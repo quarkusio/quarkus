@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Hibernate Reactive"
+metadata:
+  keywords:
+  - "hibernate-reactive"
+  - "hibernate"
+  - "reactive"
+  - "database"
+  guide: "https://quarkus.io/guides/hibernate-reactive"
+  categories:
+  - "data"
+  - "reactive"
+  status: "preview"

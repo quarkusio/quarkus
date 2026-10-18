@@ -1,0 +1,18 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Redis Client"
+metadata:
+  keywords:
+    - "redis"
+    - "redis-client"
+    - "vertx-redis"
+    - "vertx"
+    - "vert.x"
+    - "reactive"
+  guide: "https://quarkus.io/guides/redis"
+  categories:
+    - "data"
+    - "reactive"
+  status: "stable"
+  config:
+  - "quarkus.redis."

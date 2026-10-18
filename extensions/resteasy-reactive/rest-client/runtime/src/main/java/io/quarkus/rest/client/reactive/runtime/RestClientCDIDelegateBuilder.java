@@ -1,0 +1,491 @@
+package io.quarkus.rest.client.reactive.runtime;
+
+import static io.quarkus.rest.client.reactive.runtime.Constants.DEFAULT_MAX_CHUNK_SIZE;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
+import javax.net.ssl.HostnameVerifier;
+
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
+import org.jboss.resteasy.reactive.client.api.LoggingScope;
+import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
+import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.proxy.ProxyConfiguration;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
+import io.quarkus.rest.client.reactive.ParamStyle;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
+import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
+import io.smallrye.config.SmallRyeConfig;
+import io.vertx.core.http.HttpClientOptions;
+
+public class RestClientCDIDelegateBuilder<T> {
+
+    static final URI DEFAULT_DOMAIN_SOCKET_URI = URI.create("http://localhost");
+
+    private static final String REST_URL_FORMAT = "quarkus.rest-client.%s.url";
+    private static final String REST_URI_FORMAT = "quarkus.rest-client.%s.uri";
+    private static final String NONE = "none";
+
+    private final Class<T> jaxrsInterface;
+    private final String baseUriFromAnnotation;
+    private final String configKey;
+    private final RestClientsConfig configRoot;
+    private final RestClientConfig restClientConfig;
+
+    public static <T> T createDelegate(Class<T> jaxrsInterface, String baseUriFromAnnotation, String configKey) {
+        return new RestClientCDIDelegateBuilder<T>(jaxrsInterface, baseUriFromAnnotation, configKey).build();
+    }
+
+    private RestClientCDIDelegateBuilder(Class<T> jaxrsInterface, String baseUriFromAnnotation, String configKey) {
+        this(jaxrsInterface, baseUriFromAnnotation, configKey,
+                ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(RestClientsConfig.class));
+    }
+
+    RestClientCDIDelegateBuilder(Class<T> jaxrsInterface, String baseUriFromAnnotation, String configKey,
+            RestClientsConfig configRoot) {
+        this.jaxrsInterface = jaxrsInterface;
+        this.baseUriFromAnnotation = baseUriFromAnnotation;
+        this.configKey = configKey;
+        this.configRoot = configRoot;
+        this.restClientConfig = configRoot.getClient(jaxrsInterface);
+    }
+
+    private T build() {
+        QuarkusRestClientBuilder builder = QuarkusRestClientBuilder.newBuilder();
+        configureBuilder(builder);
+        return builder.build(jaxrsInterface);
+    }
+
+    void configureBuilder(QuarkusRestClientBuilder builder) {
+        configureBaseUrl(builder);
+        configureTimeouts(builder);
+        configureProviders(builder);
+        configureTLS(builder);
+        configureRedirects(builder);
+        configureQueryParamStyle(builder);
+        configureFormParamStyle(builder);
+        configureProxy(builder);
+        configureShared(builder);
+        configureLogging(builder);
+        configureCustomProperties(builder);
+        configureDomainSocket(builder);
+        configureClientOptionsCustomizer(builder);
+    }
+
+    private void configureLogging(QuarkusRestClientBuilder builder) {
+        if (restClientConfig.logging().isPresent()) {
+            RestClientsConfig.RestClientLoggingConfig loggingConfig = restClientConfig.logging().get();
+            builder.property(QuarkusRestClientProperties.LOGGING_SCOPE,
+                    loggingConfig.scope().isPresent() ? LoggingScope.forName(loggingConfig.scope().get()) : LoggingScope.NONE);
+            builder.property(QuarkusRestClientProperties.LOGGING_BODY_LIMIT, loggingConfig.bodyLimit());
+            builder.property(QuarkusRestClientProperties.LOGGING_MASKED_HEADERS,
+                    loggingConfig.maskedHeaders().orElse(Collections.emptySet()));
+        }
+    }
+
+    private void configureCustomProperties(QuarkusRestClientBuilder builder) {
+        Optional<String> encoder = oneOf(restClientConfig.multipartPostEncoderMode(), configRoot.multipartPostEncoderMode());
+        if (encoder != null && encoder.isPresent()) {
+            PausableHttpPostRequestEncoder.EncoderMode mode = PausableHttpPostRequestEncoder.EncoderMode
+                    .valueOf(encoder.get().toUpperCase(Locale.ROOT));
+            builder.property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE, mode);
+        }
+
+        OptionalInt poolSize = oneOf(restClientConfig.connectionPoolSize(), configRoot.connectionPoolSize());
+        if (poolSize.isPresent()) {
+            builder.property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, poolSize.getAsInt());
+        }
+
+        OptionalInt connectionTTL = oneOf(restClientConfig.connectionTTL(), configRoot.connectionTTL());
+        if (connectionTTL.isPresent()) {
+            // configuration bean contains value in milliseconds
+            int connectionTTLSeconds = connectionTTL.getAsInt() / 1000;
+            builder.property(QuarkusRestClientProperties.CONNECTION_TTL, connectionTTLSeconds);
+        }
+
+        Optional<Boolean> keepAliveEnabled = oneOf(restClientConfig.keepAliveEnabled(), configRoot.keepAliveEnabled());
+        if (keepAliveEnabled.isPresent()) {
+            builder.property(QuarkusRestClientProperties.KEEP_ALIVE_ENABLED, keepAliveEnabled.get());
+        }
+
+        Map<String, String> headers = restClientConfig.headers();
+        if (headers == null || headers.isEmpty()) {
+            headers = configRoot.headers();
+        }
+        if (headers != null && !headers.isEmpty()) {
+            builder.property(QuarkusRestClientProperties.STATIC_HEADERS, headers);
+        }
+
+        builder.property(QuarkusRestClientProperties.DISABLE_CONTEXTUAL_ERROR_MESSAGES,
+                configRoot.disableContextualErrorMessages());
+
+        Optional<String> userAgent = oneOf(restClientConfig.userAgent(), configRoot.userAgent());
+        if (userAgent.isPresent()) {
+            builder.userAgent(userAgent.get());
+        }
+
+        Optional<Integer> maxChunkSize = oneOf(
+                restClientConfig.maxChunkSize().map(MemorySize::asIntValue),
+                configRoot.maxChunkSize().map(MemorySize::asIntValue));
+        builder.property(QuarkusRestClientProperties.MAX_CHUNK_SIZE, maxChunkSize.orElse(DEFAULT_MAX_CHUNK_SIZE));
+
+        Optional<Boolean> enableCompressions = oneOf(restClientConfig.enableResponseDecompression(),
+                configRoot.enableResponseDecompression());
+        if (enableCompressions.isPresent()) {
+            builder.enableCompression(enableCompressions.get());
+        }
+
+        Boolean http2 = oneOf(restClientConfig.http2()).orElse(configRoot.http2());
+        builder.property(QuarkusRestClientProperties.HTTP2, http2);
+
+        Boolean http3 = oneOf(restClientConfig.http3()).orElse(configRoot.http3());
+        builder.property(QuarkusRestClientProperties.HTTP3, http3);
+
+        Optional<MemorySize> http2UpgradeMaxContentLength = oneOf(restClientConfig.http2UpgradeMaxContentLength(),
+                configRoot.http2UpgradeMaxContentLength());
+        if (http2UpgradeMaxContentLength.isPresent()) {
+            builder.property(QuarkusRestClientProperties.HTTP2_UPGRADE_MAX_CONTENT_LENGTH,
+                    http2UpgradeMaxContentLength.get().asIntValue());
+        }
+
+        Optional<Boolean> alpn = oneOf(restClientConfig.alpn(), configRoot.alpn());
+        if (alpn.isPresent()) {
+            builder.property(QuarkusRestClientProperties.ALPN, alpn.get());
+        }
+
+        Boolean captureStacktrace = oneOf(restClientConfig.captureStacktrace()).orElse(configRoot.captureStacktrace());
+        builder.property(QuarkusRestClientProperties.CAPTURE_STACKTRACE, captureStacktrace);
+
+        builder.disableDefaultMapper(restClientConfig.disableDefaultMapper());
+    }
+
+    private void configureProxy(QuarkusRestClientBuilder builder) {
+        Optional<String> proxyConfigurationName = restClientConfig.proxyConfigurationName()
+                .or(() -> configRoot.proxyConfigurationName());
+        if (proxyConfigurationName.isPresent() && proxyConfigurationName.get().equals(NONE)) {
+            builder.proxyAddress("none", 0);
+            return;
+        }
+
+        /* Check the named proxy configurations */
+        ProxyConfigurationRegistry registry = Arc.container().select(ProxyConfigurationRegistry.class).get();
+        registry.get(proxyConfigurationName)
+                .map(ProxyConfiguration::assertHttpType)
+                .ifPresent(proxyConfig -> {
+                    builder.proxyAddress(proxyConfig.host(), proxyConfig.port());
+                    if (proxyConfig.username().isPresent() && proxyConfig.password().isPresent()) {
+                        builder.proxyUser(proxyConfig.username().get());
+                        builder.proxyPassword(proxyConfig.password().get());
+                    }
+                    proxyConfig.nonProxyHosts().ifPresent(nonProxyHosts -> {
+                        if (!nonProxyHosts.isEmpty()) {
+                            builder.nonProxyHosts(String.join(",", nonProxyHosts));
+                        }
+                    });
+                    proxyConfig.proxyConnectTimeout().ifPresent(builder::proxyConnectTimeout);
+                });
+    }
+
+    private void configureQueryParamStyle(QuarkusRestClientBuilder builder) {
+        Optional<QueryParamStyle> maybeQueryParamStyle = oneOf(restClientConfig.queryParamStyle(),
+                configRoot.queryParamStyle());
+        if (maybeQueryParamStyle.isPresent()) {
+            QueryParamStyle queryParamStyle = maybeQueryParamStyle.get();
+            builder.queryParamStyle(queryParamStyle);
+        }
+    }
+
+    private void configureFormParamStyle(QuarkusRestClientBuilder builder) {
+        Optional<QueryParamStyle> maybeFormParamStyle = oneOf(restClientConfig.formParamStyle(),
+                configRoot.formParamStyle());
+        if (maybeFormParamStyle.isPresent()) {
+            builder.formParamStyle(ParamStyle.from(maybeFormParamStyle.get()));
+        }
+    }
+
+    private void configureRedirects(QuarkusRestClientBuilder builder) {
+        OptionalInt maxRedirects = oneOf(restClientConfig.maxRedirects(), configRoot.maxRedirects());
+        if (maxRedirects.isPresent()) {
+            builder.property(QuarkusRestClientProperties.MAX_REDIRECTS, maxRedirects.getAsInt());
+        }
+
+        Optional<Boolean> maybeFollowRedirects = oneOf(restClientConfig.followRedirects(), configRoot.followRedirects());
+        if (maybeFollowRedirects.isPresent()) {
+            builder.followRedirects(maybeFollowRedirects.get());
+        }
+    }
+
+    private void configureShared(QuarkusRestClientBuilder builder) {
+        Optional<Boolean> shared = restClientConfig.shared();
+        if (shared.isPresent()) {
+            builder.property(QuarkusRestClientProperties.SHARED, shared.get());
+
+            if (shared.get()) {
+                // Name is only used if shared = true
+                Optional<String> name = restClientConfig.name();
+                if (name.isPresent()) {
+                    builder.property(QuarkusRestClientProperties.NAME, name.get());
+                }
+            }
+        }
+    }
+
+    private void configureTLS(QuarkusRestClientBuilder builder) {
+        Optional<TlsConfiguration> maybeConfiguration = resolveTlsConfigurationForRegistry();
+        if (maybeConfiguration.isPresent()) {
+            builder.tlsConfiguration(maybeConfiguration.get());
+        } else {
+            configureTLSFromProperties(builder);
+        }
+    }
+
+    private Optional<TlsConfiguration> resolveTlsConfigurationForRegistry() {
+        if (Arc.container() != null) {
+            var registry = Arc.container().select(TlsConfigurationRegistry.class).orNull();
+            if (registry != null) {
+                Optional<String> maybeTlsConfigurationName = oneOf(restClientConfig.tlsConfigurationName(),
+                        configRoot.tlsConfigurationName());
+                return TlsConfiguration.from(registry, maybeTlsConfigurationName);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private void configureTLSFromProperties(QuarkusRestClientBuilder builder) {
+        Optional<String> maybeTrustStore = oneOf(restClientConfig.trustStore(), configRoot.trustStore());
+        if (maybeTrustStore.isPresent() && !maybeTrustStore.get().isBlank() && !NONE.equals(maybeTrustStore.get())) {
+            registerTrustStore(maybeTrustStore.get(), builder);
+        }
+
+        Optional<String> maybeKeyStore = oneOf(restClientConfig.keyStore(), configRoot.keyStore());
+        if (maybeKeyStore.isPresent() && !maybeKeyStore.get().isBlank() && !NONE.equals(maybeKeyStore.get())) {
+            registerKeyStore(maybeKeyStore.get(), builder);
+        }
+
+        Optional<String> maybeHostnameVerifier = oneOf(restClientConfig.hostnameVerifier(), configRoot.hostnameVerifier());
+        if (maybeHostnameVerifier.isPresent()) {
+            registerHostnameVerifier(maybeHostnameVerifier.get(), builder);
+        }
+
+        oneOf(restClientConfig.verifyHost(), configRoot.verifyHost()).ifPresent(builder::verifyHost);
+    }
+
+    private void registerHostnameVerifier(String verifier, QuarkusRestClientBuilder builder) {
+        try {
+            Class<?> verifierClass = Thread.currentThread().getContextClassLoader().loadClass(verifier);
+            builder.hostnameVerifier((HostnameVerifier) verifierClass.getDeclaredConstructor().newInstance());
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(
+                    "Could not find a public, no-argument constructor for the hostname verifier class " + verifier, e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Could not find hostname verifier class " + verifier, e);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(
+                    "Failed to instantiate hostname verifier class " + verifier
+                            + ". Make sure it has a public, no-argument constructor",
+                    e);
+        } catch (ClassCastException e) {
+            throw new RuntimeException("The provided hostname verifier " + verifier + " is not an instance of HostnameVerifier",
+                    e);
+        }
+    }
+
+    private void registerKeyStore(String keyStorePath, QuarkusRestClientBuilder builder) {
+        Optional<String> keyStorePassword = oneOf(restClientConfig.keyStorePassword(), configRoot.keyStorePassword());
+        Optional<String> keyStoreType = oneOf(restClientConfig.keyStoreType(), configRoot.keyStoreType());
+
+        try {
+            KeyStore keyStore = KeyStore.getInstance(keyStoreType.orElse("JKS"));
+            if (keyStorePassword.isEmpty()) {
+                throw new IllegalArgumentException("No password provided for keystore");
+            }
+            String password = keyStorePassword.get();
+
+            try (InputStream input = locateStream(keyStorePath)) {
+                keyStore.load(input, password.toCharArray());
+            } catch (IOException | CertificateException | NoSuchAlgorithmException e) {
+                throw new IllegalArgumentException("Failed to initialize trust store from classpath resource " + keyStorePath,
+                        e);
+            }
+
+            builder.keyStore(keyStore, password);
+        } catch (KeyStoreException e) {
+            throw new IllegalArgumentException("Failed to initialize trust store from " + keyStorePath, e);
+        }
+    }
+
+    private void registerTrustStore(String trustStorePath, QuarkusRestClientBuilder builder) {
+        Optional<String> maybeTrustStorePassword = oneOf(restClientConfig.trustStorePassword(),
+                configRoot.trustStorePassword());
+        Optional<String> maybeTrustStoreType = oneOf(restClientConfig.trustStoreType(), configRoot.trustStoreType());
+
+        try {
+            KeyStore trustStore = KeyStore.getInstance(maybeTrustStoreType.orElse("JKS"));
+            if (maybeTrustStorePassword.isEmpty()) {
+                throw new IllegalArgumentException("No password provided for truststore");
+            }
+            String password = maybeTrustStorePassword.get();
+
+            try (InputStream input = locateStream(trustStorePath)) {
+                trustStore.load(input, password.toCharArray());
+            } catch (IOException | CertificateException | NoSuchAlgorithmException e) {
+                throw new IllegalArgumentException("Failed to initialize trust store from classpath resource " + trustStorePath,
+                        e);
+            }
+
+            builder.trustStore(trustStore, password);
+        } catch (KeyStoreException e) {
+            throw new IllegalArgumentException("Failed to initialize trust store from " + trustStorePath, e);
+        }
+    }
+
+    private InputStream locateStream(String path) throws FileNotFoundException {
+        if (path.startsWith("classpath:")) {
+            path = path.replaceFirst("classpath:", "");
+            InputStream resultStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
+            if (resultStream == null) {
+                resultStream = getClass().getResourceAsStream(path);
+            }
+            if (resultStream == null) {
+                throw new IllegalArgumentException(
+                        "Classpath resource " + path + " not found for MicroProfile Rest Client SSL configuration");
+            }
+            return resultStream;
+        } else {
+            if (path.startsWith("file:")) {
+                path = path.replaceFirst("file:", "");
+            }
+            File certificateFile = new File(path);
+            if (!certificateFile.isFile()) {
+                throw new IllegalArgumentException(
+                        "Certificate file: " + path + " not found for MicroProfile Rest Client SSL configuration");
+            }
+            return new FileInputStream(certificateFile);
+        }
+    }
+
+    private void configureProviders(QuarkusRestClientBuilder builder) {
+        Optional<String> maybeProviders = oneOf(restClientConfig.providers(), configRoot.providers());
+        if (maybeProviders.isPresent()) {
+            registerProviders(builder, maybeProviders.get());
+        }
+    }
+
+    private void registerProviders(QuarkusRestClientBuilder builder, String providersAsString) {
+        for (String s : providersAsString.split(",")) {
+            builder.register(providerClassForName(s.trim()));
+        }
+    }
+
+    private Class<?> providerClassForName(String name) {
+        try {
+            return Class.forName(name, true, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Could not find provider class: " + name);
+        }
+    }
+
+    private void configureTimeouts(QuarkusRestClientBuilder builder) {
+        Long connectTimeout = restClientConfig.connectTimeout().orElse(this.configRoot.connectTimeout());
+        if (connectTimeout != null) {
+            builder.connectTimeout(connectTimeout, TimeUnit.MILLISECONDS);
+        }
+
+        Long readTimeout = restClientConfig.readTimeout().orElse(this.configRoot.readTimeout());
+        if (readTimeout != null) {
+            builder.readTimeout(readTimeout, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private void configureBaseUrl(QuarkusRestClientBuilder builder) {
+        Optional<String> propertyOptional = oneOf(restClientConfig.uriReload(), restClientConfig.urlReload());
+        if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
+                && propertyOptional.isEmpty()) {
+            if (restClientConfig.domainSocket().isPresent()) {
+                // the connection goes over the socket, so the URL only needs to provide a scheme and a Host header
+                builder.baseUri(DEFAULT_DOMAIN_SOCKET_URI);
+                return;
+            }
+            String propertyPrefix = configKey != null ? configKey : "\"" + jaxrsInterface.getName() + "\"";
+            String message = String.format(
+                    "Unable to determine the proper baseUrl/baseUri. " +
+                            "Consider registering using @RegisterRestClient(baseUri=\"someuri\"), @RegisterRestClient(configKey=\"orkey\"), "
+                            +
+                            "or by adding '%s' or '%s' to your Quarkus configuration",
+                    String.format(REST_URL_FORMAT, propertyPrefix), String.format(REST_URI_FORMAT, propertyPrefix));
+            if (RestClientRecorder.hasUrlParam(jaxrsInterface)) {
+                builder.baseUri(MissingBaseUrlRequestFilter.PLACEHOLDER_URI);
+                builder.register(new MissingBaseUrlRequestFilter(message), Integer.MIN_VALUE);
+                return;
+            }
+            throw new IllegalArgumentException(message);
+        }
+        String baseUrl = propertyOptional.orElse(baseUriFromAnnotation);
+
+        try {
+            builder.baseUri(new URI(baseUrl));
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("The value of URL was invalid " + baseUrl, e);
+        }
+    }
+
+    private void configureDomainSocket(QuarkusRestClientBuilder builder) {
+        restClientConfig.domainSocket().ifPresent(builder::domainSocket);
+    }
+
+    private void configureClientOptionsCustomizer(QuarkusRestClientBuilder builder) {
+        builder.httpClientOptionsCustomizer(new Consumer<>() {
+            @Override
+            public void accept(HttpClientOptions httpClientOptions) {
+                String metricsName = httpClientOptions.getMetricsName();
+                if (metricsName == null || metricsName.isEmpty()) {
+                    httpClientOptions.setMetricsName("rest-client|" + configKey);
+                }
+            }
+        });
+    }
+
+    @SafeVarargs
+    private static <T> Optional<T> oneOf(Optional<T>... optionals) {
+        for (Optional<T> o : optionals) {
+            if (o != null && o.isPresent()) {
+                return o;
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static OptionalInt oneOf(OptionalInt... optionals) {
+        for (OptionalInt o : optionals) {
+            if (o != null && o.isPresent()) {
+                return o;
+            }
+        }
+        return OptionalInt.empty();
+    }
+}

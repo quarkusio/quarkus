@@ -1,0 +1,261 @@
+package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.logging.Level;
+
+import org.apache.pulsar.client.impl.conf.ClientConfigurationData;
+import org.apache.pulsar.client.impl.conf.ConsumerConfigurationData;
+import org.apache.pulsar.client.impl.conf.ProducerConfigurationData;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.logging.Logger;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.avro.spi.AvroTrustedClassBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
+import io.quarkus.gizmo.Gizmo;
+import io.quarkus.pulsar.PulsarClientConfigCustomizer;
+import io.quarkus.pulsar.PulsarRuntimeConfigProducer;
+
+public class SmallRyeReactiveMessagingPulsarProcessor {
+
+    static Logger log = Logger.getLogger(SmallRyeReactiveMessagingPulsarProcessor.class);
+
+    @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(Feature.MESSAGING_PULSAR);
+    }
+
+    @BuildStep
+    public AdditionalBeanBuildItem runtimeConfig() {
+        return AdditionalBeanBuildItem.builder()
+                .addBeanClass(PulsarRuntimeConfigProducer.class)
+                .addBeanClass(PulsarClientConfigCustomizer.class)
+                .setUnremovable()
+                .build();
+    }
+
+    @BuildStep
+    void logging(BuildProducer<LogCategoryBuildItem> log) {
+        log.produce(new LogCategoryBuildItem("org.apache.pulsar.common.util.netty.DnsResolverUtil", Level.OFF));
+    }
+
+    @BuildStep
+    void trustProtobufMessagesForAvro(CombinedIndexBuildItem combinedIndex,
+            BuildProducer<AvroTrustedClassBuildItem> trustedClasses) {
+        // Protobuf-generated messages used as Pulsar payloads may be deserialized through Avro. Since Avro 1.12.2
+        // validates classes against a security validator, mark them as trusted so the quarkus-avro extension (if
+        // present) allows them. This has no effect if quarkus-avro is not on the classpath.
+        Set<String> messages = new HashSet<>();
+        for (ClassInfo message : combinedIndex.getIndex().getAllKnownSubclasses(DotNames.PROTOBUF_GENERATED)) {
+            messages.add(message.name().toString());
+        }
+        if (!messages.isEmpty()) {
+            trustedClasses.produce(new AvroTrustedClassBuildItem(messages));
+        }
+    }
+
+    @BuildStep
+    void disableStatsLogging(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig) {
+        runtimeConfig.produce(new RunTimeConfigurationDefaultBuildItem(
+                "mp.messaging.connector.smallrye-pulsar.statsIntervalSeconds", "0"));
+    }
+
+    @BuildStep
+    NativeImageResourceBuildItem nativeImageResources() {
+        return new NativeImageResourceBuildItem(
+                "org/asynchttpclient/config/ahc-default.properties",
+                "org/asynchttpclient/config/ahc.properties");
+    }
+
+    @BuildStep
+    void bytecodeTransformer(BuildProducer<BytecodeTransformerBuildItem> producer) {
+        String klass = "org.asynchttpclient.request.body.multipart.FileLikePart";
+
+        producer.produce(new BytecodeTransformerBuildItem(klass, new BiFunction<String, ClassVisitor, ClassVisitor>() {
+            @Override
+            public ClassVisitor apply(String cls, ClassVisitor classVisitor) {
+                return new FileLikePartJavaxRemover(Gizmo.ASM_API_VERSION, classVisitor);
+            }
+
+        }));
+    }
+
+    private class FileLikePartJavaxRemover extends ClassVisitor {
+        public FileLikePartJavaxRemover(int version, ClassVisitor cv) {
+            super(version, cv);
+            log.debug("Removing javax.activation from FileLikePart");
+        }
+
+        @Override
+        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+            if (name.equals("MIME_TYPES_FILE_TYPE_MAP")) {
+                return null;
+            }
+            return super.visitField(access, name, descriptor, signature, value);
+        }
+
+        // invoked for every method
+        @Override
+        public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+            MethodVisitor visitor = super.visitMethod(access, name, desc, signature, exceptions);
+            if (visitor == null) {
+                return null;
+            }
+            if (name.equals("<clinit>")) {
+                return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
+                    @Override
+                    public void visitCode() {
+                        mv.visitCode();
+                        mv.visitInsn(Opcodes.RETURN);// our new code
+                    }
+                };
+            }
+            if (name.equals("computeContentType")) {
+                return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
+                    @Override
+                    public void visitCode() {
+                        super.visitCode();
+                        visitVarInsn(Opcodes.ALOAD, 1); // first param
+                        visitInsn(Opcodes.ARETURN);
+                    }
+                };
+            }
+            visitor.visitMaxs(0, 0);
+            return visitor;
+        }
+
+    }
+
+    @BuildStep
+    void indexPulsar(BuildProducer<IndexDependencyBuildItem> indexDependency) {
+        indexDependency.produce(new IndexDependencyBuildItem("org.apache.pulsar", "pulsar-client-original"));
+        indexDependency.produce(new IndexDependencyBuildItem("org.apache.pulsar", "pulsar-common"));
+    }
+
+    @BuildStep
+    public NativeImageConfigBuildItem pulsarRuntimeInitialized(
+            CombinedIndexBuildItem combinedIndex,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ExtensionSslNativeSupportBuildItem> nativeSslSupport) {
+        nativeSslSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.MESSAGING_PULSAR));
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(ClientConfigurationData.class.getName(),
+                        ProducerConfigurationData.class.getName(),
+                        ConsumerConfigurationData.class.getName(),
+                        "org.apache.pulsar.client.impl.auth.oauth2.KeyFile",
+                        "org.apache.pulsar.client.impl.auth.oauth2.protocol.Metadata",
+                        "org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenResult",
+                        "org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenError",
+                        "org.apache.pulsar.client.impl.auth.oauth2.protocol.ClientCredentialsExchangeRequest",
+                        "org.apache.pulsar.client.api.url.DataURLStreamHandler",
+                        "com.google.protobuf.GeneratedMessageV3",
+                        "org.apache.pulsar.common.protocol.schema.ProtobufNativeSchemaData",
+                        "org.apache.pulsar.client.impl.schema.ProtobufNativeSchema$ProtoBufParsingInfo",
+                        "org.apache.pulsar.client.impl.schema.ProtobufSchema$ProtoBufParsingInfo",
+                        "org.apache.pulsar.common.schema.KeyValue")
+                .fields(true)
+                .methods(true)
+                .constructors(true)
+                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder("org.apache.pulsar.client.util.SecretsSerializer")
+                .constructors().build());
+
+        // Pulsar 4.2.x's DnsResolverGroupImpl / ConnectionPool use Netty's
+        // ReflectiveChannelFactory against the platform SocketChannel returned by
+        // EventLoopUtil. quarkus-netty registers only the NIO variants; register
+        // Epoll/KQueue/IOUring here so native image can find their no-arg
+        // constructors at runtime. Revisit when bumping pulsar-client — if Pulsar
+        // moves to non-reflective ChannelFactory factories, these can be removed.
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder("io.netty.channel.epoll.EpollSocketChannel",
+                        "io.netty.channel.epoll.EpollDatagramChannel",
+                        "io.netty.channel.kqueue.KQueueSocketChannel",
+                        "io.netty.channel.kqueue.KQueueDatagramChannel",
+                        "io.netty.incubator.channel.uring.IOUringSocketChannel",
+                        "io.netty.incubator.channel.uring.IOUringDatagramChannel")
+                .constructors().build());
+
+        Collection<ClassInfo> authPluginClasses = combinedIndex.getIndex()
+                .getAllKnownImplementations(DotNames.PULSAR_AUTHENTICATION);
+        for (ClassInfo authPluginClass : authPluginClasses) {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(authPluginClass.name().toString())
+                    .constructors().build());
+        }
+        Collection<ClassInfo> sslFactoryClasses = combinedIndex.getIndex()
+                .getAllKnownImplementations(DotNames.PULSAR_SSL_FACTORY);
+        for (ClassInfo sslFactoryClass : sslFactoryClasses) {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(sslFactoryClass.name().toString())
+                    .constructors().build());
+        }
+
+        NativeImageConfigBuildItem.Builder nativeImageConfig = NativeImageConfigBuildItem.builder()
+                .addNativeImageSystemProperty("io.netty.handler.ssl.noOpenSsl", "true")
+                .addNativeImageSystemProperty("pulsar.enableUring", "false")
+                .addRuntimeInitializedClass("org.apache.pulsar.common.allocator.PulsarByteBufAllocator")
+                .addRuntimeInitializedClass("org.apache.pulsar.common.protocol.Commands")
+                // Pulsar 4.2.x's LightProtoCodec computes Unsafe field offsets
+                // (String.value field offset, byte[] base offset) in its static
+                // initializer. GraalVM cannot auto-recompute these, so building
+                // them at image-build time bakes in host-JVM offsets and segfaults
+                // at runtime in writeRawString. Initialize at run time so the
+                // offsets match the SubstrateVM heap layout. Revisit when bumping
+                // pulsar-client — Pulsar 25883 embeds this config upstream.
+                .addRuntimeInitializedClass("org.apache.pulsar.common.api.proto.LightProtoCodec")
+                .addRuntimeInitializedClass("org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenClient")
+                .addRuntimeInitializedClass("org.apache.pulsar.client.impl.crypto.MessageCryptoBc")
+                .addRuntimeInitializedClass("org.apache.pulsar.client.impl.schema.generic.GenericProtobufNativeSchema")
+                .addRuntimeInitializedClass("org.apache.pulsar.client.impl.ConnectionPool")
+                .addRuntimeInitializedClass("org.apache.pulsar.client.impl.ControlledClusterFailover")
+                .addRuntimeInitializedClass("org.apache.pulsar.client.impl.HttpClient")
+                .addRuntimeInitializedClass("com.yahoo.sketches.quantiles.DoublesSketch")
+                .addRuntimeInitializedClass("io.netty.buffer.PooledByteBufAllocator")
+                .addRuntimeInitializedClass("io.netty.buffer.UnpooledByteBufAllocator$InstrumentedUnpooledHeapByteBuf")
+                .addRuntimeInitializedClass("io.netty.incubator.channel.uring.IOUringEventLoopGroup")
+                .addRuntimeInitializedClass("io.netty.incubator.channel.uring.Native")
+                .addRuntimeInitializedClass("io.netty.incubator.channel.uring.IOUring")
+                .addRuntimeInitializedClass("org.asynchttpclient.RequestBuilderBase")
+                .addRuntimeInitializedClass("org.asynchttpclient.RequestBuilder")
+                .addRuntimeInitializedClass("org.asynchttpclient.BoundRequestBuilder")
+                .addRuntimeInitializedClass("org.asynchttpclient.ntlm.NtlmEngine")
+                .addRuntimeInitializedClass("sun.awt.dnd.SunDropTargetContextPeer$EventDispatcher")
+                .addRuntimeInitializedClass("com.google.protobuf.JavaFeaturesProto");
+        if (QuarkusClassLoader.isClassPresentAtRuntime("org.apache.pulsar.common.util.Backoff")) {
+            nativeImageConfig
+                    .addRuntimeInitializedClass("org.apache.pulsar.common.util.Backoff");
+        }
+        if (QuarkusClassLoader.isClassPresentAtRuntime("org.apache.pulsar.client.impl.Backoff")) {
+            nativeImageConfig
+                    .addRuntimeInitializedClass("org.apache.pulsar.client.impl.Backoff");
+        }
+
+        return nativeImageConfig.build();
+    }
+
+    @BuildStep(onlyIf = NativeImageFutureDefault.RunTimeInitializeSecurityProvider.class)
+    RuntimeInitializedPackageBuildItem runtimeInitializedClasses() {
+        return new RuntimeInitializedPackageBuildItem("org.apache.pulsar.common.util.SecurityUtility");
+    }
+}

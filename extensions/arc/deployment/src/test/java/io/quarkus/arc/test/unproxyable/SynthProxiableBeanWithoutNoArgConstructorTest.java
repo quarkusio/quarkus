@@ -1,0 +1,76 @@
+package io.quarkus.arc.test.unproxyable;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.function.Consumer;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Vetoed;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.builder.BuildChainBuilder;
+import io.quarkus.builder.BuildContext;
+import io.quarkus.builder.BuildStep;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.test.QuarkusExtensionTest;
+
+public class SynthProxiableBeanWithoutNoArgConstructorTest {
+
+    @RegisterExtension
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(SynthBean.class))
+            .addBuildChainCustomizer(buildCustomizer());
+
+    static Consumer<BuildChainBuilder> buildCustomizer() {
+        return new Consumer<BuildChainBuilder>() {
+
+            @Override
+            public void accept(BuildChainBuilder builder) {
+                builder.addBuildStep(new BuildStep() {
+
+                    @Override
+                    public void execute(BuildContext context) {
+                        context.produce(SyntheticBeanBuildItem.configure(SynthBean.class)
+                                .scope(ApplicationScoped.class)
+                                .types(SynthBean.class)
+                                .unremovable()
+                                .creator(cg -> {
+                                    BlockCreator bc = cg.createMethod();
+
+                                    bc.return_(bc.new_(SynthBean.class, Const.of("foo")));
+                                })
+                                .done());
+                    }
+                }).produces(SyntheticBeanBuildItem.class).build();
+            }
+        };
+    }
+
+    @Test
+    public void testSyntheticBean() {
+        InstanceHandle<SynthBean> instance = Arc.container().instance(SynthBean.class);
+        assertTrue(instance.isAvailable());
+        assertEquals("foo", instance.get().getString());
+    }
+
+    @Vetoed
+    static class SynthBean {
+        private String s;
+
+        public SynthBean(String s) {
+            this.s = s;
+        }
+
+        public String getString() {
+            return s;
+        }
+    }
+}

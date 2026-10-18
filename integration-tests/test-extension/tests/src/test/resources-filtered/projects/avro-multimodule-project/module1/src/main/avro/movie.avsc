@@ -1,0 +1,11 @@
+{
+  "namespace": "org.acme.quarkus",
+  "type": "record",
+  "name": "Movie",
+  "fields": [
+    {
+      "name": "title",
+      "type": "string"
+    }
+  ]
+}

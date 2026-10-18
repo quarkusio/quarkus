@@ -1,0 +1,132 @@
+package io.quarkus.keycloak.admin.resteasy.client.runtime;
+
+import java.util.function.UnaryOperator;
+
+import javax.net.ssl.SSLContext;
+
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.KeycloakBuilder;
+import org.keycloak.admin.client.spi.ResteasyClientProvider;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import io.quarkus.keycloak.admin.client.common.runtime.Jackson2JsonNodeModule;
+import io.quarkus.keycloak.admin.client.common.runtime.KeycloakAdminClientConfig;
+import io.quarkus.resteasy.common.runtime.jackson.QuarkusJacksonSerializer;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+
+public class KeycloakAdminResteasyClientRecorder {
+
+    public static Keycloak createAdminClient(KeycloakAdminClientConfig config) {
+        if (config.serverUrl().isEmpty()) {
+            throw new IllegalStateException(
+                    "'quarkus.keycloak.admin-client.server-url' must be set in order to use the Keycloak admin client as a CDI bean");
+        }
+        return KeycloakBuilder
+                .builder()
+                .clientId(config.clientId())
+                .clientSecret(config.clientSecret().orElse(null))
+                .grantType(config.grantType().asString())
+                .username(config.username().orElse(null))
+                .password(config.password().orElse(null))
+                .realm(config.realm())
+                .serverUrl(config.serverUrl().get())
+                .scope(config.scope().orElse(null))
+                .build();
+    }
+
+    public static void setClientProvider(TlsConfigurationRegistry registry, KeycloakAdminClientConfig config) {
+        var namedTlsConfig = TlsConfiguration.from(registry, config.tlsConfigurationName()).orElse(null);
+        final boolean globalTrustAll;
+        if (registry.getDefault().isPresent()) {
+            globalTrustAll = registry.getDefault().get().isTrustAll();
+        } else {
+            globalTrustAll = false;
+        }
+
+        Keycloak.setClientProvider(new ResteasyClientProvider() {
+            @Override
+            public Client newRestEasyClient(Object customJacksonProvider, SSLContext sslContext, boolean disableTrustManager) {
+                // this is what 'org.keycloak.admin.client.ClientBuilderWrapper.create' does
+                var builder = new ResteasyClientBuilderImpl();
+                builder.connectionPoolSize(10);
+
+                if (namedTlsConfig == null) {
+                    builder.sslContext(sslContext);
+                    if (globalTrustAll) {
+                        builder.disableTrustManager();
+                    }
+                } else {
+                    if (namedTlsConfig.isTrustAll()) {
+                        builder.disableTrustManager();
+                    }
+                    try {
+                        builder.sslContext(namedTlsConfig.createSSLContext());
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to create Keycloak Admin client SSLContext", e);
+                    }
+                }
+
+                // this ensures we don't customize managed (shared) ObjectMapper available in the CDI container
+                // and that we use QuarkusJacksonSerializer that works in native mode
+                builder.register(new AppJsonQuarkusJacksonSerializer(), 100);
+
+                return builder.build();
+            }
+
+            @Override
+            public <R> R targetProxy(WebTarget webTarget, Class<R> aClass) {
+                return (ResteasyWebTarget.class.cast(webTarget)).proxy(aClass);
+            }
+        });
+    }
+
+    public static void avoidRuntimeInitIssueInClientBuilderWrapper() {
+        // we set our provider at runtime, it is not used before that
+        // however org.keycloak.admin.client.Keycloak.CLIENT_PROVIDER is initialized during
+        // static init with org.keycloak.admin.client.ClientBuilderWrapper that is not compatible with native mode
+        Keycloak.setClientProvider(null);
+    }
+
+    // makes media type more specific which ensures that it will be used first
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    static final class AppJsonQuarkusJacksonSerializer extends QuarkusJacksonSerializer {
+
+        private final JsonMapper jsonMapper;
+
+        private AppJsonQuarkusJacksonSerializer() {
+            // Same like JSONSerialization class. Makes it possible to use admin-client against older
+            // versions of Keycloak server where the properties on representations might be different
+            // The client must work with the newer versions of Keycloak server, which might contain the JSON fields
+            // not yet known by the client. So unknown fields will be ignored.
+            this.jsonMapper = JsonMapper.builder()
+                    .changeDefaultPropertyInclusion(new UnaryOperator<>() {
+                        @Override
+                        public JsonInclude.Value apply(JsonInclude.Value value) {
+                            return value.withValueInclusion(JsonInclude.Include.NON_NULL);
+                        }
+                    })
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .addModule(new Jackson2JsonNodeModule())
+                    .build();
+        }
+
+        @Override
+        public JsonMapper locateMapper(Class<?> type, MediaType mediaType) {
+            return jsonMapper;
+        }
+
+    }
+}

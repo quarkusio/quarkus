@@ -1,0 +1,77 @@
+package io.quarkus.reactive.mssql.client;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.reactive.datasource.ReactiveDataSource;
+import io.quarkus.test.QuarkusExtensionTest;
+import io.vertx.sqlclient.Pool;
+
+public class MultipleDataSourcesTest {
+
+    @RegisterExtension
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .withConfigurationResource("application-multiple-datasources.properties")
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(BeanUsingDefaultDataSource.class)
+                    .addClass(BeanUsingHibernateDataSource.class));
+
+    @Inject
+    BeanUsingDefaultDataSource beanUsingDefaultDataSource;
+
+    @Inject
+    BeanUsingHibernateDataSource beanUsingHibernateDataSource;
+
+    @Test
+    public void testMultipleDataSources() {
+        beanUsingDefaultDataSource.verify()
+                .thenCompose(v -> beanUsingHibernateDataSource.verify())
+                .toCompletableFuture()
+                .join();
+    }
+
+    @ApplicationScoped
+    static class BeanUsingDefaultDataSource {
+
+        @Inject
+        Pool msSQLClient;
+
+        public CompletionStage<Void> verify() {
+            CompletableFuture<Void> cf = new CompletableFuture<>();
+            msSQLClient.query("SELECT 1").execute().onComplete(ar -> {
+                if (ar.failed()) {
+                    cf.completeExceptionally(ar.cause());
+                } else {
+                    cf.complete(null);
+                }
+            });
+            return cf;
+        }
+    }
+
+    @ApplicationScoped
+    static class BeanUsingHibernateDataSource {
+
+        @Inject
+        @ReactiveDataSource("hibernate")
+        Pool msSQLClient;
+
+        public CompletionStage<Void> verify() {
+            CompletableFuture<Void> cf = new CompletableFuture<>();
+            msSQLClient.query("SELECT 1").execute().onComplete(ar -> {
+                if (ar.failed()) {
+                    cf.completeExceptionally(ar.cause());
+                } else {
+                    cf.complete(null);
+                }
+            });
+            return cf;
+        }
+    }
+}

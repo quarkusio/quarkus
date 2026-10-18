@@ -1,0 +1,15 @@
+{
+  "namespace": "io.quarkus.it.kafka.avro",
+  "type": "record",
+  "name": "Pet",
+  "fields": [
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "color",
+      "type": "string"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+* xref:index.adoc[Getting started]
+* xref:config-reference.adoc[Configuration Reference]

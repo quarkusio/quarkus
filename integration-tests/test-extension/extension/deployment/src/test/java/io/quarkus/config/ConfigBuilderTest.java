@@ -1,0 +1,40 @@
+package io.quarkus.config;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import jakarta.inject.Inject;
+
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.extest.runtime.config.StaticInitConfigBuilder;
+import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.config.SmallRyeConfig;
+
+public class ConfigBuilderTest {
+    @RegisterExtension
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
+
+    @Inject
+    SmallRyeConfig config;
+
+    @Test
+    void staticConfigBuilder() {
+        assertEquals(1, StaticInitConfigBuilder.counter.get());
+    }
+
+    @Test
+    void runTimeConfigBuilder() {
+        assertEquals("1234", config.getConfigValue("additional.builder.property").getValue());
+    }
+
+    @Test
+    void buildTimeConfigBuilder() {
+        assertFalse(config.getConfigSource("BuildTimeConfigSource").isPresent());
+        assertEquals("1234", config.getConfigValue("prop.recorded.from.btconfigsource").getValue());
+    }
+}

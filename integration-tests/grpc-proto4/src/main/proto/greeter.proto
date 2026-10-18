@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "examples";
+option java_outer_classname = "GreeterProto";
+option objc_class_prefix = "GP";
+
+package greeter;
+
+service Greeter {
+    rpc Greet (GpRequest) returns (GpReply) {}
+}
+
+message GpRequest {
+    string name = 1;
+}
+
+message GpReply {
+    string message = 1;
+    optional int32 count = 2;
+}

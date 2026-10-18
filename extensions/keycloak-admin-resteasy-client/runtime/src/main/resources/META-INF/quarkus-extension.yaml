@@ -1,0 +1,15 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Keycloak Admin RESTEasy Client"
+metadata:
+  keywords:
+  - "keycloak"
+  - "keycloak-admin-client"
+  - "admin"
+  - "openid-connect"
+  - "resteasy"
+  - "resteasy-client"
+  guide: "https://quarkus.io/guides/security-keycloak-admin-client"
+  categories:
+    - "security"
+  status: "stable"

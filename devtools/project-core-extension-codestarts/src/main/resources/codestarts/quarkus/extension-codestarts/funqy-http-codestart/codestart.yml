@@ -1,0 +1,15 @@
+name: funqy-http-codestarts
+ref: funqy-http
+type: code
+tags: extension-codestart
+metadata:
+  title: Funqy HTTP
+  description: Start your Funqy functions using HTTP
+  path: /greet
+  related-guide-section: https://quarkus.io/guides/funqy-http#get-query-parameter-mapping
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-funqy-http
+    test-dependencies:
+      - io.rest-assured:rest-assured

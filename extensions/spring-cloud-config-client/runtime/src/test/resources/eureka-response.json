@@ -1,0 +1,25 @@
+{
+  "application": {
+    "name": "config-server-id",
+    "instance": [
+      {
+        "instanceId": "my-service:9300",
+        "hostName": "localhost",
+        "app": "config-server-id",
+        "ipAddr": "192.168.1.10",
+        "status": "UP",
+        "port": {
+          "$": 9300,
+          "@enabled": true
+        },
+        "healthCheckUrl": "http://localhost:9300/actuator/health",
+        "statusPageUrl": "http://localhost:9300/info",
+        "homePageUrl": "http://localhost:9300/",
+        "dataCenterInfo": {
+          "@class": "com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo",
+          "name": "MyOwn"
+        }
+      }
+    ]
+  }
+}

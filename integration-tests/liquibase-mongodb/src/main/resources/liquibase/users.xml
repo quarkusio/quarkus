@@ -1,0 +1,23 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
+        http://www.liquibase.org/xml/ns/dbchangelog-ext https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+
+    <changeSet id="1" author="quarkus">
+
+        <ext:createCollection collectionName="Users"/>
+
+        <ext:createIndex collectionName="Users">
+            <ext:keys>{email: 1}</ext:keys>
+            <ext:options>{name: "emailIdx"}</ext:options>
+        </ext:createIndex>
+
+        <ext:insertOne collectionName="Users">
+            <ext:document>{"name":"John Doe", "email": "john.doe@example.com"}</ext:document>
+        </ext:insertOne>
+
+    </changeSet>
+
+</databaseChangeLog>

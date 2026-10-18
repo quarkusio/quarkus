@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.acme</groupId>
+        <artifactId>quarkus-quickstart-multimodule-parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>acme-integration-tests</artifactId>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>rest-tests</module>
+    </modules>
+</project>

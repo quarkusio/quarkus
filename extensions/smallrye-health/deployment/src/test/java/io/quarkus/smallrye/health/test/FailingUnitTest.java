@@ -1,0 +1,49 @@
+package io.quarkus.smallrye.health.test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.health.HealthCheck;
+import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.jboss.shrinkwrap.api.asset.EmptyAsset;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusExtensionTest;
+import io.restassured.RestAssured;
+
+class FailingUnitTest {
+
+    @RegisterExtension
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(FailingHealthCheck.class)
+                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    @Inject
+    @Any
+    Instance<HealthCheck> checks;
+
+    @Test
+    void testHealthServlet() {
+        RestAssured.when().get("/q/health/live").then().statusCode(503);
+        RestAssured.when().get("/q/health/ready").then().statusCode(503);
+        RestAssured.when().get("/q/health/started").then().statusCode(503);
+        RestAssured.when().get("/q/health").then().statusCode(503);
+    }
+
+    @Test
+    void testHealthBeans() {
+        List<HealthCheck> check = new ArrayList<>();
+        for (HealthCheck i : checks) {
+            check.add(i);
+        }
+        assertEquals(1, check.size());
+        assertEquals(HealthCheckResponse.Status.DOWN, check.get(0).call().getStatus());
+    }
+}

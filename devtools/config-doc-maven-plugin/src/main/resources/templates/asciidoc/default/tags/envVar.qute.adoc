@@ -1,0 +1,6 @@
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++{configProperty.path.environmentVariable}+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++{configProperty.path.environmentVariable}+++`
+endif::add-copy-button-to-env-var[]

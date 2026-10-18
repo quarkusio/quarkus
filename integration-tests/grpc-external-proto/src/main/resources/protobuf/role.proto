@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option java_package = "org.acme.protos.role";
+option java_outer_classname = "RoleProtos";
+
+option optimize_for = CODE_SIZE;
+
+package org.acme.protos.role;
+
+// A basic message representing a role
+message Role {
+    int32 role_id = 1;
+    string role_name = 2;
+}
+

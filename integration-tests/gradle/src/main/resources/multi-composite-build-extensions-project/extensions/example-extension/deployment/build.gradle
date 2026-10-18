@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+    id 'java-library'
+}
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    annotationProcessor "io.quarkus:quarkus-extension-processor:${quarkusPlatformVersion}"
+
+
+    api project(':example-extension') // why: https://quarkus.io/guides/building-my-first-extension
+    implementation 'io.quarkus:quarkus-core-deployment'
+    implementation 'io.quarkus:quarkus-arc-deployment'
+    implementation ('org.acme.libs:libraryA')
+
+    testImplementation 'io.quarkus:quarkus-smallrye-health'
+}
+
+java {
+   // withJavadocJar()
+    withSourcesJar()
+}
+

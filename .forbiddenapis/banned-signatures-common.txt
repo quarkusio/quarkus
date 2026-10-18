@@ -1,0 +1,80 @@
+@defaultMessage Never use Type#toString() as it's almost always the wrong thing to do. Usually org.jboss.jandex.DotName#toString() is what is needed
+org.jboss.jandex.Type#toString()
+@defaultMessage Never use AnnotationValue#toString() as it's almost always the wrong thing to do. Usually AnnotationValueDotName#asString() is what is needed
+org.jboss.jandex.AnnotationValue#toString()
+
+@defaultMessage Replace this by using InputStream.transferTo(OutputStream)
+org.apache.commons.io.IOUtils#copy(java.io.InputStream,java.io.OutputStream)
+org.apache.commons.compress.utils.IOUtils#copy(java.io.InputStream,java.io.OutputStream)
+
+@defaultMessage We should avoid using WildFly Common APIs
+org.wildfly.common.Assert
+org.wildfly.common.net.**
+org.wildfly.common.os.**
+
+@defaultMessage Use JUnit asserts
+io.smallrye.common.Assert.assertTrue(**)
+io.smallrye.common.Assert.assertFalse(**)
+io.smallrye.common.Assert.assertNotNull(**)
+
+@defaultMessage Use JBoss Logging
+# Forbid all logging methods in java.util.logging.Logger
+# Simple message logging methods:
+java.util.logging.Logger#severe(java.lang.String)
+java.util.logging.Logger#warning(java.lang.String)
+java.util.logging.Logger#info(java.lang.String)
+java.util.logging.Logger#config(java.lang.String)
+java.util.logging.Logger#fine(java.lang.String)
+java.util.logging.Logger#finer(java.lang.String)
+java.util.logging.Logger#finest(java.lang.String)
+# Methods with Supplier<String>:
+java.util.logging.Logger#severe(java.util.function.Supplier)
+java.util.logging.Logger#warning(java.util.function.Supplier)
+java.util.logging.Logger#info(java.util.function.Supplier)
+java.util.logging.Logger#config(java.util.function.Supplier)
+java.util.logging.Logger#fine(java.util.function.Supplier)
+java.util.logging.Logger#finer(java.util.function.Supplier)
+java.util.logging.Logger#finest(java.util.function.Supplier)
+# Generic log methods:
+java.util.logging.Logger#log(java.util.logging.Level,java.lang.String)
+java.util.logging.Logger#log(java.util.logging.Level,java.util.function.Supplier)
+java.util.logging.Logger#log(java.util.logging.Level,java.lang.String,java.lang.Object)
+java.util.logging.Logger#log(java.util.logging.Level,java.lang.String,java.lang.Object[])
+java.util.logging.Logger#log(java.util.logging.Level,java.lang.String,java.lang.Throwable)
+
+@defaultMessage Use org.jboss.logging.Logger in Quarkus itself
+io.quarkus.logging.Log#trace(**)
+io.quarkus.logging.Log#tracef(**)
+io.quarkus.logging.Log#tracev(**)
+io.quarkus.logging.Log#debug(**)
+io.quarkus.logging.Log#debugf(**)
+io.quarkus.logging.Log#debugv(**)
+io.quarkus.logging.Log#info(**)
+io.quarkus.logging.Log#infof(**)
+io.quarkus.logging.Log#infov(**)
+io.quarkus.logging.Log#warn(**)
+io.quarkus.logging.Log#warnf(**)
+io.quarkus.logging.Log#warnv(**)
+io.quarkus.logging.Log#error(**)
+io.quarkus.logging.Log#errorf(**)
+io.quarkus.logging.Log#errorv(**)
+io.quarkus.logging.Log#fatal(**)
+io.quarkus.logging.Log#fatalf(**)
+io.quarkus.logging.Log#fatalv(**)
+io.quarkus.logging.Log#log(**)
+io.quarkus.logging.Log#logf(**)
+io.quarkus.logging.Log#logv(**)
+
+@defaultMessage Use executeBlocking with an explicit ordering parameter
+io.vertx.core.Vertx#executeBlocking(java.util.concurrent.Callable)
+io.vertx.core.Context#executeBlocking(java.util.concurrent.Callable)
+io.vertx.mutiny.core.Vertx#executeBlocking(java.util.concurrent.Callable)
+io.vertx.mutiny.core.Vertx#executeBlockingAndAwait(java.util.concurrent.Callable)
+io.vertx.mutiny.core.Vertx#executeBlockingAndForget(java.util.concurrent.Callable)
+io.vertx.mutiny.core.Context#executeBlocking(java.util.concurrent.Callable)
+io.vertx.mutiny.core.Context#executeBlockingAndAwait(java.util.concurrent.Callable)
+io.vertx.mutiny.core.Context#executeBlockingAndForget(java.util.concurrent.Callable)
+
+@defaultMessage Do not use dynamic proxies, Quarkus has better alternatives (CDI interceptors, bytecode generation, etc.)
+java.lang.reflect.Proxy#newProxyInstance(java.lang.ClassLoader,java.lang.Class[],java.lang.reflect.InvocationHandler)
+java.lang.reflect.Proxy#getProxyClass(java.lang.ClassLoader,java.lang.Class[])

@@ -1,0 +1,33 @@
+package org.jboss.resteasy.reactive.server.handlers;
+
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.jaxrs.ContainerRequestContextImpl;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
+
+public class ResourceResponseFilterHandler implements ServerRestHandler {
+
+    private final ContainerResponseFilter filter;
+    private final boolean cancellable;
+
+    public ResourceResponseFilterHandler(ContainerResponseFilter filter, boolean cancellable) {
+        this.filter = filter;
+        this.cancellable = cancellable;
+    }
+
+    public boolean isCancellable() {
+        return cancellable;
+    }
+
+    @Override
+    public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
+        requestContext.requireCDIRequestScope();
+        ContainerRequestContextImpl filterRequestContext = requestContext.getContainerRequestContext();
+        filterRequestContext.setResponse(true);
+        filterRequestContext.setPreMatch(false);
+        ContainerResponseContext filterResponseContext = requestContext.getContainerResponseContext();
+        filter.filter(filterRequestContext, filterResponseContext);
+    }
+}

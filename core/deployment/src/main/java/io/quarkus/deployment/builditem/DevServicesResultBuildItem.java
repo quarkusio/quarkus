@@ -1,0 +1,491 @@
+package io.quarkus.deployment.builditem;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.Feature;
+
+/**
+ * BuildItem for discovered (running) or to be started dev services.
+ * <p>
+ * Processors are expected to return this build item not only when the dev service first starts,
+ * but also if a running dev service already exists.
+ * <p>
+ * Two builders are provided to create this build item:
+ * <p>
+ * - {@link DevServicesResultBuildItem#discovered()} for discovered dev services, provides config to be injected to the
+ * application with container id (if it exists).
+ * <p>
+ * - {@link DevServicesResultBuildItem#owned()} for owned dev services, that will be started before application start,
+ * provides the startable supplier and config injected to the application and post-start action.
+ */
+public final class DevServicesResultBuildItem extends MultiBuildItem {
+
+    /**
+     * The name of the dev service, usually feature name.
+     */
+    private final String name;
+
+    /**
+     * A description of the dev service, usually feature name with additional information.
+     */
+    private final String description;
+
+    /**
+     * The container id of the dev service, if it is running in a container.
+     * If the dev service is not running in a container, this will be null.
+     */
+    private final String containerId;
+
+    /**
+     * The map of static application config
+     */
+    private final Map<String, String> config;
+
+    /**
+     * If the feature provides multiple dev services, this is the name of the service
+     */
+    private final String serviceName;
+
+    /**
+     * The config object that is used to identify the dev service
+     */
+    private final Object serviceConfig;
+
+    /**
+     * Supplier of a startable dev service
+     */
+    private final Supplier<Startable> startableSupplier;
+
+    /**
+     * An action to perform after the dev service has started.
+     */
+    private final Consumer<Startable> postStartAction;
+
+    /**
+     * A function that resolves config dynamically from the started service.
+     */
+    private final Function<Startable, Map<String, String>> applicationConfigProvider;
+
+    private final Set<String> highPriorityConfig;
+    private final Set<DevServiceConfigDependency<? extends Startable>> dependencies;
+    private final Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies;
+
+    private DevServicesResultBuildItem(String name, String description, String containerId,
+            String serviceName, Object serviceConfig,
+            Map<String, String> config, Supplier<Startable> startableSupplier, Consumer<Startable> postStartAction,
+            Function<Startable, Map<String, String>> applicationConfigProvider,
+            Set<String> highPriorityConfig,
+            Set<DevServiceConfigDependency<? extends Startable>> dependencies,
+            Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies) {
+        this.name = name;
+        this.description = description;
+        this.containerId = containerId;
+        this.config = config == null ? Collections.emptyMap() : Collections.unmodifiableMap(config);
+        this.serviceName = serviceName;
+        this.serviceConfig = serviceConfig;
+        this.startableSupplier = startableSupplier;
+        this.postStartAction = postStartAction;
+        this.applicationConfigProvider = applicationConfigProvider;
+        this.highPriorityConfig = highPriorityConfig;
+        this.dependencies = dependencies;
+        this.optionalDependencies = optionalDependencies;
+    }
+
+    public static DiscoveredServiceBuilder discovered() {
+        return new DiscoveredServiceBuilder();
+    }
+
+    public static <T extends Startable> OwnedServiceBuilder<T> owned() {
+        return new OwnedServiceBuilder<>();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getContainerId() {
+        return containerId;
+    }
+
+    public boolean isStartable() {
+        return startableSupplier != null;
+    }
+
+    public Map<String, String> getConfig() {
+        return config;
+    }
+
+    public String getServiceName() {
+        return serviceName;
+    }
+
+    /**
+     * {@see OwnedServiceBuilder#serviceConfig}
+     *
+     * @return the identifying configuration
+     */
+    public Object getServiceConfig() {
+        return serviceConfig;
+    }
+
+    public Supplier<Startable> getStartableSupplier() {
+        return startableSupplier;
+    }
+
+    public Consumer<Startable> getPostStartAction() {
+        return postStartAction;
+    }
+
+    public Map<String, String> getConfig(Startable startable) {
+        Map<String, String> map = new HashMap<>();
+        // To make sure static config does make it into a config source, include it here
+        if (config != null && !config.isEmpty()) {
+            map.putAll(config);
+        }
+        if (applicationConfigProvider != null) {
+            map.putAll(applicationConfigProvider.apply(startable));
+        }
+        return map;
+    }
+
+    /**
+     * @deprecated Subject to changes due to <a href="https://github.com/quarkusio/quarkus/pull/51209">#51209</a>
+     */
+    @Deprecated(since = "3.27", forRemoval = true)
+    public Map<String, String> getOverrideConfig(Startable startable) {
+        Map<String, String> map = new HashMap<>();
+
+        if (highPriorityConfig != null && applicationConfigProvider != null) {
+            Map<String, String> resolvedConfig = applicationConfigProvider.apply(startable);
+            for (String key : highPriorityConfig) {
+                String value = resolvedConfig.get(key);
+                if (value != null) {
+                    map.put(key, value);
+                }
+            }
+        }
+        return map;
+    }
+
+    public boolean hasDependencies() {
+        return (dependencies != null && !dependencies.isEmpty())
+                || (optionalDependencies != null && !optionalDependencies.isEmpty());
+    }
+
+    public Set<DevServiceConfigDependency<? extends Startable>> getDependencies() {
+        return dependencies;
+    }
+
+    public Set<DevServiceConfigDependency<? extends Startable>> getOptionalDependencies() {
+        return optionalDependencies;
+    }
+
+    public static class DiscoveredServiceBuilder {
+        private String name;
+        private String containerId;
+        private Map<String, String> config;
+        private String description;
+
+        /**
+         * Use {@link #feature(String)} instead
+         *
+         * @param name the name of the owning feature
+         * @return the builder, for chaining
+         */
+        @Deprecated(since = "3.31")
+        public DiscoveredServiceBuilder name(String name) {
+            return feature(name);
+        }
+
+        public DiscoveredServiceBuilder feature(Feature feature) {
+            return feature(feature.getName());
+        }
+
+        public DiscoveredServiceBuilder feature(String feature) {
+            this.name = Objects.requireNonNull(feature, "name cannot be null");
+            return this;
+        }
+
+        public DiscoveredServiceBuilder containerId(String containerId) {
+            this.containerId = containerId;
+            return this;
+        }
+
+        public DiscoveredServiceBuilder config(Map<String, String> config) {
+            this.config = config;
+            return this;
+        }
+
+        public DiscoveredServiceBuilder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public DevServicesResultBuildItem build() {
+            if (name == null) {
+                throw new IllegalStateException("name cannot be null");
+            }
+            return new DevServicesResultBuildItem(name, description, containerId,
+                    null, null, config, null, null, null, null, null, null);
+        }
+    }
+
+    public static class OwnedServiceBuilder<T extends Startable> {
+        private String name;
+        private String description;
+        private Map<String, String> config;
+        private String serviceName;
+        private Object serviceConfig;
+        private Supplier<? extends Startable> startableSupplier;
+        private Consumer<? extends Startable> postStartAction;
+        private Function<Startable, Map<String, String>> applicationConfigProvider;
+        private Set<String> highPriorityConfig;
+        private final Set<DevServiceConfigDependency<? extends Startable>> dependencies = new HashSet<>();
+        private final Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies = new HashSet<>();
+
+        /**
+         * Use {@link #feature(String)} instead
+         *
+         * @param name the name of the owning feature
+         * @return the builder, for chaining
+         */
+        @Deprecated(since = "3.31")
+        public OwnedServiceBuilder<T> name(String name) {
+            return feature(name);
+        }
+
+        /**
+         * Identifies the feature which owns this service. The feature's name is used for identification and lifecycle
+         * managemennt.
+         * This should always be set. Use {@link #feature(String)} if a feature object is not available.
+         *
+         * @param feature the owning feature
+         * @return the builder, for chaining
+         */
+        public OwnedServiceBuilder<T> feature(Feature feature) {
+            return feature(feature.getName());
+        }
+
+        /**
+         * Identifies the feature which owns this service. The feature's name is used for identification and lifecycle
+         * managemennt.
+         * This should always be set. Also see {@link #feature(Feature)}, which can be used when a feature object is available.
+         *
+         * @param featureName the name of the owning feature
+         * @return the builder, for chaining
+         */
+        public OwnedServiceBuilder<T> feature(String featureName) {
+            this.name = Objects.requireNonNull(featureName, "name cannot be null");
+            return this;
+        }
+
+        /**
+         * Sets a human-readable description of the service.
+         * <p>
+         * Optional.
+         *
+         * @param description the service description
+         * @return the builder, for chaining
+         */
+        public OwnedServiceBuilder<T> description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        /**
+         * Defines config which should be injected into the config system when this service is started.
+         * All values must be known up-front, at build time.
+         * <p>
+         * This is easier to use than {@link #configProvider(Map)} because there are no lambdas, but it is also more limited.
+         * The two methods can co-exist, with static values being set via {@link #config(Map)} and lazy or dynamic ones being
+         * set via {@link #configProvider(Map)}.
+         * <p>
+         * Optional.
+         *
+         * @param config a map of config keys and fixed values
+         * @return the builder, for chaining
+         */
+        public OwnedServiceBuilder<T> config(Map<String, String> config) {
+            this.config = config;
+            return this;
+        }
+
+        /**
+         * If the feature provides multiple dev services, this is the name of the service.
+         * Used for identification and lifecycle management, along with the {@link #feature(Feature)}.
+         * <p>
+         * Optional, only needed if there are multiple services for a feature.
+         *
+         * @param serviceName a name specific to this service, when there are several
+         * @return the builder, for chaining
+         */
+        public OwnedServiceBuilder<T> serviceName(String serviceName) {
+            this.serviceName = serviceName;
+            return this;
+        }
+
+        /**
+         * Declares the configuration of this service. This is used as a uniqueness identifier to establish whether
+         * services should be restarted, for example between live reloads.
+         * Usually it would be the config object passed in to the build step,
+         * but if the reuse semantics are different, it could be a subset or superset of that object.
+         * If you want your service to be restarted when the config is different, and re-used otherwise, pass
+         * through your config. If you want it to be always restarted on live reloads, you could pass through something like a
+         * random number. If you want the service to never be restarted, you could pass through a constant.
+         *
+         * @param serviceConfig an object with defining characteristics of the service. It will be reflectively compared to the
+         *        previous configuration.
+         * @return a builder, for chaining
+         */
+
+        public OwnedServiceBuilder<T> serviceConfig(Object serviceConfig) {
+            this.serviceConfig = serviceConfig;
+            return this;
+        }
+
+        /**
+         * Declares that this dev service should not be started until config from a dependency dev service is available.
+         * Before service start, the `DevServiceConfigDependency`` will be given an opportunity to inject the required config
+         * into the `Startable`.
+         * <p>
+         * If the config key never becomes available, the service will not be started.
+         * </p>
+         * <p>
+         * This method can be called multiple times, and all of the config values will be injected.
+         *
+         * @param key the config key which should be waited for; will never be null
+         * @param function a function which should be invoked on the startable to pass in the config
+         * @return a builder, for chaining
+         */
+        public OwnedServiceBuilder<T> dependsOnConfig(String key, BiConsumer<T, String> function) {
+            this.dependencies.add(new DevServiceConfigDependency<>(key, function));
+            return this;
+        }
+
+        /**
+         * Declares that this dev service should not be started until config from a dependency dev service has a chance to
+         * become available.
+         * Before service start, the `DevServiceConfigDependency`` will be given an opportunity to inject the required config
+         * into the `Startable`.
+         * <p>
+         * This method can be called multiple times, and all of the config values will be injected.
+         *
+         * @param key the config key which should be waited for
+         * @param function a function which should be invoked on the startable to pass in the config; will not be called if the
+         *        config never becomes available
+         * @param optional whether to start the service if the config never becomes availbale
+         *
+         * @return a builder, for chaining
+         */
+        public OwnedServiceBuilder<T> dependsOnConfig(String key, BiConsumer<T, String> function, boolean optional) {
+            if (optional) {
+                this.optionalDependencies.add(new DevServiceConfigDependency<>(key, function));
+                return this;
+            } else {
+                return dependsOnConfig(key, function);
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        public <S extends Startable> OwnedServiceBuilder<S> startable(Supplier<S> startableSupplier) {
+            this.startableSupplier = startableSupplier;
+            return (OwnedServiceBuilder<S>) this;
+        }
+
+        public OwnedServiceBuilder<T> postStartHook(Consumer<T> postStartAction) {
+            this.postStartAction = postStartAction;
+            return this;
+        }
+
+        /**
+         * @deprecated Subject to changes due to <a href="https://github.com/quarkusio/quarkus/pull/51209">#51209</a>
+         */
+        @Deprecated(forRemoval = true)
+        public OwnedServiceBuilder<T> highPriorityConfig(Set<String> highPriorityConfig) {
+            this.highPriorityConfig = highPriorityConfig;
+            return this;
+        }
+
+        /**
+         * Provides config to inject into the config system. If you've got values that don't change, use {@link #config(Map)},
+         * and if you've
+         * got values that you'll only know after starting the container, use configProvider() and provide a map of
+         * name->lambda. The key in the map is the name of a config property which is being injected.
+         * <p>
+         * Note that if a subclass of Startable is passed in on {@link #startable(Supplier)}, that same subclass will be used in
+         * the function. This avoids the need to cast.
+         * <p>
+         * Optional, but will be important in most cases.
+         *
+         * @param applicationConfigProvider a map with config keys on the left side and lambdas on the right
+         * @return the builder, for chaining
+         * @deprecated Use {@link #configProvider(Function)} instead, which returns the entire config map at once
+         *             and avoids potential null-value issues with per-key suppliers.
+         */
+        @Deprecated(since = "4.0", forRemoval = true)
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        public OwnedServiceBuilder<T> configProvider(Map<String, Function<T, String>> applicationConfigProvider) {
+            Map<String, Function<Startable, String>> typedProvider = (Map<String, Function<Startable, String>>) (Map) applicationConfigProvider;
+            this.applicationConfigProvider = startable -> {
+                Map<String, String> result = new HashMap<>();
+                for (Map.Entry<String, Function<Startable, String>> entry : typedProvider.entrySet()) {
+                    String value = entry.getValue().apply(startable);
+                    if (value != null) {
+                        result.put(entry.getKey(), value);
+                    }
+                }
+                return result;
+            };
+            return this;
+        }
+
+        /**
+         * Provides a function that resolves config dynamically from the started service.
+         * <p>
+         * The function receives the started {@link Startable} and returns a map of config
+         * key-value pairs to inject into the config system.
+         * <p>
+         * Note that if a subclass of Startable is passed in on {@link #startable(Supplier)}, that same subclass will be used in
+         * the function. This avoids the need to cast.
+         * <p>
+         * Optional, but will be important in most cases. This can be used alongside {@link #config(Map)}.
+         *
+         * @param applicationConfigProvider a function that takes the started service and returns config entries
+         * @return the builder, for chaining
+         */
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        public OwnedServiceBuilder<T> configProvider(Function<T, Map<String, String>> applicationConfigProvider) {
+            this.applicationConfigProvider = (Function<Startable, Map<String, String>>) (Function) applicationConfigProvider;
+            return this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public DevServicesResultBuildItem build() {
+            return new DevServicesResultBuildItem(name, description, null,
+                    serviceName, serviceConfig, config,
+                    (Supplier<Startable>) startableSupplier,
+                    (Consumer<Startable>) postStartAction,
+                    applicationConfigProvider,
+                    highPriorityConfig, dependencies, optionalDependencies);
+        }
+    }
+
+    record DevServiceConfigDependency<T extends Startable>(String requiredConfigKey,
+            BiConsumer<T, String> valueInjector) {
+    }
+
+}

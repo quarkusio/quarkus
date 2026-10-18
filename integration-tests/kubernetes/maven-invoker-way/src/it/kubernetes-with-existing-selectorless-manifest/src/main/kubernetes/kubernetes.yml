@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubernetes-with-existing-selectorless-manifest
+spec:
+  replicas: 3
+  template:
+    containers:
+      - env:
+          - name: MY_NS
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace

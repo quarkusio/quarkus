@@ -1,0 +1,223 @@
+package io.quarkus.agroal.runtime;
+
+import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalInt;
+
+import io.agroal.api.configuration.AgroalConnectionFactoryConfiguration;
+import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
+import io.quarkus.runtime.annotations.ConfigDocDefault;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
+
+@ConfigGroup
+public interface DataSourceJdbcRuntimeConfig {
+
+    /**
+     * The datasource URL
+     */
+    Optional<@WithConverter(TrimmedStringConverter.class) String> url();
+
+    /**
+     * The initial size of the pool. Usually you will want to set the initial size to match at least the
+     * minimal size, but this is not enforced so to allow for architectures which prefer a lazy initialization
+     * of the connections on boot, while being able to sustain a minimal pool size after boot.
+     */
+    OptionalInt initialSize();
+
+    /**
+     * The datasource pool minimum size
+     */
+    @WithDefault("0")
+    int minSize();
+
+    /**
+     * The datasource pool maximum size
+     */
+    @WithDefault("50")
+    int maxSize();
+
+    /**
+     * The interval at which we validate idle connections in the background.
+     * <p>
+     * Set to {@code 0} to disable background validation.
+     */
+    @WithDefault("2M")
+    Duration backgroundValidationInterval();
+
+    /**
+     * Perform foreground validation on connections that have been idle for longer than the specified interval.
+     */
+    Optional<Duration> foregroundValidationInterval();
+
+    /**
+     * Maximum time to wait while attempting to connect to a database.
+     * The actual implementation of login timeout could be different in various drivers.
+     * (e.g. driver could only cover the authentication and not the entire connection creation phase)
+     */
+    @ConfigDocDefault("By default, there is no login timeout set.")
+    Optional<Duration> loginTimeout();
+
+    /**
+     * The timeout before cancelling the acquisition of a new connection
+     */
+    @WithDefault("5S")
+    Optional<Duration> acquisitionTimeout();
+
+    /**
+     * The interval at which we check for connection leaks.
+     */
+
+    @ConfigDocDefault("This feature is disabled by default.")
+    Optional<Duration> leakDetectionInterval();
+
+    /**
+     * The interval at which we try to remove idle connections.
+     */
+    @WithDefault("5M")
+    Duration idleRemovalInterval();
+
+    /**
+     * The max lifetime of a connection.
+     */
+    @ConfigDocDefault("By default, there is no restriction on the lifespan of a connection.")
+    Optional<Duration> maxLifetime();
+
+    /**
+     * The transaction isolation level.
+     */
+    Optional<AgroalConnectionFactoryConfiguration.TransactionIsolation> transactionIsolationLevel();
+
+    /**
+     * Whether connections from this pool should be created in read-only mode,
+     * according to {@link java.sql.Connection#setReadOnly(boolean)}.
+     * The JDBC driver is responsible for enforcing read-only mode.
+     * <p>
+     * This is useful for secondary pools that target read replicas.
+     */
+    @ConfigDocDefault("By default, the read-only mode of connections is not configured.")
+    Optional<Boolean> readOnly();
+
+    /**
+     * Collect and display extra troubleshooting info on leaked connections.
+     */
+    @WithDefault("false")
+    boolean extendedLeakReport();
+
+    /**
+     * Allows connections to be flushed upon return to the pool. It's not enabled by default.
+     */
+    @WithDefault("false")
+    boolean flushOnClose();
+
+    /**
+     * When enabled, Agroal will be able to produce a warning when a connection is returned
+     * to the pool without the application having closed all open statements.
+     * This is unrelated with tracking of open connections.
+     * Disable for peak performance, but only when there's high confidence that
+     * no leaks are happening.
+     */
+    @WithDefault("true")
+    boolean detectStatementLeaks();
+
+    /**
+     * Query executed when first using a connection.
+     */
+    Optional<String> newConnectionSql();
+
+    /**
+     * Query executed to validate a connection.
+     */
+    Optional<String> validationQuerySql();
+
+    /**
+     * The timeout for the connection validation query
+     */
+    Optional<Duration> validationQueryTimeout();
+
+    /**
+     * Forces connection validation prior to acquisition (foreground validation) regardless of the idle status.
+     * <p>
+     * Because of the overhead of performing validation on every call, it’s recommended to rely on default idle validation
+     * instead, and to leave this to `false`.
+     */
+    @WithDefault("false")
+    boolean validateOnBorrow();
+
+    /**
+     * Disable pooling to prevent reuse of Connections. Use this when an external pool manages the life-cycle
+     * of Connections.
+     */
+    @WithDefault("true")
+    boolean poolingEnabled();
+
+    /**
+     * Whether to enable recovery for this datasource.
+     * <p>
+     * Normally a transaction manager will call xa_recover () on an XA connection during recovery to obtain
+     * a list of transaction branches that are currently in a prepared or heuristically completed state.
+     * However, it can happen that multiple XA connections connect to the same datasource which would all
+     * return the same set of branches and for reasons of improved performance only one should be used
+     * for recover() calls. The default value for this configuration property is true because when there
+     * is only one connection it is vital for data consistency that the connection is able to report its
+     * list of prepared or heuristically completed branches.
+     */
+    @WithDefault("true")
+    boolean enableRecovery();
+
+    /**
+     * Require an active transaction when acquiring a connection. Recommended for production.
+     * WARNING: Some extensions acquire connections without holding a transaction for things like schema updates and schema
+     * validation. Setting this setting to STRICT may lead to failures in those cases.
+     */
+    Optional<AgroalConnectionPoolConfiguration.TransactionRequirement> transactionRequirement();
+
+    /**
+     * Defines the behavior when a thread tries to acquire multiple connections from the pool.
+     * <p>
+     * {@code lenient} (the default) means no restriction.
+     * {@code warn} will log a warning when a thread already holds a connection and tries to acquire another one.
+     * {@code strict} will throw an exception in that situation.
+     */
+    @ConfigDocDefault("By default, multiple acquisition is allowed without any restriction.")
+    @WithDefault("lenient")
+    AgroalConnectionPoolConfiguration.MultipleAcquisitionAction multipleAcquisition();
+
+    /**
+     * Other unspecified properties to be passed to the JDBC driver when creating new connections.
+     */
+    @ConfigDocMapKey("property-key")
+    Map<String, String> additionalJdbcProperties();
+
+    /**
+     * OpenTelemetry JDBC instrumentation configuration.
+     */
+    DataSourceJdbcTelemetryConfig telemetry();
+
+    /**
+     * Enable KeepAlive for this datasource. When enabled, the datasource will attempt to keep connections alive by sending
+     * periodic keep-alive messages to the database. Each JDBC driver has its own implementation of keep-alive, and the actual
+     * behavior may vary depending on the driver and database being used.
+     */
+    Optional<Boolean> enableKeepAlive();
+
+    /**
+     * The timeout value used for socket read operations. If reading from the server takes longer than this value, the
+     * connection is closed.
+     */
+    Optional<Duration> readTimeout();
+
+    /**
+     * Sets the maximum duration a connection will wait for the database to reply to any one request,
+     * using the standard JDBC 4.1 {@link java.sql.Connection#setNetworkTimeout} API.
+     * <p>
+     * Unlike {@code readTimeout}, which operates at the socket/driver level for individual read operations,
+     * this timeout is managed by the JDBC {@link java.sql.Connection} object and applies to any pending
+     * database request on the connection, making it the more portable option.
+     */
+    Optional<Duration> networkTimeout();
+}

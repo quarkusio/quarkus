@@ -1,0 +1,12 @@
+name: hibernate-orm-rest-data-codestart
+ref: hibernate-orm-rest-data
+tags: extension-codestart
+type: code
+metadata:
+  title: REST Data with Panache
+  description: Generating Jakarta REST resources with Panache
+  related-guide-section: https://quarkus.io/guides/rest-data-panache
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-hibernate-orm-rest-data-panache

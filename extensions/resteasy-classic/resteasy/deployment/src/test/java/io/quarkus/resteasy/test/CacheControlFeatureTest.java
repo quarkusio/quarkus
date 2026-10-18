@@ -1,0 +1,28 @@
+package io.quarkus.resteasy.test;
+
+import static io.restassured.RestAssured.when;
+
+import jakarta.ws.rs.core.HttpHeaders;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusExtensionTest;
+
+public class CacheControlFeatureTest {
+    @RegisterExtension
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(CacheResource.class));
+
+    @Test
+    public void testNoCacheAnnotation() {
+        when().get("/nocache").then().header(HttpHeaders.CACHE_CONTROL, "no-cache=\"foo\"");
+    }
+
+    @Test
+    public void testCacheAnnotation() {
+        when().get("/cache").then().header(HttpHeaders.CACHE_CONTROL, "max-age=123");
+    }
+
+}

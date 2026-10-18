@@ -1,0 +1,593 @@
+import { LitElement, html, css} from 'lit';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { RouterController } from 'router-controller';
+import { devuiState } from 'devui-state';
+import { observeState } from 'lit-element-state';
+import { allowExtensionManagement } from 'devui-data';
+import 'qwc/qwc-extension.js';
+import 'qwc/qwc-extension-link.js';
+import 'qwc/qwc-extension-action.js';
+import 'qwc/qwc-extension-text.js';
+import 'qwc/qwc-extension-add.js';
+import { StorageController } from 'storage-controller';
+import '@vaadin/dialog';
+import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
+import { notifier } from 'notifier';
+import { connectionState } from 'connection-state';
+import { themeState } from 'theme-state';
+import { JsonRpc } from 'jsonrpc';
+import '@qomponent/qui-badge';
+import { assistantState } from 'assistant-state';
+import { msg, updateWhenLocaleChanges } from 'localization';
+
+/**
+ * This component create cards of all the extensions
+ */
+export class QwcExtensions extends observeState(LitElement) {
+    routerController = new RouterController(this);
+    storageController = new StorageController(this);
+    jsonRpc = new JsonRpc("devui-extensions", false);
+    static styles = css`
+        :host {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-height: 100%;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            padding: 12px 12px 12px 8px;
+            animation: devui-fade-in var(--devui-transition-slow, 0.3s ease);
+        }
+
+        @keyframes devui-fade-in {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .description {
+            padding-bottom: 10px;
+            color: var(--lumo-contrast-50pct);
+            display: flex;
+            gap: 10px;
+            font-size: var(--lumo-font-size-s);
+            line-height: 1.5;
+        }
+
+        .libraryVersion {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .card-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            height: 100%;
+            gap: 16px;
+        }
+
+        .card-content-top{
+            color: var(--lumo-contrast-80pct);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding: 10px 10px;
+            height: 100%;
+        }
+
+        .card-content slot {
+            display: flex;
+            flex-flow: column wrap;
+            padding-top: 5px;
+        }
+        .float-right {
+            align-self: flex-end;
+        }
+
+        qwc-extension-link {
+            cursor: grab;
+        }
+        .addExtensionButton {
+            position: fixed;
+            bottom: calc(var(--footer-height, 38px) + 16px);
+            right: 24px;
+            width: 48px;
+            height: 48px;
+            border-radius: var(--devui-radius-lg, 12px);
+            box-shadow: 0 2px 8px var(--lumo-contrast-10pct), 0 4px 16px var(--lumo-contrast-5pct);
+            z-index: 9;
+            transition: transform var(--devui-transition-fast, 0.15s ease), box-shadow var(--devui-transition-fast, 0.15s ease);
+        }
+        .addExtensionButton:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px var(--lumo-contrast-15pct), 0 8px 24px var(--lumo-contrast-10pct);
+        }
+        .addExtensionIcon {
+            width: 1.5em;
+            height: 1.5em;
+        }
+        .extensionFilterInput {
+            width: 99%;
+            padding-left: 8px;
+            padding-right: 8px;
+            padding-top: unset;
+        }
+        vaadin-text-field::part(input-field):focus-within {
+            outline: none;
+            box-shadow: none;
+        }
+       `;
+
+    static properties = {
+        _favourites: {state: true},
+        _addDialogOpened: {state: true},
+        _installedExtensions: {state: true, type: Array},
+        _selectedFilters: {state: true, type: Array},
+        _addExtensionsEnabled: {state: true, type: Boolean},
+        _filterText: {state: true}
+    }
+
+    constructor() {
+        super();
+        updateWhenLocaleChanges(this);
+        this._favourites = this._getStoredFavourites();
+        this._addDialogOpened = false;
+        this._installedExtensions = [];
+        this._selectedFilters = ["Favorites","Active","Inactive"];
+        this._addExtensionsEnabled = false;
+        this._filterText = '';
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        window.addEventListener('extensions-filters-changed', this._onFiltersChanged);
+        window.addEventListener('storage-changed', this._storageChange);
+        if (allowExtensionManagement) {
+            this.jsonRpc.getInstalledNamespaces().then(jsonRpcResponse => {
+                if (jsonRpcResponse.result) {
+                    this._installedExtensions = jsonRpcResponse.result;
+                    this._addExtensionsEnabled = true;
+                }
+            }).catch(e => {
+                notifier.showErrorMessage(msg('Could not list namespaces', { id: 'extensions-namespaces-failed' }) + " "+ e?.error?.message);
+            });
+        }
+    }
+
+    disconnectedCallback() {
+        window.removeEventListener('extensions-filters-changed', this._onFiltersChanged);
+        window.removeEventListener('storage-changed', this._storageChange);
+        super.disconnectedCallback();
+    }
+
+    firstUpdated() {
+        this.updateComplete.then(() => this.renderRoot.getElementById('searchInput')?.focus());
+    }
+
+    render() {
+        return html`
+            ${this._renderFilterbar()}
+            ${this._renderGrid()}
+            ${this._renderAddDialog()}`;
+    }
+
+    _renderFilterbar(){
+            return html`
+                        <vaadin-text-field id="searchInput"
+                            class="extensionFilterInput"
+                            theme="small"
+                            placeholder="${msg('Search extensions…', { id: 'extensions-search' })}"
+                            clear-button-visible
+                            .value=${this._filterText}
+                            @input=${this._onFilterInput}>
+                                <vaadin-icon slot="prefix" icon="font-awesome-solid:magnifying-glass"></vaadin-icon>
+                        </vaadin-text-field>`;
+    }
+    
+    _onFilterInput(e) {
+        const value = e.target.value.trim();
+        this._filterText = value;
+    }
+    
+    _renderGrid(){
+        return html`<div class="grid">
+            ${this._renderActives(devuiState.cards.active)}
+            ${this._renderInactives(devuiState.cards.inactive)}
+        </div>`;
+    }
+
+    _renderActives(extensions){
+        let favouriteExtensions = [];
+        let unfavouriteExtensions = [];
+
+        for (let i = 0; i < extensions.length; i++) {
+            let extension = extensions[i];
+            // Make sure we import the components
+            extension.cardPages.forEach(page => {
+                if(page.embed){ // we need to register with the router
+                    import(page.componentRef);
+                    this.routerController.addRouteForExtension(page);
+                }else if(page.includeInMenu){ // we need to add the link to the submenu
+                    this.routerController.addExternalLink(page);
+                }
+            });
+            
+            if(this._favourites.includes(extension.namespace)){
+                favouriteExtensions.push(extension);
+            } else {
+                unfavouriteExtensions.push(extension);
+            }
+        }
+        
+        return html`
+            ${this._renderFavourites(favouriteExtensions)}
+            ${this._renderUnfavourites(unfavouriteExtensions)}
+        `;
+    }
+
+    _renderFavourites(favouriteExtensions){
+        if (this._selectedFilters.includes("Favorites")) {
+            return html`
+                ${favouriteExtensions.map(e => this._renderActive(e,true))}
+            `;
+        }
+    }
+
+    _renderUnfavourites(unfavouriteExtensions){
+        if (this._selectedFilters.includes("Active")) {
+            return html`
+                ${unfavouriteExtensions.map(e => this._renderActive(e,false))}
+            `;
+        }
+    }
+
+    _renderActive(extension, fav){
+        if(!this._shouldFilter(extension)){
+            let logoUrl = this._getLogoUrl(extension);
+            return html`
+                <qwc-extension 
+                    clazz="active"
+                    name="${extension.name}" 
+                    description="${extension.description}"
+                    guide="${extension.guide}"
+                    namespace="${extension.namespace}"
+                    artifact="${extension.artifact}"
+                    shortName="${extension.shortName}"
+                    keywords="${extension.keywords}"
+                    status="${extension.status}"
+                    configFilter="${extension.configFilter}"
+                    categories="${extension.categories}"
+                    unlisted="${extension.unlisted}"
+                    builtWith="${extension.builtWith}"
+                    providesCapabilities="${extension.providesCapabilities}"
+                    extensionDependencies="${extension.extensionDependencies}"
+                    ?installed=${(() => {
+                        // Build full namespace from artifact (e.g., "io.quarkus:quarkus-arc:999-SNAPSHOT" -> "io.quarkus.quarkus-arc")
+                        let fullNamespace = extension.namespace; // fallback
+                        if (extension.artifact) {
+                            const parts = extension.artifact.split(':');
+                            if (parts.length >= 2) {
+                                const groupId = parts[0]; // "io.quarkus"
+                                const artifactId = parts[1]; // "quarkus-arc"
+                                fullNamespace = `${groupId}.${artifactId}`; // "io.quarkus.quarkus-arc"
+                            }
+                        }
+                        return this._installedExtensions.includes(fullNamespace);
+                    })()}
+                    ?favourite=${fav} 
+                    @favourite=${this._favourite}
+                    logoUrl="${logoUrl}">
+
+                    ${this._renderCardContent(extension, logoUrl)}
+
+                </qwc-extension>
+
+            `;
+        }
+    }
+
+    _shouldFilter(extension){
+        const filter = this._filterText?.toLowerCase() || '';
+
+        const haystack = [
+            extension.name,
+            extension.description,
+            extension.shortName,
+            extension.keywords,
+            extension.artifact,
+            extension.namespace
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        return filter && !haystack.includes(filter);
+    }
+
+    _renderInactives(extensions){
+        if (this._selectedFilters.includes("Inactive")) {
+            return html`
+                ${extensions.map(extension => this._renderInactive(extension))}
+            `; 
+        }
+    }
+
+    _renderInactive(extension){
+        if(extension.unlisted === "false" || extension.libraryLinks){
+            if(!this._shouldFilter(extension)){
+                let logoUrl = this._getLogoUrl(extension);
+
+                return html`<qwc-extension
+                    clazz="inactive"
+                    name="${extension.name}" 
+                    description="${extension.description}" 
+                    guide="${extension.guide}"
+                    namespace="${extension.namespace}"
+                    artifact="${extension.artifact}"
+                    shortName="${extension.shortName}"
+                    keywords="${extension.keywords}"
+                    status="${extension.status}"
+                    configFilter="${extension.configFilter}"
+                    categories="${extension.categories}"
+                    unlisted="${extension.unlisted}"
+                    builtWith="${extension.builtWith}"
+                    providesCapabilities="${extension.providesCapabilities}"
+                    extensionDependencies="${extension.extensionDependencies}"
+                    logoUrl="${logoUrl}">
+
+                    ${this._renderCardContent(extension, logoUrl)}
+
+                </qwc-extension>`;
+            }
+        }
+    }
+
+    _favourite(e){
+        let favourites = this._getStoredFavourites();
+        let extName = e.detail.name;
+        if(favourites.includes(extName)){
+            const index = favourites.indexOf(extName);
+            if (index > -1) {
+                favourites.splice(index, 1);
+            }
+        }else{
+            favourites.push(extName);
+        }
+        this._setStoredFavourites(favourites);
+
+        this._favourites = this._getStoredFavourites();
+    }
+
+    _getStoredFavourites(){
+        let favourites = this.storageController.get('favourites');
+        if(favourites){
+            return JSON.parse(favourites);
+        }else{
+            return [];
+        }
+    }
+
+    _setStoredFavourites(favourites){
+        this.storageController.set('favourites', JSON.stringify(favourites));
+    }
+
+    _renderCardContent(extension, logoUrl){
+        if(extension.card){
+            return this._renderCustomCardContent(extension, logoUrl);
+        } else {
+            return this._renderDefaultCardContent(extension, logoUrl);
+        }
+    }
+
+    _renderCustomCardContent(extension, logoUrl){
+        import(extension.card.componentRef);
+        let customCardCode = `<${extension.card.componentName} 
+                                class="card-content-top"
+                                slot="content"
+                                extensionName="${extension.name}"
+                                description="${extension.description}"
+                                guide="${extension.guide}"
+                                namespace="${extension.namespace}"
+                                logoUrl="${logoUrl}">
+
+                             </${extension.card.componentName}>`;
+
+        return html`${unsafeHTML(customCardCode)}`;
+
+    }
+
+    _renderDefaultCardContent(extension, logo){
+        return html`
+            <div class="card-content" slot="content">
+                <div class="card-content-top">
+                    <span class="description">
+                        ${this._renderLogo(logo)}
+                        ${msg(extension.description, {id: extension.namespace + '-meta-description'})}
+                    </span>
+                    ${this._renderCardLinks(extension)}
+                    ${this._renderCardActions(extension)}
+                    ${this._renderCardTexts(extension)}
+                </div>
+                ${this._renderLibraryVersions(extension)}
+            </div>`;
+    }
+
+    _renderLogo(logo){
+        if(logo){
+            return html`<img src="${logo}" height="45" @error="${(e) => e.target.style.display = 'none'}">`;
+        }
+    }
+
+    _getLogoUrl(extension){
+        if(extension.darkLogo && themeState.theme.name === "dark"){
+            return this._getThemedLogoUrl(extension, extension.darkLogo);
+        }else if(extension.lightLogo){
+            return this._getThemedLogoUrl(extension, extension.lightLogo);
+        }
+        return null;
+    }
+
+    _getThemedLogoUrl(extension, logoUrl){
+        if(!logoUrl.startsWith("http://") && !logoUrl.startsWith("https://")){
+            return "./" + extension.namespace + "/" + logoUrl;
+        }
+        return logoUrl;
+    }
+
+    _renderCardLinks(extension){
+        return html`${extension.cardPages.map(page => html`${this._renderCardLink(extension, page)}`)}`;
+    }
+
+    _renderCardLink(extension, page){
+        if(!page.assistantPage || assistantState.current.isConfigured){
+            return html`<qwc-extension-link slot="link"
+                                streamingLabelParams="${page.streamingLabelParams}"
+                                webcomponentTagName="${page.componentName}"
+                                namespace="${extension.namespace}"
+                                extensionName="${extension.name}"
+                                iconName="${page.icon}"
+                                tooltipContent="${page.tooltip}"
+                                colorName="${page.color}"
+                                displayName="${page.title}"
+                                path="${page.id}"
+                                ?embed=${page.embed}
+                                externalUrl="${page.metadata.externalUrl}"
+                                dynamicUrlMethodName="${page.metadata.dynamicUrlMethodName}"
+                                dynamicUrlMethodNameParams="${page.metadata.dynamicUrlMethodNameParams}"
+                                webcomponent="${page.componentLink}"
+                                staticLabel="${page.staticLabel}" 
+                                dynamicLabel="${page.dynamicLabel}"
+                                streamingLabel="${page.streamingLabel}"
+                                draggable="true" @dragstart="${this._handleDragStart}">
+                            </qwc-extension-link>
+                        `;
+        }
+    }
+
+    _renderCardActions(extension){
+        if (extension.cardActions && extension.cardActions.length > 0) {
+            return html`${extension.cardActions.map(action => html`${this._renderCardAction(extension, action)}`)}`;
+        }
+    }
+
+    _renderCardAction(extension, action){
+        return html`<qwc-extension-action
+                        namespace="${extension.namespace}"
+                        displayName="${action.title}"
+                        iconName="${action.icon}"
+                        tooltipContent="${action.tooltip}"
+                        actionType="${action.actionType}"
+                        actionReference="${action.actionReference}"
+                        ?showResultNotification=${action.showResultNotification}>
+                    </qwc-extension-action>`;
+    }
+
+    _renderCardTexts(extension){
+        if (extension.cardTexts && extension.cardTexts.length > 0) {
+            return html`${extension.cardTexts.map(text => html`${this._renderCardText(extension, text)}`)}`;
+        }
+    }
+
+    _renderCardText(extension, text){
+        return html`<qwc-extension-text
+                        namespace="${extension.namespace}"
+                        displayName="${text.title}"
+                        iconName="${text.icon}"
+                        staticText="${text.staticText}"
+                        dynamicText="${text.dynamicText}"
+                        streamingText="${text.streamingText}"
+                        streamingTextParams="${text.streamingTextParams}">
+                    </qwc-extension-text>`;
+    }
+
+    _renderLibraryVersions(extension) {
+        return html`
+          <div class="libraryVersion">
+            ${extension.libraryLinks?.map(libraryLink => html`
+              <div
+                style="cursor: ${libraryLink.url ? 'pointer' : 'default'}"
+                @click=${libraryLink.url ? () => window.open(libraryLink.url, '_blank', 'noopener,noreferrer') : null}>
+                <qui-badge small>
+                  <span>${libraryLink.name} ${libraryLink.version}</span>
+                </qui-badge>
+              </div>
+            `)}
+          </div>
+        `;
+      }
+
+    _handleDragStart(event) {
+        const extensionNamespace = event.currentTarget.getAttribute('namespace');
+        const pageId = event.currentTarget.getAttribute('path');
+
+        const extension = devuiState.cards.active.find(obj => obj.namespace === extensionNamespace);
+        const page = extension.cardPages.find(obj => obj.id === pageId);
+        const jsonData = JSON.stringify(page);
+        event.dataTransfer.setData('application/json', jsonData);
+    }
+
+    _renderAddDialog(){
+        if (this._addExtensionsEnabled) {
+            return html`
+                <vaadin-dialog
+                theme="no-padding"
+                resizable
+                draggable
+                header-title="${msg('Add extension', { id: 'extensions-add' })}"
+                .opened="${this._addDialogOpened}"
+                @opened-changed="${(event) => {
+                    this._addDialogOpened = event.detail.value;
+                }}"
+                ${dialogHeaderRenderer(
+                    () => html`
+                        <vaadin-button theme="tertiary" @click="${() => (this._addDialogOpened = false)}">
+                            <vaadin-icon icon="font-awesome-solid:xmark"></vaadin-icon>
+                        </vaadin-button>
+                    `,
+                    []
+                    )}
+                ${dialogRenderer(
+                    () => html`<qwc-extension-add @inprogress="${this._installRequest}"></qwc-extension-add>`
+                )}
+                ></vaadin-dialog>
+                ${this._renderAddExtensionButton()}
+            `;
+        }
+    }
+    
+    _renderAddExtensionButton(){
+        if(connectionState.current.isConnected){
+            return html`<vaadin-button class="addExtensionButton" theme="icon" aria-label="Add Extension" title="${msg('Add extension', { id: 'extensions-add' })}" @click="${this._openAddDialog}">
+                        <vaadin-icon class="addExtensionIcon" icon="font-awesome-solid:plus"></vaadin-icon>
+                    </vaadin-button>`;
+        }
+    }
+    
+    _installRequest(e){
+        this._addDialogOpened = false;
+        let name = e.detail.name;
+        if(e.detail.outcome){
+            notifier.showInfoMessage(name + " " + msg('installation in progress', { id: 'extensions-installing' }));
+        }else{
+            notifier.showErrorMessage(name + " " + msg('installation failed', { id: 'extensions-install-failed' }));
+        }
+    }
+    
+    _openAddDialog() {
+        this._addDialogOpened = true;
+    }
+
+    _storageChange = (e) => {
+        if(e.detail.method === "remove" && e.detail.key.startsWith("qwc-extensions-")){
+            this._selectedFilters = ["Favorites","Active","Inactive"];
+            this._favourites = this._getStoredFavourites();
+        }
+    }
+    
+    _onFiltersChanged = (event) => {
+        this._selectedFilters = event.detail.filters;
+    }
+}
+customElements.define('qwc-extensions', QwcExtensions);

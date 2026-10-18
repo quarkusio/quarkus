@@ -1,0 +1,184 @@
+package io.quarkus.deployment.steps;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
+
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.LambdaReflectionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+public class RegisterForReflectionBuildStep {
+
+    private static final Logger log = Logger.getLogger(RegisterForReflectionBuildStep.class);
+
+    @BuildStep
+    public void build(CombinedIndexBuildItem combinedIndexBuildItem, Capabilities capabilities,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy,
+            BuildProducer<LambdaReflectionBuildItem> lambdaReflection) {
+
+        Set<DotName> processedReflectiveHierarchies = new HashSet<DotName>();
+
+        IndexView computingIndex = combinedIndexBuildItem.getComputingIndex();
+        IndexView index = combinedIndexBuildItem.getIndex();
+
+        for (AnnotationInstance i : index.getAnnotations(DotName.createSimple(RegisterForReflection.class.getName()))) {
+
+            ClassInfo classInfo = i.target().asClass();
+            String reason = "@" + RegisterForReflection.class.getSimpleName() + " on " + classInfo.name();
+
+            // we use the computingIndex here as @RegisterForReflection is not in the index
+            boolean methods = i.valueWithDefault(computingIndex, "methods").asBoolean();
+            boolean fields = i.valueWithDefault(computingIndex, "fields").asBoolean();
+            boolean ignoreNested = i.valueWithDefault(computingIndex, "ignoreNested").asBoolean();
+            boolean serialization = i.valueWithDefault(computingIndex, "serialization").asBoolean();
+            boolean unsafeAllocated = i.valueWithDefault(computingIndex, "unsafeAllocated").asBoolean();
+            boolean registerFullHierarchy = i.valueWithDefault(computingIndex, "registerFullHierarchy").asBoolean();
+
+            AnnotationValue targetsValue = i.value("targets");
+            AnnotationValue classNamesValue = i.value("classNames");
+            AnnotationValue lambdaCapturingTypesValue = i.value("lambdaCapturingTypes");
+            AnnotationValue lambdaDescriptorsValue = i.value("lambdaDescriptors");
+
+            if (lambdaCapturingTypesValue != null) {
+                final String[] lambdaTypes = lambdaCapturingTypesValue.asStringArray();
+                if (lambdaTypes.length > 0) {
+                    throw new IllegalArgumentException(String.format(
+                            "@RegisterForReflection(lambdaCapturingTypes=...) is no longer supported in reachability-metadata.json. "
+                                    + "Lambda serialization must be registered using @LambdaDescriptor, "
+                                    + "e.g. https://github.com/quarkusio/quarkus/blob/main/integration-tests/native-image-annotations/src/main/java/io/quarkus/it/nat/annotation/ProperLambdaHolder.java "
+                                    + "The following lambda types are ignored: %s. ",
+                            String.join(", ", lambdaTypes)));
+                }
+            }
+            // lambda descriptors
+            if (lambdaDescriptorsValue != null) {
+                final AnnotationInstance[] lambdaDescriptors = lambdaDescriptorsValue.asNestedArray();
+                for (AnnotationInstance lambdaDesc : lambdaDescriptors) {
+                    final Type declaringClassType = lambdaDesc.value("declaringClass").asClass();
+                    final String declaringClass = declaringClassType.name().toString();
+                    final String declaringMethod = lambdaDesc.value("declaringMethod").asString();
+                    final Type[] paramTypes = lambdaDesc.valueWithDefault(computingIndex, "parameterTypes").asClassArray();
+                    final String[] parameterTypes = new String[paramTypes.length];
+                    for (int j = 0; j < paramTypes.length; j++) {
+                        parameterTypes[j] = paramTypes[j].name().toString();
+                    }
+                    final Type[] interfaceTypes = lambdaDesc.value("interfaces").asClassArray();
+                    final String[] interfaces = new String[interfaceTypes.length];
+                    for (int j = 0; j < interfaceTypes.length; j++) {
+                        interfaces[j] = interfaceTypes[j].name().toString();
+                    }
+                    lambdaReflection.produce(LambdaReflectionBuildItem.builder(declaringClass, declaringMethod)
+                            .parameterTypes(parameterTypes)
+                            .interfaces(interfaces)
+                            .build());
+                }
+            }
+
+            if (targetsValue == null && classNamesValue == null) {
+                registerClass(reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies, computingIndex,
+                        capabilities, reason, classInfo.name().toString(), methods, fields, ignoreNested, serialization,
+                        unsafeAllocated, registerFullHierarchy);
+                continue;
+            }
+
+            if (targetsValue != null) {
+                Type[] targets = targetsValue.asClassArray();
+                for (Type type : targets) {
+                    registerClass(reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies, computingIndex,
+                            capabilities, reason, type.name().toString(), methods, fields, ignoreNested, serialization,
+                            unsafeAllocated, registerFullHierarchy);
+                }
+            }
+
+            if (classNamesValue != null) {
+                String[] classNames = classNamesValue.asStringArray();
+                for (String className : classNames) {
+                    registerClass(reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies, computingIndex,
+                            capabilities, reason, className, methods, fields, ignoreNested, serialization, unsafeAllocated,
+                            registerFullHierarchy);
+                }
+            }
+        }
+    }
+
+    private void registerClass(final BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy, Set<DotName> processedReflectiveHierarchies,
+            IndexView computingIndex,
+            Capabilities capabilities, String reason, String className, boolean methods, boolean fields,
+            boolean ignoreNested,
+            boolean serialization, boolean unsafeAllocated,
+            boolean registerFullHierarchyValue) {
+        if (registerFullHierarchyValue) {
+            registerFullHierarchy(reflectiveClassHierarchy, reason, computingIndex, processedReflectiveHierarchies,
+                    methods, fields, ignoreNested, serialization, unsafeAllocated, className);
+            return;
+        }
+
+        reflectiveClass.produce(serialization
+                ? ReflectiveClassBuildItem.builder(className).reason(reason).serialization().unsafeAllocated(unsafeAllocated)
+                        .build()
+                : ReflectiveClassBuildItem.builder(className).reason(reason).constructors().methods(methods).fields(fields)
+                        .unsafeAllocated(unsafeAllocated).build());
+
+        ClassInfo classInfo = computingIndex.getClassByName(className);
+
+        if (ignoreNested && !isKotlinClass(capabilities, classInfo)) {
+            return;
+        }
+
+        if (classInfo != null) {
+            for (DotName memberClass : classInfo.memberClasses()) {
+                registerClass(reflectiveClass, reflectiveClassHierarchy, processedReflectiveHierarchies, computingIndex,
+                        capabilities, reason, memberClass.toString(), methods, fields, false, serialization, unsafeAllocated,
+                        registerFullHierarchyValue);
+            }
+        }
+    }
+
+    private void registerFullHierarchy(BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy,
+            String reason, IndexView computingIndex, Set<DotName> processedReflectiveHierarchies, boolean methods,
+            boolean fields, boolean ignoreNested, boolean serialization, boolean unsafeAllocated, String className) {
+        DotName dotName = DotName.createSimple(className);
+
+        if (processedReflectiveHierarchies.contains(dotName)
+                || ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(dotName)) {
+            return;
+        }
+
+        processedReflectiveHierarchies.add(dotName);
+        reflectiveClassHierarchy.produce(ReflectiveHierarchyBuildItem.builder(dotName)
+                .index(computingIndex)
+                .source(RegisterForReflectionBuildStep.class.getSimpleName())
+                .ignoreMethodPredicate(methods ? ReflectiveHierarchyBuildItem.DefaultIgnoreMethodPredicate.INSTANCE : m -> true)
+                .ignoreFieldPredicate(fields ? ReflectiveHierarchyBuildItem.DefaultIgnoreFieldPredicate.INSTANCE : m -> true)
+                .methods(methods)
+                .fields(fields)
+                .ignoreNested(ignoreNested)
+                .serialization(serialization)
+                .unsafeAllocated(unsafeAllocated)
+                .build());
+    }
+
+    private static boolean isKotlinClass(Capabilities capabilities, ClassInfo classInfo) {
+        if (capabilities.isPresent(Capability.KOTLIN) && KotlinUtil.isKotlinClass(classInfo)) {
+            return true;
+        }
+
+        return false;
+    }
+}

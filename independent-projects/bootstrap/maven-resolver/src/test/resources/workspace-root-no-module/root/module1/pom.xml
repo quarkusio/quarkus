@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.acme</groupId>
+        <artifactId>root</artifactId>
+        <version>1.0</version>
+    </parent>
+
+    <artifactId>module1</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <module>module2</module>
+        <module>module3</module>
+    </modules>
+</project>

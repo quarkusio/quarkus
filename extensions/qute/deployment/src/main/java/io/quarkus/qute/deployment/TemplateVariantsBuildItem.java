@@ -1,0 +1,32 @@
+package io.quarkus.qute.deployment;
+
+import java.util.List;
+import java.util.Map;
+
+import io.quarkus.builder.item.SimpleBuildItem;
+
+/**
+ * Holds all template variants found.
+ */
+public final class TemplateVariantsBuildItem extends SimpleBuildItem {
+
+    private final Map<String, List<String>> variants;
+
+    public TemplateVariantsBuildItem(Map<String, List<String>> variants) {
+        this.variants = variants;
+    }
+
+    public Map<String, List<String>> getVariants() {
+        return variants;
+    }
+
+    public Map.Entry<String, List<String>> getVariantEntryContaining(String templateId) {
+        for (Map.Entry<String, List<String>> e : variants.entrySet()) {
+            if (e.getValue().contains(templateId)) {
+                return e;
+            }
+        }
+        return null;
+    }
+
+}

@@ -1,0 +1,68 @@
+name: Quarkus Release Test Build
+
+permissions:
+  contents: read
+  issues: write
+  packages: read
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+env:
+  LANG: en_US.UTF-8
+  MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
+jobs:
+  build:
+    name: "Prepare release"
+    runs-on: ubuntu-latest
+    if: github.repository == 'quarkusio/quarkus'
+    env:
+      MAVEN_OPTS: -Xmx2560m
+      JBANG_REPO: $HOME/release/repository
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+      - name: Get SHA
+        id: quarkus-sha
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+      - name: Reclaim Disk Space
+        run: .github/ci-prerequisites.sh
+      - name: Extract base JDK version from POM
+        id: base-jdk
+        run: |
+          BASE_JDK=$(grep -oP '<maven.compiler.release>\K[0-9]+' independent-projects/parent/pom.xml)
+          echo "base-jdk-version=${BASE_JDK}" >> $GITHUB_OUTPUT
+          echo "Base JDK version: ${BASE_JDK}"
+      - name: Set up JDK ${{ steps.base-jdk.outputs.base-jdk-version }}
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
+      - name: Create maven repo
+        run: mkdir -p $HOME/release/repository
+      - name: Build and Test
+        run: |
+          ./mvnw --settings .github/mvn-settings.xml \
+            -B \
+            -Dscan=false \
+            -Dno-build-cache \
+            -Ddevelocity.cache.local.enabled=false \
+            -Ddevelocity.cache.remote.enabled=false \
+            -Prelease \
+            -DskipTests -DskipITs \
+            -Ddokka \
+            -Dno-test-modules \
+            -Dgpg.skip \
+            clean install
+      - name: Report status
+        if: always()
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_API_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: 13058
+          quarkus-sha: ${{ steps.quarkus-sha.outputs.sha }}
+          project-sha: ${{ steps.quarkus-sha.outputs.sha }}

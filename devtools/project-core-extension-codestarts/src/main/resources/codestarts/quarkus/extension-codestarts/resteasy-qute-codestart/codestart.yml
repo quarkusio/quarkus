@@ -1,0 +1,13 @@
+name: resteasy-qute-codestart
+ref: resteasy-qute
+tags: extension-codestart
+type: code
+metadata:
+  title: RESTEasy Qute
+  description: Create your web page using Quarkus RESTEasy & Qute
+  path: /some-page
+  related-guide-section: https://quarkus.io/guides/qute#type-safe-templates
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-resteasy-qute

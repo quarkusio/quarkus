@@ -1,0 +1,5 @@
+host
+hostname
+I/O
+name
+you

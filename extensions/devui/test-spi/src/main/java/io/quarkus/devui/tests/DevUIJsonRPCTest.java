@@ -1,0 +1,302 @@
+package io.quarkus.devui.tests;
+
+import static io.quarkus.devui.tests.DevUITestUtils.DOT;
+import static io.quarkus.devui.tests.DevUITestUtils.LOCAL_BASE_URI;
+import static io.quarkus.devui.tests.DevUITestUtils.managementRootPath;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
+import org.jboss.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+
+import io.quarkus.value.registry.ValueRegistry;
+import io.smallrye.config.Config;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.WebSocket;
+import io.vertx.core.http.WebSocketClient;
+import io.vertx.core.http.WebSocketClientOptions;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.NullNode;
+import tools.jackson.databind.node.ObjectNode;
+
+public class DevUIJsonRPCTest {
+    private static final Logger log = Logger.getLogger(DevUIJsonRPCTest.class);
+
+    private final ObjectMapper mapper = new ObjectMapper();
+    private final Random random = new Random();
+    private final String namespace;
+
+    private URI uri;
+    private Vertx vertx;
+    private WebSocketClient client;
+
+    public DevUIJsonRPCTest(String namespace) {
+        this(namespace, null);
+    }
+
+    public DevUIJsonRPCTest(String namespace, String testUrl) {
+        // The namespace changed to be compatible with MCP. We add some code here to be backward compatible
+        if (namespace.contains(DOT)) {
+            namespace = namespace.substring(namespace.lastIndexOf(DOT) + 1);
+        }
+        this.namespace = namespace;
+
+        if (testUrl != null) {
+            this.uri = URI.create(testUrl + managementRootPath(Config.get(), "/dev-ui/json-rpc-ws"));
+        }
+    }
+
+    @SuppressWarnings("JUnitMalformedDeclaration")
+    @BeforeEach
+    public void beforeEach(ValueRegistry valueRegistry) {
+        if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
+            URI localBaseUri = valueRegistry.get(LOCAL_BASE_URI);
+            this.uri = URI.create(localBaseUri.toString() + managementRootPath(Config.get(), "/dev-ui/json-rpc-ws"));
+        }
+        initVertxIfNeeded();
+    }
+
+    @AfterEach
+    public void afterEach() {
+        if (this.client != null) {
+            this.client.close().await();
+        }
+        closeVertx();
+    }
+
+    public <T> T executeJsonRPCMethod(TypeReference typeReference, String methodName) throws Exception {
+        return executeJsonRPCMethod(typeReference, methodName, null);
+    }
+
+    public <T> T executeJsonRPCMethod(TypeReference typeReference, String methodName, Map<String, Object> params)
+            throws Exception {
+        int id = sendRequest(methodName, params);
+        T response = getJsonRPCResponse(typeReference, id);
+        log.debug("response = " + response);
+        return response;
+    }
+
+    public JsonNode executeJsonRPCMethod(String methodName) throws Exception {
+        return executeJsonRPCMethod(methodName, null);
+    }
+
+    public JsonNode executeJsonRPCMethod(String methodName, Map<String, Object> params) throws Exception {
+        return executeJsonRPCMethod(JsonNode.class, methodName, params);
+    }
+
+    public <T> T executeJsonRPCMethod(Class<T> classType, String methodName) throws Exception {
+        return executeJsonRPCMethod(classType, methodName, null);
+    }
+
+    public <T> T executeJsonRPCMethod(Class<T> classType, String methodName, Map<String, Object> params) throws Exception {
+
+        int id = sendRequest(methodName, params);
+        T response = getJsonRPCResponse(classType, id);
+        log.debug("response = " + response);
+
+        return response;
+    }
+
+    protected JsonNode toJsonNode(String json) {
+        return mapper.readTree(json);
+    }
+
+    private <T> T getJsonRPCResponse(TypeReference typeReference, int id) throws InterruptedException, IOException {
+        return getJsonRPCResponse(typeReference, id, 0);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T getJsonRPCResponse(TypeReference typeReference, int id, int loopCount)
+            throws InterruptedException {
+        JsonNode object = objectResultFromJsonRPC(id);
+        if (object != null) {
+            JavaType jt = mapper.getTypeFactory().constructType(typeReference);
+            return (T) mapper.treeToValue(object, jt);
+        }
+        if (loopCount > 10)
+            throw new RuntimeException("Too many recursions, message not returned for id [" + id + "]");
+        return getJsonRPCResponse(typeReference, id, loopCount + 1);
+    }
+
+    private <T> T getJsonRPCResponse(Class<T> classType, int id) throws InterruptedException, IOException {
+        return getJsonRPCResponse(classType, id, 0);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T getJsonRPCResponse(Class<T> classType, int id, int loopCount) throws InterruptedException, IOException {
+        JsonNode object = objectResultFromJsonRPC(id);
+        if (object != null) {
+            if (classType == null || classType.equals(JsonNode.class)) {
+                return (T) object;
+            } else if (classType.equals(String.class)) {
+                return (T) object.asText();
+            } else if (classType.equals(Boolean.class)) {
+                return (T) Boolean.valueOf(object.asBoolean());
+            } else if (classType.equals(Double.class)) {
+                return (T) Double.valueOf(object.asDouble());
+            } else if (classType.equals(Integer.class)) {
+                return (T) Integer.valueOf(object.asInt());
+            } else if (classType.equals(Long.class)) {
+                return (T) Long.valueOf(object.asLong());
+            } else {
+                return mapper.treeToValue(object, classType);
+            }
+        }
+        if (loopCount > 10)
+            throw new RuntimeException("Too many recursions, message not returned for id [" + id + "]");
+        return getJsonRPCResponse(classType, id, loopCount + 1);
+    }
+
+    private JsonNode objectResultFromJsonRPC(int id) throws InterruptedException, JacksonException {
+        return objectResultFromJsonRPC(id, 0);
+    }
+
+    private JsonNode objectResultFromJsonRPC(int id, int loopCount) throws InterruptedException, JacksonException {
+        if (RESPONSES.containsKey(id)) {
+            WebSocketResponse response = RESPONSES.remove(id);
+            if (response != null) {
+                ObjectNode json = (ObjectNode) new ObjectMapper().readTree(response.message());
+                JsonNode result = json.get("result");
+                if (result != null) {
+                    JsonNode object = result.get("object");
+                    // An action that answers null is a valid response and the codec omits the field. Hand back a
+                    // node rather than null, otherwise the caller retries a response that was already consumed and
+                    // can only time out.
+                    return object == null ? NullNode.getInstance() : object;
+                }
+            }
+            return null;
+        } else {
+            if (loopCount > 10)
+                throw new RuntimeException("Too many recursions, message not returned for id [" + id + "]");
+
+            TimeUnit.SECONDS.sleep(3);
+            return objectResultFromJsonRPC(id, loopCount + 1);
+        }
+    }
+
+    private String createJsonRPCRequest(int id, String methodName, Map<String, Object> params) throws IOException {
+
+        ObjectNode request = mapper.createObjectNode();
+
+        request.put("jsonrpc", "2.0");
+        request.put("id", id);
+        request.put("method", this.namespace + "_" + methodName);
+        ObjectNode jsonParams = mapper.createObjectNode();
+        if (params != null && !params.isEmpty()) {
+            for (Map.Entry<String, Object> p : params.entrySet()) {
+                JsonNode convertValue = mapper.convertValue(p.getValue(), JsonNode.class);
+                jsonParams.putIfAbsent(p.getKey(), convertValue);
+            }
+        }
+        request.set("params", jsonParams);
+        return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(request);
+    }
+
+    private int sendRequest(String methodName, Map<String, Object> params) throws IOException {
+        boolean initialized = initVertxIfNeeded();
+        try {
+            if (uri == null) {
+                throw new IllegalStateException("No URI available. Did Quarkus start with HTTP support?");
+            }
+
+            int id = random.nextInt(Integer.MAX_VALUE);
+            String request = createJsonRPCRequest(id, methodName, params);
+            log.debug("request = " + request);
+
+            WebSocketClientOptions socketOptions = new WebSocketClientOptions()
+                    .setDefaultHost(this.uri.getHost())
+                    .setDefaultPort(this.uri.getPort());
+
+            client = vertx.createWebSocketClient(socketOptions);
+
+            try {
+                WebSocket socket = client.connect(this.uri.getPath()).await();
+
+                CompletableFuture<String> responseFuture = new CompletableFuture<>();
+                Buffer accumulatedBuffer = Buffer.buffer();
+
+                socket.frameHandler((e) -> {
+                    accumulatedBuffer.appendBuffer(e.binaryData());
+                    if (e.isFinal()) {
+                        responseFuture.complete(accumulatedBuffer.toString());
+                    }
+                });
+
+                socket.exceptionHandler(responseFuture::completeExceptionally);
+
+                socket.writeTextMessage(request);
+
+                String response = responseFuture.get(30, TimeUnit.SECONDS);
+                RESPONSES.put(id, new WebSocketResponse(response));
+            } catch (Exception e) {
+                RESPONSES.put(id, new WebSocketResponse(e));
+            }
+
+            return id;
+        } finally {
+            if (initialized) {
+                if (client != null) {
+                    try {
+                        client.close().await();
+                    } catch (Exception e) {
+                        // ignore cleanup errors
+                    }
+                    client = null;
+                }
+                closeVertx();
+            }
+        }
+    }
+
+    boolean initVertxIfNeeded() {
+        if (vertx == null) {
+            vertx = Vertx.vertx();
+            return true;
+        }
+        return false;
+    }
+
+    void closeVertx() {
+        if (vertx != null) {
+            vertx.close().await();
+            vertx = null;
+        }
+    }
+
+    private static final ConcurrentHashMap<Integer, WebSocketResponse> RESPONSES = new ConcurrentHashMap<>();
+
+    private static class WebSocketResponse {
+        private final String message;
+        private final Throwable throwable;
+
+        public WebSocketResponse(String message) {
+            this.message = message;
+            this.throwable = null;
+        }
+
+        public WebSocketResponse(Throwable throwable) {
+            this.message = null;
+            this.throwable = throwable;
+        }
+
+        String message() {
+            if (throwable != null) {
+                throw new IllegalStateException("Request failed: " + throwable.getMessage(), throwable);
+            }
+            return message;
+        }
+    }
+}

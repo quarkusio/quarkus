@@ -1,0 +1,37 @@
+<extensions>
+    <extension>
+        <groupId>com.gradle</groupId>
+        <artifactId>develocity-maven-extension</artifactId>
+        <version>2.6.0</version>
+    </extension>
+    <extension>
+        <groupId>com.gradle</groupId>
+        <artifactId>common-custom-user-data-maven-extension</artifactId>
+        <version>2.4.0</version>
+    </extension>
+    <extension>
+        <groupId>com.gradle</groupId>
+        <artifactId>quarkus-build-caching-extension</artifactId>
+        <version>1.12</version>
+    </extension>
+    <extension>
+        <groupId>io.quarkus.develocity</groupId>
+        <artifactId>quarkus-project-develocity-extension</artifactId>
+        <version>1.4.0</version>
+    </extension>
+    <extension>
+        <groupId>eu.maveniverse.maven.scalpel</groupId>
+        <artifactId>extension3</artifactId>
+        <version>0.4.3</version>
+    </extension>
+    <extension>
+        <groupId>eu.maveniverse.maven.nisse</groupId>
+        <artifactId>extension3</artifactId>
+        <version>0.9.11</version>
+    </extension>
+    <extension>
+        <groupId>eu.maveniverse.maven.njord</groupId>
+        <artifactId>extension3</artifactId>
+        <version>0.9.10</version>
+    </extension>
+</extensions>

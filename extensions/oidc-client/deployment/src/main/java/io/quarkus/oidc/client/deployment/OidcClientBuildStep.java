@@ -1,0 +1,245 @@
+package io.quarkus.oidc.client.deployment;
+
+import static io.quarkus.oidc.client.deployment.OidcClientFilterDeploymentHelper.sanitize;
+
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.BooleanSupplier;
+import java.util.stream.Collectors;
+
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
+
+import org.jboss.jandex.ClassType;
+import org.jboss.jandex.DotName;
+
+import io.quarkus.arc.BeanDestroyer;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
+import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.ApplicationArchive;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Consume;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
+import io.quarkus.oidc.client.NamedOidcClient;
+import io.quarkus.oidc.client.OidcClient;
+import io.quarkus.oidc.client.OidcClients;
+import io.quarkus.oidc.client.Tokens;
+import io.quarkus.oidc.client.runtime.AbstractTokensProducer;
+import io.quarkus.oidc.client.runtime.OidcClientBuildTimeConfig;
+import io.quarkus.oidc.client.runtime.OidcClientDefaultIdConfigBuilder;
+import io.quarkus.oidc.client.runtime.OidcClientHealthCheck;
+import io.quarkus.oidc.client.runtime.OidcClientRecorder;
+import io.quarkus.oidc.client.runtime.OidcClientsImpl;
+import io.quarkus.oidc.client.runtime.TokenProviderImpl;
+import io.quarkus.oidc.client.runtime.TokensHelper;
+import io.quarkus.oidc.client.runtime.TokensProducer;
+import io.quarkus.oidc.client.spi.TokenProvider;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+
+@BuildSteps(onlyIf = OidcClientBuildStep.IsEnabled.class)
+public class OidcClientBuildStep {
+
+    @BuildStep
+    ExtensionSslNativeSupportBuildItem enableSslInNative() {
+        return new ExtensionSslNativeSupportBuildItem(Feature.OIDC_CLIENT);
+    }
+
+    @BuildStep
+    void registerProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
+        builder.addBeanClass(TokensProducer.class);
+        additionalBeans.produce(builder.build());
+    }
+
+    @BuildStep
+    void runtimeInitializeTokenHelper(BuildProducer<RuntimeInitializedClassBuildItem> runtime) {
+        runtime.produce(new RuntimeInitializedClassBuildItem(TokensHelper.class.getName()));
+    }
+
+    @BuildStep
+    void extractInjectedOidcClientNames(
+            ApplicationArchivesBuildItem beanArchiveIndex,
+            BuildProducer<OidcClientNamesBuildItem> oidcClientNames) {
+
+        oidcClientNames.produce(new OidcClientNamesBuildItem(oidcClientNamesOf(beanArchiveIndex)));
+    }
+
+    private Set<String> oidcClientNamesOf(ApplicationArchivesBuildItem beanArchiveIndex) {
+        return beanArchiveIndex.getAllArchives().stream()
+                .map(ApplicationArchive::getIndex)
+                .flatMap(archive -> archive.getAnnotations(DotName.createSimple(NamedOidcClient.class.getName())).stream())
+                .map(annotation -> annotation.value().asString())
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    void initOidcClients(OidcClientRecorder recorder) {
+        recorder.initOidcClients();
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem createOidcClientsBean() {
+        return AdditionalBeanBuildItem.unremovableOf(OidcClientsImpl.class);
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    void produceNamedOidcClientBeans(OidcClientRecorder recorder, OidcClientNamesBuildItem oidcClientNames,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBean) {
+        oidcClientNames.oidcClientNames().stream()
+                .sorted()
+                .map(clientName -> syntheticNamedOidcClientBeanFor(clientName, recorder))
+                .forEach(syntheticBean::produce);
+    }
+
+    private static SyntheticBeanBuildItem syntheticNamedOidcClientBeanFor(String clientName, OidcClientRecorder recorder) {
+        return SyntheticBeanBuildItem.configure(OidcClient.class).unremovable()
+                .types(OidcClient.class)
+                .addInjectionPoint(ClassType.create(OidcClients.class))
+                .createWith(recorder.createOidcClientBean(clientName))
+                .scope(Singleton.class)
+                .addQualifier().annotation(NamedOidcClient.class).addValue("value", clientName).done()
+                .setRuntimeInit()
+                .destroyer(BeanDestroyer.CloseableDestroyer.class)
+                .done();
+    }
+
+    @BuildStep
+    public void createNonDefaultTokensProducers(
+            BuildProducer<GeneratedBeanBuildItem> generatedBean,
+            OidcClientNamesBuildItem oidcClientNames) {
+
+        Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBean));
+
+        String targetPackage = DotNames
+                .packagePrefix(DotName.createSimple(TokensProducer.class));
+
+        for (String oidcClientName : oidcClientNames.oidcClientNames()) {
+            createNamedTokensProducerFor(gizmo, targetPackage, oidcClientName);
+        }
+    }
+
+    @BuildStep
+    RunTimeConfigBuilderBuildItem useOidcClientDefaultIdConfigBuilder() {
+        return new RunTimeConfigBuilderBuildItem(OidcClientDefaultIdConfigBuilder.class);
+    }
+
+    @BuildStep
+    void registerHealthCheck(OidcClientBuildTimeConfig config, BuildProducer<HealthBuildItem> healthBuildItems,
+            Capabilities capabilities) {
+        if (config.healthEnabled() && capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
+            healthBuildItems.produce(new HealthBuildItem(OidcClientHealthCheck.class.getName(), true));
+        }
+    }
+
+    /**
+     * Creates a Tokens producer class like follows:
+     *
+     * <pre>
+     * &#64;Singleton
+     * public class TokensProducer_oidcClientName extends AbstractTokensProducer {
+     *     &#64;Produces
+     *     &#64;NamedOidcClient("oidcClientName")
+     *     &#64;RequestScoped
+     *     public Tokens produceTokens() {
+     *         return awaitTokens();
+     *     }
+     *
+     *     &#64;Produces
+     *     &#64;NamedOidcClient("oidcClientName")
+     *     &#64;RequestScoped
+     *     public TokenProvider produceTokenProvider() {
+     *         return new TokenProviderImpl(this);
+     *     }
+     *
+     *     &#64;Override
+     *     protected Optional<String> clientId() {
+     *         return Optional.of("oidcClientName");
+     *     }
+     * }
+     * </pre>
+     */
+    private String createNamedTokensProducerFor(Gizmo gizmo, String targetPackage, String oidcClientName) {
+        String generatedName = targetPackage + ".TokensProducer_" + sanitize(oidcClientName);
+
+        gizmo.class_(generatedName, cc -> {
+            cc.extends_(AbstractTokensProducer.class);
+            cc.addAnnotation(Singleton.class);
+            cc.defaultConstructor();
+
+            cc.method("produceTokens", mc -> {
+                mc.public_();
+                mc.returning(Tokens.class);
+
+                mc.addAnnotation(Produces.class);
+                mc.addAnnotation(NamedOidcClient.class, ac -> ac.add("value", oidcClientName));
+                mc.addAnnotation(RequestScoped.class);
+
+                mc.body(bc -> {
+                    bc.return_(bc.invokeVirtual(
+                            MethodDesc.of(AbstractTokensProducer.class, "awaitTokens", Tokens.class),
+                            cc.this_()));
+                });
+            });
+
+            cc.method("produceTokenProvider", mc -> {
+                mc.public_();
+                mc.returning(TokenProvider.class);
+
+                mc.addAnnotation(Produces.class);
+                mc.addAnnotation(NamedOidcClient.class, ac -> ac.add("value", oidcClientName));
+                mc.addAnnotation(RequestScoped.class);
+
+                mc.body(bc -> {
+                    bc.return_(bc.new_(
+                            ConstructorDesc.of(TokenProviderImpl.class, AbstractTokensProducer.class),
+                            cc.this_()));
+                });
+            });
+
+            cc.method("clientId", mc -> {
+                mc.protected_();
+                mc.returning(Optional.class);
+
+                mc.body(bc -> {
+                    bc.return_(bc.invokeStatic(
+                            MethodDesc.of(Optional.class, "of", Optional.class, Object.class),
+                            Const.of(oidcClientName)));
+                });
+            });
+        });
+
+        return generatedName;
+    }
+
+    public static class IsEnabled implements BooleanSupplier {
+        OidcClientBuildTimeConfig config;
+
+        public boolean getAsBoolean() {
+            return config.enabled();
+        }
+    }
+}

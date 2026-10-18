@@ -1,0 +1,164 @@
+package org.jboss.resteasy.reactive.server.processor.scanning;
+
+import java.lang.reflect.Modifier;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.Cache;
+import org.jboss.resteasy.reactive.NoCache;
+import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
+import org.jboss.resteasy.reactive.common.util.ExtendedCacheControl;
+import org.jboss.resteasy.reactive.server.handlers.CacheControlHandler;
+import org.jboss.resteasy.reactive.server.model.FixedHandlerChainCustomizer;
+import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
+
+public class CacheControlScanner implements MethodScanner {
+
+    private static final DotName NO_CACHE = DotName.createSimple(NoCache.class.getName());
+    private static final DotName CACHE = DotName.createSimple(Cache.class.getName());
+
+    @Override
+    public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
+            Map<String, Object> methodContext) {
+
+        ClassInfo currentClassInfo = method.declaringClass();
+
+        // Check whether the actualEndpointClass is implementing an interface containing the method
+        // In this case, allow annotations on the implementation itself to take precedence over annotations on the
+        // interface.
+        if (!actualEndpointClass.equals(currentClassInfo) && Modifier.isInterface(currentClassInfo.flags())) {
+            MethodInfo actualMethod = actualEndpointClass.method(method.name(), method.parameterTypes().toArray(new Type[0]));
+            if (actualMethod == null) {
+                // method from interface not overridden in actual class. Use original method from interface.
+                actualMethod = method;
+            }
+
+            // first check bean implementation
+            List<HandlerChainCustomizer> customizers = doScan(actualMethod, actualEndpointClass, methodContext);
+            if (customizers.isEmpty()) {
+                // if no annotations where found on implementation, check the interface
+                customizers = doScan(method, currentClassInfo, methodContext);
+            }
+            return customizers;
+        } else {
+            return doScan(method, actualEndpointClass, methodContext);
+        }
+    }
+
+    private List<HandlerChainCustomizer> doScan(MethodInfo methodInfo, ClassInfo classInfo,
+            Map<String, Object> methodContext) {
+        AnnotationStore annotationStore = (AnnotationStore) methodContext.get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
+        ExtendedCacheControl cacheControl = noCacheToCacheControl(annotationStore.getAnnotation(methodInfo, NO_CACHE));
+        if (cacheControl != null) {
+            if (methodInfo.annotation(CACHE) != null) {
+                throw new IllegalStateException(
+                        "A resource method cannot be simultaneously annotated with '@Cache' and '@NoCache'. Offending method is '"
+                                + methodInfo.name() + "' of class '" + methodInfo.declaringClass().name() + "'");
+            }
+            return cacheControlToCustomizerList(cacheControl);
+        } else {
+            cacheControl = noCacheToCacheControl(annotationStore.getAnnotation(classInfo, NO_CACHE));
+            if (cacheControl != null) {
+                if (classInfo.declaredAnnotation(CACHE) != null) {
+                    throw new IllegalStateException(
+                            "A resource class cannot be simultaneously annotated with '@Cache' and '@NoCache'. Offending class is '"
+                                    + classInfo.name() + "'");
+                }
+                return cacheControlToCustomizerList(cacheControl);
+            }
+        }
+
+        cacheControl = cacheToCacheControl(methodInfo.annotation(CACHE));
+        if (cacheControl != null) {
+            return cacheControlToCustomizerList(cacheControl);
+        } else {
+            cacheControl = cacheToCacheControl(classInfo.declaredAnnotation(CACHE));
+            if (cacheControl != null) {
+                return cacheControlToCustomizerList(cacheControl);
+            }
+        }
+
+        return Collections.emptyList();
+    }
+
+    private ExtendedCacheControl noCacheToCacheControl(AnnotationInstance noCacheInstance) {
+        if (noCacheInstance == null) {
+            return null;
+        }
+        ExtendedCacheControl cacheControl = new ExtendedCacheControl();
+        cacheControl.setNoCache(true);
+        cacheControl.setNoTransform(false);
+        AnnotationValue fieldsValue = noCacheInstance.value("fields");
+        if (fieldsValue != null) {
+            String[] fields = fieldsValue.asStringArray();
+            if ((fields != null) && (fields.length > 0)) {
+                cacheControl.getNoCacheFields().addAll(List.of(fields));
+
+            }
+        }
+        return cacheControl;
+    }
+
+    private ExtendedCacheControl cacheToCacheControl(AnnotationInstance cacheInstance) {
+        if (cacheInstance == null) {
+            return null;
+        }
+        ExtendedCacheControl cacheControl = new ExtendedCacheControl();
+        AnnotationValue maxAgeValue = cacheInstance.value("maxAge");
+        if (maxAgeValue != null) {
+            int maxAge = maxAgeValue.asInt();
+            if (maxAge > -1) {
+                cacheControl.setMaxAge(maxAge);
+            }
+        }
+        AnnotationValue sMaxAgeValue = cacheInstance.value("sMaxAge");
+        if (sMaxAgeValue != null) {
+            int sMaxAge = sMaxAgeValue.asInt();
+            if (sMaxAge > -1) {
+                cacheControl.setSMaxAge(sMaxAge);
+            }
+        }
+        AnnotationValue noStoreValue = cacheInstance.value("noStore");
+        if (noStoreValue != null) {
+            cacheControl.setNoStore(noStoreValue.asBoolean());
+        }
+        AnnotationValue noTransformValue = cacheInstance.value("noTransform");
+        if (noTransformValue != null) {
+            cacheControl.setNoTransform(noTransformValue.asBoolean());
+        } else {
+            cacheControl.setNoTransform(false); // for some reason the CacheControl class sets the default to true...
+        }
+        AnnotationValue mustRevalidateValue = cacheInstance.value("mustRevalidate");
+        if (mustRevalidateValue != null) {
+            cacheControl.setMustRevalidate(mustRevalidateValue.asBoolean());
+        }
+        AnnotationValue proxyRevalidateValue = cacheInstance.value("proxyRevalidate");
+        if (proxyRevalidateValue != null) {
+            cacheControl.setProxyRevalidate(proxyRevalidateValue.asBoolean());
+        }
+        AnnotationValue isPrivateValue = cacheInstance.value("isPrivate");
+        if (isPrivateValue != null) {
+            cacheControl.setPrivate(isPrivateValue.asBoolean());
+        }
+        AnnotationValue noCacheValue = cacheInstance.value("noCache");
+        if (noCacheValue != null) {
+            cacheControl.setNoCache(noCacheValue.asBoolean());
+        }
+        return cacheControl;
+    }
+
+    private List<HandlerChainCustomizer> cacheControlToCustomizerList(ExtendedCacheControl cacheControl) {
+        CacheControlHandler handler = new CacheControlHandler();
+        handler.setCacheControl(cacheControl);
+        return Collections.singletonList(new FixedHandlerChainCustomizer(handler,
+                HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED));
+    }
+}

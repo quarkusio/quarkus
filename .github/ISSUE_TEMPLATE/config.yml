@@ -1,0 +1,14 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question
+    url: https://stackoverflow.com/questions/ask?tags=quarkus
+    about: I have a question about how to use Quarkus.
+  - name: Discussions
+    url: https://github.com/quarkusio/quarkus/discussions
+    about: Open Community discussions related to Quarkus. 
+  - name: Quarkus Zulip chat
+    url: https://quarkusio.zulipchat.com/
+    about: If you prefer live chat with the developers, we have a Zulip chat where we all hang out.
+  - name: Quarkus Development mailing list 
+    url: https://groups.google.com/forum/#!forum/quarkus-dev
+    about: You can also ask questions on our mailing list.

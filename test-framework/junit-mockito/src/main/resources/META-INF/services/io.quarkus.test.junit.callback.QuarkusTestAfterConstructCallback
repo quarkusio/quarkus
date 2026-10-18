@@ -1,0 +1,2 @@
+io.quarkus.test.junit.mockito.internal.CreateMockitoMocksCallback
+io.quarkus.test.junit.mockito.internal.CreateMockitoSpiesCallback

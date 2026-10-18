@@ -1,0 +1,15 @@
+[info] Quarkus application DEV mode build dependency tree:
+[info] io.quarkus.bootstrap.test:test-app:pom:1
+[info] ├─ io.quarkus:quarkus-core:1.0.0 (compile)
+[info] ├─ io.quarkus.bootstrap.test:artifact-with-classifier:classifier:1 (compile)
+[info] ├─ io.quarkus.bootstrap.test:test-ext2-deployment:1 (compile)
+[info] │  ├─ io.quarkus.bootstrap.test:test-ext2:1 (compile)
+[info] │  │  └─ io.quarkus.bootstrap.test:test-ext1:1 (compile)
+[info] │  └─ io.quarkus.bootstrap.test:test-ext1-deployment:1 (compile)
+[info] ├─ io.quarkus.bootstrap.test:optional:1 (compile optional)
+[info] ├─ io.quarkus.bootstrap.test:test-ext3-deployment:1 (compile)
+[info] │  ├─ io.quarkus.bootstrap.test:test-ext3:1 (compile)
+[info] │  │  └─ io.quarkus.bootstrap.test:test-core-ext:1 (compile)
+[info] │  └─ io.quarkus.bootstrap.test:test-core-ext-deployment:1 (compile)
+[info] ├─ io.quarkus.bootstrap.test:provided:1 (provided)
+[info] └─ io.quarkus.bootstrap.test:runtime:1 (runtime)

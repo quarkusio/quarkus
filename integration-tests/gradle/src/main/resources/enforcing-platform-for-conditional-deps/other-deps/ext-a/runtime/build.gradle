@@ -1,0 +1,35 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'io.quarkus.extension'
+}
+
+repositories {
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
+            includeGroup 'org.hibernate.orm'
+        }
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+}
+
+quarkusExtension {
+    deploymentArtifact = "org.enforcing.deps:ext-a-deployment:1.0-SNAPSHOT"
+    conditionalDevDependencies = ["org.enforcing.conditional:dev-mode-only-lib::jar:9.9.0"]
+}
+
+publishing {
+    publications {
+        mavenJave(MavenPublication) {
+            groupId = 'org.enforcing.deps'
+            artifactId = 'ext-a'
+            version = '1.0-SNAPSHOT'
+            from components.java
+        }
+    }
+}

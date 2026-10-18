@@ -1,0 +1,8 @@
+/* copied from avro-maven-plugin, licensed under Apache Software License */
+{
+    "type": "enum", 
+    "namespace": "test",
+    "name": "PrivacyImport",
+    "doc": "Privacy Test Enum",
+    "symbols" : ["Public","Private"]
+}

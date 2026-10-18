@@ -1,0 +1,138 @@
+package io.quarkus.paths;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+public class FilteredPathTree implements PathTree {
+
+    private final PathTree original;
+    protected final PathFilter filter;
+
+    public FilteredPathTree(PathTree tree, PathFilter filter) {
+        this.original = Objects.requireNonNull(tree, "tree is null");
+        this.filter = Objects.requireNonNull(filter, "filter is null");
+    }
+
+    @Override
+    public boolean isArchiveOrigin() {
+        return original.isArchiveOrigin();
+    }
+
+    @Override
+    public Collection<Path> getRoots() {
+        return original.getRoots();
+    }
+
+    @Override
+    public ManifestAttributes getManifestAttributes() {
+        return original.getManifestAttributes();
+    }
+
+    @Override
+    public void walk(PathVisitor visitor) {
+        original.walk(visit -> {
+            if (visit != null && filter.isVisible(visit.getResourceName())) {
+                visitor.visitPath(visit);
+            }
+        });
+    }
+
+    @Override
+    public void walkRaw(PathVisitor visitor) {
+        original.walkRaw(visit -> {
+            if (visit != null && filter.isVisible(visit.getResourceName())) {
+                visitor.visitPath(visit);
+            }
+        });
+    }
+
+    @Override
+    public void walkIfContains(String resourceDirName, PathVisitor visitor) {
+        if (!PathFilter.isVisible(filter, resourceDirName)) {
+            return;
+        }
+        original.walkIfContains(resourceDirName, visit -> {
+            if (visit != null && filter.isVisible(visit.getResourceName())) {
+                visitor.visitPath(visit);
+            }
+        });
+    }
+
+    @Override
+    public <T> T apply(String resourceName, Function<PathVisit, T> func) {
+        if (!PathFilter.isVisible(filter, resourceName)) {
+            return func.apply(null);
+        }
+        return original.apply(resourceName, func);
+    }
+
+    @Override
+    public void accept(String resourceName, Consumer<PathVisit> consumer) {
+        if (!PathFilter.isVisible(filter, resourceName)) {
+            consumer.accept(null);
+        } else {
+            original.accept(resourceName, consumer);
+        }
+    }
+
+    @Override
+    public void acceptAll(String resourceName, Consumer<PathVisit> consumer) {
+        if (!PathFilter.isVisible(filter, resourceName)) {
+            consumer.accept(null);
+        } else {
+            original.acceptAll(resourceName, consumer);
+        }
+    }
+
+    @Override
+    public boolean contains(String resourceName) {
+        return PathFilter.isVisible(filter, resourceName) && original.contains(resourceName);
+    }
+
+    @Override
+    public OpenPathTree open() {
+        return new OpenFilteredPathTree(original.open(), filter);
+    }
+
+    @Override
+    public String toString() {
+        return original.toString() + " (filtered)";
+    }
+
+    private static class OpenFilteredPathTree extends FilteredPathTree implements OpenPathTree {
+
+        private final OpenPathTree original;
+
+        private OpenFilteredPathTree(OpenPathTree original, PathFilter filter) {
+            super(original, filter);
+            this.original = original;
+        }
+
+        @Override
+        public PathTree getOriginalTree() {
+            return original.getOriginalTree();
+        }
+
+        @Override
+        public boolean isOpen() {
+            return original.isOpen();
+        }
+
+        @Override
+        public Path getPath(String relativePath) {
+            if (!PathFilter.isVisible(filter, relativePath)) {
+                return null;
+            }
+            return original.getPath(relativePath);
+        }
+
+        @Override
+        public void close() throws IOException {
+            original.close();
+        }
+    }
+}

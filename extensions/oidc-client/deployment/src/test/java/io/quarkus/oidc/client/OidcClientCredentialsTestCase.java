@@ -1,0 +1,113 @@
+package io.quarkus.oidc.client;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+import java.util.logging.LogRecord;
+import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.restassured.RestAssured;
+
+@QuarkusTestResource(KeycloakRealmClientCredentialsManager.class)
+public class OidcClientCredentialsTestCase {
+
+    private static Class<?>[] testClasses = {
+            OidcClientsResource.class,
+            ProtectedResource.class,
+            SecretProvider.class
+    };
+
+    @RegisterExtension
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(testClasses)
+                    .addAsResource("application-oidc-client-credentials.properties", "application.properties"))
+            .setLogRecordPredicate(r -> true)
+            .assertLogRecords(r -> assertLogRecord(r));
+
+    @Test
+    public void testGetTokenDefaultClient() {
+        doTestGetTokenClient("default");
+    }
+
+    @Test
+    public void testGetTokensDefaultClient() {
+        doTestGetTokensClient("default");
+    }
+
+    @Test
+    public void testClientSecretBasicAuthSchemeRefresh() {
+        doTestGetTokenClient("named-1");
+    }
+
+    @Test
+    public void testClientSecretPostMethodRefresh() {
+        doTestGetTokenClient("named-2");
+    }
+
+    @Test
+    public void testGetTokensOnDemand() {
+        String[] tokens = RestAssured.when().get("/clients/tokenOnDemand").body().asString().split(" ");
+        assertTokensNotNull(tokens);
+
+        RestAssured.given().auth().oauth2(tokens[0])
+                .when().get("/protected")
+                .then()
+                .statusCode(200)
+                .body(equalTo("service-account-quarkus-app"));
+    }
+
+    private void doTestGetTokenClient(String clientId) {
+        String token = RestAssured.when().get("/clients/token/" + clientId).body().asString();
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/protected")
+                .then()
+                .statusCode(200)
+                .body(equalTo("service-account-quarkus-app"));
+
+    }
+
+    private void doTestGetTokensClient(String clientId) {
+        String[] tokens = RestAssured.when().get("/clients/tokens/" + clientId).body().asString().split(" ");
+        assertTokensNotNull(tokens);
+
+        RestAssured.given().auth().oauth2(tokens[0])
+                .when().get("/protected")
+                .then()
+                .statusCode(200)
+                .body(equalTo("service-account-quarkus-app"));
+    }
+
+    private static void assertTokensNotNull(String[] tokens) {
+        assertEquals(2, tokens.length);
+        assertNotNull(tokens[0]);
+        assertEquals("null", tokens[1]);
+    }
+
+    private static void assertLogRecord(List<LogRecord> records) {
+        List<LogRecord> authorizationRecords = records.stream()
+                .filter(r -> (r.getMessage().contains("client_secret=")
+                        || r.getMessage().contains("authorization=Basic")))
+                .collect(Collectors.toList());
+        assertFalse(authorizationRecords.isEmpty());
+
+        List<LogRecord> clientSecretRecords = authorizationRecords.stream()
+                .filter(r -> r.getMessage().contains("client_secret=")).collect(Collectors.toList());
+        assertFalse(clientSecretRecords.isEmpty());
+        assertTrue(clientSecretRecords.stream().allMatch(r -> r.getMessage().contains("client_secret=...")));
+
+        List<LogRecord> authorizationBasicSecretRecords = authorizationRecords.stream()
+                .filter(r -> r.getMessage().contains("authorization=Basic")).collect(Collectors.toList());
+        assertFalse(authorizationBasicSecretRecords.isEmpty());
+        assertTrue(authorizationBasicSecretRecords.stream().allMatch(r -> r.getMessage().contains("authorization=Basic ...")));
+    }
+}

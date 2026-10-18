@@ -1,0 +1,616 @@
+package io.quarkus.logging.json.runtime;
+
+import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.SPAN_ID;
+import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.TRACE;
+import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.TRACE_SAMPLED;
+import static io.quarkus.logging.json.runtime.JsonLogConfig.AdditionalFieldConfig.Type.STRING;
+import static java.util.Optional.ofNullable;
+
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import jakarta.enterprise.inject.spi.CDI;
+
+import org.jboss.logging.Logger;
+import org.jboss.logmanager.ExtLogRecord;
+import org.jboss.logmanager.formatters.StructuredFormatter.Key;
+
+import io.quarkus.logging.json.runtime.JsonLogConfig.JsonConfig.LogFormat;
+
+public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter {
+
+    private static final Logger LOG = Logger.getLogger(JsonFormatter.class);
+
+    /**
+     * MDC key prefix written by {@code JBossLoggingAccessLogReceiver} for each structured
+     * access-log field. Kept in sync with the constant of the same name in that class.
+     */
+    static final String ACCESS_LOG_MDC_PREFIX = "__access__";
+
+    private Set<String> excludedKeys;
+    private Map<String, AdditionalField> additionalFields;
+    private LogFormat logFormat = LogFormat.DEFAULT;
+    private String tracePrefix = "";
+    private boolean flatMdc = false;
+    private boolean structuredAccessLog = false;
+    private List<JsonProvider> discoveredProviders = Collections.emptyList();
+    private volatile List<JsonProvider> jsonProviders;
+
+    public enum AdditionalKey {
+        ECS_VERSION("ecs.version"),
+        DATA_STREAM_TYPE("data_stream.type"),
+        SERVICE_NAME("service.name"),
+        SERVICE_VERSION("service.version"),
+        SERVICE_ENVIRONMENT("service.environment"),
+        TRACE("trace"),
+        SPAN_ID("spanId"),
+        TRACE_SAMPLED("traceSampled");
+
+        private final String key;
+
+        AdditionalKey(final String key) {
+            this.key = key;
+        }
+
+        /**
+         * Returns the name of the key for the structure.
+         *
+         * @return the name of they key
+         */
+        public String getKey() {
+            return key;
+        }
+    }
+
+    /**
+     * Creates a new JSON formatter.
+     *
+     */
+    public JsonFormatter() {
+        super();
+        this.excludedKeys = new HashSet<>();
+        this.additionalFields = new HashMap<>();
+    }
+
+    /**
+     * Creates a new JSON formatter.
+     *
+     * @param keyOverrides a string representation of a map to override keys
+     *
+     *        "@see org.jboss.logmanager.ext.PropertyValues#stringToEnumMap(Class, String)"
+     */
+    public JsonFormatter(final String keyOverrides) {
+        super(keyOverrides);
+        this.excludedKeys = new HashSet<>();
+        this.additionalFields = new HashMap<>();
+    }
+
+    /**
+     * Creates a new JSON formatter.
+     *
+     * @param keyOverrides a string representation of a map to override keys
+     *
+     *        "@see org.jboss.logmanager.ext.PropertyValues#stringToEnumMap(Class, String)"
+     * @param excludedKeys a list of keys to be excluded when writing the output
+     * @param additionalFields additionalFields to be added to the output
+     */
+    public JsonFormatter(final String keyOverrides, final Set<String> excludedKeys,
+            final Map<String, AdditionalField> additionalFields) {
+        super(keyOverrides);
+        this.excludedKeys = excludedKeys;
+        this.additionalFields = additionalFields;
+    }
+
+    public Set<String> getExcludedKeys() {
+        return this.excludedKeys;
+    }
+
+    public void setExcludedKeys(Set<String> excludedKeys) {
+        this.excludedKeys = excludedKeys;
+    }
+
+    public Map<String, AdditionalField> getAdditionalFields() {
+        return this.additionalFields;
+    }
+
+    public void setAdditionalFields(Map<String, AdditionalField> additionalFields) {
+        this.additionalFields = additionalFields;
+    }
+
+    public void setDiscoveredProviders(List<JsonProvider> providers) {
+        this.discoveredProviders = List.copyOf(providers);
+    }
+
+    public void setLogFormat(LogFormat logFormat) {
+        this.logFormat = logFormat;
+    }
+
+    public void setTracePrefix(String tracePrefix) {
+        this.tracePrefix = tracePrefix;
+    }
+
+    public boolean isFlatMdc() {
+        return flatMdc;
+    }
+
+    public void setFlatMdc(boolean flatMdc) {
+        this.flatMdc = flatMdc;
+    }
+
+    public boolean isStructuredAccessLog() {
+        return structuredAccessLog;
+    }
+
+    public void setStructuredAccessLog(boolean structuredAccessLog) {
+        this.structuredAccessLog = structuredAccessLog;
+    }
+
+    @Override
+    protected Generator createGenerator(final Writer writer) {
+        Generator superGenerator = super.createGenerator(writer);
+        // In ECS mode, pass the resolved stack trace key so the generator can strip
+        // the leading ": " that jboss's StackTraceFormatter unconditionally prepends
+        // to the rendered stack trace string.
+        // Also pass the process name key so the generator can extract just the basename
+        // from the full JVM path (e.g. /usr/lib/jvm/.../bin/java → java).
+        String stackTraceKeyToTrim = logFormat.equals(LogFormat.ECS) ? getKey(Key.STACK_TRACE) : null;
+        String processNameKey = logFormat.equals(LogFormat.ECS) ? getKey(Key.PROCESS_NAME) : null;
+        return new FormatterJsonGenerator(superGenerator, this.excludedKeys, stackTraceKeyToTrim, processNameKey, this.flatMdc,
+                this.structuredAccessLog);
+    }
+
+    @Override
+    protected void after(final Generator generator, final ExtLogRecord record) throws Exception {
+
+        if (logFormat.equals(LogFormat.ECS)) {
+            // In ECS mode the FORMATTED output type writes error.stack_trace as a flat string
+            // but does not write error.message or error.type as separate top-level fields.
+            // Write them here so the output is fully ECS-compliant.
+            final Throwable thrown = record.getThrown();
+            if (thrown != null) {
+                final String message = thrown.getMessage();
+                if (message != null && !message.isEmpty()) {
+                    generator.add(getKey(Key.EXCEPTION_MESSAGE), message);
+                }
+                generator.add(getKey(Key.EXCEPTION_TYPE), thrown.getClass().getName());
+            }
+        } else if (logFormat.equals(LogFormat.GCP)) {
+            final Map<String, String> mdcCopy = record.getMdcCopy();
+            if (!mdcCopy.isEmpty()) {
+                Map<String, AdditionalField> current = new HashMap<>(additionalFields);
+                current.computeIfPresent(TRACE.getKey(), (key, value) -> {
+                    final String traceId = mdcCopy.get("traceId");
+                    if (traceId != null && !traceId.isEmpty()) {
+                        return new AdditionalField(tracePrefix + traceId, STRING);
+                    } else {
+                        return value;
+                    }
+                });
+                current.computeIfPresent(SPAN_ID.getKey(),
+                        (key, value) -> new AdditionalField(ofNullable(mdcCopy.get("spanId")).orElse(""), STRING));
+                current.computeIfPresent(TRACE_SAMPLED.getKey(),
+                        (key, value) -> new AdditionalField(ofNullable(mdcCopy.get("sampled")).orElse(""), STRING));
+
+                addToGenerator(current, generator);
+            } else {
+                // fast path
+                addToGenerator(additionalFields, generator);
+            }
+        }
+
+        // fast path for additional fields (GCP already handled above, ECS falls through here)
+        if (!logFormat.equals(LogFormat.GCP)) {
+            addToGenerator(additionalFields, generator);
+        }
+
+        if (structuredAccessLog && isAccessLogRecord(record)) {
+            if (logFormat == LogFormat.ECS) {
+                writeEcsAccessLogFields(generator, record);
+            } else {
+                writeAccessLogObject(generator, record);
+            }
+        }
+
+        JsonLogGenerator jsonLogGenerator = new JsonLogGenerator(generator, this.excludedKeys);
+        for (JsonProvider provider : getJsonProviders()) {
+            provider.writeTo(jsonLogGenerator, record);
+        }
+    }
+
+    private static boolean isAccessLogRecord(final ExtLogRecord record) {
+        final String loggerName = record.getLoggerName();
+        return loggerName != null && loggerName.startsWith("io.quarkus.http.access-log");
+    }
+
+    private void writeAccessLogObject(final Generator generator, final ExtLogRecord record) throws Exception {
+        final Map<String, String> mdc = record.getMdcCopy();
+        if (mdc == null || mdc.isEmpty()) {
+            return;
+        }
+        boolean started = false;
+        for (Map.Entry<String, String> entry : mdc.entrySet()) {
+            if (entry.getKey().startsWith(ACCESS_LOG_MDC_PREFIX)) {
+                if (!started) {
+                    generator.startObject("accessLog");
+                    started = true;
+                }
+                final String fieldName = entry.getKey().substring(ACCESS_LOG_MDC_PREFIX.length());
+                final String value = entry.getValue();
+                if (value != null) {
+                    if (isNumericAccessField(fieldName)) {
+                        try {
+                            generator.add(fieldName, Long.parseLong(value));
+                            continue;
+                        } catch (NumberFormatException ignored) {
+                        }
+                    }
+                    generator.add(fieldName, value);
+                }
+            }
+        }
+        if (started) {
+            generator.endObject();
+        }
+    }
+
+    /**
+     * Writes the access-log fields as top-level ECS fields rather than as the nested {@code accessLog} object, so
+     * that they line up with the rest of the record in ECS mode.
+     */
+    private void writeEcsAccessLogFields(final Generator generator, final ExtLogRecord record) throws Exception {
+        final Map<String, String> mdc = record.getMdcCopy();
+        if (mdc == null || mdc.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, String> entry : mdc.entrySet()) {
+            if (!entry.getKey().startsWith(ACCESS_LOG_MDC_PREFIX)) {
+                continue;
+            }
+            final String fieldName = entry.getKey().substring(ACCESS_LOG_MDC_PREFIX.length());
+            final String value = entry.getValue();
+            if (value == null || value.isEmpty()) {
+                continue;
+            }
+            switch (fieldName) {
+                case "method" -> generator.add("http.request.method", value);
+                case "uri" -> addUrl(generator, value);
+                case "status" -> addLong(generator, "http.response.status_code", value);
+                case "responseTimeMs" -> addEventDuration(generator, value);
+                case "bytesSent" -> addLong(generator, "http.response.body.bytes", value);
+                case "remoteIp" -> generator.add("client.ip", value);
+                case "protocol" -> generator.add("http.version", stripProtocolName(value));
+                default -> generator.add(fieldName, value);
+            }
+        }
+    }
+
+    private static void addUrl(final Generator generator, final String uri) throws Exception {
+        final int queryStart = uri.indexOf('?');
+        if (queryStart < 0) {
+            generator.add("url.path", uri);
+            return;
+        }
+        generator.add("url.path", uri.substring(0, queryStart));
+        if (queryStart < uri.length() - 1) {
+            generator.add("url.query", uri.substring(queryStart + 1));
+        }
+    }
+
+    private static void addLong(final Generator generator, final String key, final String value) throws Exception {
+        try {
+            generator.add(key, Long.parseLong(value));
+        } catch (NumberFormatException ignored) {
+            generator.add(key, value);
+        }
+    }
+
+    private static void addEventDuration(final Generator generator, final String responseTimeMs) throws Exception {
+        try {
+            // ECS defines event.duration in nanoseconds
+            generator.add("event.duration", Long.parseLong(responseTimeMs) * 1_000_000L);
+        } catch (NumberFormatException ignored) {
+            generator.add("event.duration", responseTimeMs);
+        }
+    }
+
+    /**
+     * ECS expects {@code http.version} to hold the version alone, while the access log reports it as HTTP/1.1.
+     */
+    private static String stripProtocolName(final String protocol) {
+        final int slash = protocol.indexOf('/');
+        return slash < 0 ? protocol : protocol.substring(slash + 1);
+    }
+
+    private static boolean isNumericAccessField(final String fieldName) {
+        return "status".equals(fieldName) || "responseTimeMs".equals(fieldName) || "bytesSent".equals(fieldName);
+    }
+
+    private List<JsonProvider> getJsonProviders() {
+        if (jsonProviders != null) {
+            return jsonProviders;
+        }
+        List<JsonProvider> result = new ArrayList<>(discoveredProviders);
+        try {
+            CDI.current().select(JsonProvider.class).forEach(result::add);
+            jsonProviders = Collections.unmodifiableList(result);
+        } catch (Throwable ignored) {
+            LOG.debug("CDI not available, JsonProvider CDI beans will not be loaded");
+        }
+        return result;
+    }
+
+    private void addToGenerator(Map<String, AdditionalField> fields, Generator generator) throws Exception {
+        for (var entry : fields.entrySet()) {
+            switch (entry.getValue().type()) {
+                case STRING:
+                    generator.add(entry.getKey(), entry.getValue().value());
+                    break;
+                case INT:
+                    generator.add(entry.getKey(), Integer.valueOf(entry.getValue().value()));
+                    break;
+                case LONG:
+                    generator.add(entry.getKey(), Long.valueOf(entry.getValue().value()));
+                    break;
+            }
+        }
+    }
+
+    /**
+     * A JSON generator for use with {@link JsonProvider}.
+     * Writes JSON fields for the current log record, respecting any keys configured via
+     * {@code quarkus.log.*.json.excluded-keys}.
+     */
+    public static final class JsonLogGenerator {
+
+        private final Generator delegate;
+        private final Set<String> excludedKeys;
+        private int skippedDepth = 0;
+
+        JsonLogGenerator(final Generator delegate, final Set<String> excludedKeys) {
+            this.delegate = delegate;
+            this.excludedKeys = excludedKeys;
+        }
+
+        private boolean isExcluded(final String key) {
+            return key != null && excludedKeys.contains(key);
+        }
+
+        public JsonLogGenerator add(final String key, final boolean value) throws Exception {
+            if (skippedDepth == 0 && !isExcluded(key)) {
+                delegate.add(key, String.valueOf(value));
+            }
+            return this;
+        }
+
+        public JsonLogGenerator add(final String key, final int value) throws Exception {
+            if (skippedDepth == 0 && !isExcluded(key)) {
+                delegate.add(key, value);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator add(final String key, final long value) throws Exception {
+            if (skippedDepth == 0 && !isExcluded(key)) {
+                delegate.add(key, value);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator add(final String key, final Map<String, ?> value) throws Exception {
+            if (skippedDepth == 0 && !isExcluded(key)) {
+                delegate.add(key, value);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator add(final String key, final String value) throws Exception {
+            if (skippedDepth == 0 && !isExcluded(key)) {
+                delegate.add(key, value);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator startObject(final String key) throws Exception {
+            if (skippedDepth > 0 || isExcluded(key)) {
+                skippedDepth++;
+            } else {
+                delegate.startObject(key);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator endObject() throws Exception {
+            if (skippedDepth > 0) {
+                skippedDepth--;
+            } else {
+                delegate.endObject();
+            }
+            return this;
+        }
+
+        public JsonLogGenerator startArray(final String key) throws Exception {
+            if (skippedDepth > 0 || isExcluded(key)) {
+                skippedDepth++;
+            } else {
+                delegate.startArray(key);
+            }
+            return this;
+        }
+
+        public JsonLogGenerator endArray() throws Exception {
+            if (skippedDepth > 0) {
+                skippedDepth--;
+            } else {
+                delegate.endArray();
+            }
+            return this;
+        }
+    }
+
+    private static final class FormatterJsonGenerator implements Generator {
+
+        private final Generator delegate;
+        private final Set<String> excludedKeys;
+        /**
+         * When non-null, values written under this key will have a leading {@code ": "} stripped.
+         * jboss's {@code StackTraceFormatter.renderStackTrace} unconditionally prepends {@code ": "}
+         * before the exception class name. ECS requires a clean stack trace string.
+         */
+        private final String stackTraceKeyToTrim;
+        /**
+         * When non-null, values written under this key will be reduced to their basename.
+         * jboss-logmanager records the full JVM path as the process name
+         * (e.g. {@code /usr/lib/jvm/java-25-openjdk-amd64/bin/java}). ECS requires only
+         * the short process name (e.g. {@code java}).
+         */
+        private final String processNameKey;
+        private final boolean flatMdc;
+        private final boolean structuredAccessLog;
+        private int skippedDepth = 0;
+
+        private FormatterJsonGenerator(final Generator delegate, final Set<String> excludedKeys,
+                final String stackTraceKeyToTrim, final String processNameKey, final boolean flatMdc,
+                final boolean structuredAccessLog) {
+            this.delegate = delegate;
+            this.excludedKeys = excludedKeys;
+            this.stackTraceKeyToTrim = stackTraceKeyToTrim;
+            this.processNameKey = processNameKey;
+            this.flatMdc = flatMdc;
+            this.structuredAccessLog = structuredAccessLog;
+        }
+
+        private boolean isExcluded(final String key) {
+            return key != null && excludedKeys.contains(key);
+        }
+
+        @Override
+        public Generator begin() throws Exception {
+            delegate.begin();
+            return this;
+        }
+
+        @Override
+        public Generator add(final String key, final int value) throws Exception {
+            if (skippedDepth == 0 && !isExcluded(key)) {
+                delegate.add(key, value);
+            }
+            return this;
+        }
+
+        @Override
+        public Generator add(final String key, final long value) throws Exception {
+            if (skippedDepth == 0 && !isExcluded(key)) {
+                delegate.add(key, value);
+            }
+            return this;
+        }
+
+        @Override
+        public Generator add(final String key, final Map<String, ?> value) throws Exception {
+            if (skippedDepth == 0 && !isExcluded(key)) {
+                if (flatMdc && value != null && !value.isEmpty()) {
+                    for (Map.Entry<String, ?> entry : value.entrySet()) {
+                        // When structured-access-log is enabled, the __access__-prefixed MDC entries
+                        // are written as the nested "accessLog" object in JsonFormatter.after();
+                        // skip them here to avoid duplication.
+                        if (structuredAccessLog && entry.getKey().startsWith(ACCESS_LOG_MDC_PREFIX)) {
+                            continue;
+                        }
+                        Object v = entry.getValue();
+                        if (v != null) {
+                            delegate.add(entry.getKey(), v.toString());
+                        }
+                    }
+                } else if (!flatMdc) {
+                    if (structuredAccessLog && value != null && !value.isEmpty()) {
+                        // Filter out __access__ keys from the nested "mdc" object as well.
+                        Map<String, Object> filtered = new java.util.LinkedHashMap<>();
+                        for (Map.Entry<String, ?> entry : value.entrySet()) {
+                            if (!entry.getKey().startsWith(ACCESS_LOG_MDC_PREFIX)) {
+                                filtered.put(entry.getKey(), entry.getValue());
+                            }
+                        }
+                        if (!filtered.isEmpty()) {
+                            delegate.add(key, filtered);
+                        }
+                    } else {
+                        delegate.add(key, value);
+                    }
+                }
+            }
+            return this;
+        }
+
+        @Override
+        public Generator add(final String key, final String value) throws Exception {
+            if (skippedDepth == 0 && !isExcluded(key)) {
+                String actual = value;
+                // Strip the leading ": " that jboss's StackTraceFormatter prepends to the rendered
+                // stack trace string. Only applied to the specific key configured for this purpose.
+                if (stackTraceKeyToTrim != null && stackTraceKeyToTrim.equals(key)
+                        && value != null && value.startsWith(": ")) {
+                    actual = value.substring(2);
+                    // Extract the basename from a full path for the process name.
+                    // ECS process.name must be the short executable name, not a full filesystem path.
+                } else if (processNameKey != null && processNameKey.equals(key)
+                        && value != null && value.contains("/")) {
+                    actual = value.substring(value.lastIndexOf('/') + 1);
+                }
+                delegate.add(key, actual);
+            }
+            return this;
+        }
+
+        @Override
+        public Generator startObject(final String key) throws Exception {
+            if (skippedDepth > 0 || isExcluded(key)) {
+                skippedDepth++;
+            } else {
+                delegate.startObject(key);
+            }
+            return this;
+        }
+
+        @Override
+        public Generator endObject() throws Exception {
+            if (skippedDepth > 0) {
+                skippedDepth--;
+            } else {
+                delegate.endObject();
+            }
+            return this;
+        }
+
+        @Override
+        public Generator startArray(final String key) throws Exception {
+            if (skippedDepth > 0 || isExcluded(key)) {
+                skippedDepth++;
+            } else {
+                delegate.startArray(key);
+            }
+            return this;
+        }
+
+        @Override
+        public Generator endArray() throws Exception {
+            if (skippedDepth > 0) {
+                skippedDepth--;
+            } else {
+                delegate.endArray();
+            }
+            return this;
+        }
+
+        @Override
+        public Generator end() throws Exception {
+            delegate.end();
+            return this;
+        }
+    }
+}

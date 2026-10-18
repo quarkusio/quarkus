@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+import "empty.proto";
+import "messages.proto";
+
+package grpc.testing;
+
+option java_package = "io.grpc.testing.integration";
+
+service TestService {
+  // One empty request followed by one empty response.
+  rpc EmptyCall(grpc.testing.Empty) returns (grpc.testing.Empty);
+
+  // One request followed by one response.
+  rpc UnaryCall(SimpleRequest) returns (SimpleResponse);
+
+  // One request followed by a sequence of responses (streamed download).
+  // The server returns the payload with client desired type and sizes.
+  rpc StreamingOutputCall(StreamingOutputCallRequest)
+  returns (stream StreamingOutputCallResponse);
+}
+

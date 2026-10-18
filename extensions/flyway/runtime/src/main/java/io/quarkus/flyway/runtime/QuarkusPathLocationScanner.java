@@ -1,0 +1,149 @@
+package io.quarkus.flyway.runtime;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+
+import org.flywaydb.core.api.CoreLocationPrefix;
+import org.flywaydb.core.api.Location;
+import org.flywaydb.core.api.callback.Callback;
+import org.flywaydb.core.api.configuration.Configuration;
+import org.flywaydb.core.api.locations.LocationParser;
+import org.flywaydb.core.api.migration.JavaMigration;
+import org.flywaydb.core.api.resource.LoadableResource;
+import org.flywaydb.core.internal.resource.classpath.ClassPathResource;
+import org.flywaydb.core.internal.scanner.classpath.ResourceAndClassScanner;
+import org.flywaydb.core.internal.scanner.filesystem.FileSystemScanner;
+import org.jboss.logging.Logger;
+
+/**
+ * This class is used in order to prevent Flyway from doing classpath scanning which is both slow
+ * and won't work in native mode
+ */
+@SuppressWarnings("rawtypes")
+public final class QuarkusPathLocationScanner implements ResourceAndClassScanner {
+    private static final Logger LOGGER = Logger.getLogger(QuarkusPathLocationScanner.class);
+    private static final String LOCATION_SEPARATOR = "/";
+    private static Collection<String> applicationMigrationFiles = Collections.emptyList(); // the set default to aid unit tests
+    private static Collection<Class<? extends JavaMigration>> applicationMigrationClasses = Collections.emptyList(); // the set default to aid unit tests
+    private static Map<String, Collection<Callback>> applicationCallbackClasses = Collections.emptyMap(); // the set default to aid unit tests
+
+    private final Collection<LoadableResource> scannedResources;
+    private final Collection<Class<? extends JavaMigration>> scannedMigrationClasses;
+
+    public QuarkusPathLocationScanner(Configuration configuration, Collection<Location> locations) {
+        LOGGER.debugv("Locations: {0}", locations);
+
+        this.scannedResources = new ArrayList<>();
+        this.scannedMigrationClasses = new ArrayList<>();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+
+        FileSystemScanner fileSystemScanner = null;
+        for (String migrationFile : applicationMigrationFiles) {
+            if (migrationFile.startsWith(CoreLocationPrefix.FILESYSTEM_PREFIX)) {
+                Location migrationLocation = LocationParser.parseLocation(migrationFile);
+                if (isFileSystemLocation(locations, migrationLocation)) {
+                    if (fileSystemScanner == null) {
+                        fileSystemScanner = new FileSystemScanner(configuration);
+                    }
+                    LOGGER.debugf("Checking %s for migration files", migrationFile);
+                    Collection<LoadableResource> resources = fileSystemScanner
+                            .scanForResources(migrationLocation);
+                    LOGGER.debugf("%s contains %d migration files", migrationFile, resources.size());
+                    scannedResources.addAll(resources);
+                } else {
+                    LOGGER.warnf("Migration location '%s' will be ignored because it is not in the configured locations",
+                            migrationFile);
+                }
+            } else if (isClassPathResource(locations, migrationFile)) {
+                LOGGER.debugf("Loading %s", migrationFile);
+
+                scannedResources.add(new ClassPathResource(null, migrationFile, classLoader, StandardCharsets.UTF_8));
+            }
+        }
+
+        // Filter the provided migration classes to match the provided locations.
+        for (Class<? extends JavaMigration> migrationClass : applicationMigrationClasses) {
+            if (isClassPathResource(locations, migrationClass.getCanonicalName().replace('.', '/'))) {
+                LOGGER.debugf("Loading migration class %s", migrationClass.getCanonicalName());
+                scannedMigrationClasses.add(migrationClass);
+            }
+        }
+    }
+
+    public static void setApplicationCallbackClasses(Map<String, Collection<Callback>> callbackClasses) {
+        QuarkusPathLocationScanner.applicationCallbackClasses = callbackClasses;
+    }
+
+    public static Collection<Callback> callbacksForDataSource(String dsName) {
+        return applicationCallbackClasses.getOrDefault(dsName, Collections.emptyList());
+    }
+
+    /**
+     *
+     * @return The resources that were found.
+     */
+    @Override
+    public Collection<LoadableResource> scanForResources() {
+        return scannedResources;
+    }
+
+    private boolean isClassPathResource(Collection<Location> locations, String migrationFile) {
+        for (Location location : locations) {
+            String locationPath = location.getPath();
+            if (!locationPath.endsWith(LOCATION_SEPARATOR)) {
+                locationPath += LOCATION_SEPARATOR;
+            }
+
+            if (migrationFile.startsWith(locationPath)) {
+                return true;
+            } else {
+                LOGGER.debugf("Migration file '%s' will be ignored because it does not start with '%s'", migrationFile,
+                        locationPath);
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isFileSystemLocation(Collection<Location> locations, Location migrationLocation) {
+        String migrationPath = migrationLocation.getPath();
+        if (!migrationPath.endsWith(LOCATION_SEPARATOR)) {
+            migrationPath += LOCATION_SEPARATOR;
+        }
+
+        for (Location location : locations) {
+            String locationPath = location.getPath();
+            if (!locationPath.endsWith(LOCATION_SEPARATOR)) {
+                locationPath += LOCATION_SEPARATOR;
+            }
+
+            if (migrationPath.equals(locationPath)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Scans the classpath for concrete classes under the specified package implementing this interface.
+     * Non-instantiable abstract classes are filtered out.
+     *
+     * @return The non-abstract classes that were found.
+     */
+    @Override
+    public Collection<Class<? extends JavaMigration>> scanForClasses() {
+        return scannedMigrationClasses;
+    }
+
+    public static void setApplicationMigrationFiles(Collection<String> applicationMigrationFiles) {
+        QuarkusPathLocationScanner.applicationMigrationFiles = applicationMigrationFiles;
+    }
+
+    public static void setApplicationMigrationClasses(Collection<Class<? extends JavaMigration>> applicationMigrationClasses) {
+        QuarkusPathLocationScanner.applicationMigrationClasses = applicationMigrationClasses;
+    }
+}

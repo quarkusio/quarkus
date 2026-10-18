@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+    id 'java-library'
+}
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    annotationProcessor "io.quarkus:quarkus-extension-processor:${quarkusPlatformVersion}"
+
+
+    api project(':example-extension')
+    implementation 'io.quarkus:quarkus-arc-deployment'
+}
+

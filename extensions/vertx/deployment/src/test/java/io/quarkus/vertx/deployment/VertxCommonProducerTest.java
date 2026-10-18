@@ -1,0 +1,51 @@
+package io.quarkus.vertx.deployment;
+
+import java.io.File;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusExtensionTest;
+import io.vertx.core.Vertx;
+
+public class VertxCommonProducerTest {
+
+    @RegisterExtension
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addAsResource(new File("src/test/resources/lorem.txt"), "files/lorem.txt")
+                    .addClasses(BeanUsingBareVertx.class));
+
+    @Inject
+    BeanUsingBareVertx beanUsingVertx;
+
+    @Test
+    public void testVertxInjection() throws Exception {
+        beanUsingVertx.verify();
+    }
+
+    @ApplicationScoped
+    static class BeanUsingBareVertx {
+
+        @Inject
+        Vertx vertx;
+
+        public void verify() throws Exception {
+            CountDownLatch latch = new CountDownLatch(1);
+            vertx.fileSystem().readFile("files/lorem.txt").onComplete(ar -> {
+                if (ar.failed()) {
+                    ar.cause().printStackTrace();
+                } else {
+                    latch.countDown();
+                }
+            });
+            latch.await(5, TimeUnit.SECONDS);
+        }
+
+    }
+}

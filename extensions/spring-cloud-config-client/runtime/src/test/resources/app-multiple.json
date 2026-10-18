@@ -1,0 +1,38 @@
+{
+  "name": "app",
+  "profiles": [
+    "one,two,three"
+  ],
+  "propertySources": [
+    {
+      "name": "app-three.yml",
+      "source": {
+        "three": "three"
+      }
+    },
+    {
+      "name": "app-two.yml",
+      "source": {
+        "two": "two",
+        "three": "two"
+      }
+    },
+    {
+      "name": "app-one.yml",
+      "source": {
+        "one": "one",
+        "two": "one",
+        "three": "one"
+      }
+    },
+    {
+      "name": "app.yml",
+      "source": {
+        "none": "none",
+        "one": "none",
+        "two": "none",
+        "three": "none"
+      }
+    }
+  ]
+}

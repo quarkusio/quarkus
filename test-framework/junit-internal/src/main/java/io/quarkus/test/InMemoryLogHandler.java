@@ -1,0 +1,56 @@
+package io.quarkus.test;
+
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+
+import org.jboss.logmanager.ExtHandler;
+import org.jboss.logmanager.ExtLogRecord;
+
+import io.smallrye.common.constraint.Assert;
+
+public class InMemoryLogHandler extends ExtHandler {
+
+    private final Predicate<LogRecord> predicate;
+
+    public InMemoryLogHandler(Predicate<LogRecord> predicate) {
+        this.predicate = Assert.checkNotNullParam("predicate", predicate);
+    }
+
+    final List<LogRecord> records = new CopyOnWriteArrayList<>();
+
+    @Override
+    public void publish(LogRecord record) {
+        if (predicate.test(record)) {
+            if (record instanceof ExtLogRecord extLogRecord) {
+                // the records are inspected from the test thread, whose MDC is not the one of the logging thread
+                extLogRecord.copyMdc();
+            }
+            records.add(record);
+        }
+    }
+
+    @Override
+    public void flush() {
+    }
+
+    @Override
+    public Level getLevel() {
+        return Level.FINE;
+    }
+
+    @Override
+    public void close() throws SecurityException {
+        this.records.clear();
+    }
+
+    public List<LogRecord> getRecords() {
+        return records;
+    }
+
+    void clearRecords() {
+        this.records.clear();
+    }
+}

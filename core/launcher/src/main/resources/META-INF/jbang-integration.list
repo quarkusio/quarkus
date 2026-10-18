@@ -1,0 +1,3 @@
+#This integration allows JBang to run Quarkus
+
+io.quarkus.launcher.JBangIntegration #the integration class

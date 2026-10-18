@@ -1,0 +1,154 @@
+package io.quarkus.vertx.http.runtime;
+
+import java.time.Duration;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
+
+import io.quarkus.runtime.configuration.MemorySize;
+import io.smallrye.config.WithDefault;
+
+public interface ServerLimitsConfig {
+    /**
+     * The maximum length of all headers, up to {@code Integer.MAX_VALUE} bytes.
+     */
+    @WithDefault("20K")
+    MemorySize maxHeaderSize();
+
+    /**
+     * The maximum size of a request body, up to {@code Long.MAX_VALUE} bytes.
+     */
+    @WithDefault("10240K")
+    Optional<MemorySize> maxBodySize();
+
+    /**
+     * The max HTTP chunk size, up to {@code Integer.MAX_VALUE} bytes.
+     */
+    @WithDefault("8192")
+    MemorySize maxChunkSize();
+
+    /**
+     * The maximum length of the initial line (e.g. {@code "GET / HTTP/1.0"}).
+     */
+    @WithDefault("4096")
+    int maxInitialLineLength();
+
+    /**
+     * The maximum length of a form attribute, up to {@code Integer.MAX_VALUE} bytes.
+     */
+    @WithDefault("2048")
+    MemorySize maxFormAttributeSize();
+
+    /**
+     * Set the maximum number of fields of a form. Set to {@code -1} to allow unlimited number of attributes.
+     */
+    @WithDefault("256")
+    int maxFormFields();
+
+    /**
+     * Set the maximum number of bytes a server can buffer when decoding a form.
+     * Set to {@code -1} to allow unlimited length, up to {@code Integer.MAX_VALUE} bytes.
+     **/
+    @WithDefault("1K")
+    MemorySize maxFormBufferedBytes();
+
+    /**
+     * The maximum number of HTTP request parameters permitted for incoming requests.
+     * <p>
+     * If a client sends more than this number of parameters in a request, the connection is closed.
+     */
+    @WithDefault("1000")
+    int maxParameters();
+
+    /**
+     * The maximum number of query parameters decoded from the request URI.
+     * <p>
+     * Query parameters beyond this limit are ignored.
+     */
+    @WithDefault("1024")
+    int maxQueryParameters();
+
+    /**
+     * The maximum size of the headers section within a single MIME part of a {@code multipart/form-data} request.
+     * This limits the combined size of all header names and values for each individual part (e.g., the
+     * Content-Disposition and Content-Type headers), not the HTTP request headers.
+     * <p>
+     * If a part's headers exceed this limit, the request is rejected with HTTP 413.
+     */
+    @WithDefault("32K")
+    MemorySize maxMultipartPartHeaderSize();
+
+    /**
+     * The maximum number of headers allowed within a single MIME part of a {@code multipart/form-data} request.
+     * <p>
+     * If a part contains more headers than this limit, the request is rejected with HTTP 413.
+     */
+    @WithDefault("40")
+    int maxMultipartHeaderCount();
+
+    /**
+     * The maximum size of a single file part of a {@code multipart/form-data} request. Text attributes are bounded
+     * by {@code max-form-attribute-size} instead, and the whole request by {@code max-body-size}.
+     * <p>
+     * If a file part exceeds this limit, the request is rejected with HTTP 413. By default, file parts are only
+     * bounded by {@code max-body-size}.
+     */
+    Optional<MemorySize> maxMultipartFileSize();
+
+    /**
+     * The maximum number of connections that are allowed at any one time. If this is set
+     * it is recommended to set a short idle timeout.
+     */
+    OptionalInt maxConnections();
+
+    /**
+     * Set the SETTINGS_HEADER_TABLE_SIZE HTTP/2 setting.
+     * <p>
+     * Allows the sender to inform the remote endpoint of the maximum size of the header compression table used to decode
+     * header blocks, in octets. The encoder can select any size equal to or less than this value by using signaling
+     * specific to the header compression format inside a header block.
+     * The initial value is {@code 4,096} octets.
+     */
+    OptionalLong headerTableSize();
+
+    /**
+     * Set the SETTINGS_MAX_CONCURRENT_STREAMS HTTP/2 setting.
+     * <p>
+     * Indicates the maximum number of concurrent streams that the sender will allow. This limit is directional: it
+     * applies to the number of streams that the sender permits the receiver to create.
+     * Per <a href="https://www.rfc-editor.org/rfc/rfc9113#section-6.5.2">RFC 9113, Section 6.5.2</a>,
+     * it is recommended that this value be no smaller than 100, so as to not unnecessarily limit parallelism.
+     */
+    @WithDefault("128")
+    long maxConcurrentStreams();
+
+    /**
+     * Set the SETTINGS_MAX_FRAME_SIZE HTTP/2 setting.
+     * Indicates the size of the largest frame payload that the sender is willing to receive, in octets.
+     * The initial value is {@code 2^14} (16,384) octets.
+     */
+    OptionalInt maxFrameSize();
+
+    /**
+     * Set the SETTINGS_MAX_HEADER_LIST_SIZE HTTP/2 setting.
+     * This advisory setting informs a peer of the maximum size of header list that the sender is prepared to accept,
+     * in octets. The value is based on the uncompressed size of header fields, including the length of the name and
+     * value in octets plus an overhead of 32 octets for each header field.
+     * The default value is {@code 8192}
+     */
+    OptionalLong maxHeaderListSize();
+
+    /**
+     * Set the max number of RST frame allowed per time window, this is used to prevent
+     * <a href="https://github.com/netty/netty/security/advisories/GHSA-xpw8-rcwv-8f8p">HTTP/2 RST frame flood DDOS
+     * attacks</a>. The default value is {@code 200}, setting zero or a negative value, disables flood protection.
+     */
+    OptionalInt rstFloodMaxRstFramePerWindow();
+
+    /**
+     * Set the duration of the time window when checking the max number of RST frames, this is used to prevent
+     * <a href="https://github.com/netty/netty/security/advisories/GHSA-xpw8-rcwv-8f8p">HTTP/2 RST frame flood DDOS
+     * attacks</a>.. The default value is {@code 30 s}, setting zero or a negative value, disables flood protection.
+     */
+    Optional<Duration> rstFloodWindowDuration();
+}

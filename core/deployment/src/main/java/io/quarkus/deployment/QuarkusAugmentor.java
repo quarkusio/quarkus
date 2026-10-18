@@ -1,0 +1,429 @@
+package io.quarkus.deployment;
+
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.app.DependencyInfoProvider;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.builder.BuildChain;
+import io.quarkus.builder.BuildChainBuilder;
+import io.quarkus.builder.BuildExecutionBuilder;
+import io.quarkus.builder.BuildMetrics;
+import io.quarkus.builder.BuildResult;
+import io.quarkus.builder.item.BuildItem;
+import io.quarkus.core.deployment.service.impl.ServiceMetadataBuildItem;
+import io.quarkus.core.deployment.service.impl.StaticServiceMetadataBuildItem;
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
+import io.quarkus.deployment.builditem.AppModelProviderBuildItem;
+import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationContextBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
+import io.quarkus.deployment.builditem.RawCommandLineArgumentsBuildItem;
+import io.quarkus.deployment.builditem.RuntimeApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.deployment.logging.StaticInitLoggingSetupBuildItem;
+import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
+import io.quarkus.deployment.steps.ServiceDependencyValidator;
+import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.paths.PathCollection;
+import io.quarkus.runtime.JVMUnsafeWarningsControl;
+import io.quarkus.runtime.LaunchMode;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
+
+public class QuarkusAugmentor {
+
+    private static final Logger log = Logger.getLogger(QuarkusAugmentor.class);
+
+    private final ClassLoader classLoader;
+    private final ClassLoader deploymentClassLoader;
+    private final PathCollection root;
+    private final Set<Class<? extends BuildItem>> finalResults;
+    private final List<Consumer<BuildChainBuilder>> buildChainCustomizers;
+    private final List<Consumer<BuildExecutionBuilder>> buildExecutionCustomizers;
+    private final LaunchMode launchMode;
+    private final DevModeType devModeType;
+    private final List<PathCollection> additionalApplicationArchives;
+    private final Collection<Path> excludedFromIndexing;
+    private final LiveReloadBuildItem liveReloadBuildItem;
+    private final Map<Class<?>, Object> curatedApplicationContext;
+    private final Properties buildSystemProperties;
+    private final Properties runtimeProperties;
+    private final Path targetDir;
+    private final ApplicationModel effectiveModel;
+    private final Supplier<DependencyInfoProvider> depInfoProvider;
+    private final String baseName;
+    private final String originalBaseName;
+    private final boolean rebuild;
+    private final boolean auxiliaryApplication;
+    private final Optional<DevModeType> auxiliaryDevModeType;
+    private final boolean test;
+
+    QuarkusAugmentor(Builder builder) {
+        this.classLoader = builder.classLoader;
+        this.root = builder.root;
+        this.finalResults = new LinkedHashSet<>(builder.finalResults);
+        this.buildChainCustomizers = new ArrayList<>(builder.buildChainCustomizers);
+        this.buildExecutionCustomizers = new ArrayList<>(builder.buildExecutionCustomizers);
+        this.launchMode = builder.launchMode;
+        this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
+        this.excludedFromIndexing = builder.excludedFromIndexing;
+        this.liveReloadBuildItem = builder.liveReloadState;
+        this.curatedApplicationContext = builder.curatedApplicationContext;
+        this.buildSystemProperties = builder.buildSystemProperties != null ? builder.buildSystemProperties : new Properties();
+        this.runtimeProperties = builder.runtimeProperties != null ? builder.runtimeProperties : new Properties();
+        this.targetDir = builder.targetDir;
+        this.effectiveModel = builder.effectiveModel;
+        this.baseName = builder.baseName;
+        this.originalBaseName = builder.originalBaseName;
+        this.deploymentClassLoader = builder.deploymentClassLoader;
+        this.rebuild = builder.rebuild;
+        this.devModeType = builder.devModeType;
+        this.auxiliaryApplication = builder.auxiliaryApplication;
+        this.auxiliaryDevModeType = Optional.ofNullable(builder.auxiliaryDevModeType);
+        this.test = builder.test;
+        this.depInfoProvider = builder.depInfoProvider;
+        if (this.baseName != null) {
+            this.buildSystemProperties.put("quarkus.build.base-name", baseName);
+        }
+    }
+
+    public BuildResult run() throws Exception {
+        if (!(Runtime.version().feature() >= 21)) {
+            throw new IllegalStateException("Quarkus applications require Java 21 or higher to build");
+        }
+        long start = System.nanoTime();
+        log.debug("Beginning Quarkus augmentation");
+        runtimeInitializeForAugmentation();
+        ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
+        try (QuarkusBuildCloseablesBuildItem buildCloseables = new QuarkusBuildCloseablesBuildItem()) {
+            Thread.currentThread().setContextClassLoader(deploymentClassLoader);
+
+            BuildChainBuilder chainBuilder = BuildChain.builder();
+            chainBuilder.setClassLoader(deploymentClassLoader);
+
+            ExtensionLoader.loadStepsFrom(deploymentClassLoader, buildSystemProperties, runtimeProperties, effectiveModel,
+                    launchMode, devModeType).accept(chainBuilder);
+
+            Thread.currentThread().setContextClassLoader(classLoader);
+            chainBuilder.loadProviders(classLoader);
+
+            chainBuilder.addPriorityItem(LoggingSetupBuildItem.class);
+            chainBuilder.addPriorityItem(StaticInitLoggingSetupBuildItem.class);
+
+            chainBuilder
+                    .addInitial(QuarkusBuildCloseablesBuildItem.class)
+                    .addInitial(ArchiveRootBuildItem.class)
+                    .addInitial(ShutdownContextBuildItem.class)
+                    .addInitial(RawCommandLineArgumentsBuildItem.class)
+                    .addInitial(LaunchModeBuildItem.class)
+                    .addInitial(LiveReloadBuildItem.class)
+                    .addInitial(AdditionalApplicationArchiveBuildItem.class)
+                    .addInitial(CuratedApplicationContextBuildItem.class)
+                    .addInitial(CuratedApplicationShutdownBuildItem.class)
+                    .addInitial(BuildSystemTargetBuildItem.class)
+                    .addInitial(AppModelProviderBuildItem.class);
+            for (Class<? extends BuildItem> i : finalResults) {
+                chainBuilder.addFinal(i);
+            }
+            chainBuilder.addFinal(ServiceMetadataBuildItem.class);
+            chainBuilder.addFinal(StaticServiceMetadataBuildItem.class);
+            for (Consumer<BuildChainBuilder> i : buildChainCustomizers) {
+                i.accept(chainBuilder);
+            }
+            if (launchMode.isDevOrTest()) {
+                chainBuilder.addFinal(RuntimeApplicationShutdownBuildItem.class);
+            }
+            if (System.getProperty(BuildMetrics.BUILDER_METRICS_ENABLED) == null
+                    && launchMode.isDev()
+                    && !launchMode.isRemoteDev()) {
+                // If quarkus.builder.metrics.enabled is not set then
+                // collect build metrics in dev mode but not in remote-dev
+                // (as it could cause issues with container permissions)
+                System.setProperty("quarkus.builder.metrics.enabled", "true");
+            }
+
+            final ArchiveRootBuildItem.Builder rootBuilder = ArchiveRootBuildItem.builder();
+            if (root != null) {
+                rootBuilder.addArchiveRoots(root);
+            }
+            rootBuilder.setExcludedFromIndexing(excludedFromIndexing);
+
+            BuildChain chain = chainBuilder.build();
+            BuildExecutionBuilder execBuilder = chain.createExecutionBuilder(baseName)
+                    .produce(buildCloseables)
+                    .produce(liveReloadBuildItem)
+                    .produce(rootBuilder.build(buildCloseables))
+                    .produce(new ShutdownContextBuildItem())
+                    .produce(new RawCommandLineArgumentsBuildItem())
+                    .produce(new CuratedApplicationContextBuildItem(curatedApplicationContext))
+                    .produce(new CuratedApplicationShutdownBuildItem((QuarkusClassLoader) deploymentClassLoader.getParent(),
+                            !liveReloadBuildItem.isLiveReload()))
+                    .produce(new LaunchModeBuildItem(launchMode,
+                            devModeType == null ? Optional.empty() : Optional.of(devModeType), auxiliaryApplication,
+                            auxiliaryDevModeType, test))
+                    .produce(new BuildSystemTargetBuildItem(targetDir, baseName, originalBaseName, rebuild,
+                            buildSystemProperties == null ? new Properties() : buildSystemProperties))
+                    .produce(new AppModelProviderBuildItem(effectiveModel, depInfoProvider));
+            for (PathCollection i : additionalApplicationArchives) {
+                execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));
+            }
+            for (Consumer<BuildExecutionBuilder> customizer : buildExecutionCustomizers) {
+                customizer.accept(execBuilder);
+            }
+
+            BuildResult buildResult = execBuilder.execute();
+
+            // validate service dependency graphs after all build steps have completed
+            ServiceDependencyValidator.validate(
+                    buildResult.consumeMulti(StaticServiceMetadataBuildItem.class),
+                    buildResult.consumeMulti(ServiceMetadataBuildItem.class));
+
+            String message = "Quarkus augmentation completed in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start)
+                    + "ms";
+            if (launchMode.isProduction()) {
+                log.info(message);
+            } else {
+                //test and dev mode already report the total startup time, no need to add noise to the logs
+                log.debug(message);
+            }
+
+            // If enabled then dump build metrics to a JSON file in the build directory
+            if (targetDir != null) {
+                buildResult.getMetrics().dumpTo(targetDir.resolve("build-metrics.json"));
+            }
+
+            return buildResult;
+        } finally {
+            try {
+                ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance())
+                        .releaseConfig(deploymentClassLoader);
+            } catch (Exception ignore) {
+
+            }
+            Thread.currentThread().setContextClassLoader(originalClassLoader);
+        }
+    }
+
+    /**
+     * Not strictly related to Augmentation, but we want these annoying warnings
+     * disabled before any augmentation process begins.
+     */
+    private void runtimeInitializeForAugmentation() {
+        JVMUnsafeWarningsControl.disableUnsafeRelatedWarnings();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static final class Builder {
+
+        private static final String QUARKUS_APPLICATION = "quarkus-application";
+
+        public DevModeType auxiliaryDevModeType;
+        boolean rebuild;
+        List<PathCollection> additionalApplicationArchives = new ArrayList<>();
+        Collection<Path> excludedFromIndexing = Collections.emptySet();
+        ClassLoader classLoader;
+        PathCollection root;
+        Path targetDir;
+        Set<Class<? extends BuildItem>> finalResults = new LinkedHashSet<>();
+        private final List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
+        private final List<Consumer<BuildExecutionBuilder>> buildExecutionCustomizers = new ArrayList<>();
+        LaunchMode launchMode = LaunchMode.NORMAL;
+        LiveReloadBuildItem liveReloadState = new LiveReloadBuildItem();
+        Map<Class<?>, Object> curatedApplicationContext;
+        Properties buildSystemProperties;
+        Properties runtimeProperties;
+
+        ApplicationModel effectiveModel;
+        String baseName = QUARKUS_APPLICATION;
+        String originalBaseName = QUARKUS_APPLICATION;
+        ClassLoader deploymentClassLoader;
+        DevModeType devModeType;
+        boolean test;
+        boolean auxiliaryApplication;
+        private Supplier<DependencyInfoProvider> depInfoProvider;
+
+        public Builder addBuildChainCustomizer(Consumer<BuildChainBuilder> customizer) {
+            this.buildChainCustomizers.add(customizer);
+            return this;
+        }
+
+        public Builder addBuildExecutionCustomizer(Consumer<BuildExecutionBuilder> customizer) {
+            this.buildExecutionCustomizers.add(customizer);
+            return this;
+        }
+
+        public List<PathCollection> getAdditionalApplicationArchives() {
+            return additionalApplicationArchives;
+        }
+
+        public Builder addAdditionalApplicationArchive(PathCollection archive) {
+            this.additionalApplicationArchives.add(archive);
+            return this;
+        }
+
+        public Builder excludeFromIndexing(Collection<Path> excludedFromIndexing) {
+            this.excludedFromIndexing = excludedFromIndexing;
+            return this;
+        }
+
+        public Builder setAuxiliaryApplication(boolean auxiliaryApplication) {
+            this.auxiliaryApplication = auxiliaryApplication;
+            return this;
+        }
+
+        public Builder setAuxiliaryDevModeType(DevModeType auxiliaryDevModeType) {
+            this.auxiliaryDevModeType = auxiliaryDevModeType;
+            return this;
+        }
+
+        public LaunchMode getLaunchMode() {
+            return launchMode;
+        }
+
+        public Builder setLaunchMode(LaunchMode launchMode) {
+            this.launchMode = launchMode;
+            return this;
+        }
+
+        public DevModeType getDevModeType() {
+            return devModeType;
+        }
+
+        public Builder setDevModeType(DevModeType devModeType) {
+            this.devModeType = devModeType;
+            return this;
+        }
+
+        public boolean isTest() {
+            return test;
+        }
+
+        public Builder setTest(boolean test) {
+            this.test = test;
+            return this;
+        }
+
+        public ClassLoader getClassLoader() {
+            return classLoader;
+        }
+
+        public Builder setClassLoader(ClassLoader classLoader) {
+            this.classLoader = classLoader;
+            return this;
+        }
+
+        public PathCollection getRoot() {
+            return root;
+        }
+
+        public <T extends BuildItem> Builder addFinal(Class<T> clazz) {
+            finalResults.add(clazz);
+            return this;
+        }
+
+        public Builder setRoot(PathCollection root) {
+            this.root = root;
+            return this;
+        }
+
+        public String getBaseName() {
+            return baseName;
+        }
+
+        public Builder setBaseName(String baseName) {
+            this.baseName = baseName;
+            return this;
+        }
+
+        public Builder setOriginalBaseName(String originalBaseName) {
+            this.originalBaseName = originalBaseName;
+            return this;
+        }
+
+        public Properties getBuildSystemProperties() {
+            return buildSystemProperties;
+        }
+
+        public Builder setBuildSystemProperties(final Properties buildSystemProperties) {
+            this.buildSystemProperties = buildSystemProperties;
+            return this;
+        }
+
+        public Properties getRuntimeProperties() {
+            return runtimeProperties;
+        }
+
+        public Builder setRuntimeProperties(final Properties runtimeProperties) {
+            this.runtimeProperties = runtimeProperties;
+            return this;
+        }
+
+        public Builder setRebuild(boolean rebuild) {
+            this.rebuild = rebuild;
+            return this;
+        }
+
+        public QuarkusAugmentor build() {
+            return new QuarkusAugmentor(this);
+        }
+
+        public LiveReloadBuildItem getLiveReloadState() {
+            return liveReloadState;
+        }
+
+        public Builder setLiveReloadState(LiveReloadBuildItem liveReloadState) {
+            this.liveReloadState = liveReloadState;
+            return this;
+        }
+
+        public Builder setCuratedApplicationContext(Map<Class<?>, Object> curatedApplicationContext) {
+            this.curatedApplicationContext = curatedApplicationContext;
+            return this;
+        }
+
+        public Builder setTargetDir(Path outputDir) {
+            targetDir = outputDir;
+            return this;
+        }
+
+        public Builder setEffectiveModel(ApplicationModel effectiveModel) {
+            this.effectiveModel = effectiveModel;
+            return this;
+        }
+
+        public ClassLoader getDeploymentClassLoader() {
+            return deploymentClassLoader;
+        }
+
+        public Builder setDeploymentClassLoader(ClassLoader deploymentClassLoader) {
+            this.deploymentClassLoader = deploymentClassLoader;
+            return this;
+        }
+
+        public Builder setDependencyInfoProvider(Supplier<DependencyInfoProvider> depInfoProvider) {
+            this.depInfoProvider = depInfoProvider;
+            return this;
+        }
+    }
+}

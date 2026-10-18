@@ -1,0 +1,15 @@
+plugins {
+    id 'java'
+}
+
+group = 'io.example'
+version = '1.0-SNAPSHOT'
+
+dependencies {
+    implementation project(':project-b')
+}
+
+jar {
+    archiveClassifier = "something"
+    archiveBaseName = "project-a"
+}

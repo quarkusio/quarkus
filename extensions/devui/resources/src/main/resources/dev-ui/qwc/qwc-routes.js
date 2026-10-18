@@ -1,0 +1,127 @@
+import { LitElement, html, css} from 'lit';
+import { basepath } from 'devui-data';
+import '@vaadin/progress-bar';
+import '@vaadin/grid';
+import { columnBodyRenderer } from '@vaadin/grid/lit.js';
+import '@vaadin/grid/vaadin-grid-sort-column.js';
+import { msg, updateWhenLocaleChanges } from 'localization';
+
+/**
+ * This component show all available routes
+ */
+export class QwcRoutes extends LitElement {
+    
+    static styles = css`
+        .infogrid {
+            width: 99%;
+            height: 99%;
+        }
+        a {
+            cursor: pointer;
+            color: var(--lumo-body-text-color);
+        }
+        a:link { 
+            text-decoration: none;
+            color: var(--lumo-body-text-color); 
+        }
+        a:visited { 
+            text-decoration: none;
+            color: var(--lumo-body-text-color); 
+        }
+        a:active { 
+            text-decoration: none; 
+            color: var(--lumo-body-text-color);
+        }
+        a:hover {
+            color: var(--quarkus-red);
+        }
+        .contextHandler {
+            color: var(--lumo-success-text-color);
+        }
+        .failureHandler{
+            color: var(--lumo-error-text-color);
+        }
+    `;
+
+    static properties = {
+        _routes: {state: true},
+        _loadFailed: {state: true}
+    }
+
+    constructor() {
+        super();
+        updateWhenLocaleChanges(this);
+        this._routes = null;
+        this._loadFailed = false;
+    }
+
+    async connectedCallback() {
+        super.connectedCallback();
+        await this.load();
+    }
+        
+    async load() {
+        const response = await fetch(basepath + "/endpoints/routes.json");
+        if (!response.ok) {
+            this._loadFailed = true;
+            return;
+        }
+        this._routes = await response.json();
+    }
+
+    render() {
+        if (this._loadFailed) {
+            return html`<div style="color: var(--lumo-error-text-color);">${msg('Could not load the routes. See the log file for details', { id: 'endpoints-routes-failed' })}</div>`;
+        }
+        if (this._routes) {
+            return html`<vaadin-grid .items="${this._routes}" class="infogrid">
+                        <vaadin-grid-sort-column resizable
+                                            header='${msg('Handler', { id: 'endpoints-handler' })}'
+                                            path="contextHandlers"
+                                            auto-width
+                                            ${columnBodyRenderer(this._contextHandlersRenderer, [])}>>
+                        </vaadin-grid-sort-column>
+
+                        <vaadin-grid-sort-column resizable
+                                            header="${msg('Order', { id: 'endpoints-order' })}"     
+                                            path="order"
+                                            auto-width>
+                        </vaadin-grid-sort-column>
+            
+                        <vaadin-grid-sort-column resizable
+                                            header="${msg('Path', { id: 'endpoints-path' })}"
+                                            path="path"
+                                            auto-width
+                                            ${columnBodyRenderer(this._pathRenderer, [])}>>
+                        </vaadin-grid-sort-column>
+            
+                    </vaadin-grid>`;
+        }else{
+            return html`
+            <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
+                <div>${msg('Fetching routes...', { id: 'endpoints-fetching-routes' })}</div>
+                <vaadin-progress-bar indeterminate></vaadin-progress-bar>
+            </div>
+            `;
+        }
+    }
+    
+    _pathRenderer(route){
+        return route.path ?? "";
+    }
+    
+    _contextHandlersRenderer(route){
+        const contextHandler = route.contextHandlers?.[0];
+        if(contextHandler){
+            return html`<code title="${msg('Context Handler', { id: 'endpoints-context-handler' })}" class="contextHandler">${contextHandler}</code>`;
+        }else{
+            const failureHandler = route.failureHandlers?.[0];
+            if(failureHandler){
+                return html`<code title="${msg('Failure Handler', { id: 'endpoints-failure-handler' })}" class="failureHandler">${failureHandler}</code>`;
+            }
+        }
+        return html`<code>${msg('Unknown (could not detect)', { id: 'endpoints-unknown' })}</code>`;
+    }
+    
+}
+customElements.define('qwc-routes', QwcRoutes);

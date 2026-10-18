@@ -1,0 +1,54 @@
+package io.quarkus.jdbc.oracle.runtime;
+
+import java.time.Duration;
+import java.util.Map;
+
+import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
+import io.agroal.api.exceptionsorter.OracleExceptionSorter;
+import io.quarkus.agroal.runtime.AgroalConnectionConfigurer;
+import io.quarkus.agroal.runtime.JdbcDriver;
+import io.quarkus.datasource.common.runtime.DatabaseKind;
+
+@JdbcDriver(DatabaseKind.ORACLE)
+public class OracleAgroalConnectionConfigurer implements AgroalConnectionConfigurer {
+
+    /**
+     * Oracle connection properties are documented here:
+     * https://docs.oracle.com/en/database/oracle/oracle-database/21/jajdb/oracle/jdbc/OracleConnection.html#Transport_Layer_Security__TLS_SSL_
+     * <p>
+     * SSL seems to be disabled by default, so rather than disabling it explicitly we check that the user didn't attempt to
+     * enable it.
+     */
+    @Override
+    public void disableSslSupport(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+            Map<String, String> additionalProperties) {
+        final String property = additionalProperties.get("oracle.net.authentication_services");
+        if (property != null && "SSL".equalsIgnoreCase(property)) {
+            log.warnv(
+                    "SSL support has been disabled, but one of the Oracle JDBC connections has been configured to use SSL. This will likely fail");
+        }
+    }
+
+    @Override
+    public void setExceptionSorter(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration) {
+        dataSourceConfiguration.connectionPoolConfiguration().exceptionSorter(new OracleExceptionSorter());
+    }
+
+    @Override
+    public void setKeepAlive(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+            Map<String, String> additionalJdbcProperties, boolean keepAlive) {
+        // Oracle keep-alive is configured via the "oracle.net.keepAlive" property. Defaults to false.
+        // https://docs.oracle.com/en/database/oracle/oracle-database/21/jajdb/oracle/jdbc/OracleConnection.html
+        dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration()
+                .jdbcProperty("oracle.net.keepAlive", Boolean.toString(keepAlive));
+    }
+
+    @Override
+    public void setReadTimeout(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+            Map<String, String> additionalJdbcProperties, Duration timeout) {
+        // Oracle socket timeout is configured via the "oracle.jdbc.ReadTimeout" property, which is in milliseconds
+        // https://docs.oracle.com/en/database/oracle/oracle-database/21/jajdb/oracle/jdbc/OracleConnection.html
+        dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration()
+                .jdbcProperty("oracle.jdbc.ReadTimeout", Long.toString(timeout.toMillis()));
+    }
+}

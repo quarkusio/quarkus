@@ -1,0 +1,26 @@
+.navbar {
+    padding: unset;
+    justify-content: left;
+}
+
+.mr-auto, .mx-auto {
+    margin-right: unset !important;
+    padding-right: 15px;   
+}
+
+.navbar-brand img {
+    border-right: 1px solid darkgrey;
+    padding-left: 12px;
+    padding-right: 10px;
+    margin-right: 5px;
+    height: 30px;
+}
+
+#state {
+    padding-right: 10px;
+    font-weight: normal;
+}
+
+.nav-item h3 span {
+    font-size: 12px
+}

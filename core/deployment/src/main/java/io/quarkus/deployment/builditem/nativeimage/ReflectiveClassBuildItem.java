@@ -1,0 +1,294 @@
+package io.quarkus.deployment.builditem.nativeimage;
+
+import static java.util.Arrays.stream;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
+import io.quarkus.builder.item.MultiBuildItem;
+
+/**
+ * Used to register a class for reflection in native mode
+ */
+public final class ReflectiveClassBuildItem extends MultiBuildItem {
+
+    // The names of the classes that should be registered for reflection
+    private final Collection<String> className;
+    private final boolean methods;
+    private final boolean publicMethods;
+    private final boolean fields;
+    private final boolean constructors;
+    private final boolean publicConstructors;
+    private final boolean weak;
+    private final boolean serialization;
+    private final boolean unsafeAllocated;
+    private final String reason;
+
+    public static Builder builder(Class<?>... classes) {
+        List<String> classNames = stream(classes)
+                .map(aClass -> {
+                    if (aClass == null) {
+                        throw new NullPointerException();
+                    }
+                    return aClass.getName();
+                })
+                .toList();
+
+        return new Builder().className(classNames);
+    }
+
+    public static Builder builder(String... classNames) {
+        return new Builder().className(Arrays.asList(classNames));
+    }
+
+    public static Builder builder(Collection<String> classNames) {
+        return new Builder().className(classNames);
+    }
+
+    private ReflectiveClassBuildItem(boolean constructors, boolean methods,
+            boolean fields, boolean weak, boolean serialization, boolean unsafeAllocated, String reason,
+            Class<?>... classes) {
+        this(constructors, false, methods, false, fields, weak, serialization,
+                unsafeAllocated, reason, stream(classes).map(Class::getName).toArray(String[]::new));
+    }
+
+    public static ReflectiveClassBuildItem weakClass(String... classNames) {
+        return ReflectiveClassBuildItem.builder(classNames).constructors().methods().fields().weak().build();
+    }
+
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
+    public static ReflectiveClassBuildItem weakClass(boolean constructors, boolean methods, boolean fields,
+            String... classNames) {
+        return ReflectiveClassBuildItem.builder(classNames).constructors(constructors).methods(methods).fields(fields).weak()
+                .build();
+    }
+
+    public static ReflectiveClassBuildItem serializationClass(String... classNames) {
+        return ReflectiveClassBuildItem.builder(classNames).serialization().build();
+    }
+
+    ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean methods,
+            boolean publicMethods,
+            boolean fields, boolean weak, boolean serialization,
+            boolean unsafeAllocated, String reason, String... className) {
+        this(constructors, publicConstructors, methods, publicMethods, fields, weak,
+                serialization, unsafeAllocated, reason, Arrays.asList(className));
+    }
+
+    ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean methods,
+            boolean publicMethods,
+            boolean fields, boolean weak, boolean serialization,
+            boolean unsafeAllocated, String reason, Collection<String> className) {
+        for (String i : className) {
+            if (i == null) {
+                throw new NullPointerException();
+            }
+        }
+        this.className = className;
+        this.methods = methods;
+        this.publicMethods = publicMethods;
+        this.fields = fields;
+        this.constructors = constructors;
+        this.publicConstructors = publicConstructors;
+        this.weak = weak;
+        this.serialization = serialization;
+        this.unsafeAllocated = unsafeAllocated;
+        this.reason = reason;
+    }
+
+    public Collection<String> getClassNames() {
+        return className;
+    }
+
+    public boolean isMethods() {
+        return methods;
+    }
+
+    public boolean isPublicMethods() {
+        return publicMethods;
+    }
+
+    public boolean isFields() {
+        return fields;
+    }
+
+    public boolean isConstructors() {
+        return constructors;
+    }
+
+    public boolean isPublicConstructors() {
+        return publicConstructors;
+    }
+
+    public boolean isWeak() {
+        return weak;
+    }
+
+    public boolean isSerialization() {
+        return serialization;
+    }
+
+    public boolean isUnsafeAllocated() {
+        return unsafeAllocated;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public static class Builder {
+        private Collection<String> className;
+        private boolean constructors = true;
+        private boolean publicConstructors = false;
+        private boolean methods;
+        private boolean publicMethods = false;
+        private boolean fields;
+        private boolean weak;
+        private boolean serialization;
+        private boolean unsafeAllocated;
+        private String reason;
+
+        private Builder() {
+        }
+
+        /**
+         * Prefer the {@link #builder(Collection)} variant whenever possible.
+         */
+        public Builder className(String[] className) {
+            return className(Arrays.stream(className).toList());
+        }
+
+        public Builder className(Collection<String> classNames) {
+            this.className = classNames;
+            return this;
+        }
+
+        /**
+         * Configures whether constructors should be registered for reflection (true by default).
+         * Setting this enables getting all declared constructors for the class as well as invoking them reflectively.
+         */
+        public Builder constructors(boolean constructors) {
+            this.constructors = constructors;
+            return this;
+        }
+
+        public Builder constructors() {
+            return constructors(true);
+        }
+
+        /**
+         * Configures whether public constructors should be registered for reflection.
+         * Setting this enables getting all public constructors for the class as well as invoking them reflectively.
+         */
+        public Builder publicConstructors(boolean publicConstructors) {
+            this.publicConstructors = publicConstructors;
+            return this;
+        }
+
+        public Builder publicConstructors() {
+            return publicConstructors(true);
+        }
+
+        /**
+         * Configures whether methods should be registered for reflection.
+         * Setting this enables getting all methods <strong>declared</strong> by the class, regardless of their
+         * visibility, as well as invoking them reflectively, i.e. {@link Class#getDeclaredMethods()}.
+         * This does not include methods inherited from superclasses or interfaces.
+         */
+        public Builder methods(boolean methods) {
+            this.methods = methods;
+            return this;
+        }
+
+        public Builder methods() {
+            return methods(true);
+        }
+
+        /**
+         * Configures whether public methods should be registered for reflection.
+         * Setting this enables getting all <strong>public</strong> methods of the class, including those
+         * inherited from superclasses and interfaces, as well as invoking them reflectively.
+         * This is narrower than {@link #methods()} in visibility (public only)
+         * but broader in scope (inherited methods included).
+         */
+        public Builder publicMethods(boolean publicMethods) {
+            this.publicMethods = publicMethods;
+            return this;
+        }
+
+        public Builder publicMethods() {
+            return publicMethods(true);
+        }
+
+        /**
+         * Configures whether fields should be registered for reflection.
+         * Setting this enables getting all declared fields for the class as well as accessing them reflectively.
+         */
+        public Builder fields(boolean fields) {
+            this.fields = fields;
+            return this;
+        }
+
+        public Builder fields() {
+            return fields(true);
+        }
+
+        /**
+         * @deprecated This is a no-op and was kept for a couple more versions for extension compatibility (e.g. for
+         *             Blaze-Persistence).
+         *             We should be able to drop it in 3.31 but let's check before doing so.
+         */
+        @Deprecated(forRemoval = true)
+        public Builder finalFieldsWritable(boolean finalFieldsWritable) {
+            return this;
+        }
+
+        public Builder weak(boolean weak) {
+            this.weak = weak;
+            return this;
+        }
+
+        public Builder weak() {
+            return weak(true);
+        }
+
+        /**
+         * Configures whether serialization support should be enabled for the class.
+         */
+        public Builder serialization(boolean serialization) {
+            this.serialization = serialization;
+            return this;
+        }
+
+        public Builder serialization() {
+            return serialization(true);
+        }
+
+        /**
+         * Configures whether the class can be allocated in an unsafe manner (through JNI).
+         */
+        public Builder unsafeAllocated(boolean unsafeAllocated) {
+            this.unsafeAllocated = unsafeAllocated;
+            return this;
+        }
+
+        public Builder reason(String reason) {
+            this.reason = reason;
+            return this;
+        }
+
+        public Builder unsafeAllocated() {
+            return unsafeAllocated(true);
+        }
+
+        public ReflectiveClassBuildItem build() {
+            return new ReflectiveClassBuildItem(constructors, publicConstructors, methods, publicMethods,
+                    fields, weak,
+                    serialization, unsafeAllocated, reason, className);
+        }
+    }
+}

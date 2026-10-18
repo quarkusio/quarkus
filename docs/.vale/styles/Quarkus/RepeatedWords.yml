@@ -1,0 +1,10 @@
+---
+extends: repetition
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
+message: "'%s' is repeated!"
+level: error
+# source: Quarkus contributor guide
+alpha: true
+tokens:
+  - '[^\s\.]+'
+  - '[^\s]+'

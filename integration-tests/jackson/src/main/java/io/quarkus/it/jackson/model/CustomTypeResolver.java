@@ -1,0 +1,59 @@
+package io.quarkus.it.jackson.model;
+
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DatabindContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.jsontype.impl.TypeIdResolverBase;
+import tools.jackson.databind.type.TypeFactory;
+
+public class CustomTypeResolver extends TypeIdResolverBase {
+
+    private JavaType baseType;
+
+    public CustomTypeResolver() {
+    }
+
+    @Override
+    public void init(JavaType bt) {
+        baseType = bt;
+    }
+
+    @Override
+    public String idFromValue(DatabindContext ctxt, Object value) throws JacksonException {
+        return getId(value);
+    }
+
+    @Override
+    public String idFromValueAndType(DatabindContext ctxt, Object value, Class<?> suggestedType)
+            throws JacksonException {
+        return getId(value);
+    }
+
+    @Override
+    public JsonTypeInfo.Id getMechanism() {
+        return JsonTypeInfo.Id.CUSTOM;
+    }
+
+    private String getId(Object value) {
+        if (value instanceof ModelWithJsonTypeIdResolver) {
+            return ((ModelWithJsonTypeIdResolver) value).getType();
+        }
+
+        return null;
+    }
+
+    @Override
+    public JavaType typeFromId(DatabindContext context, String id) {
+        if (id != null) {
+            switch (id) {
+                case "ONE":
+                    return context.constructSpecializedType(baseType, ModelWithJsonTypeIdResolver.SubclassOne.class);
+                case "TWO":
+                    return context.constructSpecializedType(baseType, ModelWithJsonTypeIdResolver.SubclassTwo.class);
+            }
+        }
+        return TypeFactory.unknownType();
+    }
+}

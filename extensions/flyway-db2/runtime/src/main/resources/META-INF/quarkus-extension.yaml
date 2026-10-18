@@ -1,0 +1,5 @@
+name: Quarkus Flyway DB2
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+description: Conditional extension added when Flyway and DB2 extensions are present
+metadata:
+  unlisted: true

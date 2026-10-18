@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Quarkus Extension for Spring Security API"
+metadata:
+  keywords:
+  - "spring-security"
+  - "spring"
+  - "security"
+  guide: "https://quarkus.io/guides/spring-security"
+  categories:
+  - "compatibility"
+  status: "stable"

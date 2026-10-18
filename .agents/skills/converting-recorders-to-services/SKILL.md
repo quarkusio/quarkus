@@ -1,0 +1,470 @@
+---
+name: converting-recorders-to-services
+description: >
+  Step-by-step guide for converting Quarkus extensions from the legacy
+  @Record/@Recorder pattern to the ServiceRegistrar service system.
+---
+
+# Converting Recorders to Services
+
+## Architecture
+
+The `ServiceRegistrar` service system replaces `@Recorder` with typed
+services. Services declare dependencies explicitly and execute in
+dependency order, not build step order. Converted and unconverted
+extensions may coexist.
+
+### Key principles
+
+1. **Explicit dependencies only.** Services get NO implicit ordering from
+   the build step graph. All ordering comes from `require()`, `after()`,
+   `before()`, or `afterBuildItem()`.
+2. **Services are independent from recorders in the same step.** Even if
+   a build step method contains both a `@Record` call and a
+   `ServiceRegistrar` call, the service and recorder are separate nodes
+   with no implicit ordering between them.
+3. **Values flow through the dependency graph.** Service values are
+   passed from producer to consumer via indexed dependency access on
+   `ServiceNode`, not through the `StartupContext` maps (except for
+   recorder proxy bridges).
+
+### Node types in the service graph
+
+| Kind | Description | Gets step-graph deps? |
+|------|-------------|-----------------------|
+| `LEGACY_RECORDER` | Recorder chunk from a `@Record` step | Yes |
+| `ALIAS` | Bridges a recorder value to a service key | Yes |
+| `SERVICE` | `ServiceRegistrar` service with a lambda body | No |
+| `RV_WRAPPER` | Wraps a service value in `RuntimeValue` for recorders | No |
+| `CROSS_PHASE_PROXY` | Bridges a static-init service to the runtime graph | No |
+
+Legacy recorders and aliases use step-graph ordering for compatibility.
+Service nodes use only explicit declarations.
+
+## Prerequisites
+
+Before converting, verify that all runtime dependencies are available as
+services:
+
+| Dependency Type | Availability |
+|-----------------|-------------|
+| `ArcContainer` | Service in `ArcProcessor#initializeContainer` |
+| `BeanContainer` | Service in `ArcProcessor#createBeanContainer` |
+| `ScheduledExecutorService` | Aliased by `ThreadPoolSetup` |
+| `@ConfigMapping` (`RUN_TIME`) | Auto-registered by `ConfigServiceRegistrationStep` |
+| `@ConfigMapping` (`BUILD_AND_RUN_TIME_FIXED`) | Auto-registered as static-init |
+| `@ConfigMapping` (`BUILD_TIME`) | **Cannot be a service** — extract values into locals |
+| Other runtime objects | Search for `aliasRecorderValue` or `forService` |
+
+## Conversion steps
+
+### 1. Analyze the recorder
+
+For each `@Recorder` method, determine:
+
+- **Return type** — becomes the service type. `RuntimeValue<X>` unwraps
+  to `X`. `void` becomes `Void.class` with a descriptive name.
+- **Parameters** — `RuntimeValue<X>` params become `require(X.class)`.
+  Simple values (String, int, boolean, enum) can be captured. Immutable
+  collections (`List.of()`, `Set.of()`, etc.) can be captured.
+- **Instance fields** — config `RuntimeValue`s injected via constructor
+  become `require()` dependencies.
+- **Trivial methods** — inline directly into the lambda.
+
+### 2. Convert the recorder class
+
+- **Trivial methods** — delete; inline into the lambda.
+- **Complex methods** — remove `@Recorder`, make methods `static`,
+  unwrap `RuntimeValue` parameters and return types.
+- If all methods are converted, delete the class. Otherwise keep
+  `@Recorder` for remaining methods.
+
+### 3. Convert the build step
+
+**Before:**
+```java
+@BuildStep
+@Record(ExecutionTime.RUNTIME_INIT)
+ServiceStartBuildItem setup(MyRecorder recorder, SomeBuildItem item) {
+    recorder.initialize(item.getValue());
+    return new ServiceStartBuildItem("my-feature");
+}
+```
+
+**After:**
+```java
+@BuildStep
+ServiceStartBuildItem setup(ServiceRegistrar serviceRegistrar, SomeBuildItem item) {
+    serviceRegistrar
+        .forService("io.quarkus.my-feature.setup")
+        .onStart(ctx -> MyRecorder.initialize());
+    return new ServiceStartBuildItem("my-feature");
+}
+```
+
+Key changes:
+- Remove `@Record(ExecutionTime.*)` annotation.
+- Replace recorder parameter with `ServiceRegistrar serviceRegistrar`.
+- Use `.atPhase(Phase.STATIC_INIT)` for static-init services (default
+  is runtime-init / `Phase.APPLICATION`).
+- For void services, use hierarchical dot-separated names:
+  `"io.quarkus.<extension>.<purpose>"`.
+
+### 4. Declare dependencies
+
+**Every dependency must be explicit.** There is no implicit ordering
+from the build step graph.
+
+| Old Pattern | New Pattern |
+|------------|-------------|
+| `recorder.method(beanContainer.getValue())` | `.require(BeanContainer.class)` |
+| `recorder.method(someRuntimeValue)` | `.require(SomeType.class)` |
+| `recorder.method(config.maxSize())` | Capture `int maxSize = config.maxSize()` before lambda |
+| `@Consume(SyntheticBeansRuntimeInitBuildItem.class)` on step | `.afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)` on service |
+
+#### `afterBuildItem()` — bridging to build step ordering
+
+When a service depends on state produced by a legacy recorder (e.g.,
+synthetic beans must be initialized), declare the dependency via
+`afterBuildItem()`:
+
+```java
+serviceRegistrar
+    .forService("io.quarkus.arc.lifecycle")
+    .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+    .onStart(ctx -> ArcRecorder.fireLifecycleEvent(new StartupEvent()));
+```
+
+This resolves the producing step's nodes (with passthrough resolution
+for steps that have no service graph nodes) and creates ordering edges.
+
+**`afterBuildItem()` is deprecated** — it exists only for recorder
+coexistence. Before adding one, check whether the target has already
+been converted to a service; if so, use `require()` or `after()`
+directly instead.
+
+#### Cross-phase dependencies
+
+Runtime services can `require()` static-init services. The framework
+creates a `CROSS_PHASE_PROXY` node that reads the value from the
+`serviceValues` map (populated during static-init and retained via
+`retainServiceValues()`).
+
+```java
+// static-init service
+serviceRegistrar.forService(ArcContainer.class)
+    .atPhase(Phase.STATIC_INIT)
+    .afterBuildItem(ResourcesGeneratedPhaseBuildItem.class)
+    .onStart(ctx -> Arc.initialize());
+
+// runtime service that depends on it
+serviceRegistrar.forService("io.quarkus.my-ext.setup")
+    .require(ArcContainer.class)  // cross-phase: resolved via proxy
+    .onStart((ctx, container) -> { ... });
+```
+
+#### Config mappings
+
+- `BUILD_TIME` — extract values into locals before the lambda.
+- `BUILD_AND_RUN_TIME_FIXED` — capture directly (available at both build
+  and runtime, captured via `ConfigCaptureInterceptor`).
+- `RUN_TIME` — use `.require(ConfigType.class)` (injected as a service
+  dependency).
+
+### 5. Stop ordering with `before()`
+
+`before(X)` declares "X depends on me" — this service starts before X
+and stops after X. Use it for cleanup services that must outlive their
+dependents:
+
+```java
+serviceRegistrar
+    .forService("io.quarkus.vertx.netty-thread-local-cleanup")
+    .atPhase(Phase.STATIC_INIT)
+    .before(IOThreadDetector.class)
+    .before(ArcContainer.class)
+    .onStart(ctx -> {
+        ctx.onStop(() -> InternalThreadLocalMap.remove());
+    });
+```
+
+### 6. Bridge to legacy build items
+
+Build items consumed by unconverted extensions need bridge proxies:
+
+| Build Item Stores | Bridge Method |
+|-------------------|---------------|
+| `RuntimeValue<T>` | `serviceRegistrar.staticInitServiceAsRuntimeValue(T.class)` or `serviceRegistrar.serviceAsRuntimeValue(T.class)` |
+| Bare `T` (interface) | `serviceRegistrar.staticInitServiceAsRecorderValue(T.class)` or `serviceRegistrar.serviceAsRecorderValue(T.class)` |
+| Bare `T` (concrete) | Use `RuntimeValue` variant — concrete classes may not be proxyable |
+
+Recorder proxies resolve via `startupContext.getServiceValue()` (for
+`__service$$value()` proxies) or `startupContext.getValue()` (for
+standard recorder proxies). The service deploy body stores values in
+the `serviceValues` map for this resolution.
+
+**After converting**, search for other extensions that use
+`afterBuildItem()` referencing build items your old recorder produced.
+Those consumers can now migrate from `afterBuildItem()` to
+`require()`/`after()` on your new service directly, removing one more
+link in the legacy bridge chain.
+
+### 7. Synthetic beans
+
+**Before:**
+```java
+Supplier<MyBean> supplier = recorder.createBeanSupplier(args);
+SyntheticBeanBuildItem.configure(MyBean.class).supplier(supplier).done();
+```
+
+**After:**
+```java
+serviceRegistrar.forService(MyBean.class, "my-bean-name")
+    .onStart(ctx -> new MyBean(args));
+
+SyntheticBeanBuildItem.configure(MyBean.class)
+    .serviceValue(MyBean.class, "my-bean-name")
+    .done();
+```
+
+**Key rules for `serviceValue()`:**
+
+- **Type must match exactly.** The `serviceValue(type, name)` type must
+  equal the `forService(type, name)` type. If the service produces an
+  impl class but the bean type is the interface, register the service
+  under the interface type.
+- **Works with `optional()` services.** When the optional service
+  produces a value, it is stored for the bean. When it produces
+  `Optional.empty()`, no value is stored; pair with `checkActive()` on
+  the bean to prevent injection of absent services.
+- **`checkActive()` still requires `@Record`.** There is no
+  service-native way to produce a `Supplier<ActiveResult>` for
+  `SyntheticBeanBuildItem.checkActive()`. If your converted extension
+  needs activation checks, keep a minimal `@Recorder` with a
+  `checkActive()` method.
+
+#### Activation via optional services
+
+The `optional()` mechanism replaces `checkActive` for runtime-gated
+services. Return `Optional.empty()` when inactive; downstream services
+using `request()` receive the empty optional and can propagate it:
+
+```java
+reg.forService(RedisClientConnection.class, name)
+    .optional()
+    .require(RedisConfig.class)
+    .onStart((ctx, config) -> config.clients().get(name).active()
+        ? Optional.of(createConnection(config))
+        : Optional.empty());
+
+reg.forService(RedisDataSource.class, name)
+    .optional()
+    .request(RedisClientConnection.class, name)
+    .onStart((ctx, connOpt) -> connOpt.map(conn -> ...));
+```
+
+#### Services vs. CDI beans
+
+Use whichever is the cleanest fit:
+
+- **Inter-extension wiring** (one extension producing a value another
+  extension consumes): prefer services — `require()`/`request()` gives
+  explicit ordering and type safety with no CDI proxying overhead.
+- **Application-facing injection** (`@Inject` in user code): keep CDI
+  synthetic beans for the user-facing surface.
+- **Both**: register a service *and* a `serviceValue()` synthetic bean.
+  Drop the synthetic bean only if no application code injects it.
+
+### 8. Shutdown handlers
+
+Register cleanup via `ctx.onStop(Runnable)` or
+`ctx.onStopAsync(Consumer<AsyncStopContext>)`. Stop handlers run in
+reverse dependency order.
+
+`addLastShutdownTask()` is **deprecated** — its per-node "last" semantics
+don't provide global ordering. Use `before()` to ensure your service
+stops after the services it cleans up for.
+
+### 9. Runtime-optional services
+
+A value-producing service must return a non-`null` value — the
+generated code throws otherwise. For a service whose identity is known
+at build time but which may be **absent at runtime**, declare
+`optional()` before `onStart()`. This flips the return type from `T` to
+`Optional<T>`; returning `Optional.empty()` marks the service absent.
+
+```java
+serviceRegistrar.forService(Handler.class, "file")
+    .atPhase(Phase.LOGGING)
+    .require(LogRuntimeConfig.class)
+    .optional()
+    .onStart((ctx, config) -> config.file().enabled()
+        ? Optional.of(buildFileHandler(config.file()))
+        : Optional.empty());
+```
+
+Consuming an optional service:
+- `consumeAll(T.class)` skips absent producers (the map omits them).
+- `request(T.class)` yields `Optional.empty()` when absent.
+- `require(T.class)` on an optional service is a **build error** — use
+  `request()` or `consumeAll()` instead.
+
+Do not return `null` from a non-`optional` service. The `null`
+tolerance in `consumeAll` applies only to aliased recorder values.
+
+### 10. Lambda capture rules
+
+Supported captures:
+- Primitives, `String`, `Class`, enum values
+- Immutable collections: `List.of()`, `Set.of()`, `Map.of()`,
+  `Collections.singletonList/Set/Map()`, `Collections.empty*()`,
+  `Collections.unmodifiable*()`, `Set.copyOf()`, `List.copyOf()`,
+  `Map.copyOf()`
+- `BUILD_AND_RUN_TIME_FIXED` config mappings (via `ConfigCaptureInterceptor`)
+- `Constable` values — any type implementing `java.lang.constant.Constable`
+  is captured via its `describeConstable()`. Immutable collections of
+  `Constable` values (via `Map.copyOf`/`List.copyOf`) are also capturable.
+- `record` values — captured by reconstructing via the canonical
+  constructor, as long as every component is itself capturable (recursively).
+  This is the **capture** path; a `record` still cannot be used as an
+  aliased recorder return type (see "Aliased recorder return types must
+  be proxyable" below).
+
+**Not capturable:**
+- Mutable collections — use `Set.copyOf()` / `List.copyOf()` first
+  (`Stream#toList()` is already unmodifiable — don't wrap it again)
+- `BUILD_TIME` config objects — extract values into locals
+- `RUN_TIME` config objects — use `require()` instead
+- Arbitrary runtime objects — use `require()` instead
+
+## Common pitfalls
+
+### Global mutable state must be eliminated or made thread-safe
+
+Recorders ran sequentially, so global mutable state (static maps,
+shared lists, singletons populated during startup) was incidentally
+safe. Services run concurrently — any global state that survives
+conversion must be thread-safe.
+
+Prefer eliminating the global state entirely: the dependency graph
+carries values directly, so each entry becomes a named service and
+each lookup becomes `require()` or `request()`. Reserve global state
+for cases where it is genuinely shared across unrelated consumers
+with no dependency relationship.
+
+### Choose the right phase for data-access services
+
+Services that create connections to external data systems (database
+pools, Redis clients, directory services) belong at `Phase.DATA`,
+ensuring `serviceValue()` beans can read values before any bean is
+accessed.
+
+### No implicit ordering from build steps
+
+Services get NO ordering from `@Consume`/`@Produce` annotations or
+build item parameters on their build step method. Every ordering
+dependency must be declared on the service itself.
+
+If a service needs to run after a legacy recorder step, use
+`afterBuildItem()` to depend on a build item that step produces.
+
+### Concrete class proxying
+
+`staticInitServiceAsRecorderValue(ConcreteClass.class)` fails if the
+class has a non-trivial constructor. Use
+`staticInitServiceAsRuntimeValue()` instead — `RuntimeValue` is always
+proxyable.
+
+### Aliased recorder return types must be proxyable
+
+A value published via `aliasRecorderValue(T.class, recorderValue)` must
+have a **proxyable** type: an interface or a non-`final` class. Records
+are `final` and will fail. When bridging recorder values, make the
+holder an **interface** (with a nested `record` impl), or wrap it in
+`RuntimeValue`.
+
+### Package-private visibility
+
+Lambda bytecode runs at runtime but references runtime classes directly.
+Package-private classes become inaccessible from the generated
+consolidated class. Solutions:
+1. Add a public static factory method on a public runtime class.
+2. Move the class to a `.impl` subpackage and make it public.
+
+### Never reference deployment classes from service lambdas
+
+Service lambda bodies execute at **runtime** — deployment classes are
+absent from the runtime classpath. Anonymous inner classes inside
+instance-method lambdas silently capture `this` (the processor),
+causing `TransliterationException`. Moving the instantiation to a
+`private static` helper in the processor avoids the capture but still
+references a deployment class, causing `NoClassDefFoundError`. Place
+all helper methods and factories in **runtime** module classes.
+
+### Use `require()` instead of `Arc.container()`
+
+Access CDI beans through `require(BeanContainer.class)` and
+`beanInstance()`. Direct `Arc.container()` calls bypass the dependency
+graph and can cause ordering failures.
+
+### Mutable collections must be copied
+
+```java
+Set<String> captured = Set.copyOf(endpoints);  // before the lambda
+```
+
+## Behavioral parity with recorders
+
+Conversion must preserve behavior the recorder model provided
+*implicitly*. Check each of these when converting a step that touches
+classloaders, threads, cleanup, or failure handling.
+
+### TCCL parity
+
+A wrong TCCL surfaces as `ServiceLoader` "not a subtype" errors or
+dev-mode failures.
+
+**Threads created during startup inherit the creating thread's TCCL.**
+A long-lived thread that captures the per-app runtime CL leaks the
+`QuarkusClassLoader` across restarts. Clean up threads/`ThreadLocal`s
+in `onStop`; never rely on a global "reset all TCCLs" sweep.
+
+### Teardown-ordering parity
+
+Start ordering is explicit — but so is **stop ordering**, and that is
+the easy thing to lose. The recorder model gave cleanup incidental
+ordering from build-step order; a converted service's `onStop` runs
+only in reverse *dependency* order. If a cleanup implicitly depended on
+running before/after another, declare it with `before()`/`after()`.
+Lost teardown ordering surfaces as unrelated downstream symptoms — verify
+shutdown explicitly.
+
+### Failure-path parity
+
+Recorders logged nothing on failure — `doStart` caught, wrapped in
+`RuntimeException`, and rethrew. The service graph rethrows the first
+failure (concurrent ones attach as suppressed). **Do not add ERROR/WARN
+logging in service bodies for expected failures** — let them propagate.
+
+### `consumeAll` uses indexed access
+
+`consumeAll` dependencies expand to multiple consecutive entries in the
+ServiceNode's dependency array (one per matching service, sorted by
+name). Both `ServiceGraphBuilder` and `LambdaTransliterator` compute
+the same match list using the same prefix and sort order, ensuring
+index alignment.
+
+## Checklist
+
+- [ ] Identify all `@Record` build steps in the processor
+- [ ] For each, determine if all dependencies are available as services
+- [ ] Convert recorder methods (inline trivial ones, make complex ones static)
+- [ ] Update build steps: remove `@Record`, add `ServiceRegistrar`, register services
+- [ ] Declare ALL dependencies explicitly (`require`, `after`, `before`, `afterBuildItem`)
+- [ ] Do NOT rely on build step ordering for service execution order
+- [ ] Bridge values to legacy build items where needed
+- [ ] Convert synthetic beans from `supplier()`/`runtimeValue()` to `serviceValue()`
+- [ ] Verify `serviceValue(type, name)` types match `forService(type, name)` exactly
+- [ ] Choose the right phase (`Phase.DATA` for data connections, `Phase.INIT` for migrations, etc.)
+- [ ] Check for package-private visibility issues
+- [ ] `./mvnw install` the modified modules before running integration tests

@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "JSON-B"
+metadata:
+  keywords:
+  - "jsonb"
+  - "json-b"
+  - "json"
+  guide: "https://quarkus.io/guides/rest-json"
+  categories:
+  - "serialization"
+  status: "stable"

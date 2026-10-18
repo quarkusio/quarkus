@@ -1,0 +1,15 @@
+export const templates = {
+    'quarkus-messaging-meta-description': 'संदेश उत्पन्न करें और उपभोग करें और इवेंट-आधारित और डेटा स्ट्रीमिंग अनुप्रयोगों को लागू करें।',
+    'quarkus-smallrye-reactive-messaging-channels': 'चैनल्स',
+    'quarkus-smallrye-reactive-messaging-loading-channels': 'चैनल लोड हो रहे हैं...',
+    'quarkus-smallrye-reactive-messaging-channel': 'चैनल',
+    'quarkus-smallrye-reactive-messaging-publishers': 'प्रकाशक(ों)',
+    'quarkus-smallrye-reactive-messaging-subscribers': 'सदस्य(गण)',
+    'quarkus-smallrye-reactive-messaging-no-subscribers': 'कोई सब्सक्राइबर नहीं',
+    'quarkus-smallrye-reactive-messaging-no-publishers': 'कोई प्रकाशक नहीं',
+    'quarkus-smallrye-reactive-messaging-publisher': 'प्रकाशक',
+    'quarkus-smallrye-reactive-messaging-subscriber': 'सदस्य',
+    'quarkus-smallrye-reactive-messaging-processor': 'प्रोसेसर',
+    'quarkus-smallrye-reactive-messaging-connector': 'संयोगक',
+    'quarkus-smallrye-reactive-messaging-emitter': 'उत्सर्जक',
+};

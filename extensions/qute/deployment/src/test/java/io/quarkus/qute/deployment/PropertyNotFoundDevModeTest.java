@@ -1,0 +1,66 @@
+package io.quarkus.qute.deployment;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.qute.Template;
+import io.quarkus.qute.TemplateException;
+import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.vertx.web.Route;
+import io.restassured.RestAssured;
+
+public class PropertyNotFoundDevModeTest {
+
+    @RegisterExtension
+    static final QuarkusDevModeTest testConfig = new QuarkusDevModeTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClass(Routes.class)
+                    .addAsResource(new StringAsset("{foo.surname}"), "templates/foo.html")
+                    .addAsResource(new StringAsset("{bar.name}"), "templates/bar.html"));
+
+    @Test
+    public void testExceptionIsThrown() {
+        assertThat(RestAssured.get("test-foo").then().statusCode(200).extract().body().asString()).contains(
+                "Rendering error in template",
+                "foo.html:1]: Key \"foo\" not found in the template data map with keys [] in expression {foo.surname}");
+        assertThat(RestAssured.get("test-bar").then().statusCode(200).extract().body().asString()).contains(
+                "Rendering error in template",
+                "bar.html:1]: Property \"name\" not found on the base object \"java.lang.String\" in expression {bar.name}");
+    }
+
+    @Singleton
+    public static class Routes {
+
+        @Inject
+        Template foo;
+
+        @Route(produces = "text/plain")
+        String testFoo() {
+            try {
+                return foo.render();
+            } catch (TemplateException e) {
+                return e.getMessage();
+            }
+        }
+
+        @Inject
+        Template bar;
+
+        @Route(produces = "text/plain")
+        String testBar() {
+            try {
+                return bar.data("bar", "alpha").render();
+            } catch (TemplateException e) {
+                return e.getMessage();
+            }
+        }
+
+    }
+
+}

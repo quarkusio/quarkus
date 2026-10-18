@@ -1,0 +1,60 @@
+name: Sonarcloud Analysis
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 5 * * 0'
+env:
+  MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    if: github.repository == 'quarkusio/quarkus'
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Extract base JDK version from POM
+        id: base-jdk
+        run: |
+          BASE_JDK=$(grep -oP '<maven.compiler.release>\K[0-9]+' independent-projects/parent/pom.xml)
+          echo "base-jdk-version=${BASE_JDK}" >> $GITHUB_OUTPUT
+          echo "Base JDK version: ${BASE_JDK}"
+      - name: Set up JDK ${{ steps.base-jdk.outputs.base-jdk-version }}
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          CURRENT_BRANCH="${{ github.repository != 'quarkusio/quarkus' && 'fork' || github.base_ref || github.ref_name }}"
+          CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+          CURRENT_DAY=$(/bin/date -u "+%d")
+          ROOT_CACHE_KEY="m2-cache"
+          echo "m2-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+          echo "m2-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+          echo "m2-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" >> $GITHUB_OUTPUT
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ steps.cache-key.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
+            ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
+      - name: Cache SonarCloud packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar-${{ steps.get-date.outputs.date }}
+      - name: Build and analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./mvnw -e -B --settings .github/mvn-settings.xml -Dquickly-ci install org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.organization=quarkusio -Dsonar.projectKey=quarkusio_quarkus -Dsonar.host.url=https://sonarcloud.io -Dsonar.projectName=Quarkus -Dsonar.java.libraries=/home/runner/.m2/repository/**/*.jar

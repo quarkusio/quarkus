@@ -1,0 +1,32 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="security-oidc-configuration-properties-reference"]
+= OpenID Connect (OIDC) configuration properties
+include::_attributes.adoc[]
+:diataxis-type: reference
+:topics: security,oidc
+:extensions: io.quarkus:quarkus-oidc
+
+As a Quarkus developer, you configure the Quarkus OpenID Connect (OIDC) extension by setting the following properties in the `src/main/resources/application.properties` file.
+
+== OIDC configuration
+
+include::{generated-dir}/config/quarkus-oidc_quarkus.oidc.adoc[opts=optional, leveloffset=+1]
+
+See also the xref:security-oidc-expanded-configuration.adoc[Expanded OIDC Configuration Reference] for an expanded, detailed explanation of OIDC configuration properties and their typical, recommended combinations.
+
+== Keycloak Dev Services configuration
+
+include::{generated-dir}/config/quarkus-devservices-keycloak_quarkus.keycloak.adoc[opts=optional, leveloffset=+1]
+
+== References
+
+* xref:security-oidc-expanded-configuration.adoc[Expanded OIDC Configuration Reference]
+* xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
+* xref:security-oidc-code-flow-authentication.adoc[OIDC Authorization code flow authentication]
+* xref:security-openid-connect-multitenancy.adoc[OIDC MultiTenancy]
+* xref:security-openid-connect-dev-services.adoc[Keycloak Dev Services]
+* xref:security-overview.adoc[Quarkus Security]

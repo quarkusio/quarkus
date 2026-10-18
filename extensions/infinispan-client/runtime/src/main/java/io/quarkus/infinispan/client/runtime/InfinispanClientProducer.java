@@ -1,0 +1,497 @@
+package io.quarkus.infinispan.client.runtime;
+
+import java.net.URL;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+import org.infinispan.client.hotrod.RemoteCache;
+import org.infinispan.client.hotrod.RemoteCacheManager;
+import org.infinispan.client.hotrod.RemoteCounterManagerFactory;
+import org.infinispan.client.hotrod.configuration.ClusterConfigurationBuilder;
+import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
+import org.infinispan.client.hotrod.impl.ConfigurationProperties;
+import org.infinispan.client.hotrod.logging.Log;
+import org.infinispan.client.hotrod.logging.LogFactory;
+import org.infinispan.commons.configuration.StringConfiguration;
+import org.infinispan.commons.internal.InternalCacheNames;
+import org.infinispan.commons.marshall.Marshaller;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
+import org.infinispan.counter.api.CounterManager;
+import org.infinispan.protostream.BaseMarshaller;
+import org.infinispan.protostream.FileDescriptorSource;
+import org.infinispan.protostream.SerializationContext;
+import org.infinispan.protostream.SerializationContextInitializer;
+import org.infinispan.protostream.schema.Schema;
+
+/**
+ * Produces a configured remote cache manager instance
+ */
+@Singleton
+public class InfinispanClientProducer {
+    private static final Log log = LogFactory.getLog(InfinispanClientProducer.class);
+
+    public static final StringConfiguration DEFAULT_CONFIG = new StringConfiguration(
+            "<distributed-cache><encoding media-type=\"application/x-protostream\"/></distributed-cache>");
+    public static final String PROTOBUF_FILE_PREFIX = "infinispan.client.hotrod.protofile.";
+    public static final String PROTOBUF_SCHEMAS = "infinispan.client.hotrod.proto-schemas";
+
+    private final Map<String, RemoteCacheManager> remoteCacheManagers = new ConcurrentHashMap<>();
+
+    @Inject
+    private BeanManager beanManager;
+
+    @Inject
+    private Instance<InfinispanClientsRuntimeConfig> infinispanClientsRuntimeConfigHandle;
+
+    @Inject
+    private Instance<InfinispanClientsBuildTimeConfig> infinispanClientsBuildTimeConfigHandle;
+
+    private void registerSchemaInServer(String infinispanConfigName,
+            Map<String, Properties> properties,
+            RemoteCacheManager cacheManager) {
+        RemoteCache<String, String> protobufMetadataCache = null;
+        Properties namedProperties = properties.get(infinispanConfigName);
+        Set<Schema> schemas = (Set) namedProperties.remove(PROTOBUF_SCHEMAS);
+        InfinispanClientRuntimeConfig runtimeConfig = this.infinispanClientsRuntimeConfigHandle.get()
+                .getInfinispanClientRuntimeConfig(infinispanConfigName);
+        if (schemas != null) {
+            for (Schema schema : schemas) {
+                if (protobufMetadataCache == null) {
+                    protobufMetadataCache = cacheManager.getCache(
+                            InternalCacheNames.PROTOBUF_METADATA_CACHE_NAME);
+                }
+                protobufMetadataCache.put(schema.getName(), schema.getContent());
+            }
+            runtimeConfig.backupCluster().entrySet().forEach(backup -> {
+                if (backup.getValue().useSchemaRegistration().orElse(true)) {
+                    cacheManager.switchToCluster(backup.getKey());
+                    for (Schema schema : schemas) {
+                        RemoteCache<String, String> backupProtobufMetadataCache = null;
+                        if (backupProtobufMetadataCache == null) {
+                            backupProtobufMetadataCache = cacheManager.getCache(
+                                    InternalCacheNames.PROTOBUF_METADATA_CACHE_NAME);
+                        }
+                        backupProtobufMetadataCache.put(schema.getName(), schema.getContent());
+                    }
+                    cacheManager.switchToDefaultCluster();
+                }
+            });
+        }
+
+        for (Map.Entry<Object, Object> property : namedProperties.entrySet()) {
+            Object key = property.getKey();
+            if (key instanceof String) {
+                String keyString = (String) key;
+                if (keyString.startsWith(PROTOBUF_FILE_PREFIX)) {
+                    String fileName = keyString.substring(PROTOBUF_FILE_PREFIX.length());
+                    String fileContents = (String) property.getValue();
+                    if (protobufMetadataCache == null) {
+                        protobufMetadataCache = cacheManager.getCache(
+                                InternalCacheNames.PROTOBUF_METADATA_CACHE_NAME);
+                    }
+                    protobufMetadataCache.put(fileName, fileContents);
+                }
+            }
+        }
+
+        runtimeConfig.backupCluster().entrySet().forEach(backupConfigEntry -> {
+            if (backupConfigEntry.getValue().useSchemaRegistration().orElse(true)) {
+                cacheManager.switchToCluster(backupConfigEntry.getKey());
+                RemoteCache<String, String> backupProtobufMetadataCache = null;
+                for (Map.Entry<Object, Object> property : namedProperties.entrySet()) {
+                    Object key = property.getKey();
+                    if (key instanceof String) {
+                        String keyString = (String) key;
+                        if (keyString.startsWith(PROTOBUF_FILE_PREFIX)) {
+                            String fileName = keyString.substring(PROTOBUF_FILE_PREFIX.length());
+                            String fileContents = (String) property.getValue();
+                            if (backupProtobufMetadataCache == null) {
+                                backupProtobufMetadataCache = cacheManager.getCache(
+                                        InternalCacheNames.PROTOBUF_METADATA_CACHE_NAME);
+                            }
+                            backupProtobufMetadataCache.put(fileName, fileContents);
+                        }
+                    }
+                }
+                cacheManager.switchToDefaultCluster();
+            }
+        });
+    }
+
+    /**
+     * Configures the client using the client name
+     *
+     * @return the configuration builder based on the provided properties
+     * @throws RuntimeException if the cache configuration file is not present in the resources folder
+     */
+    private ConfigurationBuilder builderFromProperties(String infinispanClientName, Map<String, Properties> propertiesMap) {
+        // If you are changing this method, you will most likely have to change replaceProperties as well
+        ConfigurationBuilder builder = new ConfigurationBuilder();
+        Properties properties = propertiesMap.get(infinispanClientName);
+        // remove from properties
+        Object marshallerInstance = properties.remove(ConfigurationProperties.MARSHALLER);
+        if (marshallerInstance != null) {
+            if (marshallerInstance instanceof ProtoStreamMarshaller) {
+                handleProtoStreamMarshaller((ProtoStreamMarshaller) marshallerInstance, properties, beanManager);
+            }
+            // add to the builder directly
+            builder.marshaller((Marshaller) marshallerInstance);
+        }
+
+        InfinispanClientRuntimeConfig infinispanClientRuntimeConfig = infinispanClientsRuntimeConfigHandle.get()
+                .getInfinispanClientRuntimeConfig(infinispanClientName);
+
+        InfinispanClientBuildTimeConfig infinispanClientBuildTimeConfig = infinispanClientsBuildTimeConfigHandle.get()
+                .getInfinispanClientBuildTimeConfig(infinispanClientName);
+
+        // client name not found
+        if (infinispanClientRuntimeConfig == null) {
+            return builder;
+        }
+
+        if (infinispanClientRuntimeConfig.uri().isPresent()) {
+            properties.put(ConfigurationProperties.URI, infinispanClientRuntimeConfig.uri().get());
+        } else {
+            if (infinispanClientRuntimeConfig.hosts().isPresent()) {
+                properties.put(ConfigurationProperties.SERVER_LIST, infinispanClientRuntimeConfig.hosts().get());
+            }
+
+            if (infinispanClientRuntimeConfig.username().isPresent()) {
+                properties.put(ConfigurationProperties.AUTH_USERNAME, infinispanClientRuntimeConfig.username().get());
+            }
+
+            if (infinispanClientRuntimeConfig.password().isPresent()) {
+                properties.put(ConfigurationProperties.AUTH_PASSWORD, infinispanClientRuntimeConfig.password().get());
+            }
+        }
+
+        if (infinispanClientRuntimeConfig.clientIntelligence().isPresent()) {
+            properties.put(ConfigurationProperties.CLIENT_INTELLIGENCE,
+                    infinispanClientRuntimeConfig.clientIntelligence().get());
+        }
+
+        if (infinispanClientRuntimeConfig.useAuth().isPresent()) {
+            properties.put(ConfigurationProperties.USE_AUTH, infinispanClientRuntimeConfig.useAuth().get());
+        }
+
+        if (infinispanClientRuntimeConfig.authRealm().isPresent()) {
+            properties.put(ConfigurationProperties.AUTH_REALM, infinispanClientRuntimeConfig.authRealm().get());
+        }
+        if (infinispanClientRuntimeConfig.authServerName().isPresent()) {
+            properties.put(ConfigurationProperties.AUTH_SERVER_NAME, infinispanClientRuntimeConfig.authServerName().get());
+        }
+
+        if (infinispanClientRuntimeConfig.saslMechanism().isPresent()) {
+            properties.put(ConfigurationProperties.SASL_MECHANISM, infinispanClientRuntimeConfig.saslMechanism().get());
+        }
+        if (infinispanClientRuntimeConfig.keyStore().isPresent()) {
+            properties.put(ConfigurationProperties.KEY_STORE_FILE_NAME, infinispanClientRuntimeConfig.keyStore().get());
+        }
+        if (infinispanClientRuntimeConfig.keyStorePassword().isPresent()) {
+            properties.put(ConfigurationProperties.KEY_STORE_PASSWORD,
+                    infinispanClientRuntimeConfig.keyStorePassword().get());
+        }
+        if (infinispanClientRuntimeConfig.keyStoreType().isPresent()) {
+            properties.put(ConfigurationProperties.KEY_STORE_TYPE,
+                    infinispanClientRuntimeConfig.keyStoreType().get());
+        }
+        if (infinispanClientRuntimeConfig.keyAlias().isPresent()) {
+            properties.put(ConfigurationProperties.KEY_ALIAS,
+                    infinispanClientRuntimeConfig.keyAlias().get());
+        }
+        if (infinispanClientRuntimeConfig.trustStore().isPresent()) {
+            properties.put(ConfigurationProperties.TRUST_STORE_FILE_NAME, infinispanClientRuntimeConfig.trustStore().get());
+        }
+        if (infinispanClientRuntimeConfig.trustStorePassword().isPresent()) {
+            properties.put(ConfigurationProperties.TRUST_STORE_PASSWORD,
+                    infinispanClientRuntimeConfig.trustStorePassword().get());
+        }
+        if (infinispanClientRuntimeConfig.trustStoreType().isPresent()) {
+            properties.put(ConfigurationProperties.TRUST_STORE_TYPE, infinispanClientRuntimeConfig.trustStoreType().get());
+        }
+
+        if (infinispanClientRuntimeConfig.sslProvider().isPresent()) {
+            properties.put(ConfigurationProperties.SSL_PROVIDER, infinispanClientRuntimeConfig.sslProvider().get());
+        }
+
+        if (infinispanClientRuntimeConfig.sslProtocol().isPresent()) {
+            properties.put(ConfigurationProperties.SSL_PROTOCOL, infinispanClientRuntimeConfig.sslProtocol().get());
+        }
+
+        if (infinispanClientRuntimeConfig.sslCiphers().isPresent()) {
+            properties.put(ConfigurationProperties.SSL_CIPHERS,
+                    infinispanClientRuntimeConfig.sslCiphers().get().stream().collect(Collectors.joining(" ")));
+        }
+
+        if (infinispanClientRuntimeConfig.sslHostNameValidation().isPresent()) {
+            properties.put(ConfigurationProperties.SSL_HOSTNAME_VALIDATION,
+                    infinispanClientRuntimeConfig.sslHostNameValidation().get());
+        }
+
+        if (infinispanClientRuntimeConfig.sniHostName().isPresent()) {
+            properties.put(ConfigurationProperties.SNI_HOST_NAME, infinispanClientRuntimeConfig.sniHostName().get());
+        }
+
+        if (infinispanClientRuntimeConfig.socketTimeout().isPresent()) {
+            properties.put(ConfigurationProperties.SO_TIMEOUT, infinispanClientRuntimeConfig.socketTimeout().get());
+        }
+
+        properties.put(ConfigurationProperties.TRANSPORT_FACTORY, infinispanClientBuildTimeConfig.transportFactory());
+
+        builder.withProperties(properties);
+
+        if (infinispanClientRuntimeConfig.tracingPropagationEnabled().isPresent()) {
+            if (!infinispanClientRuntimeConfig.tracingPropagationEnabled().get()) {
+                builder.disableTracingPropagation();
+            }
+        }
+
+        if (infinispanClientBuildTimeConfig != null) {
+            for (Map.Entry<String, InfinispanClientBuildTimeConfig.RemoteCacheConfig> buildCacheConfig : infinispanClientBuildTimeConfig
+                    .cache()
+                    .entrySet()) {
+                String cacheName = buildCacheConfig.getKey();
+                // Do this if the cache config is only present in the build time configuration
+                if (!infinispanClientRuntimeConfig.cache().containsKey(cacheName)) {
+                    InfinispanClientBuildTimeConfig.RemoteCacheConfig buildCacheConfigValue = buildCacheConfig.getValue();
+                    if (buildCacheConfig.getValue().configurationResource().isPresent()) {
+                        URL configFile = Thread.currentThread().getContextClassLoader()
+                                .getResource(buildCacheConfigValue.configurationResource().get());
+                        configureRemoteCacheConfigurationURI(builder, cacheName, configFile);
+                    }
+                }
+            }
+        }
+
+        for (Map.Entry<String, InfinispanClientRuntimeConfig.RemoteCacheConfig> cacheConfig : infinispanClientRuntimeConfig
+                .cache()
+                .entrySet()) {
+            String cacheName = cacheConfig.getKey();
+            InfinispanClientRuntimeConfig.RemoteCacheConfig runtimeCacheConfig = cacheConfig.getValue();
+            URL configFile = null;
+            // Check if the build time resource file configuration exists
+            if (infinispanClientBuildTimeConfig != null) {
+                InfinispanClientBuildTimeConfig.RemoteCacheConfig buildtimeCacheConfig = infinispanClientBuildTimeConfig.cache()
+                        .get(
+                                cacheName);
+                if (buildtimeCacheConfig != null && buildtimeCacheConfig.configurationResource().isPresent()) {
+                    configFile = Thread.currentThread().getContextClassLoader()
+                            .getResource(buildtimeCacheConfig.configurationResource().get());
+                }
+            }
+
+            // Override build time resource if configuration-uri runtime resource is provided
+            if (runtimeCacheConfig.configurationUri().isPresent()) {
+                configFile = Thread.currentThread().getContextClassLoader()
+                        .getResource(runtimeCacheConfig.configurationUri().get());
+            }
+
+            if (configFile != null) {
+                configureRemoteCacheConfigurationURI(builder, cacheName, configFile);
+            } else {
+                // Inline configuration
+                if (runtimeCacheConfig.configuration().isPresent()) {
+                    builder.remoteCache(cacheName).configuration(runtimeCacheConfig.configuration().get());
+                }
+            }
+
+            // Configures near caching
+            if (runtimeCacheConfig.nearCacheMaxEntries().isPresent()) {
+                builder.remoteCache(cacheName).nearCacheMaxEntries(runtimeCacheConfig.nearCacheMaxEntries().get());
+            }
+            if (runtimeCacheConfig.nearCacheMode().isPresent()) {
+                builder.remoteCache(cacheName).nearCacheMode(runtimeCacheConfig.nearCacheMode().get());
+            }
+            if (runtimeCacheConfig.nearCacheUseBloomFilter().isPresent()) {
+                builder.remoteCache(cacheName).nearCacheUseBloomFilter(runtimeCacheConfig.nearCacheUseBloomFilter().get());
+            }
+            if (runtimeCacheConfig.transactionMode().isPresent()) {
+                builder.remoteCache(cacheName).transactionMode(runtimeCacheConfig.transactionMode().get());
+            }
+        }
+
+        for (Map.Entry<String, InfinispanClientRuntimeConfig.BackupClusterConfig> backupCluster : infinispanClientRuntimeConfig
+                .backupCluster()
+                .entrySet()) {
+            InfinispanClientRuntimeConfig.BackupClusterConfig backupClusterConfig = backupCluster.getValue();
+            ClusterConfigurationBuilder clusterConfigurationBuilder = builder.addCluster(backupCluster.getKey());
+            clusterConfigurationBuilder.addClusterNodes(backupClusterConfig.hosts());
+            if (backupClusterConfig.clientIntelligence().isPresent()) {
+                clusterConfigurationBuilder.clusterClientIntelligence(backupClusterConfig.clientIntelligence().get());
+            }
+        }
+
+        return builder;
+    }
+
+    private void configureRemoteCacheConfigurationURI(ConfigurationBuilder builder, String cacheName, URL configFile) {
+        try {
+            builder.remoteCache(cacheName).configurationURI(configFile.toURI());
+        } catch (Exception e) {
+            log.errorf("Provided configuration-resource or configuration-uri can't be loaded. %s",
+                    configFile.getPath());
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static void handleProtoStreamMarshaller(ProtoStreamMarshaller marshaller, Properties properties,
+            BeanManager beanManager) {
+        SerializationContext serializationContext = marshaller.getSerializationContext();
+
+        Set<SerializationContextInitializer> initializers = (Set) properties
+                .get(PROTOBUF_SCHEMAS);
+        if (initializers != null) {
+            for (SerializationContextInitializer initializer : initializers) {
+                initializer.registerSchema(serializationContext);
+                initializer.registerMarshallers(serializationContext);
+            }
+        }
+
+        FileDescriptorSource fileDescriptorSource = null;
+        for (Map.Entry<Object, Object> property : properties.entrySet()) {
+            Object key = property.getKey();
+            if (key instanceof String) {
+                String keyString = (String) key;
+                if (keyString.startsWith(PROTOBUF_FILE_PREFIX)) {
+                    String fileName = keyString.substring(PROTOBUF_FILE_PREFIX.length());
+                    String fileContents = (String) property.getValue();
+                    if (fileDescriptorSource == null) {
+                        fileDescriptorSource = new FileDescriptorSource();
+                    }
+                    fileDescriptorSource.addProtoFile(fileName, fileContents);
+                }
+            }
+        }
+
+        if (fileDescriptorSource != null) {
+            serializationContext.registerProtoFiles(fileDescriptorSource);
+        }
+
+        Set<Bean<Schema>> schemaBeans = (Set) beanManager.getBeans(Schema.class);
+        for (Bean<Schema> schemaBean : schemaBeans) {
+            CreationalContext<Schema> ctx = beanManager.createCreationalContext(schemaBean);
+            Schema schema = (Schema) beanManager.getReference(schemaBean, Schema.class,
+                    ctx);
+            FileDescriptorSource fds = FileDescriptorSource.fromString(schema.getName(), schema.toString());
+            serializationContext.registerProtoFiles(fds);
+            // Register all the fds so they can be queried
+            for (Map.Entry<String, char[]> fdEntry : fds.getFileDescriptors().entrySet()) {
+                properties.put(PROTOBUF_FILE_PREFIX + fdEntry.getKey(), new String(fdEntry.getValue()));
+            }
+        }
+
+        Set<Bean<FileDescriptorSource>> protoFileBeans = (Set) beanManager.getBeans(FileDescriptorSource.class);
+        for (Bean<FileDescriptorSource> bean : protoFileBeans) {
+            CreationalContext<FileDescriptorSource> ctx = beanManager.createCreationalContext(bean);
+            FileDescriptorSource fds = (FileDescriptorSource) beanManager.getReference(bean, FileDescriptorSource.class,
+                    ctx);
+            serializationContext.registerProtoFiles(fds);
+            // Register all the fds so they can be queried
+            for (Map.Entry<String, char[]> fdEntry : fds.getFileDescriptors().entrySet()) {
+                properties.put(PROTOBUF_FILE_PREFIX + fdEntry.getKey(), new String(fdEntry.getValue()));
+            }
+        }
+
+        Set<Bean<BaseMarshaller>> beans = (Set) beanManager.getBeans(BaseMarshaller.class);
+        for (Bean<BaseMarshaller> bean : beans) {
+            CreationalContext<BaseMarshaller> ctx = beanManager.createCreationalContext(bean);
+            BaseMarshaller messageMarshaller = (BaseMarshaller) beanManager.getReference(bean, BaseMarshaller.class,
+                    ctx);
+            serializationContext.registerMarshaller(messageMarshaller);
+        }
+    }
+
+    @PreDestroy
+    public void destroy() {
+        remoteCacheManagers.values().forEach(rcm -> rcm.stop());
+    }
+
+    /**
+     * This method is blocking when you call it for the first time and inits the
+     * connection to the RemoteCache
+     *
+     * @param clientName, the name of the client
+     * @param cacheName, the cache being requested
+     * @return RemoteCache
+     */
+    public <K, V> RemoteCache<K, V> getRemoteCache(String clientName, String cacheName) {
+        RemoteCacheManager cacheManager = getNamedRemoteCacheManager(clientName);
+
+        if (cacheManager != null && cacheName != null && !cacheName.isEmpty()) {
+            RemoteCache<K, V> cache = cacheManager.getCache(cacheName);
+            if (cache == null) {
+                log.warn("Attempt to create cache using minimal default config");
+                return cacheManager.administration()
+                        .getOrCreateCache(cacheName, DEFAULT_CONFIG);
+            }
+            return cache;
+        }
+
+        if (cacheManager != null) {
+            RemoteCache<K, V> cache = cacheManager.getCache();
+            if (cache == null) {
+                log.warn("Attempt to create cache using minimal default config");
+                return cacheManager.administration()
+                        .getOrCreateCache(cacheName, DEFAULT_CONFIG);
+            }
+            return cache;
+        }
+
+        log.error("Unable to produce RemoteCache. RemoteCacheManager is null. Client: " + cacheName);
+        throw new IllegalStateException(
+                "Unable to produce RemoteCache. RemoteCacheManager is null. Client: " + cacheName);
+    }
+
+    Map<String, Properties> properties;
+
+    public void setProperties(Map<String, Properties> properties) {
+        this.properties = properties;
+    }
+
+    public RemoteCacheManager getNamedRemoteCacheManager(String clientName) {
+        return remoteCacheManagers.computeIfAbsent(clientName, new Function<>() {
+            @Override
+            public RemoteCacheManager apply(String cn) {
+                if (properties.isEmpty()) {
+                    // TODO: this should probably be an error, but keeping `null` as that's what the previous version of the code did
+                    return null;
+                }
+
+                ConfigurationBuilder conf = builderFromProperties(cn, properties);
+                if (conf.servers().isEmpty()) {
+                    // TODO: this should probably be an error, but keeping `null` as that's what the previous version of the code did
+                    return null;
+                }
+                // Build the cache manager if the server list is present
+                InfinispanClientsRuntimeConfig infinispanClientsRuntimeConfig = infinispanClientsRuntimeConfigHandle.get();
+
+                RemoteCacheManager result = new RemoteCacheManager(conf.build(),
+                        infinispanClientsRuntimeConfig.startClient().orElse(Boolean.TRUE));
+
+                if (infinispanClientsRuntimeConfig.useSchemaRegistration().orElse(Boolean.TRUE)) {
+                    registerSchemaInServer(cn, properties, result);
+                }
+
+                return result;
+            }
+        });
+    }
+
+    public CounterManager getNamedCounterManager(String clientName) {
+        RemoteCacheManager cacheManager = getNamedRemoteCacheManager(clientName);
+        return RemoteCounterManagerFactory.asCounterManager(cacheManager);
+    }
+
+}

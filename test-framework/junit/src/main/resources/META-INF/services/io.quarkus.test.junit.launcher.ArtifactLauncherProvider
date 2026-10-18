@@ -1,0 +1,3 @@
+io.quarkus.test.junit.launcher.DockerContainerLauncherProvider
+io.quarkus.test.junit.launcher.JarLauncherProvider
+io.quarkus.test.junit.launcher.NativeImageLauncherProvider

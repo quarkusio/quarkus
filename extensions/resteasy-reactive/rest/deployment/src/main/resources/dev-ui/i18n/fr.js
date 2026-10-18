@@ -1,0 +1,16 @@
+export const templates = {
+    'quarkus-rest-meta-description': 'Une implémentation Jakarta REST utilisant le traitement à la compilation et Vert.x.',
+    'quarkus-rest-endpoints': 'Points de terminaison',
+    'quarkus-rest-endpoint_scores': 'Scores des points de terminaison',
+    'quarkus-rest-exception_mappers': 'Mappers d\'exception',
+    'quarkus-rest-parameter_converter_providers': 'Fournisseurs de convertisseurs de paramètres',
+    'quarkus-rest-no-rest-endpoints': 'Vous n\'avez pas de points de terminaison REST.',
+    'quarkus-rest-learn-rest': 'Apprenez à écrire des services REST avec Quarkus REST',
+    'quarkus-rest-produces': 'Produit',
+    'quarkus-rest-consumes': 'Consomme',
+    'quarkus-rest-resource-class': 'Classe de Ressource',
+    'quarkus-rest-priority': 'Priorité',
+    'quarkus-rest-exception': 'Exception',
+    'quarkus-rest-mapper': 'Mapper',
+    'quarkus-rest-class-name': 'Nom de la classe',
+};

@@ -1,0 +1,11 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Quarkus Extension for Spring DI API"
+metadata:
+  keywords:
+  - "spring-di"
+  - "spring"
+  guide: "https://quarkus.io/guides/spring-di"
+  categories:
+  - "compatibility"
+  status: "stable"

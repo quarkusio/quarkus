@@ -1,0 +1,7 @@
+<enforcer>
+    <rules>
+        <requireMavenVersion>
+            <version>${supported-maven-versions}</version>
+        </requireMavenVersion>
+    </rules>
+</enforcer>

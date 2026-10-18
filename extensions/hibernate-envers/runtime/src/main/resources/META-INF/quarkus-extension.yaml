@@ -1,0 +1,13 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Hibernate Envers"
+metadata:
+  short-name: "Envers"
+  keywords:
+  - "hibernate-orm"
+  - "envers"
+  - "hibernate"
+  guide: "https://quarkus.io/guides/hibernate-orm#envers"
+  categories:
+  - "data"
+  status: "experimental"

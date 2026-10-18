@@ -1,0 +1,276 @@
+package io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.Set;
+
+import org.junit.jupiter.api.Test;
+
+import io.netty.handler.codec.DecoderResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.*;
+import io.vertx.core.http.impl.headers.Http1xHeaders;
+import io.vertx.core.net.HostAndPort;
+import io.vertx.core.net.NetSocket;
+import io.vertx.core.net.SocketAddress;
+
+class VertxUtilTest {
+
+    @Test
+    void extractRemoteHostnameTest() {
+        assertEquals("localhost", VertxUtil.extractRemoteHostname(createDummyRequest("localhost:8080")));
+        assertEquals("127.0.0.1", VertxUtil.extractRemoteHostname(createDummyRequest("127.0.0.1:111")));
+        assertEquals("localhost", VertxUtil.extractRemoteHostname(createDummyRequest("localhost")));
+        assertEquals("localhost", VertxUtil.extractRemoteHostname(createDummyRequest("localhost:")));
+        assertEquals("", VertxUtil.extractRemoteHostname(createDummyRequest(":1111")));
+        assertEquals("", VertxUtil.extractRemoteHostname(createDummyRequest(":")));
+        assertEquals("", VertxUtil.extractRemoteHostname(createDummyRequest("")));
+    }
+
+    @Test
+    void extractRemoteHostPortTest() {
+        assertEquals(8080, VertxUtil.extractRemoteHostPort(createDummyRequest("localhost:8080")));
+        assertEquals(111, VertxUtil.extractRemoteHostPort(createDummyRequest("127.0.0.1:111")));
+        assertEquals(1010, VertxUtil.extractRemoteHostPort(createDummyRequest("localhost")));
+        assertEquals(1010, VertxUtil.extractRemoteHostPort(createDummyRequest("localhost:")));
+        assertEquals(1111, VertxUtil.extractRemoteHostPort(createDummyRequest(":1111")));
+        assertEquals(1010, VertxUtil.extractRemoteHostPort(createDummyRequest(":")));
+        assertEquals(1010, VertxUtil.extractRemoteHostPort(createDummyRequest("")));
+    }
+
+    @Test
+    void extractHostnameTest() {
+        assertEquals("localhost", VertxUtil.extractHostname("localhost:8080"));
+        assertEquals("127.0.0.1", VertxUtil.extractHostname("127.0.0.1:111"));
+        assertEquals("localhost", VertxUtil.extractHostname("localhost"));
+        assertEquals("localhost", VertxUtil.extractHostname("localhost:"));
+        assertEquals("", VertxUtil.extractHostname(":1111"));
+        assertEquals("", VertxUtil.extractHostname(":"));
+        assertEquals("", VertxUtil.extractHostname(""));
+    }
+
+    @Test
+    void extractPortTest() {
+        assertEquals(8080, VertxUtil.extractPort("localhost:8080"));
+        assertEquals(111, VertxUtil.extractPort("127.0.0.1:111"));
+        assertEquals(-1, VertxUtil.extractPort("localhost"));
+        assertEquals(-1, VertxUtil.extractPort("localhost:"));
+        assertEquals(1111, VertxUtil.extractPort(":1111"));
+        assertEquals(-1, VertxUtil.extractPort(":"));
+        assertEquals(-1, VertxUtil.extractPort(""));
+    }
+
+    private HttpServerRequest createDummyRequest(String hostHeader) {
+        return new HttpServerRequest() {
+            @Override
+            public HttpServerRequest exceptionHandler(Handler<Throwable> handler) {
+                return null;
+            }
+
+            @Override
+            public HttpServerRequest handler(Handler<Buffer> handler) {
+                return null;
+            }
+
+            @Override
+            public HttpServerRequest pause() {
+                return null;
+            }
+
+            @Override
+            public HttpServerRequest resume() {
+                return null;
+            }
+
+            @Override
+            public HttpServerRequest fetch(long amount) {
+                return null;
+            }
+
+            @Override
+            public HttpServerRequest endHandler(Handler<Void> endHandler) {
+                return null;
+            }
+
+            @Override
+            public HttpVersion version() {
+                return null;
+            }
+
+            @Override
+            public HttpMethod method() {
+                return null;
+            }
+
+            @Override
+            public String scheme() {
+                return "";
+            }
+
+            @Override
+            public String uri() {
+                return "";
+            }
+
+            @Override
+            public String path() {
+                return "";
+            }
+
+            @Override
+            public String query() {
+                return "";
+            }
+
+            @Override
+            public HostAndPort authority() {
+                return null;
+            }
+
+            @Override
+            public HostAndPort authority(boolean b) {
+                return null;
+            }
+
+            @Override
+            public long bytesRead() {
+                return 0;
+            }
+
+            @Override
+            public HttpServerResponse response() {
+                return null;
+            }
+
+            @Override
+            public MultiMap headers() {
+                Http1xHeaders entries = Http1xHeaders.httpHeaders();
+                entries.add("host", hostHeader);
+                return entries;
+            }
+
+            @Override
+            public HttpServerRequest setParamsCharset(String charset) {
+                return null;
+            }
+
+            @Override
+            public String getParamsCharset() {
+                return "";
+            }
+
+            @Override
+            public MultiMap params() {
+                return MultiMap.caseInsensitiveMultiMap();
+            }
+
+            @Override
+            public MultiMap params(boolean semicolonIsNormalChar) {
+                return null;
+            }
+
+            @Override
+            public String absoluteURI() {
+                return "";
+            }
+
+            @Override
+            public Future<Buffer> body() {
+                return null;
+            }
+
+            @Override
+            public Future<Void> end() {
+                return null;
+            }
+
+            @Override
+            public Future<NetSocket> toNetSocket() {
+                return null;
+            }
+
+            @Override
+            public HttpServerRequest setExpectMultipart(boolean expect) {
+                return null;
+            }
+
+            @Override
+            public boolean isExpectMultipart() {
+                return false;
+            }
+
+            @Override
+            public HttpServerRequest uploadHandler(Handler<HttpServerFileUpload> uploadHandler) {
+                return null;
+            }
+
+            @Override
+            public MultiMap formAttributes() {
+                return null;
+            }
+
+            @Override
+            public String getFormAttribute(String attributeName) {
+                return "";
+            }
+
+            @Override
+            public Future<ServerWebSocket> toWebSocket() {
+                return null;
+            }
+
+            @Override
+            public boolean isEnded() {
+                return false;
+            }
+
+            @Override
+            public HttpServerRequest customFrameHandler(Handler<HttpFrame> handler) {
+                return null;
+            }
+
+            @Override
+            public HttpConnection connection() {
+                return null;
+            }
+
+            @Override
+            public HttpServerRequest streamPriorityHandler(Handler<StreamPriority> handler) {
+                return null;
+            }
+
+            @Override
+            public DecoderResult decoderResult() {
+                return null;
+            }
+
+            @Override
+            public Cookie getCookie(String name) {
+                return null;
+            }
+
+            @Override
+            public Cookie getCookie(String name, String domain, String path) {
+                return null;
+            }
+
+            @Override
+            public Set<Cookie> cookies(String name) {
+                return Set.of();
+            }
+
+            @Override
+            public Set<Cookie> cookies() {
+                return Set.of();
+            }
+
+            @Override
+            public SocketAddress remoteAddress() {
+                return SocketAddress.inetSocketAddress(1010, "localhost");
+            }
+        };
+    }
+}

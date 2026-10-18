@@ -1,0 +1,227 @@
+package io.quarkus.paths;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+/**
+ * Classpath resource set backed by file system paths.
+ */
+public interface PathTree {
+
+    static PathTree ofDirectoryOrFile(Path p) {
+        return ofDirectoryOrFile(p, null);
+    }
+
+    static PathTree ofDirectoryOrFile(Path p, PathFilter filter) {
+        try {
+            final BasicFileAttributes fileAttributes = Files.readAttributes(p, BasicFileAttributes.class);
+            return fileAttributes.isDirectory() ? new DirectoryPathTree(p, filter) : new FilePathTree(p, filter);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(p + " does not exist", e);
+        }
+    }
+
+    /**
+     * Creates a new {@link PathTree} for a given existing path which is expected to be
+     * either a directory or a ZIP-based archive.
+     *
+     * @param p path to a directory or an archive
+     * @return an instance of {@link PathTree} for a given existing directory or an archive
+     */
+    static PathTree ofDirectoryOrArchive(Path p) {
+        return ofDirectoryOrArchive(p, null);
+    }
+
+    /**
+     * Creates a new {@link PathTree} for a given existing path which is expected to be
+     * either a directory or a ZIP-based archive applying a provided {@link PathFilter}
+     * unless it is {@code null}.
+     *
+     * @param p path to a directory or an archive
+     * @param filter path filter to apply, could be {@code null}
+     * @return an instance of {@link PathTree} for a given existing directory or an archive
+     */
+    static PathTree ofDirectoryOrArchive(Path p, PathFilter filter) {
+        try {
+            final BasicFileAttributes fileAttributes = Files.readAttributes(p, BasicFileAttributes.class);
+            return fileAttributes.isDirectory() ? new DirectoryPathTree(p, filter)
+                    // invoke ArchivePathTree.forPath directly instead of ofArchive() to avoid an extra Files.exists invocation
+                    : ArchivePathTree.forPath(p, filter);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(p + " does not exist", e);
+        }
+    }
+
+    /**
+     * Creates a new {@link PathTree} for an existing path that is expected to be
+     * a ZIP-based archive.
+     *
+     * @param archive path to an archive
+     * @return an instance of {@link PathTree} for a given archive
+     */
+    static PathTree ofArchive(Path archive) {
+        return ofArchive(archive, null);
+    }
+
+    /**
+     * Creates a new {@link PathTree} for an existing path that is expected to be
+     * a ZIP-based archive applying a provided {@link PathFilter} unless it is {@code null}.
+     *
+     * @param archive path to an archive
+     * @param filter path filter to apply, could be {@code null}
+     * @return an instance of {@link PathTree} for a given archive
+     */
+    static PathTree ofArchive(Path archive, PathFilter filter) {
+        if (!Files.exists(archive)) {
+            throw new IllegalArgumentException(archive + " does not exist");
+        }
+        return ArchivePathTree.forPath(archive, filter);
+    }
+
+    /**
+     * Whether the content of this tree comes from an archive or not.
+     * <p>
+     * This is useful for instance when you want to determine if the resources can be updated in dev mode.
+     */
+    boolean isArchiveOrigin();
+
+    /**
+     * The roots of the path tree.
+     * <p>
+     * Note that you shouldn't use these roots for browsing except if the PathTree is open.
+     *
+     * @return roots of the path tree
+     */
+    Collection<Path> getRoots();
+
+    /**
+     * Checks whether the tree is empty
+     *
+     * @return true, if the tree is empty, otherwise - false
+     */
+    default boolean isEmpty() {
+        return getRoots().isEmpty();
+    }
+
+    /**
+     * If {@code META-INF/MANIFEST.MF} found, reads it and returns an instance of {@link ManifestAttributes},
+     * a trimmed down version of the Manifest, otherwise returns null.
+     *
+     * @return parsed {@code META-INF/MANIFEST.MF} if it's found, otherwise {@code null}
+     */
+    ManifestAttributes getManifestAttributes();
+
+    /**
+     * Returns a set of resource names provided by this path tree.
+     * The set may include both directories and files.
+     *
+     * @return a set of resource names provided by this path tree
+     */
+    default Set<String> getResourceNames() {
+        Set<String> names = new HashSet<>();
+        walk(visit -> names.add(visit.getResourceName()));
+        return names;
+    }
+
+    /**
+     * Walks the tree.
+     * <p/>
+     * This method will make sure the relevant multi release content
+     * is associated with the expected resource name paths for the current Java version.
+     *
+     * @param visitor path visitor
+     */
+    void walk(PathVisitor visitor);
+
+    /**
+     * Walks the tree without remapping multi release content to the paths expected for the current Java version.
+     *
+     * @param visitor path visitor
+     */
+    void walkRaw(PathVisitor visitor);
+
+    /**
+     * Walks a subtree of resources in this tree that begins with a passed in {@code resourceDirName}.
+     * If this tree does not contain resource {@code resourceDirName} then the method returns without an error.
+     * <p>
+     * This method does not create a new {@link PathTree} with the root at {@code resourceDirName}.
+     * It simply applies an inclusion filter to this {@link PathTree} instance, keeping the same root.
+     *
+     * @param resourceDirName directory resource name starting from which the walk should begin
+     * @param visitor path visitor
+     */
+    void walkIfContains(String resourceDirName, PathVisitor visitor);
+
+    /**
+     * Applies a function to a given resource in the tree.
+     * If the resource isn't found in the tree, the {@link PathVisit} argument
+     * passed to the function will be {@code null}.
+     *
+     * @param <T> resulting type
+     * @param resourceName resource to process
+     * @param func processing function
+     * @return result of the function
+     */
+    <T> T apply(String resourceName, Function<PathVisit, T> func);
+
+    /**
+     * Consumes a given resource from the tree.
+     * If the resource isn't found in the tree, the {@link PathVisit} argument
+     * passed to the consumer will be {@code null}.
+     *
+     * @param resourceName resource to consume
+     * @param consumer path consumer
+     */
+    void accept(String resourceName, Consumer<PathVisit> consumer);
+
+    /**
+     * Consumes a given resource from the tree.
+     * If the resource isn't found in the tree, the {@link PathVisit} argument
+     * passed to the consumer will be {@code null}.
+     * <p>
+     * If multiple items match then the consumer will be called multiple times.
+     *
+     * @param resourceName resource to consume
+     * @param consumer path consumer
+     */
+    default void acceptAll(String resourceName, Consumer<PathVisit> consumer) {
+        accept(resourceName, consumer);
+    }
+
+    /**
+     * Checks whether the tree contains a resource.
+     *
+     * @param resourceName resource name to check
+     * @return true, in case the tree contains the path, otherwise - false
+     */
+    boolean contains(String resourceName);
+
+    /**
+     * Returns an {@link OpenPathTree} for this tree, which is supposed to be
+     * closed at the end of processing. It is meant to be an optimization when
+     * processing multiple paths of path trees that represent archives.
+     * If a path tree does not represent an archive but a directory, for example,
+     * this method is expected to be a no-op, returning the original tree as an
+     * instance of {@link OpenPathTree}.
+     *
+     * @return an instance of {@link OpenPathTree} for this path tree
+     */
+    OpenPathTree open();
+
+    /**
+     * Creates a new {@link PathTree} instance applying a path filter to this {@link PathTree} instance.
+     *
+     * @param filter path filter to apply
+     * @return a new {@link PathTree} instance applying a path filter to this {@link PathTree} instance
+     */
+    default PathTree filter(PathFilter filter) {
+        return new FilteredPathTree(this, filter);
+    }
+}

@@ -1,0 +1,300 @@
+package io.quarkus.deployment.index;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassSummary;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexReader;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Indexer;
+import org.jboss.jandex.UnsupportedVersion;
+import org.jboss.logging.Logger;
+
+import io.quarkus.deployment.util.IoUtil;
+import io.quarkus.paths.OpenPathTree;
+import io.quarkus.paths.PathVisit;
+import io.quarkus.paths.PathVisitor;
+import io.smallrye.common.io.jar.JarFiles;
+
+public class IndexingUtil {
+
+    private static final Logger log = Logger.getLogger("io.quarkus.deployment.index");
+
+    /**
+     * @deprecated use {@link DotName#OBJECT_NAME}
+     */
+    @Deprecated(since = "3.37", forRemoval = true)
+    public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
+
+    public static final String JANDEX_INDEX = "META-INF/jandex.idx";
+
+    // At least Jandex 3.0 is needed
+    private static final int REQUIRED_INDEX_VERSION = 11;
+
+    public static Index indexTree(OpenPathTree tree, Set<String> removed) throws IOException {
+        if (removed == null) {
+            Index index = tree.apply(JANDEX_INDEX, new Function<PathVisit, Index>() {
+                @Override
+                public Index apply(PathVisit visit) {
+                    if (visit == null) {
+                        return null;
+                    }
+                    try (InputStream in = Files.newInputStream(visit.getPath())) {
+                        IndexReader reader = new IndexReader(in);
+                        try {
+                            int indexVersion = reader.getIndexVersion();
+                            if (indexVersion < REQUIRED_INDEX_VERSION) {
+                                log.warnf("Reindexing %s, at least Jandex 3.0 must be used"
+                                        + " to index an application dependency (index version is %s)",
+                                        tree.toString(), indexVersion);
+                                return null;
+                            }
+                            return reader.read();
+                        } catch (UnsupportedVersion e) {
+                            log.warnf("Reindexing %s, the index format is too new for the Jandex version"
+                                    + " used by your application. Please report it to the author of this JAR (%s)",
+                                    tree.toString(), e.getMessage());
+                            return null;
+                        }
+                    } catch (IOException e) {
+                        throw new UncheckedIOException("Can't read Jandex index from " + tree, e);
+                    }
+                }
+            });
+            if (index != null) {
+                return index;
+            }
+        }
+
+        List<Path> classFilesToIndex = new ArrayList<>();
+        tree.walk(new PathVisitor() {
+            @Override
+            public void visitPath(PathVisit visit) {
+                Path fileName = visit.getPath().getFileName();
+                if (fileName == null
+                        || !fileName.toString().endsWith(".class")
+                        || Files.isDirectory(visit.getPath())
+                        || removed != null && removed.contains(visit.getRelativePath("/"))) {
+                    return;
+                }
+                classFilesToIndex.add(visit.getPath());
+            }
+        });
+
+        // feed classes to the `Indexer` in deterministic order
+        classFilesToIndex.sort(Comparator.comparing(Path::toString));
+
+        final Indexer indexer = new Indexer();
+        for (Path classFile : classFilesToIndex) {
+            try (InputStream inputStream = Files.newInputStream(classFile)) {
+                indexer.index(inputStream);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return indexer.complete();
+    }
+
+    public static Index indexJar(Path path) throws IOException {
+        return indexJar(path.toFile(), Collections.emptySet());
+    }
+
+    public static Index indexJar(File file) throws IOException {
+        return indexJar(file, Collections.emptySet());
+    }
+
+    public static Index indexJar(Path path, Set<String> removed) throws IOException {
+        return indexJar(path.toFile(), removed);
+    }
+
+    public static Index indexJar(File file, Set<String> removed) throws IOException {
+        try (JarFile jarFile = JarFiles.create(file)) {
+            JarEntry existing = jarFile.getJarEntry(JANDEX_INDEX);
+            if (existing != null && removed == null) {
+                try (InputStream in = jarFile.getInputStream(existing)) {
+                    IndexReader reader = new IndexReader(in);
+                    try {
+                        int indexVersion = reader.getIndexVersion();
+                        if (indexVersion < REQUIRED_INDEX_VERSION) {
+                            log.warnf("Reindexing %s, at least Jandex 3.0 must be used"
+                                    + " to index an application dependency (index version is %s)", file, indexVersion);
+                            return indexJar(jarFile, removed);
+                        }
+                        return reader.read();
+                    } catch (UnsupportedVersion e) {
+                        log.warnf("Reindexing %s, the index format is too new for the Jandex version"
+                                + " used by your application. Please report it to the author of this JAR (%s)",
+                                file, e.getMessage());
+                        return indexJar(jarFile, removed);
+                    }
+                }
+            }
+            return indexJar(jarFile, removed);
+        }
+    }
+
+    private static Index indexJar(JarFile file, Set<String> removed) throws IOException {
+        List<JarEntry> entriesToIndex = new ArrayList<>();
+        for (JarEntry entry : file.versionedStream().toList()) {
+            if (removed != null && removed.contains(entry.getRealName())) {
+                continue;
+            }
+            if (entry.getName().endsWith(".class")) {
+                entriesToIndex.add(entry);
+            }
+        }
+
+        // feed classes to the `Indexer` in deterministic order
+        entriesToIndex.sort(Comparator.comparing(JarEntry::getRealName));
+
+        Indexer indexer = new Indexer();
+        for (JarEntry entry : entriesToIndex) {
+            try (InputStream inputStream = file.getInputStream(entry)) {
+                indexer.index(inputStream);
+            }
+        }
+        return indexer.complete();
+    }
+
+    /**
+     * @deprecated use {@link LazyIndexer}
+     */
+    @Deprecated(since = "3.37", forRemoval = true)
+    public static void indexClass(String className, Indexer indexer, IndexView quarkusIndex,
+            Set<DotName> additionalIndex, ClassLoader classLoader) {
+        indexClass(className, indexer, quarkusIndex, additionalIndex, new HashSet<>(), classLoader);
+    }
+
+    /**
+     * @deprecated use {@link LazyIndexer}
+     */
+    @Deprecated(since = "3.37", forRemoval = true)
+    public static void indexClass(String className, Indexer indexer, IndexView quarkusIndex,
+            Set<DotName> additionalIndex, Set<DotName> knownMissingClasses, ClassLoader classLoader) {
+        DotName classDotName = DotName.createSimple(className);
+        if (additionalIndex.contains(classDotName)) {
+            return;
+        }
+
+        DotName superclassName;
+        Set<DotName> annotationNames;
+
+        ClassInfo classInfo = quarkusIndex.getClassByName(classDotName);
+        if (classInfo == null) {
+            log.debugf("Index class: %s", className);
+            try (InputStream stream = IoUtil.readClass(classLoader, className)) {
+                if (stream == null) {
+                    throw new IllegalStateException(
+                            "Failed to index: " + className + ", class not present in class loader: " + classLoader);
+                }
+
+                ClassSummary summary = indexer.indexWithSummary(stream);
+                additionalIndex.add(summary.name());
+                superclassName = summary.superclassName();
+                annotationNames = summary.annotations();
+            } catch (Exception e) {
+                throw new IllegalStateException("Failed to index: " + className, e);
+            }
+        } else {
+            // The class could be indexed by quarkus - we still need to distinguish framework classes
+            additionalIndex.add(classDotName);
+            superclassName = classInfo.superName();
+            annotationNames = classInfo.annotationsMap().keySet();
+        }
+
+        for (DotName annotationName : annotationNames) {
+            if (!additionalIndex.contains(annotationName) && quarkusIndex.getClassByName(annotationName) == null) {
+                try (InputStream annotationStream = IoUtil.readClass(classLoader, annotationName.toString())) {
+                    if (annotationStream == null) {
+                        log.debugf("Could not index annotation: %s (missing class or dependency)", annotationName);
+                        knownMissingClasses.add(annotationName);
+                    } else {
+                        log.debugf("Index annotation: %s", annotationName);
+                        indexClass(annotationName.toString(), indexer, quarkusIndex, additionalIndex, knownMissingClasses,
+                                classLoader);
+                    }
+                } catch (IOException e) {
+                    throw new IllegalStateException("Failed to index: " + className, e);
+                }
+            }
+        }
+        if (superclassName != null && !superclassName.equals(DotName.OBJECT_NAME)) {
+            indexClass(superclassName.toString(), indexer, quarkusIndex, additionalIndex, knownMissingClasses, classLoader);
+        }
+    }
+
+    /**
+     * @deprecated use {@link LazyIndexer}
+     */
+    @Deprecated(since = "3.37", forRemoval = true)
+    public static void indexClass(String className, Indexer indexer,
+            IndexView quarkusIndex, Set<DotName> additionalIndex, ClassLoader classLoader, byte[] beanData) {
+        indexClass(className, indexer, quarkusIndex, additionalIndex, new HashSet<>(), classLoader, beanData);
+    }
+
+    /**
+     * @deprecated use {@link LazyIndexer}
+     */
+    @Deprecated(since = "3.37", forRemoval = true)
+    public static void indexClass(String className, Indexer indexer,
+            IndexView quarkusIndex, Set<DotName> additionalIndex, Set<DotName> knownMissingClasses,
+            ClassLoader classLoader, byte[] beanData) {
+        DotName classDotName = DotName.createSimple(className);
+        if (additionalIndex.contains(classDotName)) {
+            return;
+        }
+
+        Set<DotName> annotationNames;
+
+        ClassInfo classInfo = quarkusIndex.getClassByName(classDotName);
+        if (classInfo == null) {
+            log.debugf("Index class: %s", className);
+            try (InputStream stream = new ByteArrayInputStream(beanData)) {
+                ClassSummary summary = indexer.indexWithSummary(stream);
+                additionalIndex.add(summary.name());
+                annotationNames = summary.annotations();
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to index: " + className, e);
+            }
+        } else {
+            // The class could be indexed by quarkus - we still need to distinguish framework classes
+            additionalIndex.add(classDotName);
+            annotationNames = classInfo.annotationsMap().keySet();
+        }
+
+        for (DotName annotationName : annotationNames) {
+            if (!additionalIndex.contains(annotationName) && quarkusIndex.getClassByName(annotationName) == null) {
+                try (InputStream annotationStream = IoUtil.readClass(classLoader, annotationName.toString())) {
+                    if (annotationStream == null) {
+                        log.debugf("Could not index annotation: %s (missing class or dependency)", annotationName);
+                        knownMissingClasses.add(annotationName);
+                    } else {
+                        log.debugf("Index annotation: %s", annotationName);
+                        indexClass(annotationName.toString(), indexer, quarkusIndex, additionalIndex, knownMissingClasses,
+                                classLoader);
+                        additionalIndex.add(annotationName);
+                    }
+                } catch (IOException e) {
+                    throw new IllegalStateException("Failed to index: " + className, e);
+                }
+            }
+        }
+    }
+}

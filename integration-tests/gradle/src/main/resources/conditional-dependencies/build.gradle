@@ -1,0 +1,16 @@
+plugins {
+    id 'java'
+    id 'io.quarkus' apply false
+    id 'io.quarkus.extension' apply false
+}
+
+repositories {
+    mavenLocal {
+        content {
+            includeGroup 'org.acme' // for dependencies built in this test
+            includeGroupByRegex 'io.quarkus.*'
+            includeGroup 'org.hibernate.orm'
+        }
+    }
+    mavenCentral()
+}

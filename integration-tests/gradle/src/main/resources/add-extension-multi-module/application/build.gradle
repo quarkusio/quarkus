@@ -1,0 +1,10 @@
+plugins {
+    id 'io.quarkus'
+}
+
+dependencies {
+    implementation project(":common")
+    implementation 'io.quarkus:quarkus-resteasy'
+
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+}

@@ -1,0 +1,65 @@
+package io.quarkus.arc;
+
+import java.lang.annotation.Annotation;
+import java.util.Collections;
+import java.util.Set;
+
+import jakarta.enterprise.event.Reception;
+import jakarta.enterprise.event.TransactionPhase;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.ObserverMethod;
+
+import io.quarkus.arc.impl.EventContextImpl;
+import io.quarkus.arc.impl.EventMetadataImpl;
+
+/**
+ * Represents an observer method.
+ *
+ * @author Martin Kouba
+ *
+ * @param <T>
+ */
+public interface InjectableObserverMethod<T> extends ObserverMethod<T>, Comparable<InjectableObserverMethod<?>> {
+
+    @Override
+    default Set<Annotation> getObservedQualifiers() {
+        return Collections.emptySet();
+    }
+
+    @Override
+    default Reception getReception() {
+        return Reception.ALWAYS;
+    }
+
+    @Override
+    default TransactionPhase getTransactionPhase() {
+        return TransactionPhase.IN_PROGRESS;
+    }
+
+    @Override
+    default Bean<?> getDeclaringBean() {
+        String id = getDeclaringBeanIdentifier();
+        if (id != null) {
+            return Arc.requireContainer().bean(id);
+        }
+        return null;
+    }
+
+    default void notify(T event) {
+        notify(new EventContextImpl<>(event,
+                new EventMetadataImpl(getObservedQualifiers(), event.getClass(), null)));
+    }
+
+    /**
+     *
+     * @return the identifier or null for synthetic observers
+     * @see InjectableBean#getIdentifier()
+     */
+    String getDeclaringBeanIdentifier();
+
+    @Override
+    default int compareTo(InjectableObserverMethod<?> other) {
+        return Integer.compare(this.getPriority(), other.getPriority());
+    }
+
+}

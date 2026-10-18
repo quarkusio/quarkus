@@ -1,0 +1,21 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "gRPC"
+metadata:
+  keywords:
+    - "gRPC"
+  guide: "https://quarkus.io/guides/grpc"
+  categories:
+    - "web"
+    - "serialization"
+    - "reactive"
+  status: "stable"
+  codestart:
+    name: "grpc"
+    languages:
+      - "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.grpc."
+  cli-plugins:
+    - "${project.groupId}:quarkus-grpc-cli:${project.version}"

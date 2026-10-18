@@ -1,0 +1,53 @@
+package io.quarkus.resteasy.test.sse;
+
+import java.net.URI;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.sse.InboundSseEvent;
+import jakarta.ws.rs.sse.SseEventSource;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.common.http.TestHTTPResource;
+
+public class SseTestCase {
+
+    @TestHTTPResource
+    URI uri;
+
+    @RegisterExtension
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(SseResource.class));
+
+    @Test
+    public void testSse() throws Exception {
+
+        Client client = ClientBuilder.newBuilder().build();
+        WebTarget target = client.target(uri.toString() + "sse");
+        try (SseEventSource eventSource = SseEventSource.target(target).build()) {
+            CompletableFuture<String> res = new CompletableFuture<>();
+            eventSource.register(new Consumer<InboundSseEvent>() {
+                @Override
+                public void accept(InboundSseEvent inboundSseEvent) {
+                    res.complete(inboundSseEvent.readData());
+                }
+            }, new Consumer<Throwable>() {
+                @Override
+                public void accept(Throwable throwable) {
+                    res.completeExceptionally(throwable);
+                }
+            });
+            eventSource.open();
+            Assertions.assertEquals("hello", res.get(5, TimeUnit.SECONDS));
+        }
+    }
+}

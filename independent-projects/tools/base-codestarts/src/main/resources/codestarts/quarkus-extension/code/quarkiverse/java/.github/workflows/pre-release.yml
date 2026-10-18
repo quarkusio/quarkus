@@ -1,0 +1,20 @@
+name: Quarkiverse Pre Release
+
+on:
+  pull_request:
+    paths:
+      - '.github/project.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pre-release:
+    name: Pre-Release
+    uses: quarkiverse/.github/.github/workflows/pre-release.yml@main
+    secrets: inherit

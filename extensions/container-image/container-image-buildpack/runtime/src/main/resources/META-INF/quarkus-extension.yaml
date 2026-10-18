@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Container Image Buildpack"
+metadata:
+  keywords:
+    - "buildpack"
+    - "buildpacks"
+    - "cnb"
+    - "container"
+    - "image"
+  guide: "https://quarkus.io/guides/container-image#buildpack"
+  categories:
+    - "cloud"
+  status: "preview"

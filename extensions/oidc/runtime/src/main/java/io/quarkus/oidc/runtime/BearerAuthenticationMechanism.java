@@ -1,0 +1,223 @@
+package io.quarkus.oidc.runtime;
+
+import static io.netty.handler.codec.http.HttpHeaders.Values.NO_STORE;
+import static io.quarkus.oidc.runtime.OidcUtils.extractBearerToken;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getAuthenticationFailureFromEvent;
+
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
+import javax.net.ssl.SSLPeerUnverifiedException;
+
+import org.eclipse.microprofile.jwt.Claims;
+import org.jboss.logging.Logger;
+
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.DPoPNonceProvider;
+import io.quarkus.oidc.DPoPNonceProvider.DPoPNonceContext;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.identity.IdentityProviderManager;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.ChallengeData;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.RoutingContext;
+
+public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMechanism {
+    private static final Logger LOG = Logger.getLogger(BearerAuthenticationMechanism.class);
+
+    private final DPoPNonceProvider dPoPNonceProvider;
+
+    BearerAuthenticationMechanism(DPoPNonceProvider dPoPNonceProvider, DefaultTenantConfigResolver resolver,
+            HttpAuthenticationMechanism parent) {
+        super(resolver, parent);
+        this.dPoPNonceProvider = dPoPNonceProvider;
+    }
+
+    public Uni<SecurityIdentity> authenticate(RoutingContext context,
+            IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {
+        LOG.debug("Starting a bearer access token authentication");
+        String token = extractBearerToken(context, oidcTenantConfig);
+        // if a bearer token is provided try to authenticate
+        if (token != null) {
+            try {
+                setCertificateThumbprint(context, oidcTenantConfig, token);
+                setDPopProof(context, oidcTenantConfig, token);
+            } catch (AuthenticationFailedException ex) {
+                return Uni.createFrom().failure(ex);
+            }
+            return authenticate(identityProviderManager, context, new AccessTokenCredential(token));
+        }
+        LOG.debug("Bearer access token is not available");
+        return Uni.createFrom().nullItem();
+    }
+
+    private static void setCertificateThumbprint(RoutingContext context, OidcTenantConfig oidcTenantConfig, String token) {
+        if (oidcTenantConfig.token().binding().certificate()) {
+            Certificate cert = getCertificate(context, token);
+            if (!(cert instanceof X509Certificate)) {
+                LOG.warn("Access token must be bound to X509 client certificate");
+                throw new AuthenticationFailedException(tokenMap(token));
+            }
+            context.put(OidcConstants.X509_SHA256_THUMBPRINT,
+                    TrustStoreUtils.calculateThumprint((X509Certificate) cert));
+        }
+    }
+
+    private void setDPopProof(RoutingContext context, OidcTenantConfig oidcTenantConfig, String token) {
+        if (OidcUtils.isDPoPScheme(oidcTenantConfig.token().authorizationScheme())) {
+
+            List<String> proofs = context.request().headers().getAll(OidcConstants.DPOP_SCHEME);
+            if (proofs == null || proofs.isEmpty()) {
+                LOG.warn("DPoP proof header must be present to verify the DPoP access token binding");
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+            }
+            if (proofs.size() != 1) {
+                LOG.warnf("Only a single DPoP proof header is accepted, %d headers are available", proofs.size());
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+            }
+            String proof = proofs.get(0);
+
+            // Initial proof check:
+            JsonObject proofJwtHeaders = OidcUtils.decodeJwtHeaders(proof);
+            JsonObject proofJwtClaims = OidcCommonUtils.decodeJwtContent(proof);
+
+            if (!OidcConstants.DPOP_TOKEN_TYPE.equals(proofJwtHeaders.getString(OidcConstants.TOKEN_TYPE_HEADER))) {
+                LOG.warn("Invalid DPoP proof token type ('typ') header");
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+            }
+
+            // Check HTTP method and request URI
+            String proofHttpMethod = proofJwtClaims.getString(OidcConstants.DPOP_HTTP_METHOD);
+            if (proofHttpMethod == null) {
+                LOG.warn("DPoP proof HTTP method claim is missing");
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+            }
+
+            String httpMethod = context.request().method().name();
+            if (!httpMethod.equals(proofHttpMethod)) {
+                LOG.warnf("DPoP proof HTTP method claim %s does not match the request HTTP method %s", proofHttpMethod,
+                        httpMethod);
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+            }
+
+            // Check HTTP request URI
+            String proofHttpRequestUri = proofJwtClaims.getString(OidcConstants.DPOP_HTTP_REQUEST_URI);
+            if (proofHttpRequestUri == null) {
+                LOG.warn("DPoP proof HTTP request uri claim is missing");
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+            }
+
+            String httpRequestUri = context.request().absoluteURI();
+            int queryIndex = httpRequestUri.indexOf("?");
+            if (queryIndex > 0) {
+                httpRequestUri = httpRequestUri.substring(0, queryIndex);
+            }
+            if (!httpRequestUri.equals(proofHttpRequestUri)) {
+                LOG.warnf("DPoP proof HTTP request uri claim %s does not match the request HTTP uri %s", proofHttpRequestUri,
+                        httpRequestUri);
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+            }
+
+            String proofJti = proofJwtClaims.getString(Claims.jti.name());
+            if (proofJti == null) {
+                LOG.debug("DPoP proof jti claim is missing");
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+            }
+
+            Object proofIatObj = proofJwtClaims.getValue(Claims.iat.name());
+            if (proofIatObj == null) {
+                LOG.debug("DPoP proof iat claim is missing");
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+            }
+            if (!(proofIatObj instanceof Number)) {
+                LOG.debug("DPoP proof iat claim is malformed");
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+            }
+
+            Object proofExpObj = proofJwtClaims.getValue(Claims.exp.name());
+            if (proofExpObj != null) {
+                if (!(proofExpObj instanceof Number)) {
+                    LOG.debug("DPoP proof exp claim is malformed");
+                    throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+                }
+            }
+
+            context.put(OidcUtils.DPOP_PROOF, proof);
+            context.put(OidcUtils.DPOP_PROOF_JWT_HEADERS, proofJwtHeaders);
+            context.put(OidcUtils.DPOP_PROOF_JWT_CLAIMS, proofJwtClaims);
+        }
+    }
+
+    private static Certificate getCertificate(RoutingContext context, String token) {
+        try {
+            return context.request().sslSession().getPeerCertificates()[0];
+        } catch (SSLPeerUnverifiedException e) {
+            LOG.warn("Access token must be certificate bound but no client certificate is available");
+            throw new AuthenticationFailedException(tokenMap(token));
+        }
+    }
+
+    private static Map<String, Object> tokenMap(String token) {
+        return Map.of(OidcConstants.ACCESS_TOKEN_VALUE, token);
+    }
+
+    private static Map<String, Object> invalidDPoPProofMap(String token) {
+        return Map.of(OidcConstants.ACCESS_TOKEN_VALUE, token, OidcConstants.INVALID_DPOP_PROOF, Boolean.TRUE);
+    }
+
+    public Uni<ChallengeData> getChallenge(RoutingContext context) {
+        Uni<TenantConfigContext> tenantContext = resolver.resolveContext(context);
+        return tenantContext.onItem().transformToUni(new Function<TenantConfigContext, Uni<? extends ChallengeData>>() {
+            @Override
+            public Uni<ChallengeData> apply(TenantConfigContext tenantContext) {
+                String wwwAuthHeaderValue;
+                if (StepUpAuthenticationPolicy.isInsufficientUserAuthException(context)) {
+                    wwwAuthHeaderValue = tenantContext.oidcConfig().token().authorizationScheme() +
+                            StepUpAuthenticationPolicy.getAuthRequirementChallenge(context);
+                } else {
+                    wwwAuthHeaderValue = tenantContext.oidcConfig().token().authorizationScheme();
+                    if (isMissingOrMismatchedDpopNonce(context)) {
+
+                        JsonObject proofClaims = context.get(OidcUtils.DPOP_PROOF_JWT_CLAIMS);
+                        String proofJti = proofClaims.getString(Claims.jti.name());
+                        final String newNonce = dPoPNonceProvider.getNonce(new DPoPNonceContext(
+                                context, tenantContext.oidcConfig(), proofJti, null));
+                        if (newNonce != null) {
+                            wwwAuthHeaderValue += " error=\"%s\"".formatted(OidcConstants.USE_DPOP_NONCE);
+                            return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
+                                    Map.of(
+                                            HttpHeaderNames.WWW_AUTHENTICATE, wwwAuthHeaderValue,
+                                            OidcConstants.DPOP_NONCE, newNonce,
+                                            HttpHeaders.CACHE_CONTROL, NO_STORE)));
+                        }
+                    } else if (tenantContext.oidcConfig().resourceMetadata().enabled()) {
+                        wwwAuthHeaderValue += ResourceMetadataHandler.resourceMetadataAuthenticateParameter(context, resolver,
+                                tenantContext.oidcConfig());
+                    }
+                }
+                return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
+                        HttpHeaderNames.WWW_AUTHENTICATE, wwwAuthHeaderValue));
+            }
+        });
+    }
+
+    private boolean isMissingOrMismatchedDpopNonce(RoutingContext context) {
+        if (dPoPNonceProvider != null) {
+            final AuthenticationFailedException authFailure = getAuthenticationFailureFromEvent(context);
+            return authFailure != null && authFailure.getAttribute(OidcConstants.USE_DPOP_NONCE) != null;
+        }
+        return false;
+    }
+
+}

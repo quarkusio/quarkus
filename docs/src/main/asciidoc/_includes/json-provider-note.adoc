@@ -1,0 +1,22 @@
+[WARNING]
+====
+If you use JSON-B and JSON-P, make sure you don't use the shortcut methods offered by `jakarta.json.Json` such as `Json.createValue(...)`.
+
+At the moment, any single call to these methods will https://github.com/jakartaee/jsonp-api/issues/154[initialize a new `JsonProvider`], which is extremely slow.
+Quarkus provides a shared `JsonProvider` instance via the `JsonProviderHolder` class of the `quarkus-jsonp` extension.
+
+You can import it as a static import to simplify your code:
+
+[source,java]
+----
+import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
+
+[...]
+
+    public void method() {
+        jsonProvider().createValue("value");
+    }
+
+[...]
+----
+====

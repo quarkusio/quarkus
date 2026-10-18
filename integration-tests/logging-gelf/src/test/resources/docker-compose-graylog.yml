@@ -1,0 +1,48 @@
+version: '3.2'
+
+services:
+  elasticsearch:
+    image: docker.io/elastic/elasticsearch:7.16.3
+    environment:
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      discovery.type: "single-node"
+      xpack.security.enabled: "false"
+      cluster.routing.allocation.disk.threshold_enabled: false
+      # Disable some features that are not needed in our tests and just slow down startup -->
+      xpack.profiling.enabled: "false"
+      xpack.monitoring.templates.enabled: "false"
+      xpack.ml.enabled: "false"
+      xpack.watcher.enabled: "false"
+      xpack.ent_search.enabled: "false"
+      stack.templates.enabled: "false"
+      cluster.deprecation_indexing.enabled: "false"
+      indices.lifecycle.history_index_enabled: "false"
+      slm.history_index_enabled: "false"
+    networks:
+      - graylog
+
+  mongo:
+    image: mongo:4.2
+    networks:
+      - graylog
+
+  graylog:
+    image: graylog/graylog:4.3.0
+    ports:
+      - "9000:9000"
+      - "12201:12201/udp"
+      - "1514:1514"
+    environment:
+      # CHANGE ME (must be at least 16 characters)!
+      GRAYLOG_PASSWORD_SECRET: "forpasswordencryptionEXAMPLE"
+      # Password: admin
+      GRAYLOG_ROOT_PASSWORD_SHA2: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
+    networks:
+      - graylog
+    depends_on:
+      - elasticsearch
+      - mongo
+
+networks:
+  graylog:
+    driver: bridge

@@ -1,0 +1,3 @@
+io.quarkus.avro.deployment.AvroIDLCodeGenProvider
+io.quarkus.avro.deployment.AvroSchemaCodeGenProvider
+io.quarkus.avro.deployment.AvroProtocolCodeGenProvider

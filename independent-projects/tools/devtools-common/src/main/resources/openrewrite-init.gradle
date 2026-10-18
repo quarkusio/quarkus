@@ -1,0 +1,45 @@
+// Script used to run Open Rewrite without having to modify the build.
+// Based on https://docs.openrewrite.org/tutorials/running-rewrite-on-a-gradle-project-without-modifying-the-build
+
+initscript {
+    repositories {
+        maven { url "https://plugins.gradle.org/m2" }
+    }
+
+    dependencies {
+        classpath("org.openrewrite:plugin:{pluginVersion}")
+    }
+}
+
+addListener(new BuildInfoPluginListener())
+
+allprojects {
+    project.afterEvaluate {
+        if (!project.plugins.hasPlugin(org.openrewrite.gradle.RewritePlugin)) {
+            project.plugins.apply(org.openrewrite.gradle.RewritePlugin)
+        }
+    }
+    dependencies {
+      rewrite("org.openrewrite:rewrite-java")
+      rewrite("{recipesGAV}");
+    }
+    rewrite {
+      configFile = project.getRootProject().file("{rewriteFile}")
+      activeRecipe("{activeRecipe}")
+      plainTextMask({plainTextMask})
+    }
+}
+
+class BuildInfoPluginListener extends BuildAdapter {
+
+    def void projectsLoaded(Gradle gradle) {
+        Project root = gradle.getRootProject()
+        if (!"buildSrc".equals(root.name)) {
+            root.allprojects {
+                apply {
+                    apply plugin: org.openrewrite.gradle.RewritePlugin
+                }
+            }
+        }
+    }
+}

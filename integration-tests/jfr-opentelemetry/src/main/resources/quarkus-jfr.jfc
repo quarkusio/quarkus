@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration version="2.0" label="quarkus-jfr" description="This is for test" provider="Quarkus">
+    <event name="io.quarkus.rest.TracingRestBlocking">
+      <setting name="enabled">true</setting>
+    </event>
+    <event name="io.quarkus.rest.TracingRestReactiveStart\">
+      <setting name="enabled">true</setting>
+    </event>
+    <event name="io.quarkus.rest.TracingRestReactiveEnd">
+      <setting name="enabled">true</setting>
+    </event>
+</configuration>

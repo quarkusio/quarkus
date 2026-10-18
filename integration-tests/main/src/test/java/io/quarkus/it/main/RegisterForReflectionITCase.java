@@ -1,0 +1,98 @@
+package io.quarkus.it.main;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.DisableIfBuiltWithGraalVMNewerThan;
+import io.quarkus.test.junit.DisableIfBuiltWithGraalVMOlderThan;
+import io.quarkus.test.junit.GraalVMVersion;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.restassured.RestAssured;
+
+@QuarkusIntegrationTest
+public class RegisterForReflectionITCase {
+
+    private static final String BASE_PKG = "io.quarkus.it.rest";
+    private static final String ENDPOINT = "/reflection/simpleClassName";
+
+    @Test
+    public void testSelfWithoutNested() {
+        final String resourceA = BASE_PKG + ".ResourceA";
+
+        assertRegistration("ResourceA", resourceA);
+        // Mandrel/GraalVM reachability-metadata.json workflow unconditionally
+        // retains all nested classes (static, non-static, interfaces) when the outer
+        // class is registered.
+        // Asserting exclusion (expected "FAILED") is no longer valid.
+        // Keeping it here for a reference in case we manage to change this in Mandrel/GraalVM.
+        // assertRegistration("FAILED", resourceA + "$InnerClassOfA");
+        // assertRegistration("FAILED", resourceA + "$StaticClassOfA");
+        // assertRegistration("FAILED", resourceA + "$InterfaceOfA");
+        // It's all registered now:
+        assertRegistration("InnerClassOfA", resourceA + "$InnerClassOfA");
+        assertRegistration("StaticClassOfA", resourceA + "$StaticClassOfA");
+        assertRegistration("InterfaceOfA", resourceA + "$InterfaceOfA");
+    }
+
+    @Test
+    public void testSelfWithNested() {
+        final String resourceB = BASE_PKG + ".ResourceB";
+        assertRegistration("ResourceB", resourceB);
+        assertRegistration("InnerClassOfB", resourceB + "$InnerClassOfB");
+        assertRegistration("StaticClassOfB", resourceB + "$StaticClassOfB");
+        assertRegistration("InterfaceOfB", resourceB + "$InterfaceOfB");
+        assertRegistration("InnerInnerOfB", resourceB + "$InnerClassOfB$InnerInnerOfB");
+    }
+
+    @Test
+    public void testTargetWithNestedPost22_1() {
+        final String resourceC = BASE_PKG + ".ResourceC";
+        // Starting with GraalVM 22.1 ResourceC implicitly gets registered by GraalVM
+        // (see https://github.com/oracle/graal/pull/4414)
+        assertRegistration("ResourceC", resourceC);
+        assertRegistration("InaccessibleClassOfC", resourceC + "$InaccessibleClassOfC");
+        assertRegistration("OtherInaccessibleClassOfC", resourceC + "$InaccessibleClassOfC$OtherInaccessibleClassOfC");
+    }
+
+    @Test
+    @DisableIfBuiltWithGraalVMNewerThan(GraalVMVersion.GRAALVM_24_0_0)
+    public void testTargetWithoutNested_Mandrel21() {
+        final String resourceD = BASE_PKG + ".ResourceD";
+        // GraalVM/Mandrel for JDK 21 traverses up and flags the enclosing
+        // class as reachable when processing reachability-metadata.json for a nested target.
+        assertRegistration("ResourceD", resourceD);
+        assertRegistration("StaticClassOfD", resourceD + "$StaticClassOfD");
+        assertRegistration("OtherAccessibleClassOfD", resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
+    }
+
+    @Test
+    @DisableIfBuiltWithGraalVMOlderThan(GraalVMVersion.GRAALVM_24_0_0)
+    public void testTargetWithoutNested_Mandrel25() {
+        final String resourceD = BASE_PKG + ".ResourceD";
+        // GraalVM/Mandrel for JDK 25 isolates the nested target without
+        // leaking reachability to the enclosing class.
+        assertRegistration("FAILED", resourceD);
+        assertRegistration("StaticClassOfD", resourceD + "$StaticClassOfD");
+        // StaticClassOfD is registered. Mandrel/GraalVM reachability-metadata.json workflow unconditionally
+        // registers its inner classes. Asserting exclusion fails.
+        // assertRegistration("FAILED", resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
+        // It's all registered now:
+        assertRegistration("OtherAccessibleClassOfD", resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
+    }
+
+    // NOTE: This test is expected to fail with GraalVM >= 23.1.0 and < 23.1.3 yet we enable it for all 23.1 versions
+    // due to https://github.com/quarkusio/quarkus/issues/45873
+    @Test
+    @DisableIfBuiltWithGraalVMOlderThan(GraalVMVersion.GRAALVM_23_1_0)
+    public void testLambdaCapturingPost23_1_2() {
+        // Starting with GraalVM 23.1.3 lambda class names match the ones from HotSpot
+        // (see https://github.com/oracle/graal/pull/7775 and https://github.com/oracle/graal/commit/7d158e5c141e2f5c84f27095d8718189ab4953c2)
+        RestAssured.given().when().get("/reflection/lambda").then().body(startsWith("Comparator$$Lambda/"));
+    }
+
+    private void assertRegistration(String expected, String queryParam) {
+        RestAssured.given().queryParam("className", queryParam).when().get(ENDPOINT).then().body(is(expected));
+    }
+}

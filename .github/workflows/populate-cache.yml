@@ -1,0 +1,75 @@
+name: Quarkus CI - Populate cache
+
+permissions:
+  contents: read
+  packages: read
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'
+
+env:
+  # Workaround testsuite locale issue
+  LANG: en_US.UTF-8
+  COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
+  MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  configure:
+    name: "Configure jobs"
+    runs-on: ubuntu-slim
+    outputs:
+      m2-monthly-branch-cache-key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}
+      m2-monthly-cache-key: ${{ steps.cache-key.outputs.m2-monthly-cache-key }}
+      m2-cache-key: ${{ steps.cache-key.outputs.m2-cache-key }}
+    steps:
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          CURRENT_BRANCH="${{ github.repository != 'quarkusio/quarkus' && 'fork' || github.base_ref || github.ref_name }}"
+          CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+          CURRENT_DAY=$(/bin/date -u "+%d")
+          CURRENT_WEEK=$(/bin/date -u "+%Y-%U")
+          ROOT_CACHE_KEY="m2-cache"
+          echo "m2-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+          echo "m2-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+          echo "m2-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_WEEK}" >> $GITHUB_OUTPUT
+
+  populate-cache:
+    name: "Populate cache"
+    needs: [ configure ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Extract base JDK version from POM
+        id: base-jdk
+        run: |
+          BASE_JDK=$(grep -oP '<maven.compiler.release>\K[0-9]+' independent-projects/parent/pom.xml)
+          echo "base-jdk-version=${BASE_JDK}" >> $GITHUB_OUTPUT
+          echo "Base JDK version: ${BASE_JDK}"
+      - name: Set up JDK ${{ steps.base-jdk.outputs.base-jdk-version }}
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
+      - name: Cache Maven Repository
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
+        with:
+          path: ~/.m2/repository
+          # A new cache will be stored weekly. After that first store of the day, cache save actions will fail because the cache is immutable but it's not a problem.
+          # The whole cache is dropped monthly to prevent unlimited growth.
+          # The cache is per branch but in case we don't find a branch for a given branch, we will get a cache from another branch.
+          key: ${{ needs.configure.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.configure.outputs.m2-monthly-cache-key }}-
+      - name: Populate the cache
+        run: |
+          ./mvnw -T2C $COMMON_MAVEN_ARGS -q dependency:go-offline -Dgo-offline

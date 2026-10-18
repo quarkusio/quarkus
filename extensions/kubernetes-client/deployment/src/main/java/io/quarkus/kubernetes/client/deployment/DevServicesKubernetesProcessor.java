@@ -1,0 +1,556 @@
+package io.quarkus.kubernetes.client.deployment;
+
+import static com.dajudge.kindcontainer.KubernetesVersionEnum.latest;
+import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.DevServicesHostUtil.formatResolvedHostAndPort;
+import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
+import static io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig.Flavor.api_only;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singletonList;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.jboss.logging.Logger;
+import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.ContainerState;
+
+import com.dajudge.kindcontainer.ApiServerContainer;
+import com.dajudge.kindcontainer.ApiServerContainerVersion;
+import com.dajudge.kindcontainer.K3sContainer;
+import com.dajudge.kindcontainer.K3sContainerVersion;
+import com.dajudge.kindcontainer.KindContainer;
+import com.dajudge.kindcontainer.KindContainerVersion;
+import com.dajudge.kindcontainer.KubernetesContainer;
+import com.dajudge.kindcontainer.KubernetesImageSpec;
+import com.dajudge.kindcontainer.KubernetesVersionEnum;
+import com.dajudge.kindcontainer.client.KubeConfigUtils;
+import com.dajudge.kindcontainer.client.config.Cluster;
+import com.dajudge.kindcontainer.client.config.ClusterSpec;
+import com.dajudge.kindcontainer.client.config.Context;
+import com.dajudge.kindcontainer.client.config.ContextSpec;
+import com.dajudge.kindcontainer.client.config.KubeConfig;
+import com.dajudge.kindcontainer.client.config.User;
+import com.dajudge.kindcontainer.client.config.UserSpec;
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.InspectContainerResponse;
+
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.ConfigBuilder;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import io.fabric8.kubernetes.client.readiness.Readiness;
+import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Produce;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.builditem.DockerStatusBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.builditem.Startable;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
+import io.quarkus.devservices.common.ComposeLocator;
+import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerAddress;
+import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildTimeConfig;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig;
+import io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig.Flavor;
+import io.quarkus.kubernetes.client.spi.KubernetesDevServiceRequestBuildItem;
+import io.quarkus.runtime.configuration.ConfigUtils;
+
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class,
+        NoQuarkusTestKubernetesClient.class })
+public class DevServicesKubernetesProcessor {
+    private static final String KUBERNETES_CLIENT_DEVSERVICES_OVERRIDE_KUBECONFIG = "quarkus.kubernetes-client.devservices.override-kubeconfig";
+    private static final Logger log = Logger.getLogger(DevServicesKubernetesProcessor.class);
+    private static final String KUBERNETES_CLIENT_MASTER_URL = "quarkus.kubernetes-client.api-server-url";
+    private static final String KUBERNETES_CLIENT_CA_CERT_DATA = "quarkus.kubernetes-client.ca-cert-data";
+    private static final String KUBERNETES_CLIENT_CLIENT_CERT_DATA = "quarkus.kubernetes-client.client-cert-data";
+    private static final String KUBERNETES_CLIENT_CLIENT_KEY_DATA = "quarkus.kubernetes-client.client-key-data";
+    private static final String KUBERNETES_CLIENT_CLIENT_KEY_ALGO = "quarkus.kubernetes-client.client-key-algo";
+    private static final String KUBERNETES_CLIENT_NAMESPACE = "quarkus.kubernetes-client.namespace";
+    private static final String DEFAULT_MASTER_URL_ENDING_WITH_SLASH = Config.DEFAULT_MASTER_URL + "/";
+
+    static final String DEV_SERVICE_LABEL = "quarkus-dev-service-kubernetes";
+    static final int KUBERNETES_PORT = 6443;
+    private static final ContainerLocator KubernetesContainerLocator = locateContainerWithLabels(KUBERNETES_PORT,
+            DEV_SERVICE_LABEL);
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    @BuildStep
+    public DevServicesResultBuildItem setupKubernetesDevService(
+            DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            LaunchModeBuildItem launchMode,
+            KubernetesClientBuildTimeConfig kubernetesClientBuildTimeConfig,
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            DevServicesConfig devServicesConfig,
+            Optional<KubernetesDevServiceRequestBuildItem> devServiceKubeRequest) {
+
+        KubernetesDevServiceCfg configuration = new KubernetesDevServiceCfg(kubernetesClientBuildTimeConfig.devservices());
+
+        if (!configuration.devServicesEnabled) {
+            log.debug("Not starting Dev Services for Kubernetes, as it has been disabled in the config.");
+            return null;
+        }
+
+        if (ConfigUtils.isPropertyNonEmpty(KUBERNETES_CLIENT_MASTER_URL)) {
+            log.debug("Not starting Dev Services for Kubernetes as the client has been explicitly configured via "
+                    + KUBERNETES_CLIENT_MASTER_URL);
+            return null;
+        }
+
+        final boolean shouldStart = configuration.overrideKubeconfig || devServiceKubeRequest.isPresent();
+        if (!shouldStart) {
+            var autoConfigMasterUrl = Config.autoConfigure(null).getMasterUrl();
+            if (!DEFAULT_MASTER_URL_ENDING_WITH_SLASH.equals(autoConfigMasterUrl)) {
+                log.debug(
+                        "Not starting Dev Services for Kubernetes as a kube config file has been found. Set "
+                                + KUBERNETES_CLIENT_DEVSERVICES_OVERRIDE_KUBECONFIG
+                                + " to true to disregard the config and start Dev Services for Kubernetes.");
+                return null;
+            }
+        }
+
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
+            log.warn(
+                    "A running container runtime is required for Dev Services to work. Please check if your container runtime is running.");
+            return null;
+        }
+
+        boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
+                devServicesSharedNetworkBuildItem);
+
+        final Optional<ContainerAddress> maybeContainerAddress = KubernetesContainerLocator
+                .locateContainer(configuration.serviceName, configuration.shared, launchMode.getLaunchMode())
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
+                        List.of("kube-apiserver", "k3s", "kindest/node"),
+                        KUBERNETES_PORT, launchMode.getLaunchMode(), useSharedNetwork));
+
+        if (maybeContainerAddress.isPresent()) {
+            ContainerAddress containerAddress = maybeContainerAddress.get();
+            return DevServicesResultBuildItem.discovered()
+                    .feature(Feature.KUBERNETES_CLIENT)
+                    .containerId(containerAddress.getId())
+                    .config(resolveConfigurationFromRunningContainer(containerAddress))
+                    .build();
+        }
+
+        Flavor clusterType = configuration.flavor
+                .or(() -> devServiceKubeRequest
+                        .map(KubernetesDevServiceRequestBuildItem::getFlavor)
+                        .map(Flavor::valueOf))
+                .orElse(api_only);
+
+        return DevServicesResultBuildItem.owned()
+                .feature(Feature.KUBERNETES_CLIENT)
+                .serviceConfig(configuration)
+                .startable(() -> createQuarkusKubernetesContainer(configuration, clusterType,
+                        useSharedNetwork, devServicesConfig.timeout()))
+                .configProvider(c -> Map.of(
+                        KUBERNETES_CLIENT_MASTER_URL, c.getCluster().getServer(),
+                        KUBERNETES_CLIENT_CA_CERT_DATA, c.getCluster().getCertificateAuthorityData(),
+                        KUBERNETES_CLIENT_CLIENT_CERT_DATA, c.getUser().getClientCertificateData(),
+                        KUBERNETES_CLIENT_CLIENT_KEY_DATA, c.getUser().getClientKeyData(),
+                        KUBERNETES_CLIENT_CLIENT_KEY_ALGO, Config.getKeyAlgorithm(null, c.getUser().getClientKeyData()),
+                        KUBERNETES_CLIENT_NAMESPACE, "default"))
+                .postStartHook(c -> {
+                    log.info(
+                            "Dev Services for Kubernetes started. Other Quarkus applications in dev mode will find the "
+                                    + "cluster automatically.");
+                    applyManifestsToCluster(
+                            getKubernetesClientConfigFromKubeConfig(c.kubeConfig),
+                            kubernetesClientBuildTimeConfig.devservices().manifests());
+                })
+                .build();
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private QuarkusKubernetesContainer createQuarkusKubernetesContainer(KubernetesDevServiceCfg config,
+            Flavor clusterType, boolean useSharedNetwork, Optional<Duration> timeout) {
+        KubernetesContainer container = switch (clusterType) {
+            case api_only -> createContainer(ApiServerContainer::new, ApiServerContainerVersion.class, config, clusterType);
+            case k3s -> createContainer(K3sContainer::new, K3sContainerVersion.class, config, clusterType);
+            case kind -> createContainer(KindContainer::new, KindContainerVersion.class, config, clusterType);
+        };
+
+        if (useSharedNetwork) {
+            ConfigureUtil.configureSharedNetwork(container, "quarkus-kubernetes-client");
+        }
+        if (config.serviceName != null) {
+            container.withLabel(DEV_SERVICE_LABEL, config.serviceName);
+            container.withLabel(QUARKUS_DEV_SERVICE, config.serviceName);
+        }
+        timeout.ifPresent(container::withStartupTimeout);
+        container.withEnv(config.containerEnv);
+
+        return new QuarkusKubernetesContainer(container);
+    }
+
+    /**
+     * Deploys a set of manifests as files in the resources directory to the Kubernetes dev service.
+     * This build step handles the case where a Kubernetes dev service was discovered (not owned),
+     * so its config is available statically. For owned services, manifests are applied in the postStartHook.
+     */
+    @BuildStep
+    @Produce(ServiceStartBuildItem.class)
+    public void applyManifests(
+            DevServicesLauncherConfigResultBuildItem devServicesConfig,
+            KubernetesClientBuildTimeConfig kubernetesClientBuildTimeConfig) {
+
+        Map<String, String> config = devServicesConfig.getConfig();
+        String masterUrl = config.get(KUBERNETES_CLIENT_MASTER_URL);
+        if (masterUrl == null) {
+            return;
+        }
+
+        applyManifestsToCluster(config, kubernetesClientBuildTimeConfig.devservices().manifests());
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private void applyManifestsToCluster(Map<String, String> config, Optional<List<String>> manifests) {
+        if (manifests.isEmpty()) {
+            return;
+        }
+
+        Config kubeConfig = new ConfigBuilder()
+                .withMasterUrl(config.get(KUBERNETES_CLIENT_MASTER_URL))
+                .withCaCertData(config.get(KUBERNETES_CLIENT_CA_CERT_DATA))
+                .withClientCertData(config.get(KUBERNETES_CLIENT_CLIENT_CERT_DATA))
+                .withClientKeyData(config.get(KUBERNETES_CLIENT_CLIENT_KEY_DATA))
+                .withClientKeyAlgo(config.get(KUBERNETES_CLIENT_CLIENT_KEY_ALGO))
+                .withNamespace(config.get(KUBERNETES_CLIENT_NAMESPACE))
+                .build();
+
+        try (KubernetesClient client = new KubernetesClientBuilder()
+                .withConfig(kubeConfig)
+                .build()) {
+            for (String manifestPath : manifests.get()) {
+                InputStream manifestStream = getManifestStream(manifestPath);
+
+                if (manifestStream == null) {
+                    log.errorf("Could not find manifest file in resources: %s", manifestPath);
+                    continue;
+                }
+
+                try (manifestStream) {
+                    try {
+                        // A single manifest file may contain multiple resources to deploy
+                        List<HasMetadata> resources = client.load(manifestStream).items();
+                        List<HasMetadata> resourcesWithReadiness = new ArrayList<>();
+
+                        if (resources.isEmpty()) {
+                            log.warnf("No resources found in manifest: %s", manifestPath);
+                        } else {
+                            resources.forEach(resource -> {
+                                client.resource(resource).create();
+
+                                if (Readiness.getInstance().isReadinessApplicable(resource)) {
+                                    resourcesWithReadiness.add(resource);
+                                }
+                            });
+
+                            resourcesWithReadiness.forEach(resource -> {
+                                log.info("Waiting for " + resource.getClass().getSimpleName() + " "
+                                        + resource.getMetadata().getName()
+                                        + " to be ready...");
+                                client.resource(resource).waitUntilReady(60, TimeUnit.SECONDS);
+                            });
+
+                            log.infof("Applied manifest %s.", manifestPath);
+                        }
+                    } catch (Exception ex) {
+                        log.errorf("Failed to apply manifest %s: %s", manifestPath, ex.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to create Kubernetes client while trying to apply manifests.", e);
+        }
+    }
+
+    private InputStream getManifestStream(String manifestPath) throws IOException {
+        try {
+            URL url = new URL(manifestPath);
+            // For file:// URLs, optionally check if you want to support those or not
+            return url.openStream();
+        } catch (MalformedURLException e) {
+            // Not a URL, so treat as classpath resource
+            InputStream stream = Thread.currentThread()
+                    .getContextClassLoader()
+                    .getResourceAsStream(manifestPath);
+            if (stream == null) {
+                throw new IOException("Resource not found: " + manifestPath);
+            }
+            return stream;
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    private <T extends KubernetesVersionEnum<T>, C extends KubernetesContainer> C createContainer(
+            Function<KubernetesImageSpec<T>, C> constructor,
+            Class<T> versionClass,
+            KubernetesDevServiceCfg config,
+            Flavor flavor) {
+        T version = config.apiVersion
+                .map(v -> findOrElseThrow(flavor, v, versionClass))
+                .orElseGet(() -> latest(versionClass));
+
+        KubernetesImageSpec<T> imageSpec = version.withImage(config.imageName);
+        return constructor.apply(imageSpec);
+    }
+
+    private <T extends KubernetesVersionEnum<T>> T findOrElseThrow(final Flavor flavor, final String version,
+            final Class<T> versions) {
+        final String versionWithPrefix = !version.startsWith("v") ? "v" + version : version;
+        return KubernetesVersionEnum.ascending(versions)
+                .stream()
+                .filter(v -> v.descriptor().getKubernetesVersion().startsWith(versionWithPrefix))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("Invalid API version '%s' for flavor '%s'. Options are: [%s]", versionWithPrefix, flavor,
+                                KubernetesVersionEnum.ascending(versions).stream()
+                                        .map(v -> v.descriptor().getKubernetesVersion())
+                                        .collect(Collectors.joining(", ")))));
+    }
+
+    private Map<String, String> resolveConfigurationFromRunningContainer(ContainerAddress containerAddress) {
+        var dockerClient = DockerClientFactory.lazyClient();
+        var container = new DiscoveredContainer(dockerClient, containerAddress);
+        return container.getKubeconfig();
+    }
+
+    private Map<String, String> getKubernetesClientConfigFromKubeConfig(KubeConfig kubeConfig) {
+        ClusterSpec cluster = kubeConfig.getClusters().get(0).getCluster();
+        UserSpec user = kubeConfig.getUsers().get(0).getUser();
+        return Map.of(
+                KUBERNETES_CLIENT_MASTER_URL, cluster.getServer(),
+                KUBERNETES_CLIENT_CA_CERT_DATA, cluster.getCertificateAuthorityData(),
+                KUBERNETES_CLIENT_CLIENT_CERT_DATA, user.getClientCertificateData(),
+                KUBERNETES_CLIENT_CLIENT_KEY_DATA, user.getClientKeyData(),
+                KUBERNETES_CLIENT_CLIENT_KEY_ALGO, Config.getKeyAlgorithm(null, user.getClientKeyData()),
+                KUBERNETES_CLIENT_NAMESPACE, "default");
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private static final class KubernetesDevServiceCfg {
+
+        public boolean devServicesEnabled;
+        public String imageName;
+        public Optional<Flavor> flavor;
+        public Optional<String> apiVersion;
+        public boolean overrideKubeconfig;
+        public boolean shared;
+        public String serviceName;
+        public Map<String, String> containerEnv;
+        public Optional<List<String>> manifests;
+
+        public KubernetesDevServiceCfg(KubernetesDevServicesBuildTimeConfig config) {
+            this.devServicesEnabled = config.enabled();
+            this.imageName = config.imageName()
+                    .orElse(null);
+            this.serviceName = config.serviceName();
+            this.apiVersion = config.apiVersion();
+            this.overrideKubeconfig = config.overrideKubeconfig();
+            this.flavor = config.flavor();
+            this.shared = config.shared();
+            this.containerEnv = config.containerEnv();
+            this.manifests = config.manifests();
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(devServicesEnabled, imageName, flavor, apiVersion, overrideKubeconfig, shared, serviceName,
+                    containerEnv);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (!(obj instanceof KubernetesDevServiceCfg other))
+                return false;
+            return devServicesEnabled == other.devServicesEnabled
+                    && Objects.equals(imageName, other.imageName)
+                    && Objects.equals(flavor, other.flavor)
+                    && Objects.equals(apiVersion, other.apiVersion)
+                    && overrideKubeconfig == other.overrideKubeconfig
+                    && shared == other.shared
+                    && Objects.equals(serviceName, other.serviceName)
+                    && Objects.equals(containerEnv, other.containerEnv);
+        }
+    }
+
+    static final class QuarkusKubernetesContainer implements Startable {
+        private final KubernetesContainer<?> container;
+        private KubeConfig kubeConfig;
+
+        QuarkusKubernetesContainer(KubernetesContainer<?> container) {
+            this.container = container;
+        }
+
+        @Override
+        public void start() {
+            container.start();
+            kubeConfig = KubeConfigUtils.parseKubeConfig(container.getKubeconfig());
+        }
+
+        @Override
+        public String getConnectionInfo() {
+            return kubeConfig != null ? kubeConfig.getClusters().get(0).getCluster().getServer() : "not started";
+        }
+
+        @Override
+        public String getContainerId() {
+            return container.getContainerId();
+        }
+
+        @Override
+        public void close() {
+            container.stop();
+        }
+
+        ClusterSpec getCluster() {
+            return kubeConfig.getClusters().get(0).getCluster();
+        }
+
+        UserSpec getUser() {
+            return kubeConfig.getUsers().get(0).getUser();
+        }
+    }
+
+    private class DiscoveredContainer implements ContainerState {
+        private static final String KIND_KUBECONFIG = "/etc/kubernetes/admin.conf";
+        private static final String K3S_KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
+        private static final String APISERVER = "apiserver";
+        private static final String PKI_BASEDIR = "/etc/kubernetes/pki";
+        private static final String API_SERVER_CA = PKI_BASEDIR + "/ca.crt";
+        private static final String API_SERVER_CERT = PKI_BASEDIR + "/apiserver.crt";
+        private static final String API_SERVER_KEY = PKI_BASEDIR + "/apiserver.key";
+
+        private final DockerClient dockerClient;
+
+        private final InspectContainerResponse containerInfo;
+
+        private final ContainerAddress containerAddress;
+
+        public DiscoveredContainer(DockerClient dockerClient, ContainerAddress containerAddress) {
+            this.dockerClient = dockerClient;
+            this.containerAddress = containerAddress;
+            this.containerInfo = dockerClient.inspectContainerCmd(getContainerId()).exec();
+        }
+
+        private String resolvedConnectionAddress() {
+            return formatResolvedHostAndPort(containerAddress.getId(), containerAddress.getHost(),
+                    containerAddress.getPort());
+        }
+
+        private KubeConfig getKubeconfigFromContainer() {
+            var image = getContainerInfo().getConfig().getImage();
+            String connectionAddress = resolvedConnectionAddress();
+            if (image.contains("rancher/k3s")) {
+                return KubeConfigUtils
+                        .parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig("https://" + connectionAddress,
+                                getFileContentFromContainer(K3S_KUBECONFIG)));
+            } else if (image.contains("kindest/node")) {
+                return KubeConfigUtils
+                        .parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig("https://" + connectionAddress,
+                                getFileContentFromContainer(KIND_KUBECONFIG)));
+            } else if (image.contains("k8s.gcr.io/kube-apiserver") ||
+                    image.contains("registry.k8s.io/kube-apiserver")) {
+                return getKubeconfigFromApiContainer(connectionAddress);
+            }
+
+            // this can happen only if the user manually start
+            // a DEV_SERVICE_LABEL labeled container with an invalid image name
+            throw new RuntimeException("The container with the label '" + DEV_SERVICE_LABEL
+                    + "' is not compatible with Dev Services for Kubernetes. Stop it or disable Dev Services for Kubernetes.");
+        }
+
+        public Map<String, String> getKubeconfig() {
+            return getKubernetesClientConfigFromKubeConfig(getKubeconfigFromContainer());
+        }
+
+        protected KubeConfig getKubeconfigFromApiContainer(final String url) {
+            final Cluster cluster = new Cluster();
+            cluster.setName(APISERVER);
+            cluster.setCluster(new ClusterSpec());
+            cluster.getCluster().setServer(url);
+            cluster.getCluster().setCertificateAuthorityData((base64(getFileContentFromContainer(API_SERVER_CA))));
+            final User user = new User();
+            user.setName(APISERVER);
+            user.setUser(new UserSpec());
+            user.getUser().setClientKeyData(base64(getFileContentFromContainer(API_SERVER_KEY)));
+            user.getUser().setClientCertificateData(base64(getFileContentFromContainer(API_SERVER_CERT)));
+            final Context context = new Context();
+            context.setName(APISERVER);
+            context.setContext(new ContextSpec());
+            context.getContext().setCluster(cluster.getName());
+            context.getContext().setUser(user.getName());
+            final KubeConfig config = new KubeConfig();
+            config.setUsers(singletonList(user));
+            config.setClusters(singletonList(cluster));
+            config.setContexts(singletonList(context));
+            config.setCurrentContext(context.getName());
+            return config;
+        }
+
+        private String base64(final String str) {
+            return Base64.getEncoder().encodeToString(str.getBytes(US_ASCII));
+        }
+
+        @Override
+        public List<Integer> getExposedPorts() {
+            return List.of(containerAddress.getPort());
+        }
+
+        @Override
+        public DockerClient getDockerClient() {
+            return this.dockerClient;
+        }
+
+        @Override
+        public InspectContainerResponse getContainerInfo() {
+            return containerInfo;
+        }
+
+        @Override
+        public String getContainerId() {
+            return this.containerAddress.getId();
+        }
+
+        public String getFileContentFromContainer(String containerPath) {
+            return copyFileFromContainer(containerPath, this::readString);
+        }
+
+        String readString(final InputStream is) throws IOException {
+            return new String(readBytes(is), UTF_8);
+        }
+
+        private byte[] readBytes(final InputStream is) throws IOException {
+            final byte[] buffer = new byte[1024];
+            final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            int read;
+            while ((read = is.read(buffer)) > 0) {
+                bos.write(buffer, 0, read);
+            }
+            return bos.toByteArray();
+        }
+    }
+}

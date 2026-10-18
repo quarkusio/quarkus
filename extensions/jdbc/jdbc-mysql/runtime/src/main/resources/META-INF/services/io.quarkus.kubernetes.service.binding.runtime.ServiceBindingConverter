@@ -1,0 +1,1 @@
+io.quarkus.jdbc.mysql.runtime.MySQLServiceBindingConverter

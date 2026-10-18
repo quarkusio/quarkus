@@ -1,0 +1,1255 @@
+package io.quarkus.devui.deployment;
+
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.net.JarURLConnection;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import org.jboss.logging.Logger;
+import org.junit.platform.engine.UniqueId;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.util.ExtensionMetadataUtil;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.IsLocalDevelopment;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.util.ArtifactInfoUtil;
+import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.devjsonrpc.deployment.DeploymentMethodBuildItem;
+import io.quarkus.devjsonrpc.deployment.DevJsonRpcProcessor;
+import io.quarkus.devjsonrpc.deployment.JsonRPCRuntimeMethodsBuildItem;
+import io.quarkus.devjsonrpc.deployment.JsonRpcCodecCustomizerBuildItem;
+import io.quarkus.devjsonrpc.runtime.DevJsonRpcRecorder;
+import io.quarkus.devjsonrpc.runtime.jsonrpc.json.JsonMapper;
+import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devui.deployment.extension.Codestart;
+import io.quarkus.devui.deployment.extension.Extension;
+import io.quarkus.devui.runtime.AssistantJsonRPCService;
+import io.quarkus.devui.runtime.DefaultAssistantProducer;
+import io.quarkus.devui.runtime.DevUIBuildTimeStaticService;
+import io.quarkus.devui.runtime.DevUIRecorder;
+import io.quarkus.devui.runtime.VertxRouteInfoService;
+import io.quarkus.devui.runtime.js.DevUISessionManager;
+import io.quarkus.devui.spi.DevUIContent;
+import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
+import io.quarkus.devui.spi.buildtime.BuildTimeData;
+import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
+import io.quarkus.devui.spi.buildtime.StaticContentBuildItem;
+import io.quarkus.devui.spi.page.CardAction;
+import io.quarkus.devui.spi.page.CardPageBuildItem;
+import io.quarkus.devui.spi.page.CardText;
+import io.quarkus.devui.spi.page.FooterPageBuildItem;
+import io.quarkus.devui.spi.page.LibraryLink;
+import io.quarkus.devui.spi.page.MenuPageBuildItem;
+import io.quarkus.devui.spi.page.Page;
+import io.quarkus.devui.spi.page.PageBuilder;
+import io.quarkus.devui.spi.page.QuteDataPageBuilder;
+import io.quarkus.devui.spi.page.SettingPageBuildItem;
+import io.quarkus.devui.spi.page.UnlistedPageBuildItem;
+import io.quarkus.devui.spi.page.WebComponentPageBuilder;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.qute.Qute;
+import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
+import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
+import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.RoutingContext;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+
+/**
+ * Create the HTTP related Dev UI API Points.
+ * This includes the JsonRPC Websocket endpoint and the endpoints that deliver the generated and static content.
+ */
+public class DevUIProcessor {
+    private static final String FOOTER_LOG_NAMESPACE = "devui-footer-log";
+    private static final String JS_SUFFIX = ".js";
+    private static final String I18N_DIR = "dev-ui/i18n/";
+    private static final String DEVUI = "dev-ui";
+    private static final String INTERNAL_NAMESPACE = "devui";
+    private static final String UNDERSCORE = "_";
+    private static final String SLASH = "/";
+    // Where Dev UI's files sit inside every web jar it deploys, and so also the root its web jar results are
+    // looked up by: the same artifact can be deployed with other roots by other extensions.
+    private static final String WEB_JAR_ROOT = DEVUI + SLASH;
+    private static final String SLASH_ALL = SLASH + "*";
+    private static final String JSONRPC = "json-rpc-ws";
+
+    private final ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+
+    private static final String JAR = "jar";
+    private static final GACT UI_JAR = new GACT("io.quarkus", "quarkus-devui-resources", null, JAR);
+    private static final String NAME = "name";
+    private static final String DESCRIPTION = "description";
+    private static final String ARTIFACT = "artifact";
+    private static final String METADATA = "metadata";
+    private static final String KEYWORDS = "keywords";
+    private static final String SHORT_NAME = "short-name";
+    private static final String GUIDE = "guide";
+    private static final String CATEGORIES = "categories";
+    private static final String STATUS = "status";
+    private static final String BUILT_WITH = "built-with-quarkus-core";
+    private static final String CONFIG = "config";
+    private static final String EXTENSION_DEPENDENCIES = "extension-dependencies";
+    private static final String CAPABILITIES = "capabilities";
+    private static final String PROVIDES = "provides";
+    private static final String UNLISTED = "unlisted";
+    private static final String HIDE = "hide-in-dev-ui";
+    private static final String CODESTART = "codestart";
+    private static final String LANGUAGES = "languages";
+    private static final String ICON_URL = "icon-url";
+    private static final String LIB_GA = "lib-ga";
+    private final Pattern libGAPattern = Pattern.compile("([^:\\[\\]]+):([^\\[\\]]+)(\\[(.+?)\\])?");
+
+    private static final Logger log = Logger.getLogger(DevUIProcessor.class);
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    void registerTestResultCodecCustomizer(BuildProducer<JsonRpcCodecCustomizerBuildItem> customizers) {
+        customizers.produce(new JsonRpcCodecCustomizerBuildItem(builder -> {
+            builder.addMixIn(io.quarkus.deployment.dev.testing.TestResult.class, TestResultMixIn.class);
+        }));
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void initializeJsonRpcCodec(DevUIRecorder recorder,
+            BeanContainerBuildItem beanContainer,
+            LaunchModeBuildItem launchModeBuildItem) {
+        if (launchModeBuildItem.isNotLocalDevModeType()) {
+            return;
+        }
+        recorder.initializeJsonRpcCodec(beanContainer.getValue());
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    @Record(ExecutionTime.STATIC_INIT)
+    void registerDevUiHandlers(
+            DevUIConfig devUIConfig,
+            BeanContainerBuildItem beanContainer,
+            MvnpmBuildItem mvnpmBuildItem,
+            List<DevUIRoutesBuildItem> devUIRoutesBuildItems,
+            List<StaticContentBuildItem> staticContentBuildItems,
+            List<JsonRpcCodecCustomizerBuildItem> codecCustomizers,
+            BuildProducer<RouteBuildItem> routeProducer,
+            DevUIRecorder recorder,
+            LaunchModeBuildItem launchModeBuildItem,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            HttpRootPathBuildItem httpRootPathBuildItem,
+            ShutdownContextBuildItem shutdownContext) throws IOException {
+
+        if (launchModeBuildItem.isNotLocalDevModeType()) {
+            return;
+        }
+
+        DevConsoleManager.setGlobal(DevJsonRpcRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY,
+                JsonMapper.Factory.deploymentLinker()
+                        .createLinkData(DevJsonRpcProcessor.createCodecFactory(codecCustomizers)));
+
+        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .orderedRoute(DEVUI + SLASH_ALL, -2 * SecurityHandlerPriorities.CORS)
+                .handler(recorder.createLocalHostOnlyFilter(devUIConfig.hosts().orElse(null)))
+                .build());
+
+        if (devUIConfig.cors().enabled()) {
+            routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    .orderedRoute(DEVUI + SLASH_ALL, -1 * SecurityHandlerPriorities.CORS)
+                    .handler(recorder.createDevUICorsFilter(devUIConfig.hosts().orElse(null)))
+                    .build());
+        }
+
+        // Websocket for JsonRPC comms
+        routeProducer.produce(
+                nonApplicationRootPathBuildItem
+                        .routeBuilder().route(DEVUI + SLASH + JSONRPC)
+                        .handler(recorder.devUIWebSocketHandler())
+                        .build());
+
+        // Static handler for components
+        for (DevUIRoutesBuildItem devUIRoutesBuildItem : devUIRoutesBuildItems) {
+            String route = devUIRoutesBuildItem.getPath();
+
+            String path = nonApplicationRootPathBuildItem.resolvePath(route);
+            Handler<RoutingContext> uihandler = recorder.uiHandler(
+                    devUIRoutesBuildItem.getFinalDestination(),
+                    path,
+                    devUIRoutesBuildItem.getWebRootConfigurations(),
+                    shutdownContext);
+
+            NonApplicationRootPathBuildItem.Builder builder = nonApplicationRootPathBuildItem.routeBuilder()
+                    .route(route)
+                    .handler(uihandler);
+
+            if (route.endsWith(DEVUI + SLASH)) {
+                builder = builder.displayOnNotFoundPage("Dev UI");
+                routeProducer.produce(builder.build());
+            }
+
+            routeProducer.produce(
+                    nonApplicationRootPathBuildItem.routeBuilder().route(route + SLASH_ALL).handler(uihandler).build());
+        }
+
+        String basepath = nonApplicationRootPathBuildItem.resolvePath(DEVUI);
+        // For static content generated at build time
+        Path devUiBasePath = Files.createTempDirectory("quarkus-devui");
+        recorder.shutdownTask(shutdownContext, devUiBasePath.toString());
+
+        for (StaticContentBuildItem staticContentBuildItem : staticContentBuildItems) {
+
+            Map<String, String> urlAndPath = new HashMap<>();
+            Map<String, String> descriptions = new HashMap<>();
+            Map<String, String> mcpDefaultEnabled = new HashMap<>();
+            Map<String, String> contentTypes = new HashMap<>();
+
+            List<DevUIContent> content = staticContentBuildItem.getContent();
+            for (DevUIContent c : content) {
+                Path tempFile = devUiBasePath
+                        .resolve(c.getFileName());
+                if (c.getData().containsKey("buildTimeData")) {
+                    // Write build-time data directly to file to avoid building a huge String in memory
+                    // which can cause OOM for large applications with many extensions
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> buildTimeData = (Map<String, Object>) c.getData().get("buildTimeData");
+                    try (BufferedWriter writer = Files.newBufferedWriter(tempFile)) {
+                        writer.write("// Generated by Quarkus during Build");
+                        writer.newLine();
+                        for (Map.Entry<String, Object> entry : buildTimeData.entrySet()) {
+                            writer.write("export const ");
+                            writer.write(entry.getKey());
+                            writer.write(" = ");
+                            writer.write(entry.getValue().toString());
+                            writer.write(";");
+                            writer.newLine();
+                        }
+                    }
+                } else {
+                    String parsedContent = Qute.fmt(new String(c.getTemplate()), c.getData());
+                    Files.writeString(tempFile, parsedContent);
+                }
+
+                urlAndPath.put(c.getFileName(), tempFile.toString());
+                if (c.getDescriptions() != null && !c.getDescriptions().isEmpty()) {
+                    descriptions.putAll(c.getDescriptions());
+                }
+                if (c.getMcpDefaultEnables() != null && !c.getMcpDefaultEnables().isEmpty()) {
+                    mcpDefaultEnabled.putAll(c.getMcpDefaultEnables());
+                }
+
+                if (c.getContentTypes() != null && !c.getContentTypes().isEmpty()) {
+                    contentTypes.putAll(c.getContentTypes());
+                }
+            }
+            Handler<RoutingContext> buildTimeStaticHandler = recorder.buildTimeStaticHandler(beanContainer.getValue(), basepath,
+                    urlAndPath, descriptions, mcpDefaultEnabled, contentTypes);
+
+            routeProducer.produce(
+                    nonApplicationRootPathBuildItem.routeBuilder().route(DEVUI + SLASH_ALL)
+                            .handler(buildTimeStaticHandler)
+                            .build());
+        }
+
+        Handler<RoutingContext> endpointInfoHandler = recorder.endpointInfoHandler(basepath);
+
+        routeProducer.produce(
+                nonApplicationRootPathBuildItem.routeBuilder().route(DEVUI + SLASH + "endpoints" + SLASH + "*")
+                        .handler(endpointInfoHandler)
+                        .build());
+
+        // For the Vaadin router (So that bookmarks/url refreshes work)
+        for (DevUIRoutesBuildItem devUIRoutesBuildItem : devUIRoutesBuildItems) {
+            String route = devUIRoutesBuildItem.getPath();
+            basepath = nonApplicationRootPathBuildItem.resolvePath(route);
+            Handler<RoutingContext> routerhandler = recorder.vaadinRouterHandler(basepath);
+            routeProducer.produce(
+                    nonApplicationRootPathBuildItem.routeBuilder().route(route + SLASH_ALL).handler(routerhandler).build());
+        }
+
+        // Static mvnpm jars
+        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath();
+        routeProducer.produce(
+                nonApplicationRootPathBuildItem.routeBuilder()
+                        .route("_static" + SLASH_ALL)
+                        .handler(recorder.mvnpmHandler(contextRoot, mvnpmBuildItem.getMvnpmJars()))
+                        .build());
+
+        // Redirect /q/dev -> /q/dev-ui
+        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route("dev")
+                .handler(recorder.redirect(contextRoot))
+                .build());
+
+        // Redirect naked to welcome if there is no index.html
+        if (!hasOwnIndexHtml()) {
+            routeProducer.produce(httpRootPathBuildItem.routeBuilder()
+                    .orderedRoute(SLASH, Integer.MAX_VALUE)
+                    .handler(recorder.redirect(contextRoot, "welcome"))
+                    .build());
+        }
+    }
+
+    private boolean hasOwnIndexHtml() {
+        try {
+            Enumeration<URL> jarsWithIndexHtml = Thread.currentThread().getContextClassLoader()
+                    .getResources("META-INF/resources/index.html");
+            return jarsWithIndexHtml.hasMoreElements();
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+    }
+
+    /**
+     * This makes sure the Runtime JsonRPC Classes for both the internal Dev UI and extensions is available as a bean and on the
+     * index.
+     */
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    void additionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
+
+        additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(VertxRouteInfoService.class)
+                .setUnremovable().build());
+
+        additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(DevUIBuildTimeStaticService.class)
+                .setDefaultScope(BuiltinScope.APPLICATION.getName())
+                .setUnremovable().build());
+
+        additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(DefaultAssistantProducer.class)
+                .setUnremovable().build());
+
+        additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(DevUISessionManager.class)
+                .setDefaultScope(BuiltinScope.APPLICATION.getName())
+                .setUnremovable().build());
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    void produceJsonRpcMethodInfo(
+            BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer,
+            Optional<JsonRPCRuntimeMethodsBuildItem> jsonRPCMethodsBuildItem,
+            Optional<DeploymentMethodBuildItem> deploymentMethodBuildItem) {
+
+        Set<String> allMethodsNames = new java.util.HashSet<>();
+        Set<String> allSubscriptionNames = new java.util.HashSet<>();
+
+        jsonRPCMethodsBuildItem.ifPresent(item -> {
+            allMethodsNames.addAll(item.getRuntimeMethodsMap().keySet());
+            allSubscriptionNames.addAll(item.getRuntimeSubscriptionsMap().keySet());
+        });
+        deploymentMethodBuildItem.ifPresent(item -> {
+            allMethodsNames.addAll(item.getMethods().keySet());
+            allMethodsNames.addAll(item.getRecordedMethods().keySet());
+            allSubscriptionNames.addAll(item.getSubscriptions().keySet());
+            allSubscriptionNames.addAll(item.getRecordedSubscriptions().keySet());
+        });
+
+        BuildTimeConstBuildItem methodInfo = new BuildTimeConstBuildItem("devui-jsonrpc");
+        if (!allSubscriptionNames.isEmpty()) {
+            methodInfo.addBuildTimeData("jsonRPCSubscriptions", allSubscriptionNames);
+        }
+        if (!allMethodsNames.isEmpty()) {
+            methodInfo.addBuildTimeData("jsonRPCMethods", allMethodsNames);
+        }
+        buildTimeConstProducer.produce(methodInfo);
+    }
+
+    /**
+     * This creates a set of supported locales
+     */
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    BuildTimeConstBuildItem findAllSupportedLocales() {
+        BuildTimeConstBuildItem localesInfo = new BuildTimeConstBuildItem("devui-locales");
+        Set<LanguageCountry> locales = new HashSet<>();
+        try {
+            Enumeration<URL> urls = tccl.getResources(I18N_DIR);
+            while (urls.hasMoreElements()) {
+                URL url = urls.nextElement();
+                String protocol = url.getProtocol();
+
+                if ("file".equals(protocol)) {
+                    scanFileDirectory(url, locales);
+                } else if ("jar".equals(protocol)) {
+                    scanJarDirectory(url, locales);
+                }
+            }
+
+            if (!locales.isEmpty()) {
+                List<LanguageCountry> sorted = locales.stream()
+                        .sorted(Comparator.comparing(LanguageCountry::name, String.CASE_INSENSITIVE_ORDER))
+                        .toList();
+
+                localesInfo.addBuildTimeData("locales", sorted);
+            }
+
+        } catch (IOException | URISyntaxException ex) {
+            ex.printStackTrace();
+            locales.add(new LanguageCountry("en-GB", "English (UK)")); // default
+            List<LanguageCountry> sorted = locales.stream()
+                    .sorted(Comparator.comparing(LanguageCountry::name, String.CASE_INSENSITIVE_ORDER))
+                    .toList();
+            localesInfo.addBuildTimeData("locales", sorted);
+        }
+        return localesInfo;
+    }
+
+    private static void scanFileDirectory(URL dirUrl, Set<LanguageCountry> locales) throws IOException, URISyntaxException {
+        URI uri = dirUrl.toURI();
+        Path dir = Paths.get(uri);
+
+        if (!Files.isDirectory(dir)) {
+            return;
+        }
+
+        try (var stream = Files.list(dir)) {
+            stream.filter(Files::isRegularFile)
+                    .forEach(path -> {
+                        String fileName = path.getFileName().toString();
+                        addIfLocaleFile(fileName, locales);
+                    });
+        }
+
+    }
+
+    private static void scanJarDirectory(URL jarDirUrl, Set<LanguageCountry> locales) throws IOException {
+        JarURLConnection conn = (JarURLConnection) jarDirUrl.openConnection();
+        try (JarFile jarFile = conn.getJarFile()) {
+            Enumeration<JarEntry> entries = jarFile.entries();
+            while (entries.hasMoreElements()) {
+                JarEntry entry = entries.nextElement();
+                if (entry.isDirectory()) {
+                    continue;
+                }
+                String name = entry.getName();
+                // We only care about entries under dev-ui/i18n/
+                if (name.startsWith(I18N_DIR)) {
+                    String fileName = name.substring(I18N_DIR.length());
+                    // ignore nested dirs under dev-ui/i18n/
+                    if (fileName.contains("/")) {
+                        continue;
+                    }
+                    addIfLocaleFile(fileName, locales);
+                }
+            }
+        }
+
+    }
+
+    private static void addIfLocaleFile(String fileName, Set<LanguageCountry> locales) {
+        if (!fileName.endsWith(JS_SUFFIX)) {
+            return;
+        }
+        if (!fileName.contains("-")) {
+            // only accept e.g. en-GB.js, fr-FR.js, not plain en.js
+            return;
+        }
+
+        String code = fileName.substring(0, fileName.length() - JS_SUFFIX.length());
+
+        Locale locale = Locale.forLanguageTag(code);
+        String displayLanguage = locale.getDisplayLanguage();
+        String countryCode = locale.getCountry();
+
+        locales.add(new LanguageCountry(code, displayLanguage + " (" + countryCode + ")"));
+    }
+
+    @BuildStep
+    JsonRPCProvidersBuildItem createAssistantJsonRPCService() {
+        return new JsonRPCProvidersBuildItem("devui-assistant", AssistantJsonRPCService.class);
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    void processFooterLogs(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
+            BuildProducer<FooterPageBuildItem> footerPageProducer,
+            List<FooterLogBuildItem> footerLogBuildItems) {
+
+        List<BuildTimeActionBuildItem> devServiceLogs = new ArrayList<>();
+        List<FooterPageBuildItem> footers = new ArrayList<>();
+
+        for (FooterLogBuildItem footerLogBuildItem : footerLogBuildItems) {
+            // Create the Json-RPC service that will stream the log
+            String name = footerLogBuildItem.getName().replaceAll(" ", "");
+
+            BuildTimeActionBuildItem devServiceLogActions = new BuildTimeActionBuildItem(FOOTER_LOG_NAMESPACE);
+            if (footerLogBuildItem.hasRuntimePublisher()) {
+                devServiceLogActions.subscriptionBuilder()
+                        .methodName(name + "Log")
+                        .description("Streams the " + name + " log")
+                        .runtime(footerLogBuildItem.getRuntimePublisher())
+                        .build();
+            } else {
+                devServiceLogActions.subscriptionBuilder()
+                        .methodName(name + "Log")
+                        .description("Streams the " + name + " log")
+                        .function(ignored -> {
+                            try {
+                                return footerLogBuildItem.getPublisher();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        })
+                        .build();
+            }
+            devServiceLogs.add(devServiceLogActions);
+
+            // Create the Footer in the Dev UI
+            WebComponentPageBuilder footerLogComponent = Page.webComponentPageBuilder().internal()
+                    .namespace(FOOTER_LOG_NAMESPACE)
+                    .icon("font-awesome-regular:file-lines")
+                    .title(capitalizeFirstLetter(footerLogBuildItem.getName()))
+                    .metadata("jsonRpcMethodName", footerLogBuildItem.getName() + "Log")
+                    .componentLink("qwc-footer-log.js");
+
+            FooterPageBuildItem footerPageBuildItem = new FooterPageBuildItem(FOOTER_LOG_NAMESPACE, footerLogComponent);
+            footers.add(footerPageBuildItem);
+        }
+
+        buildTimeActionProducer.produce(devServiceLogs);
+        footerPageProducer.produce(footers);
+    }
+
+    private String capitalizeFirstLetter(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+        return input.substring(0, 1).toUpperCase() + input.substring(1);
+    }
+
+    /**
+     * This build all the pages for dev ui, based on the extension included
+     */
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    @SuppressWarnings("unchecked")
+    void getAllExtensions(List<CardPageBuildItem> cardPageBuildItems,
+            List<MenuPageBuildItem> menuPageBuildItems,
+            List<FooterPageBuildItem> footerPageBuildItems,
+            List<SettingPageBuildItem> settingPageBuildItems,
+            List<UnlistedPageBuildItem> unlistedPageBuildItems,
+            LaunchModeBuildItem launchModeBuildItem,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            BuildProducer<ExtensionsBuildItem> extensionsProducer,
+            BuildProducer<WebJarBuildItem> webJarBuildProducer,
+            BuildProducer<DevUIWebJarBuildItem> devUIWebJarProducer,
+            Capabilities capabilities) {
+
+        if (launchModeBuildItem.isNotLocalDevModeType()) {
+            // produce extension build item as cascade of build steps rely on it
+            var emptyExtensionBuildItem = new ExtensionsBuildItem(List.of(), List.of(), List.of(), List.of(), List.of(),
+                    List.of());
+            extensionsProducer.produce(emptyExtensionBuildItem);
+            return;
+        }
+
+        // First create the static resources for our own internal components
+        webJarBuildProducer.produce(WebJarBuildItem.builder()
+                .artifactKey(UI_JAR)
+                .root(WEB_JAR_ROOT).build());
+
+        // The Dev UI's own resources are served from the Dev UI root, so they keep the empty namespace rather than
+        // the "devui" one used for build time data, otherwise everything under /q/dev-ui/ moves to /q/dev-ui/devui/
+        devUIWebJarProducer.produce(new DevUIWebJarBuildItem(UI_JAR, DEVUI, getNamespace(UI_JAR)));
+
+        final boolean assistantIsAvailable = capabilities.isPresent(Capability.ASSISTANT);
+
+        // Now go through all extensions and check them for active components
+        Map<String, CardPageBuildItem> cardPagesMap = getCardPagesMap(curateOutcomeBuildItem, cardPageBuildItems);
+        Map<String, MenuPageBuildItem> menuPagesMap = getMenuPagesMap(curateOutcomeBuildItem, menuPageBuildItems);
+        Map<String, List<FooterPageBuildItem>> footerPagesMap = getFooterPagesMap(curateOutcomeBuildItem, footerPageBuildItems);
+        Map<String, List<SettingPageBuildItem>> settingPagesMap = getSettingPagesMap(curateOutcomeBuildItem,
+                settingPageBuildItems);
+        Map<String, List<UnlistedPageBuildItem>> unlistedPagesMap = getUnlistedPagesMap(curateOutcomeBuildItem,
+                unlistedPageBuildItems);
+
+        var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
+        var yamlMapper = YAMLMapper.builder().build();
+        List<Extension> activeExtensions = new ArrayList<>();
+        List<Extension> inactiveExtensions = new ArrayList<>();
+        List<Extension> sectionMenuExtensions = new ArrayList<>();
+        List<Extension> footerTabExtensions = new ArrayList<>();
+        List<Extension> settingTabExtensions = new ArrayList<>();
+        List<Extension> unlistedExtensions = new ArrayList<>();
+
+        for (ResolvedDependency runtimeExt : curateOutcomeBuildItem.getApplicationModel()
+                .getDependencies(DependencyFlags.RUNTIME_EXTENSION_ARTIFACT)) {
+            ExtensionMetadataUtil.acceptExtensionMetadata(runtimeExt.getContentTree(), extMetadataVisit -> {
+                if (extMetadataVisit == null) {
+                    // this could be an exception but previously the code was simply looking for this resource on the classpath
+                    log.error("Failed to locate extension metadata in "
+                            + runtimeExt.toCompactCoords());
+                    return;
+                }
+                final Path extMetadataFile = extMetadataVisit.getPath();
+                try {
+                    Extension extension = new Extension();
+                    final String extensionContent;
+                    try (Scanner scanner = new Scanner(
+                            Files.newBufferedReader(extMetadataFile, StandardCharsets.UTF_8))) {
+                        scanner.useDelimiter("\\A");
+                        extensionContent = scanner.hasNext() ? scanner.next() : null;
+                    }
+                    if (extensionContent == null) {
+                        // This is a internal extension (like this one, Dev UI)
+                        return;
+                    }
+
+                    final Map<String, Object> extensionMap = extMetadataFile.toString().endsWith(".json")
+                            ? jsonMapper.readValue(extensionContent, Map.class)
+                            : yamlMapper.readValue(extensionContent, Map.class);
+
+                    if (extensionMap.containsKey(NAME)) {
+
+                        Map<String, Object> metaData = (Map<String, Object>) extensionMap.getOrDefault(METADATA, null);
+                        if (metaData != null) {
+                            boolean isHidden = Boolean.valueOf(String.valueOf(metaData.getOrDefault(HIDE, false)));
+                            if (!isHidden) {
+
+                                String namespace = getExtensionNamespace(extensionMap);
+                                extension.setNamespace(namespace);
+                                extension.setName((String) extensionMap.get(NAME));
+                                extension.setDescription((String) extensionMap.getOrDefault(DESCRIPTION, null));
+                                extension.setArtifact((String) extensionMap.getOrDefault(ARTIFACT, null));
+
+                                extension.setKeywords((List<String>) metaData.getOrDefault(KEYWORDS, null));
+                                extension.setShortName((String) metaData.getOrDefault(SHORT_NAME, null));
+
+                                if (metaData.containsKey(GUIDE)) {
+                                    String guide = (String) metaData.get(GUIDE);
+                                    try {
+                                        extension.setGuide(new URL(guide));
+                                    } catch (MalformedURLException mue) {
+                                        log.warn("Could not set Guide URL [" + guide + "] for exception [" + namespace + "]");
+                                    }
+                                }
+
+                                extension.setCategories((List<String>) metaData.getOrDefault(CATEGORIES, null));
+                                extension.setStatus(collectionToString(metaData, STATUS));
+                                extension.setBuiltWith((String) metaData.getOrDefault(BUILT_WITH, null));
+                                extension.setConfigFilter((List<String>) metaData.getOrDefault(CONFIG, null));
+                                extension.setExtensionDependencies(
+                                        (List<String>) metaData.getOrDefault(EXTENSION_DEPENDENCIES, null));
+                                extension.setUnlisted(String.valueOf(metaData.getOrDefault(UNLISTED, false)));
+
+                                if (metaData.containsKey(CAPABILITIES)) {
+                                    Map<String, Object> cap = (Map<String, Object>) metaData.get(CAPABILITIES);
+                                    extension.setProvidesCapabilities((List<String>) cap.getOrDefault(PROVIDES, null));
+                                }
+
+                                if (metaData.containsKey(CODESTART)) {
+                                    Map<String, Object> codestartMap = (Map<String, Object>) metaData.get(CODESTART);
+                                    if (codestartMap != null) {
+                                        Codestart codestart = new Codestart();
+                                        codestart.setName((String) codestartMap.getOrDefault(NAME, null));
+                                        codestart.setLanguages(listOrString(codestartMap, LANGUAGES));
+                                        codestart.setArtifact((String) codestartMap.getOrDefault(ARTIFACT, null));
+                                        extension.setCodestart(codestart);
+                                    }
+                                }
+
+                                if (cardPagesMap.containsKey(namespace)
+                                        && (cardPagesMap.get(namespace).hasPages()
+                                                || cardPagesMap.get(namespace).hasCardActions()
+                                                || cardPagesMap.get(namespace).hasCardTexts())) { // Active
+                                    CardPageBuildItem cardPageBuildItem = cardPagesMap.get(namespace);
+
+                                    // Add all card links
+                                    List<PageBuilder> cardPageBuilders = cardPageBuildItem.getPages();
+
+                                    Map<String, BuildTimeData> buildTimeData = cardPageBuildItem.getBuildTimeData();
+                                    for (PageBuilder pageBuilder : cardPageBuilders) {
+                                        Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
+                                        if (!page.isAssistantPage() || assistantIsAvailable) {
+                                            extension.addCardPage(page);
+                                        }
+                                    }
+
+                                    // Add card actions
+                                    for (CardAction action : cardPageBuildItem.getCardActions()) {
+                                        extension.addCardAction(action);
+                                    }
+
+                                    // Add card texts
+                                    for (CardText text : cardPageBuildItem.getCardTexts()) {
+                                        extension.addCardText(text);
+                                    }
+
+                                    // See if there is a custom card component
+                                    cardPageBuildItem.getOptionalCard().ifPresent((card) -> {
+                                        card.setNamespace(extension.getNamespace());
+                                        extension.setCard(card);
+                                    });
+
+                                    // See if there is a headless component
+                                    String headlessJs = cardPageBuildItem.getHeadlessComponentLink();
+                                    if (headlessJs != null) {
+                                        extension.setHeadlessComponent(headlessJs);
+                                    }
+
+                                    addLogo(extension, cardPageBuildItem, metaData);
+                                    addLibraryLinks(extension, cardPageBuildItem, curateOutcomeBuildItem, metaData);
+
+                                    // Also make sure the static resources for that static resource is available
+                                    produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
+                                    activeExtensions.add(extension);
+                                } else { // Inactive
+                                    if (addLogo(extension, cardPagesMap.get(namespace), metaData)) {
+                                        // Also make sure the static resources for that static resource is available
+                                        produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
+                                    }
+
+                                    addLibraryLinks(extension, cardPagesMap.get(namespace), curateOutcomeBuildItem,
+                                            metaData);
+
+                                    inactiveExtensions.add(extension);
+                                }
+
+                                // Menus on the sections menu
+                                if (menuPagesMap.containsKey(namespace)) {
+                                    MenuPageBuildItem menuPageBuildItem = menuPagesMap.get(namespace);
+                                    List<PageBuilder> menuPageBuilders = menuPageBuildItem.getPages();
+
+                                    Map<String, BuildTimeData> buildTimeData = menuPageBuildItem.getBuildTimeData();
+                                    for (PageBuilder pageBuilder : menuPageBuilders) {
+                                        Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
+                                        if (!page.isAssistantPage() || assistantIsAvailable) {
+                                            extension.addMenuPage(page);
+                                        }
+                                    }
+                                    // See if there is a headless component
+                                    String headlessJs = menuPageBuildItem.getHeadlessComponentLink();
+                                    if (headlessJs != null) {
+                                        extension.setHeadlessComponent(headlessJs);
+                                    }
+
+                                    // Also make sure the static resources for that static resource is available
+                                    produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
+                                    sectionMenuExtensions.add(extension);
+                                }
+
+                                // Tabs in the footer
+                                if (footerPagesMap.containsKey(namespace)) {
+
+                                    List<FooterPageBuildItem> fbis = footerPagesMap.remove(namespace);
+                                    for (FooterPageBuildItem footerPageBuildItem : fbis) {
+                                        List<PageBuilder> footerPageBuilders = footerPageBuildItem.getPages();
+
+                                        Map<String, BuildTimeData> buildTimeData = footerPageBuildItem.getBuildTimeData();
+                                        for (PageBuilder pageBuilder : footerPageBuilders) {
+                                            Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
+                                            if (!page.isAssistantPage() || assistantIsAvailable) {
+                                                extension.addFooterPage(page);
+                                            }
+                                        }
+
+                                        // See if there is a headless component
+                                        String headlessJs = footerPageBuildItem.getHeadlessComponentLink();
+                                        if (headlessJs != null) {
+                                            extension.setHeadlessComponent(headlessJs);
+                                        }
+                                        // Also make sure the static resources for that static resource is available
+                                        produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
+                                        footerTabExtensions.add(extension);
+                                    }
+                                }
+
+                                // Tabs in the settings page
+                                if (settingPagesMap.containsKey(namespace)) {
+
+                                    List<SettingPageBuildItem> sbis = settingPagesMap.remove(namespace);
+                                    for (SettingPageBuildItem settingPageBuildItem : sbis) {
+                                        List<PageBuilder> settingPageBuilders = settingPageBuildItem.getPages();
+
+                                        Map<String, BuildTimeData> buildTimeData = settingPageBuildItem.getBuildTimeData();
+                                        for (PageBuilder pageBuilder : settingPageBuilders) {
+                                            Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
+                                            if (!page.isAssistantPage() || assistantIsAvailable) {
+                                                extension.addSettingPage(page);
+                                            }
+                                        }
+                                        // See if there is a headless component
+                                        String headlessJs = settingPageBuildItem.getHeadlessComponentLink();
+                                        if (headlessJs != null) {
+                                            extension.setHeadlessComponent(headlessJs);
+                                        }
+                                        // Also make sure the static resources for that static resource is available
+                                        produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
+                                        settingTabExtensions.add(extension);
+                                    }
+                                }
+
+                                // Unlisted pages
+                                if (unlistedPagesMap.containsKey(namespace)) {
+
+                                    List<UnlistedPageBuildItem> ubis = unlistedPagesMap.remove(namespace);
+                                    for (UnlistedPageBuildItem unlistedPageBuildItem : ubis) {
+                                        List<PageBuilder> unlistedPageBuilders = unlistedPageBuildItem.getPages();
+
+                                        Map<String, BuildTimeData> buildTimeData = unlistedPageBuildItem.getBuildTimeData();
+                                        for (PageBuilder pageBuilder : unlistedPageBuilders) {
+                                            Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
+                                            if (!page.isAssistantPage() || assistantIsAvailable) {
+                                                extension.addUnlistedPage(page);
+                                            }
+                                        }
+                                        // See if there is a headless component
+                                        String headlessJs = unlistedPageBuildItem.getHeadlessComponentLink();
+                                        if (headlessJs != null) {
+                                            extension.setHeadlessComponent(headlessJs);
+                                        }
+                                        // Also make sure the static resources for that static resource is available
+                                        produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
+                                        unlistedExtensions.add(extension);
+                                    }
+                                }
+                            }
+                        }
+
+                        Collections.sort(activeExtensions, sortingComparator);
+                        Collections.sort(inactiveExtensions, sortingComparator);
+                    }
+                } catch (IOException | RuntimeException e) {
+                    // don't abort, just log, to prevent a single extension from breaking entire dev ui
+                    log.error("Failed to process extension descriptor " + extMetadataFile.toUri(), e);
+                }
+            });
+        }
+
+        // Also add footers for extensions that might not have a runtime
+        if (!footerPagesMap.isEmpty()) {
+            for (Map.Entry<String, List<FooterPageBuildItem>> footer : footerPagesMap.entrySet()) {
+                List<FooterPageBuildItem> fbis = footer.getValue();
+                for (FooterPageBuildItem footerPageBuildItem : fbis) {
+
+                    Extension deploymentOnlyExtension = new Extension();
+                    deploymentOnlyExtension.setName(footer.getKey());
+                    deploymentOnlyExtension.setNamespace(FOOTER_LOG_NAMESPACE);
+
+                    List<PageBuilder> footerPageBuilders = footerPageBuildItem.getPages();
+
+                    for (PageBuilder pageBuilder : footerPageBuilders) {
+                        pageBuilder.namespace(deploymentOnlyExtension.getNamespace());
+                        pageBuilder.extension(deploymentOnlyExtension.getName());
+                        Page page = pageBuilder.build();
+                        deploymentOnlyExtension.addFooterPage(page);
+                    }
+
+                    footerTabExtensions.add(deploymentOnlyExtension);
+                }
+            }
+        }
+
+        // Also add setting for extensions that might not have a runtime
+        if (!settingPagesMap.isEmpty()) {
+            for (Map.Entry<String, List<SettingPageBuildItem>> setting : settingPagesMap.entrySet()) {
+                List<SettingPageBuildItem> sbis = setting.getValue();
+                for (SettingPageBuildItem settingPageBuildItem : sbis) {
+
+                    Extension deploymentOnlyExtension = new Extension();
+                    deploymentOnlyExtension.setName(setting.getKey());
+
+                    List<PageBuilder> settingPageBuilders = settingPageBuildItem.getPages();
+
+                    for (PageBuilder pageBuilder : settingPageBuilders) {
+                        pageBuilder.namespace(deploymentOnlyExtension.getNamespace());
+                        pageBuilder.extension(deploymentOnlyExtension.getName());
+                        Page page = pageBuilder.build();
+                        deploymentOnlyExtension.addSettingPage(page);
+                    }
+
+                    settingTabExtensions.add(deploymentOnlyExtension);
+                }
+            }
+        }
+
+        // Also add unlisting pages for extensions that might not have a runtime
+        if (!unlistedPagesMap.isEmpty()) {
+            for (Map.Entry<String, List<UnlistedPageBuildItem>> setting : unlistedPagesMap.entrySet()) {
+                List<UnlistedPageBuildItem> ubis = setting.getValue();
+                for (UnlistedPageBuildItem unlistedPageBuildItem : ubis) {
+
+                    Extension deploymentOnlyExtension = new Extension();
+                    deploymentOnlyExtension.setName(setting.getKey());
+
+                    List<PageBuilder> unlistedPageBuilders = unlistedPageBuildItem.getPages();
+
+                    for (PageBuilder pageBuilder : unlistedPageBuilders) {
+                        pageBuilder.namespace(deploymentOnlyExtension.getNamespace());
+                        pageBuilder.extension(deploymentOnlyExtension.getName());
+                        Page page = pageBuilder.build();
+                        deploymentOnlyExtension.addUnlistedPage(page);
+                    }
+
+                    unlistedExtensions.add(deploymentOnlyExtension);
+                }
+            }
+        }
+
+        extensionsProducer.produce(
+                new ExtensionsBuildItem(activeExtensions, inactiveExtensions, sectionMenuExtensions, footerTabExtensions,
+                        settingTabExtensions, unlistedExtensions));
+    }
+
+    private void addLibraryLinks(Extension extension, CardPageBuildItem cardPageBuildItem,
+            CurateOutcomeBuildItem curateOutcomeBuildItem, Map<String, Object> metaData) {
+        if (cardPageBuildItem != null && !cardPageBuildItem.hasLibraryVersions() && !metaData.containsKey(LIB_GA)) {
+            return;
+        }
+
+        // Build a lookup map once
+        Map<String, String> versionMap = curateOutcomeBuildItem.getApplicationModel().getDependencies().stream()
+                .collect(Collectors.toMap(
+                        rd -> rd.getGroupId() + ":" + rd.getArtifactId(),
+                        ResolvedDependency::getVersion,
+                        (existing, replacement) -> existing // keep the first one
+                ));
+
+        if (cardPageBuildItem != null && cardPageBuildItem.hasLibraryVersions()) {
+            for (LibraryLink lib : cardPageBuildItem.getLibraryVersions()) {
+                String key = lib.getGroupId() + ":" + lib.getArtifactId();
+                String version = versionMap.get(key);
+                if (version != null) {
+                    lib.setVersion(version);
+                    extension.addLibraryLink(lib);
+                }
+            }
+        }
+
+        if (metaData.containsKey(LIB_GA) && !extension.hasLibraryLinks()) {
+            String libGA = (String) metaData.get(LIB_GA);
+            Matcher matcher = libGAPattern.matcher(libGA);
+
+            if (matcher.matches()) {
+
+                String groupId = matcher.group(1);
+                String artifactId = matcher.group(2);
+                URL url = null;
+                if (matcher.group(4) != null) {
+                    try {
+                        url = URI.create(matcher.group(4)).toURL();
+                    } catch (MalformedURLException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+
+                String version = versionMap.get(groupId + ":" + artifactId);
+                if (version != null) {
+                    LibraryLink l = new LibraryLink(groupId, artifactId, artifactId, url);
+                    l.setVersion(version);
+                    extension.addLibraryLink(l);
+                }
+            }
+        }
+
+    }
+
+    private boolean addLogo(Extension extension, CardPageBuildItem cardPageBuildItem, Map<String, Object> metaData) {
+        if (cardPageBuildItem != null && cardPageBuildItem.hasLogo()) {
+            extension.setLogo(cardPageBuildItem.getDarkLogo(), cardPageBuildItem.getLightLogo());
+            return true;
+        } else if (metaData.containsKey(ICON_URL)) {
+            String iconUrl = (String) metaData.get(ICON_URL);
+            extension.setLogo(iconUrl, iconUrl);
+            return true;
+        }
+        return false;
+    }
+
+    private String collectionToString(Map<String, Object> metaData, String key) {
+        Object value = metaData.getOrDefault(key, null);
+        if (value == null) {
+            return null;
+        } else if (String.class.isAssignableFrom(value.getClass())) {
+            return (String) value;
+        } else if (List.class.isAssignableFrom(value.getClass())) {
+            List values = (List) value;
+            return (String) values.stream()
+                    .map(n -> String.valueOf(n))
+                    .collect(Collectors.joining(", "));
+        }
+        return String.valueOf(value);
+    }
+
+    private List<String> listOrString(Map<String, Object> metaData, String key) {
+        Object value = metaData.getOrDefault(key, null);
+        if (value == null) {
+            return null;
+        } else if (String.class.isAssignableFrom(value.getClass())) {
+            return List.of((String) value);
+        } else if (List.class.isAssignableFrom(value.getClass())) {
+            return (List) value;
+        }
+        return List.of(String.valueOf(value));
+    }
+
+    private void produceResources(ResolvedDependency runtimeExt,
+            BuildProducer<WebJarBuildItem> webJarBuildProducer,
+            BuildProducer<DevUIWebJarBuildItem> devUIWebJarProducer) {
+
+        String namespace = getWebJarNamespace(runtimeExt.getKey());
+        String buildTimeDataImport = namespace + "-data";
+
+        final GACT deploymentKey = getDeploymentKey(runtimeExt);
+        webJarBuildProducer.produce(WebJarBuildItem.builder()
+                .artifactKey(deploymentKey)
+                .root(WEB_JAR_ROOT)
+                .filter(new WebJarResourcesFilter() {
+                    @Override
+                    public WebJarResourcesFilter.FilterResult apply(String fileName, InputStream file) throws IOException {
+                        if (fileName.endsWith(".js")) {
+                            String content = new String(file.readAllBytes(), StandardCharsets.UTF_8);
+                            content = content.replaceAll("build-time-data", buildTimeDataImport);
+                            return new WebJarResourcesFilter.FilterResult(
+                                    new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), true);
+                        }
+
+                        return new WebJarResourcesFilter.FilterResult(file, false);
+                    }
+                })
+                .build());
+
+        devUIWebJarProducer.produce(new DevUIWebJarBuildItem(deploymentKey, DEVUI, namespace));
+    }
+
+    private static GACT getDeploymentKey(ResolvedDependency runtimeExt) {
+        String deploymentCoords = ArtifactInfoUtil.deploymentArtifactCoords(runtimeExt);
+        if (deploymentCoords == null) {
+            throw new RuntimeException("Failed to locate " + BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT + " in "
+                    + BootstrapConstants.DESCRIPTOR_PATH + " of " + runtimeExt.toCompactCoords());
+        }
+        var coords = GACTV.fromString(deploymentCoords);
+        return new GACT(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType());
+    }
+
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    void createAllRoutes(WebJarResultsBuildItem webJarResultsBuildItem,
+            LaunchModeBuildItem launchModeBuildItem,
+            List<DevUIWebJarBuildItem> devUIWebJarBuiltItems,
+            BuildProducer<DevUIRoutesBuildItem> devUIRoutesProducer) {
+
+        if (launchModeBuildItem.isNotLocalDevModeType()) {
+            return;
+        }
+
+        for (DevUIWebJarBuildItem devUIWebJarBuiltItem : devUIWebJarBuiltItems) {
+            WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem
+                    .byArtifactKeyAndRoot(devUIWebJarBuiltItem.getArtifactKey(), WEB_JAR_ROOT);
+            if (result != null) {
+                String namespace = devUIWebJarBuiltItem.getNamespace();
+                devUIRoutesProducer.produce(new DevUIRoutesBuildItem(namespace, devUIWebJarBuiltItem.getPath(),
+                        result.getFinalDestination(), result.getWebRootConfigurations()));
+            }
+        }
+    }
+
+    /**
+     * The namespace of an extension's web jar and build time data, which is the internal one for the Dev UI's own
+     * artifact rather than the empty string {@link #getNamespace(ArtifactKey)} returns for it. The Dev UI's own
+     * resources jar is not registered through this, as it is served from the Dev UI root.
+     */
+    private String getWebJarNamespace(ArtifactKey artifactKey) {
+        String namespace = getNamespace(artifactKey);
+        return namespace.isEmpty() ? INTERNAL_NAMESPACE : namespace;
+    }
+
+    private String getNamespace(ArtifactKey artifactKey) {
+        String namespace = artifactKey.getArtifactId();
+
+        if (namespace.equals("quarkus-devui-resources")) {
+            // Internal
+            namespace = "";
+        } else if (namespace.endsWith("-deployment")) {
+            int end = namespace.lastIndexOf("-");
+            namespace = namespace.substring(0, end);
+        }
+        return namespace;
+    }
+
+    private Page buildFinalPage(PageBuilder pageBuilder, Extension extension, Map<String, BuildTimeData> buildTimeData) {
+        pageBuilder.namespace(extension.getNamespace());
+        pageBuilder.extension(extension.getName());
+
+        // TODO: Have a nice factory way to load this...
+        // Some preprocessing for certain builds
+        if (pageBuilder.getClass().equals(QuteDataPageBuilder.class)) {
+            return buildQutePage(pageBuilder, buildTimeData);
+        }
+
+        return pageBuilder.build();
+    }
+
+    private Page buildQutePage(PageBuilder pageBuilder, Map<String, BuildTimeData> buildTimeData) {
+        try {
+            QuteDataPageBuilder quteDataPageBuilder = (QuteDataPageBuilder) pageBuilder;
+            String templatePath = quteDataPageBuilder.getTemplatePath();
+            ClassPathUtils.consumeAsPaths(templatePath, p -> {
+                try {
+                    String template = Files.readString(p);
+                    Map<String, Object> contentMap = buildTimeData.entrySet().stream()
+                            .collect(Collectors.toMap(
+                                    Map.Entry::getKey,
+                                    e -> e.getValue().getContent()));
+                    String fragment = Qute.fmt(template, contentMap);
+                    pageBuilder.metadata("htmlFragment", fragment);
+                } catch (IOException ex) {
+                    throw new UncheckedIOException(ex);
+                }
+            });
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+        return pageBuilder.build();
+    }
+
+    private Map<String, CardPageBuildItem> getCardPagesMap(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<CardPageBuildItem> pages) {
+        Map<String, CardPageBuildItem> m = new HashMap<>();
+        for (CardPageBuildItem pageBuildItem : pages) {
+            String name = pageBuildItem.getExtensionPathName(curateOutcomeBuildItem);
+            m.put(name, pageBuildItem);
+        }
+        return m;
+    }
+
+    private Map<String, MenuPageBuildItem> getMenuPagesMap(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<MenuPageBuildItem> pages) {
+        Map<String, MenuPageBuildItem> m = new HashMap<>();
+        for (MenuPageBuildItem pageBuildItem : pages) {
+            m.put(pageBuildItem.getExtensionPathName(curateOutcomeBuildItem), pageBuildItem);
+        }
+        return m;
+    }
+
+    private Map<String, List<FooterPageBuildItem>> getFooterPagesMap(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<FooterPageBuildItem> pages) {
+        Map<String, List<FooterPageBuildItem>> m = new HashMap<>();
+        for (FooterPageBuildItem pageBuildItem : pages) {
+            String key = pageBuildItem.getExtensionPathName(curateOutcomeBuildItem);
+            if (m.containsKey(key)) {
+                m.get(key).add(pageBuildItem);
+            } else {
+                List<FooterPageBuildItem> fbi = new ArrayList<>();
+                fbi.add(pageBuildItem);
+                m.put(key, fbi);
+            }
+        }
+        return m;
+    }
+
+    private Map<String, List<SettingPageBuildItem>> getSettingPagesMap(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<SettingPageBuildItem> pages) {
+        Map<String, List<SettingPageBuildItem>> m = new HashMap<>();
+        for (SettingPageBuildItem pageBuildItem : pages) {
+            String key = pageBuildItem.getExtensionPathName(curateOutcomeBuildItem);
+            if (m.containsKey(key)) {
+                m.get(key).add(pageBuildItem);
+            } else {
+                List<SettingPageBuildItem> sbi = new ArrayList<>();
+                sbi.add(pageBuildItem);
+                m.put(key, sbi);
+            }
+        }
+        return m;
+    }
+
+    private Map<String, List<UnlistedPageBuildItem>> getUnlistedPagesMap(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<UnlistedPageBuildItem> pages) {
+        Map<String, List<UnlistedPageBuildItem>> m = new HashMap<>();
+        for (UnlistedPageBuildItem pageBuildItem : pages) {
+            String key = pageBuildItem.getExtensionPathName(curateOutcomeBuildItem);
+            if (m.containsKey(key)) {
+                m.get(key).add(pageBuildItem);
+            } else {
+                List<UnlistedPageBuildItem> ubi = new ArrayList<>();
+                ubi.add(pageBuildItem);
+                m.put(key, ubi);
+            }
+        }
+        return m;
+    }
+
+    private String getExtensionNamespace(Map<String, Object> extensionMap) {
+        final String artifactId;
+        final String artifact = (String) extensionMap.get("artifact");
+        if (artifact == null) {
+            // trying quarkus 1.x format
+            artifactId = (String) extensionMap.get("artifact-id");
+            if (artifactId == null) {
+                throw new RuntimeException(
+                        "Failed to locate 'artifact' or 'group-id' and 'artifact-id' among metadata keys "
+                                + extensionMap.keySet());
+            }
+        } else {
+            final GACTV coords = GACTV.fromString(artifact);
+            artifactId = coords.getArtifactId();
+        }
+        return artifactId;
+    }
+
+    // Sort extensions with Guide first and then alphabetical
+    private final Comparator sortingComparator = new Comparator<Extension>() {
+        @Override
+        public int compare(Extension t, Extension t1) {
+            if (t.getGuide() != null && t1.getGuide() != null) {
+                return t.getName().compareTo(t1.getName());
+            } else if (t.getGuide() == null) {
+                return 1;
+            } else {
+                return -1;
+            }
+        }
+    };
+
+    static record LanguageCountry(
+            String code,
+            String name) {
+    }
+
+    private interface TestResultMixIn {
+        @JsonIgnore
+        UniqueId getUniqueId();
+    }
+}

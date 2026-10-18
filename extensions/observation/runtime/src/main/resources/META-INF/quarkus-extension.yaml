@@ -1,0 +1,16 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Observation"
+metadata:
+  keywords:
+    - "micrometer"
+    - "observation"
+    - "tracing"
+    - "metrics"
+    - "monitoring"
+  guide: "https://quarkus.io/guides/telemetry-micrometer-observation"
+  categories:
+    - "observability"
+  status: "preview"
+  config:
+    - "quarkus.observation."

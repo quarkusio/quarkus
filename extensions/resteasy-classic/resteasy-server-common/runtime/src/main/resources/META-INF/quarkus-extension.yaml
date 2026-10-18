@@ -1,0 +1,15 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "RESTEasy Classic Server Common"
+metadata:
+  keywords:
+  - "resteasy"
+  - "jaxrs"
+  - "web"
+  - "rest"
+  - "jakarta-rest"
+  guide: "https://quarkus.io/guides/resteasy"
+  categories:
+  - "web"
+  status: "stable"
+  unlisted: true

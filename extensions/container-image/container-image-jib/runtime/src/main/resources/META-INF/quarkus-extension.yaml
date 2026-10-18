@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Container Image Jib"
+metadata:
+  keywords:
+    - "jib"
+    - "container"
+    - "image"
+  guide: "https://quarkus.io/guides/container-image#jib"
+  categories:
+    - "cloud"
+  status: "preview"

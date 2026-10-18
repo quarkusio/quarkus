@@ -1,0 +1,1117 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="logging"]
+= Logging configuration
+include::_attributes.adoc[]
+:diataxis-type: reference
+:topics: logging,observability
+:toclevels: 4
+
+Read about the use of logging API in {project-name}, configuring logging output, and using logging adapters to unify the output from other logging APIs.
+
+include::{includes}/observability-include.adoc[]
+
+Quarkus uses the JBoss Log Manager logging backend for publishing application and framework logs.
+Quarkus supports the JBoss Logging API and multiple other logging APIs, seamlessly integrated with JBoss Log Manager.
+
+This means you can use your favorite logging API with Quarkus, provided you add the <<logging-apis,appropriate adapter>> to your application:
+
+[cols="2,1", options="header"]
+|===
+| Logging API
+| Adapter
+
+| link:https://github.com/jboss-logging/jboss-logging[JBoss Logging]
+| Built-in
+
+| link:https://docs.oracle.com/en/java/javase/17/docs/api/java.logging/java/util/logging/package-summary.html[JDK `java.util.logging` (JUL)]
+| Built-in
+
+| link:https://www.slf4j.org/[SLF4J]
+| <<logging-adapters-slf4j,SLF4J adapter>>
+
+| link:https://commons.apache.org/proper/commons-logging/[Apache Commons Logging]
+| <<logging-adapters-commons-logging,Commons Logging adapter>>
+
+| link:https://logging.apache.org/log4j/2.x/[Apache Log4j 2]
+| <<logging-adapters-log4j2,Log4j 2 adapter>>
+|===
+
+[[jboss-logging]]
+== Use JBoss Logging for application logging
+
+When using the JBoss Logging API, your application requires no additional dependencies, as {project-name} provides it automatically.
+
+.An example of using the JBoss Logging API to log a message:
+[source,java]
+----
+import org.jboss.logging.Logger;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+@Path("/hello")
+public class ExampleResource {
+
+    private static final Logger LOG = Logger.getLogger(ExampleResource.class);
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        LOG.info("Hello");
+        return "hello";
+    }
+}
+----
+
+NOTE: While JBoss Logging routes log messages directly to the JBoss Log Manager, one of your libraries might rely on a different logging API.
+In such cases, you need to use a <<logging-apis,logging adapter>> to ensure that its log messages are routed to JBoss Log Manager as well.
+
+== Get an application logger
+
+To get an application logger in {project-name}, select one of the following approaches.
+
+* <<declaring-a-logger-field>>
+* <<simplified-logging>>
+* <<injection-of-a-configured-logger>>
+
+[[declaring-a-logger-field]]
+=== Declaring a logger field
+
+With this classic approach, you use a specific API to obtain a logger instance, store it in a static field of a class, and call logging operations upon this instance.
+
+The same flow can be applied with any of the <<logging-apis,supported logging APIs>>.
+
+.An example of storing a logger instance into a static field by using the JBoss Logging API:
+[source,java]
+----
+package com.example;
+
+import org.jboss.logging.Logger;
+
+public class MyService {
+    private static final Logger log = Logger.getLogger(MyService.class); <1>
+
+    public void doSomething() {
+        log.info("It works!"); <2>
+    }
+}
+----
+<1> Define the logger field.
+<2> Invoke the desired logging methods on the `log` object.
+
+[WARNING]
+====
+When you create a `Logger` instance, Quarkus keeps metadata associated with the `Logger` name in memory for the full lifecycle of the application.
+
+Do not use an unbounded dynamic name for loggers, for example, `for (int i ...) { Logger.getLogger("logger-name." + i).info("my log") }`.
+====
+
+[[simplified-logging]]
+=== Simplified logging
+
+Quarkus simplifies logging by automatically adding logger fields to classes that use `io.quarkus.logging.Log`.
+This eliminates the need for repetitive boilerplate code and enhances the convenience of logging setup.
+
+.An example of simplified logging with static method calls:
+[source,java]
+----
+package com.example;
+
+import io.quarkus.logging.Log; // <1>
+
+class MyService { // <2>
+    public void doSomething() {
+        Log.info("Simple!"); // <3>
+    }
+}
+----
+<1> The io.quarkus.logging.Log class provides the same methods as JBoss Logging, but as static methods.
+<2> The class does not declare a logger field.
+During the application build, Quarkus creates a `private static final org.jboss.logging.Logger` field in each class that uses the `Log` API.
+Quarkus uses the fully qualified name of the calling class as the logger name.
+In this example, the logger name is `com.example.MyService`.
+<3> During the application build, Quarkus rewrites calls to `Log` methods into JBoss Logging calls on the generated logger field.
+
+[[log-api-extension-warning]]
+[WARNING]
+====
+Use the `Log` API only in application classes, not in external dependencies.
+`Log` method calls not processed by Quarkus at build time will result in an exception.
+
+.Using `io.quarkus.logging.Log` in extensions:
+
+While the `Log` API simplifies logging in application classes, do not use it in extension modules or external dependencies.
+
+The following considerations apply:
+
+* `io.quarkus.logging.Log` depends on Quarkus bytecode transformations that occur at build time.
+
+* In extension modules, `Log` works only if the module includes a Jandex index.
+However, this behavior is unsupported and can lead to unreliable logging.
++
+For extension development, use `org.jboss.logging.Logger.getLogger(String)` instead of `io.quarkus.logging.Log`.
+====
+
+
+[[injection-of-a-configured-logger]]
+=== Injecting a configured logger
+
+Instead of declaring a logger field, you can use an alternative approach and inject a configured `org.jboss.logging.Logger` instance by using `@Inject`.
+This approach applies only to CDI beans.
+
+To control the logger name, choose one of the following injection patterns:
+
+* Use `@Inject Logger log` when you want Quarkus to name the logger after the class it is injected into.
+* Use `@LoggerName("...") Logger log` when you want to set the logger name explicitly.
+
+[NOTE]
+====
+`@Inject` is not required if you already annotated your `Logger` with `@LoggerName("...")`.
+====
+
+Once injected, you can use the `log` object to invoke logging methods.
+
+.An example of two different types of logger injection:
+[source, java]
+----
+package com.example;
+
+import org.jboss.logging.Logger;
+
+@ApplicationScoped
+class SimpleBean {
+
+   @Inject
+   Logger log; <1>
+
+   @LoggerName("foo")
+   Logger fooLog; <2>
+
+   public void ping() {
+     log.info("Simple!");
+     fooLog.info("Goes to _foo_ logger!");
+   }
+}
+----
+<1> The logger is created with `org.jboss.logging.Logger.getLogger(SimpleBean.class)`.
+<2> In this case, the name "foo" is used as a logger name.
+The logger is created with `org.jboss.logging.Logger.getLogger("foo")`.
+
+[NOTE]
+====
+Quarkus caches logger instances internally.
+When you inject a logger into a `@RequestScoped` bean, Quarkus shares that logger across bean instances to avoid performance penalties from repeated logger instantiation.
+====
+
+== Use log levels
+
+{project-name} provides multiple log levels to control the amount of information logged based on event severity.
+
+.Available log levels:
+
+[horizontal]
+OFF:: A special level used in configuration to turn off logging.
+FATAL:: A critical service failure or total inability to handle any requests.
+ERROR:: A major issue in processing or an inability to complete a request.
+WARN:: A non-critical service error or problem that might not require immediate correction.
+INFO:: Service lifecycle events or other important infrequent information.
+DEBUG:: Additional information about lifecycle events or events not tied to specific requests, useful for debugging.
+TRACE:: Detailed per-request debugging information, potentially at a very high frequency.
+ALL:: A special level to turn on logging for all messages, including custom levels.
+
+You can also configure the following levels for applications and libraries that use link:https://docs.oracle.com/javase/8/docs/api/java/util/logging/Level.html[`java.util.logging`]:
+
+[horizontal]
+SEVERE:: Same as **ERROR**.
+WARNING:: Same as **WARN**.
+CONFIG:: Service configuration information.
+FINE:: Same as **DEBUG**.
+FINER:: Same as **TRACE**.
+FINEST:: Increased debug output compared to `TRACE`, which might have a higher frequency.
+
+.The mapping between the levels
+[options="header",cols="^33%,^33%,^33%"]
+|===
+|Numerical level value |Standard level name |Equivalent `java.util.logging` (JUL) level name
+
+|1100 |FATAL | Not applicable
+
+|1000 |ERROR |SEVERE
+
+|900 |WARN |WARNING
+
+|800 |INFO |INFO
+
+|700 | Not applicable |CONFIG
+
+|500 |DEBUG |FINE
+
+|400 |TRACE |FINER
+
+|300 | Not applicable |FINEST
+|===
+
+== Configure the log level, category, and format
+
+JBoss Logging, integrated into {project-name}, provides a unified configuration for all <<logging-apis,supported logging APIs>> through a single configuration file that sets up all available extensions.
+
+To adjust runtime logging, modify the `application.properties` file.
+
+====
+.An example of how you can set the default log level to `INFO` logging and include Hibernate `DEBUG` logs:
+[source,properties]
+----
+quarkus.log.level=INFO
+quarkus.log.category."org.hibernate".level=DEBUG
+----
+Assuming the link:https://quarkus.io/guides/config-yaml[Quarkus YAML extension] is included, the equivalent YAML configuration is:
+[source,yaml]
+----
+quarkus:
+  log:
+    level: INFO
+    category:
+      org.hibernate: # Using org.hibernate as a single key is required
+        level: DEBUG
+----
+====
+
+When you set the log level to below `DEBUG`, for example `TRACE`, you must also adjust the minimum log level.
+
+Set the minimum log level globally with the `quarkus.log.min-level` configuration property, or set it per category:
+[source,properties]
+----
+quarkus.log.category."org.hibernate".min-level=TRACE
+----
+
+The minimum log level is a build-time configuration option that sets the floor level for which Quarkus generates supporting code.
+This enables further build-time optimizations, such as dead code elimination when building a native image.
+
+====
+.An example from a native executable:
+Setting `INFO` as the minimum log level forces checks for lower levels, such as `isTraceEnabled()`, always to return `false`.
+
+In turn, code such as `if (logger.isDebugEnabled()) callMethod();` is identified as never executed, also known as dead code.
+====
+
+[WARNING]
+====
+If you add these properties on the command line, ensure the `"` character is escaped with a backslash:
+[source,properties]
+----
+-Dquarkus.log.category.\"org.hibernate\".level=TRACE
+----
+====
+
+All potential properties are listed in the <<loggingConfigurationReference,logging configuration reference>> section.
+
+=== Logging categories
+
+Logging is configured per category.
+Configuration for a category applies recursively to all subcategories unless a more specific subcategory configuration exists.
+
+The parent of all logging categories is called the "root category."
+As the ultimate parent, this category might contain a configuration that applies globally to all other categories.
+This includes the globally configured handlers and formatters.
+
+.An example of a global configuration that applies to all categories:
+====
+[source, properties]
+----
+quarkus.log.handlers=con,mylog
+
+quarkus.log.handler.console.con.enable=true
+quarkus.log.handler.file.mylog.enable=true
+----
+
+In this example, the root category is configured to use two named handlers: `con` and `mylog`.
+====
+
+.An example of a per-category configuration:
+====
+[source, properties]
+----
+quarkus.log.category."org.apache.kafka.clients".level=INFO
+quarkus.log.category."org.apache.kafka.common.utils".level=INFO
+----
+
+This example shows how to configure the minimal log level for the categories `org.apache.kafka.clients` and `org.apache.kafka.common.utils`.
+====
+
+For more information, see <<loggingConfigurationReference>>.
+
+If you want to configure something extra for a specific category, create a named handler like `quarkus.log.handler.[console|file|syslog].<your-handler-name>.*` and set it up for that category by using `quarkus.log.category.<my-category>.handlers`.
+
+An example use case can be a desire to use a different timestamp format for log messages that are saved to a file than the format used for other handlers.
+
+For further demonstration, see the outputs of the <<category-named-handlers-example,Attaching named handlers to a category>> example.
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|quarkus.log.category."<category-name>".level|INFO footnote:[Some extensions might define customized default log levels for certain categories to reduce log noise by default.
+Setting the log level in configuration will override any extension-defined log levels.]|The level to use to configure the category named `<category-name>`.
+The quotes are necessary.
+|quarkus.log.category."<category-name>".min-level|DEBUG|The minimum logging level to use to configure the category named `<category-name>`.
+The quotes are necessary.
+|quarkus.log.category."<category-name>".use-parent-handlers|true|Specify whether this logger should send its output to its parent logger.
+|quarkus.log.category."<category-name>".handlers=[<handler>]|empty footnote:[By default, the configured category gets the same handlers attached as the one on the root logger.]|The names of the handlers that you want to attach to a specific category.
+|===
+
+[NOTE]
+====
+The `.` symbol separates the specific parts in the configuration property.
+The quotes in the property name are used as a required escape to keep category specifications, such as `quarkus.log.category."io.quarkus.smallrye.jwt".level=TRACE`, intact.
+====
+
+
+=== Root logger configuration
+
+The root logger category is handled separately, and is configured by using the following properties:
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|quarkus.log.level|INFO|The default log level for every log category.
+|quarkus.log.min-level|DEBUG|The default minimum log level for every log category.
+|===
+
+* The parent category is examined if no level configuration exists for a given logger category.
+* The root logger configuration is used if no specific configurations are provided for the category and any of its parent categories.
+
+[NOTE]
+====
+Although the root logger's handlers are usually configured directly via `quarkus.log.console`, `quarkus.log.file` and `quarkus.log.syslog`, it can nonetheless have additional named handlers attached to it using the `quarkus.log.handlers` property.
+====
+
+
+== Logging format
+
+=== Human-readable text
+
+{project-name} uses a pattern-based logging formatter that generates human-readable text logs by default, but you can also configure the format for each log handler by using a dedicated property.
+
+For the console handler, the property is `quarkus.log.console.format`.
+
+The logging format string supports the following symbols:
+
+[cols="<m,<3,<5",options="header"]
+|===
+|Symbol|Summary|Description
+
+|%%|`%`|Renders a simple `%` character.
+|%c|Category|Renders the category name.
+|%C|Source class|Renders the source class name.footnote:calc[Format sequences which examine caller information might affect performance]
+|%d{xxx}|Date|Renders a date with the given date format string, which uses the syntax defined by `java.text.SimpleDateFormat`.
+|%e|Exception|Renders the thrown exception, if any.
+|%F|Source file|Renders the source file name.footnote:calc[]
+|%h|Host name|Renders the system simple host name.
+|%H|Qualified host name|Renders the system's fully qualified host name, which might be the same as the simple host name, depending on operating system configuration.
+|%i|Process ID|Render the current process PID.
+|%l|Source location|Renders the source location information, which includes source file name, line number, class name, and method name.footnote:calc[]
+|%L|Source line|Renders the source line number.footnote:calc[]
+|%m|Full Message|Renders the log message plus exception (if any).
+|%M|Source method|Renders the source method name.footnote:calc[]
+|%n|Newline|Renders the platform-specific line separator string.
+|%N|Process name|Render the name of the current process.
+|%p|Level|Render the log level of the message.
+|%r|Relative time|Render the time in milliseconds since the start of the application log.
+|%s|Simple message|Renders just the log message, with no exception trace.
+|%t|Thread name|Render the thread name.
+|%t{id}|Thread ID|Render the thread ID.
+|%z{<zone name>}|Time zone|Set the time zone of the output to `<zone name>`.
+|%X{<MDC property name>}|Mapped Diagnostic Context Value|Renders the value from Mapped Diagnostic Context.
+|%X|Mapped Diagnostic Context Values|Renders all the values from Mapped Diagnostic Context in format `{property.key=property.value}`.
+|%x|Nested Diagnostics context values|Renders all the values from Nested Diagnostics Context in format `{value1.value2}`.
+|===
+
+[id="json-logging"]
+=== JSON logging format
+
+Add the `quarkus-logging-json` extension to enable the JSON logging format and its related configuration.
+
+. Add this extension to your build file as the following snippet illustrates:
++
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-logging-json</artifactId>
+</dependency>
+----
++
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-logging-json")
+----
++
+By default, this extension overrides the console output format configuration, and any format string or color settings are ignored.
+Other console configuration items continue to apply, including items that control asynchronous logging and the log level.
++
+If you prefer human-readable, unstructured logging in dev mode and JSON-structured logging in production mode, configure this by using profiles, as shown in the following configuration.
++
+. Disable JSON logging in application.properties for dev and test mode:
++
+[source, properties]
+----
+%dev.quarkus.log.console.json.enabled=false
+%test.quarkus.log.console.json.enabled=false
+----
++
+. Choose the JSON console log format by setting the configuration property:
++
+[source,properties]
+----
+quarkus.log.console.json.log-format
+----
+This property sets the JSON log format for the console.
++
+The possible values are:
+
+* *default*: Generates structured logs based on the key-value pairs present in the log record.
+Mapped Diagnostic Context (MDC) and Nested Diagnostic Context (NDC) data are included under the `mdc` and `ndc` fields.
++
+Set `quarkus.log.console.json.mdc.flat-fields=true` to write MDC entries as root-level JSON fields instead of nesting them under `mdc`.
+This is useful when a log aggregator (such as OpenSearch or Elasticsearch) needs MDC fields to be queryable as top-level document fields.
++
+.Example: nested MDC (default, `flat-fields=false`)
+[source,json]
+----
+{"timestamp":"...","message":"Handling request","mdc":{"requestId":"abc123","userId":"42"}}
+----
++
+.Example: flat MDC (`flat-fields=true`)
+[source,json]
+----
+{"timestamp":"...","message":"Handling request","requestId":"abc123","userId":"42"}
+----
++
+The option is available for all handler types:
++
+** console: `quarkus.log.console.json.mdc.flat-fields`
+** file: `quarkus.log.file.json.mdc.flat-fields`
+** syslog: `quarkus.log.syslog.json.mdc.flat-fields`
+** socket: `quarkus.log.socket.json.mdc.flat-fields`
+** Named handlers, such as `quarkus.log.handler.console.<name>.json.mdc.flat-fields`
++
+Set `quarkus.log.console.json.access-log.structured=true` to enrich HTTP access log records with a nested `accessLog` JSON object.
+Access log records are those produced by the `io.quarkus.http.access-log` logger, which is active when `quarkus.http.access-log.enabled=true`.
+When the option is disabled (the default), access log entries appear as plain `message` strings with no structured fields.
++
+The `accessLog` object contains the following fields:
++
+[cols="1,1,3",options="header"]
+|===
+|Field |Type |Description
+|`method` |string |HTTP request method (e.g. `GET`)
+|`uri` |string |Request URI, including query string when present
+|`status` |number |HTTP response status code (e.g. `200`)
+|`responseTimeMs` |number |Response time in milliseconds
+|`bytesSent` |number |Number of bytes sent in the response body (excluding headers)
+|`remoteIp` |string |Remote IP address of the client
+|`protocol` |string |HTTP protocol version (e.g. `HTTP/1.1`)
+|===
++
+.Example: access log without `structured-access-log` (default)
+[source,json]
+----
+{"timestamp":"...","level":"INFO","loggerName":"io.quarkus.http.access-log","message":"GET /hello HTTP/1.1 200 512 12"}
+----
++
+.Example: access log with `structured-access-log=true`
+[source,json]
+----
+{"timestamp":"...","level":"INFO","loggerName":"io.quarkus.http.access-log","message":"GET /hello HTTP/1.1 200 512 12","accessLog":{"method":"GET","uri":"/hello","status":200,"responseTimeMs":12,"bytesSent":512,"remoteIp":"127.0.0.1","protocol":"HTTP/1.1"}}
+----
++
+When `log-format` is set to `ecs`, the fields are written as top-level ECS fields instead of the `accessLog` object:
++
+[cols="1,2",options="header"]
+|===
+|Access log field |ECS field
+|`method` |`http.request.method`
+|`uri` |`url.path`, plus `url.query` when the URI has a query string
+|`status` |`http.response.status_code`
+|`responseTimeMs` |`event.duration`, converted to nanoseconds
+|`bytesSent` |`http.response.body.bytes`
+|`remoteIp` |`client.ip`
+|`protocol` |`http.version`, holding the version alone (e.g. `1.1`)
+|===
++
+.Example: access log with `structured-access-log=true` and `log-format=ecs`
+[source,json]
+----
+{"@timestamp":"...","log.level":"INFO","log.logger":"io.quarkus.http.access-log","message":"GET /hello HTTP/1.1 200 512 12","http.request.method":"GET","url.path":"/hello","http.response.status_code":200,"event.duration":12000000,"http.response.body.bytes":512,"client.ip":"127.0.0.1","http.version":"1.1"}
+----
++
+The option is available for all handler types: `quarkus.log.console.json.access-log.structured`, `quarkus.log.file.json.access-log.structured`, `quarkus.log.syslog.json.access-log.structured`, `quarkus.log.socket.json.access-log.structured`, and named handlers such as `quarkus.log.handler.console.<name>.json.access-log.structured`.
++
+TIP: To add custom fields beyond the standard access log fields, use the <<json-provider,JsonProvider SPI>>.
+* *ecs*: Uses the link:https://www.elastic.co/docs/reference/ecs/ecs-field-reference[Elastic Common Schema (ECS)] format.
+This format modifies some default field names and adds other fields to align with ECS.
++
+Fields include `@timestamp`, `log.logger`, `log.level`, `process.pid`, `process.name`, `process.thread.name`, `process.thread.id`, `host.hostname`, `event.sequence`, `error.message`, `error.stack_trace`, `ecs.version`, `data_stream.type`, `service.name`, `service.version`, and `service.environment`.
++
+MDC data is kept in the `mdc` field, which is not part of the ECS schema. Set `mdc.flat-fields` to write those entries as root-level fields instead, or add `mdc` to `excluded-keys` to leave them out entirely.
+* *gcp*: Uses the link:https://cloud.google.com/logging/docs/structured-logging#structured_logging_special_fields[Google Cloud] format.
+This format follows the *default* format. When using GCP format, if `exception-output-type` is set to `DETAILED` (the default), it is automatically upgraded to `DETAILED_AND_FORMATTED` to ensure stack traces appear in the `stack_trace` field.
++
+When you use xref:opentelemetry-tracing.adoc[OpenTelemetry], Quarkus flattens tracing data present in the `mdc` field and copies it to `spanId`, `traceSampled`, and `trace`, with the `trace` value including a prefix.
++
+Google Cloud requires the `trace` field to follow the `"projects/<my-trace-project>/traces/12345"` format.
+`<my-trace-project>` uses the value of the `quarkus.application.name` configuration property.
+
+
+[id="json-provider"]
+==== Custom JSON fields with JsonProvider
+
+The `JsonProvider` SPI allows you to dynamically inject additional JSON fields into every log record at formatting time.
+Each registered provider's `writeTo` method is called once per log record, receiving a `JsonLogGenerator` and the `ExtLogRecord` being formatted.
+
+Providers can inspect the log record (level, logger name, MDC values, message, etc.) to decide which fields, if any, to add.
+Any keys listed in `quarkus.log.*.json.excluded-keys` are still filtered, even when written by a provider.
+
+===== CDI registration
+
+In a Quarkus application, the preferred way to register a `JsonProvider` is as a CDI bean:
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import org.jboss.logmanager.ExtLogRecord;
+import org.jboss.logmanager.Level;
+import io.quarkus.logging.json.runtime.JsonProvider;
+import io.quarkus.logging.json.runtime.JsonFormatter.JsonLogGenerator;
+
+@ApplicationScoped
+public class MyJsonProvider implements JsonProvider {
+
+    @Override
+    public void writeTo(JsonLogGenerator generator, ExtLogRecord record) throws Exception {
+        // Add a static field to every log record
+        generator.add("environment", "production");
+
+        // Conditionally add a field based on the log level
+        if (record.getLevel().intValue() >= Level.ERROR.intValue()) {
+            generator.add("alert", "true");
+        }
+
+        // Add an MDC value as a top-level field
+        String requestId = record.getMDC("requestId");
+        if (requestId != null) {
+            generator.add("requestId", requestId);
+        }
+
+        // Add a nested JSON object
+        generator.startObject("metadata")
+                .add("version", "1.0")
+                .add("region", "us-east-1")
+                .endObject();
+    }
+}
+----
+
+===== ServiceLoader registration
+
+For providers that must work without CDI (for example, in libraries or during early startup), register them via the Java `ServiceLoader` mechanism.
+Create a file named `META-INF/services/io.quarkus.logging.json.runtime.JsonProvider` containing the fully qualified class name of each implementation:
+
+[source,text]
+----
+com.example.MyJsonProvider
+----
+
+The implementation does not need to be a CDI bean:
+
+[source,java]
+----
+import io.quarkus.logging.json.runtime.JsonProvider;
+import io.quarkus.logging.json.runtime.JsonFormatter.JsonLogGenerator;
+import org.jboss.logmanager.ExtLogRecord;
+
+public class MyJsonProvider implements JsonProvider {
+
+    @Override
+    public void writeTo(JsonLogGenerator generator, ExtLogRecord record) throws Exception {
+        generator.add("source", "my-library");
+    }
+}
+----
+
+NOTE: When both CDI beans and ServiceLoader providers are present, all of them are called for each log record.
+ServiceLoader providers are called first, in the order they appear in the `META-INF/services/` configuration file.
+CDI beans are called afterwards, but their relative order is not guaranteed.
+
+==== Configuration
+
+Configure the JSON logging extension using supported properties to customize its behavior.
+
+include::{generated-dir}/config/quarkus-logging-json.adoc[opts=optional, leveloffset=+1]
+
+WARNING: Enabling pretty printing might cause certain processors and JSON parsers to fail.
+
+NOTE: Printing the details can be expensive as the values are retrieved from the caller.
+The details include the source class name, source file name, source method name, and source line number.
+
+== Log handlers
+
+A log handler is a logging component that emits log events to a recipient.
+{project-name} includes several different log handlers: **console**, **file**, and **syslog**.
+
+The featured examples use `com.example` as a logging category.
+
+=== Console log handler
+
+The console log handler is enabled by default, and it directs all log events to the application's console, usually the system's `stdout`.
+
+* A global configuration example:
++
+[source, properties]
+----
+quarkus.log.console.format=%d{yyyy-MM-dd HH:mm:ss} %-5p [%c] (%t) %s%e%n
+----
+
+* A per-category configuration example:
++
+[source, properties]
+----
+quarkus.log.handler.console.my-console-handler.format=%d{yyyy-MM-dd HH:mm:ss} [com.example] %s%e%n
+
+quarkus.log.category."com.example".handlers=my-console-handler
+quarkus.log.category."com.example".use-parent-handlers=false
+----
+
+For details about its configuration, see the xref:#quarkus-core_section_quarkus-log-console[console logging configuration] reference.
+
+
+=== File log handler
+
+To log events to a file on the application's host, use the Quarkus file log handler.
+The file log handler is disabled by default, so you must enable it first.
+
+The Quarkus file log handler supports log file rotation.
+
+Log file rotation ensures efficient log management by preserving a specified number of backup files while keeping the primary log file up to date and manageable in size.
+
+* A global configuration example:
++
+[source, properties]
+----
+quarkus.log.file.enabled=true
+quarkus.log.file.path=application.log
+quarkus.log.file.format=%d{yyyy-MM-dd HH:mm:ss} %-5p [%c] (%t) %s%e%n
+----
+
+* A per-category configuration example:
++
+[source, properties]
+----
+quarkus.log.handler.file.my-file-handler.enabled=true
+quarkus.log.handler.file.my-file-handler.path=application.log
+quarkus.log.handler.file.my-file-handler.format=%d{yyyy-MM-dd HH:mm:ss} [com.example] %s%e%n
+
+quarkus.log.category."com.example".handlers=my-file-handler
+quarkus.log.category."com.example".use-parent-handlers=false
+----
+
+For details about its configuration, see the xref:#quarkus-core_section_quarkus-log-file[file logging configuration] reference.
+
+
+=== Syslog log handler
+
+The syslog handler in Quarkus follows the link:https://en.wikipedia.org/wiki/Syslog[Syslog] protocol, which is used to send log messages on UNIX-like systems.
+It uses the protocol defined in link:https://tools.ietf.org/html/rfc5424[RFC 5424].
+
+By default, the syslog handler is disabled.
+When enabled, it sends all log events to a syslog server, typically the local syslog server for the application.
+
+* A global configuration example:
++
+[source, properties]
+----
+quarkus.log.syslog.enabled=true
+quarkus.log.syslog.app-name=my-application
+quarkus.log.syslog.format=%d{yyyy-MM-dd HH:mm:ss} %-5p [%c] (%t) %s%e%n
+----
+
+* A per-category configuration example:
++
+[source, properties]
+----
+quarkus.log.handler.syslog.my-syslog-handler.enabled=true
+quarkus.log.handler.syslog.my-syslog-handler.app-name=my-application
+quarkus.log.handler.syslog.my-syslog-handler.format=%d{yyyy-MM-dd HH:mm:ss} [com.example] %s%e%n
+
+quarkus.log.category."com.example".handlers=my-syslog-handler
+quarkus.log.category."com.example".use-parent-handlers=false
+----
+
+For details about its configuration, see the xref:#quarkus-core_section_quarkus-log-syslog[Syslog logging configuration] reference.
+
+
+=== Socket log handler
+
+This handler sends logs to a socket.
+The socket log handler is disabled by default; enable it in your configuration.
+When enabled, it sends all log events to a socket, such as a Logstash server.
+
+* A global configuration example:
++
+[source, properties]
+----
+quarkus.log.socket.enabled=true
+quarkus.log.socket.endpoint=localhost:4560
+----
+
+Typically, this handler is used with the `quarkus-logging-json` extension to send logs in ECS format to an Elasticsearch instance.
+For an example configuration, see the xref:centralized-log-management.adoc[Centralized log management] guide.
+
+
+== Add a logging filter to your log handler
+
+You can attach a link:https://docs.oracle.com/en/java/javase/17/docs/api/java.logging/java/util/logging/Filter.html[filter] to a log handler such as the console handler.
+The filter determines whether the handler logs a given log record.
+
+To register a logging filter:
+
+. Annotate a `final` class that implements `java.util.logging.Filter` with `@io.quarkus.logging.LoggingFilter`, and set the `name` property:
++
+.An example of writing a filter:
+[source,java]
+----
+package com.example;
+
+import io.quarkus.logging.LoggingFilter;
+import java.util.logging.Filter;
+import java.util.logging.LogRecord;
+
+@LoggingFilter(name = "my-filter")
+public final class TestFilter implements Filter {
+
+    private final String part;
+
+    public TestFilter(@ConfigProperty(name = "my-filter.part") String part) {
+        this.part = part;
+    }
+
+    @Override
+    public boolean isLoggable(LogRecord record) {
+        return !record.getMessage().contains(part);
+    }
+}
+----
++
+In this example, the filter excludes log records containing specific text from console logs.
+The specific text to filter on is not hard-coded; instead, it is read from the `my-filter.part` configuration property.
++
+.An example of Configuring the filter in `application.properties`:
+[source, properties]
+----
+my-filter.part=TEST
+----
+
+. Attach the filter to the corresponding handler using the `filter` configuration property, located in `application.properties`:
++
+[source, properties]
+----
+quarkus.log.console.filter=my-filter
+----
+
+
+== Examples of logging configurations
+
+The following examples show how to configure logging in {project-name}:
+
+.Console DEBUG logging except for Quarkus logs (INFO), no color, shortened time, shortened category prefixes
+[source, properties]
+----
+quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
+quarkus.log.console.level=DEBUG
+quarkus.console.color=false
+
+quarkus.log.category."io.quarkus".level=INFO
+----
+
+[NOTE]
+====
+If you add these properties on the command line, ensure the `"` character is escaped with a backslash.
+For example, `-Dquarkus.log.category.\"io.quarkus\".level=DEBUG`.
+====
+
+[[category-example]]
+.File TRACE logging configuration
+[source, properties]
+----
+quarkus.log.file.enabled=true
+# Send output to a trace.log file under the /tmp directory
+quarkus.log.file.path=/tmp/trace.log
+quarkus.log.file.level=TRACE
+quarkus.log.file.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
+# Set 2 categories (io.quarkus.smallrye.jwt, io.undertow.request.security) to TRACE level
+quarkus.log.min-level=TRACE
+quarkus.log.category."io.quarkus.smallrye.jwt".level=TRACE
+quarkus.log.category."io.undertow.request.security".level=TRACE
+----
+
+NOTE: Because this example does not change the root logger, the console log contains only `INFO` or higher level logs.
+
+[[category-named-handlers-example]]
+.Named handlers attached to a category
+[source, properties]
+----
+# Send output to a trace.log file under the /tmp directory
+quarkus.log.file.path=/tmp/trace.log
+quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
+# Configure a named handler that logs to console
+quarkus.log.handler.console."STRUCTURED_LOGGING".format=%e%n
+# Configure a named handler that logs to file
+quarkus.log.handler.file."STRUCTURED_LOGGING_FILE".enabled=true
+quarkus.log.handler.file."STRUCTURED_LOGGING_FILE".format=%e%n
+# Configure the category and link the two named handlers to it
+quarkus.log.category."io.quarkus.category".level=INFO
+quarkus.log.category."io.quarkus.category".handlers=STRUCTURED_LOGGING,STRUCTURED_LOGGING_FILE
+----
+
+[[root-category-named-handlers-example]]
+.Named handlers attached to the root logger
+[source, properties]
+----
+# configure a named file handler that sends the output to 'quarkus.log'
+quarkus.log.handler.file.CONSOLE_MIRROR.enabled=true
+quarkus.log.handler.file.CONSOLE_MIRROR.path=quarkus.log
+# attach the handler to the root logger
+quarkus.log.handlers=CONSOLE_MIRROR
+----
+
+
+== Centralized log management
+
+Use a centralized location to efficiently collect, store, and analyze log data from various components and application instances.
+
+To send logs to a centralized tool such as Graylog, Logstash, or Fluentd, see the Quarkus xref:centralized-log-management.adoc[Centralized log management] guide.
+
+
+=== OpenTelemetry logging
+You can enable sending log entries from all appenders to OpenTelemetry Logging.
+
+For details, see the Quarkus xref:opentelemetry-logging.adoc[OpenTelemetry Logging] guide.
+
+== Configure logging for `@QuarkusTest`
+
+To enable logging for `@QuarkusTest`, it is necessary to set the `java.util.logging.manager` system property to `org.jboss.logmanager.LogManager` early in the startup process, or logging will not work as expected.
+
+Configure it in your build tool as follows:
+
+* For Maven:
++
+Set the property in the Maven Surefire plugin configuration.
++
+.Setting `java.util.logging.manager` in the Maven Surefire plugin configuration:
+[source,xml]
+----
+<build>
+  <plugins>
+    <plugin>
+      <artifactId>maven-surefire-plugin</artifactId>
+      <version>${surefire-plugin.version}</version>
+      <configuration>
+        <systemPropertyVariables>
+          <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager> <1>
+          <quarkus.log.level>DEBUG</quarkus.log.level> <2>
+          <maven.home>${maven.home}</maven.home>
+        </systemPropertyVariables>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
+----
+<1> Make sure the `org.jboss.logmanager.LogManager` is used.
+<2> Enable debug logging for all logging categories.
+
+* For Gradle:
++
+Set the property in the `build.gradle` file.
++
+[source,groovy]
+----
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}
+----
+
+For more information, see the xref:getting-started-testing.adoc#test-from-ide[Running `@QuarkusTest` from an IDE] section of the Testing your Application guide.
+
+[[logging-apis]]
+== Use other logging APIs
+
+{project-name} relies on the JBoss Logging library for logging.
+If your dependencies use other logging APIs, such as Apache Commons Logging, Log4j, or SLF4J, exclude those libraries and use a JBoss Logging adapter.
+This step is especially important for native executables, because the native build can fail with errors such as the following:
+
+[source,text]
+----
+Caused by java.lang.ClassNotFoundException: org.apache.commons.logging.impl.LogFactoryImpl
+----
+
+The native executable does not include the logging implementation for those APIs.
+Use JBoss Logging adapters to resolve this issue.
+
+The next section describes adapters for common open-source logging APIs.
+
+[[logging-adapters]]
+=== Add a logging adapter to your application
+
+For each logging API that is not JBoss Logging, add a logging adapter library to ensure that messages logged through these APIs are routed to the JBoss Log Manager backend.
+You can then verify whether the logs generated by the added library adhere to the same format as the other Quarkus logs.
+
+NOTE: This step is unnecessary for libraries that are dependencies of a Quarkus extension where the extension handles it automatically.
+
+[[logging-adapters-slf4j]]
+==== SLF4J
+
+The SLF4J adapter is provided by the following dependency:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>org.jboss.slf4j</groupId>
+    <artifactId>slf4j-jboss-logmanager</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.jboss.slf4j:slf4j-jboss-logmanager")
+----
+
+[[logging-adapters-commons-logging]]
+==== Apache Commons Logging
+
+The Commons Logging adapter is provided by the following dependency:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>org.jboss.logging</groupId>
+    <artifactId>commons-logging-jboss-logging</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.jboss.logging:commons-logging-jboss-logging")
+----
+
+[[logging-adapters-log4j2]]
+==== Log4j 2
+
+The Log4j 2 adapter is provided by the following dependency:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>org.jboss.logmanager</groupId>
+    <artifactId>log4j2-jboss-logmanager</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.jboss.logmanager:log4j2-jboss-logmanager")
+----
+
+[NOTE]
+====
+Do not include any Log4j dependencies, as the `log4j2-jboss-logmanager` library contains everything needed to use Log4j as a logging implementation.
+====
+
+=== Use MDC to add contextual log information
+
+Quarkus overrides the logging Mapped Diagnostic Context (MDC) to improve compatibility with its reactive core.
+
+==== Add and read MDC data
+
+To add data to the MDC and extract it in your log output:
+
+. Use the `MDC` class to set the data.
+.. Add `import org.jboss.logmanager.MDC;`
+.. Set `MDC.put(...)` as shown in the example below:
++
+[source,java]
+.An example with JBoss Logging and `io.quarkus.logging.Log`
+----
+package me.sample;
+
+import io.quarkus.logging.Log;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import org.jboss.logmanager.MDC;
+
+import java.util.UUID;
+
+@Path("/hello/jboss")
+public class GreetingResourceJbossLogging {
+
+    @GET
+    @Path("/test")
+    public String greeting() {
+        MDC.put("request.id", UUID.randomUUID().toString());
+        MDC.put("request.path", "/hello/test");
+        Log.info("request received");
+        return "hello world!";
+    }
+}
+----
+
+. Configure the log format to use `%X\{mdc-key\}`:
++
+[source, properties]
+----
+quarkus.log.console.format=%d{HH:mm:ss} %-5p request.id=%X{request.id} request.path=%X{request.path} [%c{2.}] (%t) %s%n
+----
++
+The resulting message contains the MDC data:
++
+[source, text]
+----
+08:48:13 INFO request.id=c37a3a36-b7f6-4492-83a1-de41dbc26fe2 request.path=/hello/test [me.sa.GreetingResourceJbossLogging] (executor-thread-1) request received
+----
+
+==== MDC and supported logging APIs
+
+Based on your logging API, use one of the following MDC classes:
+
+* Log4j 2 - `org.apache.logging.log4j.ThreadContext.put(key, value)`
+* SLF4J - `org.slf4j.MDC.put(key, value)`
+
+[[mdc-propagation]]
+==== MDC propagation
+
+In Quarkus, the MDC provider has a specific implementation for handling the reactive context, ensuring that MDC data is propagated during reactive and asynchronous processing.
+
+As a result, you can still access the MDC data in various scenarios:
+
+* After asynchronous calls, for example, when a REST client returns a Uni.
+* In code submitted to `org.eclipse.microprofile.context.ManagedExecutor`.
+* In code executed with `vertx.executeBlocking()`.
+
+NOTE: If applicable, Quarkus stores MDC data in a Vert.x duplicated context, which isolates processing for a single task or request.
+
+[[loggingConfigurationReference]]
+== Logging configuration reference
+
+include::{generated-dir}/config/quarkus-core_quarkus.log.adoc[opts=optional, leveloffset=+1]

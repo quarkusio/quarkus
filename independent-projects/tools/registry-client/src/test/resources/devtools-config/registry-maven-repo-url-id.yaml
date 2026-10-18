@@ -1,0 +1,7 @@
+---
+registries:
+- registry.acme.org:
+    maven:
+      repository:
+        id: "acme-repo"
+        url: "https://repo.acme.org/maven"

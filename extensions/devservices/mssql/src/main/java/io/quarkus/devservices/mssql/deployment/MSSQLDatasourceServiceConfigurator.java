@@ -1,0 +1,51 @@
+package io.quarkus.devservices.mssql.deployment;
+
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_PASSWORD;
+
+import io.quarkus.deployment.dev.devservices.RunningContainer;
+import io.quarkus.devservices.common.ContainerAddress;
+import io.quarkus.devservices.common.DatasourceServiceConfigurator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceContainerConfig;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProvider.RunningDevServicesDatasource;
+
+public class MSSQLDatasourceServiceConfigurator implements DatasourceServiceConfigurator {
+
+    private final static String[] PASSWORD_ENVS = new String[] { "MSSQL_SA_PASSWORD", "SA_PASSWORD", "MSSQL_PASSWORD" };
+
+    private final static String DEFAULT_MSSQL_USERNAME = "sa";
+
+    public RunningDevServicesDatasource composeRunningService(ContainerAddress containerAddress,
+            DevServicesDatasourceContainerConfig containerConfig) {
+        RunningContainer container = containerAddress.getRunningContainer();
+        String effectiveUsername = containerConfig.getUsername().orElse(DEFAULT_MSSQL_USERNAME);
+        String effectivePassword = containerConfig.getPassword().orElse(DEFAULT_DATABASE_PASSWORD);
+        String jdbcUrl = getJdbcUrl(containerAddress, null);
+        String reactiveUrl = getReactiveUrl(jdbcUrl);
+        return new RunningDevServicesDatasource(
+                containerAddress.getId(),
+                jdbcUrl,
+                reactiveUrl,
+                effectiveUsername,
+                container.tryGetEnv(PASSWORD_ENVS).orElse(effectivePassword));
+    }
+
+    @Override
+    public String getJdbcPrefix() {
+        return "sqlserver";
+    }
+
+    @Override
+    public String getParametersStartCharacter() {
+        return ";";
+    }
+
+    @Override
+    public String getJdbcUrl(ContainerAddress containerAddress, String databaseName) {
+        return SqlServerDevServicesJdbcUrl.build(
+                DevServicesHostUtil.resolvePublishedPortHost(containerAddress.getId(), containerAddress.getHost()),
+                containerAddress.getPort(),
+                getParameters(containerAddress.getRunningContainer().containerInfo().labels()));
+    }
+
+}

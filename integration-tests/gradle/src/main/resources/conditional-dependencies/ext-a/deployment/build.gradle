@@ -1,0 +1,26 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+dependencies {
+    implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-core-deployment'
+    implementation("org.acme:simple-dependency:1.0-SNAPSHOT")
+
+    implementation("io.quarkus:quarkus-hibernate-search-orm-elasticsearch-deployment")
+
+    implementation project(':ext-a:runtime')
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'org.acme'
+            artifactId = 'ext-a-deployment'
+            version = '1.0-SNAPSHOT'
+
+            from components.java
+        }
+    }
+}

@@ -1,0 +1,246 @@
+package io.quarkus.hibernate.orm.deployment;
+
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
+
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
+import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
+import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithName;
+import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
+
+@ConfigMapping(prefix = "quarkus.hibernate-orm")
+@ConfigRoot
+public interface HibernateOrmConfig {
+
+    /**
+     * Whether Hibernate ORM is enabled *during the build*.
+     *
+     * If Hibernate ORM is disabled during the build, all processing related to Hibernate ORM will be skipped,
+     * but it will not be possible to activate Hibernate ORM at runtime:
+     * `quarkus.hibernate-orm.active` will default to `false` and setting it to `true` will lead to an error.
+     *
+     * @asciidoclet
+     */
+    @WithDefault("true")
+    boolean enabled();
+
+    /**
+     * Whether Hibernate ORM is working in blocking mode.
+     *
+     * Hibernate ORM's blocking `EntityManager`/`Session`/`SessionFactory`
+     * are normally disabled by default if no JDBC datasource is found.
+     * You can set this property to `false` if you want to disable them
+     * despite having a JDBC datasource.
+     *
+     * @deprecated Use {@code quarkus.hibernate-orm.jdbc.enabled} for the default persistence unit,
+     *             and {@code quarkus.hibernate-orm."<persistence-unit-name>".jdbc.enabled} for named persistence
+     *             units, to configure this on a per-persistence-unit basis instead.
+     * @asciidoclet
+     */
+    @WithDefault("true")
+    @Deprecated(forRemoval = true, since = "3.39")
+    boolean blocking();
+
+    /**
+     * Database related configuration.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigDatabase database();
+
+    /**
+     * JSON/XML mapping related configuration.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigMapping mapping();
+
+    /**
+     * Configuration for persistence units.
+     */
+    @WithParentName
+    @WithUnnamedKey(value = PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, eager = false)
+    @WithDefaults
+    @ConfigDocMapKey("persistence-unit-name")
+    Map<String, HibernateOrmConfigPersistenceUnit> persistenceUnits();
+
+    default HibernateOrmConfigPersistenceUnit defaultPersistenceUnit() {
+        return persistenceUnits().get(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+    }
+
+    default Map<String, HibernateOrmConfigPersistenceUnit> namedPersistenceUnits() {
+        Map<String, HibernateOrmConfigPersistenceUnit> map = new TreeMap<>();
+        map.putAll(persistenceUnits());
+        map.remove(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+        return map;
+    }
+
+    /**
+     * Configuration for the {@code persistence.xml} handling.
+     */
+    HibernateOrmConfigPersistenceXml persistenceXml();
+
+    /**
+     * Logging configuration.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigLog log();
+
+    /**
+     * Whether statistics collection is enabled. If 'metrics.enabled' is true, then the default here is
+     * considered true, otherwise the default is false.
+     */
+    Optional<Boolean> statistics();
+
+    /**
+     * Whether session metrics should be appended into the server log for each Hibernate session.
+     *
+     * @deprecated This property is no longer functional: Hibernate ORM 7+ logs session metrics
+     *             based on whether the {@code org.hibernate.session.metrics} log category is
+     *             enabled, not based on this setting. Enable that log category instead. This
+     *             property will be removed in a future version.
+     * @asciidoclet
+     */
+    @Deprecated(since = "4.0", forRemoval = true)
+    Optional<Boolean> logSessionMetrics();
+
+    /**
+     * Configuration related to metrics.
+     */
+    HibernateOrmConfigMetric metrics();
+
+    /**
+     * Dev UI.
+     */
+    @WithDefaults
+    @WithName("dev-ui")
+    HibernateOrmConfigDevUI devui();
+
+    default boolean isAnyNonPersistenceXmlPropertySet() {
+        // Do NOT include persistenceXml in here.
+        return !persistenceUnits().isEmpty() ||
+                log().bindParameters() ||
+                statistics().isPresent() ||
+                logSessionMetrics().isPresent() ||
+                metrics().isAnyPropertySet();
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigPersistenceXml {
+
+        /**
+         * If {@code true}, Quarkus will ignore any {@code persistence.xml} file in the classpath
+         * and rely exclusively on the Quarkus configuration.
+         */
+        @WithDefault("false")
+        boolean ignore();
+
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigLog {
+        /**
+         * Logs SQL bind parameters.
+         * <p>
+         * Setting it to true is obviously not recommended in production.
+         */
+        @WithDefault("false")
+        boolean bindParameters();
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigDatabase {
+        /**
+         * When set, attempts to exchange data with the database
+         * as the given version of Hibernate ORM would have,
+         * *on a best-effort basis*.
+         *
+         * Please note:
+         *
+         * * schema validation may still fail in some cases:
+         * this attempts to make Hibernate ORM 6+ behave correctly at runtime,
+         * but it may still expect a different (but runtime-compatible) schema.
+         * * robust test suites are still useful and recommended:
+         * you should still check that your application behaves as intended with your legacy schema.
+         * * this feature is inherently unstable:
+         * some aspects of it may stop working in future versions of Quarkus,
+         * and older versions will be dropped as Hibernate ORM changes pile up
+         * and support for those older versions becomes too unreliable.
+         * * you should still plan a migration of your schema to a newer version of Hibernate ORM.
+         * For help with migration, refer to
+         * link:https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration[the Quarkus 3
+         * migration guide from Hibernate ORM 5 to 6].
+         *
+         * @deprecated This setting will be removed in a future version of Quarkus. Migrate your schema
+         *             to native Hibernate ORM 6 behavior.
+         * @asciidoclet
+         */
+        @Deprecated(since = "4.0", forRemoval = true)
+        @WithName("orm-compatibility.version")
+        @WithDefault("latest")
+        @WithConverter(DatabaseOrmCompatibilityVersion.Converter.class)
+        DatabaseOrmCompatibilityVersion ormCompatibilityVersion();
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigMetric {
+
+        /**
+         * Whether metrics are published if a metrics extension is enabled.
+         */
+        @WithDefault("false")
+        boolean enabled();
+
+        default boolean isAnyPropertySet() {
+            return enabled();
+        }
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigDevUI {
+        /**
+         * Allow hql queries in the Dev UI page
+         */
+        @WithDefault("false")
+        boolean allowHql();
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigMapping {
+
+        /**
+         * Mapping format.
+         */
+        HibernateOrmConfigMappingFormat format();
+
+        @ConfigGroup
+        interface HibernateOrmConfigMappingFormat {
+            /**
+             * How the default JSON/XML format mappers are configured.
+             *
+             * Quarkus no longer pre-builds format mappers and unless a user configures
+             * one explicitly it lets Hibernate ORM create its own internally.
+             *
+             * This property is deprecated and only accepts {@code ignore}. Setting it
+             * to {@code warn} or {@code fail} will result in an exception.
+             *
+             * @deprecated This property is no longer functional. It will be removed in a future version.
+             * @asciidoclet
+             */
+            @Deprecated(since = "4.0", forRemoval = true)
+            @WithDefault("ignore")
+            BuiltinFormatMapperBehaviour global();
+
+        }
+    }
+
+}

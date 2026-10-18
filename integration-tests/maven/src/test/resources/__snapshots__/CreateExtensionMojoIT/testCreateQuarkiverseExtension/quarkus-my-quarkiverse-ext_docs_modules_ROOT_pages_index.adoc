@@ -1,0 +1,31 @@
+= Quarkus My Quarkiverse extension
+
+include::./includes/attributes.adoc[]
+
+TIP: Describe what the extension does here.
+
+== Installation
+
+To use this extension, add the `io.quarkiverse.my-quarkiverse-ext:quarkus-my-quarkiverse-ext` dependency to your build file.
+
+With Maven, add the following to your `pom.xml`:
+
+[source,xml,subs=attributes+]
+----
+<dependency>
+    <groupId>io.quarkiverse.my-quarkiverse-ext</groupId>
+    <artifactId>quarkus-my-quarkiverse-ext</artifactId>
+    <version>{project-version}</version>
+</dependency>
+----
+
+With Gradle, add the following to your `build.gradle`:
+
+[source,gradle,subs=attributes+]
+----
+implementation("io.quarkiverse.my-quarkiverse-ext:quarkus-my-quarkiverse-ext:{project-version}")
+----
+
+== Usage
+
+TIP: Add a minimal usage example here.

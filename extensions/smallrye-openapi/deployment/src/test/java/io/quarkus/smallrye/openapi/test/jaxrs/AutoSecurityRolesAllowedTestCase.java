@@ -1,0 +1,211 @@
+package io.quarkus.smallrye.openapi.test.jaxrs;
+
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.emptyIterable;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.iterableWithSize;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+
+import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusExtensionTest;
+import io.restassured.RestAssured;
+
+class AutoSecurityRolesAllowedTestCase {
+
+    @RegisterExtension
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(ResourceBean.class, OpenApiResourceSecuredAtClassLevel.class,
+                            OpenApiResourceSecuredAtClassLevel2.class, OpenApiResourceSecuredAtMethodLevel.class,
+                            OpenApiResourceSecuredAtMethodLevel2.class, OpenApiResourceSecuredAtClassLevel4.class,
+                            OpenApiResourceSecuredAtMethodLevel4.class, CustomAuthorizationPolicy.class)
+                    .addAsResource(
+                            new StringAsset("quarkus.smallrye-openapi.security-scheme=jwt\n"
+                                    + "quarkus.smallrye-openapi.security-scheme-name=JWTCompanyAuthentication\n"
+                                    + "quarkus.smallrye-openapi.security-scheme-description=JWT Authentication\n"
+                                    + "quarkus.smallrye-openapi.security-scheme-extensions.x-my-extension1=extension-value\n"
+                                    + "quarkus.smallrye-openapi.security-scheme-extensions.my-extension2=extension-value"),
+
+                            "application.properties"));
+
+    static Matcher<Iterable<Object>> schemeArray(String schemeName) {
+        return allOf(
+                iterableWithSize(1),
+                hasItem(allOf(
+                        aMapWithSize(1),
+                        hasEntry(equalTo(schemeName), emptyIterable()))));
+    }
+
+    @Test
+    void testAutoSecurityRequirement() {
+        var defaultSecurity = schemeArray("JWTCompanyAuthentication");
+
+        RestAssured.given()
+                .header("Accept", "application/json")
+                .when()
+                .get("/q/openapi")
+                .then()
+                .log().body()
+                .and()
+                .body("components.securitySchemes.JWTCompanyAuthentication", allOf(
+                        hasEntry("type", "http"),
+                        hasEntry("scheme", "bearer"),
+                        hasEntry("bearerFormat", "JWT"),
+                        hasEntry("description", "JWT Authentication"),
+                        hasEntry("x-my-extension1", "extension-value"),
+                        not(hasKey("my-extension2"))))
+                .and()
+                // OpenApiResourceSecuredAtMethodLevel
+                .body("paths.'/resource2/test-security/naked'.get.security", defaultSecurityScheme("admin"))
+                .body("paths.'/resource2/test-security/annotated'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/methodLevel/1'.get.security", defaultSecurityScheme("user1"))
+                .body("paths.'/resource2/test-security/methodLevel/2'.get.security", defaultSecurityScheme("user2"))
+                .body("paths.'/resource2/test-security/methodLevel/public'.get.security", nullValue())
+                .body("paths.'/resource2/test-security/annotated/documented'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/methodLevel/3'.get.security", defaultSecurityScheme("admin"))
+                .body("paths.'/resource2/test-security/methodLevel/4'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/methodLevel/5'.get.security", defaultSecurity)
+                .body("paths.'/resource2/test-security/methodLevel/6'.get.security", defaultSecurity)
+                .and()
+                // OpenApiResourceSecuredAtClassLevel
+                .body("paths.'/resource2/test-security/classLevel/1'.get.security", defaultSecurityScheme("user1"))
+                .body("paths.'/resource2/test-security/classLevel/2'.get.security", defaultSecurityScheme("user2"))
+                .body("paths.'/resource2/test-security/classLevel/3'.get.security", schemeArray("MyOwnName"))
+                .body("paths.'/resource2/test-security/classLevel/4'.get.security", defaultSecurityScheme("admin"))
+                .and()
+                // OpenApiResourceSecuredAtMethodLevel2
+                .body("paths.'/resource3/test-security/annotated'.get.security", schemeArray("AtClassLevel"))
+                .and()
+                // OpenApiResourceSecuredAtClassLevel2
+                .body("paths.'/resource3/test-security/classLevel-2/1'.get.security", defaultSecurity)
+                .and()
+                // OpenApiResourceSecuredAtMethodLevel4
+                .body("paths.'/resource4/test-security/annotated'.get.security", schemeArray("AtClassLevel"))
+                .and()
+                // OpenApiResourceSecuredAtClassLevel4
+                .body("paths.'/resource4/test-security/class-level/1'.get.security", defaultSecurity);
+    }
+
+    @Test
+    void testOpenAPIAnnotations() {
+        RestAssured.given().header("Accept", "application/json")
+                .when().get("/q/openapi")
+                .then()
+                .log().body()
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/1'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/1'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/2'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/2'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/3'.get.responses.401.description",
+                        Matchers.nullValue())
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/3'.get.responses.403.description",
+                        Matchers.nullValue())
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/4'.get.responses.401.description",
+                        Matchers.equalTo("Who are you?"))
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/4'.get.responses.403.description",
+                        Matchers.equalTo("You cannot do that."))
+                .and()
+                .body("paths.'/resource2/test-security/naked'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/naked'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource2/test-security/annotated'.get.responses.401.description",
+                        Matchers.nullValue())
+                .and()
+                .body("paths.'/resource2/test-security/annotated'.get.responses.403.description",
+                        Matchers.nullValue())
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/1'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/1'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/2'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/2'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/public'.get.responses.401.description",
+                        Matchers.nullValue())
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/public'.get.responses.403.description",
+                        Matchers.nullValue())
+                .and()
+                .body("paths.'/resource2/test-security/annotated/documented'.get.responses.401.description",
+                        Matchers.equalTo("Who are you?"))
+                .and()
+                .body("paths.'/resource2/test-security/annotated/documented'.get.responses.403.description",
+                        Matchers.equalTo("You cannot do that."))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/3'.get.responses.401.description",
+                        Matchers.equalTo("Who are you?"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/3'.get.responses.403.description",
+                        Matchers.equalTo("You cannot do that."))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/4'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/4'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/5'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/5'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/6'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/6'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource3/test-security/classLevel-2/1'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource3/test-security/classLevel-2/1'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource4/test-security/class-level/1'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource4/test-security/class-level/1'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"));
+    }
+
+    static Matcher<Iterable<Object>> defaultSecurityScheme(String... roles) {
+        return allOf(
+                iterableWithSize(1),
+                hasItem(allOf(
+                        aMapWithSize(1),
+                        hasEntry(equalTo("JWTCompanyAuthentication"), containsInAnyOrder(roles)))));
+    }
+}

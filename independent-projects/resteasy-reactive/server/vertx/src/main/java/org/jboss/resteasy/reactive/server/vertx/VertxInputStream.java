@@ -1,0 +1,350 @@
+package org.jboss.resteasy.reactive.server.vertx;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.nio.channels.ClosedChannelException;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.vertx.core.Context;
+import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpConnection;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.HttpVersion;
+import io.vertx.core.internal.buffer.BufferInternal;
+import io.vertx.core.net.impl.ConnectionBase;
+import io.vertx.ext.web.RoutingContext;
+
+public class VertxInputStream extends InputStream {
+
+    public static final String MAX_REQUEST_SIZE_KEY = "io.quarkus.max-request-size";
+    private final VertxBlockingInput exchange;
+
+    private boolean closed;
+    private boolean finished;
+    private ByteBuf pooled;
+    private final long limit;
+    private final VertxResteasyReactiveRequestContext vertxResteasyReactiveRequestContext;
+
+    public VertxInputStream(RoutingContext request, long timeout,
+            VertxResteasyReactiveRequestContext vertxResteasyReactiveRequestContext) {
+        this.vertxResteasyReactiveRequestContext = vertxResteasyReactiveRequestContext;
+        this.exchange = new VertxBlockingInput(request.request(), timeout);
+        Long limitObj = request.get(MAX_REQUEST_SIZE_KEY);
+        if (limitObj == null) {
+            limit = -1;
+        } else {
+            limit = limitObj;
+        }
+    }
+
+    public VertxInputStream(RoutingContext request, long timeout, ByteBuf existing,
+            VertxResteasyReactiveRequestContext vertxResteasyReactiveRequestContext) {
+        this.vertxResteasyReactiveRequestContext = vertxResteasyReactiveRequestContext;
+        this.exchange = new VertxBlockingInput(request.request(), timeout);
+        Long limitObj = request.get(MAX_REQUEST_SIZE_KEY);
+        if (limitObj == null) {
+            limit = -1;
+        } else {
+            limit = limitObj;
+        }
+        this.pooled = existing;
+    }
+
+    @Override
+    public int read() throws IOException {
+        byte[] b = new byte[1];
+        int read = read(b);
+        if (read == -1) {
+            return -1;
+        }
+        return b[0] & 0xff;
+    }
+
+    @Override
+    public int read(final byte[] b) throws IOException {
+        return read(b, 0, b.length);
+    }
+
+    @Override
+    public int read(final byte[] b, final int off, final int len) throws IOException {
+        if (closed) {
+            throw new IOException("Stream is closed");
+        }
+        if (vertxResteasyReactiveRequestContext.continueState == VertxResteasyReactiveRequestContext.ContinueState.REQUIRED) {
+            vertxResteasyReactiveRequestContext.continueState = VertxResteasyReactiveRequestContext.ContinueState.SENT;
+            vertxResteasyReactiveRequestContext.response.writeContinue();
+        }
+        readIntoBuffer();
+        if (limit > 0 && exchange.request.bytesRead() > limit) {
+            HttpServerResponse response = exchange.request.response();
+            if (response.headWritten()) {
+                //the response has been written, not much we can do
+                exchange.request.connection().close();
+                throw new IOException("Request too large");
+            } else {
+                response.setStatusCode(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE.code());
+                response.headers().add(HttpHeaderNames.CONNECTION, "close");
+                response.endHandler(new Handler<Void>() {
+                    @Override
+                    public void handle(Void event) {
+                        exchange.request.connection().close();
+                    }
+                });
+                response.end();
+                throw new IOException("Request too large");
+            }
+        }
+        if (finished) {
+            return -1;
+        }
+        if (len == 0) {
+            return 0;
+        }
+        ByteBuf buffer = pooled;
+        int copied = Math.min(len, buffer.readableBytes());
+        buffer.readBytes(b, off, copied);
+        if (!buffer.isReadable()) {
+            pooled.release();
+            pooled = null;
+        }
+        return copied;
+    }
+
+    private void readIntoBuffer() throws IOException {
+        if (pooled == null && !finished) {
+            pooled = exchange.readBlocking();
+            if (pooled == null) {
+                finished = true;
+                pooled = null;
+            }
+        }
+    }
+
+    @Override
+    public int available() throws IOException {
+        if (closed) {
+            throw new IOException("Stream is closed");
+        }
+        if (finished) {
+            return 0;
+        }
+
+        return exchange.readBytesAvailable();
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (closed) {
+            return;
+        }
+        closed = true;
+        try {
+            while (!finished) {
+                readIntoBuffer();
+                if (pooled != null) {
+                    pooled.release();
+                    pooled = null;
+                }
+            }
+        } catch (IOException | RuntimeException e) {
+            //our exchange is all broken, just end it
+            throw e;
+        } finally {
+            if (pooled != null) {
+                pooled.release();
+                pooled = null;
+            }
+            finished = true;
+        }
+    }
+
+    public static class VertxBlockingInput implements Handler<Buffer> {
+        protected final HttpServerRequest request;
+        protected Buffer input1;
+        protected Deque<Buffer> inputOverflow;
+        protected boolean waiting = false;
+        protected boolean eof = false;
+        protected Throwable readException;
+        private final long timeout;
+        private final ReentrantLock lock = new ReentrantLock();
+        private final Condition dataAvailable = lock.newCondition();
+
+        public VertxBlockingInput(HttpServerRequest request, long timeout) {
+            this.request = request;
+            this.timeout = timeout;
+            final HttpConnection connection = request.connection();
+            // Lock before registering handlers: a buffer arriving immediately after fetch(1) must not race with initialization.
+            lock.lock();
+            try {
+                if (connection instanceof ConnectionBase cb && !cb.channel().isOpen()) {
+                    readException = new ClosedChannelException();
+                } else if (!request.isEnded()) {
+                    request.pause();
+                    request.handler(this);
+                    request.endHandler(new Handler<Void>() {
+                        @Override
+                        public void handle(Void event) {
+                            // Lock to publish eof and signal the blocked reader from the event loop.
+                            lock.lock();
+                            try {
+                                eof = true;
+                                if (waiting) {
+                                    dataAvailable.signalAll(); // EOF received; wake the blocked reader.
+                                }
+                            } finally {
+                                lock.unlock();
+                            }
+                        }
+                    });
+                    request.exceptionHandler(new Handler<Throwable>() {
+                        @Override
+                        public void handle(Throwable event) {
+                            // Lock to publish readException and signal the blocked reader from the event loop.
+                            lock.lock();
+                            try {
+                                readException = new IOException(event);
+                                if (input1 != null) {
+                                    ((BufferInternal) input1).getByteBuf().release();
+                                    input1 = null;
+                                }
+                                if (inputOverflow != null) {
+                                    Buffer d = inputOverflow.poll();
+                                    while (d != null) {
+                                        ((BufferInternal) d).getByteBuf().release();
+                                        d = inputOverflow.poll();
+                                    }
+                                }
+                                if (waiting) {
+                                    dataAvailable.signalAll(); // Error received; wake the blocked reader.
+                                }
+                            } finally {
+                                lock.unlock();
+                            }
+                        }
+                    });
+                    request.fetch(1);
+                } else {
+                    eof = true;
+                }
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        protected ByteBuf readBlocking() throws IOException {
+            long expire = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout);
+            // Lock to guard input1/eof/readException while waiting for the event loop to deliver data.
+            lock.lock();
+            try {
+                while (input1 == null && !eof && readException == null) {
+                    long rem = expire - System.nanoTime();
+                    if (rem <= 0) {
+                        //everything is broken, if read has timed out we can assume that the underling connection
+                        //is wrecked, so just close it
+                        request.connection().close();
+                        IOException throwable = new IOException("Read timed out");
+                        readException = throwable;
+                        throw throwable;
+                    }
+
+                    try {
+                        if (Context.isOnEventLoopThread()) {
+                            throw new BlockingNotAllowedException("Attempting a blocking read on io thread");
+                        }
+                        waiting = true;
+                        dataAvailable.await(rem, TimeUnit.NANOSECONDS); // Park and release lock; resumes when data, EOF, or error arrives.
+                    } catch (InterruptedException e) {
+                        throw new InterruptedIOException(e.getMessage());
+                    } finally {
+                        waiting = false;
+                    }
+                }
+                if (readException != null) {
+                    throw new IOException(readException);
+                }
+                Buffer ret = input1;
+                input1 = null;
+                if (inputOverflow != null) {
+                    input1 = inputOverflow.poll();
+                    if (input1 == null) {
+                        request.fetch(1);
+                    }
+                } else if (!eof) {
+                    request.fetch(1);
+                }
+                return ret == null ? null : ((BufferInternal) ret).getByteBuf();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        @Override
+        public void handle(Buffer event) {
+            // Lock to publish the buffer (or eof) and signal the blocked reader from the event loop.
+            lock.lock();
+            try {
+                if (event.length() == 0
+                        && (request.version() == HttpVersion.HTTP_2 || request.version() == HttpVersion.HTTP_3)) {
+                    // When using HTTP/2 or HTTP/3, this indicates that we won't receive anymore data.
+                    eof = true;
+                    if (waiting) {
+                        dataAvailable.signalAll(); // HTTP/2 or HTTP/3 EOF marker; wake the blocked reader.
+                    }
+                    return;
+                }
+                if (input1 == null) {
+                    input1 = event;
+                } else {
+                    if (inputOverflow == null) {
+                        inputOverflow = new ArrayDeque<>();
+                    }
+                    inputOverflow.add(event);
+                }
+                if (waiting) {
+                    dataAvailable.signalAll(); // Data available; wake the blocked reader.
+                }
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        public int readBytesAvailable() {
+            // Lock for a consistent snapshot of input1 alongside concurrent event-loop handler mutations.
+            lock.lock();
+            try {
+                if (input1 != null) {
+                    return ((BufferInternal) input1).getByteBuf().readableBytes();
+                }
+            } finally {
+                lock.unlock();
+            }
+
+            String length = request.getHeader(HttpHeaders.CONTENT_LENGTH);
+
+            if (length == null) {
+                return 0;
+            }
+
+            try {
+                return Integer.parseInt(length);
+            } catch (NumberFormatException e) {
+                Long.parseLong(length); // ignore the value as can only return an int anyway
+                return Integer.MAX_VALUE;
+            }
+        }
+    }
+
+}

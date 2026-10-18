@@ -1,0 +1,26 @@
+package io.quarkus.hibernate.orm.mapping.id.optimizer;
+
+import org.hibernate.id.enhanced.PooledOptimizer;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.hibernate.orm.SchemaUtil;
+import io.quarkus.test.QuarkusExtensionTest;
+
+public class IdOptimizerDefaultPooledTest extends AbstractIdOptimizerDefaultTest {
+
+    @RegisterExtension
+    static QuarkusExtensionTest TEST = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(EntityWithDefaultGenerator.class, EntityWithGenericGenerator.class,
+                            EntityWithSequenceGenerator.class, EntityWithTableGenerator.class,
+                            EntityWithGenericGeneratorAndPooledOptimizer.class,
+                            EntityWithGenericGeneratorAndPooledLoOptimizer.class)
+                    .addClasses(SchemaUtil.class))
+            .withConfigurationResource("application.properties")
+            .overrideConfigKey("quarkus.hibernate-orm.mapping.id.optimizer.default", "pooled");
+
+    @Override
+    Class<?> defaultOptimizerType() {
+        return PooledOptimizer.class;
+    }
+}

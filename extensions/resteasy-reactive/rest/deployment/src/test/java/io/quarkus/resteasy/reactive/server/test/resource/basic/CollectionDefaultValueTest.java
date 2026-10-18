@@ -1,0 +1,69 @@
+package io.quarkus.resteasy.reactive.server.test.resource.basic;
+
+import java.net.URI;
+import java.util.function.Supplier;
+
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.CollectionDefaultValueResource;
+import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.common.http.TestHTTPResource;
+
+/**
+ * @tpSubChapter Resteasy-client
+ * @tpChapter Integration tests
+ * @tpTestCaseDetails Test that empty QueryParam list is empty
+ * @tpSince RESTEasy 3.0.16
+ */
+@DisplayName("Collection Default Value Test")
+public class CollectionDefaultValueTest {
+
+    static Client client;
+    @RegisterExtension
+    static QuarkusExtensionTest testExtension = new QuarkusExtensionTest()
+            .setArchiveProducer(new Supplier<>() {
+                @Override
+                public JavaArchive get() {
+                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+                    war.addClasses(CollectionDefaultValueResource.class);
+                    return war;
+                }
+            });
+
+    @BeforeEach
+    public void init() {
+        client = ClientBuilder.newClient();
+    }
+
+    @AfterEach
+    public void after() throws Exception {
+        client.close();
+    }
+
+    @TestHTTPResource
+    URI uri;
+
+    /**
+     * @tpTestDetails Test that empty QueryParam list is empty
+     * @tpSince RESTEasy 3.0.16
+     */
+    @Test
+    @DisplayName("Test Empty")
+    public void testEmpty() {
+        Response response = client.target(UriBuilder.fromUri(uri).path("/collection")).request().get();
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        response.close();
+    }
+}

@@ -1,0 +1,756 @@
+package io.quarkus.arc.processor.bcextensions;
+
+import static io.quarkus.arc.processor.Beans.stereotypesWithTransitive;
+
+import java.lang.annotation.Annotation;
+import java.lang.constant.ClassDesc;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.spi.AlterableContext;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.event.TransactionPhase;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
+import jakarta.enterprise.inject.build.compatible.spi.ClassConfig;
+import jakarta.enterprise.inject.build.compatible.spi.Parameters;
+import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanCreator;
+import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanDisposer;
+import jakarta.enterprise.inject.build.compatible.spi.SyntheticInjections;
+import jakarta.enterprise.inject.build.compatible.spi.SyntheticObserver;
+import jakarta.enterprise.inject.spi.EventContext;
+import jakarta.enterprise.util.Nonbinding;
+
+import org.jboss.jandex.AnnotationTransformation;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MutableAnnotationOverlay;
+
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.impl.CreationalContextImpl;
+import io.quarkus.arc.impl.InstanceImpl;
+import io.quarkus.arc.impl.SyntheticCreationalContextImpl;
+import io.quarkus.arc.impl.bcextensions.ParametersImpl;
+import io.quarkus.arc.impl.bcextensions.SyntheticInjectionsImpl;
+import io.quarkus.arc.processor.AsyncHandlerInfo;
+import io.quarkus.arc.processor.BeanArchives;
+import io.quarkus.arc.processor.BeanConfigurator;
+import io.quarkus.arc.processor.BeanDeploymentValidator;
+import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BeanProcessor;
+import io.quarkus.arc.processor.BeanRegistrar;
+import io.quarkus.arc.processor.BuildExtension;
+import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.ConfiguratorBase;
+import io.quarkus.arc.processor.ContextConfigurator;
+import io.quarkus.arc.processor.ContextRegistrar;
+import io.quarkus.arc.processor.CustomAlterableContexts;
+import io.quarkus.arc.processor.CustomAlterableContexts.CustomAlterableContextInfo;
+import io.quarkus.arc.processor.InterceptorBindingRegistrar;
+import io.quarkus.arc.processor.InvokerFactory;
+import io.quarkus.arc.processor.ObserverConfigurator;
+import io.quarkus.arc.processor.ObserverInfo;
+import io.quarkus.arc.processor.ObserverRegistrar;
+import io.quarkus.arc.processor.QualifierRegistrar;
+import io.quarkus.arc.processor.ScopeInfo;
+import io.quarkus.arc.processor.StereotypeInfo;
+import io.quarkus.arc.processor.StereotypeRegistrar;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
+
+/**
+ * Entrypoint for the Build Compatible Extensions implementation. Used by the rest of ArC.
+ * <p>
+ * Exactly one instance of this class is supposed to exist for a single {@code BeanProcessor}.
+ * <p>
+ * All methods are single-threaded (serial), but it is expected that one may be called
+ * on a different thread than the other. Therefore, this class as well as all other classes
+ * that implement the BCExtensions API do not guard data against concurrent access, but they
+ * do ensure visibility.
+ */
+public class ExtensionsEntryPoint {
+    private final ExtensionInvoker invoker;
+    private final SharedErrors errors;
+
+    private final Map<DotName, ClassConfig> qualifiers;
+    private final Map<DotName, ClassConfig> interceptorBindings;
+    private final Map<DotName, ClassConfig> stereotypes;
+    private final List<MetaAnnotationsImpl.ContextData> contexts;
+    private final List<AnnotationTransformation> preAnnotationTransformations;
+
+    private volatile MutableAnnotationOverlay annotationOverlay;
+
+    private final List<SyntheticBeanBuilderImpl<?>> syntheticBeans;
+    private final List<SyntheticObserverBuilderImpl<?>> syntheticObservers;
+
+    public ExtensionsEntryPoint() {
+        this(List.of());
+    }
+
+    // only for `ArcTestContainer`
+    public ExtensionsEntryPoint(List<BuildCompatibleExtension> extensions) {
+        invoker = new ExtensionInvoker(extensions);
+        if (invoker.isEmpty()) {
+            errors = null;
+            qualifiers = null;
+            interceptorBindings = null;
+            stereotypes = null;
+            contexts = null;
+            preAnnotationTransformations = null;
+            syntheticBeans = null;
+            syntheticObservers = null;
+        } else {
+            errors = new SharedErrors();
+            qualifiers = new ConcurrentHashMap<>();
+            interceptorBindings = new ConcurrentHashMap<>();
+            stereotypes = new ConcurrentHashMap<>();
+            contexts = Collections.synchronizedList(new ArrayList<>());
+            preAnnotationTransformations = Collections.synchronizedList(new ArrayList<>());
+            syntheticBeans = Collections.synchronizedList(new ArrayList<>());
+            syntheticObservers = Collections.synchronizedList(new ArrayList<>());
+        }
+    }
+
+    /**
+     * Must be called first, <i>before</i> {@code registerMetaAnnotations}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
+     */
+    public void runDiscovery(org.jboss.jandex.IndexView applicationIndex, Set<String> additionalClasses) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
+        MutableAnnotationOverlay overlay = MutableAnnotationOverlay.builder(applicationIndex)
+                .compatibleMode()
+                .runtimeAnnotationsOnly()
+                .inheritedAnnotations()
+                .build();
+        try {
+            BuildServicesImpl.init(applicationIndex, overlay);
+
+            // the method name is `buildComputingBeanArchiveIndex`, but it just builds a computing index
+            // on top of whatever index is passed to it
+            org.jboss.jandex.IndexView computingApplicationIndex = BeanArchives.buildComputingBeanArchiveIndex(
+                    Thread.currentThread().getContextClassLoader(), new ConcurrentHashMap<>(), applicationIndex);
+
+            new ExtensionPhaseDiscovery(invoker, computingApplicationIndex, errors, additionalClasses,
+                    overlay, qualifiers, interceptorBindings, stereotypes, contexts).run();
+        } finally {
+            // noone should attempt annotation transformations on custom meta-annotations after `@Discovery` is finished
+            preAnnotationTransformations.addAll(overlay.freeze());
+
+            BuildServicesImpl.reset();
+        }
+    }
+
+    /**
+     * Must be called <i>after</i> {@code runDiscovery} and <i>before</i> {@code runEnhancement}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
+     */
+    public void registerMetaAnnotations(BeanProcessor.Builder builder, CustomAlterableContexts customAlterableContexts) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
+        builder.addAnnotationTransformation(new AnnotationTransformation() {
+            @Override
+            public void apply(TransformationContext context) {
+                for (AnnotationTransformation preAnnotationTransformation : preAnnotationTransformations) {
+                    if (preAnnotationTransformation.supports(context.declaration().kind())) {
+                        preAnnotationTransformation.apply(context);
+                    }
+                }
+            }
+        });
+
+        if (!qualifiers.isEmpty()) {
+            builder.addQualifierRegistrar(new QualifierRegistrar() {
+                @Override
+                public Map<DotName, Set<String>> getAdditionalQualifiers() {
+                    Map<DotName, Set<String>> result = new HashMap<>();
+                    for (Map.Entry<DotName, ClassConfig> entry : qualifiers.entrySet()) {
+                        DotName annotationName = entry.getKey();
+                        ClassConfig config = entry.getValue();
+
+                        Set<String> nonbindingMembers = config.methods()
+                                .stream()
+                                .filter(it -> it.info().hasAnnotation(Nonbinding.class))
+                                .map(it -> it.info().name())
+                                .collect(Collectors.toUnmodifiableSet());
+                        result.put(annotationName, nonbindingMembers);
+                    }
+                    return result;
+                }
+            });
+        }
+
+        if (!interceptorBindings.isEmpty()) {
+            builder.addInterceptorBindingRegistrar(new InterceptorBindingRegistrar() {
+                @Override
+                public List<InterceptorBinding> getAdditionalBindings() {
+                    return interceptorBindings.entrySet()
+                            .stream()
+                            .map(entry -> {
+                                DotName annotationName = entry.getKey();
+                                ClassConfig config = entry.getValue();
+
+                                Set<String> nonbindingMembers = config.methods()
+                                        .stream()
+                                        .filter(it -> it.info().hasAnnotation(Nonbinding.class))
+                                        .map(it -> it.info().name())
+                                        .collect(Collectors.toUnmodifiableSet());
+
+                                return InterceptorBinding.of(annotationName, nonbindingMembers);
+                            })
+                            .toList();
+                }
+            });
+        }
+
+        if (!stereotypes.isEmpty()) {
+            builder.addStereotypeRegistrar(new StereotypeRegistrar() {
+                @Override
+                public Set<DotName> getAdditionalStereotypes() {
+                    return stereotypes.keySet();
+                }
+            });
+        }
+
+        if (!contexts.isEmpty()) {
+            for (MetaAnnotationsImpl.ContextData context : contexts) {
+                builder.addContextRegistrar(new ContextRegistrar() {
+                    @Override
+                    public void register(RegistrationContext registrationContext) {
+                        Class<? extends Annotation> scopeAnnotation = context.scopeAnnotation;
+                        Class<? extends AlterableContext> contextClass = context.contextClass;
+
+                        ContextConfigurator config = registrationContext.configure(scopeAnnotation);
+                        if (InjectableContext.class.isAssignableFrom(contextClass)) {
+                            config.contextClass((Class<? extends InjectableContext>) contextClass);
+                        } else {
+                            CustomAlterableContextInfo info = customAlterableContexts.add(contextClass, context.isNormal,
+                                    scopeAnnotation);
+                            config.creator(cg -> {
+                                return cg.method().new_(ConstructorDesc.of(ClassDesc.of(info.generatedName)));
+                            });
+                        }
+                        if (context.isNormal != null) {
+                            config.normal(context.isNormal);
+                        }
+                        config.done();
+                    }
+                });
+            }
+        }
+    }
+
+    /**
+     * Must be called <i>after</i> {@code registerMetaAnnotations} and <i>before</i> {@code runRegistration}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
+     */
+    public void runEnhancement(org.jboss.jandex.IndexView beanArchiveIndex, BeanProcessor.Builder builder) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
+        annotationOverlay = MutableAnnotationOverlay.builder(beanArchiveIndex)
+                .compatibleMode()
+                .runtimeAnnotationsOnly()
+                .inheritedAnnotations()
+                .build();
+
+        BuildServicesImpl.init(beanArchiveIndex, annotationOverlay);
+
+        try {
+            new ExtensionPhaseEnhancement(invoker, beanArchiveIndex, errors, annotationOverlay).run();
+        } finally {
+            // noone should attempt annotation transformations on application classes after `@Enhancement` is finished
+            List<AnnotationTransformation> annotationTransformations = annotationOverlay.freeze();
+
+            builder.addAnnotationTransformation(new AnnotationTransformation() {
+                @Override
+                public void apply(TransformationContext context) {
+                    for (AnnotationTransformation annotationTransformation : annotationTransformations) {
+                        if (annotationTransformation.supports(context.declaration().kind())) {
+                            annotationTransformation.apply(context);
+                        }
+                    }
+                }
+            });
+
+            BuildServicesImpl.reset();
+        }
+    }
+
+    /**
+     * Must be called <i>after</i> {@code runEnhancement} and <i>before</i> {@code runSynthesis}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
+     */
+    public void runRegistration(org.jboss.jandex.IndexView beanArchiveIndex,
+            Collection<io.quarkus.arc.processor.BeanInfo> allBeans,
+            Collection<io.quarkus.arc.processor.InterceptorInfo> allInterceptors,
+            Collection<io.quarkus.arc.processor.ObserverInfo> allObservers,
+            io.quarkus.arc.processor.InvokerFactory invokerFactory) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
+        BuildServicesImpl.init(beanArchiveIndex, annotationOverlay);
+
+        try {
+            new ExtensionPhaseRegistration(invoker, beanArchiveIndex, errors, annotationOverlay,
+                    allBeans, allInterceptors, allObservers, invokerFactory).run();
+        } finally {
+            BuildServicesImpl.reset();
+        }
+    }
+
+    /**
+     * Must be called <i>after</i> {@code runRegistration} and <i>before</i> {@code registerSyntheticBeans}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
+     */
+    public void runSynthesis(org.jboss.jandex.IndexView beanArchiveIndex) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
+        BuildServicesImpl.init(beanArchiveIndex, annotationOverlay);
+
+        try {
+            new ExtensionPhaseSynthesis(invoker, beanArchiveIndex, errors, annotationOverlay,
+                    syntheticBeans, syntheticObservers).run();
+        } finally {
+            BuildServicesImpl.reset();
+        }
+    }
+
+    /**
+     * Must be called <i>after</i> {@code runSynthesis} and <i>before</i> {@code runRegistrationAgain}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
+     */
+    public void registerSyntheticBeans(BeanRegistrar.RegistrationContext context, Predicate<DotName> isApplicationClass) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
+        Map<DotName, StereotypeInfo> allStereotypes = context.get(BuildExtension.Key.STEREOTYPES);
+
+        for (SyntheticBeanBuilderImpl<?> syntheticBean : syntheticBeans) {
+            StereotypeInfo[] stereotypes = syntheticBean.stereotypes.stream()
+                    .map(allStereotypes::get)
+                    .toArray(StereotypeInfo[]::new);
+
+            // no need to verify if scope inheritance from stereotypes is valid, that will be checked later
+            // this means that `dependentByStereotype` may be inaccurate, but deployment will eventually fail if so
+            boolean dependentByStereotype = false;
+            for (StereotypeInfo stereotype : stereotypesWithTransitive(Arrays.asList(stereotypes), allStereotypes)) {
+                ScopeInfo defaultScope = stereotype.getDefaultScope();
+                if (defaultScope != null) {
+                    if (BuiltinScope.DEPENDENT.is(defaultScope)) {
+                        dependentByStereotype = true;
+                        break;
+                    }
+                }
+            }
+
+            BeanConfigurator<Object> bean = context.configure(syntheticBean.implementationClass)
+                    .types(syntheticBean.types.toArray(new org.jboss.jandex.Type[0]))
+                    .qualifiers(syntheticBean.qualifiers.toArray(new org.jboss.jandex.AnnotationInstance[0]))
+                    .stereotypes(stereotypes);
+            if (syntheticBean.scope != null) {
+                bean.scope(syntheticBean.scope);
+            }
+            if (syntheticBean.name != null) {
+                bean.name(syntheticBean.name);
+            }
+            if (syntheticBean.isAlternative) {
+                bean.alternative(true);
+            }
+            if (syntheticBean.isReserve) {
+                bean.reserve(true);
+            }
+            if (syntheticBean.priority != null) {
+                bean.priority(syntheticBean.priority);
+            }
+            if (syntheticBean.isEager) {
+                bean.eager(true);
+            }
+            if (syntheticBean.isAutoClose) {
+                bean.autoClose(true);
+            }
+            configureParams(bean, syntheticBean.params);
+            for (TypeAndQualifiers injectionPoint : syntheticBean.injectionPoints) {
+                bean.addInjectionPoint(injectionPoint.type(), injectionPoint.qualifiers());
+            }
+            boolean isDependent = syntheticBean.scope == null
+                    || Dependent.class.equals(syntheticBean.scope)
+                    || dependentByStereotype;
+            if (hasNewCreate(syntheticBean.creatorClass)) {
+                bean.creator(cg -> {
+                    BlockCreator bc = cg.createMethod();
+
+                    // | SyntheticCreationalContextImpl synthCC = (SyntheticCreationalContextImpl) creationalContext;
+                    Expr synthCC = bc.cast(cg.syntheticCreationalContext(), SyntheticCreationalContextImpl.class);
+                    // | Map<TypeAndQualifiers, Object> injectionsMap = synthCC.getInjectedReferences();
+                    Expr injectionsMap = bc.invokeVirtual(MethodDesc.of(SyntheticCreationalContextImpl.class,
+                            "getInjectedReferences", Map.class), synthCC);
+                    // | SyntheticInjections injections = new SyntheticInjectionsImpl(injectionsMap);
+                    LocalVar injections = bc.localVar("injections",
+                            bc.new_(ConstructorDesc.of(SyntheticInjectionsImpl.class, Map.class), injectionsMap));
+
+                    // | Parameters params = new ParametersImpl(this.params);
+                    LocalVar params = bc.localVar("params",
+                            bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), cg.paramsMap()));
+
+                    // | SyntheticBeanCreator creator = new ConfiguredSyntheticBeanCreator();
+                    LocalVar creator = bc.localVar("creator",
+                            bc.new_(ConstructorDesc.of(syntheticBean.creatorClass)));
+
+                    // | Object instance = creator.create(injections, params);
+                    Expr instance = bc.invokeInterface(MethodDesc.of(SyntheticBeanCreator.class,
+                            "create", Object.class, SyntheticInjections.class, Parameters.class),
+                            creator, injections, params);
+
+                    // | return instance;
+                    bc.return_(instance);
+                });
+            } else { // the old, deprecated `create()` method
+                bean.creator(cg -> {
+                    BlockCreator bc = cg.createMethod();
+
+                    // | SyntheticCreationalContextImpl synthCC = (SyntheticCreationalContextImpl) creationalContext;
+                    Expr synthCC = bc.cast(cg.syntheticCreationalContext(), SyntheticCreationalContextImpl.class);
+                    // | CreationalContext delegateCC = synthCC.getDelegateCreationalContext()
+                    Expr delegateCC = bc.invokeVirtual(MethodDesc.of(SyntheticCreationalContextImpl.class,
+                            "getDelegateCreationalContext", CreationalContext.class), synthCC);
+                    // | CreationalContextImpl ccImpl = (CreationalContextImpl) delegateCC;
+                    Expr ccImpl = bc.cast(delegateCC, CreationalContextImpl.class);
+                    // | Instance<Object> lookup = InstanceImpl.forSynthesis(ccImpl, isDependent);
+                    LocalVar lookup = bc.localVar("lookup", bc.invokeStatic(MethodDesc.of(InstanceImpl.class,
+                            "forSynthesis", Instance.class, CreationalContextImpl.class, boolean.class),
+                            ccImpl, Const.of(isDependent)));
+
+                    // | Parameters params = new ParametersImpl(paramsMap);
+                    LocalVar params = bc.localVar("params",
+                            bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), cg.paramsMap()));
+
+                    // | SyntheticBeanCreator creator = new ConfiguredSyntheticBeanCreator();
+                    LocalVar creator = bc.localVar("creator",
+                            bc.new_(ConstructorDesc.of(syntheticBean.creatorClass)));
+
+                    // | Object instance = creator.create(lookup, params);
+                    Expr instance = bc.invokeInterface(MethodDesc.of(SyntheticBeanCreator.class,
+                            "create", Object.class, Instance.class, Parameters.class),
+                            creator, lookup, params);
+
+                    // | return instance;
+                    bc.return_(instance);
+                });
+            }
+            if (syntheticBean.disposerClass != null) {
+                if (hasNewDispose(syntheticBean.disposerClass)) {
+                    bean.destroyer(dg -> {
+                        BlockCreator bc = dg.destroyMethod();
+
+                        // | SyntheticCreationalContextImpl synthCC = (SyntheticCreationalContextImpl) creationalContext;
+                        LocalVar synthCC = bc.localVar("synthCC",
+                                bc.cast(dg.syntheticCreationalContext(), SyntheticCreationalContextImpl.class));
+
+                        // | Map<TypeAndQualifiers, Object> injectionsMap = synthCC.getInjectedReferences();
+                        Expr injectionsMap = bc.invokeVirtual(MethodDesc.of(SyntheticCreationalContextImpl.class,
+                                "getInjectedReferences", Map.class), synthCC);
+                        // | SyntheticInjections injections = new SyntheticInjectionsImpl(injectionsMap);
+                        LocalVar injections = bc.localVar("injections",
+                                bc.new_(ConstructorDesc.of(SyntheticInjectionsImpl.class, Map.class), injectionsMap));
+
+                        // | Parameters params = new ParametersImpl(paramsMap);
+                        LocalVar params = bc.localVar("params",
+                                bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), dg.paramsMap()));
+
+                        // | SyntheticBeanDisposer disposer = new ConfiguredSyntheticBeanDisposer();
+                        LocalVar disposer = bc.localVar("disposer",
+                                bc.new_(ConstructorDesc.of(syntheticBean.disposerClass)));
+
+                        // | disposer.dispose(instance, injections, params);
+                        bc.invokeInterface(MethodDesc.of(SyntheticBeanDisposer.class,
+                                "dispose", void.class, Object.class, SyntheticInjections.class, Parameters.class),
+                                disposer, dg.destroyedInstance(), injections, params);
+
+                        // | synthCC.release()
+                        bc.invokeVirtual(MethodDesc.of(SyntheticCreationalContextImpl.class, "release", void.class), synthCC);
+
+                        bc.return_();
+                    });
+                } else { // the old, deprecated `dispose()` method
+                    bean.destroyer(dg -> {
+                        BlockCreator bc = dg.destroyMethod();
+
+                        // | SyntheticCreationalContextImpl synthCC = (SyntheticCreationalContextImpl) creationalContext;
+                        LocalVar synthCC = bc.localVar("synthCC",
+                                bc.cast(dg.syntheticCreationalContext(), SyntheticCreationalContextImpl.class));
+
+                        // | CreationalContext delegateCC = synthCC.getDelegateCreationalContext()
+                        Expr delegateCC = bc.invokeVirtual(MethodDesc.of(SyntheticCreationalContextImpl.class,
+                                "getDelegateCreationalContext", CreationalContext.class), synthCC);
+                        // | CreationalContextImpl ccImpl = (CreationalContextImpl) delegateCC;
+                        Expr ccImpl = bc.cast(delegateCC, CreationalContextImpl.class);
+                        // | Instance<Object> lookup = InstanceImpl.forSynthesis(creationalContext, isDependent);
+                        // last argument is `false` because looking up `InjectionPoint` in disposer is invalid
+                        LocalVar lookup = bc.localVar("lookup", bc.invokeStatic(MethodDesc.of(InstanceImpl.class,
+                                "forSynthesis", Instance.class, CreationalContextImpl.class, boolean.class),
+                                ccImpl, Const.of(false)));
+
+                        // | Parameters params = new ParametersImpl(paramsMap);
+                        LocalVar params = bc.localVar("params",
+                                bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), dg.paramsMap()));
+
+                        // | SyntheticBeanDisposer disposer = new ConfiguredSyntheticBeanDisposer();
+                        LocalVar disposer = bc.localVar("disposer",
+                                bc.new_(ConstructorDesc.of(syntheticBean.disposerClass)));
+
+                        // | disposer.dispose(instance, lookup, params);
+                        bc.invokeInterface(MethodDesc.of(SyntheticBeanDisposer.class,
+                                "dispose", void.class, Object.class, Instance.class, Parameters.class),
+                                disposer, dg.destroyedInstance(), lookup, params);
+
+                        // | synthCC.release()
+                        bc.invokeVirtual(MethodDesc.of(SyntheticCreationalContextImpl.class, "release", void.class), synthCC);
+
+                        bc.return_();
+                    });
+                }
+            }
+            // the generated classes need to see the `creatorClass` and the `disposerClass`,
+            // so if they are application classes, the generated classes are forced to also
+            // be application classes, even if the `implementationClass` possibly isn't
+            if (isApplicationClass.test(DotName.createSimple(syntheticBean.creatorClass))) {
+                bean.forceApplicationClass();
+            }
+            if (syntheticBean.disposerClass != null
+                    && isApplicationClass.test(DotName.createSimple(syntheticBean.disposerClass))) {
+                bean.forceApplicationClass();
+            }
+            bean.done();
+        }
+    }
+
+    private boolean hasNewCreate(Class<? extends SyntheticBeanCreator<?>> clazz) {
+        try {
+            clazz.getDeclaredMethod("create", SyntheticInjections.class, Parameters.class);
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+    private boolean hasNewDispose(Class<? extends SyntheticBeanDisposer<?>> clazz) {
+        try {
+            clazz.getDeclaredMethod("dispose", Object.class, SyntheticInjections.class, Parameters.class);
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Must be called <i>after</i> {@code runSynthesis} and <i>before</i> {@code runRegistrationAgain}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
+     */
+    public void registerSyntheticObservers(ObserverRegistrar.RegistrationContext context,
+            Predicate<DotName> isApplicationClass) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
+        for (SyntheticObserverBuilderImpl<?> syntheticObserver : syntheticObservers) {
+            if (syntheticObserver.isAsync && syntheticObserver.transactionPhase != TransactionPhase.IN_PROGRESS) {
+                throw new IllegalStateException("Synthetic observer declared as asynchronous and transactional "
+                        + "(event type " + syntheticObserver.type + ", \"declared\" by " + syntheticObserver.declaringClass
+                        + ", notified using " + syntheticObserver.implementationClass + ")");
+            }
+
+            ObserverConfigurator observer = context.configure()
+                    .beanClass(syntheticObserver.declaringClass)
+                    .observedType(syntheticObserver.type)
+                    .qualifiers(syntheticObserver.qualifiers.toArray(new org.jboss.jandex.AnnotationInstance[0]))
+                    .priority(syntheticObserver.priority)
+                    .async(syntheticObserver.isAsync)
+                    .transactionPhase(syntheticObserver.transactionPhase);
+            configureParams(observer, syntheticObserver.params);
+            observer.notify(ng -> {
+                BlockCreator bc = ng.notifyMethod();
+
+                // | SyntheticObserver instance = new ConfiguredEventConsumer();
+                Expr instance = bc.new_(syntheticObserver.implementationClass);
+
+                // | Parameters params = new ParametersImpl(paramsMap);
+                Expr params = bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), ng.paramsMap());
+
+                // | instance.observe(eventContext, params);
+                bc.invokeInterface(MethodDesc.of(SyntheticObserver.class, "observe",
+                        void.class, EventContext.class, Parameters.class), instance, ng.eventContext(), params);
+
+                bc.return_();
+            });
+            // the generated classes need to see the `implementationClass`, so if it is
+            // an application class, the generated classes are forced to also be application
+            // classes, even if the `declaringClass` possibly isn't
+            if (isApplicationClass.test(DotName.createSimple(syntheticObserver.implementationClass))) {
+                observer.forceApplicationClass();
+            }
+            observer.done();
+        }
+    }
+
+    private void configureParams(ConfiguratorBase<?> configurator, Map<String, Object> params) {
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            if (entry.getValue() instanceof Boolean) {
+                configurator.param(entry.getKey(), (Boolean) entry.getValue());
+            } else if (entry.getValue() instanceof boolean[]) {
+                configurator.param(entry.getKey(), (boolean[]) entry.getValue());
+            } else if (entry.getValue() instanceof Byte) {
+                configurator.param(entry.getKey(), (Byte) entry.getValue());
+            } else if (entry.getValue() instanceof byte[]) {
+                configurator.param(entry.getKey(), (byte[]) entry.getValue());
+            } else if (entry.getValue() instanceof Short) {
+                configurator.param(entry.getKey(), (Short) entry.getValue());
+            } else if (entry.getValue() instanceof short[]) {
+                configurator.param(entry.getKey(), (short[]) entry.getValue());
+            } else if (entry.getValue() instanceof Integer) {
+                configurator.param(entry.getKey(), (Integer) entry.getValue());
+            } else if (entry.getValue() instanceof int[]) {
+                configurator.param(entry.getKey(), (int[]) entry.getValue());
+            } else if (entry.getValue() instanceof Long) {
+                configurator.param(entry.getKey(), (Long) entry.getValue());
+            } else if (entry.getValue() instanceof long[]) {
+                configurator.param(entry.getKey(), (long[]) entry.getValue());
+            } else if (entry.getValue() instanceof Float) {
+                configurator.param(entry.getKey(), (Float) entry.getValue());
+            } else if (entry.getValue() instanceof float[]) {
+                configurator.param(entry.getKey(), (float[]) entry.getValue());
+            } else if (entry.getValue() instanceof Double) {
+                configurator.param(entry.getKey(), (Double) entry.getValue());
+            } else if (entry.getValue() instanceof double[]) {
+                configurator.param(entry.getKey(), (double[]) entry.getValue());
+            } else if (entry.getValue() instanceof Character) {
+                configurator.param(entry.getKey(), (Character) entry.getValue());
+            } else if (entry.getValue() instanceof char[]) {
+                configurator.param(entry.getKey(), (char[]) entry.getValue());
+            } else if (entry.getValue() instanceof String) {
+                configurator.param(entry.getKey(), (String) entry.getValue());
+            } else if (entry.getValue() instanceof String[]) {
+                configurator.param(entry.getKey(), (String[]) entry.getValue());
+            } else if (entry.getValue() instanceof Enum<?>) {
+                configurator.param(entry.getKey(), (Enum<?>) entry.getValue());
+            } else if (entry.getValue() instanceof Enum<?>[]) {
+                configurator.param(entry.getKey(), (Enum<?>[]) entry.getValue());
+            } else if (entry.getValue() instanceof Class<?>) {
+                configurator.param(entry.getKey(), (Class<?>) entry.getValue());
+            } else if (entry.getValue() instanceof Class<?>[]) {
+                configurator.param(entry.getKey(), (Class<?>[]) entry.getValue());
+            } else if (entry.getValue() instanceof org.jboss.jandex.ClassInfo) {
+                configurator.param(entry.getKey(), (org.jboss.jandex.ClassInfo) entry.getValue());
+            } else if (entry.getValue() instanceof org.jboss.jandex.ClassInfo[]) {
+                configurator.param(entry.getKey(), (org.jboss.jandex.ClassInfo[]) entry.getValue());
+            } else if (entry.getValue() instanceof org.jboss.jandex.AnnotationInstance) {
+                configurator.param(entry.getKey(), (org.jboss.jandex.AnnotationInstance) entry.getValue());
+            } else if (entry.getValue() instanceof org.jboss.jandex.AnnotationInstance[]) {
+                configurator.param(entry.getKey(), (org.jboss.jandex.AnnotationInstance[]) entry.getValue());
+            } else if (entry.getValue() instanceof io.quarkus.arc.processor.InvokerInfo) {
+                configurator.param(entry.getKey(), (io.quarkus.arc.processor.InvokerInfo) entry.getValue());
+            } else if (entry.getValue() instanceof io.quarkus.arc.processor.InvokerInfo[]) {
+                configurator.param(entry.getKey(), (io.quarkus.arc.processor.InvokerInfo[]) entry.getValue());
+            } else {
+                throw new IllegalStateException("Unknown param: " + entry);
+            }
+        }
+    }
+
+    /**
+     * Must be called <i>after</i> {@code registerSynthetic{Beans,Observers}} and <i>before</i>
+     * {@code runValidation}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
+     */
+    public void runRegistrationAgain(org.jboss.jandex.IndexView beanArchiveIndex,
+            Collection<io.quarkus.arc.processor.BeanInfo> allBeans,
+            Collection<io.quarkus.arc.processor.ObserverInfo> allObservers,
+            io.quarkus.arc.processor.InvokerFactory invokerFactory) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
+        Collection<io.quarkus.arc.processor.BeanInfo> syntheticBeans = allBeans.stream()
+                .filter(BeanInfo::isSynthetic)
+                .toList();
+        Collection<io.quarkus.arc.processor.ObserverInfo> syntheticObservers = allObservers.stream()
+                .filter(ObserverInfo::isSynthetic)
+                .toList();
+
+        BuildServicesImpl.init(beanArchiveIndex, annotationOverlay);
+
+        try {
+            new ExtensionPhaseRegistration(invoker, beanArchiveIndex, errors, annotationOverlay,
+                    syntheticBeans, Collections.emptyList(), syntheticObservers, invokerFactory).run();
+        } finally {
+            BuildServicesImpl.reset();
+        }
+    }
+
+    /**
+     * Must be called <i>after</i> {@code runRegistrationAgain} and <i>before</i> {@code registerValidationErrors}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
+     */
+    public void runValidation(IndexView beanArchiveIndex, List<AsyncHandlerInfo> asyncHandlers) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
+        BuildServicesImpl.init(beanArchiveIndex, annotationOverlay);
+
+        try {
+            new ExtensionPhaseValidation(invoker, beanArchiveIndex, errors, annotationOverlay, asyncHandlers).run();
+        } finally {
+            BuildServicesImpl.reset();
+        }
+    }
+
+    /**
+     * Must be called last, <i>after</i> {@code runValidation}.
+     * <p>
+     * It is a no-op if no {@link BuildCompatibleExtension} was found.
+     */
+    public void registerValidationErrors(BeanDeploymentValidator.ValidationContext context) {
+        if (invoker.isEmpty()) {
+            return;
+        }
+
+        for (Throwable error : errors.list) {
+            context.addDeploymentProblem(error);
+        }
+
+        invoker.invalidate();
+    }
+}

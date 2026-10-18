@@ -1,0 +1,3 @@
+= Quarkus - Extension Codestarts
+
+This documentation has been promoted as a Quarkus guide: https://quarkus.io/guides/extension-codestart

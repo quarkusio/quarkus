@@ -1,0 +1,87 @@
+package io.quarkus.bootstrap.workspace;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.model.Mappable;
+import io.quarkus.bootstrap.model.MappableCollectionFactory;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.paths.EmptyPathTree;
+import io.quarkus.paths.MultiRootPathTree;
+import io.quarkus.paths.PathTree;
+
+public interface ArtifactSources extends Mappable {
+
+    String MAIN = ArtifactCoords.DEFAULT_CLASSIFIER;
+    String TEST = "tests";
+
+    static ArtifactSources main(SourceDir sources, SourceDir resources) {
+        return new DefaultArtifactSources(MAIN, List.of(sources), List.of(resources));
+    }
+
+    static ArtifactSources test(SourceDir sources, SourceDir resources) {
+        return new DefaultArtifactSources(TEST, List.of(sources), List.of(resources));
+    }
+
+    String getClassifier();
+
+    Collection<SourceDir> getSourceDirs();
+
+    Collection<SourceDir> getResourceDirs();
+
+    default boolean isOutputAvailable() {
+        for (SourceDir src : getSourceDirs()) {
+            if (src.isOutputAvailable()) {
+                return true;
+            }
+        }
+        for (SourceDir src : getResourceDirs()) {
+            if (src.isOutputAvailable()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    default PathTree getOutputTree() {
+        final Collection<SourceDir> sourceDirs = getSourceDirs();
+        final Collection<SourceDir> resourceDirs = getResourceDirs();
+        final List<PathTree> trees = new ArrayList<>(sourceDirs.size() + resourceDirs.size());
+        collectOutputs(sourceDirs, trees);
+        collectOutputs(resourceDirs, trees);
+        if (trees.isEmpty()) {
+            return EmptyPathTree.getInstance();
+        }
+        if (trees.size() == 1) {
+            return trees.get(0);
+        }
+        return new MultiRootPathTree(trees.toArray(new PathTree[0]));
+    }
+
+    private static void collectOutputs(Collection<SourceDir> sourceDirs, List<PathTree> trees) {
+        for (SourceDir src : sourceDirs) {
+            final PathTree outputTree = src.getOutputTree();
+            if (outputTree != null && !trees.contains(outputTree) && !outputTree.isEmpty()) {
+                trees.add(outputTree);
+            }
+        }
+    }
+
+    @Override
+    default Map<String, Object> asMap(MappableCollectionFactory factory) {
+        final Map<String, Object> map = factory.newMap(3);
+        map.put(BootstrapConstants.MAPPABLE_CLASSIFIER, getClassifier());
+        var sources = getSourceDirs();
+        if (!sources.isEmpty()) {
+            map.put(BootstrapConstants.MAPPABLE_SOURCES, Mappable.asMaps(sources, factory));
+        }
+        var resources = getResourceDirs();
+        if (!resources.isEmpty()) {
+            map.put(BootstrapConstants.MAPPABLE_RESOURCES, Mappable.asMaps(resources, factory));
+        }
+        return map;
+    }
+}

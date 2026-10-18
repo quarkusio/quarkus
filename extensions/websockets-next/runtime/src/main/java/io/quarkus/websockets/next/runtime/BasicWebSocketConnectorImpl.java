@@ -1,0 +1,422 @@
+package io.quarkus.websockets.next.runtime;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Typed;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.virtual.threads.VirtualThreadsRecorder;
+import io.quarkus.websockets.next.BasicWebSocketConnector;
+import io.quarkus.websockets.next.CloseReason;
+import io.quarkus.websockets.next.WebSocketClientConnection;
+import io.quarkus.websockets.next.WebSocketClientException;
+import io.quarkus.websockets.next.runtime.config.WebSocketsClientRuntimeConfig;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.WebSocket;
+import io.vertx.core.http.WebSocketClient;
+import io.vertx.core.http.WebSocketConnectOptions;
+import io.vertx.core.http.WebSocketFrame;
+import io.vertx.core.http.WebSocketFrameType;
+import io.vertx.core.internal.ContextInternal;
+import io.vertx.core.internal.VertxInternal;
+
+@Typed(BasicWebSocketConnector.class)
+@Dependent
+public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWebSocketConnectorImpl>
+        implements BasicWebSocketConnector {
+
+    private static final Logger LOG = Logger.getLogger(BasicWebSocketConnectorImpl.class);
+
+    // mutable state
+
+    private ExecutionModel executionModel = ExecutionModel.BLOCKING;
+
+    private Consumer<WebSocketClientConnection> openHandler;
+
+    private BiConsumer<WebSocketClientConnection, String> textMessageHandler;
+
+    private BiConsumer<WebSocketClientConnection, Buffer> binaryMessageHandler;
+
+    private BiConsumer<WebSocketClientConnection, Buffer> pingMessageHandler;
+
+    private BiConsumer<WebSocketClientConnection, Buffer> pongMessageHandler;
+
+    private BiConsumer<WebSocketClientConnection, CloseReason> closeHandler;
+
+    private BiConsumer<WebSocketClientConnection, Throwable> errorHandler;
+
+    BasicWebSocketConnectorImpl(Vertx vertx, Codecs codecs, ClientConnectionManager connectionManager,
+            WebSocketsClientRuntimeConfig config, TlsConfigurationRegistry tlsConfigurationRegistry) {
+        super(vertx, codecs, connectionManager, config, tlsConfigurationRegistry);
+    }
+
+    @Override
+    public BasicWebSocketConnector executionModel(ExecutionModel model) {
+        this.executionModel = Objects.requireNonNull(model);
+        return self();
+    }
+
+    @Override
+    public BasicWebSocketConnector path(String path) {
+        setPath(Objects.requireNonNull(path));
+        return self();
+    }
+
+    @Override
+    public BasicWebSocketConnector onOpen(Consumer<WebSocketClientConnection> consumer) {
+        this.openHandler = Objects.requireNonNull(consumer);
+        return self();
+    }
+
+    @Override
+    public BasicWebSocketConnector onTextMessage(BiConsumer<WebSocketClientConnection, String> consumer) {
+        this.textMessageHandler = Objects.requireNonNull(consumer);
+        return self();
+    }
+
+    @Override
+    public BasicWebSocketConnector onBinaryMessage(BiConsumer<WebSocketClientConnection, Buffer> consumer) {
+        this.binaryMessageHandler = Objects.requireNonNull(consumer);
+        return self();
+    }
+
+    @Override
+    public BasicWebSocketConnector onPing(BiConsumer<WebSocketClientConnection, Buffer> consumer) {
+        this.pingMessageHandler = Objects.requireNonNull(consumer);
+        return self();
+    }
+
+    @Override
+    public BasicWebSocketConnector onPong(BiConsumer<WebSocketClientConnection, Buffer> consumer) {
+        this.pongMessageHandler = Objects.requireNonNull(consumer);
+        return self();
+    }
+
+    @Override
+    public BasicWebSocketConnector onClose(BiConsumer<WebSocketClientConnection, CloseReason> consumer) {
+        this.closeHandler = Objects.requireNonNull(consumer);
+        return self();
+    }
+
+    @Override
+    public BasicWebSocketConnector onError(BiConsumer<WebSocketClientConnection, Throwable> consumer) {
+        this.errorHandler = Objects.requireNonNull(consumer);
+        return self();
+    }
+
+    @Override
+    public Uni<WebSocketClientConnection> connect() {
+        if (baseUri == null) {
+            throw new WebSocketClientException("Endpoint URI not set!");
+        }
+
+        // A new client is created for each connection
+        // The client is created when the returned Uni is subscribed
+        // The client is closed when the connection is closed
+        AtomicReference<WebSocketClient> client = new AtomicReference<>();
+
+        WebSocketConnectOptions connectOptions = newConnectOptions(baseUri);
+        StringBuilder requestUri = new StringBuilder();
+        String mergedPath = mergePath(baseUri.getPath(), replacePathParameters(path));
+        requestUri.append(mergedPath);
+        if (baseUri.getQuery() != null) {
+            requestUri.append("?").append(baseUri.getQuery());
+        }
+        connectOptions.setURI(requestUri.toString());
+        for (Entry<String, List<String>> e : headers.entrySet()) {
+            for (String val : e.getValue()) {
+                connectOptions.addHeader(e.getKey(), val);
+            }
+        }
+        subprotocols.forEach(connectOptions::addSubProtocol);
+
+        URI serverEndpointUri;
+        try {
+            serverEndpointUri = new URI(baseUri.getScheme(), baseUri.getUserInfo(), baseUri.getHost(), baseUri.getPort(),
+                    mergedPath,
+                    baseUri.getQuery(), baseUri.getFragment());
+        } catch (URISyntaxException e) {
+            throw new WebSocketClientException(e);
+        }
+
+        Uni<WebSocketOpen> websocketOpen = Uni.createFrom().<WebSocketOpen> emitter(e -> {
+            // Create a new event loop context for each client, otherwise the current context is used
+            // We want to avoid a situation where if multiple clients/connections are created in a row,
+            // the same event loop is used and so writing/receiving messages is de-facto serialized
+            // Get rid of this workaround once https://github.com/eclipse-vertx/vert.x/issues/5366 is resolved
+            ContextInternal context = ((VertxInternal) vertx).createEventLoopContext();
+            context.dispatch(new Handler<Void>() {
+                @Override
+                public void handle(Void event) {
+                    try {
+                        WebSocketClient c = vertx.createWebSocketClient(populateClientOptions());
+                        client.setPlain(c);
+                        c.connect(connectOptions).onComplete(new Handler<AsyncResult<WebSocket>>() {
+                            @Override
+                            public void handle(AsyncResult<WebSocket> r) {
+                                if (r.succeeded()) {
+                                    e.complete(new WebSocketOpen(newCleanupConsumer(c, context), r.result()));
+                                } else {
+                                    e.fail(r.cause());
+                                }
+                            }
+                        });
+                    } catch (RuntimeException re) {
+                        e.fail(re);
+                    }
+                }
+            });
+        });
+        return websocketOpen.map(wsOpen -> {
+            WebSocket ws = wsOpen.websocket();
+            String clientId = BasicWebSocketConnector.class.getName();
+            TrafficLogger trafficLogger = TrafficLogger.forClient(config);
+            WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientId,
+                    ws,
+                    codecs,
+                    pathParams,
+                    serverEndpointUri,
+                    headers,
+                    trafficLogger,
+                    userData,
+                    null,
+                    wsOpen.cleanup());
+            if (trafficLogger != null) {
+                trafficLogger.connectionOpened(connection);
+            }
+            connectionManager.add(BasicWebSocketConnectorImpl.class.getName(), connection);
+
+            // Only text and binary messages count as pending messages, so back-pressure only makes sense
+            // if at least one of these handlers is set
+            int maxPendingMessages = config.maxPendingMessages();
+            boolean backpressure = maxPendingMessages > 0
+                    && (textMessageHandler != null || binaryMessageHandler != null);
+
+            if (backpressure) {
+                // Pause the stream before any handler is registered so that no message can be delivered until
+                // fetch(maxPendingMessages) is requested at the end of the initialization
+                LOG.debugf("Back-pressure enabled - pause the stream: %s", connection);
+                ws.pause();
+            }
+
+            if (openHandler != null) {
+                doExecute(connection, null, (c, ignored) -> openHandler.accept(c));
+            }
+
+            if (textMessageHandler != null || backpressure) {
+                ws.textMessageHandler(new Handler<String>() {
+                    @Override
+                    public void handle(String message) {
+                        if (textMessageHandler == null) {
+                            // No handler set but the stream must be drained to replenish the final frame's credit
+                            fetchOne(ws, connection);
+                            return;
+                        }
+                        if (trafficLogger != null) {
+                            trafficLogger.textMessageReceived(connection, message);
+                        }
+                        doExecute(connection, message, textMessageHandler,
+                                backpressure ? () -> fetchOne(ws, connection) : null);
+                    }
+                });
+            }
+
+            if (binaryMessageHandler != null || backpressure) {
+                ws.binaryMessageHandler(new Handler<Buffer>() {
+
+                    @Override
+                    public void handle(Buffer message) {
+                        if (binaryMessageHandler == null) {
+                            // No handler set but the stream must be drained to replenish the final frame's credit
+                            fetchOne(ws, connection);
+                            return;
+                        }
+                        if (trafficLogger != null) {
+                            trafficLogger.binaryMessageReceived(connection, message);
+                        }
+                        doExecute(connection, message, binaryMessageHandler,
+                                backpressure ? () -> fetchOne(ws, connection) : null);
+                    }
+                });
+            }
+
+            if (pingMessageHandler != null || backpressure) {
+                // The frame handler receives every frame, not just pings. It also replenishes demand for non-final
+                // data frames so that fragmented messages can be assembled before the message callback runs.
+                ws.frameHandler(new Handler<WebSocketFrame>() {
+
+                    @Override
+                    public void handle(WebSocketFrame frame) {
+                        if (backpressure && Endpoints.isNonFinalDataFrame(frame)) {
+                            // Vert.x demand counts frames; only the final frame waits for message processing.
+                            // PING/PONG frames are not replenished here on purpose - Vert.x returns their demand
+                            // itself (see io.vertx.core.http.impl.websocket.WebSocketImplBase#receiveFrame).
+                            fetchOne(ws, connection);
+                        }
+                        if (frame.type() == WebSocketFrameType.PING && pingMessageHandler != null) {
+                            doExecute(connection, frame.binaryData(), pingMessageHandler);
+                        }
+                    }
+                });
+            }
+
+            if (pongMessageHandler != null) {
+                ws.pongHandler(new Handler<Buffer>() {
+
+                    @Override
+                    public void handle(Buffer event) {
+                        doExecute(connection, event, pongMessageHandler);
+                    }
+                });
+            }
+
+            if (errorHandler != null) {
+                ws.exceptionHandler(new Handler<Throwable>() {
+
+                    @Override
+                    public void handle(Throwable event) {
+                        doExecute(connection, event, errorHandler);
+                    }
+                });
+            }
+
+            ws.closeHandler(new Handler<Void>() {
+
+                @Override
+                public void handle(Void event) {
+                    try {
+                        if (trafficLogger != null) {
+                            trafficLogger.connectionClosed(connection);
+                        }
+                        if (closeHandler != null) {
+                            doExecute(connection, connection.closeReason(), closeHandler);
+                        }
+                    } finally {
+                        connectionManager.remove(BasicWebSocketConnectorImpl.class.getName(), connection);
+                        client.get().close();
+                    }
+                }
+
+            });
+
+            if (backpressure) {
+                // All handlers are registered - grant the initial frame demand; non-final data frames immediately
+                // return their credit while the final frame returns its credit after message processing, which bounds
+                // the number of in-flight messages even though Vert.x fetch() counts frames
+                LOG.debugf("Back-pressure - fetch %s pending messages: %s", maxPendingMessages, connection);
+                ws.fetch(maxPendingMessages);
+            }
+
+            return connection;
+        });
+    }
+
+    private <MESSAGE> void doExecute(WebSocketClientConnectionImpl connection, MESSAGE message,
+            BiConsumer<WebSocketClientConnection, MESSAGE> consumer) {
+        doExecute(connection, message, consumer, null);
+    }
+
+    private <MESSAGE> void doExecute(WebSocketClientConnectionImpl connection, MESSAGE message,
+            BiConsumer<WebSocketClientConnection, MESSAGE> consumer, Runnable onComplete) {
+        // We always invoke callbacks on a new duplicated context and offload if blocking/virtualThread is needed
+        Context context = vertx.getOrCreateContext();
+        Context duplicatedContext = ContextSupport.createNewDuplicatedContext(context, connection);
+        duplicatedContext.runOnContext(new Handler<Void>() {
+            @Override
+            public void handle(Void event) {
+                if (executionModel == ExecutionModel.VIRTUAL_THREAD) {
+                    VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
+                        public void run() {
+                            try {
+                                consumer.accept(connection, message);
+                            } catch (Exception e) {
+                                LOG.errorf(e, "Unable to call handler: " + connection);
+                            } finally {
+                                // fetch() must be called on the connection event loop, not the virtual thread
+                                if (onComplete != null) {
+                                    duplicatedContext.runOnContext(v -> onComplete.run());
+                                }
+                            }
+                        }
+                    });
+                } else if (executionModel == ExecutionModel.BLOCKING) {
+                    vertx.executeBlocking(new Callable<Void>() {
+                        @Override
+                        public Void call() {
+                            try {
+                                consumer.accept(connection, message);
+                            } catch (Exception e) {
+                                LOG.errorf(e, "Unable to call handler: " + connection);
+                            }
+                            return null;
+                        }
+                    }, false).onComplete(ar -> {
+                        // onComplete runs back on the calling event loop context
+                        if (onComplete != null) {
+                            onComplete.run();
+                        }
+                    });
+                } else {
+                    // Non-blocking -> event loop
+                    try {
+                        consumer.accept(connection, message);
+                    } catch (Exception e) {
+                        LOG.errorf(e, "Unable to call handler: " + connection);
+                    } finally {
+                        if (onComplete != null) {
+                            onComplete.run();
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    private void fetchOne(WebSocket ws, WebSocketClientConnectionImpl connection) {
+        LOG.debugf("Back-pressure - fetch one more message: %s", connection);
+        ws.fetch(1);
+    }
+
+    private String mergePath(String path1, String path2) {
+        StringBuilder ret = new StringBuilder();
+        if (path1 != null) {
+            ret.append(path1);
+        }
+        if (path2 != null && !path2.isEmpty()) {
+            if (path1.endsWith("/")) {
+                if (path2.startsWith("/")) {
+                    ret.append(path2.substring(1));
+                } else {
+                    ret.append(path2);
+                }
+            } else {
+                if (path2.startsWith("/")) {
+                    ret.append(path2);
+                } else {
+                    ret.append("/").append(path2);
+                }
+            }
+        }
+        if (ret.isEmpty()) {
+            ret.append("/");
+        }
+        return ret.toString();
+    }
+
+}

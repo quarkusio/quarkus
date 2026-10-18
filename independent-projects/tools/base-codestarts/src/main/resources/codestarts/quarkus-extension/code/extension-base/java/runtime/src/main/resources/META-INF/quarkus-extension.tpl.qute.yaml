@@ -1,0 +1,16 @@
+name: {extension.name}
+#description: {extension.description ?: 'Do something useful.'}
+metadata:
+#  keywords:
+#    - {extension.id}
+#  guide: {extension.guide ?: '...'} # To create and publish this guide, see https://github.com/quarkiverse/quarkiverse/wiki#documenting-your-extension
+#  categories:
+#    - "miscellaneous"
+#  status: "preview"
+{#if input.extra-codestarts.contains("extension-codestart")}
+  codestart:
+    name: {extension.id}
+    languages:
+      - "java"
+    artifact: "{group-id}:{namespace.id}{extension.id}:codestarts:jar:$\{project.version}"
+{/if}

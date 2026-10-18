@@ -1,0 +1,52 @@
+package io.quarkus.quartz.test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.scheduler.Scheduled;
+import io.quarkus.test.QuarkusExtensionTest;
+
+public class DisabledScheduledMethodTest {
+
+    @RegisterExtension
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(Jobs.class)
+                    .addAsResource(new StringAsset("DisabledScheduledMethodTest.interval=disabled"),
+                            "application.properties"));
+
+    @Test
+    public void testNoSchedulerInvocations() throws InterruptedException {
+        assertTrue(Jobs.LATCH.await(2, TimeUnit.SECONDS));
+        assertEquals(0, Jobs.executionCounter);
+    }
+
+    static class Jobs {
+
+        static final CountDownLatch LATCH = new CountDownLatch(1);
+
+        static volatile int executionCounter = 0;
+
+        @Scheduled(every = "{DisabledScheduledMethodTest.interval}")
+        void disabledByConfigValue() {
+            executionCounter++;
+        }
+
+        @Scheduled(every = "{non.existent.property:disabled}")
+        void disabledByDefault() {
+            executionCounter++;
+        }
+
+        @Scheduled(every = "0.5s")
+        void enabled() {
+            LATCH.countDown();
+        }
+    }
+}

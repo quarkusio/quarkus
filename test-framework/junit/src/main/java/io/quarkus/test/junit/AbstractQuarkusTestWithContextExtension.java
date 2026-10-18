@@ -1,0 +1,131 @@
+package io.quarkus.test.junit;
+
+import static org.junit.jupiter.api.extension.ExtensionContext.Namespace.GLOBAL;
+
+import java.io.IOException;
+
+import org.jboss.logging.Logger;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
+import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
+import org.junit.jupiter.api.extension.TestWatcher;
+
+import io.quarkus.test.config.ConfigInjector;
+import io.quarkus.test.config.ValueRegistryInjector;
+import io.quarkus.value.registry.ValueRegistry;
+import io.smallrye.config.Config;
+
+public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTestWithCallbacksExtension
+        implements TestExecutionExceptionHandler, LifecycleMethodExecutionExceptionHandler, TestWatcher {
+
+    private static final Logger LOG = Logger.getLogger(AbstractQuarkusTestWithContextExtension.class);
+
+    public static final String IO_QUARKUS_TESTING_TYPE = "io.quarkus.testing.type";
+
+    @Override
+    public void handleTestExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+        markTestAsFailed(context, throwable);
+
+        throw throwable;
+    }
+
+    @Override
+    public void handleAfterAllMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+        markTestAsFailed(context, throwable);
+
+        throw throwable;
+    }
+
+    @Override
+    public void handleAfterEachMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+        markTestAsFailed(context, throwable);
+
+        throw throwable;
+    }
+
+    @Override
+    public void handleBeforeAllMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+        markTestAsFailed(context, throwable);
+
+        throw throwable;
+    }
+
+    @Override
+    public void handleBeforeEachMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+        markTestAsFailed(context, throwable);
+
+        throw throwable;
+    }
+
+    @Override
+    public void testFailed(ExtensionContext context, Throwable cause) {
+        markTestAsFailed(context, cause);
+    }
+
+    protected QuarkusTestExtensionState getState(ExtensionContext context) {
+        ExtensionContext.Store store = getStoreFromContext(context);
+        Object o = store.get(QuarkusTestExtensionState.class.getName());
+        if (o != null) {
+
+            QuarkusTestExtensionState state;
+
+            // It's quite possible the state was created in another classloader, and if so, we will need to clone it across into this classloader
+            if (o instanceof QuarkusTestExtensionState) {
+                state = (QuarkusTestExtensionState) o;
+            } else {
+                state = QuarkusTestExtensionState.clone(o);
+            }
+
+            Class<?> testingTypeOfState = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
+            if (!this.getTestingType().equals(testingTypeOfState)) {
+                // The current state was created by a different testing type, so we need to renew it, so the new state is
+                // compatible with the current testing type.
+                try {
+                    state.close();
+                } catch (IOException ignored) {
+                    LOG.debug(ignored);
+                    // ignoring exceptions when closing state.
+
+                } finally {
+                    store.remove(QuarkusTestExtensionState.class.getName());
+                    store.remove(ValueRegistry.class.getName());
+                    store.remove(Config.class.getName());
+                    ValueRegistryInjector.clear(context);
+                    ConfigInjector.clear(context);
+                }
+
+                return null;
+            }
+            return state;
+
+        } else {
+            return null;
+        }
+
+    }
+
+    protected void setState(ExtensionContext context, QuarkusTestExtensionState state) {
+        ExtensionContext.Store store = getStoreFromContext(context);
+        store.put(ValueRegistry.class.getName(), context.getStore(GLOBAL).get(ValueRegistry.class.getName()));
+        store.put(Config.class.getName(), context.getStore(GLOBAL).get(Config.class.getName()));
+        store.put(QuarkusTestExtensionState.class.getName(), state);
+        store.put(IO_QUARKUS_TESTING_TYPE, this.getTestingType());
+    }
+
+    protected ExtensionContext.Store getStoreFromContext(ExtensionContext context) {
+        // TODO if we would add some ugly code here to jump up to the
+        // system classloader, we could load QuarkusTestExtension with the test's classloader, and
+        // avoid a whole bunch of reflection
+        // TODO #store
+
+        ExtensionContext root = context.getRoot();
+        return root.getStore(GLOBAL);
+    }
+
+    protected void markTestAsFailed(ExtensionContext context, Throwable throwable) {
+        QuarkusTestExtensionState state = getState(context);
+        if (state != null) {
+            state.setTestFailed(throwable);
+        }
+    }
+}

@@ -1,0 +1,33 @@
+package io.quarkus.hibernate.reactive.services;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import org.hibernate.boot.registry.StandardServiceInitiator;
+import org.hibernate.reactive.provider.internal.ReactiveServiceInitiators;
+import org.hibernate.service.StandardServiceInitiators;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+public class ServiceInitiatorsTest {
+
+    private static final Map<String, String> HR_SERVICES = toServicesMap(ReactiveServiceInitiators.LIST);
+    private static final Map<String, String> ORM_SERVICES = toServicesMap(StandardServiceInitiators.LIST);
+
+    @Test
+    public void serviceInitiatorsAreUnique() {
+        Assertions.assertEquals(HR_SERVICES.size(), ReactiveServiceInitiators.LIST.size());
+        Assertions.assertEquals(ORM_SERVICES.size(), StandardServiceInitiators.LIST.size());
+    }
+
+    private static Map<String, String> toServicesMap(List<StandardServiceInitiator<?>> list) {
+        TreeMap<String, String> rolesToImplMap = new TreeMap<>();
+        for (StandardServiceInitiator<?> initiator : list) {
+            final String serviceRole = initiator.getServiceInitiated().getName();
+            rolesToImplMap.put(serviceRole, initiator.getClass().getName());
+        }
+        return Collections.unmodifiableMap(rolesToImplMap);
+    }
+}

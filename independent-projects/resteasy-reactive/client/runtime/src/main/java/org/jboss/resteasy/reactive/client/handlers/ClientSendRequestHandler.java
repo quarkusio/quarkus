@@ -1,0 +1,829 @@
+package org.jboss.resteasy.reactive.client.handlers;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.EntityPart;
+import jakarta.ws.rs.core.GenericEntity;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Variant;
+import jakarta.ws.rs.ext.WriterInterceptor;
+
+import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.AsyncResultUni;
+import org.jboss.resteasy.reactive.client.api.ClientLogger;
+import org.jboss.resteasy.reactive.client.api.LoggingScope;
+import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
+import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
+import org.jboss.resteasy.reactive.client.impl.InputStreamReadStream;
+import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
+import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
+import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload;
+import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartResponseDecoder;
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
+import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.jaxrs.EntityPartImpl;
+import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
+
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.handler.codec.DecoderException;
+import io.netty.handler.codec.http.HttpHeaderValues;
+import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.vertx.ReadStreamSubscriber;
+import io.smallrye.stork.api.ServiceInstance;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.file.AsyncFile;
+import io.vertx.core.file.OpenOptions;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.http.HttpClosedException;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpVersion;
+import io.vertx.core.http.RequestOptions;
+import io.vertx.core.internal.buffer.BufferInternal;
+import io.vertx.core.internal.http.HttpClientInternal;
+import io.vertx.core.net.SocketAddress;
+import io.vertx.core.streams.Pipe;
+import io.vertx.core.streams.ReadStream;
+
+public class ClientSendRequestHandler implements ClientRestHandler {
+    private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
+    public static final String CONTENT_TYPE = "Content-Type";
+
+    private final HttpClientOptions httpClientOptions;
+    private final boolean followRedirects;
+    private final LoggingScope loggingScope;
+    private final ClientLogger clientLogger;
+    private final Map<Class<?>, MultipartResponseData> multipartResponseDataMap;
+    private final List<Consumer<HttpClientRequest>> clientRequestCustomizers;
+    private final String domainSocketPath;
+    private final int maxChunkSize;
+    private final int inputStreamChunkSize;
+
+    public ClientSendRequestHandler(HttpClientOptions httpClientOptions,
+            boolean followRedirects,
+            LoggingScope loggingScope, ClientLogger logger,
+            Map<Class<?>, MultipartResponseData> multipartResponseDataMap,
+            List<Consumer<HttpClientRequest>> clientRequestCustomizers,
+            String domainSocketPath) {
+        this.maxChunkSize = httpClientOptions.getMaxChunkSize();
+        this.inputStreamChunkSize = httpClientOptions.getMaxChunkSize();
+        this.httpClientOptions = httpClientOptions;
+        this.followRedirects = followRedirects;
+        this.loggingScope = loggingScope;
+        this.clientLogger = logger;
+        this.multipartResponseDataMap = multipartResponseDataMap;
+        this.clientRequestCustomizers = clientRequestCustomizers;
+        this.domainSocketPath = domainSocketPath;
+    }
+
+    @Override
+    public void handle(RestClientRequestContext requestContext) {
+        if (requestContext.isAborted()) {
+            return;
+        }
+        requestContext.suspend();
+
+        requestContext.setHttpClientOptions(httpClientOptions);
+
+        Uni<HttpClientRequest> future = createRequest(requestContext);
+
+        // DNS failures happen before we send the request
+        future.subscribe().with(new Consumer<>() {
+            @Override
+            public void accept(HttpClientRequest httpClientRequest) {
+                if (requestContext.isUserCanceled()) {
+                    httpClientRequest.reset();
+                    return;
+                }
+
+                customizeRequest(httpClientRequest, requestContext);
+
+                // adapt headers to HTTP/2 depending on the underlying HTTP connection
+                ClientSendRequestHandler.this.adaptRequest(httpClientRequest);
+
+                if (requestContext.isMultipart()) {
+                    Promise<HttpClientRequest> requestPromise = Promise.promise();
+                    QuarkusMultipartFormUpload actualEntity;
+                    try {
+                        actualEntity = ClientSendRequestHandler.this.setMultipartHeadersAndPrepareBody(httpClientRequest,
+                                requestContext);
+                        if (loggingScope != LoggingScope.NONE) {
+                            clientLogger.logRequest(httpClientRequest, null, true);
+                        }
+
+                        Pipe<Buffer> pipe = actualEntity.pipe(); // Shouldn't this be called in an earlier phase ?
+                        requestPromise.future().onComplete(ar -> {
+
+                            if (ar.succeeded()) {
+                                HttpClientRequest req = ar.result();
+                                if (httpClientRequest.headers() == null
+                                        || !httpClientRequest.headers().contains(HttpHeaders.CONTENT_LENGTH)) {
+                                    req.setChunked(true);
+                                }
+                                pipe.endOnFailure(false);
+                                pipe.to(req).onComplete(ar2 -> {
+                                    if (ar2.failed()) {
+                                        req.reset(0L, ar2.cause());
+                                    }
+                                });
+                                actualEntity.run();
+                            } else {
+                                pipe.close();
+                            }
+                        });
+                        Future<HttpClientResponse> sent = httpClientRequest.response();
+                        requestPromise.complete(httpClientRequest);
+                        attachSentHandlers(sent, httpClientRequest, requestContext);
+                    } catch (Throwable e) {
+                        reportFinish(e, requestContext);
+                        requestContext.resume(e);
+                        return;
+                    }
+                } else if (requestContext.isFileUpload()) {
+                    Vertx vertx = Vertx.currentContext().owner();
+                    Object entity = requestContext.getEntity().getEntity();
+                    String filePathToUpload = null;
+                    if (entity instanceof File) {
+                        filePathToUpload = ((File) entity).getAbsolutePath();
+                    } else if (entity instanceof Path) {
+                        filePathToUpload = ((Path) entity).toAbsolutePath().toString();
+                    }
+                    vertx.fileSystem()
+                            .open(filePathToUpload, new OpenOptions().setRead(true).setWrite(false))
+                            .onComplete(openedAsyncFile -> {
+                                if (openedAsyncFile.failed()) {
+                                    requestContext.resume(openedAsyncFile.cause());
+                                    return;
+                                }
+
+                                MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
+                                updateRequestHeadersFromConfig(requestContext, headerMap);
+                                setEntityRelatedHeaders(headerMap, requestContext.getEntity());
+
+                                // set the Vertx headers after we've run the interceptors because they can modify them
+                                setVertxHeaders(httpClientRequest, headerMap);
+
+                                Future<HttpClientResponse> sent = httpClientRequest.send(openedAsyncFile.result());
+                                attachSentHandlers(sent, httpClientRequest, requestContext);
+                            });
+                } else if (requestContext.isInputStreamUpload() && !hasWriterInterceptors(requestContext)) {
+                    MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
+                    updateRequestHeadersFromConfig(requestContext, headerMap);
+                    setEntityRelatedHeaders(headerMap, requestContext.getEntity());
+                    setVertxHeaders(httpClientRequest, headerMap);
+                    Future<HttpClientResponse> sent = httpClientRequest.send(
+                            new InputStreamReadStream(
+                                    Vertx.currentContext().owner(), (InputStream) requestContext.getEntity().getEntity(),
+                                    httpClientRequest, inputStreamChunkSize));
+                    attachSentHandlers(sent, httpClientRequest, requestContext);
+                } else if (requestContext.isMultiBufferUpload()) {
+                    MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
+                    updateRequestHeadersFromConfig(requestContext, headerMap);
+                    setVertxHeaders(httpClientRequest, headerMap);
+                    Multi<Buffer> buffers = ((Multi<?>) requestContext.getEntity().getEntity()).onItem()
+                            .transform(ClientSendRequestHandler::toBuffer);
+                    if (!httpClientRequest.headers().contains(HttpHeaders.CONTENT_LENGTH)) {
+                        httpClientRequest.setChunked(true);
+                    }
+                    // a failing Multi must fail the request: with the default pipe behaviour the body would be ended
+                    // normally and the server response to the truncated body would be reported as a success
+                    ReadStream<Buffer> body = ReadStreamSubscriber.asReadStream(buffers,
+                            new Function<>() {
+                                @Override
+                                public Buffer apply(Buffer buffer) {
+                                    return buffer;
+                                }
+                            });
+                    Pipe<Buffer> pipe = body.pipe();
+                    pipe.endOnFailure(false);
+                    pipe.to(httpClientRequest).onComplete(new Handler<>() {
+                        @Override
+                        public void handle(AsyncResult<Void> ar) {
+                            if (ar.failed()) {
+                                httpClientRequest.reset(0L, ar.cause());
+                            }
+                        }
+                    });
+                    Future<HttpClientResponse> sent = httpClientRequest.response();
+                    attachSentHandlers(sent, httpClientRequest, requestContext);
+                } else if (requestContext.isInputStreamUpload() && hasWriterInterceptors(requestContext)) {
+                    // the entity has to be serialized through the writer interceptors, which means reading the whole
+                    // stream; as reading the stream may block (e.g. its data may come from a database), this is done
+                    // on a worker thread
+                    MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
+                    Vertx.currentContext().executeBlocking(new Callable<Buffer>() {
+                        @Override
+                        public Buffer call() throws Exception {
+                            return ClientSendRequestHandler.this.prepareBody(requestContext, headerMap);
+                        }
+                    }, false).onComplete(new Handler<>() {
+                        @Override
+                        public void handle(AsyncResult<Buffer> ar) {
+                            if (ar.failed()) {
+                                requestContext.resume(ar.cause());
+                                return;
+                            }
+                            // set the Vertx headers after we've run the interceptors because they can modify them
+                            setVertxHeaders(httpClientRequest, headerMap);
+                            sendEntity(httpClientRequest, requestContext, ar.result());
+                        }
+                    });
+                } else {
+                    Buffer actualEntity;
+                    try {
+                        actualEntity = ClientSendRequestHandler.this
+                                .setRequestHeadersAndPrepareBody(httpClientRequest, requestContext);
+                    } catch (Throwable e) {
+                        requestContext.resume(e);
+                        return;
+                    }
+                    sendEntity(httpClientRequest, requestContext, actualEntity);
+                }
+            }
+        }, new Consumer<>() {
+            @Override
+            public void accept(Throwable event) {
+                // set some properties to prevent NPEs down the chain
+                requestContext.setResponseHeaders(new MultivaluedTreeMap<>());
+                requestContext.setResponseReasonPhrase("unknown");
+
+                if (event instanceof IOException) {
+                    ProcessingException throwable = new ProcessingException(event);
+                    reportFinish(throwable, requestContext);
+                    requestContext.resume(throwable);
+                } else {
+                    requestContext.resume(event);
+                    reportFinish(event, requestContext);
+                }
+            }
+        });
+    }
+
+    private void customizeRequest(HttpClientRequest httpClientRequest, RestClientRequestContext requestContext) {
+        installRedirectRequestCustomizer(httpClientRequest, requestContext);
+        for (int i = 0; i < clientRequestCustomizers.size(); i++) {
+            clientRequestCustomizers.get(i).accept(httpClientRequest);
+        }
+
+        requestContext.setHttpClientRequest(httpClientRequest);
+    }
+
+    /*
+     * If the request leads to a new request because of redirect then this method will install the original request's
+     * customizers to the new redirect request.
+     */
+    private void installRedirectRequestCustomizer(HttpClientRequest httpClientRequest,
+            RestClientRequestContext requestContext) {
+        if (!followRedirects || clientRequestCustomizers.isEmpty()) {
+            return;
+        }
+        httpClientRequest.redirectHandler(response -> {
+            /*
+             * The docs for `redirectHandler()` make no statement about whether the returned result is nullable.
+             * We'll guard against null here and assume there's no redirect taking place.
+             */
+            Function<HttpClientResponse, Future<RequestOptions>> redirectHandler = ((HttpClientInternal) requestContext
+                    .getHttpClient())
+                    .redirectHandler();
+            if (redirectHandler == null) {
+                return Future.succeededFuture(null);
+            }
+
+            /*
+             * @see HttpClient#redirectHandler(Function)
+             * According to the docs the `redirectHandler` function returns null if there is no redirect taking place.
+             *
+             * But it doesn't return `HttpClientRequest`, it returns a `Future<RequestOptions>`.
+             * Vert.x 3 exposed redirect handling in terms of HttpClientRequest, while Vert.x 4
+             * changed the client-level redirect handler to Future<RequestOptions>. The current
+             * docs still describe the old null semantics, so they are likely stale.
+             *
+             * In practice, we defensively accept both interpretations of "no redirect":
+             * - the handler returns a null Future<RequestOptions>
+             * - the handler returns a Future completing with null RequestOptions
+             */
+            Future<RequestOptions> redirectOptions = redirectHandler.apply(response);
+            if (redirectOptions == null) {
+                return Future.succeededFuture(null);
+            }
+            return redirectOptions.compose(options -> {
+                if (options == null) {
+                    return Future.succeededFuture(null);
+                }
+                /*
+                 * If there is a redirect taking place install the original request's customizers to the redirect
+                 * request.
+                 */
+                return requestContext.getHttpClient().request(options)
+                        .map(nextRequest -> {
+                            customizeRequest(nextRequest, requestContext);
+                            return nextRequest;
+                        });
+            });
+        });
+    }
+
+    private static Buffer toBuffer(Object item) {
+        if (item instanceof Buffer buffer) {
+            return buffer;
+        }
+        if (item instanceof byte[] bytes) {
+            return Buffer.buffer(bytes);
+        }
+        throw new IllegalArgumentException("Unsupported item type '" + item.getClass().getName()
+                + "' for a streamed request body. Supported types are io.vertx.core.buffer.Buffer and byte[]");
+    }
+
+    private void attachSentHandlers(Future<HttpClientResponse> sent,
+            HttpClientRequest httpClientRequest,
+            RestClientRequestContext requestContext) {
+        sent.onSuccess(new Handler<>() {
+            @Override
+            public void handle(HttpClientResponse clientResponse) {
+                try {
+                    requestContext.initialiseResponse(clientResponse);
+                    int status = clientResponse.statusCode();
+                    if (requestContext.getCallStatsCollector() != null) {
+                        if (status >= 500 && status < 600) {
+                            reportFinish(new InternalServerErrorException(),
+                                    requestContext);
+                        } else {
+                            reportFinish(null, requestContext);
+                        }
+                    }
+
+                    if (isResponseMultipart(requestContext) && !requestContext.isInputStreamDownload()) {
+                        QuarkusMultipartResponseDecoder multipartDecoder = new QuarkusMultipartResponseDecoder(
+                                clientResponse);
+
+                        // Collect raw buffers so we can reconstruct an entity stream for MessageBodyReader usage
+                        // (e.g. Response.readEntity with a custom reader), since the Netty decoder consumes the data
+                        List<Buffer> rawBuffers = new ArrayList<>();
+                        clientResponse.handler(buffer -> {
+                            rawBuffers.add(buffer.copy());
+                            multipartDecoder.offer(buffer);
+                        });
+
+                        clientResponse.endHandler(new Handler<>() {
+                            @Override
+                            public void handle(Void event) {
+                                multipartDecoder.offer(LastHttpContent.EMPTY_LAST_CONTENT);
+
+                                List<InterfaceHttpData> datas = multipartDecoder.getBodyHttpDatas();
+                                requestContext.setResponseMultipartParts(datas);
+
+                                Buffer combined = Buffer.buffer();
+                                for (Buffer b : rawBuffers) {
+                                    combined.appendBuffer(b);
+                                }
+                                if (combined.length() > 0) {
+                                    requestContext.setResponseEntityStream(
+                                            new ByteArrayInputStream(combined.getBytes()));
+                                }
+
+                                if (loggingScope != LoggingScope.NONE) {
+                                    clientLogger.logResponse(clientResponse, false);
+                                }
+
+                                requestContext.resume();
+                            }
+                        });
+                    } else if (!requestContext.isRegisterBodyHandler()
+                            && (Response.Status.Family.familyOf(status) == Response.Status.Family.SUCCESSFUL)) { // we force the registration of a body handler if there was an error, so we can ensure the body can be read
+                        clientResponse.pause();
+                        if (loggingScope != LoggingScope.NONE) {
+                            clientLogger.logResponse(clientResponse, false);
+                        }
+                        requestContext.resume();
+                    } else {
+                        if (requestContext.isFileDownload()) {
+                            // when downloading a file we copy the bytes to the file system and manually set the entity type
+                            // this is needed because large files can cause OOM or exceed the InputStream limit (of 2GB)
+
+                            clientResponse.pause();
+                            Vertx vertx = Vertx.currentContext().owner();
+                            vertx.fileSystem().createTempFile("rest-client", "")
+                                    .onComplete(tempFileCreation -> {
+                                        if (tempFileCreation.failed()) {
+                                            reportFinish(tempFileCreation.cause(), requestContext);
+                                            requestContext.resume(tempFileCreation.cause());
+                                            return;
+                                        }
+                                        String tmpFilePath = tempFileCreation.result();
+                                        vertx.fileSystem().open(tmpFilePath,
+                                                new OpenOptions().setWrite(true))
+                                                .onComplete(asyncFileOpened -> {
+                                                    if (asyncFileOpened.failed()) {
+                                                        reportFinish(asyncFileOpened.cause(), requestContext);
+                                                        requestContext.resume(asyncFileOpened.cause());
+                                                        return;
+                                                    }
+                                                    final AsyncFile tmpAsyncFile = asyncFileOpened.result();
+                                                    clientResponse.pipeTo(tmpAsyncFile)
+                                                            .onComplete(event -> {
+                                                                if (event.failed()) {
+                                                                    reportFinish(event.cause(),
+                                                                            requestContext);
+                                                                    requestContext.resume(event.cause());
+                                                                    return;
+                                                                }
+
+                                                                if (loggingScope != LoggingScope.NONE) {
+                                                                    clientLogger.logRequest(
+                                                                            httpClientRequest, null, false);
+                                                                }
+
+                                                                requestContext.setTmpFilePath(tmpFilePath);
+                                                                requestContext.resume();
+                                                            });
+                                                    clientResponse.resume();
+                                                });
+                                    });
+
+                        } else if (requestContext.isInputStreamDownload() ||
+                        // when returning Response (and not Uni<Response>) we don't buffer the result
+                        // but instead set up the proper InputStream
+                        // for Uni<Response> we can't buffer because setting up the InputSteam would result in blocking the event loop
+                                (requestContext.isJakartaResponseDownload()
+                                        && !requestContext.invokedMethodReturnsAsyncType())) {
+                            if (loggingScope != LoggingScope.NONE) {
+                                clientLogger.logResponse(clientResponse, false);
+                            }
+                            //TODO: make timeout configurable
+                            requestContext
+                                    .setResponseEntityStream(
+                                            new VertxClientInputStream(clientResponse, 100000));
+                            requestContext.resume();
+                        } else {
+                            clientResponse.body().onComplete(ar -> {
+                                if (ar.succeeded()) {
+                                    if (loggingScope != LoggingScope.NONE) {
+                                        clientLogger.logResponse(clientResponse, false);
+                                    }
+                                    Buffer buffer = ar.result();
+                                    try {
+                                        if (buffer.length() > 0) {
+                                            requestContext.setResponseEntityStream(
+                                                    new ByteBufInputStream(
+                                                            ((BufferInternal) buffer).getByteBuf(), true));
+                                        } else {
+                                            requestContext.setResponseEntityStream(null);
+                                        }
+                                        requestContext.resume();
+                                    } catch (Throwable t) {
+                                        requestContext.resume(t);
+                                    }
+                                } else {
+                                    requestContext.resume(ar.cause());
+                                }
+                            });
+                        }
+                    }
+                } catch (Throwable t) {
+                    reportFinish(t, requestContext);
+                    requestContext.resume(t);
+                }
+            }
+        })
+                .onFailure(new Handler<>() {
+                    @Override
+                    public void handle(Throwable failure) {
+                        if (failure instanceof HttpClosedException || failure instanceof DecoderException) {
+                            // This is because of the Rest Client TCK
+                            // HttpClosedException / DecoderException are runtime exceptions. If we complete with that
+                            // exception, it gets unwrapped by the rest client proxy and thus fails the TCK.
+                            // By creating an IOException, we avoid that and provide a meaningful exception (because
+                            // it's an I/O exception)
+                            requestContext.resume(new ProcessingException(new IOException(failure.getMessage())));
+                        } else if (failure instanceof IOException) {
+                            requestContext.resume(new ProcessingException(failure));
+                        } else {
+                            requestContext.resume(failure);
+                        }
+                    }
+                });
+    }
+
+    private boolean isResponseMultipart(RestClientRequestContext requestContext) {
+        MultivaluedMap<String, String> responseHeaders = requestContext.getResponseHeaders();
+        List<String> contentTypes = responseHeaders.get(CONTENT_TYPE);
+        if (contentTypes != null) {
+            for (String contentType : contentTypes) {
+                if (contentType.toLowerCase(Locale.ROOT).startsWith(MediaType.MULTIPART_FORM_DATA)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void reportFinish(Throwable throwable, RestClientRequestContext requestContext) {
+        ServiceInstance serviceInstance = requestContext.getCallStatsCollector();
+        if (serviceInstance != null) {
+            serviceInstance.recordReply();
+            serviceInstance.recordEnd(throwable);
+        }
+    }
+
+    public Uni<HttpClientRequest> createRequest(RestClientRequestContext state) {
+        HttpClient httpClient = state.getHttpClient();
+        URI uri = state.getUri();
+        Object readTimeout = state.getConfiguration().getProperty(QuarkusRestClientProperties.READ_TIMEOUT);
+        Uni<RequestOptions> requestOptions;
+        state.setMultipartResponsesData(multipartResponseDataMap);
+        if (uri.getScheme() == null) { // invalid URI
+            return Uni.createFrom()
+                    .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri + "'"));
+        }
+        try {
+            URL ignored = uri.toURL();
+        } catch (MalformedURLException mue) {
+            log.error("Invalid REST Client URL used: '" + uri + "'");
+            return Uni.createFrom()
+                    .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri + "'"));
+        }
+
+        boolean isHttps = "https".equals(uri.getScheme());
+        int port = getPort(isHttps, uri.getPort());
+        requestOptions = Uni.createFrom().item(new RequestOptions().setHost(uri.getHost())
+                .setPort(port).setSsl(isHttps));
+
+        if (domainSocketPath != null) {
+            requestOptions = requestOptions.onItem().invoke(
+                    new Consumer<RequestOptions>() {
+                        @Override
+                        public void accept(RequestOptions requestOptions) {
+                            requestOptions.setServer(SocketAddress.domainSocketAddress(domainSocketPath));
+                        }
+                    });
+        }
+
+        return requestOptions.onItem()
+                .transform(r -> {
+                    r.setMethod(HttpMethod.valueOf(state.getHttpMethod()))
+                            .setURI(uri.getRawPath() + (uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery()))
+                            .setFollowRedirects(followRedirects);
+                    String pathTemplate = (String) state.getClientFilterProperties().get("UrlPathTemplate");
+                    if (pathTemplate != null && pathTemplate.length() > 1) {
+                        r.setTraceOperation(state.getHttpMethod() + " " + pathTemplate);
+                    }
+                    return r;
+                })
+                .onItem().invoke(r -> {
+                    if (readTimeout instanceof Long) {
+                        r.setTimeout((Long) readTimeout);
+                    }
+                })
+                .onItem().transformToUni(new Function<RequestOptions, Uni<? extends HttpClientRequest>>() {
+                    @Override
+                    public Uni<? extends HttpClientRequest> apply(RequestOptions options) {
+                        return AsyncResultUni.toUni(handler -> httpClient.request(options).onComplete(handler));
+                    }
+                });
+    }
+
+    private boolean shouldMeasureTime(RestClientRequestContext state) {
+        return !Multi.class.equals(state.getResponseType().getRawType());
+    }
+
+    private int getPort(boolean isHttps, int specifiedPort) {
+        return specifiedPort != -1 ? specifiedPort : defaultPort(isHttps);
+    }
+
+    private int defaultPort(boolean isHttps) {
+        return isHttps ? 443 : 80;
+    }
+
+    @SuppressWarnings("unchecked")
+    private QuarkusMultipartFormUpload setMultipartHeadersAndPrepareBody(HttpClientRequest httpClientRequest,
+            RestClientRequestContext state) throws Exception {
+        QuarkusMultipartForm multipartForm;
+        Object entityObj = state.getEntity().getEntity();
+        boolean entityPartList = false;
+        if (entityObj instanceof GenericEntity<?> ge) {
+            entityPartList = EntityPartImpl.isEntityPartList(ge.getType());
+            entityObj = ge.getEntity();
+        }
+        if (entityObj instanceof QuarkusMultipartForm) {
+            multipartForm = (QuarkusMultipartForm) entityObj;
+        } else if (entityObj instanceof List<?> list
+                && (entityPartList || (!list.isEmpty() && list.get(0) instanceof EntityPart))) {
+            multipartForm = entityPartsToMultipartForm((List<EntityPart>) list);
+        } else {
+            throw new IllegalArgumentException(
+                    "Multipart form upload expects an entity of type MultipartForm or List<EntityPart>, got: " + entityObj);
+        }
+
+        MultivaluedMap<String, String> headerMap = state.getRequestHeadersAsMap();
+        updateRequestHeadersFromConfig(state, headerMap);
+        multipartForm.preparePojos(state);
+
+        Object property = state.getConfiguration().getProperty(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE);
+        PausableHttpPostRequestEncoder.EncoderMode mode = PausableHttpPostRequestEncoder.EncoderMode.RFC1738;
+        if (property != null) {
+            mode = (PausableHttpPostRequestEncoder.EncoderMode) property;
+        }
+        QuarkusMultipartFormUpload multipartFormUpload = new QuarkusMultipartFormUpload(Vertx.currentContext(), multipartForm,
+                true, maxChunkSize, mode);
+        httpClientRequest.setChunked(multipartFormUpload.isChunked());
+        setEntityRelatedHeaders(headerMap, state.getEntity());
+
+        // multipart has its own headers:
+        MultiMap multipartHeaders = multipartFormUpload.headers();
+        for (String multipartHeader : multipartHeaders.names()) {
+            headerMap.put(multipartHeader, multipartHeaders.getAll(multipartHeader));
+        }
+
+        if (state.getEntity().getVariant() != null) {
+            Variant v = state.getEntity().getVariant();
+            String variantContentType = v.getMediaType().toString();
+            String multipartContentType = headerMap.getFirst(HttpHeaders.CONTENT_TYPE);
+            if (multipartContentType.startsWith(HttpHeaderValues.MULTIPART_FORM_DATA.toString())
+                    && !variantContentType.startsWith(HttpHeaderValues.MULTIPART_FORM_DATA.toString())) {
+                // this is a total hack whose purpose is to allow the @Consumes annotation to override the media type
+                int semicolonIndex = multipartContentType.indexOf(';');
+                headerMap.put(HttpHeaders.CONTENT_TYPE,
+                        List.of(variantContentType + multipartContentType.substring(semicolonIndex)));
+            }
+        }
+
+        setVertxHeaders(httpClientRequest, headerMap);
+        return multipartFormUpload;
+    }
+
+    private void sendEntity(HttpClientRequest httpClientRequest, RestClientRequestContext requestContext,
+            Buffer actualEntity) {
+        Future<HttpClientResponse> sent;
+        if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
+            sent = httpClientRequest.send();
+            if (loggingScope != LoggingScope.NONE) {
+                clientLogger.logRequest(httpClientRequest, null, false);
+            }
+        } else {
+            sent = httpClientRequest.send(actualEntity);
+            if (loggingScope != LoggingScope.NONE) {
+                clientLogger.logRequest(httpClientRequest, actualEntity, false);
+            }
+        }
+        attachSentHandlers(sent, httpClientRequest, requestContext);
+    }
+
+    private Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest,
+            RestClientRequestContext state)
+            throws IOException {
+        MultivaluedMap<String, String> headerMap = state.getRequestHeadersAsMap();
+        Buffer actualEntity = prepareBody(state, headerMap);
+        // set the Vertx headers after we've run the interceptors because they can modify them
+        setVertxHeaders(httpClientRequest, headerMap);
+        return actualEntity;
+    }
+
+    /**
+     * Serializes the entity, running the writer interceptors, and completes the headers accordingly.
+     */
+    private Buffer prepareBody(RestClientRequestContext state, MultivaluedMap<String, String> headerMap)
+            throws IOException {
+        updateRequestHeadersFromConfig(state, headerMap);
+
+        Buffer actualEntity = AsyncInvokerImpl.EMPTY_BUFFER;
+        Entity<?> entity = state.getEntity();
+        if (entity != null) {
+            // no need to set the entity.getMediaType, it comes from the variant
+            setEntityRelatedHeaders(headerMap, entity);
+
+            actualEntity = state.writeEntity(entity, headerMap, getWriterInterceptors(state));
+        } else {
+            // some servers don't like the fact that a POST or PUT does not have a method body if there is no content-length header associated
+            if (state.getHttpMethod().equals("POST") || state.getHttpMethod().equals("PUT")) {
+                headerMap.putSingle(HttpHeaders.CONTENT_LENGTH, "0");
+            }
+        }
+        return actualEntity;
+    }
+
+    private WriterInterceptor[] getWriterInterceptors(RestClientRequestContext context) {
+        return context.getConfiguration().getWriterInterceptors().toArray(Serialisers.NO_WRITER_INTERCEPTOR);
+    }
+
+    private boolean hasWriterInterceptors(RestClientRequestContext context) {
+        WriterInterceptor[] interceptors = getWriterInterceptors(context);
+        return interceptors != null && interceptors.length > 0;
+    }
+
+    private void adaptRequest(HttpClientRequest request) {
+        if (request.version() == HttpVersion.HTTP_2) {
+            // When using the protocol HTTP/2, Netty which is internally used by Vert.x will validate the headers and reject
+            // the requests with invalid metadata.
+            // When we start a new connection, the Vert.x client will automatically upgrade the first request we make to be
+            // valid in HTTP/2.
+            // The problem is that in next requests, the Vert.x client reuses the same connection within the same window time
+            // and hence does not upgrade the following requests. Therefore, even though the first request works fine, the
+            // next requests won't work.
+            // This has been reported in https://github.com/eclipse-vertx/vert.x/issues/4618.
+            // To workaround this issue, we need to "upgrade" the next requests by ourselves when the version is already set
+            // to HTTP/2:
+            if (request.path() == null || request.path().length() == 0) {
+                // HTTP/2 does not allow empty paths
+                request.setURI(request.getURI() + "/");
+            }
+        }
+    }
+
+    private void updateRequestHeadersFromConfig(RestClientRequestContext state, MultivaluedMap<String, String> headerMap) {
+        Object staticHeaders = state.getConfiguration().getProperty(QuarkusRestClientProperties.STATIC_HEADERS);
+        if (staticHeaders instanceof Map) {
+            for (Map.Entry<String, String> entry : ((Map<String, String>) staticHeaders).entrySet()) {
+                headerMap.putSingle(entry.getKey(), entry.getValue());
+            }
+        }
+    }
+
+    private void setVertxHeaders(HttpClientRequest httpClientRequest, MultivaluedMap<String, String> headerMap) {
+        MultiMap vertxHttpHeaders = httpClientRequest.headers();
+        for (Map.Entry<String, List<String>> entry : headerMap.entrySet()) {
+            vertxHttpHeaders.add(entry.getKey(), entry.getValue());
+        }
+    }
+
+    private QuarkusMultipartForm entityPartsToMultipartForm(List<EntityPart> parts) throws IOException {
+        QuarkusMultipartForm form = new QuarkusMultipartForm();
+        for (EntityPart part : parts) {
+            addEntityPartToForm(form, part);
+        }
+        return form;
+    }
+
+    public static void addEntityPartToForm(QuarkusMultipartForm form, EntityPart part) throws IOException {
+        String name = part.getName();
+        String fileName = part.getFileName().orElse(null);
+        MediaType mediaType = part.getMediaType();
+        String mediaTypeStr = mediaType != null ? mediaType.toString() : MediaType.APPLICATION_OCTET_STREAM;
+        Buffer content = Buffer.buffer(part.getContent().readAllBytes());
+
+        if (fileName != null) {
+            boolean isText = mediaType != null && mediaType.getType().equals("text");
+            if (isText) {
+                form.textFileUpload(name, fileName, content, mediaTypeStr);
+            } else {
+                form.binaryFileUpload(name, fileName, content, mediaTypeStr);
+            }
+        } else {
+            boolean isText = mediaType == null || mediaType.equals(MediaType.TEXT_PLAIN_TYPE)
+                    || mediaType.getType().equals("text");
+            if (isText) {
+                form.attribute(name, content.toString(), null);
+            } else {
+                // empty fileName tells PausableHttpPostRequestEncoder to omit filename= from Content-Disposition
+                form.binaryFileUpload(name, "", content, mediaTypeStr);
+            }
+        }
+    }
+
+    private void setEntityRelatedHeaders(MultivaluedMap<String, String> headerMap, Entity<?> entity) {
+        if (entity.getVariant() != null) {
+            Variant v = entity.getVariant();
+            if (!headerMap.containsKey(HttpHeaders.CONTENT_TYPE)) {
+                headerMap.putSingle(HttpHeaders.CONTENT_TYPE, v.getMediaType().toString());
+            }
+            if ((v.getLanguage() != null) && !headerMap.containsKey(HttpHeaders.CONTENT_LANGUAGE)) {
+                headerMap.putSingle(HttpHeaders.CONTENT_LANGUAGE, v.getLanguage().toLanguageTag());
+            }
+            if ((v.getEncoding() != null) && !headerMap.containsKey(HttpHeaders.CONTENT_ENCODING)) {
+                headerMap.putSingle(HttpHeaders.CONTENT_ENCODING, v.getEncoding());
+            }
+        }
+    }
+}

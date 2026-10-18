@@ -1,0 +1,280 @@
+import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
+import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
+import { JsonRpc } from 'jsonrpc';
+import '@vaadin/icon';
+import '@qomponent/qui-badge';
+import { StorageController } from 'storage-controller';
+import { msg, dynamicMsg, updateWhenLocaleChanges } from 'localization';
+
+/**
+ * This component adds a custom link on the Extension card
+ */
+export class QwcExtensionLink extends QwcHotReloadElement {
+
+    static styles = css`
+        :host {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--lumo-contrast-70pct);
+            font-size: var(--lumo-font-size-s);
+            padding: 2px 5px;
+            text-decoration: none;
+            gap: 5px;
+        }
+        .extensionLink {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--lumo-contrast-70pct);
+            font-size: var(--lumo-font-size-s);
+            padding: 4px 8px;
+            cursor: pointer;
+            text-decoration: none;
+            gap: 5px;
+            border-radius: var(--devui-radius-sm, 6px);
+            transition: background-color var(--devui-transition-fast, 0.15s ease),
+                        color var(--devui-transition-fast, 0.15s ease);
+        }
+        .extensionLink:hover {
+            background-color: var(--lumo-primary-color-10pct);
+            color: var(--lumo-primary-text-color);
+        }
+        .icon {
+            padding-right: 5px;
+            width: var(--lumo-icon-size-s);
+            height: var(--lumo-icon-size-s);
+        }
+        .iconAndName {
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-start;
+            align-items: center;
+        }
+    `;
+
+    static properties = {
+        streamingLabelParams: {type: String},
+        webcomponentTagName: {type: String},
+        namespace: {type: String},
+        extensionName: {type: String},
+        iconName: {type: String},
+        colorName: {type: String},
+        tooltipContent: {type: String},
+        displayName: {type: String},
+        path:  {type: String},
+        webcomponent: {type: String},
+        embed: {type: Boolean},
+        externalUrl: {type: String},
+        dynamicUrlMethodName: {type: String},
+        dynamicUrlMethodNameParams: {type: String},
+        staticLabel: {type: String},
+        dynamicLabel: {type: String},
+        streamingLabel: {type: String},
+        _effectiveLabel: {state: true},
+        _effectiveExternalUrl: {state: true},
+        _observer: {state: false}
+    };
+  
+    _staticLabel = null;
+    _dynamicLabel = null;
+    _streamingLabel = null;
+    _effectiveExternalUrl = null;
+
+    set staticLabel(val) {
+        if(!this._staticLabel || (this._staticLabel && this._staticLabel !== val)){
+            let oldVal = this._staticLabel;
+            this._staticLabel = val;
+            this.requestUpdate('staticLabel', oldVal);
+            this.hotReload();
+        }
+    }
+      
+    get staticLabel() { 
+        return this._staticLabel; 
+    }
+
+    set dynamicLabel(val) {
+        if(!this._dynamicLabel || (this._dynamicLabel && this._dynamicLabel != val)){
+            let oldVal = this._dynamicLabel;
+            this._dynamicLabel = val;
+            this.requestUpdate('dynamicLabel', oldVal);
+            this.hotReload();
+        }
+    }
+      
+    get dynamicLabel() { 
+        return this._dynamicLabel; 
+    }
+    
+    set streamingLabel(val) {
+        if(!this._streamingLabel || (this._streamingLabel && this._streamingLabel !== val)){
+            let oldVal = this._streamingLabel;
+            this._streamingLabel = val;
+            this.requestUpdate('streamingLabel', oldVal);
+            this.hotReload();
+        }
+    }
+      
+    get streamingLabel() { 
+        return this._streamingLabel; 
+    }
+
+    constructor() {
+        super();
+        updateWhenLocaleChanges(this);
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        this.hotReload();
+    }
+
+    hotReload(){
+        if(this._observer){
+            this._observer.cancel();
+        }
+        
+        if(this.dynamicUrlMethodName){
+            let jrpc;
+            let methodName = this.dynamicUrlMethodName;
+            if (this.dynamicUrlMethodName.includes(':')) {
+                let parts = this.dynamicUrlMethodName.split(':');
+                methodName = parts[1];
+                jrpc = new JsonRpc(parts[0]);
+            } else {
+                jrpc = new JsonRpc(this.namespace);
+            }
+
+            let params = {};
+            // Parse URL-style parameters from dynamicUrlMethodNameParams (e.g., "key1=value1&key2=value2")
+            if (this.dynamicUrlMethodNameParams) {
+                const urlParams = new URLSearchParams(this.dynamicUrlMethodNameParams);
+                urlParams.forEach((value, key) => params[key] = value);
+            }
+            jrpc[methodName](params).then(jsonRpcResponse => {
+                this._effectiveExternalUrl = jsonRpcResponse.result;
+                this.requestUpdate();
+            });
+        }else {
+            this._effectiveExternalUrl = this.externalUrl;
+        }
+
+        this._effectiveLabel = null;
+        if(this.streamingLabel){
+            this.jsonRpc = new JsonRpc(this);
+            if(this.streamingLabelParams) {
+                let streamingLabelParamsArray = this.streamingLabelParams.split(',');
+                let storageController = new StorageController(this.webcomponentTagName);
+                let params = {};
+                for (const localParam of streamingLabelParamsArray){
+                    let val = storageController.get(localParam);
+                    if(!val)val="";
+                    params[localParam] = val;
+                }
+                this._observer = this.jsonRpc[this.streamingLabel](params).onNext(jsonRpcResponse => {
+                    let oldVal = this._effectiveLabel;
+                    this._effectiveLabel = jsonRpcResponse.result;
+                    this.requestUpdate('_effectiveLabel', oldVal);
+                });
+            }else {
+                this._observer = this.jsonRpc[this.streamingLabel]().onNext(jsonRpcResponse => {
+                    let oldVal = this._effectiveLabel;
+                    this._effectiveLabel = jsonRpcResponse.result;
+                    this.requestUpdate('_effectiveLabel', oldVal);
+                });
+            }
+        }else if(this.dynamicLabel){
+            this.jsonRpc = new JsonRpc(this);
+            this.jsonRpc[this.dynamicLabel]().then(jsonRpcResponse => {
+                let oldVal = this._effectiveLabel;
+                this._effectiveLabel = jsonRpcResponse.result;
+                this.requestUpdate('_effectiveLabel', oldVal);
+            });
+        }else if(this.staticLabel){
+            let oldVal = this._effectiveLabel;
+            this._effectiveLabel = this.staticLabel;
+            this.requestUpdate('_effectiveLabel', oldVal);
+        }else{
+            let oldVal = this._effectiveLabel;
+            this._effectiveLabel = null;
+            this.requestUpdate('_effectiveLabel', oldVal);
+        }
+    }
+
+    _getEffectiveLabel(){
+        if(this.streamingLabel){
+            this.jsonRpc = new JsonRpc(this);
+            this._observer = this.jsonRpc[this.streamingLabel]().onNext(jsonRpcResponse => {
+                this._effectiveLabel = jsonRpcResponse.result;
+            });
+        }else if(this.dynamicLabel){
+            this.jsonRpc = new JsonRpc(this);
+            this.jsonRpc[this.dynamicLabel]().then(jsonRpcResponse => {
+                this._effectiveLabel = jsonRpcResponse.result;
+            });
+        }else if(this.staticLabel){
+            this._effectiveLabel = this.staticLabel;
+        }
+    }
+
+    disconnectedCallback() {
+        if(this._observer){
+            this._observer.cancel();
+        }
+        super.disconnectedCallback();
+    }
+
+    render() {
+        if(!this.embed && this._effectiveExternalUrl) {
+            return html`${this.renderLink(this._effectiveExternalUrl, true, "_blank")}`;
+        }else if(this.path){
+            return html`${this.renderLink(this.path, false, "_self")}`;
+        }
+    }
+    
+    renderLink(linkRef, routerIgnore, target){
+        if(linkRef){
+            return html`
+                <a class="extensionLink" href="${linkRef}" ?router-ignore=${routerIgnore} target="${target}" title="${this.tooltipContent}">
+                    <span class="iconAndName" style="color:${this.colorName};">
+                        <vaadin-icon class="icon" icon="${this.iconName}"></vaadin-icon>
+                        ${dynamicMsg(this.namespace, this.displayName)}
+                    </span>
+                </a>
+                ${this._renderBadge()}
+                ${this._renderExternalIcon()}
+                `;
+        }else{
+            return html`<a class="extensionLink" ?router-ignore=true>
+            <span class="iconAndName">
+                <vaadin-icon class="icon" icon="font-awesome-solid:spinner"></vaadin-icon>
+            </span>
+        </a>${this._renderBadge()}`;
+        }
+    }
+
+    _renderBadge() {
+        if (this._effectiveLabel) {
+            if(this.isHTML(this._effectiveLabel)){
+                return html`${unsafeHTML(this._effectiveLabel)}`;
+            }else{
+                return html`<qui-badge tiny pill><span>${this._effectiveLabel}</span></qui-badge>`;
+            }
+        }
+    }
+
+    _renderExternalIcon() {
+        if (this.embed && this._effectiveExternalUrl) {
+            if (this._effectiveLabel && this.isHTML(this._effectiveLabel)) {
+                return;
+            }
+            return html`<a style='color: var(--lumo-contrast-80pct);' href='${this._effectiveExternalUrl}' target='_blank'><vaadin-icon class='icon' icon='font-awesome-solid:up-right-from-square'></vaadin-icon></a>`;
+        }
+    }
+
+    isHTML = RegExp.prototype.test.bind(/(<([^>]+)>)/i);
+}
+customElements.define('qwc-extension-link', QwcExtensionLink);

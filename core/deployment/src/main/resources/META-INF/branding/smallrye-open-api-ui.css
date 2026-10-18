@@ -1,0 +1,113 @@
+html{
+    box-sizing: border-box;
+    overflow: -moz-scrollbars-vertical;
+    overflow-y: scroll;
+}
+
+#swagger-ui .topbar {
+    padding-top: 5px !important;
+    padding-left: 14px !important;
+    padding-bottom: 5px !important;
+}
+
+#swaggerUiLogoLink {
+    max-width: 50px;
+    min-width: 50px;
+}
+
+#swaggerUiTitleLink {
+    max-width: 120px;
+}
+
+#swaggerUiTitleLink::after {
+    content: "Swagger UI";
+    font-size: 1.25rem;
+    font-weight: normal;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+#swagger-ui .download-url-input {
+    z-index: 1;
+    min-width: 150px;
+    border: 2px solid #4695eb;
+}
+#swagger-ui .download-url-button {
+    z-index: 1;
+    min-width: 30px;
+}
+
+@media (max-width: 1200px) {
+    #swagger-ui .topbar-wrapper .download-url-wrapper::after {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    #swagger-ui .topbar-wrapper .link a::after {
+        display: none;
+    }
+    #swagger-ui .swagger-ui .topbar a {
+        max-width: 50px;
+    }
+    #swagger-ui .download-url-button {
+        padding-left: 5px;
+        padding-right: 5px;
+    }
+}
+
+@media (max-width: 480px) {
+    #swagger-ui .topbar-wrapper .download-url-wrapper {
+        display: none;
+    }
+}
+
+#swagger-ui .topbar .wrapper {
+    max-width: unset !important;
+    padding: unset;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+#swagger-ui .download-url-wrapper {
+    justify-content: left;
+}
+
+#swagger-ui .download-url-input {
+    width: 30%;
+    
+}
+
+#swagger-ui .topbar .wrapper img {
+    border-right: 1px solid darkgrey;
+    padding-right: 10px;
+    margin-right: 10px;
+    height: 30px;
+}
+
+#swagger-ui .download-url-button {
+    background-color: #4695eb;
+    color: white;
+}
+
+*,
+*:before,
+*:after
+{
+    box-sizing: inherit;
+}
+
+body{
+    margin:0;
+    background: #fafafa;
+}
+
+.swagger-ui .topbar {
+   background-color: #343a40;
+}
+
+#footer {
+    font-family:sans-serif;
+    color:#3b4151;
+    font-size:70%;
+    text-align: center;
+}

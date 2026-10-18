@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings
+        xmlns="http://www.hibernate.org/xsd/orm/mapping"
+        version="8.0">
+
+    <package>io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.attributeconverter</package>
+
+    <entity class="MyEntity" access="FIELD" metadata-complete="true">
+        <attributes>
+            <id name="id">
+                <generated-value />
+            </id>
+            <basic name="myData" />
+        </attributes>
+    </entity>
+
+    <!-- For some reason <package> does not apply to converters.
+    See https://hibernate.atlassian.net/browse/HHH-14880 -->
+    <conversion converter="io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.attributeconverter.MyConverter"
+            class="io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.attributeconverter.MyData" auto-apply="true" />
+</entity-mappings>

@@ -1,0 +1,30 @@
+[info] Quarkus application PROD mode build dependency tree:
+[info] io.quarkus.bootstrap.test:app-with-conditional-graph:pom:1
+[info] ├─ io.quarkus.bootstrap.test:quarkus-basil:1 (compile) [+]
+[info] ├─ io.quarkus.bootstrap.test:quarkus-mozzarella:1 (compile) [+]
+[info] ├─ io.quarkus.bootstrap.test:quarkus-salad:1 (compile) [+]
+[info] ├─ io.quarkus.bootstrap.test:quarkus-tomato:1 (compile) [+]
+[info] ├─ io.quarkus.bootstrap.test:quarkus-tomato-deployment:1 (compile)
+[info] │  ├─ io.quarkus.bootstrap.test:quarkus-tomato:1 (compile)
+[info] │  │  └─ io.quarkus.bootstrap.test:test-core-ext:1 (compile)
+[info] │  └─ io.quarkus.bootstrap.test:test-core-ext-deployment:1 (compile)
+[info] │     └─ io.quarkus.bootstrap.test:test-core-ext:1 (compile) [+]
+[info] ├─ io.quarkus.bootstrap.test:quarkus-mozzarella-deployment:1 (compile)
+[info] │  ├─ io.quarkus.bootstrap.test:test-core-ext-deployment:1 (compile) [+]
+[info] │  └─ io.quarkus.bootstrap.test:quarkus-mozzarella:1 (compile)
+[info] │     └─ io.quarkus.bootstrap.test:test-core-ext:1 (compile) [+]
+[info] ├─ io.quarkus.bootstrap.test:quarkus-basil-deployment:1 (compile)
+[info] │  ├─ io.quarkus.bootstrap.test:test-core-ext-deployment:1 (compile) [+]
+[info] │  └─ io.quarkus.bootstrap.test:quarkus-basil:1 (compile)
+[info] │     └─ io.quarkus.bootstrap.test:test-core-ext:1 (compile) [+]
+[info] ├─ io.quarkus.bootstrap.test:quarkus-salad-deployment:1 (compile)
+[info] │  ├─ io.quarkus.bootstrap.test:test-core-ext-deployment:1 (compile) [+]
+[info] │  ├─ io.quarkus.bootstrap.test:quarkus-salad:1 (compile)
+[info] │  │  ├─ io.quarkus.bootstrap.test:test-core-ext:1 (compile) [+]
+[info] │  │  └─ io.quarkus.bootstrap.test:quarkus-caprese:1 (compile)
+[info] │  │     └─ io.quarkus.bootstrap.test:test-core-ext:1 (compile) [+]
+[info] │  └─ io.quarkus.bootstrap.test:quarkus-caprese-deployment:1 (compile)
+[info] │     ├─ io.quarkus.bootstrap.test:quarkus-caprese:1 (compile) [+]
+[info] │     ├─ io.quarkus.bootstrap.test:quarkus-oil:1 (compile) [+]
+[info] │     └─ io.quarkus.bootstrap.test:test-core-ext-deployment:1 (compile) [+]
+[info] └─ io.quarkus.bootstrap.test:quarkus-oil:1 (compile)

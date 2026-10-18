@@ -1,0 +1,70 @@
+package io.quarkus.redis.runtime.datasource;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+
+import io.quarkus.redis.datasource.sortedset.ReactiveZScanCursor;
+import io.quarkus.redis.datasource.sortedset.ScoredValue;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
+
+public class ZScanReactiveCursorImpl<V> extends AbstractRedisCommands implements ReactiveZScanCursor<V> {
+
+    private final byte[] key;
+    private final Type typeOfValue;
+    private long cursor;
+    private boolean initial;
+    private final List<String> extra = new ArrayList<>();
+
+    public <K> ZScanReactiveCursorImpl(RedisCommandExecutor redis, K key, Marshaller marshaller, Type typeOfValue,
+            List<String> extra) {
+        super(redis, marshaller);
+        this.key = marshaller.encode(key);
+        this.cursor = 0;
+        this.initial = true;
+        this.typeOfValue = typeOfValue;
+        this.extra.addAll(extra);
+    }
+
+    @Override
+    public boolean hasNext() {
+        return initial || cursor != 0;
+    }
+
+    @Override
+    public Uni<List<ScoredValue<V>>> next() {
+        initial = false;
+        return execute(RedisCommand.of(Command.ZSCAN).put(key).put(Long.toUnsignedString(cursor)).putAll(extra))
+                .invoke(response -> cursor = Long.parseUnsignedLong(response.get(0).toString()))
+                .map(response -> {
+                    Response array = response.get(1);
+                    V value = null;
+                    List<ScoredValue<V>> list = new ArrayList<>();
+                    for (Response nested : array) {
+                        if (value == null) {
+                            value = marshaller.decode(typeOfValue, nested.toBytes());
+                        } else {
+                            list.add(new ScoredValue<>(value, nested.toDouble()));
+                            value = null;
+                        }
+                    }
+                    return list;
+                });
+    }
+
+    @Override
+    public long cursorId() {
+        return cursor;
+    }
+
+    @Override
+    public Multi<ScoredValue<V>> toMulti() {
+        return Multi.createBy().repeating()
+                .uni(this::next)
+                .whilst(m -> hasNext())
+                .onItem().transformToMultiAndConcatenate(list -> Multi.createFrom().items(list.stream()));
+    }
+}

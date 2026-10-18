@@ -1,0 +1,566 @@
+package io.quarkus.runner.bootstrap;
+
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
+import static io.quarkus.deployment.dev.testing.ApplicationPropertiesUtils.APPLICATION_PROPERTIES;
+import static io.quarkus.deployment.dev.testing.ApplicationPropertiesUtils.writeTempApplicationProperties;
+import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.STARTUP_OVERRIDE;
+
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.BootstrapDebug;
+import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.app.RunningQuarkusApplication;
+import io.quarkus.bootstrap.app.StartupAction;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.builder.BuildResult;
+import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
+import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
+import io.quarkus.deployment.builditem.DevServicesCustomizerBuildItem;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
+import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.MainClassBuildItem;
+import io.quarkus.deployment.builditem.RuntimeApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
+import io.quarkus.deployment.dev.testing.ApplicationPropertiesUtils;
+import io.quarkus.deployment.jvm.JvmModulesReconfigurer;
+import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
+import io.quarkus.dev.appstate.ApplicationStateNotification;
+import io.quarkus.runtime.ApplicationLifecycleManager;
+import io.quarkus.runtime.Quarkus;
+
+public class StartupActionImpl implements StartupAction {
+
+    private static final Logger log = Logger.getLogger(StartupActionImpl.class);
+
+    private final CuratedApplication curatedApplication;
+    private final QuarkusClassLoader runtimeClassLoader;
+    private ClassLoader deploymentClassLoader;
+
+    private final String mainClassName;
+    private final String applicationClassName;
+    private final Map<String, String> devServicesProperties;
+    private final ResolvedJVMRequirements jvmRequirements;
+    private volatile boolean devServicesStarted = false;
+    private final List<DevServicesResultBuildItem> devServicesResults;
+    private final List<DevServicesCustomizerBuildItem> devServicesCustomizers;
+    private final List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems;
+    private final String devServicesNetworkId;
+    private final List<RuntimeApplicationShutdownBuildItem> runtimeApplicationShutdownBuildItems;
+    private final List<Closeable> runtimeCloseTasks = new ArrayList<>();
+    private final DevServicesRegistryBuildItem devServicesRegistry;
+
+    private static final JvmModulesReconfigurer jvmModulesReconfigurer = JvmModulesReconfigurer.getInstance();
+
+    public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult) {
+        this.curatedApplication = curatedApplication;
+
+        this.mainClassName = buildResult.consume(MainClassBuildItem.class).getClassName();
+        this.applicationClassName = buildResult.consume(ApplicationClassNameBuildItem.class).getClassName();
+        this.devServicesProperties = extractDevServicesProperties(buildResult);
+        this.devServicesNetworkId = extractDevServicesNetworkId(buildResult);
+        this.runtimeApplicationShutdownBuildItems = buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class);
+
+        this.devServicesResults = buildResult.consumeMulti(DevServicesResultBuildItem.class);
+        this.devServicesRegistry = buildResult.consumeOptional(DevServicesRegistryBuildItem.class);
+        this.devServicesCustomizers = buildResult.consumeMulti(DevServicesCustomizerBuildItem.class);
+        this.additionalConfigBuildItems = buildResult.consumeMulti(DevServicesAdditionalConfigBuildItem.class);
+        this.deploymentClassLoader = buildResult.getDeploymentClassLoader();
+
+        QuarkusClassLoader baseClassLoader = curatedApplication.getOrCreateBaseRuntimeClassLoader();
+        QuarkusClassLoader runtimeClassLoader;
+
+        //so we have some differences between dev and test mode here.
+        //test mode only has a single class loader, while dev uses a disposable runtime class loader
+        //that is discarded between restarts
+        Map<String, byte[]> transformedClasses = extractTransformedClasses(buildResult);
+        Map<String, byte[]> resources = new HashMap<>(extractGeneratedResources(buildResult, true));
+        if (curatedApplication.isFlatClassPath()) {
+            resources.putAll(extractGeneratedResources(buildResult, false));
+            baseClassLoader.reset(resources, transformedClasses);
+            runtimeClassLoader = baseClassLoader;
+        } else {
+            baseClassLoader.reset(extractGeneratedResources(buildResult, false), transformedClasses);
+            // TODO Need to do recreations in JUnitTestRunner for dev mode case
+            Path tempApplicationProperties = ApplicationPropertiesUtils
+                    .createTempApplicationProperties(STARTUP_OVERRIDE.getName());
+            runtimeClassLoader = curatedApplication.createRuntimeClassLoader(resources, transformedClasses,
+                    List.of(tempApplicationProperties));
+        }
+        this.runtimeClassLoader = runtimeClassLoader;
+        runtimeClassLoader.setStartupAction(this);
+        // Adjust JVM module requirements for this app
+        jvmRequirements = buildResult.consume(ResolvedJVMRequirements.class);
+        // Apply to both base and runtime classloaders, as classes may be loaded from either
+        applyModuleConfigurationToClassloader(baseClassLoader);
+        if (runtimeClassLoader != baseClassLoader) {
+            applyModuleConfigurationToClassloader(runtimeClassLoader);
+        }
+    }
+
+    @Override
+    public void applyModuleConfigurationToClassloader(ClassLoader classLoader) {
+        jvmRequirements.applyJavaModuleConfigurationToRuntime(jvmModulesReconfigurer, classLoader);
+    }
+
+    /**
+     * Runs the application by running the main method of the main class. As this is a blocking method a new
+     * thread is created to run this task.
+     * <p>
+     * Before this method is called an appropriate exit handler will likely need to
+     * be set in {@link io.quarkus.runtime.ApplicationLifecycleManager#setDefaultExitCodeHandler(Consumer)}
+     * of the JVM will exit when the app stops.
+     */
+    public RunningQuarkusApplication runMainClass(String... args) throws Exception {
+        // Start dev services that weren't started in the augmentation phase
+        ensureDevServicesStarted();
+        InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
+
+        //first we hack around class loading in the fork join pool
+        ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
+
+        //this clears any old state, and gets ready to start again
+        ApplicationStateNotification.reset();
+        //we have our class loaders
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(runtimeClassLoader);
+        try {
+            // force init here
+            Class<?> appClass = Class.forName(mainClassName, true, runtimeClassLoader);
+            Method start = appClass.getMethod("main", String[].class);
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Thread.currentThread().setContextClassLoader(runtimeClassLoader);
+                    try {
+                        start.invoke(null, (Object) (args == null ? new String[0] : args));
+                    } catch (Throwable e) {
+                        log.error("Error running Quarkus", e);
+                        //this can happen if we did not make it to application init
+                        if (ApplicationStateNotification.getState() == ApplicationStateNotification.State.INITIAL) {
+                            ApplicationStateNotification.notifyStartupFailed(e);
+                        }
+                    } finally {
+                        for (var i : runtimeApplicationShutdownBuildItems) {
+                            try {
+                                i.getCloseTask().run();
+                            } catch (Throwable t) {
+                                log.error("Failed to run close task", t);
+                            }
+                        }
+                        for (var closeTask : runtimeCloseTasks) {
+                            try {
+                                closeTask.close();
+                            } catch (Throwable t) {
+                                log.error("Failed to run close task", t);
+                            }
+                        }
+                    }
+                }
+            }, "Quarkus Main Thread");
+            t.start();
+            ApplicationStateNotification.waitForApplicationStart();
+            return new RunningQuarkusApplicationImpl(new Closeable() {
+                @Override
+                public void close() throws IOException {
+                    if (Quarkus.isMainThread(Thread.currentThread())) {
+                        CountDownLatch latch = new CountDownLatch(1);
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                doClose();
+                                latch.countDown();
+                            }
+                        }).start();
+                        try {
+                            latch.await();
+                        } catch (InterruptedException e) {
+                            throw new IOException(e);
+                        }
+                    } else {
+                        doClose();
+                    }
+                }
+            }, runtimeClassLoader);
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+    }
+
+    @Override
+    public void addRuntimeCloseTask(Closeable closeTask) {
+        this.runtimeCloseTasks.add(closeTask);
+    }
+
+    private void doClose() {
+        devServicesStarted = false;
+        deploymentClassLoader = null;
+        try {
+            runtimeClassLoader.loadClass(Quarkus.class.getName()).getMethod("blockingExit").invoke(null);
+        } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException
+                | ClassNotFoundException e) {
+            log.error("Failed to stop Quarkus", e);
+        } finally {
+            ForkJoinClassLoading.setForkJoinClassLoader(ClassLoader.getSystemClassLoader());
+            if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST) {
+                //for tests, we just always shut down the curated application, as it is only used once
+                //dev mode might be about to restart, so we leave it
+                curatedApplication.close();
+            }
+        }
+    }
+
+    @Override
+    public int runMainClassBlocking(String... args) throws Exception {
+        // Start dev services that weren't started in the augmentation phase
+        ensureDevServicesStarted();
+        InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
+
+        //first we hack around class loading in the fork join pool
+        ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
+
+        //we have our class loaders
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(runtimeClassLoader);
+        try {
+            AtomicInteger result = new AtomicInteger();
+            Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true, runtimeClassLoader);
+            AtomicBoolean alreadyStarted = new AtomicBoolean();
+            Method setDefaultExitCodeHandler = lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class);
+            Method setAlreadyStartedCallback = lifecycleManager.getDeclaredMethod("setAlreadyStartedCallback", Consumer.class);
+
+            try {
+                setDefaultExitCodeHandler.invoke(null, (Consumer<Integer>) result::set);
+                setAlreadyStartedCallback.invoke(null, (Consumer<Boolean>) alreadyStarted::set);
+                // force init here
+                Class<?> appClass = Class.forName(mainClassName, true, runtimeClassLoader);
+                Method start = appClass.getMethod("main", String[].class);
+                start.invoke(null, (Object) (args == null ? new String[0] : args));
+
+                CountDownLatch latch = new CountDownLatch(1);
+                new Thread(() -> {
+                    try {
+                        Class<?> q = Class.forName(Quarkus.class.getName(), true, runtimeClassLoader);
+                        q.getMethod("blockingExit").invoke(null);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    } finally {
+                        latch.countDown();
+                    }
+                }).start();
+                latch.await();
+
+                if (alreadyStarted.get()) {
+                    //quarkus was not actually started by the main method
+                    //just return
+                    return 0;
+                }
+                return result.get();
+            } finally {
+                setDefaultExitCodeHandler.invoke(null, (Consumer<?>) null);
+                setAlreadyStartedCallback.invoke(null, (Consumer<?>) null);
+            }
+        } finally {
+            for (var closeTask : runtimeCloseTasks) {
+                try {
+                    closeTask.close();
+                } catch (Throwable t) {
+                    log.error("Failed to run close task", t);
+                }
+            }
+            runtimeClassLoader.close();
+            Thread.currentThread().setContextClassLoader(old);
+            for (var i : runtimeApplicationShutdownBuildItems) {
+                try {
+                    i.getCloseTask().run();
+                } catch (Throwable t) {
+                    log.error("Failed to run close task", t);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void overrideConfig(Map<String, String> config) {
+        if (config == null || config.isEmpty()) {
+            return;
+        }
+
+        try {
+            Enumeration<URL> resources = runtimeClassLoader.getResources(APPLICATION_PROPERTIES);
+            while (resources.hasMoreElements()) {
+                URL url = resources.nextElement();
+                if (url.toString().contains(STARTUP_OVERRIDE.getName())) {
+                    writeTempApplicationProperties(url.toURI(), config, STARTUP_OVERRIDE);
+                    break;
+                }
+            }
+        } catch (IOException | URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void ensureDevServicesStarted() {
+        if (devServicesStarted) {
+            return;
+        }
+        devServicesStarted = true;
+        if (devServicesRegistry != null) {
+            if (deploymentClassLoader == null) {
+                throw new IllegalStateException("Dev services cannot be started without a deployment class loader.");
+            }
+            DevServicesRegistryBuildItem.DevServicesStartResult startResult = devServicesRegistry.startAll(
+                    devServicesResults, devServicesCustomizers, additionalConfigBuildItems, deploymentClassLoader);
+
+            devServicesProperties.putAll(startResult.configs());
+            setDevServicesConfigSourceValues(startResult);
+        }
+    }
+
+    private void setDevServicesConfigSourceValues(DevServicesRegistryBuildItem.DevServicesStartResult startResult) {
+        try {
+            Class<?> configSourceClass = runtimeClassLoader
+                    .loadClass("io.quarkus.devservice.runtime.config.DevServicesConfigSource");
+            configSourceClass.getMethod("setConfig", Map.class).invoke(null, startResult.configs());
+        } catch (ClassNotFoundException e) {
+            // devservices runtime module not available
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to set dev services config", e);
+        }
+
+        try {
+            Class<?> overrideConfigSourceClass = runtimeClassLoader
+                    .loadClass("io.quarkus.devservice.runtime.config.DevServicesOverrideConfigSource");
+            overrideConfigSourceClass.getMethod("setConfig", Map.class).invoke(null, startResult.overrideConfigs());
+        } catch (ClassNotFoundException e) {
+            // devservices runtime module not available
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to set dev services override config", e);
+        }
+    }
+
+    /**
+     * Runs the application, and returns a handle that can be used to shut it down.
+     */
+    public RunningQuarkusApplication run(String... args) throws Exception {
+
+        if (runtimeClassLoader.isClosed()) {
+            throw new RuntimeException(
+                    "Internal error: An attempt was made to start an application which had already been started and closed. The affected ClassLoader is "
+                            + runtimeClassLoader);
+
+        }
+        // Start dev services that weren't started in the augmentation phase
+        ensureDevServicesStarted();
+        InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
+
+        //first we hack around class loading in the fork join pool
+        ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
+
+        //we have our class loaders
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(runtimeClassLoader);
+            // force init here
+            Class<?> appClass = Class.forName(applicationClassName, true, runtimeClassLoader);
+            Method start = appClass.getMethod("start", String[].class);
+            Object application = appClass.getDeclaredConstructor().newInstance();
+
+            start.invoke(application, (Object) args);
+
+            Closeable closeTask = (Closeable) application;
+            return new RunningQuarkusApplicationImpl(new Closeable() {
+                @Override
+                public void close() throws IOException {
+                    try {
+                        ClassLoader original = Thread.currentThread().getContextClassLoader();
+                        try {
+                            // some actions during close can still require the runtime classloader
+                            // (e.g. ServiceLoader calls)
+                            Thread.currentThread().setContextClassLoader(runtimeClassLoader);
+                            closeTask.close();
+                            for (var closeTask : runtimeCloseTasks) {
+                                try {
+                                    closeTask.close();
+                                } catch (Throwable t) {
+                                    log.error("Failed to run close task", t);
+                                }
+                            }
+                        } finally {
+                            Thread.currentThread().setContextClassLoader(original);
+                            runtimeClassLoader.close();
+                        }
+                    } finally {
+                        ForkJoinClassLoading.setForkJoinClassLoader(ClassLoader.getSystemClassLoader());
+
+                        for (var i : runtimeApplicationShutdownBuildItems) {
+                            try {
+                                i.getCloseTask().run();
+                            } catch (Throwable t) {
+                                log.error("Failed to run close task", t);
+                            }
+                        }
+                        if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST
+                                && !curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication()) {
+                            //for tests, we just always shut down the curated application, as it is only used once
+                            //dev mode might be about to restart, so we leave it
+                            curatedApplication.close();
+                        }
+                    }
+                }
+            }, runtimeClassLoader);
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof Exception) {
+                throw (Exception) e.getCause();
+            }
+            throw new RuntimeException("Failed to start Quarkus", e.getCause());
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+
+    }
+
+    @Override
+    public QuarkusClassLoader getClassLoader() {
+        return runtimeClassLoader;
+    }
+
+    @Override
+    public Map<String, String> getOrInitialiseDevServicesProperties() {
+        ensureDevServicesStarted();
+        return devServicesProperties;
+    }
+
+    @Override
+    public String getOrInitialiseDevServicesNetworkId() {
+        ensureDevServicesStarted();
+        return devServicesNetworkId;
+    }
+
+    private static Map<String, String> extractDevServicesProperties(BuildResult buildResult) {
+        DevServicesLauncherConfigResultBuildItem result = buildResult
+                .consumeOptional(DevServicesLauncherConfigResultBuildItem.class);
+        if (result == null) {
+            return Map.of();
+        }
+        return new HashMap<>(result.getConfig());
+    }
+
+    private static String extractDevServicesNetworkId(BuildResult buildResult) {
+        DevServicesNetworkIdBuildItem networkId = buildResult.consumeOptional(DevServicesNetworkIdBuildItem.class);
+        if (networkId == null || networkId.getNetworkId() == null) {
+            return null;
+        }
+        return networkId.getNetworkId();
+    }
+
+    private static Map<String, byte[]> extractTransformedClasses(BuildResult buildResult) {
+        Map<String, byte[]> ret = new HashMap<>();
+        TransformedClassesBuildItem transformers = buildResult.consume(TransformedClassesBuildItem.class);
+        for (Set<TransformedClassesBuildItem.TransformedClass> i : transformers.getTransformedClassesByJar().values()) {
+            for (TransformedClassesBuildItem.TransformedClass clazz : i) {
+                if (clazz.getData() != null) {
+                    ret.put(clazz.getFileName(), clazz.getData());
+                }
+            }
+        }
+        return ret;
+    }
+
+    private static Map<String, byte[]> extractGeneratedResources(BuildResult buildResult, boolean applicationClasses) {
+        Map<String, byte[]> data = new HashMap<>();
+        String debugClassesDir = BootstrapDebug.debugClassesDir();
+        String debugSourcesDir = BootstrapDebug.debugSourcesDir();
+        for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
+            if (i.isApplicationClass() == applicationClasses) {
+                data.put(fromClassNameToResourceName(i.internalName()), i.getClassData());
+                if (debugClassesDir != null) {
+                    try {
+                        File debugPath = new File(debugClassesDir);
+                        if (!debugPath.exists()) {
+                            debugPath.mkdir();
+                        }
+                        File classFile = new File(debugPath, i.internalName() + ".class");
+                        classFile.getParentFile().mkdirs();
+                        try (FileOutputStream classWriter = new FileOutputStream(classFile)) {
+                            classWriter.write(i.getClassData());
+                        }
+                        log.infof("Wrote %s", classFile.getAbsolutePath());
+                    } catch (Exception t) {
+                        log.errorf(t, "Failed to write debug class file for %s", i.binaryName());
+                    }
+                }
+
+                if (debugSourcesDir != null) {
+                    try {
+                        if (i.getSource() != null) {
+                            File debugPath = new File(debugSourcesDir);
+                            if (!debugPath.exists()) {
+                                debugPath.mkdir();
+                            }
+                            File sourceFile = new File(debugPath, i.internalName() + ".zig");
+                            sourceFile.getParentFile().mkdirs();
+                            Files.writeString(sourceFile.toPath(), i.getSource(), StandardOpenOption.CREATE);
+                            log.infof("Wrote source %s", sourceFile.getAbsolutePath());
+                        } else {
+                            log.infof("Source not available: %s", i.binaryName());
+                        }
+                    } catch (Exception t) {
+                        log.errorf(t, "Failed to write debug source file for %s", i.binaryName());
+                    }
+                }
+            }
+        }
+        if (applicationClasses) {
+            for (GeneratedResourceBuildItem i : buildResult.consumeMulti(GeneratedResourceBuildItem.class)) {
+                if (i.isExcludeFromDevCL()) {
+                    continue;
+                }
+                data.put(i.getName(), i.getData());
+            }
+            Map<String, StringBuilder> serviceProviders = new LinkedHashMap<>();
+            for (GeneratedServiceProviderBuildItem i : buildResult
+                    .consumeMulti(GeneratedServiceProviderBuildItem.class)) {
+                serviceProviders.computeIfAbsent("META-INF/services/" + i.getServiceInterfaceName(),
+                        k -> new StringBuilder())
+                        .append(i.getImplementationClassName())
+                        .append(System.lineSeparator());
+            }
+            for (Map.Entry<String, StringBuilder> entry : serviceProviders.entrySet()) {
+                data.put(entry.getKey(), entry.getValue().toString().getBytes(StandardCharsets.UTF_8));
+            }
+        }
+        return data;
+    }
+
+}

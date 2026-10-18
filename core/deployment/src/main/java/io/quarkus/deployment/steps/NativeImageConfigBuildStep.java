@@ -1,0 +1,107 @@
+package io.quarkus.deployment.steps;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
+import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.InlineBeforeAnalysisBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.runtime.ssl.SslContextConfiguration;
+
+//TODO: this should go away, once we decide on which one of the API's we want
+class NativeImageConfigBuildStep {
+
+    private static final Logger log = Logger.getLogger(NativeImageConfigBuildStep.class);
+
+    @BuildStep
+    void build(ServiceRegistrar reg,
+            NativeConfig nativeConfig,
+            List<NativeImageConfigBuildItem> nativeImageConfigBuildItems,
+            SslNativeConfigBuildItem sslNativeConfig,
+            List<NativeImageEnableAllCharsetsBuildItem> nativeImageEnableAllCharsetsBuildItems,
+            List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
+            List<InlineBeforeAnalysisBuildItem> inlineBeforeAnalysisBuildItems,
+            BuildProducer<NativeImageProxyDefinitionBuildItem> proxy,
+            BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
+            BuildProducer<NativeImageSystemPropertyBuildItem> nativeImage) {
+        for (NativeImageConfigBuildItem nativeImageConfigBuildItem : nativeImageConfigBuildItems) {
+            for (String i : nativeImageConfigBuildItem.getRuntimeInitializedClasses()) {
+                runtimeInit.produce(new RuntimeInitializedClassBuildItem(i));
+            }
+            for (Map.Entry<String, String> e : nativeImageConfigBuildItem.getNativeImageSystemProperties().entrySet()) {
+                nativeImage.produce(new NativeImageSystemPropertyBuildItem(e.getKey(), e.getValue()));
+            }
+            for (String i : nativeImageConfigBuildItem.getResourceBundles()) {
+                resourceBundle.produce(new NativeImageResourceBundleBuildItem(i));
+            }
+            for (List<String> i : nativeImageConfigBuildItem.getProxyDefinitions()) {
+                proxy.produce(new NativeImageProxyDefinitionBuildItem(i));
+            }
+        }
+
+        // For now, we enable SSL native if it hasn't been explicitly disabled
+        // it's probably overly conservative but it's a first step in the right direction
+        boolean enableSslNative = !sslNativeConfig.isExplicitlyDisabled();
+        reg.forService("io.quarkus.ssl.native-config")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> SslContextConfiguration.setSslNativeEnabled(enableSslNative));
+
+        Boolean sslNativeEnabled = isSslNativeEnabled(sslNativeConfig, extensionSslNativeSupport);
+        nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
+
+        if (!inlineBeforeAnalysisBuildItems.isEmpty()) {
+            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.inline-before-analysis", "true"));
+        }
+
+        if (nativeConfig.monitoring().isPresent()) {
+            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.monitoring",
+                    nativeConfig.monitoring().get().stream().map(x -> x.toString().toLowerCase())
+                            .collect(Collectors.joining(","))));
+        }
+
+        if (!nativeImageEnableAllCharsetsBuildItems.isEmpty()) {
+            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-charsets", "true"));
+        }
+    }
+
+    @BuildStep
+    void reinitHostNameUtil(BuildProducer<RuntimeInitializedClassBuildItem> runtimeReInitClass) {
+        // certain libraries like JBoss logging internally use this class to determine the hostname
+        // of the system. This HostName class computes and stores the hostname as a static field in a class,
+        // so we reinitialize this to re-compute the field (and other related fields) during native application's
+        // runtime
+        runtimeReInitClass.produce(new RuntimeInitializedClassBuildItem("org.wildfly.common.net.HostName"));
+        runtimeReInitClass.produce(new RuntimeInitializedClassBuildItem("io.smallrye.common.net.HostName"));
+    }
+
+    private Boolean isSslNativeEnabled(SslNativeConfigBuildItem sslNativeConfig,
+            List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
+        if (sslNativeConfig.isEnabled()) {
+            return Boolean.TRUE;
+        } else if (!sslNativeConfig.isExplicitlyDisabled() && !extensionSslNativeSupport.isEmpty()) {
+            // we have extensions desiring the SSL support and it's not explicitly disabled
+            if (log.isDebugEnabled()) {
+                log.debugf("Native SSL support enabled due to extensions [%s] requiring it",
+                        extensionSslNativeSupport.stream().map(s -> s.getExtension()).collect(Collectors.joining(", ")));
+            }
+            return Boolean.TRUE;
+        }
+
+        return Boolean.FALSE;
+    }
+}

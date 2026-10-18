@@ -1,0 +1,21 @@
+name: "Quarkus ecosystem CI"
+on:
+  workflow_dispatch:
+  watch:
+    types: [started]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || github.actor == 'quarkusbot' || github.actor == 'quarkiversebot'
+    uses: quarkiverse/.github/.github/workflows/quarkus-ecosystem-ci.yml@main
+    secrets: inherit
+    with:
+      ecosystem_ci_repo_path: quarkiverse-{extension.id}
+      java_version: {java.version}

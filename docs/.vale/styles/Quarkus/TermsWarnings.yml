@@ -1,0 +1,105 @@
+---
+extends: substitution
+ignorecase: true
+level: warning
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
+message: "Consider using '%s' rather than '%s' unless updating existing content that uses the term."
+# source: Quarkus contributor guide
+action:
+  name: replace
+swap:
+  "[bB]asic [aA]uth": Basic HTTP authentication (first instance)|Basic authentication
+  "a lot(?: of)?": many|much
+  "backward(?:-)?compatible": compatible with earlier versions
+  "bottle neck|bottle-neck": bottleneck
+  "bottom(?:-)?left": lower left|lower-left
+  "bottom(?:-)?right": lower right|lower-right
+  "down(?:-)?level": earlier|previous|not at the latest level
+  "non-English(?!-language?)": in languages other than English|non-English-language
+  "pop-up (?:blocker|killer)": software to block pop-up ad windows
+  "top(?:-)?left": upper left|upper right|upper-left|upper-right
+  "top(?:-)?right": upper left|upper right|upper-left|upper-right
+  '(?<!\/)etc(?!\/)': and so on
+  '\b(?:eg|e\.g\.)[\s,]': for example
+  '\b(?:ie|i\.e\.)[\s,]': that is
+  a number of: several
+  abort: cancel|stop
+  administrate: administer
+  all caps: uppercase
+  wish: want
+  and/or: a or b|a, b, or both
+  as long as: if|provided that
+  as per: according to|as|as in
+  back-level: earlier|previous|not at the latest level
+  bi-monthly: bimonthly
+  bi-weekly: biweekly
+  bugfix: bug fix
+  builtin|built in: built-in
+  case insensitive: not case-sensitive
+  colour: color
+  comes with: includes
+  comma delimited|commadelimited: comma-delimited
+  comma-delimited values|comma delimited values|comma separated values: comma-separated values
+  command driven|commanddriven: command-driven
+  command-language: command language
+  deinstall: uninstall
+  deinstallation: uninstallation
+  entitlement: repository|subscription
+  host name: hostname
+  in order to: to
+  in other words: for example|that is
+  in spite of: regardless of|despite
+  in the event: in case|if|when
+  inactivate: deactivate
+  information on: information about
+  insure: ensure
+  keep in mind: remember
+  launch: start|open
+  leave out: omit
+  left-hand: left
+  leverage: use
+  look at: examine
+  lots of|bunches of: many
+  main directory: root directory
+  make sure: verify
+  may: might (for possibility)|can (for ability)
+  OK button: OK
+  okay: OK
+  on-premises|on-prem|on premise: on-premise|on-site|in-house
+  openshift: OpenShift
+  open-source|OpenSource|opensource: open source
+  organise: organize
+  organised: organized
+  organising: organizing
+  over-ride|over ride: override
+  pain point: challenge|concern|difficulty|issue
+  plaintext|plain-text|cleartext|clear text: plain text
+  plug in|plug ins|plug-in: plugin
+  preload: preinstall|preinstalled
+  preloaded: preinstall|preinstalled
+  prepend: add a prefix to
+  pull-down: pulldown
+  recognise: recognize
+  right double-click: double right-click
+  right-hand: right
+  sane: accurate|valid|verified
+  sanity check: test|evaluate|validate|verify
+  sanity test: test|evaluate|validate|verify
+  shift-click: press Shift and click
+  ship: include|included
+  super-user|super user: superuser
+  thus: therefore
+  timeframe|time-frame: time frame
+  trust store: truststore
+  uncheck: clear
+  uncompress: decompress
+  undeploy: remove|withdraw
+  unselect: clear|deselect
+  up-grade|up grade: upgrade
+  upward compatible: compatible with later versions
+  utilize: use
+  versus|vs: compared to
+  via: through|by|from|on|by using
+  wish: want
+  wish|would like: want
+  xsite: cross-site replication

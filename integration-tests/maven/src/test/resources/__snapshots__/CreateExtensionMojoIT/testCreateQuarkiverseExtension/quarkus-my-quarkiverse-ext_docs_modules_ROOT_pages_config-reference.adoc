@@ -1,0 +1,5 @@
+= Configuration Reference
+
+include::./includes/attributes.adoc[]
+
+include::includes/quarkus-my-quarkiverse-ext.adoc[leveloffset=+1, opts=optional]

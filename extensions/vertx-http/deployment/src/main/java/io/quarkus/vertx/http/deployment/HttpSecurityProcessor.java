@@ -1,0 +1,1072 @@
+package io.quarkus.vertx.http.deployment;
+
+import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
+import static io.quarkus.arc.processor.DotNames.SINGLETON;
+import static io.quarkus.security.spi.ClassSecurityAnnotationBuildItem.useClassLevelSecurity;
+import static io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem.toTargetName;
+import static io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem.isExcludedAnnotationTarget;
+import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.BASIC_AUTH_ANNOTATION_DETECTED;
+import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED;
+import static java.util.stream.Collectors.toMap;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
+
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
+
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.TypeVariable;
+import org.objectweb.asm.Opcodes;
+
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.builder.item.EmptyBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
+import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassTransformer;
+import io.quarkus.gizmo.DescriptorUtils;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.security.Authenticated;
+import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
+import io.quarkus.security.spi.AdditionalSecurityAnnotationBuildItem;
+import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
+import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
+import io.quarkus.security.spi.CurrentIdentityAssociationClassBuildItem;
+import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
+import io.quarkus.security.spi.SecurityTransformer;
+import io.quarkus.security.spi.SecurityTransformerBuildItem;
+import io.quarkus.security.spi.runtime.MethodDescription;
+import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
+import io.quarkus.vertx.core.deployment.IgnoredContextLocalDataKeysBuildItem;
+import io.quarkus.vertx.core.runtime.security.VertxBlockingSecurityExecutor;
+import io.quarkus.vertx.http.runtime.RouteHandler;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.cors.CORSConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage;
+import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.DuplicatedContextSecurityIdentityAssociation;
+import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
+import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
+import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.AuthenticationHandler;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
+import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
+import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
+import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
+import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
+import io.quarkus.vertx.http.security.AuthorizationPolicy;
+import io.quarkus.vertx.http.security.CSRF;
+import io.vertx.core.http.ClientAuth;
+import io.vertx.ext.web.RoutingContext;
+
+public class HttpSecurityProcessor {
+
+    private static final DotName AUTH_MECHANISM_NAME = DotName.createSimple(HttpAuthenticationMechanism.class);
+    private static final DotName BASIC_AUTH_ANNOTATION_NAME = DotName.createSimple(BasicAuthentication.class);
+    private static final String KOTLIN_SUSPEND_IMPL_SUFFIX = "$suspendImpl";
+    static final DotName AUTHORIZATION_POLICY = DotName.createSimple(AuthorizationPolicy.class);
+
+    @Consume(HttpSecurityConfigSetupCompleteBuildItem.class)
+    @Produce(ServiceStartBuildItem.class)
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void initFormAuth(VertxWebRouterBuildItem vertxWebRouterBuildItem, HttpSecurityRecorder recorder,
+            VertxHttpBuildTimeConfig buildTimeConfig) {
+        if (!buildTimeConfig.auth().proactive()) {
+            var httpRouter = vertxWebRouterBuildItem.getHttpRouter();
+            recorder.formAuthPostHandler(httpRouter);
+        }
+    }
+
+    @BuildStep
+    void makeRequiredBeansUnremovable(BuildProducer<UnremovableBeanBuildItem> unremovableBeanProducer,
+            Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            unremovableBeanProducer.produce(UnremovableBeanBuildItem
+                    .beanTypes(io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism.class));
+        }
+    }
+
+    // NOTE: registering the synthetic bean and defining its service action are deliberately kept in two
+    // separate build steps (this one and defineFormAuthService below); they must not be merged.
+    // This step produces a SyntheticBeanBuildItem, which ARC's synthetic-bean pipeline consumes to build
+    // the bean container, so it is *upstream* of BeanContainerBuildItem. defineFormAuthService consumes
+    // HttpSecurityInitCompleteBuildItem, which initializeHttpSecurity produces after consuming
+    // BeanContainerBuildItem, so it is *downstream* of the container. A single step doing both would be
+    // both upstream and downstream of the container build, forming a build-step cycle through the synthetic
+    // bean pipeline. The basic-auth path (initBasicAuth / defineBasicAuthService) is split for the same
+    // reason. See HttpSecurityInitCompleteBuildItem.
+    @BuildStep
+    void registerFormAuthMechanism(BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
+            VertxHttpBuildTimeConfig buildTimeConfig) {
+        if (buildTimeConfig.auth().form()) {
+            syntheticBeanProducer.produce(SyntheticBeanBuildItem
+                    .configure(FormAuthenticationMechanism.class)
+                    .types(io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism.class)
+                    .scope(Singleton.class)
+                    .setRuntimeInit()
+                    .unremovable()
+                    .serviceValue(FormAuthenticationMechanism.class)
+                    .done());
+        }
+    }
+
+    // Kept separate from registerFormAuthMechanism to avoid a build-step cycle through ARC's synthetic bean
+    // pipeline; see the note on registerFormAuthMechanism above.
+    @Consume(HttpSecurityInitCompleteBuildItem.class) // service ordering: remove when bytecode recorders are removed
+    @Produce(ServiceStartBuildItem.class)
+    @BuildStep
+    void defineFormAuthService(ServiceRegistrar reg, VertxHttpBuildTimeConfig buildTimeConfig) {
+        if (buildTimeConfig.auth().form()) {
+            reg
+                    .forService(FormAuthenticationMechanism.class)
+                    .onStart(ctx -> HttpSecurityConfiguration.get().getFormAuthenticationMechanism());
+        }
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem initMtlsClientAuth(VertxHttpBuildTimeConfig buildTimeConfig) {
+        if (isMtlsClientAuthenticationEnabled(buildTimeConfig)) {
+            return AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(MtlsAuthenticationMechanism.class)
+                    .setDefaultScope(SINGLETON).build();
+        }
+        return null;
+    }
+
+    @Consume(HttpSecurityConfigSetupCompleteBuildItem.class)
+    @BuildStep
+    void setMtlsCertificateRoleProperties(ServiceRegistrar reg, Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            reg
+                    .forService("io.quarkus.vertx.http.security.mtls-cert-roles")
+                    .require(io.quarkus.vertx.http.runtime.VertxHttpConfig.class)
+                    .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                    .onStart((ctx, httpConfig) -> HttpSecurityRecorder.setMtlsCertificateRoleProperties(httpConfig));
+        }
+    }
+
+    @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
+    void detectBasicAuthImplicitlyRequired(
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem,
+            ApplicationIndexBuildItem applicationIndexBuildItem,
+            BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
+            List<EagerSecurityInterceptorBindingBuildItem> eagerSecurityInterceptorBindings) {
+        if (makeBasicAuthMechDefaultBean(httpBuildTimeConfig)) {
+            var appIndex = applicationIndexBuildItem.getIndex();
+            boolean noCustomAuthMechanismsDetected = beanRegistrationPhaseBuildItem
+                    .getContext()
+                    .beans()
+                    .filter(b -> b.hasType(AUTH_MECHANISM_NAME))
+                    .filter(BeanInfo::isClassBean)
+                    .filter(b -> appIndex.getClassByName(b.getBeanClass()) != null)
+                    .isEmpty();
+            // we can't decide whether custom mechanisms support basic auth or not
+            if (noCustomAuthMechanismsDetected) {
+                systemPropertyProducer
+                        .produce(new SystemPropertyBuildItem(TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED, Boolean.TRUE.toString()));
+                if (!eagerSecurityInterceptorBindings.isEmpty()) {
+                    boolean basicAuthAnnotationUsed = eagerSecurityInterceptorBindings
+                            .stream()
+                            .map(EagerSecurityInterceptorBindingBuildItem::getAnnotationBindings)
+                            .flatMap(Arrays::stream)
+                            .anyMatch(BASIC_AUTH_ANNOTATION_NAME::equals);
+                    // @BasicAuthentication is used, hence the basic authentication is required
+                    if (basicAuthAnnotationUsed) {
+                        systemPropertyProducer
+                                .produce(new SystemPropertyBuildItem(BASIC_AUTH_ANNOTATION_DETECTED, Boolean.TRUE.toString()));
+                    }
+                }
+            }
+        }
+    }
+
+    @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
+    SyntheticBeanBuildItem initBasicAuth(
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
+
+        if (httpBuildTimeConfig.auth().basic().isPresent() && httpBuildTimeConfig.auth().basic().get()) {
+            securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
+        }
+
+        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+                .configure(BasicAuthenticationMechanism.class)
+                .types(io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism.class)
+                .scope(Singleton.class)
+                .serviceValue(BasicAuthenticationMechanism.class)
+                .setRuntimeInit()
+                .unremovable();
+        if (makeBasicAuthMechDefaultBean(httpBuildTimeConfig)) {
+            configurator.defaultBean();
+        }
+
+        return configurator.done();
+    }
+
+    @Consume(HttpSecurityInitCompleteBuildItem.class) // service ordering: remove when bytecode recorders are removed
+    @Produce(ServiceStartBuildItem.class)
+    @BuildStep
+    void defineBasicAuthService(ServiceRegistrar reg, VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
+        if (applicationBasicAuthRequired(httpBuildTimeConfig, managementBuildTimeConfig)) {
+            reg
+                    .forService(BasicAuthenticationMechanism.class)
+                    .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                    .onStart(ctx -> HttpSecurityConfiguration.get().getBasicAuthenticationMechanism());
+        }
+    }
+
+    private static boolean makeBasicAuthMechDefaultBean(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        return !httpBuildTimeConfig.auth().form() && !isMtlsClientAuthenticationEnabled(httpBuildTimeConfig)
+                && !httpBuildTimeConfig.auth().basic().orElse(false);
+    }
+
+    private static boolean applicationBasicAuthRequired(VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
+        //basic auth explicitly disabled
+        if (httpBuildTimeConfig.auth().basic().isPresent() && !httpBuildTimeConfig.auth().basic().get()) {
+            return false;
+        }
+        if (!httpBuildTimeConfig.auth().basic().orElse(false)) {
+            if ((httpBuildTimeConfig.auth().form() || isMtlsClientAuthenticationEnabled(httpBuildTimeConfig))
+                    || managementBuildTimeConfig.auth().basic().orElse(false)) {
+                //if form auth is enabled and we are not then we don't install
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    @BuildStep
+    void setupAuthenticationMechanisms(
+            ServiceRegistrar reg,
+            BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
+            BuildProducer<AdditionalBeanBuildItem> beanProducer,
+            Optional<HttpAuthenticationHandlerBuildItem> authenticationHandlerBuildItem,
+            Capabilities capabilities,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
+        if (!httpBuildTimeConfig.auth().form() && httpBuildTimeConfig.auth().basic().orElse(false)) {
+            securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
+        }
+
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            beanProducer
+                    .produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                            .addBeanClass(VertxBlockingSecurityExecutor.class).setDefaultScope(APPLICATION_SCOPED).build());
+            beanProducer
+                    .produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(HttpAuthenticator.class)
+                            .addBeanClass(HttpAuthorizer.class).build());
+            beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(PathMatchingHttpSecurityPolicy.class));
+
+            // authentication filter: the AuthenticationHandler IS a Handler<RoutingContext>
+            reg
+                    .forService(RouteHandler.class, "io.quarkus.vertx.http.security.authentication-filter")
+                    .atPhase(Phase.STATIC_INIT)
+                    .require(AuthenticationHandler.class)
+                    .onStart((ctx, handler) -> handler::handle);
+            RouteHandler authHandler = reg.getRecorderProxy(RouteHandler.class,
+                    "io.quarkus.vertx.http.security.authentication-filter");
+            filterBuildItemBuildProducer
+                    .produce(new FilterBuildItem(authHandler, SecurityHandlerPriorities.AUTHENTICATION));
+
+            // authorization filter
+            reg
+                    .forService(RouteHandler.class, "io.quarkus.vertx.http.security.permission-check-filter")
+                    .atPhase(Phase.STATIC_INIT)
+                    .onStart(ctx -> HttpSecurityRecorder.permissionCheckHandler()::handle);
+            RouteHandler permHandler = reg.getRecorderProxy(RouteHandler.class,
+                    "io.quarkus.vertx.http.security.permission-check-filter");
+            filterBuildItemBuildProducer
+                    .produce(new FilterBuildItem(permHandler, SecurityHandlerPriorities.AUTHORIZATION));
+        }
+    }
+
+    @BuildStep
+    void createHttpAuthenticationHandler(ServiceRegistrar reg, Capabilities capabilities,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            BuildProducer<HttpAuthenticationHandlerBuildItem> authenticationHandlerProducer) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            boolean proactive = httpBuildTimeConfig.auth().proactive();
+            boolean propagateSecurityIdentity = httpBuildTimeConfig.auth().propagateSecurityIdentity();
+            reg
+                    .forService(AuthenticationHandler.class)
+                    .atPhase(Phase.STATIC_INIT)
+                    .onStart(ctx -> new AuthenticationHandler(proactive, propagateSecurityIdentity));
+            authenticationHandlerProducer.produce(new HttpAuthenticationHandlerBuildItem(
+                    reg.staticInitServiceAsRuntimeValue(AuthenticationHandler.class)));
+        }
+    }
+
+    @BuildStep
+    void prepareCsrfConfigBuilder(Capabilities capabilities, Optional<CsrfBuilderClassBuildItem> csrfBuilderClassBuildItem,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerProducer) {
+        if (csrfBuilderClassBuildItem.isPresent()) {
+            final Class<? extends CSRF.Builder> csrfBuilderClass = csrfBuilderClassBuildItem.get().csrfBuilderClass;
+            bytecodeTransformerProducer
+                    .produce(new BytecodeTransformerBuildItem(CSRF.class.getName(), (cls, classVisitor) -> {
+                        var classTransformer = new ClassTransformer(cls);
+                        classTransformer.removeMethod("builder", CSRF.Builder.class);
+                        try (var mc = classTransformer.addMethod("builder", CSRF.Builder.class)) {
+                            mc.setModifiers(ACC_PUBLIC | ACC_STATIC);
+                            if (capabilities.isPresent(Capability.SECURITY)) {
+                                // static Builder builder() {
+                                //     return new io.quarkus.something.CsfrBuilder();
+                                // }
+                                var builderInstance = mc.newInstance(MethodDescriptor.ofConstructor(csrfBuilderClass));
+                                mc.returnValue(mc.checkCast(builderInstance, CSRF.Builder.class));
+                            } else {
+                                // static Builder builder() {
+                                //     throw new IllegalStateException("Please add the `quarkus-security` extension");
+                                // }
+                                mc.throwException(IllegalStateException.class, "Please add the `quarkus-security` extension");
+                            }
+                        }
+                        return classTransformer.applyTo(classVisitor);
+                    }));
+        }
+    }
+
+    @Consume(TlsRegistryBuildItem.class) // we may need to register a TLS configuration for the mTLS
+    // the mTLS auth event fired from prepareHttpSecurityConfiguration reads the TlsConfigurationRegistry
+    // synthetic bean, which is initialized during RUNTIME_INIT; ensure that init has run first
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    @Produce(PreRouterFinalizationBuildItem.class)
+    @Produce(HttpSecurityInitCompleteBuildItem.class) // service ordering: remove when bytecode recorders are removed
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    HttpSecurityConfigSetupCompleteBuildItem initializeHttpSecurity(
+            Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
+            HttpSecurityRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
+            ShutdownContextBuildItem shutdown) {
+        if (authenticationHandler.isPresent()) {
+            RuntimeValue<CORSConfig> programmaticCorsConfig = recorder.prepareHttpSecurityConfiguration(shutdown);
+            recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler, beanContainerBuildItem.getValue());
+            return new HttpSecurityConfigSetupCompleteBuildItem(programmaticCorsConfig);
+        }
+        return new HttpSecurityConfigSetupCompleteBuildItem(null);
+    }
+
+    @BuildStep
+    List<HttpAuthMechanismAnnotationBuildItem> registerHttpAuthMechanismAnnotations() {
+        return List.of(
+                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(BasicAuthentication.class),
+                        BasicAuthentication.AUTH_MECHANISM_SCHEME),
+                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(FormAuthentication.class),
+                        FormAuthentication.AUTH_MECHANISM_SCHEME),
+                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(MTLSAuthentication.class),
+                        MTLSAuthentication.AUTH_MECHANISM_SCHEME));
+    }
+
+    @BuildStep
+    void registerAdditionalIndexedClassesBuildItem(Capabilities capabilities,
+            List<HttpAuthMechanismAnnotationBuildItem> additionalHttpAuthMechAnnotations,
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClassesProducer) {
+        // we need the combined index to contain authentication annotations in order to check for repeatable annotations
+        // (we do not hardcode knowledge which annotation is repeatable and which one isn't, so we check all)
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            additionalIndexedClassesProducer.produce(new AdditionalIndexedClassesBuildItem(AUTH_MECHANISM_NAME.toString()));
+            additionalIndexedClassesProducer.produce(new AdditionalIndexedClassesBuildItem(
+                    additionalHttpAuthMechAnnotations.stream().map(i -> i.annotationName.toString()).toArray(String[]::new)));
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void registerAuthMechanismSelectionInterceptor(Capabilities capabilities, VertxHttpBuildTimeConfig buildTimeConfig,
+            BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer, HttpSecurityRecorder recorder,
+            BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredMethodsProducer,
+            BuildProducer<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckProducer,
+            List<ClassSecurityAnnotationBuildItem> classSecurityAnnotations,
+            List<HttpAuthMechanismAnnotationBuildItem> additionalHttpAuthMechAnnotations,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
+        if (capabilities.isMissing(Capability.SECURITY)) {
+            return;
+        }
+        var index = combinedIndexBuildItem.getIndex();
+        SecurityTransformer securityTransformer = SecurityTransformerBuildItem.createSecurityTransformer(index,
+                securityTransformerBuildItem);
+
+        // methods annotated with @HttpAuthenticationMechanism that we should additionally secure;
+        // when there is no other RBAC annotation applied
+        // then by default @HttpAuthenticationMechanism("any-value") == @Authenticated
+        Set<MethodInfo> methodsWithoutRbacAnnotations = new HashSet<>();
+        Set<ClassInfo> classLevelSecurityClasses = new HashSet<>();
+
+        AtomicBoolean hasAnnotatedTargets = new AtomicBoolean(false);
+        Predicate<AnnotationTarget> isExcludedAnnotationTarget = isExcludedAnnotationTarget(additionalHttpAuthMechAnnotations);
+        Predicate<ClassInfo> useClassLevelSecurity = useClassLevelSecurity(classSecurityAnnotations);
+        DotName[] mechNames = Stream
+                .concat(Stream.of(AUTH_MECHANISM_NAME), additionalHttpAuthMechAnnotations.stream().map(s -> s.annotationName))
+                .flatMap(mechName -> {
+                    var instances = index.getAnnotationsWithRepeatable(mechName, index);
+                    if (!instances.isEmpty()) {
+                        if (!hasAnnotatedTargets.get() && instances.stream().map(AnnotationInstance::target)
+                                .filter(Objects::nonNull).anyMatch(Predicate.not(isExcludedAnnotationTarget))) {
+                            hasAnnotatedTargets.set(true);
+                        }
+                        // e.g. collect @Basic without @RolesAllowed, @PermissionsAllowed, ..
+                        methodsWithoutRbacAnnotations
+                                .addAll(collectMethodsWithoutRbacAnnotation(collectAnnotatedMethods(instances),
+                                        securityTransformer));
+                        methodsWithoutRbacAnnotations
+                                .addAll(collectClassMethodsWithoutRbacAnnotation(collectAnnotatedClasses(instances,
+                                        useClassLevelSecurity.negate()), securityTransformer));
+                        // class-level security; this registers @Authenticated if no RBAC is explicitly declared
+                        collectAnnotatedClasses(instances, useClassLevelSecurity).stream()
+                                .filter(Predicate.not(securityTransformer::hasSecurityAnnotation))
+                                .filter(Predicate.not(isExcludedAnnotationTarget))
+                                .forEach(classLevelSecurityClasses::add);
+
+                        return Stream.of(mechName);
+                    } else {
+                        return Stream.empty();
+                    }
+                }).toArray(DotName[]::new);
+
+        if (mechNames.length > 0) {
+            classLevelSecurityClasses.forEach(c -> registerClassSecurityCheckProducer.produce(
+                    new RegisterClassSecurityCheckBuildItem(c.name(), AnnotationInstance
+                            .builder(Authenticated.class).buildWithTarget(c))));
+
+            if (hasAnnotatedTargets.get()) {
+                validateAuthMechanismAnnotationUsage(capabilities, buildTimeConfig, mechNames);
+            }
+
+            // register method interceptor that will be run before security checks
+            Map<String, String> knownBindingValues = additionalHttpAuthMechAnnotations.stream()
+                    .collect(Collectors.toUnmodifiableMap(item -> item.annotationName.toString(),
+                            item -> item.authMechanismScheme));
+            bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(
+                    recorder.authMechanismSelectionInterceptorCreator(), knownBindingValues, mechNames));
+            recorder.selectAuthMechanismViaAnnotation();
+
+            // make all @HttpAuthenticationMechanism annotation targets authenticated by default
+            if (!methodsWithoutRbacAnnotations.isEmpty()) {
+                methodsWithoutRbacAnnotations.removeIf(isExcludedAnnotationTarget);
+                if (!methodsWithoutRbacAnnotations.isEmpty()) {
+                    // @RolesAllowed("**") == @Authenticated
+                    additionalSecuredMethodsProducer.produce(
+                            new AdditionalSecuredMethodsBuildItem(methodsWithoutRbacAnnotations, Optional.of(List.of("**"))));
+                }
+            }
+        }
+    }
+
+    @BuildStep
+    void collectInterceptedMethods(CombinedIndexBuildItem indexBuildItem,
+            List<EagerSecurityInterceptorBindingBuildItem> interceptorBindings,
+            List<ClassSecurityAnnotationBuildItem> classSecurityAnnotations,
+            BuildProducer<EagerSecurityInterceptorMethodsBuildItem> methodsProducer,
+            BuildProducer<EagerSecurityInterceptorClassesBuildItem> classesProducer) {
+        if (!interceptorBindings.isEmpty()) {
+            Map<DotName, Boolean> bindingToRequiresSecCheckFlag = interceptorBindings.stream()
+                    .flatMap(ib -> Arrays
+                            .stream(ib.getAnnotationBindings())
+                            .map(b -> Map.entry(b, ib.requiresSecurityCheck())))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            var index = indexBuildItem.getIndex();
+            Map<AnnotationTarget, List<EagerSecurityInterceptorBindingBuildItem>> cache = new HashMap<>();
+            Map<DotName, Map<String, List<MethodInfo>>> result = new HashMap<>();
+            Predicate<ClassInfo> useClassLevelSecurity = useClassLevelSecurity(classSecurityAnnotations);
+            // these are classes with class-level security, where interceptor runs once per class, not on every method
+            Map<DotName, Map<String, Set<String>>> classResult = new HashMap<>();
+            addInterceptedEndpoints(interceptorBindings, index, AnnotationTarget.Kind.METHOD, result, cache,
+                    useClassLevelSecurity, classResult);
+            addInterceptedEndpoints(interceptorBindings, index, AnnotationTarget.Kind.CLASS, result, cache,
+                    useClassLevelSecurity, classResult);
+            if (!result.isEmpty()) {
+                result.forEach((annotationBinding, bindingValueToInterceptedMethods) -> methodsProducer.produce(
+                        new EagerSecurityInterceptorMethodsBuildItem(bindingValueToInterceptedMethods, annotationBinding,
+                                bindingToRequiresSecCheckFlag.get(annotationBinding))));
+            }
+            if (!classResult.isEmpty()) {
+                classResult.forEach((annotationBinding, bindingValueToInterceptedClasses) -> classesProducer
+                        .produce(new EagerSecurityInterceptorClassesBuildItem(bindingValueToInterceptedClasses,
+                                annotationBinding)));
+            }
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void produceEagerSecurityInterceptorStorage(HttpSecurityRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> producer,
+            List<EagerSecurityInterceptorBindingBuildItem> interceptorBindings,
+            List<EagerSecurityInterceptorClassesBuildItem> interceptorClasses,
+            List<EagerSecurityInterceptorMethodsBuildItem> interceptorMethods) {
+        if (!interceptorMethods.isEmpty() || !interceptorClasses.isEmpty()) {
+            final var bindingNameToInterceptorCreator = interceptorBindings
+                    .stream()
+                    .flatMap(binding -> Arrays.stream(binding.getAnnotationBindings())
+                            .map(name -> Map.entry(name, binding.getInterceptorCreator())))
+                    .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+            final var methodCache = new HashMap<MethodInfo, RuntimeValue<MethodDescription>>();
+            final var methodDescriptionToInterceptor = new LinkedHashMap<RuntimeValue<MethodDescription>, Consumer<RoutingContext>>();
+            for (EagerSecurityInterceptorMethodsBuildItem interceptorMethod : interceptorMethods) {
+                var interceptorCreator = bindingNameToInterceptorCreator.get(interceptorMethod.interceptorBinding);
+                for (Map.Entry<String, List<MethodInfo>> e : interceptorMethod.bindingValueToInterceptedMethods.entrySet()) {
+                    var annotationValue = e.getKey();
+                    var annotatedMethods = e.getValue();
+                    var interceptor = recorder.createEagerSecurityInterceptor(interceptorCreator, annotationValue);
+                    for (MethodInfo method : annotatedMethods) {
+                        // transform method info to description
+                        final RuntimeValue<MethodDescription> methodDescription = methodCache
+                                .computeIfAbsent(method, mi -> {
+                                    String[] paramTypes = mi.parameterTypes().stream().map(t -> t.name().toString())
+                                            .toArray(String[]::new);
+                                    String className = mi.declaringClass().name().toString();
+                                    String methodName = mi.name();
+                                    return recorder.createMethodDescription(className, methodName, paramTypes);
+                                });
+
+                        // add (methodDesc -> interceptor) to the storage
+                        methodDescriptionToInterceptor.compute(methodDescription,
+                                (desc, existingInterceptor) -> existingInterceptor == null ? interceptor
+                                        : recorder.compoundSecurityInterceptor(interceptor, existingInterceptor));
+                    }
+                }
+            }
+
+            final var classNameToInterceptor = new HashMap<String, Consumer<RoutingContext>>();
+            for (EagerSecurityInterceptorClassesBuildItem interceptorClass : interceptorClasses) {
+                var interceptorCreator = bindingNameToInterceptorCreator.get(interceptorClass.interceptorBinding);
+                interceptorClass.bindingValueToInterceptedClasses.forEach((annotationValue, annotatedClasses) -> {
+                    Consumer<RoutingContext> interceptor = recorder.createEagerSecurityInterceptor(interceptorCreator,
+                            annotationValue);
+                    for (String annotatedClass : annotatedClasses) {
+                        // add (class name -> interceptor) to the storage
+                        classNameToInterceptor.compute(annotatedClass,
+                                (c, existingInterceptor) -> existingInterceptor == null ? interceptor
+                                        : recorder.compoundSecurityInterceptor(interceptor, existingInterceptor));
+                    }
+                });
+            }
+
+            producer.produce(SyntheticBeanBuildItem
+                    .configure(EagerSecurityInterceptorStorage.class)
+                    .scope(ApplicationScoped.class)
+                    .supplier(recorder.createSecurityInterceptorStorage(methodDescriptionToInterceptor, classNameToInterceptor))
+                    .unremovable()
+                    .done());
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void addRoutingCtxToSecurityEventsForCdiBeans(HttpSecurityRecorder recorder, Capabilities capabilities,
+            BuildProducer<AdditionalSecurityConstrainerEventPropsBuildItem> producer) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            producer.produce(
+                    new AdditionalSecurityConstrainerEventPropsBuildItem(recorder.createAdditionalSecEventPropsSupplier()));
+        }
+    }
+
+    private static Map<MethodInfo, String> gatherAuthorizationPolicyInstances(CombinedIndexBuildItem combinedIndex,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
+        SecurityTransformer securityTransformer = SecurityTransformerBuildItem.createSecurityTransformer(
+                combinedIndex.getIndex(), securityTransformerBuildItem);
+        var methodToPolicy = securityTransformer
+                // @AuthorizationPolicy(name = "policy-name")
+                .getAnnotations(AUTHORIZATION_POLICY)
+                .stream()
+                .flatMap(ai -> {
+                    var policyName = ai.value("name").asString();
+                    if (policyName.isBlank()) {
+                        var targetName = ai.target().kind() == AnnotationTarget.Kind.CLASS
+                                ? ai.target().asClass().name().toString()
+                                : ai.target().asMethod().name();
+                        throw new RuntimeException("""
+                                The @AuthorizationPolicy annotation placed on '%s' must not have blank policy name.
+                                """.formatted(targetName));
+                    }
+                    return getPolicyTargetEndpointCandidates(ai.target(), securityTransformer)
+                            .map(mi -> Map.entry(mi, policyName));
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return Collections.unmodifiableMap(methodToPolicy);
+    }
+
+    @BuildStep
+    AdditionalSecurityAnnotationBuildItem registerAuthorizationPolicyAnnotation() {
+        return new AdditionalSecurityAnnotationBuildItem(AUTHORIZATION_POLICY);
+    }
+
+    /**
+     * Implements {@link io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage} as a bean.
+     * If no {@link AuthorizationPolicy} are detected, generated bean will look like this:
+     *
+     * <pre>
+     * {@code
+     * public class AuthorizationPolicyStorage_Imp extends AuthorizationPolicyStorage {
+     *     AuthorizationPolicyStorage_Imp() {
+     *         super();
+     *     }
+     *
+     *     @Override
+     *     protected Map<MethodDescription, String> getMethodToPolicyName() {
+     *         return Map.of();
+     *     }
+     * }
+     * }
+     * </pre>
+     *
+     * On the other hand, if {@link AuthorizationPolicy} is detected, <code>getMethodToPolicyName</code> returns
+     * method descriptions of detected annotation instances.
+     */
+    @BuildStep
+    void generateAuthorizationPolicyStorage(BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer,
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem,
+            Capabilities capabilities, CombinedIndexBuildItem combinedIndexBuildItem) {
+        if (!capabilities.isPresent(Capability.SECURITY)) {
+            return;
+        }
+
+        // provide support for JAX-RS HTTP Security Policies to extensions that supports them
+        if (capabilities.isPresent(Capability.REST) || capabilities.isPresent(Capability.RESTEASY)) {
+            // generates:
+            // public class AuthorizationPolicyStorage_Impl extends AuthorizationPolicyStorage
+            GeneratedBeanGizmoAdaptor beanAdaptor = new GeneratedBeanGizmoAdaptor(generatedBeanProducer);
+            var generatedClassName = AuthorizationPolicyStorage.class.getName() + "_Impl";
+            try (ClassCreator cc = ClassCreator.builder().className(generatedClassName)
+                    .superClass(AuthorizationPolicyStorage.class).classOutput(beanAdaptor).build()) {
+                cc.addAnnotation(Singleton.class);
+
+                // generate matching constructor that calls the super
+                var constructor = cc.getConstructorCreator(new String[] {});
+                constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AuthorizationPolicyStorage.class),
+                        constructor.getThis());
+
+                var mapDescriptorType = DescriptorUtils.typeToString(
+                        ParameterizedType.create(Map.class, Type.create(MethodDescription.class), Type.create(String.class)));
+                var methodToPolicyName = gatherAuthorizationPolicyInstances(combinedIndexBuildItem,
+                        securityTransformerBuildItem);
+                if (methodToPolicyName.isEmpty()) {
+                    // generate:
+                    // protected Map<MethodDescription, String> getMethodToPolicyName() { Map.of(); }
+                    try (var mc = cc.getMethodCreator(MethodDescriptor.ofMethod(AuthorizationPolicyStorage.class,
+                            "getMethodToPolicyName", mapDescriptorType))) {
+                        var map = mc.invokeStaticInterfaceMethod(MethodDescriptor.ofMethod(Map.class, "of", Map.class));
+                        mc.returnValue(map);
+                    }
+                } else {
+                    // detected @AuthorizationPolicy annotation instances
+                    // generates:
+                    // private final Map<MethodDescription, String> methodToPolicyName;
+                    var methodToPolicyNameField = cc.getFieldCreator("methodToPolicyName", mapDescriptorType)
+                            .setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL);
+
+                    // generates:
+                    // protected Map<MethodDescription, String> getMethodToPolicyName() { this.methodToPolicyName; }
+                    try (var mc = cc.getMethodCreator(MethodDescriptor.ofMethod(AuthorizationPolicyStorage.class,
+                            "getMethodToPolicyName", mapDescriptorType))) {
+                        var map = mc.readInstanceField(methodToPolicyNameField.getFieldDescriptor(), mc.getThis());
+                        mc.returnValue(map);
+                    }
+
+                    // === constructor
+                    // initializes 'methodToPolicyName' private field in the constructor
+                    // this.methodToPolicyName = new MethodsToPolicyBuilder()
+                    //      .addMethodToPolicyName(policyName, className, methodName, parameterTypes)
+                    //      .build();
+
+                    // create builder
+                    var builder = constructor.newInstance(
+                            MethodDescriptor.ofConstructor(AuthorizationPolicyStorage.MethodsToPolicyBuilder.class));
+
+                    var addMethodToPolicyNameType = MethodDescriptor.ofMethod(
+                            AuthorizationPolicyStorage.MethodsToPolicyBuilder.class, "addMethodToPolicyName",
+                            AuthorizationPolicyStorage.MethodsToPolicyBuilder.class, String.class, String.class, String.class,
+                            String[].class);
+                    for (var e : methodToPolicyName.entrySet()) {
+                        MethodInfo securedMethod = e.getKey();
+                        String policyNameStr = e.getValue();
+
+                        // String policyName
+                        var policyName = constructor.load(policyNameStr);
+                        // String methodName
+                        var methodName = constructor.load(securedMethod.name());
+                        // String declaringClassName
+                        var declaringClassName = constructor.load(securedMethod.declaringClass().name().toString());
+                        // String[] paramTypes
+                        var paramTypes = constructor.marshalAsArray(String[].class, securedMethod.parameterTypes().stream()
+                                .map(pt -> pt.name().toString()).map(constructor::load).toArray(ResultHandle[]::new));
+
+                        // builder.addMethodToPolicyName(policyName, className, methodName, paramTypes)
+                        builder = constructor.invokeVirtualMethod(addMethodToPolicyNameType, builder, policyName,
+                                declaringClassName, methodName, paramTypes);
+                    }
+
+                    // builder.build()
+                    var resultMapType = DescriptorUtils
+                            .typeToString(ParameterizedType.create(Map.class, TypeVariable.create(MethodDescription.class),
+                                    TypeVariable.create(String.class)));
+                    var buildMethodType = MethodDescriptor.ofMethod(AuthorizationPolicyStorage.MethodsToPolicyBuilder.class,
+                            "build", resultMapType);
+                    var resultMap = constructor.invokeVirtualMethod(buildMethodType, builder);
+                    // assign builder to the private field
+                    constructor.writeInstanceField(methodToPolicyNameField.getFieldDescriptor(), constructor.getThis(),
+                            resultMap);
+                }
+
+                // late return from constructor in case we need to write value to the field
+                constructor.returnVoid();
+            }
+        }
+    }
+
+    @BuildStep(onlyIf = AlwaysPropagateSecurityIdentity.class)
+    CurrentIdentityAssociationClassBuildItem createCurrentIdentityAssociation() {
+        return new CurrentIdentityAssociationClassBuildItem(DuplicatedContextSecurityIdentityAssociation.class);
+    }
+
+    @BuildStep(onlyIf = AlwaysPropagateSecurityIdentity.class)
+    IgnoredContextLocalDataKeysBuildItem dontPropagateSecurityIdentityToDuplicateContext() {
+        return new IgnoredContextLocalDataKeysBuildItem(List.of(HttpSecurityUtils.ROUTING_CONTEXT_ATTRIBUTE));
+    }
+
+    private static Stream<MethodInfo> getPolicyTargetEndpointCandidates(AnnotationTarget target,
+            SecurityTransformer securityTransformer) {
+        if (target.kind() == AnnotationTarget.Kind.METHOD) {
+            var method = target.asMethod();
+            if (!hasProperEndpointModifiers(method)) {
+                if (method.isSynthetic() && method.name().endsWith(KOTLIN_SUSPEND_IMPL_SUFFIX)) {
+                    // ATM there are 2 methods for Kotlin endpoint like this:
+                    // @AuthorizationPolicy(name = "suspended")
+                    // suspend fun sayHi() = "Hi"
+                    // the synthetic method doesn't need to be secured, but it keeps security annotations
+                    return Stream.empty();
+                }
+                throw new RuntimeException("""
+                        Found method annotated with the @AuthorizationPolicy annotation that is not an endpoint: %s#%s
+                        """.formatted(method.declaringClass().name().toString(), method.name()));
+            }
+            return Stream.of(method);
+        }
+        return target.asClass().methods().stream()
+                .filter(HttpSecurityProcessor::hasProperEndpointModifiers)
+                .filter(mi -> !securityTransformer.hasSecurityAnnotation(mi));
+    }
+
+    private static void validateAuthMechanismAnnotationUsage(Capabilities capabilities,
+            VertxHttpBuildTimeConfig buildTimeConfig,
+            DotName[] annotationNames) {
+        if (buildTimeConfig.auth().proactive()
+                || (capabilities.isMissing(Capability.RESTEASY_REACTIVE) && capabilities.isMissing(Capability.RESTEASY)
+                        && capabilities.isMissing(Capability.WEBSOCKETS_NEXT))) {
+            throw new ConfigurationException("Annotations '" + Arrays.toString(annotationNames) + "' can only be used when"
+                    + " proactive authentication is disabled and either Quarkus REST, RESTEasy Classic or WebSockets Next"
+                    + " extension is present");
+        }
+    }
+
+    private static boolean isMtlsClientAuthenticationEnabled(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        return !ClientAuth.NONE.equals(httpBuildTimeConfig.tlsClientAuth());
+    }
+
+    public static Set<MethodInfo> collectClassMethodsWithoutRbacAnnotation(Collection<ClassInfo> classes,
+            SecurityTransformer securityTransformer) {
+        return classes
+                .stream()
+                .filter(c -> !securityTransformer.hasSecurityAnnotation(c))
+                .map(ClassInfo::methods)
+                .flatMap(Collection::stream)
+                .filter(HttpSecurityProcessor::hasProperEndpointModifiers)
+                .filter(m -> !securityTransformer.hasSecurityAnnotation(m))
+                .collect(Collectors.toSet());
+    }
+
+    public static Set<MethodInfo> collectMethodsWithoutRbacAnnotation(Collection<MethodInfo> methods,
+            SecurityTransformer securityTransformer) {
+        return methods
+                .stream()
+                .filter(m -> !securityTransformer.hasSecurityAnnotation(m))
+                .collect(Collectors.toSet());
+    }
+
+    public static Set<ClassInfo> collectAnnotatedClasses(Collection<AnnotationInstance> instances,
+            Predicate<ClassInfo> filter) {
+        return instances
+                .stream()
+                .map(AnnotationInstance::target)
+                .filter(target -> target.kind() == AnnotationTarget.Kind.CLASS)
+                .map(AnnotationTarget::asClass)
+                .filter(filter)
+                .collect(Collectors.toSet());
+    }
+
+    private static Set<MethodInfo> collectAnnotatedMethods(Collection<AnnotationInstance> instances) {
+        return instances
+                .stream()
+                .map(AnnotationInstance::target)
+                .filter(target -> target.kind() == AnnotationTarget.Kind.METHOD)
+                .map(AnnotationTarget::asMethod)
+                .collect(Collectors.toSet());
+    }
+
+    private static boolean hasProperEndpointModifiers(MethodInfo info) {
+        // synthetic methods are not endpoints
+        if (info.isSynthetic()) {
+            return false;
+        }
+        if (!Modifier.isPublic(info.flags())) {
+            return false;
+        }
+        if (info.isConstructor()) {
+            return false;
+        }
+        // instance methods only
+        return !Modifier.isStatic(info.flags());
+    }
+
+    private static void addInterceptedEndpoints(List<EagerSecurityInterceptorBindingBuildItem> interceptorBindings,
+            IndexView index, AnnotationTarget.Kind appliesTo, Map<DotName, Map<String, List<MethodInfo>>> result,
+            Map<AnnotationTarget, List<EagerSecurityInterceptorBindingBuildItem>> cache,
+            Predicate<ClassInfo> hasClassLevelSecurity,
+            Map<DotName, Map<String, Set<String>>> classResult) {
+        for (EagerSecurityInterceptorBindingBuildItem interceptorBinding : interceptorBindings) {
+            for (DotName annotationBinding : interceptorBinding.getAnnotationBindings()) {
+                Map<String, List<MethodInfo>> bindingValueToInterceptedMethods = new HashMap<>();
+                Map<String, Set<String>> bindingValueToInterceptedClasses = new HashMap<>();
+                final Collection<AnnotationInstance> annotationInstances;
+                if (interceptorBinding.allowToRepeatThisInterceptorBinding()) {
+                    annotationInstances = index.getAnnotationsWithRepeatable(annotationBinding, index);
+                } else {
+                    annotationInstances = index.getAnnotations(annotationBinding);
+                }
+                for (AnnotationInstance annotation : annotationInstances) {
+                    if (annotation.target().kind() != appliesTo) {
+                        continue;
+                    }
+                    if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
+                        ClassInfo interceptedClass = annotation.target().asClass();
+                        if (interceptedClass.isAnnotation()) {
+                            // currently we don't support meta-annotations
+                            // this is the easiest way to avoid detecting @HttpAuthenticationMechanism on @BasicAuthentication
+                            continue;
+                        }
+
+                        if (hasClassLevelSecurity.test(interceptedClass)) {
+                            // endpoint can only be annotated with one of @Basic, @Form, ...
+                            // however combining @CodeFlow and @Tenant is supported
+                            var appliedBindings = cache.computeIfAbsent(interceptedClass, a -> new ArrayList<>());
+                            if (appliedBindings.contains(interceptorBinding)) {
+                                if (!interceptorBinding.allowToRepeatThisInterceptorBinding()) {
+                                    throw new RuntimeException(
+                                            "Only one of the '%s' annotations can be applied on the '%s' class".formatted(
+                                                    Arrays.toString(interceptorBinding.getAnnotationBindings()),
+                                                    interceptedClass));
+                                }
+                            } else {
+                                appliedBindings.add(interceptorBinding);
+                            }
+
+                            // don't apply security interceptor on individual methods, but on the class-level instead
+                            bindingValueToInterceptedClasses
+                                    .computeIfAbsent(interceptorBinding.getBindingValue(annotation, annotationBinding,
+                                            interceptedClass), s -> new HashSet<>())
+                                    .add(interceptedClass.name().toString());
+                            continue;
+                        }
+
+                        for (MethodInfo method : interceptedClass.methods()) {
+                            if (hasProperEndpointModifiers(method)) {
+                                // avoid situation when resource method is annotated with @Basic, class is annotated
+                                // with @Bearer, and we apply the @Bearer annotation
+                                boolean interceptorBindingNotAppliedOnMethodLevel = !cache.containsKey(method)
+                                        || !cache.get(method).contains(interceptorBinding);
+
+                                if (interceptorBindingNotAppliedOnMethodLevel) {
+                                    addInterceptedEndpoint(method, annotation, annotationBinding,
+                                            bindingValueToInterceptedMethods, interceptorBinding);
+                                }
+                            }
+                        }
+                    } else {
+                        MethodInfo mi = annotation.target().asMethod();
+
+                        if (hasClassLevelSecurity.test(mi.declaringClass())) {
+                            throw new RuntimeException(
+                                    ("Security annotations '%s' cannot be applied on the '%s' method, "
+                                            + "please move the annotations to the class-level instead").formatted(
+                                                    Arrays.toString(Arrays.stream(interceptorBinding.getAnnotationBindings())
+                                                            .toArray()),
+                                                    toTargetName(mi)));
+                        } else {
+                            // only allow to combine interceptor bindings on endpoints if we explicitly support it
+                            var appliedBindings = cache.computeIfAbsent(mi, a -> new ArrayList<>());
+                            if (appliedBindings.contains(interceptorBinding)) {
+                                if (!interceptorBinding.allowToRepeatThisInterceptorBinding()) {
+                                    throw new RuntimeException(
+                                            "Only one of the '%s' annotations can be applied on the '%s' method".formatted(
+                                                    Arrays.toString(interceptorBinding.getAnnotationBindings()),
+                                                    toTargetName(mi)));
+                                }
+                            } else {
+                                appliedBindings.add(interceptorBinding);
+                            }
+                        }
+
+                        addInterceptedEndpoint(mi, annotation, annotationBinding, bindingValueToInterceptedMethods,
+                                interceptorBinding);
+                    }
+                }
+                if (!bindingValueToInterceptedMethods.isEmpty()) {
+                    result.compute(annotationBinding, (key, existingMap) -> {
+                        if (existingMap == null) {
+                            return bindingValueToInterceptedMethods;
+                        } else {
+                            bindingValueToInterceptedMethods.forEach((annotationValue, methods) -> existingMap
+                                    .computeIfAbsent(annotationValue, a -> new ArrayList<>()).addAll(methods));
+                            return existingMap;
+                        }
+                    });
+                }
+                if (!bindingValueToInterceptedClasses.isEmpty()) {
+                    classResult.compute(annotationBinding, (key, existingMap) -> {
+                        if (existingMap == null) {
+                            return bindingValueToInterceptedClasses;
+                        } else {
+                            bindingValueToInterceptedClasses.forEach((annotationValue, classes) -> existingMap
+                                    .computeIfAbsent(annotationValue, a -> new HashSet<>()).addAll(classes));
+                            return existingMap;
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    private static void addInterceptedEndpoint(MethodInfo classEndpoint, AnnotationInstance annotationInstance,
+            DotName annotation, Map<String, List<MethodInfo>> bindingValueToInterceptedMethods,
+            EagerSecurityInterceptorBindingBuildItem interceptorBinding) {
+        bindingValueToInterceptedMethods
+                .computeIfAbsent(interceptorBinding.getBindingValue(annotationInstance, annotation, classEndpoint),
+                        s -> new ArrayList<>())
+                .add(classEndpoint);
+    }
+
+    static class IsApplicationBasicAuthRequired implements BooleanSupplier {
+        private final boolean required;
+
+        public IsApplicationBasicAuthRequired(VertxHttpBuildTimeConfig httpBuildTimeConfig,
+                ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
+            required = applicationBasicAuthRequired(httpBuildTimeConfig, managementBuildTimeConfig);
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return required;
+        }
+    }
+
+    static final class HttpAuthenticationHandlerBuildItem extends SimpleBuildItem {
+        private final RuntimeValue<AuthenticationHandler> handler;
+
+        private HttpAuthenticationHandlerBuildItem(RuntimeValue<AuthenticationHandler> handler) {
+            this.handler = handler;
+        }
+    }
+
+    static final class AlwaysPropagateSecurityIdentity implements BooleanSupplier {
+
+        private final boolean alwaysPropagateSecurityIdentity;
+
+        AlwaysPropagateSecurityIdentity(VertxHttpBuildTimeConfig buildTimeConfig) {
+            this.alwaysPropagateSecurityIdentity = buildTimeConfig.auth().propagateSecurityIdentity();
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return alwaysPropagateSecurityIdentity;
+        }
+    }
+
+    static final class HttpSecurityConfigSetupCompleteBuildItem extends SimpleBuildItem {
+
+        final RuntimeValue<CORSConfig> programmaticCorsConfig;
+
+        private HttpSecurityConfigSetupCompleteBuildItem(RuntimeValue<CORSConfig> programmaticCorsConfig) {
+            this.programmaticCorsConfig = programmaticCorsConfig;
+        }
+    }
+
+    /**
+     * Ordering-only build item produced by {@link #initializeHttpSecurity} to signal that
+     * {@link HttpSecurityConfiguration} is initialized and service actions that depend on it
+     * may now safely run.
+     * <p>
+     * This is separate from {@link HttpSecurityConfigSetupCompleteBuildItem} to avoid creating
+     * a build-step cycle through ARC's synthetic bean pipeline.
+     * <p>
+     * This build item should be removed once bytecode recorders are removed and service
+     * dependency ordering is used instead.
+     */
+    static final class HttpSecurityInitCompleteBuildItem extends EmptyBuildItem {
+    }
+}

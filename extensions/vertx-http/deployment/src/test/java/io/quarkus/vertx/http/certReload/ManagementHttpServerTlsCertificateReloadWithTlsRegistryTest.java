@@ -1,0 +1,163 @@
+package io.quarkus.vertx.http.certReload;
+
+import static io.quarkus.vertx.http.certReload.CertReloadTestHelper.assertTlsFails;
+import static io.quarkus.vertx.http.certReload.CertReloadTestHelper.httpsGet;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.security.cert.X509Certificate;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
+
+import jakarta.enterprise.event.Event;
+import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.builder.BuildChainBuilder;
+import io.quarkus.builder.BuildContext;
+import io.quarkus.builder.BuildStep;
+import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.tls.CertificateUpdatedEvent;
+import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.net.PemTrustOptions;
+import io.vertx.ext.web.RoutingContext;
+
+@Certificates(baseDir = "target/certificates", certificates = {
+        @Certificate(name = "reload-C", formats = Format.PEM),
+        @Certificate(name = "reload-D", formats = Format.PEM, duration = 365),
+})
+@DisabledOnOs(OS.WINDOWS)
+public class ManagementHttpServerTlsCertificateReloadWithTlsRegistryTest {
+
+    public static final File temp = new File("target/test-certificates-" + UUID.randomUUID());
+
+    private static final String APP_PROPS = """
+            quarkus.management.enabled=true
+            quarkus.tls.key-store.pem.0.cert=%s
+            quarkus.tls.key-store.pem.0.key=%s
+            loc=%s
+            """.formatted(temp.getAbsolutePath() + "/tls.crt", temp.getAbsolutePath() + "/tls.key", temp.getAbsolutePath());
+
+    @RegisterExtension
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(CertReloadTestHelper.class)
+                    .addAsResource(new StringAsset(APP_PROPS), "application.properties"))
+            .setBeforeAllCustomizer(() -> {
+                try {
+                    // Prepare a random directory to store the certificates.
+                    temp.mkdirs();
+                    Files.copy(new File("target/certificates/reload-C.crt").toPath(),
+                            new File(temp, "/tls.crt").toPath());
+                    Files.copy(new File("target/certificates/reload-C.key").toPath(),
+                            new File(temp, "/tls.key").toPath());
+                    Files.copy(new File("target/certificates/reload-C-ca.crt").toPath(),
+                            new File(temp, "/ca.crt").toPath());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            })
+            .addBuildChainCustomizer(buildCustomizer())
+            .setAfterAllCustomizer(() -> {
+                try {
+                    Files.deleteIfExists(new File(temp, "/tls.crt").toPath());
+                    Files.deleteIfExists(new File(temp, "/tls.key").toPath());
+                    Files.deleteIfExists(new File(temp, "/ca.crt").toPath());
+                    Files.deleteIfExists(temp.toPath());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+    static Consumer<BuildChainBuilder> buildCustomizer() {
+        return new Consumer<BuildChainBuilder>() {
+            @Override
+            public void accept(BuildChainBuilder builder) {
+                builder.addBuildStep(new BuildStep() {
+                    @Override
+                    public void execute(BuildContext context) {
+                        NonApplicationRootPathBuildItem buildItem = context.consume(NonApplicationRootPathBuildItem.class);
+                        context.produce(buildItem.routeBuilder()
+                                .management()
+                                .route("/hello")
+                                .handler(new MyHandler())
+                                .build());
+                    }
+                }).produces(RouteBuildItem.class)
+                        .consumes(NonApplicationRootPathBuildItem.class)
+                        .build();
+            }
+        };
+    }
+
+    @Inject
+    Vertx vertx;
+
+    @ConfigProperty(name = "loc")
+    File certs;
+
+    @Inject
+    TlsConfigurationRegistry registry;
+
+    @Inject
+    Event<CertificateUpdatedEvent> event;
+
+    @Test
+    void test() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        var options = new HttpClientOptions()
+                .setSsl(true)
+                .setDefaultPort(9001) // Management interface test port
+                .setDefaultHost("localhost")
+                .setTrustOptions(new PemTrustOptions().addCertPath(new File(certs, "/ca.crt").getAbsolutePath()));
+
+        String response1 = httpsGet(vertx, options, "/q/hello");
+
+        // Update certs
+        Files.copy(new File("target/certificates/reload-D.crt").toPath(),
+                new File(certs, "/tls.crt").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(new File("target/certificates/reload-D.key").toPath(),
+                new File(certs, "/tls.key").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+        // Trigger the reload
+        registry.getDefault().orElseThrow().reload();
+        event.fire(new CertificateUpdatedEvent("<default>", registry.getDefault().orElseThrow()));
+
+        // The client truststore is not updated, thus it should fail.
+        assertTlsFails(vertx, options, "/hello");
+
+        var options2 = new HttpClientOptions(options)
+                .setTrustOptions(new PemTrustOptions().addCertPath("target/certificates/reload-D-ca.crt"));
+
+        String response2 = httpsGet(vertx, options2, "/hello");
+
+        assertThat(response1).isNotEqualTo(response2); // Because cert duration are different.
+    }
+
+    public static class MyHandler implements Handler<RoutingContext> {
+        @Override
+        public void handle(RoutingContext rc) {
+            var exp = ((X509Certificate) rc.request().connection().sslSession().getLocalCertificates()[0]).getNotAfter()
+                    .toInstant().toEpochMilli();
+            rc.response().end("Hello Management " + exp);
+        }
+    }
+
+}

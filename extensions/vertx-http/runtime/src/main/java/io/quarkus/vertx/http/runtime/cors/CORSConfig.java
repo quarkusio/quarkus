@@ -1,0 +1,101 @@
+package io.quarkus.vertx.http.runtime.cors;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
+
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
+
+public interface CORSConfig {
+
+    /**
+     * Enable the CORS filter.
+     */
+    @WithDefault("false")
+    boolean enabled();
+
+    /**
+     * The origins allowed for CORS.
+     * <p>
+     * A comma-separated list of valid URLs, such as `http://www.quarkus.io,http://localhost:3000`.
+     * URLs enclosed in forward slashes are interpreted as regular expressions.
+     */
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> origins();
+
+    /**
+     * The HTTP methods allowed for CORS requests.
+     * <p>
+     * A comma-separated list of valid HTTP methods, such as `GET,PUT,POST`.
+     * If not set, the filter allows any HTTP method by default.
+     * <p>
+     * This property is not used to control same-origin HTTP request methods.
+     * <p>
+     * Default: Any HTTP request method is allowed.
+     */
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> methods();
+
+    /**
+     * The HTTP headers allowed for CORS requests.
+     * <p>
+     * A comma-separated list of valid headers, such as `X-Custom,Content-Disposition`.
+     * If not set, the filter allows any header by default.
+     * <p>
+     * Default: Any HTTP request header is allowed.
+     */
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> headers();
+
+    /**
+     * The HTTP headers exposed in CORS responses.
+     * <p>
+     * A comma-separated list of headers to expose, such as `X-Custom,Content-Disposition`.
+     * <p>
+     * Default: No headers are exposed.
+     */
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> exposedHeaders();
+
+    /**
+     * The `Access-Control-Max-Age` response header value in {@link java.time.Duration} format.
+     * <p>
+     * Informs the browser how long it can cache the results of a preflight request.
+     */
+    Optional<Duration> accessControlMaxAge();
+
+    /**
+     * The `Access-Control-Allow-Credentials` response header.
+     * <p>
+     * Tells browsers if front-end JavaScript can be allowed to access credentials when the request's credentials mode,
+     * `Request.credentials`, is set to `include`.
+     * <p>
+     * Default: `true` if the `quarkus.http.cors.origins` property is set
+     * and matches the precise `Origin` header value.
+     */
+    Optional<Boolean> accessControlAllowCredentials();
+
+    /**
+     * Whether to return the exact request origin in the `Access-Control-Allow-Origin` response header.
+     * <p>
+     * When set to `true` (the default), the filter echoes back the request's `Origin` header value.
+     * When set to `false` and `origins` is configured as `*`, the response will contain the literal
+     * `Access-Control-Allow-Origin: *` instead of echoing the request origin. This is useful for public
+     * APIs where HTTP caching is important, as echoing the origin requires `Vary: Origin` and defeats
+     * shared caches.
+     * <p>
+     * Note: When `*` is returned as the origin, `Access-Control-Allow-Credentials` is forced to `false`
+     * per the CORS specification.
+     */
+    @WithDefault("true")
+    boolean returnExactOrigins();
+
+    /**
+     * Whether to add the {@code Vary: Origin} response header to CORS responses when the origin is not a wildcard.
+     * <p>
+     * The {@code Vary: Origin} header tells HTTP caches that the response depends on the request's {@code Origin} header,
+     * preventing a cached response for one origin from being served to a different origin.
+     * <p>
+     * This should remain enabled (the default) in most setups, especially when a reverse proxy or CDN may cache responses.
+     */
+    @WithDefault("true")
+    boolean varyOrigin();
+}

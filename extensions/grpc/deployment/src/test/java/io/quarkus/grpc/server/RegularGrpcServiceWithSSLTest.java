@@ -1,0 +1,89 @@
+package io.quarkus.grpc.server;
+
+import java.io.File;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import com.google.protobuf.EmptyProtos;
+
+import io.grpc.examples.helloworld.GreeterGrpc;
+import io.grpc.examples.helloworld.HelloReply;
+import io.grpc.examples.helloworld.HelloReplyOrBuilder;
+import io.grpc.examples.helloworld.HelloRequest;
+import io.grpc.examples.helloworld.HelloRequestOrBuilder;
+import io.grpc.examples.helloworld.HelloWorldProto;
+import io.grpc.examples.helloworld.MutinyGreeterGrpc;
+import io.grpc.netty.GrpcSslContexts;
+import io.grpc.netty.NettyChannelBuilder;
+import io.grpc.testing.integration.Messages;
+import io.grpc.testing.integration.MutinyTestServiceGrpc;
+import io.grpc.testing.integration.TestServiceGrpc;
+import io.netty.handler.ssl.SslContext;
+import io.quarkus.grpc.server.services.AssertHelper;
+import io.quarkus.grpc.server.services.HelloService;
+import io.quarkus.grpc.server.services.TestService;
+import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
+
+/**
+ * Test services exposed by the gRPC server implemented using the regular gRPC model.
+ * Communication uses TLS.
+ */
+@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "grpc-tls", password = "wibble", formats = {
+        Format.JKS, Format.PEM, Format.PKCS12 }))
+public class RegularGrpcServiceWithSSLTest extends GrpcServiceTestBase {
+
+    @RegisterExtension
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .setFlatClassPath(true)
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class)
+                            .addPackage(io.grpc.testing.integration.Test.class.getPackage())
+                            .addPackage(HelloWorldProto.class.getPackage())
+                            .addClasses(HelloService.class, TestService.class, AssertHelper.class,
+                                    GreeterGrpc.class, HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class,
+                                    HelloRequestOrBuilder.class, HelloReplyOrBuilder.class,
+                                    EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
+                                    TestServiceGrpc.class))
+            .withConfigurationResource("grpc-server-tls-configuration.properties");
+
+    @Override
+    @BeforeEach
+    public void init() throws Exception {
+        SslContext sslcontext = GrpcSslContexts.forClient()
+                .trustManager(new File("target/certs/grpc-tls-ca.crt"))
+                .build();
+        channel = NettyChannelBuilder.forAddress("localhost", 8444)
+                .sslContext(sslcontext)
+                .build();
+    }
+
+    // Create a TrustManager which trusts everything
+    private static TrustManager createTrustAllTrustManager() {
+        return new X509TrustManager() {
+            @Override
+            public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+            }
+
+            @Override
+            public void checkServerTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+            }
+
+            @Override
+            public X509Certificate[] getAcceptedIssuers() {
+                return new X509Certificate[0];
+            }
+        };
+    }
+
+}

@@ -1,0 +1,22 @@
+package org.acme.codegen.test;
+
+import io.quarkus.test.QuarkusExtensionTest;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+public class AcmeCodegenTest {
+
+    // Start unit test with your extension loaded
+    @RegisterExtension
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
+
+    @Test
+    public void writeYourOwnUnitTest() {
+        // Write your unit tests here - see the testing extension guide https://quarkus.io/guides/writing-extensions#testing-extensions for more information
+        Assertions.assertTrue(true, "Add some assertions to " + getClass().getName());
+    }
+}

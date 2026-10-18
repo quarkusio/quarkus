@@ -1,0 +1,52 @@
+package io.quarkus.it.bouncycastle;
+
+import static org.hamcrest.Matchers.equalTo;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.RestAssured;
+
+@QuarkusTest
+public class BouncyCastleFipsTestCase {
+
+    @Test
+    public void testListProviders() {
+        RestAssured.given()
+                .when()
+                .get("/jca/listProviders")
+                .then()
+                .statusCode(200)
+                .body(equalTo("BCFIPS"));
+    }
+
+    @Test
+    public void testSHA256withRSAandMGF1() {
+        RestAssured.given()
+                .when()
+                .get("/jca/SHA256withRSAandMGF1")
+                .then()
+                .statusCode(200)
+                .body(equalTo("success"));
+    }
+
+    @Test
+    public void testPoly1305() {
+        RestAssured.given()
+                .when()
+                .get("/jca/poly1305")
+                .then()
+                .statusCode(200)
+                .body(equalTo("success"));
+    }
+
+    @Test
+    public void testFipsMode() {
+        RestAssured.given()
+                .when()
+                .get("/jca/fipsmode")
+                .then()
+                .statusCode(200)
+                .body(equalTo("HMAC SHA-512 initialization does not work when FIPS enabled."));
+    }
+}

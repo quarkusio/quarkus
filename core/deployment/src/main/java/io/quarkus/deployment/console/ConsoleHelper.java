@@ -1,0 +1,103 @@
+package io.quarkus.deployment.console;
+
+import java.io.IOError;
+import java.io.IOException;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import org.aesh.terminal.Connection;
+import org.aesh.terminal.tty.TerminalConnection;
+import org.jboss.logging.Logger;
+
+import io.quarkus.deployment.dev.testing.TestConfig;
+import io.quarkus.dev.console.BasicConsole;
+import io.quarkus.dev.console.QuarkusConsole;
+
+public class ConsoleHelper {
+
+    private static final Logger log = Logger.getLogger(ConsoleHelper.class);
+
+    public static synchronized void installConsole(TestConfig config, ConsoleConfig consoleConfig, boolean test) {
+        if (QuarkusConsole.installed) {
+            return;
+        }
+        boolean colorEnabled = consoleConfig.color().orElse(QuarkusConsole.hasColorSupport());
+        QuarkusConsole.installed = true;
+        //if there is no color we need a basic console
+        //note that we never enable input for tests
+        //surefire communicates of stdin, so this can mess with it
+        boolean inputSupport = !test && !consoleConfig.disableInput();
+        if (!inputSupport) {
+            //note that in this case we don't hold onto anything from this class loader
+            //which is important for the test suite
+            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, QuarkusConsole.ORIGINAL_OUT, System.console());
+            return;
+        }
+        try {
+            new TerminalConnection(new Consumer<Connection>() {
+                @Override
+                public void accept(Connection connection) {
+                    if (connection.supportsAnsi() && !consoleConfig.basic()) {
+                        QuarkusConsole.INSTANCE = new AeshConsole(connection);
+                    } else {
+                        LinkedBlockingDeque<Integer> queue = new LinkedBlockingDeque<>();
+                        if (inputSupport) {
+                            connection.openNonBlocking();
+                        }
+                        connection.setStdinHandler(new Consumer<int[]>() {
+                            @Override
+                            public void accept(int[] ints) {
+                                QuarkusConsole.StateChangeInputStream redirectIn = QuarkusConsole.REDIRECT_IN;
+                                for (int i : ints) {
+                                    if (redirectIn != null && !redirectIn.acceptInput(i)) {
+                                        queue.add(i);
+                                    }
+                                }
+                            }
+                        });
+                        connection.setSignalHandler(event -> {
+                            switch (event) {
+                                case INT:
+                                    //todo: why does async exit not work here
+                                    //Quarkus.asyncExit();
+                                    //end(conn);
+                                    new Thread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            System.exit(0);
+                                        }
+                                    }).start();
+                                    break;
+                            }
+                        });
+                        connection.setCloseHandler(new Consumer<Void>() {
+                            @Override
+                            public void accept(Void unused) {
+                                queue.add(-1);
+                            }
+                        });
+                        QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled,
+                                inputSupport,
+                                connection::write, new Supplier<Integer>() {
+                                    @Override
+                                    public Integer get() {
+                                        try {
+                                            return queue.takeFirst();
+                                        } catch (InterruptedException e) {
+                                            throw new RuntimeException(e);
+                                        }
+                                    }
+                                });
+                    }
+                }
+            });
+        } catch (IOException | IOError e) {
+            // terminal probing failures surface as IOError, e.g. when an incompatible stty is first in the PATH,
+            // see https://github.com/quarkusio/quarkus/issues/55918
+            log.warn("Failed to initialize the advanced console, falling back to the basic console: " + e);
+            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, QuarkusConsole.ORIGINAL_OUT, System.console());
+        }
+        QuarkusConsole.installRedirects();
+    }
+}

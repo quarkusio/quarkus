@@ -1,0 +1,89 @@
+package io.quarkus.datasource.runtime;
+
+import java.util.Map;
+import java.util.Optional;
+
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.common.runtime.DbVersionDefaults;
+import io.quarkus.runtime.annotations.ConfigDocIgnore;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithName;
+import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
+
+@ConfigMapping(prefix = "quarkus.datasource")
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+public interface DataSourcesBuildTimeConfig {
+
+    /**
+     * Datasources.
+     */
+    @ConfigDocMapKey("datasource-name")
+    @WithParentName
+    @WithDefaults
+    @WithUnnamedKey(value = DataSourceUtil.DEFAULT_DATASOURCE_NAME, eager = false)
+    Map<String, DataSourceBuildTimeConfig> dataSources();
+
+    /**
+     * Whether or not a health check is published in case the smallrye-health extension is present.
+     * <p>
+     * This is a global setting and is not specific to a datasource.
+     */
+    @WithName("health.enabled")
+    @WithDefault("true")
+    boolean healthEnabled();
+
+    /**
+     * Whether datasource metrics are published in case a metrics extension is present.
+     * <p>
+     * This is a global setting and is not specific to a datasource.
+     * <p>
+     * NOTE: This is different from the <code>quarkus.datasource."datasource name".jdbc.metrics.enabled</code> property that
+     * needs to be set on the JDBC datasource level to
+     * enable collection of metrics for that datasource.
+     */
+    @WithName("metrics.enabled")
+    @WithDefault("false")
+    boolean metricsEnabled();
+
+    /**
+     * Controls whether default database versions are applied when not explicitly configured.
+     * <p>
+     * This is a global setting and is not specific to a datasource.
+     * <p>
+     * When set to <code>recent</code> (the default), Quarkus will use recent stable versions as defaults
+     * for each database kind. This optimizes for performance and features but requires your database
+     * to be reasonably up-to-date.
+     * <p>
+     * When set to <code>compatible</code>, no default versions are applied. You must explicitly set
+     * <code>quarkus.datasource.db-version</code> (or <code>quarkus.datasource."datasource-name".db-version</code>)
+     * for each datasource.
+     */
+    @WithName("db-version-defaults")
+    @WithDefault("recent")
+    DbVersionDefaults dbVersionDefaults();
+
+    /**
+     * Only here to detect configuration errors.
+     * <p>
+     * This used to be runtime but we don't really care, we just want to catch invalid configurations.
+     */
+    @ConfigDocIgnore
+    Optional<String> url();
+
+    /**
+     * Only here to detect configuration errors.
+     */
+    @ConfigDocIgnore
+    Optional<String> driver();
+
+    default boolean hasNamedDataSources() {
+        return dataSources().keySet().stream()
+                .anyMatch(name -> !DataSourceUtil.isDefault(name));
+    }
+}

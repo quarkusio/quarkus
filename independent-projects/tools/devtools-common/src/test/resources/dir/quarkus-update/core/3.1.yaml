@@ -1,0 +1,10 @@
+#####
+# Remove mockito-inline
+#####
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.updates.core.quarkus31.RemoveMockitoInline
+recipeList:
+  - org.openrewrite.maven.RemoveDependency:
+      groupId: org.mockito
+      artifactId: mockito-inline

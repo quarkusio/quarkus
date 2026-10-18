@@ -1,0 +1,17 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Quartz"
+metadata:
+  keywords:
+  - "scheduler"
+  - "quartz"
+  - "tasks"
+  - "periodic-tasks"
+  guide: "https://quarkus.io/guides/quartz"
+  categories:
+  - "miscellaneous"
+  status: "stable"
+  icon-url: "https://avatars.githubusercontent.com/u/5505009?s=200&v=4"
+  lib-ga: org.quartz-scheduler:quartz[https://www.quartz-scheduler.org/]
+  config:
+  - "quarkus.quartz."

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quarkus-build-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../build-parent/pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>quarkus-relocations-parent</artifactId>
+    <name>Quarkus - Relocations</name>
+    <description>This is the parent of relocated artifacts, that are still released for compatibility reasons.</description>
+    <packaging>pom</packaging>
+
+    <!--
+        All relocations inherited from the 3.x line were dropped in Quarkus 4.0: every one of them was still
+        published (and still warned) in 3.40, the last 3.x LTS, which is the supported staging point for the
+        upgrade to 4.0. New relocations introduced during the 4.x line should be added below.
+    -->
+    <modules>
+        <module>quarkus-junit5</module>
+    </modules>
+
+</project>

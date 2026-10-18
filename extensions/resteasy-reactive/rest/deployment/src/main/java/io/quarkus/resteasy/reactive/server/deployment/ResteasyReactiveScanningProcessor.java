@@ -1,0 +1,540 @@
+package io.quarkus.resteasy.reactive.server.deployment;
+
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_RESPONSE;
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.ROUTING_CONTEXT;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
+
+import jakarta.transaction.RollbackException;
+import jakarta.ws.rs.Priorities;
+
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.CompositeIndex;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
+import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
+import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
+import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
+import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveInterceptorScanner;
+import org.jboss.resteasy.reactive.server.Cancellable;
+import org.jboss.resteasy.reactive.server.ExceptionUnwrapStrategy;
+import org.jboss.resteasy.reactive.server.UnwrapException;
+import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
+import org.jboss.resteasy.reactive.server.model.ContextResolvers;
+import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.processor.generation.exceptionmappers.ServerExceptionMapperGenerator;
+import org.jboss.resteasy.reactive.server.processor.generation.filters.FilterGeneration;
+import org.jboss.resteasy.reactive.server.processor.scanning.AsyncReturnTypeScanner;
+import org.jboss.resteasy.reactive.server.processor.scanning.CacheControlScanner;
+import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveContextResolverScanner;
+import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveExceptionMappingScanner;
+import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFeatureScanner;
+
+import io.quarkus.arc.ArcUndeclaredThrowableException;
+import io.quarkus.arc.Unremovable;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BuildTimeEnabledProcessor;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.LookupConditionsProcessor;
+import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.index.LazyIndexer;
+import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
+import io.quarkus.resteasy.reactive.common.deployment.ResourceInterceptorsContributorBuildItem;
+import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
+import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
+import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.UnwrappedExceptionBuildItem;
+import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
+import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
+import io.quarkus.resteasy.reactive.spi.ContextResolverBuildItem;
+import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
+import io.quarkus.resteasy.reactive.spi.CustomContainerResponseFilterBuildItem;
+import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
+import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
+import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
+import io.quarkus.resteasy.reactive.spi.JaxrsFeatureBuildItem;
+import io.quarkus.resteasy.reactive.spi.ParamConverterBuildItem;
+import io.quarkus.runtime.BlockingOperationNotAllowedException;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+
+/**
+ * Processor that handles scanning for types and turning them into build items
+ */
+public class ResteasyReactiveScanningProcessor {
+
+    private static final DotName EXCEPTION = DotName.createSimple(Exception.class);
+    private static final DotName RUNTIME_EXCEPTION = DotName.createSimple(RuntimeException.class);
+
+    public static final Set<DotName> CONDITIONAL_BEAN_ANNOTATIONS;
+    private static final DotName CANCELLABLE = DotName.createSimple(Cancellable.class);
+
+    static {
+        CONDITIONAL_BEAN_ANNOTATIONS = new HashSet<>(BuildTimeEnabledProcessor.BUILD_TIME_ENABLED_BEAN_ANNOTATIONS);
+        CONDITIONAL_BEAN_ANNOTATIONS.addAll(LookupConditionsProcessor.LOOKUP_BEAN_ANNOTATIONS);
+    }
+
+    @BuildStep
+    public MethodScannerBuildItem asyncSupport() {
+        return new MethodScannerBuildItem(new AsyncReturnTypeScanner());
+    }
+
+    @BuildStep
+    public MethodScannerBuildItem cacheControlSupport() {
+        return new MethodScannerBuildItem(new CacheControlScanner());
+    }
+
+    @BuildStep
+    public MethodScannerBuildItem compressionSupport(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        return new MethodScannerBuildItem(new CompressionScanner(httpBuildTimeConfig));
+    }
+
+    @BuildStep
+    public ResourceInterceptorsContributorBuildItem scanForInterceptors(CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem) {
+        return new ResourceInterceptorsContributorBuildItem(new Consumer<ResourceInterceptors>() {
+            @Override
+            public void accept(ResourceInterceptors interceptors) {
+                ResteasyReactiveInterceptorScanner.scanForContainerRequestFilters(interceptors,
+                        combinedIndexBuildItem.getIndex(),
+                        applicationResultBuildItem.getResult(),
+                        (filterClass, interceptor) -> {
+                            AnnotationInstance cancellableAnnotation = filterClass.declaredAnnotation(CANCELLABLE);
+                            if (cancellableAnnotation != null) {
+                                AnnotationValue value = cancellableAnnotation.value();
+                                if (value != null) {
+                                    interceptor.setCancellable(value.asBoolean());
+                                }
+                            }
+                        });
+            }
+        });
+    }
+
+    @BuildStep
+    public List<UnwrappedExceptionBuildItem> defaultUnwrappedExceptions() {
+        return List.of(new UnwrappedExceptionBuildItem(ArcUndeclaredThrowableException.class),
+                new UnwrappedExceptionBuildItem(RollbackException.class));
+    }
+
+    @BuildStep
+    public void applicationSpecificUnwrappedExceptions(CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<UnwrappedExceptionBuildItem> producer) {
+        IndexView index = combinedIndexBuildItem.getIndex();
+        for (AnnotationInstance instance : index.getAnnotations(UnwrapException.class)) {
+            AnnotationValue value = instance.value();
+            AnnotationValue strategyValue = instance.value("strategy");
+            ExceptionUnwrapStrategy strategy = toExceptionUnwrapStrategy(strategyValue);
+
+            if (value == null) {
+                // in this case we need to use the class where the annotation was placed as the exception to be unwrapped
+
+                AnnotationTarget target = instance.target();
+                if (target.kind() != AnnotationTarget.Kind.CLASS) {
+                    throw new IllegalStateException(
+                            "@UnwrapException is only supported on classes. Offending target is: " + target);
+                }
+                ClassInfo classInfo = target.asClass();
+                ClassInfo toCheck = classInfo;
+                boolean isException = false;
+                while (true) {
+                    DotName superDotName = toCheck.superName();
+                    if (EXCEPTION.equals(superDotName) || RUNTIME_EXCEPTION.equals(superDotName)) {
+                        isException = true;
+                        break;
+                    }
+                    toCheck = index.getClassByName(superDotName);
+                    if (toCheck == null) {
+                        break;
+                    }
+                }
+                if (!isException) {
+                    throw new IllegalArgumentException(
+                            "Using @UnwrapException without a value is only supported on exception classes. Offending target is '"
+                                    + classInfo.name() + "'.");
+                }
+
+                producer.produce(new UnwrappedExceptionBuildItem(classInfo.name().toString(), strategy));
+            } else {
+                Type[] exceptionTypes = value.asClassArray();
+                for (Type exceptionType : exceptionTypes) {
+                    producer.produce(new UnwrappedExceptionBuildItem(exceptionType.name().toString(), strategy));
+                }
+            }
+        }
+    }
+
+    private static ExceptionUnwrapStrategy toExceptionUnwrapStrategy(AnnotationValue strategyValue) {
+        if (strategyValue != null) {
+            return ExceptionUnwrapStrategy.valueOf(strategyValue.asEnum());
+        }
+        return ExceptionUnwrapStrategy.UNWRAP_IF_NO_MATCH;
+    }
+
+    @BuildStep
+    public ExceptionMappersBuildItem scanForExceptionMappers(CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
+            List<ExceptionMapperBuildItem> mappers, List<UnwrappedExceptionBuildItem> unwrappedExceptions,
+            Capabilities capabilities,
+            ResteasyReactiveConfig config) {
+        AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
+        ExceptionMapping exceptions = ResteasyReactiveExceptionMappingScanner
+                .scanForExceptionMappers(combinedIndexBuildItem.getComputingIndex(), applicationResultBuildItem.getResult());
+
+        if (config.exceptionMapping().disableMapperFor().isPresent()) {
+            for (String disabledMapper : config.exceptionMapping().disableMapperFor().get()
+                    .stream().sorted().toList()) {
+                if (disabledMapper != null && !disabledMapper.isEmpty()) {
+                    exceptions.addDisabledMapper(disabledMapper);
+                }
+            }
+        }
+
+        exceptions.addBlockingProblem(BlockingOperationNotAllowedException.class);
+        exceptions.addBlockingProblem(BlockingNotAllowedException.class);
+        for (UnwrappedExceptionBuildItem bi : unwrappedExceptions.stream()
+                .sorted(Comparator.comparing(UnwrappedExceptionBuildItem::getThrowableClassName)).toList()) {
+            exceptions.addUnwrappedException(bi.getThrowableClassName(), bi.getStrategy());
+        }
+        if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
+            exceptions.addNonBlockingProblem(
+                    new ExceptionMapping.ExceptionTypeAndMessageContainsPredicate(IllegalStateException.class, "HR000068"));
+        }
+
+        Set<String> singletonClasses = applicationResultBuildItem.getResult().getSingletonClasses();
+        for (Map.Entry<String, ResourceExceptionMapper<? extends Throwable>> i : exceptions.getMappers().entrySet()) {
+            if (!singletonClasses.contains(i.getValue().getClassName())) {
+                beanBuilder.addBeanClass(i.getValue().getClassName());
+            }
+        }
+        for (ExceptionMapperBuildItem additionalExceptionMapper : mappers.stream()
+                .sorted(Comparator.comparing(ExceptionMapperBuildItem::getClassName)).toList()) {
+            if (additionalExceptionMapper.isRegisterAsBean()) {
+                beanBuilder.addBeanClass(additionalExceptionMapper.getClassName());
+            } else {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(ReflectiveClassBuildItem.builder(additionalExceptionMapper.getClassName())
+                                .build());
+            }
+            int priority = Priorities.USER;
+            if (additionalExceptionMapper.getPriority() != null) {
+                priority = additionalExceptionMapper.getPriority();
+            }
+            ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>();
+            mapper.setPriority(priority);
+            mapper.setClassName(additionalExceptionMapper.getClassName());
+            addRuntimeCheckIfNecessary(additionalExceptionMapper, mapper);
+            exceptions.addExceptionMapper(additionalExceptionMapper.getHandledExceptionName(), mapper);
+        }
+        additionalBeanBuildItemBuildProducer.produce(beanBuilder.build());
+        return new ExceptionMappersBuildItem(exceptions);
+    }
+
+    private static void addRuntimeCheckIfNecessary(ExceptionMapperBuildItem additionalExceptionMapper,
+            ResourceExceptionMapper<Throwable> mapper) {
+        ClassInfo declaringClass = additionalExceptionMapper.getDeclaringClass();
+        if (declaringClass != null) {
+            boolean needsRuntimeCheck = false;
+            List<AnnotationInstance> classAnnotations = declaringClass.declaredAnnotations();
+            for (AnnotationInstance classAnnotation : classAnnotations) {
+                if (CONDITIONAL_BEAN_ANNOTATIONS.contains(classAnnotation.name())) {
+                    needsRuntimeCheck = true;
+                    break;
+                }
+            }
+            if (needsRuntimeCheck) {
+                mapper.setDiscardAtRuntime(new ResourceExceptionMapper.DiscardAtRuntimeIfBeanIsUnavailable(
+                        declaringClass.name().toString()));
+            }
+        }
+    }
+
+    @BuildStep
+    public ParamConverterProvidersBuildItem scanForParamConverters(
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
+            List<ParamConverterBuildItem> paramConverterBuildItems) {
+
+        AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
+        ParamConverterProviders paramConverterProviders = new ParamConverterProviders();
+        for (ParamConverterBuildItem additionalParamConverter : paramConverterBuildItems) {
+            if (additionalParamConverter.isRegisterAsBean()) {
+                beanBuilder.addBeanClass(additionalParamConverter.getClassName());
+            } else {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(ReflectiveClassBuildItem.builder(additionalParamConverter.getClassName())
+                                .build());
+            }
+            int priority = Priorities.USER;
+            if (additionalParamConverter.getPriority() != null) {
+                priority = additionalParamConverter.getPriority();
+            }
+            ResourceParamConverterProvider provider = new ResourceParamConverterProvider();
+            provider.setPriority(priority);
+            provider.setClassName(additionalParamConverter.getClassName());
+            paramConverterProviders.addParamConverterProviders(provider);
+        }
+        additionalBeanBuildItemBuildProducer.produce(beanBuilder.build());
+        return new ParamConverterProvidersBuildItem(paramConverterProviders);
+
+    }
+
+    @BuildStep
+    public void scanForDynamicFeatures(CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            BuildProducer<DynamicFeatureBuildItem> dynamicFeatureBuildItemBuildProducer) {
+        IndexView index = combinedIndexBuildItem.getComputingIndex();
+        Set<String> features = ResteasyReactiveFeatureScanner.scanForDynamicFeatures(index,
+                applicationResultBuildItem.getResult());
+        for (String dynamicFeatureClass : features) {
+            dynamicFeatureBuildItemBuildProducer
+                    .produce(new DynamicFeatureBuildItem(dynamicFeatureClass, true));
+        }
+    }
+
+    @BuildStep
+    public void scanForFeatures(CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            BuildProducer<JaxrsFeatureBuildItem> featureBuildItemBuildProducer) {
+        IndexView index = combinedIndexBuildItem.getComputingIndex();
+        Set<String> features = ResteasyReactiveFeatureScanner.scanForFeatures(index, applicationResultBuildItem.getResult());
+        for (String feature : features) {
+            featureBuildItemBuildProducer
+                    .produce(new JaxrsFeatureBuildItem(feature, true));
+        }
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @BuildStep
+    public ContextResolversBuildItem scanForContextResolvers(CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
+            List<ContextResolverBuildItem> additionalResolvers) {
+        IndexView index = combinedIndexBuildItem.getComputingIndex();
+        AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
+        ContextResolvers resolvers = ResteasyReactiveContextResolverScanner.scanForContextResolvers(index,
+                applicationResultBuildItem.getResult());
+        Set<String> singletonClasses = applicationResultBuildItem.getResult().getSingletonClasses();
+        for (Map.Entry<Class<?>, List<ResourceContextResolver>> entry : resolvers.getResolvers().entrySet()) {
+            for (ResourceContextResolver i : entry.getValue()) {
+                if (!singletonClasses.contains(i.getClassName())) {
+                    beanBuilder.addBeanClass(i.getClassName());
+                }
+            }
+        }
+        for (ContextResolverBuildItem i : additionalResolvers) {
+            if (i.isRegisterAsBean()) {
+                beanBuilder.addBeanClass(i.getClassName());
+            } else {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(ReflectiveClassBuildItem.builder(i.getClassName())
+                                .build());
+            }
+            ResourceContextResolver resolver = new ResourceContextResolver();
+            resolver.setClassName(i.getClassName());
+            resolver.setMediaTypeStrings(i.getMediaTypes());
+            try {
+                resolvers.addContextResolver((Class) Class.forName(i.getProvidedType(), false,
+                        Thread.currentThread().getContextClassLoader()), resolver);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(
+                        "Unable to load handled exception type " + i.getProvidedType(), e);
+            }
+        }
+        additionalBeanBuildItemBuildProducer.produce(beanBuilder.build());
+        return new ContextResolversBuildItem(resolvers);
+    }
+
+    @BuildStep
+    public void scanForParamConverters(CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem,
+            BuildProducer<ParamConverterBuildItem> paramConverterBuildItemBuildProducer) {
+        IndexView index = combinedIndexBuildItem.getComputingIndex();
+        Collection<ClassInfo> paramConverterProviders = index
+                .getAllKnownImplementations(ResteasyReactiveDotNames.PARAM_CONVERTER_PROVIDER);
+
+        for (ClassInfo converterClass : paramConverterProviders) {
+            ApplicationScanningResult.KeepProviderResult keepProviderResult = applicationResultBuildItem.getResult()
+                    .keepProvider(converterClass);
+            if (keepProviderResult != ApplicationScanningResult.KeepProviderResult.DISCARD) {
+                AnnotationInstance priorityInstance = converterClass.declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
+                paramConverterBuildItemBuildProducer.produce(new ParamConverterBuildItem(converterClass.name().toString(),
+                        priorityInstance != null ? priorityInstance.value().asInt() : Priorities.USER, true));
+            }
+        }
+
+    }
+
+    @BuildStep
+    public void handleCustomAnnotatedMethods(
+            Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<GeneratedBeanBuildItem> generatedBean,
+            List<CustomContainerRequestFilterBuildItem> customContainerRequestFilters,
+            List<CustomContainerResponseFilterBuildItem> customContainerResponseFilters,
+            List<CustomExceptionMapperBuildItem> customExceptionMappers,
+            BuildProducer<ContainerRequestFilterBuildItem> additionalContainerRequestFilters,
+            BuildProducer<ContainerResponseFilterBuildItem> additionalContainerResponseFilters,
+            BuildProducer<ExceptionMapperBuildItem> additionalExceptionMappers,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean) {
+        IndexView index = combinedIndexBuildItem.getComputingIndex();
+        AdditionalBeanBuildItem.Builder additionalBeans = AdditionalBeanBuildItem.builder();
+
+        // if we have custom filters, we need to index these classes
+        if (!customContainerRequestFilters.isEmpty() || !customContainerResponseFilters.isEmpty()
+                || !customExceptionMappers.isEmpty()) {
+            //we have to use the non-computing index here
+            //the logic checks if the bean is already indexed, so the computing one breaks this
+            LazyIndexer indexer = new LazyIndexer(Thread.currentThread().getContextClassLoader(),
+                    combinedIndexBuildItem.getIndex());
+            for (CustomContainerRequestFilterBuildItem filter : customContainerRequestFilters) {
+                indexer.add(filter.getClassName());
+            }
+            for (CustomContainerResponseFilterBuildItem filter : customContainerResponseFilters) {
+                indexer.add(filter.getClassName());
+            }
+            for (CustomExceptionMapperBuildItem mapper : customExceptionMappers) {
+                indexer.add(mapper.getClassName());
+            }
+            LazyIndexer.Result result = indexer.complete();
+            index = CompositeIndex.create(index, result.index());
+        }
+
+        List<FilterGeneration.GeneratedFilter> generatedFilters = FilterGeneration.generate(index,
+                Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()),
+                (methodInfo -> {
+                    List<AnnotationInstance> methodAnnotations = methodInfo.annotations();
+                    for (AnnotationInstance methodAnnotation : methodAnnotations) {
+                        if (CONDITIONAL_BEAN_ANNOTATIONS.contains(methodAnnotation.name())) {
+                            throw new RuntimeException("The combination of '@" + methodAnnotation.name().withoutPackagePrefix()
+                                    + "' and '@ServerRequestFilter' or '@ServerResponseFilter' is not allowed. Offending method is '"
+                                    + methodInfo.name() + "' of class '" + methodInfo.declaringClass().name() + "'");
+                        }
+                    }
+
+                    List<AnnotationInstance> classAnnotations = methodInfo.declaringClass().declaredAnnotations();
+                    for (AnnotationInstance classAnnotation : classAnnotations) {
+                        if (CONDITIONAL_BEAN_ANNOTATIONS.contains(classAnnotation.name())) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }));
+        for (var generated : generatedFilters) {
+            for (var i : generated.getGeneratedClasses()) {
+                generatedBean.produce(new GeneratedBeanBuildItem(i.getName(), i.getData()));
+            }
+            if (generated.isRequestFilter()) {
+                // the user class itself is made to be a bean as we want the user to be able to declare dependencies
+                additionalBeans.addBeanClass(generated.getDeclaringClassName());
+                ContainerRequestFilterBuildItem.Builder builder = new ContainerRequestFilterBuildItem.Builder(
+                        generated.getGeneratedClassName())
+                        .setRegisterAsBean(false) // it has already been made a bean
+                        .setPriority(generated.getPriority())
+                        .setPreMatching(generated.isPreMatching())
+                        .setNonBlockingRequired(generated.isNonBlocking())
+                        .setWithFormRead(generated.isWithFormRead())
+                        .setFilterSourceMethod(generated.getFilterSourceMethod());
+                if (!generated.getNameBindingNames().isEmpty()) {
+                    builder.setNameBindingNames(generated.getNameBindingNames());
+                }
+
+                additionalContainerRequestFilters.produce(builder.build());
+            } else {
+                // the user class itself is made to be a bean as we want the user to be able to declare dependencies
+                additionalBeans.addBeanClass(generated.getDeclaringClassName());
+                ContainerResponseFilterBuildItem.Builder builder = new ContainerResponseFilterBuildItem.Builder(
+                        generated.getGeneratedClassName())
+                        .setRegisterAsBean(false)// it has already been made a bean
+                        .setPriority(generated.getPriority())
+                        .setCancellable(generated.isCancellable())
+                        .setFilterSourceMethod(generated.getFilterSourceMethod());
+                if (!generated.getNameBindingNames().isEmpty()) {
+                    builder.setNameBindingNames(generated.getNameBindingNames());
+                }
+                additionalContainerResponseFilters.produce(builder.build());
+            }
+        }
+        Set<MethodInfo> classLevelExceptionMappers = new HashSet<>(resourceScanningResultBuildItem
+                .map(s -> s.getResult().getClassLevelExceptionMappers()).orElse(Collections.emptyList()));
+        for (AnnotationInstance instance : index
+                .getAnnotations(ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER)) {
+            if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
+                continue;
+            }
+            MethodInfo methodInfo = instance.target().asMethod();
+            if (methodInfo.isBridge()) { // we don't want to generate duplicates for bridge methods added by javac to handle generics
+                continue;
+            }
+            if (classLevelExceptionMappers.contains(methodInfo)) { // methods annotated with @ServerExceptionMapper that exist inside a Resource Class are handled differently
+                continue;
+            }
+            // the user class itself is made to be a bean as we want the user to be able to declare dependencies
+            additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
+            Map<String, String> generatedClassNames = ServerExceptionMapperGenerator.generateGlobalMapper(methodInfo,
+                    new GeneratedBeanGizmoAdaptor(generatedBean),
+                    Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()),
+                    (m -> {
+                        List<AnnotationInstance> methodAnnotations = m.annotations();
+                        for (AnnotationInstance methodAnnotation : methodAnnotations) {
+                            if (CONDITIONAL_BEAN_ANNOTATIONS.contains(methodAnnotation.name())) {
+                                throw new RuntimeException(
+                                        "The combination of '@" + methodAnnotation.name().withoutPackagePrefix()
+                                                + "' and '@ServerExceptionMapper' is not allowed. Offending method is '"
+                                                + m.name() + "' of class '" + m.declaringClass().name() + "'");
+                            }
+                        }
+
+                        List<AnnotationInstance> classAnnotations = m.declaringClass().declaredAnnotations();
+                        for (AnnotationInstance classAnnotation : classAnnotations) {
+                            if (CONDITIONAL_BEAN_ANNOTATIONS.contains(classAnnotation.name())) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }));
+            for (Map.Entry<String, String> entry : generatedClassNames.entrySet()) {
+                ExceptionMapperBuildItem.Builder builder = new ExceptionMapperBuildItem.Builder(entry.getValue(),
+                        entry.getKey())
+                        .setRegisterAsBean(false) // it has already been made a bean
+                        .setDeclaringClass(methodInfo.declaringClass()); // we'll use this later on
+                AnnotationValue priorityValue = instance.value("priority");
+                if (priorityValue != null) {
+                    builder.setPriority(priorityValue.asInt());
+                }
+                additionalExceptionMappers.produce(builder.build());
+            }
+        }
+
+        additionalBean.produce(additionalBeans.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());
+    }
+
+}

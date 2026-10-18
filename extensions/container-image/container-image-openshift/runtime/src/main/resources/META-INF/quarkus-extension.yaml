@@ -1,0 +1,12 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Container Image OpenShift"
+metadata:
+  keywords:
+    - "openshift"
+    - "container"
+    - "image"
+  guide: "https://quarkus.io/guides/container-image#openshift"
+  categories:
+    - "cloud"
+  status: "stable"

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration version="2.0" label="quarkus-jfr" description="This is for test" provider="Quarkus">
+    <event name="quarkus.Rest">
+      <setting name="enabled">true</setting>
+    </event>
+    <event name="quarkus.RestStart">
+      <setting name="enabled">true</setting>
+    </event>
+    <event name="quarkus.RestEnd">
+      <setting name="enabled">true</setting>
+    </event>
+</configuration>

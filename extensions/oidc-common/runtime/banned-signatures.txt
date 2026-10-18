@@ -1,0 +1,2 @@
+@defaultMessage Don't jakarta.json.Json as it is ridiculously slow (see https://github.com/quarkusio/quarkus/issues/42748)
+jakarta.json.Json

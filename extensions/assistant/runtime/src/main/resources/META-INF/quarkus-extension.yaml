@@ -1,0 +1,9 @@
+name: Dev Assistant
+description: Get assistance when developing your applications
+metadata:
+  categories:
+  - "ai"
+  guide: "https://quarkus.io/guides/assistant"
+  status: "stable"
+  unlisted: true
+  hide-in-dev-ui: true

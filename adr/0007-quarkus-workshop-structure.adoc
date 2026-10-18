@@ -1,0 +1,81 @@
+= Structure for Quarkus Workshops
+
+* Status: _Accepted_
+* Date: 2024-11-06
+* Authors: @cescoffier
+
+== Context and Problem Statement
+
+Since the public release of Quarkus, we launched a hands-on workshop to help developers get started with it.
+Known as the "Quarkus Superheroes" workshop, this workshop allowed developers to learn Quarkus by actively writing and running code in a structured environment, often at conferences or in classroom settings.
+
+The "Quarkus Superheroes" workshop has been highly successful, delivered at various conferences and widely used by developers for self-study.
+At the time, we anticipated additional workshops, leading us to establish a dedicated structure within a single repository: Quarkus Workshops (https://github.com/quarkusio/quarkus-workshops).
+
+The initial (and still existing) structure was straightforward:
+
+[source]
+----
+.
+├── README.md
+└── quarkus-workshop-super-heroes/
+    ├── dist
+    ├── docs
+    ├── super-heroes
+    ├── README.adoc
+    └── pom.xml
+----
+
+Although this structure was meant to support multiple workshops, only the "Quarkus Superheroes" workshop was added.
+Instead of separate workshops, we expanded this initial workshop with additional steps and features.
+
+As we now develop new workshops on various topics, we face limitations with the single repository structure.
+For example, the Quarkus LangChain4J workshop was created separately to demonstrate Quarkus LangChain4J usage, yet it isn’t integrated into the main workshop repository.
+Additionally, having a single repository complicates using GitHub Pages for documentation.
+
+Given the current and future workshops, it’s essential to reconsider the structure to allow easier management and discoverability of each workshop.
+
+== Proposed New Structure
+
+Our experience shows that hosting all workshops in one repository isn’t optimal. We propose a new structure as follows:
+
+1. Each workshop will be hosted in its own repository.
+This simplifies management, avoids conflicts in `README` and documentation setup, and improves workshop discoverability.
+2. Naming convention: Each workshop repository should follow the format `quarkus-workshop-<topic>`, where `<topic>` represents the workshop subject (e.g., `quarkus-workshop-superheroes`, `quarkus-workshop-langchain4j`).
+3. Documentation should be hosted with GitHub Pages in each repository, making each workshop more accessible.
+4. Each workshop repository should have the `workshop` topic to facilitate discoverability.
+5. We will keep https://quarkus.io/quarkus-workshops/ as a landing page, which people can use to find workshops.
+In order to preserve the GitHub history, the quarkus-workshops repository should be renamed to https://quarkus.io/quarkus-workshop-superheroes, and then a new repository should be created, using the old name, `quarkus-workshops`.
+6. This _landing_ repository can also be used to host redirects. For example, the existing URL https://quarkus.io/quarkus-workshops/super-heroes/ should be kept valid by using a redirect.
+
+== Considered Options
+
+=== Option 1: Continue with the current single-repository approach
+
+This would mean keeping all workshops under the existing repository.
+However, as observed, this approach has not met expectations and makes workshop management more challenging.
+
+=== Option 2: Create a separate organization for workshops
+
+A dedicated organization could host all workshops, offering a single access point.
+However, this approach could reduce discoverability, but would not use the Quarkus organization’s CI resources.
+CI resource usage is minor, as workshops are not frequently updated.
+
+== Consequences
+
+=== Positive
+
+* Simplified workshop management.
+* Greater autonomy for workshop maintainers.
+* Consolidation of workshops previously hosted in separate repositories.
+
+=== Negative
+
+* Lack of a central place to list all workshops. This could be mitigated by creating a dedicated page on the Quarkus website.
+* Potential CI resource shortage as each workshop repository uses _quarkusio_ organization CI resources.
+However, this is unlikely to be a significant issue, as, generally, workshops don't use much CI resources.
+That being said, it would require monitoring to ensure it doesn't become a problem.
+
+=== Neutral
+
+* Existing workshops would need restructuring to align with the new approach, especially the Quarkus Superheroes workshop.

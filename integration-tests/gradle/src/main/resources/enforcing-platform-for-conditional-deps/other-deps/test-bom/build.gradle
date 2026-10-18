@@ -1,0 +1,29 @@
+plugins {
+    id 'java-platform'
+    id 'maven-publish'
+}
+
+javaPlatform {
+    allowDependencies()
+}
+
+publishing {
+    publications {
+        mavenBom(MavenPublication) {
+            from components.javaPlatform
+            groupId = 'org.enforcing.deps'
+            artifactId = 'test-bom'
+            version = '1.0.0'
+        }
+    }
+    repositories {
+        mavenLocal()
+    }
+}
+
+dependencies {
+    constraints {
+        api 'org.enforcing.conditional:dev-mode-only-lib:9.4.0'
+    }
+}
+

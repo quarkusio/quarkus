@@ -1,0 +1,5 @@
+---
+registries:
+- registry.acme.org:
+    descriptor:
+      artifact: "org.acme:acme-quarkus-registry-descriptor::json:2.0"

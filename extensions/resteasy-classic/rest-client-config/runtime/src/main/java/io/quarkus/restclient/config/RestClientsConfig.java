@@ -1,0 +1,684 @@
+package io.quarkus.restclient.config;
+
+import java.io.InputStream;
+import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.Set;
+
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
+
+import io.quarkus.runtime.annotations.ConfigDocDefault;
+import io.quarkus.runtime.annotations.ConfigDocIgnore;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.configuration.MemorySize;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.ConfigValue;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithKeys;
+import io.smallrye.config.WithName;
+import io.smallrye.config.WithParentName;
+
+@ConfigMapping(prefix = "quarkus.rest-client")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface RestClientsConfig {
+    /**
+     * Configurations of REST client instances.
+     * <p>
+     * The key can be either the value of the configKey parameter of a `@RegisterRestClient` annotation, or the name of
+     * a class bearing that annotation, in which case it is possible to use the short name, as well as fully qualified
+     * name.
+     */
+    @WithParentName
+    @WithDefaults
+    @WithKeys(RestClientKeysProvider.class)
+    @ConfigDocMapKey("client")
+    Map<String, RestClientConfig> clients();
+
+    /**
+     * Mode in which the form data are encoded. Possible values are `HTML5`, `RFC1738` and `RFC3986`.
+     * The modes are described in the
+     * <a href="https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html">Netty
+     * documentation</a>
+     * <p>
+     * By default, Rest Client Reactive uses RFC1738.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    Optional<String> multipartPostEncoderMode();
+
+    /**
+     * The name of the proxy configuration to use.
+     * <p>
+     * If not set and the default proxy configuration is configured ({@code quarkus.proxy.*}) then that will be used.
+     * If the proxy configuration name is set, the configuration from {@code quarkus.proxy.<name>.*} will be used.
+     * If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be thrown
+     * at runtime.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     * <p>
+     * Use the value {@code none} to disable using the default configuration defined via {@code quarkus.proxy.*}.
+     * <p>
+     * Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency) does not support this property.
+     */
+    Optional<String> proxyConfigurationName();
+
+    /**
+     * A timeout in milliseconds that REST clients should wait to connect to the remote endpoint.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    @WithDefault("15000")
+    Long connectTimeout();
+
+    /**
+     * A timeout in milliseconds that REST clients should wait for a response from the remote endpoint.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    @WithDefault("30000")
+    Long readTimeout();
+
+    /**
+     * If true, the REST clients will not provide additional contextual information (like REST client class and method
+     * names) when exception occurs during a client invocation.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @WithDefault("false")
+    boolean disableContextualErrorMessages();
+
+    /**
+     * Default configuration for the HTTP user-agent header to use in all REST clients.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    Optional<String> userAgent();
+
+    /**
+     * The HTTP headers that should be applied to all requests of the rest client.
+     */
+    @ConfigDocMapKey("header-name")
+    Map<String, String> headers();
+
+    /**
+     * The class name of the host name verifier. The class must have a public no-argument constructor.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    Optional<String> hostnameVerifier();
+
+    /**
+     * The time in ms for which a connection remains unused in the connection pool before being evicted and closed.
+     * <p>
+     * Although this is set in milliseconds, the underlying client can only be configured in seconds, meaning that
+     * for this value to actually take effect, it must be higher than {@code 1000}; any value less than or equal to {@code 999}
+     * is converted to 0 seconds.
+     * <p>
+     * A timeout of {@code 0} means there is no timeout.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigDocDefault("60000")
+    OptionalInt connectionTTL();
+
+    /**
+     * The size of the connection pool for this client.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigDocDefault("50")
+    OptionalInt connectionPoolSize();
+
+    /**
+     * If set to false disables the keep alive completely.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    @WithDefault("true")
+    Optional<Boolean> keepAliveEnabled();
+
+    /**
+     * The maximum number of redirection a request can follow.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    OptionalInt maxRedirects();
+
+    /**
+     * A boolean value used to determine whether the client should follow HTTP redirect responses.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    Optional<Boolean> followRedirects();
+
+    /**
+     * Fully-qualified provider classnames to include in the client. The equivalent of the `@RegisterProvider` annotation.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    Optional<String> providers();
+
+    /**
+     * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
+     * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same query parameter is used.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    Optional<QueryParamStyle> queryParamStyle();
+
+    /**
+     * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
+     * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same
+     * {@code application/x-www-form-urlencoded} form parameter is used.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    Optional<QueryParamStyle> formParamStyle();
+
+    /**
+     * Set whether hostname verification is enabled. Default is enabled.
+     * This setting should not be disabled in production as it makes the client vulnerable to MITM attacks.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    Optional<Boolean> verifyHost();
+
+    /**
+     * The trust store location. Can point to either a classpath resource or a file.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    Optional<String> trustStore();
+
+    /**
+     * The trust store password.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    Optional<String> trustStorePassword();
+
+    /**
+     * The type of the trust store. Defaults to "JKS".
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    Optional<String> trustStoreType();
+
+    /**
+     * The key store location. Can point to either a classpath resource or a file.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    Optional<String> keyStore();
+
+    /**
+     * The key store password.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    Optional<String> keyStorePassword();
+
+    /**
+     * The type of the key store. Defaults to "JKS".
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    Optional<String> keyStoreType();
+
+    /**
+     * The name of the TLS configuration to use.
+     * <p>
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * The default TLS configuration will be ignored.
+     * <p>
+     * If no named TLS configuration is set, then the key-store, trust-store, etc. properties will be used.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    Optional<String> tlsConfigurationName();
+
+    /**
+     * If this is true then HTTP/2 will be enabled.
+     */
+    @WithDefault("false")
+    boolean http2();
+
+    /**
+     * If this is true then HTTP/3 will be enabled.
+     * The target server must support HTTP/3 and the connection must use TLS.
+     * <p>
+     * This property is not applicable to the RESTEasy Classic Client.
+     */
+    @WithDefault("false")
+    boolean http3();
+
+    /**
+     * Configures the HTTP/2 upgrade maximum length of the aggregated content in bytes.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @ConfigDocDefault("64K")
+    Optional<MemorySize> http2UpgradeMaxContentLength();
+
+    /**
+     * Configures two different things:
+     * <ul>
+     * <li>The max HTTP chunk size, up to {@code Integer.MAX_VALUE} bytes.</li>
+     * <li>The size of the chunk to be read when an {@link InputStream} is being used as an input</li>
+     * </ul>
+     * <p>
+     * Can be overwritten by client-specific settings.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @ConfigDocDefault("8k")
+    Optional<MemorySize> maxChunkSize();
+
+    /**
+     * Supports receiving compressed messages using GZIP.
+     * When this feature is enabled and a server returns a response that includes the header {@code Content-Encoding: gzip},
+     * REST Client will automatically decode the content and proceed with the message handling.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    Optional<Boolean> enableResponseDecompression();
+
+    /**
+     * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
+     * protocols exposed by the server. By default, it will try to use HTTP/2 first and if it's not enabled, it will
+     * use HTTP/1.1.
+     * When the property `http2` is enabled, this flag will be automatically enabled.
+     */
+    Optional<Boolean> alpn();
+
+    /**
+     * If {@code true}, the stacktrace of the invocation of the REST Client method is captured.
+     * This stacktrace will be used if the invocation throws an exception
+     */
+    @WithDefault("false")
+    boolean captureStacktrace();
+
+    /**
+     * Logging configuration.
+     */
+    RestClientLoggingConfig logging();
+
+    default RestClientConfig getClient(final Class<?> restClientInterface) {
+        if (RestClientKeysProvider.KEYS.contains(restClientInterface.getName())) {
+            return clients().get(restClientInterface.getName());
+        }
+        throw new IllegalArgumentException("Unable to lookup configuration for REST Client " + restClientInterface.getName()
+                + ". Please confirm if the REST Client is annotated with @RegisterRestClient");
+    }
+
+    interface RestClientLoggingConfig {
+        /**
+         * Scope of logging for the client.
+         * <br/>
+         * WARNING: beware of logging sensitive data
+         * <br/>
+         * The possible values are:
+         * <ul>
+         * <li>{@code request-response} - enables logging request and responses, including redirect responses</li>
+         * <li>{@code all} - enables logging requests and responses and lower-level logging</li>
+         * <li>{@code none} - no additional logging</li>
+         * </ul>
+         *
+         * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
+         */
+        Optional<String> scope();
+
+        /**
+         * How many characters of the body should be logged. Message body can be large and can easily pollute the logs.
+         * <p>
+         * By default, set to 100.
+         * <p>
+         * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
+         */
+        @WithDefault("100")
+        Integer bodyLimit();
+
+        /**
+         * Which request and response headers values to mask in logs.
+         * <p>
+         * The value of any matching header will be replaced with {@code "<hidden>"}.
+         * The header name itself remains visible. E.g. {@code Authorization=<hidden>}
+         * <p>
+         * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
+         */
+        @WithDefault("Authorization,Cookie")
+        Optional<Set<String>> maskedHeaders();
+    }
+
+    interface RestClientConfig {
+        /**
+         * The base URL to use for this service. This property or the `uri` property is considered required, unless
+         * the `baseUri` attribute is configured in the `@RegisterRestClient` annotation.
+         */
+        Optional<String> url();
+
+        /**
+         * Duplicate mapping of {@link RestClientConfig#url()} to keep a reference of the name used to retrieve the
+         * <code>url</code>. We need this to reload the <code>url</code> configuration in case it contains an expression
+         * to <code>${quarkus.http.port}</code>, which is only set after we load the config.
+         */
+        @ConfigDocIgnore
+        @WithName("url")
+        ConfigValue urlValue();
+
+        default Optional<String> urlReload() {
+            SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+            return config.getOptionalValue(urlValue().getName(), String.class);
+        }
+
+        /**
+         * The base URI to use for this service. This property or the `url` property is considered required, unless
+         * the `baseUri` attribute is configured in the `@RegisterRestClient` annotation.
+         */
+        Optional<String> uri();
+
+        /**
+         * Duplicate mapping of {@link RestClientConfig#uri()} to keep a reference of the name used to retrieve the
+         * <code>uri</code>. We need this to reload the <code>uri</code> configuration in case it contains an expression
+         * to <code>${quarkus.http.port}</code>, which is only set after we load the config.
+         */
+        @ConfigDocIgnore
+        @WithName("uri")
+        ConfigValue uriValue();
+
+        default Optional<String> uriReload() {
+            SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+            return config.getOptionalValue(uriValue().getName(), String.class);
+        }
+
+        /**
+         * This property is only meant to be set by advanced configurations to override whatever value was set for the uri or
+         * url.
+         * The override is done using the REST Client class name configuration syntax.
+         * <p>
+         * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
+         */
+        Optional<String> overrideUri();
+
+        /**
+         * Map where keys are fully-qualified provider classnames to include in the client, and values are their integer
+         * priorities. The equivalent of the `@RegisterProvider` annotation.
+         */
+        Optional<String> providers();
+
+        /**
+         * Timeout specified in milliseconds to wait to connect to the remote endpoint.
+         */
+        Optional<Long> connectTimeout();
+
+        /**
+         * Timeout specified in milliseconds to wait for a response from the remote endpoint.
+         */
+        Optional<Long> readTimeout();
+
+        /**
+         * A boolean value used to determine whether the client should follow HTTP redirect responses.
+         */
+        Optional<Boolean> followRedirects();
+
+        /**
+         * Mode in which the form data are encoded. Possible values are `HTML5`, `RFC1738` and `RFC3986`.
+         * The modes are described in the
+         * <a href=
+         * "https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html">Netty
+         * documentation</a>
+         * <p>
+         * By default, Rest Client Reactive uses RFC1738.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        Optional<String> multipartPostEncoderMode();
+
+        /**
+         * The name of the proxy configuration to use.
+         * <p>
+         * If not set and {@code quarkus.rest-client.proxy-configuration-name} or the default proxy configuration
+         * ({@code quarkus.proxy.*}) is set, then the first valid of them will get effective.
+         * If the proxy configuration name is set, the configuration from {@code quarkus.proxy.<name>.*} will be used.
+         * If the proxy configuration name is set, but no proxy configuration is found with that name, then an error will be
+         * thrown at runtime.
+         * <p>
+         * Use the value {@code none} to disable using the default configuration defined via
+         * {@code quarkus.rest-client.proxy-configuration-name} or {@code quarkus.proxy.*}.
+         * <p>
+         * Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency) does not support this property.
+         */
+        Optional<String> proxyConfigurationName();
+
+        /**
+         * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
+         * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same query parameter is used.
+         */
+        Optional<QueryParamStyle> queryParamStyle();
+
+        /**
+         * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
+         * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same
+         * {@code application/x-www-form-urlencoded} form parameter is used.
+         * <p>
+         * Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency) does not support this property.
+         */
+        Optional<QueryParamStyle> formParamStyle();
+
+        /**
+         * Set whether hostname verification is enabled. Default is enabled.
+         * This setting should not be disabled in production as it makes the client vulnerable to MITM attacks.
+         */
+        Optional<Boolean> verifyHost();
+
+        /**
+         * The trust store location. Can point to either a classpath resource or a file.
+         */
+        Optional<String> trustStore();
+
+        /**
+         * The trust store password.
+         */
+        Optional<String> trustStorePassword();
+
+        /**
+         * The type of the trust store. Defaults to "JKS".
+         */
+        Optional<String> trustStoreType();
+
+        /**
+         * The key store location. Can point to either a classpath resource or a file.
+         */
+        Optional<String> keyStore();
+
+        /**
+         * The key store password.
+         */
+        Optional<String> keyStorePassword();
+
+        /**
+         * The type of the key store. Defaults to "JKS".
+         */
+        Optional<String> keyStoreType();
+
+        /**
+         * The class name of the host name verifier. The class must have a public no-argument constructor.
+         */
+        Optional<String> hostnameVerifier();
+
+        /**
+         * The name of the TLS configuration to use.
+         * <p>
+         * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+         * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+         * The default TLS configuration will be ignored.
+         * <p>
+         * If no named TLS configuration is set, then the key-store, trust-store, etc. properties will be used.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        Optional<String> tlsConfigurationName();
+
+        /**
+         * The time in ms for which a connection remains unused in the connection pool before being evicted and closed.
+         * <p>
+         * Although this is set in milliseconds, the underlying client can only be configured in seconds, meaning that
+         * for this value to actually take effect, it must be higher than {@code 1000}; any value less than or equal to
+         * {@code 999}
+         * is converted to 0 seconds.
+         * <p>
+         * A timeout of {@code 0} means there is no timeout.
+         */
+        @ConfigDocDefault("60000")
+        OptionalInt connectionTTL();
+
+        /**
+         * The size of the connection pool for this client.
+         */
+        @ConfigDocDefault("50")
+        OptionalInt connectionPoolSize();
+
+        /**
+         * If set to false disables the keep alive completely.
+         */
+        Optional<Boolean> keepAliveEnabled();
+
+        /**
+         * The maximum number of redirection a request can follow.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        OptionalInt maxRedirects();
+
+        /**
+         * The HTTP headers that should be applied to all requests of the rest client.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        @ConfigDocMapKey("header-name")
+        Map<String, String> headers();
+
+        /**
+         * Set to true to share the HTTP client between REST clients.
+         * There can be multiple shared clients distinguished by <em>name</em>, when no specific name is set,
+         * the name <code>__vertx.DEFAULT</code> is used.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        Optional<Boolean> shared();
+
+        /**
+         * Set the HTTP client name, used when the client is shared, otherwise ignored.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        Optional<String> name();
+
+        /**
+         * Configure the HTTP user-agent header to use.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        Optional<String> userAgent();
+
+        /**
+         * If this is true then HTTP/2 will be enabled.
+         */
+        Optional<Boolean> http2();
+
+        /**
+         * If this is true then HTTP/3 will be enabled.
+         * The target server must support HTTP/3 and the connection must use TLS.
+         * <p>
+         * This property is not applicable to the RESTEasy Classic Client.
+         */
+        Optional<Boolean> http3();
+
+        /**
+         * Configures the HTTP/2 upgrade maximum length of the aggregated content in bytes.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        @ConfigDocDefault("64K")
+        Optional<MemorySize> http2UpgradeMaxContentLength();
+
+        /**
+         * Configures two different things:
+         * <ul>
+         * <li>The max HTTP chunk size, up to {@code Integer.MAX_VALUE} bytes.</li>
+         * <li>The size of the chunk to be read when an {@link InputStream} is being read and sent to the server</li>
+         * </ul>
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        @ConfigDocDefault("8K")
+        Optional<MemorySize> maxChunkSize();
+
+        /**
+         * Supports receiving compressed messages using GZIP.
+         * When this feature is enabled and a server returns a response that includes the header {@code Content-Encoding: gzip},
+         * REST Client will automatically decode the content and proceed with the message handling.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        Optional<Boolean> enableResponseDecompression();
+
+        /**
+         * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
+         * protocols exposed by the server. By default, it will try to use HTTP/2 first and if it's not enabled, it will
+         * use HTTP/1.1.
+         * When the property `http2` is enabled, this flag will be automatically enabled.
+         */
+        Optional<Boolean> alpn();
+
+        /**
+         * If {@code true}, the stacktrace of the invocation of the REST Client method is captured.
+         * This stacktrace will be used if the invocation throws an exception
+         */
+        Optional<Boolean> captureStacktrace();
+
+        /**
+         * If set to {@code true}, then this REST Client will not the default exception mapper which
+         * always throws an exception if HTTP response code >= 400.
+         * <p>
+         * This property is only taken into account if the REST Client returns {@code jakarta.ws.rs.core.Response} or
+         * {@code org.jboss.resteasy.reactive.RestResponse}
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        @WithDefault("false")
+        Boolean disableDefaultMapper();
+
+        /**
+         * The path to a Unix domain socket. When set, the client connects to the server
+         * using a Unix domain socket instead of a network connection. The {@code url} or {@code uri}
+         * property is optional in this case: when set, it provides the scheme, the request path prefix
+         * and the HTTP {@code Host} header, otherwise {@code http://localhost} is used.
+         * <p>
+         * Unix domain sockets are not available on Windows.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        Optional<String> domainSocket();
+
+        /**
+         * Logging configuration.
+         */
+        Optional<RestClientLoggingConfig> logging();
+    }
+}

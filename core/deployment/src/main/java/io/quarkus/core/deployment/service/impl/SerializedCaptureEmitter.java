@@ -1,0 +1,957 @@
+package io.quarkus.core.deployment.service.impl;
+
+import static java.lang.constant.ConstantDescs.CD_Class;
+import static java.lang.constant.ConstantDescs.CD_Double;
+import static java.lang.constant.ConstantDescs.CD_Float;
+import static java.lang.constant.ConstantDescs.CD_Integer;
+import static java.lang.constant.ConstantDescs.CD_List;
+import static java.lang.constant.ConstantDescs.CD_Long;
+import static java.lang.constant.ConstantDescs.CD_Map;
+import static java.lang.constant.ConstantDescs.CD_Object;
+import static java.lang.constant.ConstantDescs.CD_Set;
+import static java.lang.constant.ConstantDescs.CD_double;
+import static java.lang.constant.ConstantDescs.CD_float;
+import static java.lang.constant.ConstantDescs.CD_int;
+import static java.lang.constant.ConstantDescs.CD_long;
+import static java.lang.constant.ConstantDescs.CD_void;
+
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.DirectMethodHandleDesc;
+import java.lang.constant.DynamicConstantDesc;
+import java.lang.constant.MethodTypeDesc;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.RecordComponent;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.IdentityHashMap;
+import java.util.List;
+
+import io.quarkus.core.Bootstraps;
+import io.smallrye.classfile.CodeBuilder;
+import io.smallrye.classfile.TypeKind;
+import io.smallrye.classfile.extras.constant.ExtraConstantDescs;
+import io.smallrye.serial.SerialData;
+import io.smallrye.serial.SerialField;
+import io.smallrye.serial.Serialized;
+import io.smallrye.serial.SerializedClass;
+import io.smallrye.serial.SerializedEnum;
+import io.smallrye.serial.SerializedNull;
+import io.smallrye.serial.SerializedRecord;
+import io.smallrye.serial.SerializedRecordClass;
+import io.smallrye.serial.SerializedSerializable;
+import io.smallrye.serial.SerializedString;
+import io.smallrye.serial.StreamData;
+
+/**
+ * Walks a {@link Serialized} graph and produces {@link CaptureEmitter} instances
+ * that emit the bytecode to reconstruct captured values at runtime.
+ * <p>
+ * All decomposition is performed by {@code smallrye-serial} via custom serializers;
+ * this class only handles the bytecode emission from the resulting {@code Serialized} tree.
+ */
+final class SerializedCaptureEmitter {
+
+    private static final ClassDesc CD_Thread = ClassDesc.of("java.lang.Thread");
+    private static final ClassDesc CD_ClassLoader = ClassDesc.of("java.lang.ClassLoader");
+
+    private static final ClassDesc CD_Map_Entry = ClassDesc.of("java.util.Map$Entry");
+    private static final ClassDesc CD_ConfigLookup = ClassDesc.of("io.quarkus.runtime.configuration.ConfigLookup");
+    private static final ClassDesc CD_Bootstraps = ClassDesc.of("io.quarkus.core.Bootstraps");
+
+    /** Bootstrap method handle for {@code Bootstraps.loadClass(Lookup, String, Class, String)}. */
+    private static final DirectMethodHandleDesc BSM_Bootstraps_loadClass = ConstantDescs.ofConstantBootstrap(
+            CD_Bootstraps, "loadClass", CD_Class, ConstantDescs.CD_String);
+
+    /** CollSer tag: unmodifiable list. */
+    private static final int TAG_LIST = 1;
+    /** CollSer tag: unmodifiable set. */
+    private static final int TAG_SET = 2;
+    /** CollSer tag: unmodifiable map. */
+    private static final int TAG_MAP = 3;
+
+    /** Tracks dedup: Serialized identity → emitter (to avoid re-emitting shared nodes). */
+    private final IdentityHashMap<Serialized, CaptureEmitter> dedupMap = new IdentityHashMap<>();
+
+    SerializedCaptureEmitter() {
+    }
+
+    /**
+     * Produce a {@link CaptureEmitter} for the given serialized node.
+     *
+     * @param serialized the serialized value (must not be {@code null})
+     * @param targetType the target type descriptor (for boxing decisions)
+     * @return the capture emitter
+     */
+    CaptureEmitter emitFor(Serialized serialized, ClassDesc targetType) {
+        // dedup: return existing emitter for shared Serialized nodes
+        CaptureEmitter existing = dedupMap.get(serialized);
+        if (existing != null) {
+            return existing;
+        }
+
+        CaptureEmitter result;
+        boolean doDedup = false;
+        result = switch (serialized) {
+            case SerializedConstant sc -> emitConstant(sc, targetType);
+            case SerializedConfigMapping cm -> {
+                var res = emitConfigMapping(cm);
+                doDedup = true;
+                yield res;
+            }
+            case SerializedNull ignored -> CodeBuilder::aconst_null;
+            case SerializedRecord sr -> {
+                var res = emitRecord(sr);
+                doDedup = true;
+                yield res;
+            }
+            case SerializedClass sc -> emitClassConstant(sc);
+            case SerializedQuarkusClassLoader scl -> emitQuarkusClassLoader(scl);
+            case SerializedSerializable ss -> {
+                CaptureEmitter res = emitSerializable(ss);
+                doDedup = true;
+                yield res;
+            }
+            case SerializedJavaTime sjt -> emitJavaTime(sjt);
+            default -> throw new LambdaTransliterator.TransliterationException(
+                    "Unsupported serialized type: " + serialized.getClass().getName());
+        };
+
+        // wrap non-trivial emitters in dedup (constants are cheap to re-emit)
+        if (doDedup) {
+            DedupEmitter dedup = new DedupEmitter(result);
+            dedupMap.put(serialized, dedup);
+            return dedup;
+        }
+        dedupMap.put(serialized, result);
+        return result;
+    }
+
+    // ── Constants ──
+
+    /**
+     * Emit a constant value, with boxing if the target type is a reference type
+     * but the constant pushes a primitive.
+     */
+    private static CaptureEmitter emitConstant(SerializedConstant sc, ClassDesc targetType) {
+        ConstantDesc cd = sc.constantDesc();
+        if (targetType.isPrimitive()) {
+            // target is primitive — load as primitive constant
+            // Boolean/Byte/Short/Character are already stored as int by ConstantDescSerializer
+            return code -> code.loadConstant(cd);
+        }
+        // target is reference — may need boxing
+        ClassDesc boxType = sc.boxType();
+        if (boxType == null) {
+            // check for Integer/Long/Float/Double (which push primitives via ldc)
+            boxType = inferBoxType(cd);
+        }
+        if (boxType != null) {
+            ClassDesc bt = boxType;
+            ClassDesc primType = inferPrimType(cd);
+            return code -> {
+                code.loadConstant(cd);
+                code.invokestatic(bt, "valueOf", MethodTypeDesc.of(bt, primType));
+            };
+        }
+        return code -> code.loadConstant(cd);
+    }
+
+    /**
+     * Infer the box type for a ConstantDesc that pushes a primitive via ldc.
+     * Returns null if the constant pushes a reference (no boxing needed).
+     */
+    private static ClassDesc inferBoxType(ConstantDesc cd) {
+        if (cd instanceof Integer) {
+            return CD_Integer;
+        }
+        if (cd instanceof Long) {
+            return CD_Long;
+        }
+        if (cd instanceof Float) {
+            return CD_Float;
+        }
+        if (cd instanceof Double) {
+            return CD_Double;
+        }
+        return null;
+    }
+
+    /**
+     * Infer the primitive type for a ConstantDesc that pushes a primitive.
+     * For Boolean/Byte/Short/Character (stored as Integer by ConstantDescSerializer),
+     * the primitive type is always int.
+     */
+    private static ClassDesc inferPrimType(ConstantDesc cd) {
+        if (cd instanceof Integer) {
+            return CD_int;
+        }
+        if (cd instanceof Long) {
+            return CD_long;
+        }
+        if (cd instanceof Float) {
+            return CD_float;
+        }
+        if (cd instanceof Double) {
+            return CD_double;
+        }
+        throw new IllegalArgumentException("Unexpected primitive constant: " + cd.getClass());
+    }
+
+    // ── Config mappings ──
+
+    /**
+     * Emit a config mapping lookup via ConfigLookup.getConfigMapping(type).
+     */
+    private static CaptureEmitter emitConfigMapping(SerializedConfigMapping cm) {
+        ClassDesc configType = cm.configInterface();
+        return code -> {
+            code.loadConstant(configType);
+            code.invokestatic(CD_ConfigLookup, "getConfigMapping",
+                    MethodTypeDesc.of(CD_Object, CD_Class));
+            code.checkcast(configType);
+        };
+    }
+
+    // ── Class constants ──
+
+    /**
+     * Emit a Class constant from a SerializedClass node.
+     * <p>
+     * For accessible, non-array classes, emits a simple {@code ldc} class constant.
+     * For array types and inaccessible classes (non-public, or in a named module
+     * that does not export the package), emits a {@code condy} via
+     * {@link Bootstraps#loadClass} which uses the caller's
+     * class loader and handles array descriptors.
+     */
+    private static CaptureEmitter emitClassConstant(SerializedClass sc) {
+        ClassDesc classDesc = sc.descriptor();
+        if (needsDynamicLoad(classDesc)) {
+            DynamicConstantDesc<?> condy = DynamicConstantDesc.of(
+                    BSM_Bootstraps_loadClass, classDesc.descriptorString());
+            return code -> code.loadConstant(condy);
+        }
+        return code -> code.loadConstant(classDesc);
+    }
+
+    /**
+     * Determine whether a class descriptor requires dynamic loading.
+     *
+     * @param classDesc the class descriptor to check
+     * @return {@code true} if the class cannot be safely emitted as an {@code ldc} class constant
+     */
+    private static boolean needsDynamicLoad(ClassDesc classDesc) {
+        if (classDesc.isArray()) {
+            return true;
+        }
+        if (classDesc.isPrimitive()) {
+            return false;
+        }
+        try {
+            Class<?> cls = Class.forName(
+                    classDesc.displayName(), false, Thread.currentThread().getContextClassLoader());
+            if (!Modifier.isPublic(cls.getModifiers())) {
+                return true;
+            }
+            Module module = cls.getModule();
+            return module.isNamed() && !module.isExported(cls.getPackageName());
+        } catch (ClassNotFoundException e) {
+            return true;
+        }
+    }
+
+    // ── Class loaders  ──
+
+    private static CaptureEmitter emitQuarkusClassLoader(SerializedQuarkusClassLoader scl) {
+        return switch (scl.kind()) {
+            case RUNTIME -> code -> {
+                code.invokestatic(CD_Thread, "currentThread", MethodTypeDesc.of(CD_Thread));
+                code.invokevirtual(CD_Thread, "getContextClassLoader", MethodTypeDesc.of(CD_ClassLoader));
+            };
+        };
+    }
+
+    // ── java.time types ──
+
+    private static final ClassDesc CD_Duration = ClassDesc.of("java.time.Duration");
+    private static final ClassDesc CD_Instant = ClassDesc.of("java.time.Instant");
+    private static final ClassDesc CD_LocalDate = ClassDesc.of("java.time.LocalDate");
+    private static final ClassDesc CD_LocalTime = ClassDesc.of("java.time.LocalTime");
+    private static final ClassDesc CD_LocalDateTime = ClassDesc.of("java.time.LocalDateTime");
+    private static final ClassDesc CD_ZoneOffset = ClassDesc.of("java.time.ZoneOffset");
+    private static final ClassDesc CD_ZoneId = ClassDesc.of("java.time.ZoneId");
+    private static final ClassDesc CD_ZonedDateTime = ClassDesc.of("java.time.ZonedDateTime");
+    private static final ClassDesc CD_OffsetTime = ClassDesc.of("java.time.OffsetTime");
+    private static final ClassDesc CD_OffsetDateTime = ClassDesc.of("java.time.OffsetDateTime");
+    private static final ClassDesc CD_Year = ClassDesc.of("java.time.Year");
+    private static final ClassDesc CD_YearMonth = ClassDesc.of("java.time.YearMonth");
+    private static final ClassDesc CD_MonthDay = ClassDesc.of("java.time.MonthDay");
+    private static final ClassDesc CD_Period = ClassDesc.of("java.time.Period");
+
+    private static final ClassDesc CD_String = ConstantDescs.CD_String;
+
+    /**
+     * Emit bytecode to reconstruct a {@code java.time} value from its decomposed fields.
+     * <p>
+     * Simple types emit a sequence of constant loads followed by a static factory call.
+     * Composite types (e.g. {@code ZonedDateTime}) first construct their component objects
+     * on the operand stack, then invoke the composite factory method.
+     */
+    private static CaptureEmitter emitJavaTime(SerializedJavaTime sjt) {
+        return switch (sjt) {
+            case SerializedJavaTime.OfDuration d -> code -> {
+                code.loadConstant(d.seconds());
+                code.loadConstant((long) d.nanos());
+                code.invokestatic(CD_Duration, "ofSeconds",
+                        MethodTypeDesc.of(CD_Duration, CD_long, CD_long));
+            };
+            case SerializedJavaTime.OfInstant i -> code -> {
+                code.loadConstant(i.seconds());
+                code.loadConstant((long) i.nanos());
+                code.invokestatic(CD_Instant, "ofEpochSecond",
+                        MethodTypeDesc.of(CD_Instant, CD_long, CD_long));
+            };
+            case SerializedJavaTime.OfLocalDate ld -> code -> {
+                code.loadConstant(ld.year());
+                code.loadConstant(ld.month());
+                code.loadConstant(ld.day());
+                code.invokestatic(CD_LocalDate, "of",
+                        MethodTypeDesc.of(CD_LocalDate, CD_int, CD_int, CD_int));
+            };
+            case SerializedJavaTime.OfLocalTime lt -> code -> {
+                code.loadConstant(lt.hour());
+                code.loadConstant(lt.minute());
+                code.loadConstant(lt.second());
+                code.loadConstant(lt.nano());
+                code.invokestatic(CD_LocalTime, "of",
+                        MethodTypeDesc.of(CD_LocalTime, CD_int, CD_int, CD_int, CD_int));
+            };
+            case SerializedJavaTime.OfLocalDateTime ldt -> code -> {
+                code.loadConstant(ldt.year());
+                code.loadConstant(ldt.month());
+                code.loadConstant(ldt.day());
+                code.loadConstant(ldt.hour());
+                code.loadConstant(ldt.minute());
+                code.loadConstant(ldt.second());
+                code.loadConstant(ldt.nano());
+                code.invokestatic(CD_LocalDateTime, "of",
+                        MethodTypeDesc.of(CD_LocalDateTime, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int));
+            };
+            case SerializedJavaTime.OfZoneOffset zo -> code -> {
+                code.loadConstant(zo.totalSeconds());
+                code.invokestatic(CD_ZoneOffset, "ofTotalSeconds",
+                        MethodTypeDesc.of(CD_ZoneOffset, CD_int));
+            };
+            case SerializedJavaTime.OfZoneId z -> code -> {
+                code.loadConstant(z.id());
+                code.invokestatic(CD_ZoneId, "of",
+                        MethodTypeDesc.of(CD_ZoneId, CD_String));
+            };
+            case SerializedJavaTime.OfZonedDateTime zdt -> code -> {
+                // LocalDateTime.of(year, month, day, hour, minute, second, nano)
+                code.loadConstant(zdt.year());
+                code.loadConstant(zdt.month());
+                code.loadConstant(zdt.day());
+                code.loadConstant(zdt.hour());
+                code.loadConstant(zdt.minute());
+                code.loadConstant(zdt.second());
+                code.loadConstant(zdt.nano());
+                code.invokestatic(CD_LocalDateTime, "of",
+                        MethodTypeDesc.of(CD_LocalDateTime, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int));
+                // ZoneOffset.ofTotalSeconds(offsetTotalSeconds)
+                code.loadConstant(zdt.offsetTotalSeconds());
+                code.invokestatic(CD_ZoneOffset, "ofTotalSeconds",
+                        MethodTypeDesc.of(CD_ZoneOffset, CD_int));
+                // ZoneId.of(zoneId)
+                code.loadConstant(zdt.zoneId());
+                code.invokestatic(CD_ZoneId, "of",
+                        MethodTypeDesc.of(CD_ZoneId, CD_String));
+                // ZonedDateTime.ofStrict(LocalDateTime, ZoneOffset, ZoneId)
+                code.invokestatic(CD_ZonedDateTime, "ofStrict",
+                        MethodTypeDesc.of(CD_ZonedDateTime, CD_LocalDateTime, CD_ZoneOffset, CD_ZoneId));
+            };
+            case SerializedJavaTime.OfOffsetTime ot -> code -> {
+                // LocalTime.of(hour, minute, second, nano)
+                code.loadConstant(ot.hour());
+                code.loadConstant(ot.minute());
+                code.loadConstant(ot.second());
+                code.loadConstant(ot.nano());
+                code.invokestatic(CD_LocalTime, "of",
+                        MethodTypeDesc.of(CD_LocalTime, CD_int, CD_int, CD_int, CD_int));
+                // ZoneOffset.ofTotalSeconds(offsetTotalSeconds)
+                code.loadConstant(ot.offsetTotalSeconds());
+                code.invokestatic(CD_ZoneOffset, "ofTotalSeconds",
+                        MethodTypeDesc.of(CD_ZoneOffset, CD_int));
+                // OffsetTime.of(LocalTime, ZoneOffset)
+                code.invokestatic(CD_OffsetTime, "of",
+                        MethodTypeDesc.of(CD_OffsetTime, CD_LocalTime, CD_ZoneOffset));
+            };
+            case SerializedJavaTime.OfOffsetDateTime odt -> code -> {
+                // LocalDateTime.of(year, month, day, hour, minute, second, nano)
+                code.loadConstant(odt.year());
+                code.loadConstant(odt.month());
+                code.loadConstant(odt.day());
+                code.loadConstant(odt.hour());
+                code.loadConstant(odt.minute());
+                code.loadConstant(odt.second());
+                code.loadConstant(odt.nano());
+                code.invokestatic(CD_LocalDateTime, "of",
+                        MethodTypeDesc.of(CD_LocalDateTime, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int));
+                // ZoneOffset.ofTotalSeconds(offsetTotalSeconds)
+                code.loadConstant(odt.offsetTotalSeconds());
+                code.invokestatic(CD_ZoneOffset, "ofTotalSeconds",
+                        MethodTypeDesc.of(CD_ZoneOffset, CD_int));
+                // OffsetDateTime.of(LocalDateTime, ZoneOffset)
+                code.invokestatic(CD_OffsetDateTime, "of",
+                        MethodTypeDesc.of(CD_OffsetDateTime, CD_LocalDateTime, CD_ZoneOffset));
+            };
+            case SerializedJavaTime.OfYear y -> code -> {
+                code.loadConstant(y.year());
+                code.invokestatic(CD_Year, "of",
+                        MethodTypeDesc.of(CD_Year, CD_int));
+            };
+            case SerializedJavaTime.OfYearMonth ym -> code -> {
+                code.loadConstant(ym.year());
+                code.loadConstant(ym.month());
+                code.invokestatic(CD_YearMonth, "of",
+                        MethodTypeDesc.of(CD_YearMonth, CD_int, CD_int));
+            };
+            case SerializedJavaTime.OfMonthDay md -> code -> {
+                code.loadConstant(md.month());
+                code.loadConstant(md.day());
+                code.invokestatic(CD_MonthDay, "of",
+                        MethodTypeDesc.of(CD_MonthDay, CD_int, CD_int));
+            };
+            case SerializedJavaTime.OfPeriod p -> code -> {
+                code.loadConstant(p.years());
+                code.loadConstant(p.months());
+                code.loadConstant(p.days());
+                code.invokestatic(CD_Period, "of",
+                        MethodTypeDesc.of(CD_Period, CD_int, CD_int, CD_int));
+            };
+        };
+    }
+
+    // ── Records ──
+
+    /**
+     * Emit record reconstruction: {@code new RecordType(component1, component2, ...)}.
+     * Serialized fields are name-sorted (per Java serialization spec), but the canonical
+     * constructor takes parameters in declaration order. We load the class to get
+     * RecordComponent[] and reorder accordingly.
+     */
+    private CaptureEmitter emitRecord(SerializedRecord sr) {
+        SerializedRecordClass rc = sr.recordClass();
+        ClassDesc recordDesc = rc.descriptor();
+        SerialData fieldData = sr.fieldData();
+
+        // load the class to get declaration-order components
+        Class<?> recordClass;
+        try {
+            recordClass = Class.forName(rc.name(), false, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new LambdaTransliterator.TransliterationException(
+                    "Record class not found: " + rc.name(), e);
+        }
+        RecordComponent[] components = recordClass.getRecordComponents();
+
+        // resolve emitters in declaration order, reading values by name from serialized data
+        CaptureEmitter[] componentEmitters = new CaptureEmitter[components.length];
+        ClassDesc[] componentTypes = new ClassDesc[components.length];
+        for (int i = 0; i < components.length; i++) {
+            RecordComponent comp = components[i];
+            String name = comp.getName();
+            Class<?> type = comp.getType();
+            componentTypes[i] = type.describeConstable().orElseThrow();
+            if (type.isPrimitive()) {
+                SerialField field = rc.streamField(name);
+                componentEmitters[i] = emitPrimitiveField(fieldData, field);
+            } else {
+                Serialized fieldValue = fieldData.getObject(name);
+                componentEmitters[i] = emitFor(fieldValue, componentTypes[i]);
+            }
+        }
+
+        MethodTypeDesc ctorType = MethodTypeDesc.of(CD_void, componentTypes);
+        return code -> {
+            code.new_(recordDesc);
+            code.dup();
+            for (CaptureEmitter emitter : componentEmitters) {
+                emitter.emit(code);
+            }
+            code.invokespecial(recordDesc, ExtraConstantDescs.INIT_NAME, ctorType);
+        };
+    }
+
+    /**
+     * Emit a primitive field value from SerialData as a constant.
+     */
+    private static CaptureEmitter emitPrimitiveField(SerialData data, SerialField field) {
+        return switch (field.typeCode()) {
+            case 'Z' -> code -> code.loadConstant(data.getBoolean(field.name()) ? 1 : 0);
+            case 'B' -> code -> code.loadConstant(data.getByte(field.name()));
+            case 'C' -> code -> code.loadConstant(data.getChar(field.name()));
+            case 'S' -> code -> code.loadConstant(data.getShort(field.name()));
+            case 'I' -> code -> code.loadConstant(data.getInt(field.name()));
+            case 'J' -> code -> code.loadConstant(data.getLong(field.name()));
+            case 'F' -> code -> code.loadConstant(data.getFloat(field.name()));
+            case 'D' -> code -> code.loadConstant(data.getDouble(field.name()));
+            default -> throw new LambdaTransliterator.TransliterationException(
+                    "Unknown primitive type code: " + field.typeCode());
+        };
+    }
+
+    // ── Serializable (collections, maps, wrappers) ──
+
+    /**
+     * Emit a serializable object — dispatches to collection/map handlers based on
+     * the serialized class name.
+     */
+    private CaptureEmitter emitSerializable(SerializedSerializable ss) {
+        String className = ss.serializedClass().name();
+        return switch (className) {
+            case "java.util.CollSer" -> emitCollSer(ss);
+            case "java.util.Collections$EmptyList" -> emitFactoryCall(CD_List, "of", new CaptureEmitter[0]);
+            case "java.util.Collections$EmptySet" -> emitFactoryCall(CD_Set, "of", new CaptureEmitter[0]);
+            case "java.util.Collections$EmptyMap" -> emitMapOf(new CaptureEmitter[0], new CaptureEmitter[0]);
+            case "java.util.Collections$SingletonList" -> emitSingletonCollection(ss, CD_List);
+            case "java.util.Collections$SingletonSet" -> emitSingletonCollection(ss, CD_Set);
+            case "java.util.Collections$SingletonMap" -> emitSingletonMap(ss);
+            case "java.util.Collections$UnmodifiableList",
+                    "java.util.Collections$UnmodifiableRandomAccessList" ->
+                emitUnmodifiableCollection(ss, CD_List);
+            case "java.util.Collections$UnmodifiableSet",
+                    "java.util.Collections$UnmodifiableSortedSet",
+                    "java.util.Collections$UnmodifiableNavigableSet" ->
+                emitUnmodifiableCollection(ss, CD_Set);
+            case "java.util.Collections$UnmodifiableMap",
+                    "java.util.Collections$UnmodifiableSortedMap",
+                    "java.util.Collections$UnmodifiableNavigableMap" ->
+                emitUnmodifiableMap(ss);
+            // mutable collection types — reject when captured directly
+            case "java.util.ArrayList", "java.util.LinkedList",
+                    "java.util.HashSet", "java.util.TreeSet",
+                    "java.util.HashMap", "java.util.TreeMap",
+                    "java.util.LinkedHashSet", "java.util.LinkedHashMap" ->
+                throw new LambdaTransliterator.TransliterationException(
+                        "Unsupported collection/map type: " + className
+                                + " — only unmodifiable List, Set, and Map types created via"
+                                + " List.of(), Set.of(), Map.of(), Collections.unmodifiableList/Set/Map(),"
+                                + " Collections.singletonList/Set/Map(), or Collections.emptyList/Set/Map()"
+                                + " are supported as captured values");
+            default -> throw new LambdaTransliterator.TransliterationException(
+                    "Unsupported serializable type in capture: " + className);
+        };
+    }
+
+    /**
+     * Handle JDK immutable collections via CollSer.
+     * The tag field determines the collection type (1=list, 2=set, 3=map, 4=nullable list).
+     * Elements are in the stream data.
+     */
+    private CaptureEmitter emitCollSer(SerializedSerializable ss) {
+        SerialData data = ss.dataFor("java.util.CollSer");
+        int tag = data.getInt("tag") & 0xFF;
+        // elements are in the stream data as objects
+        Serialized[] elements = extractStreamObjects(data);
+        return switch (tag) {
+            case TAG_LIST, 4 -> {
+                CaptureEmitter[] emitters = resolveElements(elements);
+                yield emitFactoryCall(CD_List, "of", emitters);
+            }
+            case TAG_SET -> {
+                sortSetElements(elements);
+                CaptureEmitter[] emitters = resolveElements(elements);
+                yield emitFactoryCall(CD_Set, "of", emitters);
+            }
+            case TAG_MAP -> {
+                // map elements are interleaved: key, value, key, value, ...
+                sortMapEntries(elements);
+                int entryCount = elements.length / 2;
+                CaptureEmitter[] keys = new CaptureEmitter[entryCount];
+                CaptureEmitter[] values = new CaptureEmitter[entryCount];
+                for (int i = 0; i < entryCount; i++) {
+                    keys[i] = emitFor(elements[i * 2], CD_Object);
+                    values[i] = emitFor(elements[i * 2 + 1], CD_Object);
+                }
+                yield emitMapOf(keys, values);
+            }
+            default -> throw new LambdaTransliterator.TransliterationException(
+                    "Unsupported CollSer tag " + tag);
+        };
+    }
+
+    /**
+     * Handle Collections.singletonList / Collections.singleton.
+     */
+    private CaptureEmitter emitSingletonCollection(SerializedSerializable ss, ClassDesc collType) {
+        // singleton collections have a single "element" field
+        SerialData data = ss.data().getFirst();
+        Serialized element = data.getObject("element");
+        CaptureEmitter elementEmitter = emitFor(element, CD_Object);
+        return emitFactoryCall(collType, "of", new CaptureEmitter[] { elementEmitter });
+    }
+
+    /**
+     * Handle Collections.singletonMap.
+     */
+    private CaptureEmitter emitSingletonMap(SerializedSerializable ss) {
+        SerialData data = ss.data().getFirst();
+        Serialized key = data.getObject("k");
+        Serialized value = data.getObject("v");
+        return emitMapOf(
+                new CaptureEmitter[] { emitFor(key, CD_Object) },
+                new CaptureEmitter[] { emitFor(value, CD_Object) });
+    }
+
+    /**
+     * Handle Collections.unmodifiableList/Set.
+     * The backing collection is in the "c" field at the UnmodifiableCollection level.
+     */
+    private CaptureEmitter emitUnmodifiableCollection(SerializedSerializable ss, ClassDesc collType) {
+        SerialData ucData = ss.dataFor("java.util.Collections$UnmodifiableCollection");
+        Serialized backing = ucData.getObject("c");
+        if (backing instanceof SerializedSerializable backingSs) {
+            return emitBackingCollection(backingSs, collType);
+        }
+        // backing might be a CollSer (immutable factory type) — recurse normally
+        return emitFor(backing, collType);
+    }
+
+    /**
+     * Handle Collections.unmodifiableMap.
+     * The backing map is in the "m" field at the UnmodifiableMap level.
+     */
+    private CaptureEmitter emitUnmodifiableMap(SerializedSerializable ss) {
+        SerialData umData = ss.dataFor("java.util.Collections$UnmodifiableMap");
+        Serialized backing = umData.getObject("m");
+        if (backing instanceof SerializedSerializable backingSs) {
+            return emitBackingMap(backingSs);
+        }
+        return emitFor(backing, CD_Map);
+    }
+
+    // ── Backing collections (for unmodifiable wrappers) ──
+
+    /**
+     * Emit a backing collection (ArrayList, LinkedList, HashSet) as List.of/Set.of.
+     * Elements are in the stream data written by the collection's writeObject method.
+     */
+    private CaptureEmitter emitBackingCollection(SerializedSerializable ss, ClassDesc collType) {
+        // ArrayList/LinkedList/HashSet write elements to stream data via writeObject
+        SerialData data = ss.data().getLast();
+        Serialized[] elements = extractStreamObjects(data);
+        boolean isList = collType.descriptorString().equals(CD_List.descriptorString());
+        if (!isList) {
+            sortSetElements(elements);
+        }
+        CaptureEmitter[] emitters = resolveElements(elements);
+        if (isList) {
+            return emitFactoryCall(CD_List, "of", emitters);
+        } else {
+            return emitFactoryCall(CD_Set, "of", emitters);
+        }
+    }
+
+    /**
+     * Emit a backing map (HashMap) as Map.of.
+     * Entries are written as key, value, key, value, ... in stream data.
+     */
+    private CaptureEmitter emitBackingMap(SerializedSerializable ss) {
+        SerialData data = ss.data().getLast();
+        Serialized[] elements = extractStreamObjects(data);
+        sortMapEntries(elements);
+        int entryCount = elements.length / 2;
+        CaptureEmitter[] keys = new CaptureEmitter[entryCount];
+        CaptureEmitter[] values = new CaptureEmitter[entryCount];
+        for (int i = 0; i < entryCount; i++) {
+            keys[i] = emitFor(elements[i * 2], CD_Object);
+            values[i] = emitFor(elements[i * 2 + 1], CD_Object);
+        }
+        return emitMapOf(keys, values);
+    }
+
+    // ── Helpers ──
+
+    /**
+     * Extract all objects from the stream data of a SerialData.
+     */
+    private static Serialized[] extractStreamObjects(SerialData data) {
+        List<StreamData> streamDataList = data.streamData();
+        if (streamDataList.isEmpty()) {
+            return new Serialized[0];
+        }
+        // collect all objects from all stream data blocks
+        int total = 0;
+        for (StreamData sd : streamDataList) {
+            if (sd instanceof StreamData.OfObjects oo) {
+                total += oo.size();
+            }
+        }
+        Serialized[] result = new Serialized[total];
+        int idx = 0;
+        for (StreamData sd : streamDataList) {
+            if (sd instanceof StreamData.OfObjects oo) {
+                for (int i = 0; i < oo.size(); i++) {
+                    result[idx++] = oo.getObject(i);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Resolve an array of Serialized elements to emitters (for collection elements).
+     */
+    private CaptureEmitter[] resolveElements(Serialized[] elements) {
+        CaptureEmitter[] emitters = new CaptureEmitter[elements.length];
+        for (int i = 0; i < elements.length; i++) {
+            emitters[i] = emitFor(elements[i], CD_Object);
+        }
+        return emitters;
+    }
+
+    /**
+     * Emit a static factory call (List.of, Set.of) with the given elements.
+     * Uses specific overloads for ≤10 elements, varargs for >10.
+     */
+    private static CaptureEmitter emitFactoryCall(ClassDesc owner, String method, CaptureEmitter[] elements) {
+        int count = elements.length;
+        if (count <= 10) {
+            ClassDesc[] params = new ClassDesc[count];
+            Arrays.fill(params, CD_Object);
+            MethodTypeDesc mtd = MethodTypeDesc.of(owner, params);
+            return code -> {
+                for (CaptureEmitter e : elements) {
+                    e.emit(code);
+                }
+                code.invokestatic(owner, method, mtd, true);
+            };
+        } else {
+            return code -> {
+                code.loadConstant(count);
+                code.anewarray(CD_Object);
+                for (int i = 0; i < count; i++) {
+                    code.dup();
+                    code.loadConstant(i);
+                    elements[i].emit(code);
+                    code.aastore();
+                }
+                code.invokestatic(owner, method,
+                        MethodTypeDesc.of(owner, CD_Object.arrayType()), true);
+            };
+        }
+    }
+
+    /**
+     * Emit a Map.of or Map.ofEntries call.
+     */
+    private static CaptureEmitter emitMapOf(CaptureEmitter[] keys, CaptureEmitter[] values) {
+        int count = keys.length;
+        if (count <= 10) {
+            return code -> {
+                ClassDesc[] params = new ClassDesc[count * 2];
+                for (int i = 0; i < count; i++) {
+                    keys[i].emit(code);
+                    values[i].emit(code);
+                    params[i << 1] = CD_Object;
+                    params[(i << 1) + 1] = CD_Object;
+                }
+                code.invokestatic(CD_Map, "of",
+                        MethodTypeDesc.of(CD_Map, params), true);
+            };
+        } else {
+            return code -> {
+                code.loadConstant(count);
+                code.anewarray(CD_Map_Entry);
+                for (int i = 0; i < count; i++) {
+                    code.dup();
+                    code.loadConstant(i);
+                    keys[i].emit(code);
+                    values[i].emit(code);
+                    code.invokestatic(CD_Map, "entry",
+                            MethodTypeDesc.of(CD_Map_Entry, CD_Object, CD_Object), true);
+                    code.aastore();
+                }
+                code.invokestatic(CD_Map, "ofEntries",
+                        MethodTypeDesc.of(CD_Map, CD_Map_Entry.arrayType()), true);
+            };
+        }
+    }
+
+    // ── Build-reproducibility sorting ──
+    //
+    // Hash-based sets and maps (HashSet, HashMap, and the JDK immutable
+    // Set.of/Map.of variants backed by CollSer) iterate in nondeterministic
+    // order.  When their elements are serialized and emitted as bytecode,
+    // different iteration orders produce different bytecode, breaking build
+    // reproducibility.  We sort set elements and map entries (by key) before
+    // emitting, using a comparator over the Serialized tree.  Only applied
+    // when there are two or more elements; singletons and empties are
+    // inherently stable.
+
+    /**
+     * Comparator that provides a total order over {@link Serialized} values
+     * for the purpose of stabilizing bytecode emission order.
+     * <p>
+     * Handles the leaf types that realistically appear as set elements and
+     * map keys (constants, strings, enums, class references, config mappings,
+     * null). Throws for complex types (records, general serializables) used
+     * as keys — those indicate a design problem at the source.
+     */
+    private static final Comparator<Serialized> SERIALIZED_ORDER = (a, b) -> {
+        if (a == b) {
+            return 0;
+        }
+        int ta = typeOrdinal(a);
+        int tb = typeOrdinal(b);
+        if (ta != tb) {
+            return Integer.compare(ta, tb);
+        }
+        return switch (a) {
+            case SerializedNull ignored -> 0;
+            case SerializedString sa ->
+                sa.string().compareTo(((SerializedString) b).string());
+            case SerializedConstant ca ->
+                compareConstants(ca, (SerializedConstant) b);
+            case SerializedConfigMapping ca ->
+                ca.configInterface().descriptorString()
+                        .compareTo(((SerializedConfigMapping) b).configInterface().descriptorString());
+            case SerializedClass ca ->
+                ca.descriptorString().compareTo(((SerializedClass) b).descriptorString());
+            case SerializedEnum ea ->
+                compareEnums(ea, (SerializedEnum) b);
+            case SerializedJavaTime ja ->
+                compareJavaTime(ja, (SerializedJavaTime) b);
+            default -> throw new LambdaTransliterator.TransliterationException(
+                    "Cannot deterministically sort serialized value of type "
+                            + a.getClass().getName()
+                            + " — use a sorted collection (TreeSet/TreeMap) at the source");
+        };
+    };
+
+    /**
+     * Assign a type ordinal for cross-type comparison.
+     */
+    private static int typeOrdinal(Serialized s) {
+        return switch (s) {
+            case SerializedNull ignored -> 0;
+            case SerializedString ignored -> 1;
+            case SerializedConstant ignored -> 2;
+            case SerializedConfigMapping ignored -> 3;
+            case SerializedClass ignored -> 4;
+            case SerializedEnum ignored -> 5;
+            case SerializedJavaTime ignored -> 6;
+            default -> 7;
+        };
+    }
+
+    /**
+     * Compare two {@link SerializedConstant} values by their {@link ConstantDesc}.
+     */
+    @SuppressWarnings("unchecked")
+    private static int compareConstants(SerializedConstant a, SerializedConstant b) {
+        ConstantDesc da = a.constantDesc();
+        ConstantDesc db = b.constantDesc();
+        // same concrete type: use natural ordering
+        if (da.getClass() == db.getClass() && da instanceof Comparable<?> ca) {
+            return ((Comparable<Object>) ca).compareTo(db);
+        }
+        // ClassDesc comparison
+        if (da instanceof ClassDesc ca && db instanceof ClassDesc cb) {
+            return ca.descriptorString().compareTo(cb.descriptorString());
+        }
+        // cross-type fallback: order by concrete class name
+        return da.getClass().getName().compareTo(db.getClass().getName());
+    }
+
+    /**
+     * Compare two {@link SerializedEnum} values by enum class name, then constant name.
+     */
+    private static int compareEnums(SerializedEnum a, SerializedEnum b) {
+        int c = a.enumClass().name().compareTo(b.enumClass().name());
+        if (c != 0) {
+            return c;
+        }
+        return a.constantName().string().compareTo(b.constantName().string());
+    }
+
+    /**
+     * Compare two {@link SerializedJavaTime} values by their record type name,
+     * then by field values in declaration order.
+     */
+    private static int compareJavaTime(SerializedJavaTime a, SerializedJavaTime b) {
+        int c = a.getClass().getSimpleName().compareTo(b.getClass().getSimpleName());
+        if (c != 0) {
+            return c;
+        }
+        // same record type — compare field values via toString (records have deterministic toString)
+        return a.toString().compareTo(b.toString());
+    }
+
+    /**
+     * Sort set elements in place for build reproducibility.
+     * No-op for arrays with fewer than two elements.
+     *
+     * @param elements the set elements to sort
+     */
+    private static void sortSetElements(Serialized[] elements) {
+        if (elements.length >= 2) {
+            Arrays.sort(elements, SERIALIZED_ORDER);
+        }
+    }
+
+    /**
+     * Sort interleaved map entries (key, value, key, value, ...) in place by key
+     * for build reproducibility. No-op for maps with fewer than two entries.
+     * <p>
+     * Uses insertion sort — optimal for the small entry counts typical of
+     * captured maps, and avoids allocations entirely.
+     *
+     * @param interleaved the interleaved key-value array
+     */
+    private static void sortMapEntries(Serialized[] interleaved) {
+        int entryCount = interleaved.length / 2;
+        if (entryCount < 2) {
+            return;
+        }
+        for (int i = 1; i < entryCount; i++) {
+            Serialized key = interleaved[i * 2];
+            Serialized val = interleaved[i * 2 + 1];
+            int j = i - 1;
+            while (j >= 0 && SERIALIZED_ORDER.compare(interleaved[j * 2], key) > 0) {
+                interleaved[(j + 1) * 2] = interleaved[j * 2];
+                interleaved[(j + 1) * 2 + 1] = interleaved[j * 2 + 1];
+                j--;
+            }
+            interleaved[(j + 1) * 2] = key;
+            interleaved[(j + 1) * 2 + 1] = val;
+        }
+    }
+
+    /**
+     * Reuse the existing DedupEmitter from LambdaTransliterator.
+     * Emits the delegate once and stores in a local; subsequent calls load from local.
+     */
+    private static final class DedupEmitter implements CaptureEmitter {
+        private final CaptureEmitter delegate;
+        private int slot = -1;
+
+        DedupEmitter(CaptureEmitter delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void emit(CodeBuilder code) {
+            if (slot == -1) {
+                delegate.emit(code);
+                slot = code.allocateLocal(TypeKind.REFERENCE);
+                code.dup();
+                code.astore(slot);
+            } else {
+                code.aload(slot);
+            }
+        }
+    }
+}

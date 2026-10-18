@@ -1,0 +1,5 @@
+---
+registries:
+- registry.acme.org:
+    non-platform-extensions:
+      artifact: "org.acme:acme-quarkus-non-platform-extensions::json:2.0"

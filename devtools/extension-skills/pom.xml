@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <artifactId>quarkus-build-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../../build-parent/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>quarkus-extension-skills</artifactId>
+    <name>Quarkus - Extension Skills</name>
+    <description>Aggregated extension skill files for AI coding agents, following the Agent Skills specification</description>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <executions>
+                    <!-- Disable the default extension-descriptor goal -->
+                    <execution>
+                        <id>generate-extension-descriptor</id>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <id>aggregate-extension-skills</id>
+                        <goals>
+                            <goal>aggregate-skills</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

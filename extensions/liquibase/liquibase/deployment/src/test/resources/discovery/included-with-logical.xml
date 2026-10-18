@@ -1,0 +1,13 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        logicalFilePath="db/changelog/db.changelog-1.0.0.xml"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="1" author="quarkus-test">
+        <createTable tableName="discovery_logical_path">
+            <column name="id" type="int"/>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

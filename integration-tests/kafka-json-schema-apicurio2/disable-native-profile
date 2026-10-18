@@ -1,0 +1,2 @@
+Native build disabled: Apicurio Registry client uses OAuth2Options.setFlow(OAuth2FlowType)
+which was removed in Vert.x 5. Waiting for Apicurio to release a Vert.x 5 compatible version.

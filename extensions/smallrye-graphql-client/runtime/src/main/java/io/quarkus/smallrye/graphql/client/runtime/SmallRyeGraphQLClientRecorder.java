@@ -1,0 +1,298 @@
+package io.quarkus.smallrye.graphql.client.runtime;
+
+import static io.quarkus.tls.runtime.config.TlsConfig.DEFAULT_NAME;
+import static io.smallrye.graphql.client.impl.GraphQLClientConfiguration.ProxyType.HTTP;
+import static io.smallrye.graphql.client.impl.GraphQLClientConfiguration.ProxyType.SOCKS4;
+import static io.smallrye.graphql.client.impl.GraphQLClientConfiguration.ProxyType.SOCKS5;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.proxy.ProxyConfiguration;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
+import io.smallrye.graphql.client.impl.GraphQLClientConfiguration;
+import io.smallrye.graphql.client.impl.GraphQLClientsConfiguration;
+import io.smallrye.graphql.client.model.ClientModels;
+import io.smallrye.graphql.client.typesafe.api.TypesafeGraphQLClientBuilder;
+import io.smallrye.graphql.client.vertx.VertxManager;
+import io.smallrye.graphql.client.vertx.typesafe.VertxTypesafeGraphQLClientBuilder;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClient;
+
+@Recorder
+public class SmallRyeGraphQLClientRecorder {
+    private final Logger logger = Logger.getLogger(SmallRyeGraphQLClientRecorder.class);
+
+    private static final Map<String, List<HttpClient>> tlsConfigNameToVertxHttpClients = new ConcurrentHashMap<>();
+    private static final Map<Object, TlsClientInfo> typesafeInstanceToTlsInfo = Collections
+            .synchronizedMap(new IdentityHashMap<>());
+
+    private final RuntimeValue<GraphQLClientsConfig> runtimeConfig;
+
+    public SmallRyeGraphQLClientRecorder(final RuntimeValue<GraphQLClientsConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public <T> Function<SyntheticCreationalContext<T>, T> typesafeClientSupplier(Class<T> targetClassName) {
+        return new Function<>() {
+            @Override
+            public T apply(SyntheticCreationalContext<T> context) {
+                VertxTypesafeGraphQLClientBuilder builder = (VertxTypesafeGraphQLClientBuilder) TypesafeGraphQLClientBuilder
+                        .newBuilder();
+                ClientModels clientModels = context.getInjectedReference(ClientModels.class);
+                builder.clientModels(clientModels);
+                T result = builder.build(targetClassName);
+
+                HttpClient httpClient = builder.getHttpClient();
+                if (httpClient != null) {
+                    String configKey = builder.getConfigKey();
+                    GraphQLClientsConfig config = Arc.container().instance(GraphQLClientsConfig.class).get();
+                    if (config != null && configKey != null) {
+                        GraphQLClientConfig clientConfig = config.clients().get(configKey);
+                        if (clientConfig != null) {
+                            String tlsConfigName = clientConfig.tlsConfigurationName().orElse(DEFAULT_NAME);
+                            registerReloadableHttpClient(tlsConfigName, httpClient);
+                            typesafeInstanceToTlsInfo.put(result,
+                                    new TlsClientInfo(tlsConfigName, httpClient));
+                        }
+                    }
+                }
+
+                return result;
+            }
+        };
+    }
+
+    public static void registerReloadableHttpClient(String tlsConfigName, HttpClient httpClient) {
+        tlsConfigNameToVertxHttpClients.computeIfAbsent(tlsConfigName, s -> new ArrayList<>(1)).add(httpClient);
+    }
+
+    public static void removeReloadableHttpClient(String tlsConfigName, HttpClient httpClient) {
+        if (tlsConfigName == null) {
+            return;
+        }
+        List<HttpClient> httpClients = tlsConfigNameToVertxHttpClients.get(tlsConfigName);
+        if (httpClients != null) {
+            httpClients.remove(httpClient);
+        }
+    }
+
+    public static TlsClientInfo removeInstanceTlsInfo(Object typesafeClientInstance) {
+        return typesafeInstanceToTlsInfo.remove(typesafeClientInstance);
+    }
+
+    public static List<HttpClient> clientsUsingTlsConfig(String tlsConfigName) {
+        return tlsConfigNameToVertxHttpClients.getOrDefault(tlsConfigName, Collections.emptyList());
+    }
+
+    public void cleanUp(ShutdownContext shutdown) {
+        shutdown.addShutdownTask(() -> {
+            tlsConfigNameToVertxHttpClients.clear();
+            typesafeInstanceToTlsInfo.clear();
+        });
+    }
+
+    public void setTypesafeApiClasses(List<String> apiClassNames) {
+        GraphQLClientsConfiguration.setSingleApplication(true);
+        GraphQLClientsConfiguration configBean = GraphQLClientsConfiguration.getInstance();
+        List<Class<?>> classes = apiClassNames.stream().map(className -> {
+            try {
+                return Class.forName(className, true, Thread.currentThread().getContextClassLoader());
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }).collect(Collectors.toList());
+        configBean.addTypesafeClientApis(classes);
+    }
+
+    public void mergeClientConfigurations(GraphQLClientSupport support) {
+        GraphQLClientsConfiguration upstreamConfigs = GraphQLClientsConfiguration.getInstance();
+        for (Map.Entry<String, GraphQLClientConfig> client : runtimeConfig.getValue().clients().entrySet()) {
+            // the raw config key provided in the config, this might be a short class name,
+            // so translate that into the fully qualified name if applicable
+            String rawConfigKey = client.getKey();
+            Map<String, String> shortNamesToQualifiedNamesMapping = support.getShortNamesToQualifiedNamesMapping();
+            String configKey = shortNamesToQualifiedNamesMapping != null &&
+                    shortNamesToQualifiedNamesMapping.containsKey(rawConfigKey)
+                            ? shortNamesToQualifiedNamesMapping.get(rawConfigKey)
+                            : rawConfigKey;
+
+            GraphQLClientConfig quarkusConfig = client.getValue();
+            // if SmallRye configuration does not contain this client, simply use it
+            GraphQLClientConfiguration upstreamConfig = upstreamConfigs.getClient(configKey);
+            if (upstreamConfig == null) {
+                GraphQLClientConfiguration transformed = toSmallRyeNativeConfiguration(quarkusConfig);
+                upstreamConfigs.addClient(configKey, transformed);
+            } else {
+                // if SmallRye configuration already contains this client, enhance it with the Quarkus configuration
+                upstreamConfig.merge(toSmallRyeNativeConfiguration(quarkusConfig));
+            }
+        }
+
+        // allow automatically wiring client to the local server instance in test mode
+        if (LaunchMode.current() == LaunchMode.TEST) {
+            String testUrl = null;
+            for (String configKey : support.getKnownConfigKeys()) {
+                GraphQLClientConfiguration config = upstreamConfigs.getClient(configKey);
+                if (config.getUrl() == null) {
+                    if (testUrl == null) {
+                        testUrl = getTestingServerUrl();
+                    }
+                    logger.info("Automatically wiring the URL of GraphQL client named " + configKey + " to " + testUrl
+                            + ". If this is incorrect, " +
+                            "please set it manually using the quarkus.smallrye-graphql-client." + maybeWithQuotes(configKey)
+                            + ".url property. Also note that" +
+                            " this autowiring is only supported during tests.");
+                    config.setUrl(testUrl);
+                }
+            }
+        }
+    }
+
+    public void setGlobalVertxInstance(Supplier<Vertx> vertx) {
+        VertxManager.setFromGlobal(vertx.get());
+    }
+
+    private String maybeWithQuotes(String key) {
+        if (key.contains(".")) {
+            return "\"" + key + "\"";
+        } else {
+            return key;
+        }
+    }
+
+    // translates a Quarkus `GraphQLClientConfig` configuration object to `GraphQLClientConfiguration` which is understood
+    // by SmallRye GraphQL
+    private GraphQLClientConfiguration toSmallRyeNativeConfiguration(GraphQLClientConfig quarkusConfig) {
+        GraphQLClientConfiguration transformed = new GraphQLClientConfiguration();
+        transformed.setHeaders(quarkusConfig.headers());
+        transformed.setInitPayload(Optional.ofNullable(quarkusConfig.initPayload())
+                .map(m -> new HashMap<String, Object>(m)).orElse(null));
+        quarkusConfig.url().ifPresent(transformed::setUrl);
+        transformed.setWebsocketSubprotocols(quarkusConfig.subprotocols().orElse(new ArrayList<>()));
+
+        resolveTlsConfigurationForRegistry(quarkusConfig)
+                .ifPresent(tlsConfiguration -> {
+                    transformed.setTlsKeyStoreOptions(tlsConfiguration.getKeyStoreOptions());
+                    transformed.setTlsTrustStoreOptions(tlsConfiguration.getTrustStoreOptions());
+                    transformed.setSslOptions(tlsConfiguration.getClientSSLOptions());
+                    tlsConfiguration.getHostnameVerificationAlgorithm()
+                            .ifPresent(transformed::setHostnameVerificationAlgorithm);
+                    transformed.setUsesSni(Boolean.valueOf(tlsConfiguration.usesSni()));
+                });
+
+        // use the proxy configuration registry
+        resolveProxyConfiguration(quarkusConfig)
+                .ifPresent(proxyConfiguration -> {
+                    transformed.setProxyHost(proxyConfiguration.host());
+                    transformed.setProxyPort(proxyConfiguration.port());
+                    proxyConfiguration.username().ifPresent(transformed::setProxyUsername);
+                    proxyConfiguration.password().ifPresent(transformed::setProxyPassword);
+                    proxyConfiguration.nonProxyHosts().ifPresent(transformed::setNonProxyHosts);
+                    transformed.setProxyType(switch (proxyConfiguration.type()) {
+                        case HTTP -> HTTP;
+                        case SOCKS4 -> SOCKS4;
+                        case SOCKS5 -> SOCKS5;
+                    });
+                });
+
+        quarkusConfig.maxRedirects().ifPresent(transformed::setMaxRedirects);
+        quarkusConfig.executeSingleResultOperationsOverWebsocket()
+                .ifPresent(transformed::setExecuteSingleOperationsOverWebsocket);
+        quarkusConfig.websocketInitializationTimeout().ifPresent(transformed::setWebsocketInitializationTimeout);
+        quarkusConfig.allowUnexpectedResponseFields().ifPresent(transformed::setAllowUnexpectedResponseFields);
+        transformed.setDynamicHeaders(new HashMap<>());
+        return transformed;
+    }
+
+    private String getTestingServerUrl() {
+        Config config = ConfigProvider.getConfig();
+        // the client extension doesn't have dependencies on neither the server extension nor quarkus-vertx-http, so guessing
+        // is somewhat limited
+        return "http://localhost:" + config.getOptionalValue("quarkus.http.test-port", int.class).orElse(8081) + "/graphql";
+    }
+
+    public RuntimeValue<ClientModels> getRuntimeClientModel(ClientModels clientModel) {
+        return new RuntimeValue<>(clientModel);
+    }
+
+    private Optional<TlsConfiguration> resolveTlsConfigurationForRegistry(GraphQLClientConfig quarkusConfig) {
+        if (Arc.container() != null) {
+            TlsConfigurationRegistry tlsConfigurationRegistry = Arc.container().select(TlsConfigurationRegistry.class).orNull();
+            if (tlsConfigurationRegistry != null) {
+                if (quarkusConfig.tlsConfigurationName().isPresent()) {
+                    // explicit TLS config
+                    Optional<TlsConfiguration> namedConfig = TlsConfiguration.from(tlsConfigurationRegistry,
+                            quarkusConfig.tlsConfigurationName());
+                    if (namedConfig.isEmpty()) {
+                        throw new ConfigurationException("TLS configuration '" + quarkusConfig.tlsConfigurationName().get()
+                                + "' was specified, but it does not exist.");
+                    }
+                    return namedConfig;
+                } else {
+                    // no explicit TLS config
+                    return tlsConfigurationRegistry.getDefault();
+                }
+            } else {
+                if (quarkusConfig.tlsConfigurationName().isPresent()) {
+                    throw new ConfigurationException("TLS configuration '" + quarkusConfig.tlsConfigurationName().get()
+                            + "' was specified, but no TLS configuration registry could be found.");
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    private Optional<ProxyConfiguration> resolveProxyConfiguration(GraphQLClientConfig clientConfig) {
+        if (Arc.container() != null) {
+            ProxyConfigurationRegistry proxyConfigurationRegistry = Arc.container().select(ProxyConfigurationRegistry.class)
+                    .orNull();
+            if (proxyConfigurationRegistry != null) {
+                if (clientConfig.proxyConfigurationName().isPresent()) {
+                    // explicit proxy config
+                    Optional<ProxyConfiguration> namedConfig = proxyConfigurationRegistry
+                            .get(clientConfig.proxyConfigurationName());
+                    if (namedConfig.isEmpty()) {
+                        throw new ConfigurationException("Proxy configuration '" + clientConfig.proxyConfigurationName().get()
+                                + "' was specified, but it does not exist.");
+                    }
+                    return namedConfig;
+                } else {
+                    // no explicit proxy config -> get the default proxy configuration if it exists
+                    return proxyConfigurationRegistry.get(Optional.empty());
+                }
+            } else {
+                if (clientConfig.proxyConfigurationName().isPresent()) {
+                    throw new ConfigurationException("Proxy configuration '" + clientConfig.proxyConfigurationName().get()
+                            + "' was specified, but no Proxy configuration registry could be found.");
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    record TlsClientInfo(String tlsConfigName, HttpClient httpClient) {
+    }
+}

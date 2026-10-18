@@ -1,0 +1,50 @@
+.Outgoing Attributes of the 'smallrye-pulsar' connector
+[options="header"]
+|===
+|Attribute (_alias_) |Description |Type |Mandatory |Default
+|*client-configuration*
+|Identifier of a CDI bean that provides the default Pulsar client configuration for this channel. The channel configuration can still override any attribute. The bean must have a type of Map<String, Object> and must use the @io.smallrye.common.annotation.Identifier qualifier to set the identifier.
+|string
+|false
+|
+|*health-enabled*
+|Whether health reporting is enabled (default) or disabled
+|boolean
+|false
+|`true`
+|*maxPendingMessages*
+|The maximum size of a queue holding pending messages, i.e messages waiting to receive an acknowledgment from a broker
+|int
+|false
+|`1000`
+|*producer-configuration*
+|Identifier of a CDI bean that provides the default Pulsar producer configuration for this channel. The channel configuration can still override any attribute. The bean must have a type of Map<String, Object> and must use the @io.smallrye.common.annotation.Identifier qualifier to set the identifier.
+|string
+|false
+|
+|*schema*
+|The Pulsar schema type of this channel. When configured a schema is built with the given SchemaType and used for the channel. When absent, the schema is resolved searching for a CDI bean typed `Schema` qualified with `@Identifier` and the channel name. As a fallback AUTO_CONSUME or AUTO_PRODUCE are used.
+|string
+|false
+|
+|*serviceUrl*
+|The service URL for the Pulsar service
+|string
+|false
+|`pulsar://localhost:6650`
+|*topic*
+|The consumed / populated Pulsar topic. If not set, the channel name is used
+|string
+|false
+|
+|*tracing-enabled*
+|Whether tracing is enabled (default) or disabled
+|boolean
+|false
+|`true`
+|*waitForWriteCompletion*
+|Whether the client waits for the broker to acknowledge the written record before acknowledging the message
+|boolean
+|false
+|`true`
+|===

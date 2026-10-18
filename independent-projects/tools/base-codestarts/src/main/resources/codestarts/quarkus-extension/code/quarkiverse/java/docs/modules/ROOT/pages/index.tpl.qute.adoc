@@ -1,0 +1,31 @@
+= {extension.full-name}
+
+include::./includes/attributes.adoc[]
+
+TIP: Describe what the extension does here.
+
+== Installation
+
+To use this extension, add the `{group-id}:{namespace.id}{extension.id}` dependency to your build file.
+
+With Maven, add the following to your `pom.xml`:
+
+[source,xml,subs=attributes+]
+----
+<dependency>
+    <groupId>{group-id}</groupId>
+    <artifactId>{namespace.id}{extension.id}</artifactId>
+    <version>\{project-version}</version>
+</dependency>
+----
+
+With Gradle, add the following to your `build.gradle`:
+
+[source,gradle,subs=attributes+]
+----
+implementation("{group-id}:{namespace.id}{extension.id}:\{project-version}")
+----
+
+== Usage
+
+TIP: Add a minimal usage example here.

@@ -1,0 +1,201 @@
+package io.quarkus.info.runtime;
+
+import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.info.BuildInfo;
+import io.quarkus.info.GitInfo;
+import io.quarkus.info.JavaInfo;
+import io.quarkus.info.OsInfo;
+import io.quarkus.info.runtime.spi.InfoContributor;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.RuntimeInit;
+import io.vertx.core.Handler;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.RoutingContext;
+
+@Recorder
+public class InfoRecorder {
+
+    private static final Logger log = Logger.getLogger(InfoRecorder.class);
+
+    @RuntimeInit
+    public RuntimeValue<Map<String, Object>> getFinalInfo(Map<String, Object> buildTimeInfo,
+            List<InfoContributor> knownContributors) {
+        Map<String, Object> finalBuildInfo = new HashMap<>(buildTimeInfo);
+        for (InfoContributor contributor : knownContributors) {
+            String key = contributor.name();
+            if (finalBuildInfo.containsKey(key)) {
+                log.warn(
+                        "Info key " + key + " contains duplicate values. This can lead to unpredictable values being used");
+            }
+            //TODO: we might want this to be done lazily
+            // also, do we want to merge information or simply replace like we are doing here?
+            finalBuildInfo.put(key, contributor.data());
+        }
+        for (InstanceHandle<InfoContributor> handler : Arc.container().listAll(InfoContributor.class)) {
+            InfoContributor contributor = handler.get();
+            String key = contributor.name();
+            if (finalBuildInfo.containsKey(key)) {
+                log.warn(
+                        "Info key " + key + " contains duplicate values. This can lead to unpredictable values being used");
+            }
+            finalBuildInfo.put(key, contributor.data());
+        }
+        return new RuntimeValue(finalBuildInfo);
+    }
+
+    @RuntimeInit
+    public Handler<RoutingContext> handler(RuntimeValue<Map<String, Object>> finalBuildInfo) {
+        return new InfoHandler(finalBuildInfo.getValue());
+    }
+
+    @RuntimeInit
+    public Supplier<GitInfo> gitInfoSupplier(String branch, String latestCommitId, String latestCommitTime) {
+        return new Supplier<GitInfo>() {
+            @Override
+            public GitInfo get() {
+                return new GitInfo() {
+                    @Override
+                    public String branch() {
+                        return branch;
+                    }
+
+                    @Override
+                    public String latestCommitId() {
+                        return latestCommitId;
+                    }
+
+                    @Override
+                    public OffsetDateTime commitTime() {
+                        return OffsetDateTime.parse(latestCommitTime, ISO_OFFSET_DATE_TIME);
+                    }
+                };
+            }
+        };
+    }
+
+    @RuntimeInit
+    public Supplier<BuildInfo> buildInfoSupplier(String group, String artifact, String version, String time,
+            String quarkusVersion) {
+        return new Supplier<BuildInfo>() {
+            @Override
+            public BuildInfo get() {
+                return new BuildInfo() {
+                    @Override
+                    public String group() {
+                        return group;
+                    }
+
+                    @Override
+                    public String artifact() {
+                        return artifact;
+                    }
+
+                    @Override
+                    public String version() {
+                        return version;
+                    }
+
+                    @Override
+                    public OffsetDateTime time() {
+                        return OffsetDateTime.parse(time, ISO_OFFSET_DATE_TIME);
+                    }
+
+                    @Override
+                    public String quarkusVersion() {
+                        return quarkusVersion;
+                    }
+                };
+            }
+        };
+    }
+
+    @RuntimeInit
+    public OsInfoContributor osInfoContributor() {
+        return new OsInfoContributor();
+    }
+
+    @RuntimeInit
+    public Supplier<OsInfo> osInfoSupplier() {
+        return new Supplier<OsInfo>() {
+            @Override
+            public OsInfo get() {
+                return new OsInfo() {
+                    @Override
+                    public String name() {
+                        return OsInfoContributor.getName();
+                    }
+
+                    @Override
+                    public String version() {
+                        return OsInfoContributor.getVersion();
+                    }
+
+                    @Override
+                    public String architecture() {
+                        return OsInfoContributor.getArchitecture();
+                    }
+                };
+            }
+        };
+    }
+
+    public JavaInfoContributor javaInfoContributor() {
+        return new JavaInfoContributor();
+    }
+
+    @RuntimeInit
+    public Supplier<JavaInfo> javaInfoSupplier() {
+        return new Supplier<JavaInfo>() {
+            @Override
+            public JavaInfo get() {
+                return new JavaInfo() {
+                    @Override
+                    public String version() {
+                        return JavaInfoContributor.getVersion();
+                    }
+
+                    @Override
+                    public String vendor() {
+                        return JavaInfoContributor.getVendor();
+                    }
+
+                    @Override
+                    public String vendorVersion() {
+                        return JavaInfoContributor.getVendorVersion();
+                    }
+                };
+            }
+        };
+    }
+
+    private static class InfoHandler implements Handler<RoutingContext> {
+        private final Map<String, Object> finalBuildInfo;
+
+        public InfoHandler(Map<String, Object> finalBuildInfo) {
+            this.finalBuildInfo = finalBuildInfo;
+        }
+
+        @Override
+        public void handle(RoutingContext ctx) {
+            HttpServerResponse resp = ctx.response();
+            resp.headers().set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
+            JsonObject jsonObject = new JsonObject(finalBuildInfo);
+            ctx.end(Json.encodePrettily(jsonObject));
+        }
+    }
+}

@@ -1,0 +1,42 @@
+package io.quarkus.it.jpa.db2;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.LogCollectingTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.ResourceArg;
+import io.quarkus.test.junit.QuarkusTest;
+
+/**
+ * Tests that Hibernate ORM does not log any warning on startup with this particular database.
+ * <p>
+ * In particular, this checks that there are no warnings related to the use of a deprecated dialect
+ * or a database version that is not supported by the dialect.
+ * <p>
+ * Note LogCollectingTestResource cannot be used in native mode,
+ * hence the lack of a corresponding native mode test.
+ */
+@QuarkusTest
+@QuarkusTestResource(value = LogCollectingTestResource.class, restrictToAnnotatedClass = true, initArgs = {
+        @ResourceArg(name = LogCollectingTestResource.LEVEL, value = "WARNING"),
+        @ResourceArg(name = LogCollectingTestResource.INCLUDE, value = "org\\.hibernate\\..*")
+})
+public class HibernateOrmNoWarningsTest {
+    @Test
+    public void testNoWarningsOnStartup() {
+        assertThat(LogCollectingTestResource.current().getRecords()
+                // Ignore warnings about dropping non-existent sequences.
+                // Hibernate ORM does not use "DROP SEQUENCE IF EXISTS" for DB2,
+                // so drop-and-create causes harmless warnings on first run.
+                .stream().filter(r -> {
+                    String msg = LogCollectingTestResource.format(r);
+                    return !msg.contains("drop sequence") || !msg.contains("SQLSTATE=42704");
+                }))
+                // There shouldn't be any warning or error
+                .as("Startup logs (warning or higher)")
+                .extracting(LogCollectingTestResource::format)
+                .isEmpty();
+    }
+}

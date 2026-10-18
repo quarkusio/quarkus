@@ -1,0 +1,685 @@
+package io.quarkus.smallrye.reactivemessaging.deployment;
+
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.INCOMING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.INCOMINGS;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.RUN_ON_VIRTUAL_THREAD;
+
+import java.lang.constant.ClassDesc;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Vetoed;
+import jakarta.enterprise.inject.spi.DeploymentException;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.spi.Connector;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.gizmo2.Jandex2Gizmo;
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
+import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.KotlinUtils;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
+import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
+import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.runtime.metrics.MetricsFactory;
+import io.quarkus.runtime.util.HashUtil;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.CustomInvokerBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedEmitterBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.MediatorBuildItem;
+import io.quarkus.smallrye.reactivemessaging.runtime.ConnectorContextPropagationDecorator;
+import io.quarkus.smallrye.reactivemessaging.runtime.ContextualEmitterFactory;
+import io.quarkus.smallrye.reactivemessaging.runtime.DuplicatedContextConnectorFactory;
+import io.quarkus.smallrye.reactivemessaging.runtime.DuplicatedContextConnectorFactoryInterceptor;
+import io.quarkus.smallrye.reactivemessaging.runtime.HealthCenterFilter;
+import io.quarkus.smallrye.reactivemessaging.runtime.HealthCenterInterceptor;
+import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
+import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
+import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfigBuilderCustomizer;
+import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration;
+import io.quarkus.smallrye.reactivemessaging.runtime.RequestScopedDecorator;
+import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLifecycle;
+import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder;
+import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder.SmallRyeReactiveMessagingContext;
+import io.quarkus.smallrye.reactivemessaging.runtime.WorkerConfiguration;
+import io.quarkus.smallrye.reactivemessaging.runtime.devmode.DevModeSupportConnectorFactory;
+import io.quarkus.smallrye.reactivemessaging.runtime.devmode.DevModeSupportConnectorFactoryInterceptor;
+import io.smallrye.reactive.messaging.EmitterConfiguration;
+import io.smallrye.reactive.messaging.Invoker;
+import io.smallrye.reactive.messaging.annotations.Blocking;
+import io.smallrye.reactive.messaging.extension.health.SmallRyeReactiveMessagingLivenessCheck;
+import io.smallrye.reactive.messaging.extension.health.SmallRyeReactiveMessagingReadinessCheck;
+import io.smallrye.reactive.messaging.extension.health.SmallRyeReactiveMessagingStartupCheck;
+import io.smallrye.reactive.messaging.providers.extension.ChannelConfiguration;
+
+public class SmallRyeReactiveMessagingProcessor {
+
+    private static final Logger LOGGER = Logger
+            .getLogger("io.quarkus.smallrye-reactive-messaging.deployment.processor");
+
+    static final String DEFAULT_VIRTUAL_THREADS_MAX_CONCURRENCY = "1024";
+    static final String INVOKER_SUFFIX = "_SmallRyeMessagingInvoker";
+
+    @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(Feature.MESSAGING);
+    }
+
+    @BuildStep
+    void beans(BuildProducer<AdditionalBeanBuildItem> additionalBean, ReactiveMessagingBuildTimeConfig buildTimeConfig) {
+        // We add the connector and channel qualifiers to make them part of the index.
+        additionalBean.produce(new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class, Connector.class,
+                Channel.class, io.smallrye.reactive.messaging.annotations.Channel.class,
+                QuarkusWorkerPoolRegistry.class, ConnectorContextPropagationDecorator.class, ContextualEmitterFactory.class));
+        if (buildTimeConfig.activateRequestScopeEnabled()) {
+            additionalBean.produce(new AdditionalBeanBuildItem(RequestScopedDecorator.class));
+        }
+    }
+
+    @BuildStep
+    AnnotationsTransformerBuildItem transformBeanScope(BeanArchiveIndexBuildItem index,
+            CustomScopeAnnotationsBuildItem scopes) {
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+            }
+
+            @Override
+            public int priority() {
+                // Must run after the SpringDIProcessor annotation transformer, which has default priority 1000
+                return 500;
+            }
+
+            @Override
+            public void transform(AnnotationsTransformer.TransformationContext ctx) {
+                if (ctx.isClass()) {
+                    ClassInfo clazz = ctx.getTarget().asClass();
+                    Map<DotName, List<AnnotationInstance>> annotations = clazz.annotationsMap();
+                    if (scopes.isScopeIn(ctx.getAnnotations())
+                            || annotations.containsKey(ReactiveMessagingDotNames.JAXRS_PATH)
+                            || annotations.containsKey(ReactiveMessagingDotNames.REST_CONTROLLER)
+                            || annotations.containsKey(ReactiveMessagingDotNames.JAXRS_PROVIDER)) {
+                        // Skip - has a built-in scope annotation or is a JAX-RS endpoint/provider
+                        return;
+                    }
+                    if (annotations.containsKey(ReactiveMessagingDotNames.INCOMING)
+                            || annotations.containsKey(ReactiveMessagingDotNames.OUTGOING)
+                            || annotations.containsKey(ReactiveMessagingDotNames.CHANNEL)) {
+                        LOGGER.debugf(
+                                "Found reactive messaging annotations on a class %s with no scope defined - adding @Dependent",
+                                ctx.getTarget());
+                        ctx.transform().add(Dependent.class).done();
+                    }
+                }
+            }
+        });
+    }
+
+    @BuildStep
+    public List<UnremovableBeanBuildItem> removalExclusions() {
+        return Arrays.asList(
+                new UnremovableBeanBuildItem(
+                        new BeanClassAnnotationExclusion(
+                                ReactiveMessagingDotNames.INCOMING)),
+                new UnremovableBeanBuildItem(
+                        new BeanClassAnnotationExclusion(
+                                ReactiveMessagingDotNames.INCOMINGS)),
+                new UnremovableBeanBuildItem(
+                        new BeanClassAnnotationExclusion(
+                                ReactiveMessagingDotNames.OUTGOING)),
+                new UnremovableBeanBuildItem(
+                        new BeanClassAnnotationExclusion(
+                                ReactiveMessagingDotNames.OUTGOINGS)),
+                new UnremovableBeanBuildItem(
+                        new BeanClassAnnotationExclusion(
+                                ReactiveMessagingDotNames.MESSAGE_CONVERTER)),
+                new UnremovableBeanBuildItem(
+                        new BeanClassAnnotationExclusion(
+                                ReactiveMessagingDotNames.KEY_VALUE_EXTRACTOR)));
+    }
+
+    @BuildStep
+    public AnnotationsTransformerBuildItem enableMetrics(Optional<MetricsCapabilityBuildItem> metricsCapability,
+            ReactiveMessagingConfiguration configuration) {
+        boolean isMetricEnabled = metricsCapability.isPresent() && configuration.metricsEnabled();
+        boolean useMicrometer = isMetricEnabled && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER);
+        LOGGER.debug("Metrics Enabled: " + isMetricEnabled + "; Using Micrometer: " + useMicrometer);
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+            }
+
+            @Override
+            public void transform(AnnotationsTransformer.TransformationContext ctx) {
+                // Remove the MicrometerDecorator that requires the Micrometer API
+                if (ctx.getTarget().asClass().name().equals(ReactiveMessagingDotNames.MICROMETER_DECORATOR)) {
+                    if (!isMetricEnabled || !useMicrometer) {
+                        ctx.transform()
+                                .removeAll()
+                                .add(Vetoed.class).done();
+                    }
+                }
+                // Remove the MetricDecorator that requires the MP Metrics API
+                if (ctx.getTarget().asClass().name().equals(ReactiveMessagingDotNames.METRIC_DECORATOR)) {
+                    if (!isMetricEnabled || useMicrometer) {
+                        ctx.transform()
+                                .removeAll()
+                                .add(Vetoed.class).done();
+                    }
+                }
+            }
+        });
+    }
+
+    @BuildStep
+    public void disableObservation(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfigProducer) {
+        runtimeConfigProducer.produce(
+                new RunTimeConfigurationDefaultBuildItem("smallrye.messaging.observation.enabled", "false"));
+    }
+
+    @BuildStep
+    public void enableHealth(ReactiveMessagingBuildTimeConfig buildTimeConfig,
+            BuildProducer<HealthBuildItem> producer, BuildProducer<AdditionalBeanBuildItem> beans,
+            BuildProducer<AnnotationsTransformerBuildItem> transformations) {
+        producer.produce(
+                new HealthBuildItem(SmallRyeReactiveMessagingLivenessCheck.class.getName(),
+                        buildTimeConfig.healthEnabled()));
+        producer.produce(
+                new HealthBuildItem(SmallRyeReactiveMessagingReadinessCheck.class.getName(),
+                        buildTimeConfig.healthEnabled()));
+        producer.produce(
+                new HealthBuildItem(SmallRyeReactiveMessagingStartupCheck.class.getName(),
+                        buildTimeConfig.healthEnabled()));
+        if (buildTimeConfig.healthEnabled()) {
+            beans.produce(new AdditionalBeanBuildItem(HealthCenterFilter.class, HealthCenterInterceptor.class));
+
+            transformations.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+                @Override
+                public boolean appliesTo(AnnotationTarget.Kind kind) {
+                    return kind == AnnotationTarget.Kind.CLASS;
+                }
+
+                @Override
+                public void transform(TransformationContext ctx) {
+                    ClassInfo clazz = ctx.getTarget().asClass();
+                    if (clazz.name().equals(ReactiveMessagingDotNames.HEALTH_CENTER)) {
+                        ctx.transform().add(HealthCenterFilter.class).done();
+                    }
+                }
+            }));
+        }
+    }
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    public void build(SmallRyeReactiveMessagingRecorder recorder,
+            LaunchModeBuildItem launchMode,
+            RecorderContext recorderContext,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            List<MediatorBuildItem> mediatorMethods,
+            List<ConnectorManagedChannelBuildItem> connectorManagedChannels,
+            List<InjectedEmitterBuildItem> emitterFields,
+            List<InjectedChannelBuildItem> channelFields,
+            List<CustomInvokerBuildItem> customInvokers,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfig,
+            ReactiveMessagingConfiguration conf) {
+
+        Gizmo gizmo = Gizmo
+                .create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResources, generatedServiceProviders, true));
+
+        Set<String> connectorManagedIncomingChannels = connectorManagedChannels.stream()
+                .filter(c -> c.getDirection() == ChannelDirection.INCOMING)
+                .map(ConnectorManagedChannelBuildItem::getName)
+                .collect(Collectors.toSet());
+
+        Map<String, CustomInvokerBuildItem> customInvokerMap = new HashMap<>();
+        for (CustomInvokerBuildItem item : customInvokers) {
+            customInvokerMap.put(item.getMethodId(), item);
+        }
+
+        List<QuarkusMediatorConfiguration> mediatorConfigurations = new ArrayList<>(mediatorMethods.size());
+        List<WorkerConfiguration> workerConfigurations = new ArrayList<>();
+        Map<String, EmitterConfiguration> emittersConfigurations = new HashMap<>();
+        List<ChannelConfiguration> channelConfigurations = new ArrayList<>();
+
+        /*
+         * Go through the collected MediatorMethods and build up the corresponding MediaConfiguration
+         * This includes generating an invoker for each method
+         * The configuration will then be captured and used at static init time to push data into smallrye
+         */
+        for (MediatorBuildItem mediatorMethod : mediatorMethods) {
+            MethodInfo methodInfo = mediatorMethod.getMethod();
+            BeanInfo bean = mediatorMethod.getBean();
+
+            String methodId = CustomInvokerBuildItem.mediatorMethodId(methodInfo);
+            CustomInvokerBuildItem customInvoker = customInvokerMap.get(methodId);
+
+            if (QuarkusMediatorConfigurationUtil.hasBlockingAnnotation(methodInfo)) {
+                // Just in case both annotation are used, use @Blocking value.
+                String poolName = methodInfo.hasAnnotation(RUN_ON_VIRTUAL_THREAD)
+                        ? QuarkusWorkerPoolRegistry.DEFAULT_VIRTUAL_THREAD_WORKER
+                        : Blocking.DEFAULT_WORKER_POOL;
+
+                // If the method is annotated with the SmallRye Reactive Messaging @Blocking, extract the worker pool name if any
+                if (methodInfo.hasAnnotation(ReactiveMessagingDotNames.BLOCKING)) {
+                    AnnotationInstance blocking = methodInfo.annotation(ReactiveMessagingDotNames.BLOCKING);
+                    poolName = blocking.value() == null ? Blocking.DEFAULT_WORKER_POOL : blocking.value().asString();
+                }
+                if (methodInfo.hasAnnotation(RUN_ON_VIRTUAL_THREAD)) {
+                    defaultConfig.produce(new RunTimeConfigurationDefaultBuildItem(
+                            "smallrye.messaging.worker." + poolName + ".max-concurrency",
+                            DEFAULT_VIRTUAL_THREADS_MAX_CONCURRENCY));
+                }
+                if (launchMode.getLaunchMode().isDevOrTest()) {
+                    defaultConfig.produce(new RunTimeConfigurationDefaultBuildItem(
+                            "smallrye.messaging.worker." + poolName + ".shutdown-timeout", "0"));
+                }
+                workerConfigurations.add(new WorkerConfiguration(methodInfo.declaringClass().toString(),
+                        methodInfo.name(), poolName, methodInfo.hasAnnotation(RUN_ON_VIRTUAL_THREAD)));
+            }
+
+            try {
+                boolean isSuspendMethod = KotlinUtils.isKotlinSuspendMethod(methodInfo);
+
+                QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil
+                        .create(methodInfo, isSuspendMethod, bean, recorderContext,
+                                Thread.currentThread().getContextClassLoader(), conf.strict(),
+                                consumesFromConnector(methodInfo, connectorManagedIncomingChannels)
+                                        ? conf.blockingSignaturesExecutionMode()
+                                        : ReactiveMessagingConfiguration.ExecutionMode.EVENT_LOOP,
+                                customInvoker); // disable execution mode setting for inner channels
+                mediatorConfigurations.add(mediatorConfiguration);
+
+                String generatedInvokerName = generateInvoker(bean, methodInfo, isSuspendMethod, mediatorConfiguration,
+                        gizmo, customInvokerMap);
+                /*
+                 * We need to register the invoker's constructor for reflection since it will be called inside smallrye.
+                 * We could potentially lift this restriction with some extra CDI bean generation, but it's probably not worth
+                 * it
+                 */
+                reflectiveClass
+                        .produce(ReflectiveClassBuildItem.builder(generatedInvokerName).build());
+                mediatorConfiguration
+                        .setInvokerClass((Class<? extends Invoker>) recorderContext.classProxy(generatedInvokerName));
+            } catch (IllegalArgumentException e) {
+                throw new DeploymentException(e); // needed to pass the TCK
+            }
+        }
+
+        for (InjectedEmitterBuildItem it : emitterFields) {
+            EmitterConfiguration configuration = it.getEmitterConfig();
+            String channel = configuration.name();
+            EmitterConfiguration previousConfig = emittersConfigurations.get(channel);
+            if (previousConfig != null && !previousConfig.equals(configuration)) {
+                throw new DeploymentException(
+                        String.format("Emitter configuration for channel `%s` is different than previous configuration : %s",
+                                channel, it.getEmitterConfig()));
+            }
+            emittersConfigurations.put(channel, configuration);
+        }
+        for (InjectedChannelBuildItem it : channelFields) {
+            channelConfigurations.add(it.getChannelConfig());
+        }
+
+        // sort the recorder parameters for reproducible bytecode generation
+        mediatorConfigurations.sort(Comparator.comparing(QuarkusMediatorConfiguration::getBeanId)
+                .thenComparing(QuarkusMediatorConfiguration::getMethodName));
+        workerConfigurations.sort(Comparator.comparing(WorkerConfiguration::getClassName)
+                .thenComparing(WorkerConfiguration::getMethodName));
+        List<EmitterConfiguration> sortedEmitterConfigurations = emittersConfigurations.values().stream()
+                .sorted(Comparator.comparing(EmitterConfiguration::name))
+                .toList();
+        channelConfigurations.sort(Comparator.comparing(c -> c.channelName));
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(SmallRyeReactiveMessagingContext.class)
+                .supplier(recorder.createContext(mediatorConfigurations, workerConfigurations,
+                        sortedEmitterConfigurations, channelConfigurations))
+                .done());
+    }
+
+    /**
+     * Generates an invoker class that looks like the following:
+     *
+     * <pre>
+     * public class SomeName implements Invoker {
+     *     private BeanType beanInstance;
+     *
+     *     public SomeName(Object var1) {
+     *         this.beanInstance = var1;
+     *     }
+     *
+     *     public Object invoke(Object[] args) {
+     *         return this.beanInstance.doSomething(var1);
+     *     }
+     * }
+     * </pre>
+     */
+    private String generateInvoker(BeanInfo bean, MethodInfo method, boolean isSuspendMethod,
+            QuarkusMediatorConfiguration mediatorConfiguration,
+            Gizmo gizmo, Map<String, CustomInvokerBuildItem> customInvokerMap) {
+
+        String methodId = CustomInvokerBuildItem.mediatorMethodId(method);
+        CustomInvokerBuildItem customInvoker = customInvokerMap.get(methodId);
+        if (customInvoker != null) {
+            return customInvoker.getInvokerClassName();
+        }
+
+        String baseName;
+        if (bean.getImplClazz().enclosingClass() != null) {
+            baseName = DotNames.simpleName(bean.getImplClazz().enclosingClass()) + "_"
+                    + DotNames.simpleName(bean.getImplClazz().name());
+        } else {
+            baseName = DotNames.simpleName(bean.getImplClazz().name());
+        }
+        StringBuilder sigBuilder = new StringBuilder();
+        sigBuilder.append(method.name()).append("_").append(method.returnType().name().toString());
+        for (Type i : method.parameterTypes()) {
+            sigBuilder.append(i.name().toString());
+        }
+        String targetPackage = DotNames.internalPackageNameWithTrailingSlash(bean.getImplClazz().name());
+        String generatedName = targetPackage + baseName
+                + INVOKER_SUFFIX + "_" + method.name() + "_"
+                + HashUtil.sha1(sigBuilder.toString());
+
+        if (isSuspendMethod
+                && ((mediatorConfiguration.getIncoming().isEmpty()) && (mediatorConfiguration.getOutgoing() != null))) {
+            // TODO: this restriction needs to be lifted
+            throw new IllegalStateException(
+                    "Currently suspend methods for Reactive Messaging are not supported on methods that are only annotated with @Outgoing");
+        }
+
+        if (!isSuspendMethod) {
+            generateStandardInvoker(method, gizmo, generatedName);
+        } else if (!mediatorConfiguration.getIncoming().isEmpty()) {
+            generateSubscribingCoroutineInvoker(method, gizmo, generatedName);
+        }
+
+        return generatedName.replace('/', '.');
+    }
+
+    private void generateStandardInvoker(MethodInfo method, Gizmo gizmo, String generatedName) {
+        String dotName = generatedName.replace('/', '.');
+        gizmo.class_(dotName, cc -> {
+            cc.implements_(Invoker.class);
+
+            String beanInstanceType = method.declaringClass().name().toString();
+            FieldDesc beanInstanceField = cc.field("beanInstance", fc -> {
+                fc.setType(ClassDesc.of(beanInstanceType));
+            });
+
+            // generate a constructor that takes the bean instance as an argument
+            // the method parameter needs to be of type Object because that is what is used as the call site in SmallRye
+            // Reactive Messaging
+            cc.constructor(ctc -> {
+                ctc.public_();
+                ParamVar beanParam = ctc.parameter("arg0", pc -> pc.setType(Object.class));
+                ctc.body(bc -> {
+                    bc.invokeSpecial(ConstructorDesc.of(Object.class), cc.this_());
+                    bc.set(cc.this_().field(beanInstanceField), beanParam);
+                    bc.return_();
+                });
+            });
+
+            cc.method("invoke", mc -> {
+                mc.public_();
+                mc.returning(Object.class);
+                ParamVar argsParam = mc.parameter("args", pc -> pc.setType(Object[].class));
+                mc.body(bc -> {
+                    int parametersCount = method.parametersCount();
+                    LocalVar[] args = new LocalVar[parametersCount];
+                    for (int i = 0; i < parametersCount; i++) {
+                        args[i] = bc.localVar("arg" + i, bc.get(argsParam.elem(i)));
+                    }
+                    LocalVar beanInstance = bc.localVar("beanInstance",
+                            bc.get(cc.this_().field(beanInstanceField)));
+                    Expr result = bc.invokeVirtual(
+                            Jandex2Gizmo.methodDescOf(method),
+                            beanInstance, List.of(args));
+                    if (ReactiveMessagingDotNames.VOID.equals(method.returnType().name())) {
+                        bc.return_(Const.ofNull(Object.class));
+                    } else {
+                        bc.return_(result);
+                    }
+                });
+            });
+        });
+    }
+
+    private void generateSubscribingCoroutineInvoker(MethodInfo method, Gizmo gizmo, String generatedName) {
+        String dotName = generatedName.replace('/', '.');
+        String superClassName = ReactiveMessagingDotNames.ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER.toString();
+        String continuationType = ReactiveMessagingDotNames.CONTINUATION.toString();
+        gizmo.class_(dotName, cc -> {
+            cc.extends_(ClassDesc.of(superClassName));
+
+            // generate a constructor that takes the bean instance as an argument
+            // the method parameter type needs to be Object, because that is what is used as the call site in SmallRye
+            // Reactive Messaging
+            cc.constructor(ctc -> {
+                ctc.public_();
+                ParamVar beanParam = ctc.parameter("arg0", pc -> pc.setType(Object.class));
+                ctc.body(bc -> {
+                    bc.invokeSpecial(
+                            ConstructorDesc.of(ClassDesc.of(superClassName), Object.class),
+                            cc.this_(),
+                            beanParam);
+                    bc.return_();
+                });
+            });
+
+            cc.method("invokeBean", mc -> {
+                mc.public_();
+                mc.returning(Object.class);
+                ParamVar beanInstanceParam = mc.parameter("beanInstance", pc -> pc.setType(Object.class));
+                ParamVar arrayParam = mc.parameter("args", pc -> pc.setType(Object[].class));
+                ParamVar continuationParam = mc.parameter("continuation",
+                        pc -> pc.setType(ClassDesc.of(continuationType)));
+                mc.body(bc -> {
+                    int parametersCount = method.parametersCount();
+                    LocalVar[] args = new LocalVar[parametersCount];
+                    for (int i = 0; i < parametersCount - 1; ++i) {
+                        args[i] = bc.localVar("arg" + i, bc.get(arrayParam.elem(i)));
+                    }
+                    args[args.length - 1] = bc.localVar("continuation", continuationParam);
+                    Expr result = bc.invokeVirtual(
+                            Jandex2Gizmo.methodDescOf(method),
+                            beanInstanceParam, List.of(args));
+                    bc.return_(result);
+                });
+            });
+        });
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void devmodeSupport(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> beans,
+            BuildProducer<AnnotationsTransformerBuildItem> transformations) {
+        beans.produce(new AdditionalBeanBuildItem(DevModeSupportConnectorFactory.class,
+                DevModeSupportConnectorFactoryInterceptor.class));
+
+        transformations.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == AnnotationTarget.Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                ClassInfo clazz = ctx.getTarget().asClass();
+                if (doesImplement(clazz, ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.INBOUND_CONNECTOR, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.OUTBOUND_CONNECTOR, index.getIndex())) {
+                    ctx.transform().add(DevModeSupportConnectorFactory.class).done();
+                }
+            }
+
+            private boolean doesImplement(ClassInfo clazz, DotName iface, IndexView index) {
+                while (clazz != null && !clazz.name().equals(ReactiveMessagingDotNames.OBJECT)) {
+                    if (clazz.interfaceNames().contains(iface)) {
+                        return true;
+                    }
+
+                    clazz = index.getClassByName(clazz.superName());
+                }
+
+                return false;
+            }
+        }));
+    }
+
+    @BuildStep
+    CoroutineConfigurationBuildItem producesCoroutineConfiguration() {
+        if (QuarkusClassLoader.isClassPresentAtRuntime("kotlinx.coroutines.future.FutureKt")) {
+            return new CoroutineConfigurationBuildItem(true);
+        } else {
+            return new CoroutineConfigurationBuildItem(false);
+        }
+    }
+
+    @BuildStep
+    void produceCoroutineScope(
+            CoroutineConfigurationBuildItem coroutineConfigurationBuildItem,
+            BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer) {
+        if (coroutineConfigurationBuildItem.isEnabled()) {
+            buildItemBuildProducer.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClasses(
+                            "io.quarkus.smallrye.reactivemessaging.runtime.kotlin.ApplicationCoroutineScope")
+                    .setUnremovable().build());
+        }
+    }
+
+    @BuildStep
+    void configCustomizer(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        // Config mapping between SmallRye / MP and Quarkus
+        serviceProvider.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath(ReactiveMessagingConfigBuilderCustomizer.class.getName()));
+    }
+
+    private void ensureKotlinCoroutinesEnabled(CoroutineConfigurationBuildItem coroutineConfigurationBuildItem,
+            MethodInfo method) {
+        if (!coroutineConfigurationBuildItem.isEnabled()) {
+            String format = String.format(
+                    "Method %s.%s is suspendable but kotlinx-coroutines-jdk8 dependency not detected",
+                    method.declaringClass().name(), method.name());
+            throw new IllegalStateException(format);
+        }
+    }
+
+    public static final class CoroutineConfigurationBuildItem extends SimpleBuildItem {
+        private final boolean isEnabled;
+
+        public CoroutineConfigurationBuildItem(boolean isEnabled) {
+            this.isEnabled = isEnabled;
+        }
+
+        public boolean isEnabled() {
+            return isEnabled;
+        }
+    }
+
+    @BuildStep
+    void duplicatedContextSupport(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> beans,
+            BuildProducer<AnnotationsTransformerBuildItem> transformations) {
+        beans.produce(new AdditionalBeanBuildItem(DuplicatedContextConnectorFactory.class,
+                DuplicatedContextConnectorFactoryInterceptor.class));
+
+        transformations.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == AnnotationTarget.Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                ClassInfo clazz = ctx.getTarget().asClass();
+                if (doesImplement(clazz, ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.INBOUND_CONNECTOR, index.getIndex())) {
+                    ctx.transform().add(DuplicatedContextConnectorFactory.class).done();
+                }
+            }
+
+            private boolean doesImplement(ClassInfo clazz, DotName iface, IndexView index) {
+                while (clazz != null && !clazz.name().equals(ReactiveMessagingDotNames.OBJECT)) {
+                    if (clazz.interfaceNames().contains(iface)) {
+                        return true;
+                    }
+
+                    clazz = index.getClassByName(clazz.superName());
+                }
+
+                return false;
+            }
+        }));
+    }
+
+    boolean consumesFromConnector(MethodInfo methodInfo, Set<String> connectorManagedChannels) {
+        AnnotationInstance incoming = methodInfo.annotation(INCOMING);
+        if (incoming != null) {
+            return connectorManagedChannels.contains(incoming.value().asString());
+        }
+        AnnotationInstance incomings = methodInfo.annotation(INCOMINGS);
+        if (incomings != null) {
+            return connectorManagedChannels.containsAll(
+                    Arrays.stream(incomings.value().asNestedArray())
+                            .map(i -> i.value().asString()).collect(Collectors.toSet()));
+        }
+        return false;
+    }
+
+}

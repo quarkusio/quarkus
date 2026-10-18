@@ -1,0 +1,227 @@
+package io.quarkus.data.hibernate.runtime.orm;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
+
+import jakarta.data.Limit;
+import jakarta.data.Order;
+import jakarta.data.page.PageRequest;
+import jakarta.persistence.LockModeType;
+
+import org.hibernate.SharedSessionContract;
+
+import io.quarkus.data.hibernate.blocking.BlockingDataQuery;
+import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
+import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
+
+public class PanacheBlockingQueryImpl<Entity> implements BlockingDataQuery<Entity> {
+
+    final CommonPanacheQueryImpl<Entity> delegate;
+    final Limits<BlockingDataQuery<Entity>> limitingDelegate = new Limits<BlockingDataQuery<Entity>>() {
+        @Override
+        public Limit limit() {
+            io.quarkus.panache.common.Range range = delegate.range();
+            // convert 0-based range to 1-based Jakarta Data Limit
+            return Limit.range(range.getStartIndex() + 1, range.getLastIndex() + 1);
+        }
+
+        @Override
+        public BlockingDataQuery<Entity> limit(Limit limit) {
+            // startAt is 1-based in Jakarta Data, convert to 0-based; end is inclusive, hence -1 on size
+            delegate.range((int) (limit.startAt() - 1), (int) (limit.startAt() + limit.maxResults() - 2));
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public BlockingDataQuery<Entity> limit(int max) {
+            if (max == 0) {
+                throw new IllegalArgumentException("Limiting to 0 values is not supported");
+            }
+            // end is inclusive, hence -1 on size
+            delegate.range(0, max - 1);
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public BlockingDataQuery<Entity> limit(long start, int max) {
+            // end is inclusive, hence -1 on size
+            delegate.range((int) start, (int) (start + max - 1));
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public BlockingDataQuery<Entity> limitFrom(long start) {
+            // end is inclusive, hence -1 on size
+            // default page size of Jakarta Data is 10 (see PageRequest)
+            delegate.range((int) start, (int) (start + 10 - 1));
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public BlockingDataQuery<Entity> range(long start, long end) {
+            delegate.range((int) start, (int) end);
+            return PanacheBlockingQueryImpl.this;
+        }
+    };
+    final Pages<BlockingDataQuery<Entity>, BlockingDataQuery<Entity>, Boolean, Long> pagesDelegate = new Pages<BlockingDataQuery<Entity>, BlockingDataQuery<Entity>, Boolean, Long>() {
+        @Override
+        public PageRequest request() {
+            Page page = delegate.page();
+            // FIXME: let's hope they fix their page indices to 0-based
+            return PageRequest.ofPage(page.index + 1, page.size, false);
+        }
+
+        @Override
+        public BlockingDataQuery<Entity> request(PageRequest request) {
+            // FIXME: let's hope they fix their page indices to 0-based
+            delegate.page((int) (request.page() - 1), request.size());
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public BlockingDataQuery<Entity> page(long pageIndex, int pageSize) {
+            delegate.page((int) pageIndex, pageSize);
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public BlockingDataQuery<Entity> cursor(long pageIndex, int pageSize) {
+            delegate.cursor((int) pageIndex, pageSize);
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public BlockingDataQuery<Entity> next() {
+            delegate.nextPage();
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public BlockingDataQuery<Entity> previous() {
+            delegate.previousPage();
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public BlockingDataQuery<Entity> first() {
+            delegate.firstPage();
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public BlockingDataQuery<Entity> last() {
+            delegate.lastPage();
+            return PanacheBlockingQueryImpl.this;
+        }
+
+        @Override
+        public Boolean hasNext() {
+            return delegate.hasNextPage();
+        }
+
+        @Override
+        public Boolean hasPrevious() {
+            return delegate.hasPreviousPage();
+        }
+
+        @Override
+        public Long count() {
+            return (long) delegate.pageCount();
+        }
+    };
+
+    PanacheBlockingQueryImpl(SharedSessionContract session, Class<?> entityClass, String query, String originalQuery,
+            Sort sort,
+            Object paramsArrayOrMap) {
+        delegate = new CommonPanacheQueryImpl<Entity>(session, entityClass, query, originalQuery, sort, paramsArrayOrMap);
+    }
+
+    PanacheBlockingQueryImpl(CommonPanacheQueryImpl<Entity> delegate) {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public PanacheBlockingQueryImpl<Entity> sort(Order<? super Entity> order) {
+        delegate.sort(PanacheJpaUtil.toSort(order));
+        return this;
+    }
+
+    @Override
+    public PanacheBlockingQueryImpl<Entity> withLock(LockModeType lockModeType) {
+        delegate.withLock(lockModeType);
+        return this;
+    }
+
+    @Override
+    public PanacheBlockingQueryImpl<Entity> withHint(String hintName, Object value) {
+        delegate.withHint(hintName, value);
+        return this;
+    }
+
+    @Override
+    public PanacheBlockingQueryImpl<Entity> filter(String filterName, Map<String, Object> parameters) {
+        delegate.filter(filterName, parameters);
+        return this;
+    }
+
+    @Override
+    public PanacheBlockingQueryImpl<Entity> filter(String filterName) {
+        delegate.filter(filterName, Collections.emptyMap());
+        return this;
+    }
+
+    @Override
+    public Long count() {
+        return delegate.count();
+    }
+
+    @Override
+    public List<Entity> list() {
+        return delegate.list();
+    }
+
+    @Override
+    public Entity firstResult() {
+        return delegate.firstResult();
+    }
+
+    @Override
+    public Entity singleResult() {
+        return delegate.singleResult();
+    }
+
+    @Override
+    public Limits<BlockingDataQuery<Entity>> limits() {
+        return limitingDelegate;
+    }
+
+    @Override
+    public Pages<BlockingDataQuery<Entity>, BlockingDataQuery<Entity>, Boolean, Long> pages() {
+        return pagesDelegate;
+    }
+
+    @Override
+    public <NewEntity> PanacheBlockingQueryImpl<NewEntity> project(Class<NewEntity> type) {
+        return new PanacheBlockingQueryImpl<>(delegate.project(type));
+    }
+
+    @Override
+    public Stream<Entity> stream() {
+        return delegate.stream();
+    }
+
+    @Override
+    public Optional<Entity> firstResultOptional() {
+        return delegate.firstResultOptional();
+    }
+
+    @Override
+    public Optional<Entity> singleResultOptional() {
+        return delegate.singleResultOptional();
+    }
+}

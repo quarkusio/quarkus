@@ -1,0 +1,31 @@
+.asciidoc-tabs-hidden {
+    display: none;
+}
+
+.asciidoc-tabs-switch {
+    border-width: 1px 0 0 1px;
+    border-style: solid;
+    border-color: #aaa;
+    margin-bottom: -1px;
+    display: inline-block;
+}
+
+.asciidoc-tabs-switch--item.selected {
+    background-color: #fff;
+    color: #0D1C2C;
+    font-weight: 600;
+    border-bottom: 1px solid #fff;
+}
+
+.asciidoc-tabs-switch--item {
+    padding: 0.75rem 2.5rem;
+    background-color: #e4edf7;
+    color: #0D1C2C;
+    display: inline-block;
+    cursor: pointer;
+    border-right: 1px solid #aaa;
+}
+
+.asciidoc-tabs-switch ~ .content pre.highlight {
+    margin-top: 0;
+}

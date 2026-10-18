@@ -1,0 +1,661 @@
+package io.quarkus.arc.processor;
+
+import java.lang.annotation.Annotation;
+import java.lang.annotation.Inherited;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import jakarta.enterprise.context.NormalScope;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.inject.spi.ObserverMethod;
+
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
+
+import io.quarkus.arc.ActiveResult;
+import io.quarkus.arc.BeanCreator;
+import io.quarkus.arc.BeanDestroyer;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.InterceptionProxy;
+import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
+
+/**
+ * This construct is not thread-safe.
+ */
+public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THIS, T>, T> extends ConfiguratorBase<THIS>
+        implements Consumer<AnnotationInstance> {
+
+    protected String identifier;
+    protected final DotName implClazz;
+    protected final Set<Type> types;
+    protected final Set<Type> registeredTypeClosures;
+    protected final Set<Type> typesToRemove;
+    protected final Set<AnnotationInstance> qualifiers;
+    protected ScopeInfo scope;
+    protected Boolean alternative;
+    protected Boolean reserve;
+    protected final List<StereotypeInfo> stereotypes;
+    protected String name;
+    // this is for CDI `@Eager`, while `startupPriority` is for ArC `@Startup`
+    // they are intentionally disconnected, because expressing one in terms of the other would be needlessly complex
+    protected Boolean eager;
+    protected Boolean autoClose;
+    protected Consumer<CreateGeneration> creatorConsumer;
+    protected Consumer<DestroyGeneration> destroyerConsumer;
+    protected boolean removable;
+    protected Type providerType;
+    protected boolean forceApplicationClass;
+    protected String targetPackageName;
+    protected Integer priority;
+    protected final Set<TypeAndQualifiers> injectionPoints;
+    // see `eager`
+    protected Integer startupPriority;
+    protected InterceptionProxyInfo interceptionProxy;
+    protected Consumer<CheckActiveGeneration> checkActiveConsumer;
+
+    protected BeanConfiguratorBase(DotName implClazz) {
+        this.implClazz = implClazz;
+        this.types = new HashSet<>();
+        this.registeredTypeClosures = new HashSet<>();
+        this.typesToRemove = new HashSet<>();
+        this.qualifiers = new HashSet<>();
+        this.stereotypes = new ArrayList<>();
+        this.removable = true;
+        this.injectionPoints = new HashSet<>();
+    }
+
+    /**
+     * Read metadata from another configurator base.
+     *
+     * @param base
+     * @return self
+     */
+    public THIS read(BeanConfiguratorBase<?, ?> base) {
+        super.read(base);
+        identifier = base.identifier;
+        types.clear();
+        types.addAll(base.types);
+        registeredTypeClosures.clear();
+        registeredTypeClosures.addAll(base.registeredTypeClosures);
+        typesToRemove.clear();
+        typesToRemove.addAll(base.typesToRemove);
+        qualifiers.clear();
+        qualifiers.addAll(base.qualifiers);
+        scope = base.scope;
+        alternative = base.alternative;
+        reserve = base.reserve;
+        stereotypes.clear();
+        stereotypes.addAll(base.stereotypes);
+        name = base.name;
+        creator(base.creatorConsumer);
+        destroyer(base.destroyerConsumer);
+        removable = base.removable;
+        providerType = base.providerType;
+        forceApplicationClass = base.forceApplicationClass;
+        targetPackageName = base.targetPackageName;
+        priority = base.priority;
+        injectionPoints.clear();
+        injectionPoints.addAll(base.injectionPoints);
+        startupPriority = base.startupPriority;
+        eager = base.eager;
+        autoClose = base.autoClose;
+        interceptionProxy = base.interceptionProxy;
+        checkActiveConsumer = base.checkActiveConsumer;
+        return self();
+    }
+
+    public THIS types(Class<?>... types) {
+        for (Class<?> type : types) {
+            addType(type);
+        }
+        return self();
+    }
+
+    public THIS types(Type... types) {
+        Collections.addAll(this.types, types);
+        return self();
+    }
+
+    public THIS addType(DotName className) {
+        this.types.add(Type.create(className, Kind.CLASS));
+        return self();
+    }
+
+    public THIS addType(Type type) {
+        this.types.add(type);
+        return self();
+    }
+
+    public THIS addType(Class<?> type) {
+        return addType(DotName.createSimple(type.getName()));
+    }
+
+    /**
+     * Adds an unrestricted set of bean types for the given type as if it represented a bean class of a managed bean.
+     *
+     * @param typeName {@link DotName} representation of a class that should be scanned for types
+     * @return self
+     */
+    public THIS addTypeClosure(DotName typeName) {
+        return addTypeClosure(Type.create(typeName, Kind.CLASS));
+    }
+
+    /**
+     * Adds an unrestricted set of bean types for the given type as if it represented a bean class of a managed bean.
+     *
+     * @param type a class that should be scanned for types
+     * @return self
+     */
+    public THIS addTypeClosure(Class<?> type) {
+        return addTypeClosure(Type.create(type));
+    }
+
+    /**
+     * Adds an unrestricted set of bean types for the given type as if it represented a bean class of a managed bean.
+     *
+     * @param type {@link Type} representation of a class that should be scanned for types
+     * @return self
+     */
+    public THIS addTypeClosure(Type type) {
+        this.registeredTypeClosures.add(type);
+        return self();
+    }
+
+    /**
+     * Removes listed types from the resulting types of the synthetic bean.
+     *
+     * @param types types that should be removed from the resulting set of bean types
+     * @return self
+     */
+    public THIS removeTypes(Class<?>... types) {
+        for (Class<?> classType : types) {
+            removeTypes(Type.create(classType));
+        }
+        return self();
+    }
+
+    /**
+     * Removes listed types from the resulting types of the synthetic bean.
+     *
+     * @param types types that should be removed from the resulting set of bean types
+     * @return self
+     */
+    public THIS removeTypes(DotName... types) {
+        for (DotName name : types) {
+            removeTypes(Type.create(name, Kind.CLASS));
+        }
+        return self();
+    }
+
+    /**
+     * Removes listed types from the resulting types of the synthetic bean.
+     *
+     * @param types types that should be removed from the resulting set of bean types
+     * @return self
+     */
+    public THIS removeTypes(Type... types) {
+        Collections.addAll(this.typesToRemove, types);
+        return self();
+    }
+
+    public THIS addQualifier(Class<? extends Annotation> annotationClass) {
+        return addQualifier(DotName.createSimple(annotationClass.getName()));
+    }
+
+    public THIS addQualifier(DotName annotationName) {
+        return addQualifier(AnnotationInstance.create(annotationName, null, new AnnotationValue[] {}));
+    }
+
+    public THIS addQualifier(AnnotationInstance qualifier) {
+        this.qualifiers.add(qualifier);
+        return self();
+    }
+
+    public QualifierConfigurator<THIS> addQualifier() {
+        return new QualifierConfigurator<>(cast(this));
+    }
+
+    public THIS qualifiers(AnnotationInstance... qualifiers) {
+        Collections.addAll(this.qualifiers, qualifiers);
+        return self();
+    }
+
+    public THIS scope(ScopeInfo scope) {
+        this.scope = scope;
+        return self();
+    }
+
+    public THIS scope(Class<? extends Annotation> scope) {
+        DotName scopeName = DotName.createSimple(scope.getName());
+        BuiltinScope builtinScope = BuiltinScope.from(scopeName);
+        if (builtinScope != null) {
+            this.scope = builtinScope.getInfo();
+        } else {
+            this.scope = new ScopeInfo(scopeName, scope.isAnnotationPresent(NormalScope.class),
+                    scope.isAnnotationPresent(Inherited.class));
+        }
+        return self();
+    }
+
+    public THIS name(String name) {
+        this.name = name;
+        return self();
+    }
+
+    /**
+     * Unlike the {@link #name(String)} method, a new {@link jakarta.inject.Named} qualifier with the specified value
+     * is added to the configured bean.
+     *
+     * @param name
+     * @return self
+     */
+    public THIS named(String name) {
+        return name(name).addQualifier().annotation(DotNames.NAMED).addValue("value", name).done();
+    }
+
+    /**
+     * @deprecated use {@link #reserve(boolean)}
+     */
+    @Deprecated(forRemoval = true, since = "4.0")
+    public THIS defaultBean() {
+        reserve(true);
+        if (priority == null) {
+            priority(0);
+        }
+        return self();
+    }
+
+    public THIS unremovable() {
+        this.removable = false;
+        return self();
+    }
+
+    /**
+     * Forces the bean to be considered an 'application class', so it will be defined in the runtime
+     * ClassLoader and re-created on each redeployment.
+     *
+     * @return self
+     */
+    public THIS forceApplicationClass() {
+        this.forceApplicationClass = true;
+        return self();
+    }
+
+    public THIS targetPackageName(String name) {
+        this.targetPackageName = name;
+        return self();
+    }
+
+    public THIS alternative(boolean alternative) {
+        this.alternative = alternative;
+        return self();
+    }
+
+    public THIS reserve(boolean reserve) {
+        this.reserve = reserve;
+        return self();
+    }
+
+    public THIS priority(int value) {
+        this.priority = value;
+        return self();
+    }
+
+    public THIS addStereotype(StereotypeInfo stereotype) {
+        this.stereotypes.add(stereotype);
+        return self();
+    }
+
+    public THIS stereotypes(StereotypeInfo... stereotypes) {
+        Collections.addAll(this.stereotypes, stereotypes);
+        return self();
+    }
+
+    /**
+     * The provider type is the "real" type of the bean instance created via
+     * {@link InjectableReferenceProvider#get(CreationalContext)}.
+     * <p>
+     * The container attempts to derive the provider type from the implementation class. However, in some cases it's better to
+     * specify it manually.
+     *
+     * @param providerType
+     * @return self
+     */
+    public THIS providerType(Type providerType) {
+        this.providerType = providerType;
+        return self();
+    }
+
+    /**
+     * Adds a synthetic injection point. The injection point is validated at build time and is also considered when removing
+     * unused beans.
+     *
+     * @param requiredType
+     * @param requiredQualifiers
+     * @return self
+     * @see SyntheticCreationalContext
+     */
+    public THIS addInjectionPoint(Type requiredType, AnnotationInstance... requiredQualifiers) {
+        this.injectionPoints.add(new TypeAndQualifiers(requiredType,
+                requiredQualifiers.length == 0 ? Set.of(AnnotationInstance.builder(Default.class).build())
+                        : Set.of(requiredQualifiers)));
+        return self();
+    }
+
+    /**
+     * Initialize the bean eagerly at application startup.
+     * <p>
+     * The bean also becomes {@code unremovable}.
+     * <p>
+     * If this bean is not active (see {@link #checkActive(Consumer)}) and is not injected into
+     * any always active bean, eager initialization is skipped to prevent needless failures.
+     *
+     * @param priority priority of the generated synthetic observer, to affect eager init ordering
+     * @return self
+     */
+    public THIS startup(int priority) {
+        this.startupPriority = priority;
+        return unremovable();
+    }
+
+    /**
+     * Initialize the bean eagerly at application startup.
+     * <p>
+     * The bean also becomes {@code unremovable}.
+     * <p>
+     * If this bean is not active (see {@link #checkActive(Consumer)}) and is not injected into
+     * any always active bean, eager initialization is skipped to prevent needless failures.
+     *
+     * @return self
+     */
+    public THIS startup() {
+        return startup(ObserverMethod.DEFAULT_PRIORITY);
+    }
+
+    /**
+     * Initialize the bean eagerly at application startup.
+     * <p>
+     * The bean also becomes {@code unremovable}.
+     * <p>
+     * If this bean is not active (see {@link #checkActive(Consumer)}) and is not injected into
+     * any always active bean, eager initialization is skipped to prevent needless failures.
+     *
+     * @param eager whether this bean should be eagerly initialized
+     * @return self
+     */
+    public THIS eager(boolean eager) {
+        this.eager = eager;
+        // made unremovable in the `BeanInfo` constructor, no need to call `unremovable()`
+        return self();
+    }
+
+    /**
+     * Mark the bean as auto-closeable.
+     *
+     * @param autoClose whether this bean should be auto-closeable
+     * @return self
+     */
+    public THIS autoClose(boolean autoClose) {
+        this.autoClose = autoClose;
+        return self();
+    }
+
+    /**
+     * Declares that this synthetic bean has an injection point of type {@code InterceptionProxy<PT>},
+     * where {@code PT} is the {@linkplain #providerType(Type) provider type} of this bean.
+     * An instance of {@code PT} may be used as a parameter to {@link InterceptionProxy#create(Object)}
+     * in the {@linkplain BeanCreator creator} of this synthetic bean.
+     * <p>
+     * The class of the provider type is scanned for interceptor binding annotations.
+     * <p>
+     * This method may only be called once. Subsequent calls throw an exception.
+     *
+     * @return self
+     */
+    public THIS injectInterceptionProxy() {
+        return injectInterceptionProxy((DotName) null);
+    }
+
+    /**
+     * Declares that this synthetic bean has an injection point of type {@code InterceptionProxy<PT>},
+     * where {@code PT} is the {@linkplain #providerType(Type) provider type} of this bean.
+     * An instance of {@code PT} may be used as a parameter to {@link InterceptionProxy#create(Object)}
+     * in the {@linkplain BeanCreator creator} of this synthetic bean.
+     * <p>
+     * If the {@code bindingsSource} is not {@code null}, interceptor bindings on the class
+     * of the provider type are ignored; instead, the {@code bindingsSource} class is scanned
+     * for interceptor binding annotations as defined in {@link io.quarkus.arc.BindingsSource}.
+     * <p>
+     * This method may only be called once. Subsequent calls throw an exception.
+     *
+     * @param bindingsSource the bindings source class, may be {@code null}
+     * @return self
+     */
+    public THIS injectInterceptionProxy(Class<?> bindingsSource) {
+        return injectInterceptionProxy(bindingsSource != null ? DotName.createSimple(bindingsSource) : null);
+    }
+
+    /**
+     * Declares that this synthetic bean has an injection point of type {@code InterceptionProxy<PT>},
+     * where {@code PT} is the {@linkplain #providerType(Type) provider type} of this bean.
+     * An instance of {@code PT} may be used as a parameter to {@link InterceptionProxy#create(Object)}
+     * in the {@linkplain BeanCreator creator} of this synthetic bean.
+     * <p>
+     * If the {@code bindingsSource} is not {@code null}, interceptor bindings on the class
+     * of the provider type are ignored; instead, the {@code bindingsSource} class is scanned
+     * for interceptor binding annotations as defined in {@link io.quarkus.arc.BindingsSource}.
+     * <p>
+     * This method may only be called once. Subsequent calls throw an exception.
+     *
+     * @param bindingsSource the bindings source class, may be {@code null}
+     * @return self
+     */
+    public THIS injectInterceptionProxy(DotName bindingsSource) {
+        if (interceptionProxy != null) {
+            throw new DefinitionException("Calling injectInterceptionProxy() more than once is invalid");
+        }
+        interceptionProxy = new InterceptionProxyInfo(bindingsSource);
+        return self();
+    }
+
+    public <U extends T> THIS creator(Class<? extends BeanCreator<U>> creatorClazz) {
+        return creator(cg -> {
+            BlockCreator bc = cg.createMethod();
+
+            // return new FooBeanCreator().create(syntheticCreationalContext)
+            MethodDesc createDesc = MethodDesc.of(BeanCreator.class,
+                    "create", Object.class, SyntheticCreationalContext.class);
+            bc.return_(bc.invokeInterface(createDesc, bc.new_(creatorClazz), cg.syntheticCreationalContext()));
+        });
+    }
+
+    public THIS creator(Consumer<CreateGeneration> creatorConsumer) {
+        this.creatorConsumer = creatorConsumer;
+        return cast(this);
+    }
+
+    public <U extends T> THIS destroyer(Class<? extends BeanDestroyer<U>> destroyerClazz) {
+        return destroyer(dg -> {
+            BlockCreator bc = dg.destroyMethod();
+
+            // new FooBeanDestroyer().destroy(instance, syntheticCreationalContext)
+            MethodDesc destroyDesc = MethodDesc.of(BeanDestroyer.class,
+                    "destroy", void.class, Object.class, SyntheticCreationalContext.class);
+            bc.invokeInterface(destroyDesc, bc.new_(destroyerClazz),
+                    dg.destroyedInstance(), dg.syntheticCreationalContext());
+            bc.return_();
+        });
+    }
+
+    public THIS destroyer(Consumer<DestroyGeneration> destroyerConsumer) {
+        this.destroyerConsumer = destroyerConsumer;
+        return cast(this);
+    }
+
+    /**
+     * Configures the class of the "check active" procedure.
+     *
+     * @see #checkActive(Consumer)
+     */
+    public THIS checkActive(Class<? extends Supplier<ActiveResult>> checkActiveClazz) {
+        return checkActive(cag -> {
+            BlockCreator bc = cag.checkActiveMethod();
+
+            // return new FooActiveResultSupplier().get()
+            bc.return_(bc.invokeInterface(MethodDescs.SUPPLIER_GET, bc.new_(checkActiveClazz)));
+        });
+    }
+
+    /**
+     * Configures the procedure that generates the bytecode for checking whether this bean is active or not.
+     * Usually, this method should not be called, because most beans are always active. However, certain
+     * synthetic beans may be inactive from time to time -- as determined by this procedure. If a bean
+     * is inactive, injecting it or looking it up ends with {@code InactiveBeanException}.
+     * <p>
+     * The procedure is expected to return an {@link io.quarkus.arc.ActiveResult ActiveResult}, which
+     * for inactive beans must include an explanation (why is this bean not active) and optionally also
+     * a cause (in case the bean is inactive because another bean is also inactive).
+     *
+     * @return the procedure that generates the bytecode for checking whether this bean is active or not
+     */
+    public THIS checkActive(Consumer<CheckActiveGeneration> checkActiveConsumer) {
+        this.checkActiveConsumer = checkActiveConsumer;
+        return cast(this);
+    }
+
+    /**
+     * The identifier becomes part of the {@link BeanInfo#getIdentifier()} and {@link InjectableBean#getIdentifier()}.
+     * <p>
+     * An identifier can be used to register multiple synthetic beans with the same set of types and qualifiers.
+     *
+     * @param identifier
+     * @return self
+     * @see #alternative(boolean)
+     * @see #reserve(boolean)
+     */
+    public THIS identifier(String identifier) {
+        this.identifier = identifier;
+        return cast(this);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected static <T> T cast(Object obj) {
+        return (T) obj;
+    }
+
+    @Override
+    public void accept(AnnotationInstance qualifier) {
+        addQualifier(qualifier);
+    }
+
+    public interface CreateGeneration {
+        /**
+         * {@return the generated implementation of {@link InjectableBean} for the synthetic bean}
+         * This class contains the generated {@code create} method.
+         *
+         * @see #createMethod()
+         */
+        ClassCreator beanClass();
+
+        /**
+         * {@return the {@link BlockCreator} for the generated {@code create} method}
+         * This method is supposed to contain the creation logic.
+         */
+        BlockCreator createMethod();
+
+        /**
+         * {@return the field on the {@link #beanClass()} that contains the parameter map}
+         */
+        default Var paramsMap() {
+            ClassCreator cc = beanClass();
+            return cc.this_().field(FieldDesc.of(cc.type(), "params", Map.class));
+        }
+
+        /**
+         * {@return the parameter of the generated creation method that contains the {@link SyntheticCreationalContext}}
+         *
+         * @see #createMethod()
+         */
+        Var syntheticCreationalContext();
+    }
+
+    public interface DestroyGeneration {
+        /**
+         * {@return the generated implementation of {@link InjectableBean} for the synthetic bean}
+         * This class contains the generated {@code destroy} method.
+         *
+         * @see #destroyMethod()
+         */
+        ClassCreator beanClass();
+
+        /**
+         * {@return the {@link BlockCreator} for the generated {@code destroy} method}
+         * This method is supposed to contain the destruction logic.
+         */
+        BlockCreator destroyMethod();
+
+        /**
+         * {@return the field on the {@link #beanClass()} that contains the parameter map}
+         */
+        default Var paramsMap() {
+            ClassCreator cc = beanClass();
+            return cc.this_().field(FieldDesc.of(cc.type(), "params", Map.class));
+        }
+
+        /**
+         * {@return the parameter of the generated destruction method that contains the destroyed instance}
+         *
+         * @see #destroyMethod()
+         */
+        Var destroyedInstance();
+
+        /**
+         * @deprecated use {@link #syntheticCreationalContext()}
+         */
+        @Deprecated(forRemoval = true, since = "4.0")
+        default Var creationalContext() {
+            return syntheticCreationalContext();
+        }
+
+        /**
+         * {@return the parameter of the generated destruction method that contains the {@link SyntheticCreationalContext}}
+         *
+         * @see #destroyMethod()
+         */
+        Var syntheticCreationalContext();
+    }
+
+    public interface CheckActiveGeneration {
+        /**
+         * {@return the generated implementation of {@link InjectableBean} for the synthetic bean}
+         * This class contains the generated {@code checkActive} method.
+         *
+         * @see #checkActiveMethod()
+         */
+        ClassCreator beanClass();
+
+        /**
+         * {@return the {@link BlockCreator} for the generated {@code checkActive} method}
+         * This method is supposed to contain the logic to determine whether the bean is active or not.
+         */
+        BlockCreator checkActiveMethod();
+    }
+}

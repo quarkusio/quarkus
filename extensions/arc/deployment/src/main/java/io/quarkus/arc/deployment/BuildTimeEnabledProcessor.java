@@ -1,0 +1,443 @@
+package io.quarkus.arc.deployment;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
+import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.groupingBy;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import jakarta.enterprise.inject.Vetoed;
+
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationTransformation;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.Declaration;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.EquivalenceKey;
+import org.jboss.jandex.IndexView;
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.VetoedProducer;
+import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.profile.IfBuildProfile;
+import io.quarkus.arc.profile.UnlessBuildProfile;
+import io.quarkus.arc.properties.IfBuildProperty;
+import io.quarkus.arc.properties.StringValueMatch;
+import io.quarkus.arc.properties.UnlessBuildProperty;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.runtime.configuration.ConfigUtils;
+
+public class BuildTimeEnabledProcessor {
+
+    private static final Logger LOGGER = Logger.getLogger(BuildTimeEnabledProcessor.class);
+
+    private static final DotName IF_BUILD_PROFILE = DotName.createSimple(IfBuildProfile.class.getName());
+    private static final DotName UNLESS_BUILD_PROFILE = DotName.createSimple(UnlessBuildProfile.class.getName());
+
+    private static final DotName IF_BUILD_PROPERTY = DotName.createSimple(IfBuildProperty.class.getName());
+    private static final DotName IF_BUILD_PROPERTY_CONTAINER = DotName.createSimple(IfBuildProperty.List.class.getName());
+    private static final DotName UNLESS_BUILD_PROPERTY = DotName.createSimple(UnlessBuildProperty.class.getName());
+    private static final DotName UNLESS_BUILD_PROPERTY_CONTAINER = DotName
+            .createSimple(UnlessBuildProperty.List.class.getName());
+
+    public static final Set<DotName> BUILD_TIME_ENABLED_BEAN_ANNOTATIONS = Set.of(IF_BUILD_PROFILE, UNLESS_BUILD_PROFILE,
+            IF_BUILD_PROPERTY, IF_BUILD_PROPERTY_CONTAINER, UNLESS_BUILD_PROPERTY, UNLESS_BUILD_PROPERTY_CONTAINER);
+
+    @BuildStep
+    BuildTimeEnabledStereotypesBuildItem findEnablementStereotypes(CombinedIndexBuildItem combinedIndex) {
+        IndexView index = combinedIndex.getComputingIndex();
+
+        // find all stereotypes
+        Set<DotName> stereotypeNames = new HashSet<>();
+        for (AnnotationInstance annotation : index.getAnnotations(DotNames.STEREOTYPE)) {
+            // `Stereotype` is `@Target(ANNOTATION_TYPE)`
+            stereotypeNames.add(annotation.target().asClass().name());
+        }
+        // ideally, we would also consider all `StereotypeRegistrarBuildItem`s here,
+        // but there is a build step cycle involving Spring DI and RESTEasy Reactive
+        // that I'm not capable of breaking
+
+        // for each stereotype, find all enablement annotations, present either directly or transitively
+        List<BuildTimeEnabledStereotypesBuildItem.BuildTimeEnabledStereotype> buildTimeEnabledStereotypes = new ArrayList<>();
+        for (DotName stereotypeToScan : stereotypeNames) {
+            Map<DotName, List<AnnotationInstance>> result = new HashMap<>();
+
+            Set<DotName> alreadySeen = new HashSet<>(); // to guard against hypothetical stereotype cycle
+            Deque<DotName> worklist = new ArrayDeque<>();
+            worklist.add(stereotypeToScan);
+            while (!worklist.isEmpty()) {
+                DotName stereotype = worklist.poll();
+                if (!alreadySeen.add(stereotype)) {
+                    continue;
+                }
+
+                ClassInfo stereotypeClass = index.getClassByName(stereotype);
+                if (stereotypeClass == null) {
+                    continue;
+                }
+
+                for (DotName enablementAnnotation : List.of(IF_BUILD_PROFILE, UNLESS_BUILD_PROFILE, IF_BUILD_PROPERTY,
+                        UNLESS_BUILD_PROPERTY)) {
+                    for (AnnotationInstance ann : stereotypeClass.declaredAnnotationsWithRepeatable(
+                            enablementAnnotation, index)) {
+                        result.computeIfAbsent(enablementAnnotation, ignored -> new ArrayList<>()).add(ann);
+                    }
+                }
+
+                for (AnnotationInstance metaAnn : stereotypeClass.declaredAnnotations()) {
+                    if (stereotypeNames.contains(metaAnn.name())) {
+                        worklist.add(metaAnn.name());
+                    }
+                }
+            }
+
+            if (!result.isEmpty()) {
+                ClassInfo stereotypeClass = index.getClassByName(stereotypeToScan);
+                boolean inheritable = stereotypeClass != null && stereotypeClass.hasDeclaredAnnotation(DotNames.INHERITED);
+                buildTimeEnabledStereotypes.add(new BuildTimeEnabledStereotypesBuildItem.BuildTimeEnabledStereotype(
+                        stereotypeToScan, inheritable, result));
+            }
+        }
+
+        return new BuildTimeEnabledStereotypesBuildItem(buildTimeEnabledStereotypes);
+    }
+
+    @BuildStep
+    void ifBuildProfile(CombinedIndexBuildItem index, BuildTimeEnabledStereotypesBuildItem stereotypes,
+            BuildProducer<BuildTimeConditionBuildItem> producer) {
+        enablementAnnotations(IF_BUILD_PROFILE, index.getComputingIndex(), stereotypes, producer,
+                new Predicate<AnnotationInstance>() {
+                    @Override
+                    public boolean test(AnnotationInstance annotation) {
+                        return BuildProfile.from(annotation).enabled();
+                    }
+                });
+    }
+
+    @BuildStep
+    void unlessBuildProfile(CombinedIndexBuildItem index, BuildTimeEnabledStereotypesBuildItem stereotypes,
+            BuildProducer<BuildTimeConditionBuildItem> producer) {
+        enablementAnnotations(UNLESS_BUILD_PROFILE, index.getComputingIndex(), stereotypes, producer,
+                new Predicate<AnnotationInstance>() {
+                    @Override
+                    public boolean test(AnnotationInstance annotation) {
+                        return BuildProfile.from(annotation).disabled();
+                    }
+                });
+    }
+
+    @BuildStep
+    void ifBuildProperty(CombinedIndexBuildItem index, BuildTimeEnabledStereotypesBuildItem stereotypes,
+            BuildProducer<BuildTimeConditionBuildItem> conditions) {
+        Config config = ConfigProviderResolver.instance().getConfig();
+        enablementAnnotations(IF_BUILD_PROPERTY, index.getComputingIndex(), stereotypes, conditions,
+                new Predicate<AnnotationInstance>() {
+                    @Override
+                    public boolean test(AnnotationInstance annotation) {
+                        return BuildProperty.from(annotation).enabled(config);
+                    }
+                });
+    }
+
+    @BuildStep
+    void unlessBuildProperty(CombinedIndexBuildItem index, BuildTimeEnabledStereotypesBuildItem stereotypes,
+            BuildProducer<BuildTimeConditionBuildItem> conditions) {
+        Config config = ConfigProviderResolver.instance().getConfig();
+        enablementAnnotations(UNLESS_BUILD_PROPERTY, index.getComputingIndex(), stereotypes, conditions,
+                new Predicate<AnnotationInstance>() {
+                    @Override
+                    public boolean test(AnnotationInstance annotation) {
+                        return BuildProperty.from(annotation).disabled(config);
+                    }
+                });
+    }
+
+    private void enablementAnnotations(DotName annotationName, IndexView index,
+            BuildTimeEnabledStereotypesBuildItem stereotypes, BuildProducer<BuildTimeConditionBuildItem> producer,
+            Predicate<AnnotationInstance> predicate) {
+
+        // instances of enablement annotation directly on affected declarations
+        List<AnnotationInstance> annotationInstances = getAnnotations(index, annotationName);
+        for (AnnotationInstance annotation : annotationInstances) {
+            AnnotationTarget target = annotation.target();
+            boolean enabled = predicate.test(annotation);
+            if (enabled) {
+                LOGGER.debugf("Enabling %s due to %s", target, annotation);
+            } else {
+                LOGGER.debugf("Disabling %s due to %s", target, annotation);
+            }
+            producer.produce(new BuildTimeConditionBuildItem(target, enabled));
+        }
+
+        // instances of stereotypes (with enablement annotation) directly on affected declarations
+        Set<DotName> processedClasses = new HashSet<>();
+        List<ClassInfo> classesWithPossiblyInheritedStereotype = new ArrayList<>();
+        for (BuildTimeEnabledStereotypesBuildItem.BuildTimeEnabledStereotype stereotype : stereotypes.all()) {
+            for (AnnotationInstance stereotypeUsage : getAnnotations(index, stereotype.name)) {
+                AnnotationTarget target = stereotypeUsage.target();
+                for (AnnotationInstance annotation : stereotype.getEnablementAnnotations(annotationName)) {
+                    boolean enabled = predicate.test(annotation);
+                    if (enabled) {
+                        LOGGER.debugf("Enabling %s  due to %s on stereotype %s", target, annotation, stereotype.name);
+                    } else {
+                        LOGGER.debugf("Disabling %s due to %s on stereotype %s", target, annotation, stereotype.name);
+                    }
+                    producer.produce(new BuildTimeConditionBuildItem(target, enabled));
+                }
+
+                // annotations are inherited only on classes (and only from superclasses)
+                if (target.kind() == Kind.CLASS) {
+                    ClassInfo clazz = target.asClass();
+                    processedClasses.add(clazz.name());
+                    if (stereotype.inheritable && !clazz.isInterface()) {
+                        classesWithPossiblyInheritedStereotype.addAll(index.getAllKnownSubclasses(clazz.name()));
+                    }
+                }
+            }
+        }
+
+        // instances of stereotypes (with enablement annotation) inherited from a superclass
+        for (ClassInfo clazz : classesWithPossiblyInheritedStereotype) {
+            if (!processedClasses.add(clazz.name())) {
+                continue;
+            }
+
+            ClassInfo superclass = index.getClassByName(clazz.superName());
+            Set<DotName> seenStereotypes = new HashSet<>(); // avoid "inheriting" the same annotation multiple times
+            while (superclass != null && !DotNames.OBJECT.equals(superclass.name())) {
+                for (AnnotationInstance ann : superclass.declaredAnnotations()) {
+                    if (!stereotypes.isStereotype(ann.name()) || seenStereotypes.contains(ann.name())) {
+                        continue;
+                    }
+
+                    BuildTimeEnabledStereotypesBuildItem.BuildTimeEnabledStereotype stereotype = stereotypes
+                            .getStereotype(ann.name());
+                    if (stereotype == null) {
+                        continue;
+                    }
+
+                    for (AnnotationInstance annotation : stereotype.getEnablementAnnotations(annotationName)) {
+                        boolean enabled = predicate.test(annotation);
+                        if (enabled) {
+                            LOGGER.debugf("Enabling %s due to %s on stereotype %s inherited from %s",
+                                    clazz, annotation, stereotype.name, superclass.name());
+                        } else {
+                            LOGGER.debugf("Disabling %s due to %s on stereotype %s inherited from %s",
+                                    clazz, annotation, stereotype.name, superclass.name());
+                        }
+                        producer.produce(new BuildTimeConditionBuildItem(clazz, enabled));
+                    }
+
+                    seenStereotypes.add(ann.name());
+                }
+
+                superclass = index.getClassByName(superclass.superName());
+            }
+        }
+    }
+
+    @BuildStep
+    void conditionTransformer(List<BuildTimeConditionBuildItem> buildTimeConditions,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
+        if (buildTimeConditions.isEmpty()) {
+            return;
+        }
+
+        /*
+         * Determine whether each of the targets was enabled or not by combining their 'enabled' values
+         * Done this way in order to support having different annotation specify different conditions
+         * under which the bean is enabled and then combining all of them using a logical 'AND'
+         */
+        final Map<EquivalenceKey, Boolean> enabled = new HashMap<>();
+        for (BuildTimeConditionBuildItem buildTimeCondition : buildTimeConditions) {
+            AnnotationTarget target = buildTimeCondition.getTarget();
+            EquivalenceKey key = EquivalenceKey.of(target);
+            Boolean allPreviousConditionsTrue = enabled.getOrDefault(key, true);
+            enabled.put(key, allPreviousConditionsTrue && buildTimeCondition.isEnabled());
+        }
+
+        // the transformer just tries to match targets and then enables or disables the bean accordingly
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationTransformation() {
+            @Override
+            public void apply(TransformationContext ctx) {
+                Declaration target = ctx.declaration();
+                if (!enabled.getOrDefault(EquivalenceKey.of(target), Boolean.TRUE)) {
+                    if (target.kind() == Kind.CLASS) {
+                        // Veto the class
+                        ctx.add(Vetoed.class);
+                    } else {
+                        // Veto the producer
+                        ctx.add(VetoedProducer.class);
+                    }
+                }
+            }
+        }));
+    }
+
+    /**
+     * @param buildTimeConditions the build time conditions from which the excluded classes are extracted.
+     * @return an instance of {@link BuildExclusionsBuildItem} containing the set of classes
+     *         that have been annotated with unsuccessful build time conditions.
+     */
+    @BuildStep
+    BuildExclusionsBuildItem buildExclusions(List<BuildTimeConditionBuildItem> buildTimeConditions) {
+        final Map<Kind, Set<String>> map = buildTimeConditions.stream()
+                .filter(not(BuildTimeConditionBuildItem::isEnabled))
+                .map(BuildTimeConditionBuildItem::getTarget)
+                .collect(groupingBy(
+                        AnnotationTarget::kind,
+                        () -> new EnumMap<>(Kind.class),
+                        Collectors.mapping(BuildExclusionsBuildItem::targetMapper, Collectors.toSet())));
+        return new BuildExclusionsBuildItem(
+                map.getOrDefault(AnnotationTarget.Kind.CLASS, Collections.emptySet()),
+                map.getOrDefault(AnnotationTarget.Kind.METHOD, Collections.emptySet()),
+                map.getOrDefault(AnnotationTarget.Kind.FIELD, Collections.emptySet()));
+    }
+
+    private static List<AnnotationInstance> getAnnotations(IndexView index, DotName annotationName) {
+        List<AnnotationInstance> result = new ArrayList<>();
+        for (AnnotationInstance annotation : index.getAnnotationsWithRepeatable(annotationName, index)) {
+            AnnotationTarget target = annotation.target();
+            if (target != null && (target.kind() != Kind.CLASS || !target.asClass().isAnnotation())) {
+                result.add(annotation);
+            }
+        }
+        return result;
+    }
+
+    private static class BuildProfile {
+        private final Set<String> allOf;
+        private final Set<String> anyOf;
+
+        BuildProfile(final Set<String> allOf, final Set<String> anyOf) {
+            this.allOf = allOf;
+            this.anyOf = anyOf;
+        }
+
+        boolean allMatch() {
+            if (allOf.isEmpty()) {
+                return true;
+            }
+
+            for (String profile : allOf) {
+                if (!ConfigUtils.isProfileActive(profile)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        boolean anyMatch() {
+            if (anyOf.isEmpty()) {
+                return true;
+            }
+
+            for (String profile : anyOf) {
+                if (ConfigUtils.isProfileActive(profile)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        boolean enabled() {
+            return allMatch() && anyMatch();
+        }
+
+        boolean disabled() {
+            return !enabled();
+        }
+
+        private static BuildProfile from(AnnotationInstance instance) {
+            AnnotationValue value = instance.value();
+
+            AnnotationValue allOfValue = instance.value("allOf");
+            Set<String> allOf = allOfValue != null ? new HashSet<>(asList(allOfValue.asStringArray())) : emptySet();
+
+            AnnotationValue anyOfValue = instance.value("anyOf");
+            Set<String> anyOf = new HashSet<>();
+            if (value != null) {
+                anyOf.add(value.asString());
+            }
+            if (anyOfValue != null) {
+                Collections.addAll(anyOf, anyOfValue.asStringArray());
+            }
+
+            return new BuildProfile(allOf, anyOf);
+        }
+    }
+
+    static class BuildProperty {
+        private final String propertyName;
+        private final String expectedStringValue;
+        private final boolean enableIfMissing;
+        private final Pattern regexPattern;
+
+        private BuildProperty(String propertyName, String expectedStringValue, boolean enableIfMissing,
+                StringValueMatch match) {
+            this.propertyName = propertyName;
+            this.expectedStringValue = expectedStringValue;
+            this.enableIfMissing = enableIfMissing;
+            this.regexPattern = match == StringValueMatch.REGEX ? Pattern.compile(expectedStringValue) : null;
+        }
+
+        boolean enabled(Config config) {
+            Optional<String> optionalValue = config.getOptionalValue(propertyName, String.class);
+            if (optionalValue.isPresent()) {
+                return matches(optionalValue.get());
+            } else {
+                return enableIfMissing;
+            }
+        }
+
+        boolean disabled(Config config) {
+            // cannot just negate `enabled()`, that would change the meaning of `enableIfMissing`
+            Optional<String> optionalValue = config.getOptionalValue(propertyName, String.class);
+            if (optionalValue.isPresent()) {
+                return !matches(optionalValue.get());
+            } else {
+                return enableIfMissing;
+            }
+        }
+
+        private boolean matches(String actualValue) {
+            if (regexPattern != null) {
+                return regexPattern.matcher(actualValue).matches();
+            }
+            return expectedStringValue.equals(actualValue);
+        }
+
+        static BuildProperty from(AnnotationInstance instance) {
+            String propertyName = instance.value("name").asString();
+            String expectedStringValue = instance.value("stringValue").asString();
+            AnnotationValue enableIfMissingValue = instance.value("enableIfMissing");
+            boolean enableIfMissing = enableIfMissingValue != null && enableIfMissingValue.asBoolean();
+            AnnotationValue matchValue = instance.value("match");
+            StringValueMatch match = matchValue != null ? StringValueMatch.valueOf(matchValue.asEnum())
+                    : StringValueMatch.EQ;
+
+            return new BuildProperty(propertyName, expectedStringValue, enableIfMissing, match);
+        }
+    }
+}

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <!-- This is a cut down version of a real extension pom.
+  Including a quarkus-extensions-parent makes maven test harness unhappy, and causes
+  a ' NullPointer repository system session's local repository manager cannot be null' error -->
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.quackiverse</groupId>
+  <artifactId>quarkus-fake-extension</artifactId>
+  <version>${project.version}</version>
+  <name>Quarkus - Fake extension - Deployment</name>
+  <description>A version of the fake extension whose pom is missing dependencies</description>
+  <dependencies>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-core</artifactId>
+      <!-- The version in this dependency is arbitrary, but needs to be 'real' (downloadable from maven).
+      It should not be a snapshot build, to avoid introducing a build-order dependency into this test. -->
+      <version>2.12.0.Final</version>
+    </dependency>
+
+    <!-- Mirror of the deployment artifact's dependencies would be here, but is deliberately missing -->
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-extension-maven-plugin</artifactId>
+        <version>${project.version}</version>
+        <configuration>
+          <capabilities>
+            <provides>io.quarkus.agroal</provides>
+          </capabilities>
+        </configuration>
+      </plugin>
+
+    </plugins>
+  </build>
+
+
+</project>

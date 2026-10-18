@@ -1,0 +1,81 @@
+package io.quarkus.registry.config;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.json.JsonArtifactCoordsMixin;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.cfg.MapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+
+public class RegistriesConfigMapperHelper {
+
+    private static ObjectMapper yamlMapper;
+    private static ObjectMapper jsonMapper;
+
+    public static ObjectMapper yamlMapper() {
+        return yamlMapper == null ? yamlMapper = initMapper(YAMLMapper.builder()) : yamlMapper;
+    }
+
+    public static ObjectMapper jsonMapper() {
+        return jsonMapper == null ? jsonMapper = initMapper(JsonMapper.builder()) : jsonMapper;
+    }
+
+    private static ObjectMapper mapper(Path p) {
+        return p.getFileName().toString().endsWith(".json") ? jsonMapper() : yamlMapper();
+    }
+
+    public static ObjectMapper initMapper(MapperBuilder<?, ?> builder) {
+        builder.addMixIn(ArtifactCoords.class, JsonArtifactCoordsMixin.class)
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+                .propertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        return builder.build();
+    }
+
+    public static void serialize(Object config, Path p) throws IOException {
+        if (!Files.exists(p.getParent())) {
+            Files.createDirectories(p.getParent());
+        }
+        try (BufferedWriter writer = Files.newBufferedWriter(p)) {
+            mapper(p).writeValue(writer, config);
+        }
+    }
+
+    public static void toJson(Object config, Writer writer) throws IOException {
+        jsonMapper().writeValue(writer, config);
+    }
+
+    public static void toYaml(Object config, Writer writer) throws IOException {
+        yamlMapper().writeValue(writer, config);
+    }
+
+    public static <T> T deserialize(Path p, Class<T> t) throws IOException {
+        if (!Files.exists(p)) {
+            throw new IllegalArgumentException("File " + p + " does not exist");
+        }
+        try (BufferedReader reader = Files.newBufferedReader(p)) {
+            return mapper(p).readValue(reader, t);
+        }
+    }
+
+    public static <T> T deserializeYaml(InputStream is, Class<T> t) throws IOException {
+        return yamlMapper().readValue(is, t);
+    }
+
+    public static <T> T deserializeYaml(Reader reader, Class<T> t) throws IOException {
+        return yamlMapper().readValue(reader, t);
+    }
+}

@@ -1,0 +1,52 @@
+package io.quarkus.deployment.builditem;
+
+import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.recording.BytecodeRecorderImpl;
+import io.quarkus.runtime.ObjectSubstitution;
+
+/**
+ * Used to capture object substitution information for non-serializable classes.
+ */
+@Deprecated(since = "4.0")
+public final class ObjectSubstitutionBuildItem extends MultiBuildItem {
+    /**
+     * Holder to keep type info around for compiler.
+     *
+     * @param <F> - from class
+     * @param <T> - to class
+     */
+    @Deprecated(since = "4.0")
+    public static final class Holder<F, T> {
+        public final Class<F> from;
+
+        public final Class<T> to;
+
+        public final Class<ObjectSubstitution<F, T>> substitution;
+
+        public Holder(Class<F> from, Class<T> to, Class<ObjectSubstitution<F, T>> substitution) {
+            this.from = from;
+            this.to = to;
+            this.substitution = substitution;
+
+        }
+
+        public void registerTo(final BytecodeRecorderImpl recorder) {
+            recorder.registerSubstitution(from, to, substitution);
+        }
+    }
+
+    public final Holder<?, ?> holder;
+
+    public <F, T> ObjectSubstitutionBuildItem(Class<F> from, Class<T> to,
+            Class<? extends ObjectSubstitution<F, T>> substitution) {
+        holder = new Holder(from, to, substitution);
+    }
+
+    public ObjectSubstitutionBuildItem(Holder<?, ?> holder) {
+        this.holder = holder;
+    }
+
+    public Holder<?, ?> getHolder() {
+        return holder;
+    }
+}

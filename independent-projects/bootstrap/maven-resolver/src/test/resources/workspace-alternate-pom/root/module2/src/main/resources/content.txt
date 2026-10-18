@@ -1,0 +1,1 @@
+This file here is to indicate to the resolver that this module is not an empty jar. Do not remove it.

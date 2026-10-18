@@ -1,0 +1,32 @@
+package io.quarkus.qute.deployment.typesafe;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.qute.Template;
+import io.quarkus.test.QuarkusExtensionTest;
+
+public class NestedVirtualMethodSuccessTest {
+
+    @RegisterExtension
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(Movie.class, MovieExtensions.class)
+                    .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.typesafe.Movie movie}"
+                            + "{movie.findServices(movie.name,movie.toNumber(movie.getName))}"),
+                            "templates/nested.html"));
+
+    @Inject
+    Template nested;
+
+    @Test
+    public void testResult() {
+        assertEquals("11", nested.data("movie", new Movie("John")).render());
+    }
+
+}

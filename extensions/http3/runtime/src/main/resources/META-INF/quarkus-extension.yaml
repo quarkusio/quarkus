@@ -1,0 +1,14 @@
+---
+name: "HTTP/3"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "http3"
+  - "quic"
+  - "h3"
+  guide: "https://quarkus.io/guides/http3-reference"
+  categories:
+  - "web"
+  status: "experimental"
+  config:
+  - "quarkus.http3."

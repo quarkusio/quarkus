@@ -1,0 +1,499 @@
+package io.quarkus.panache.common;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * <p>
+ * Utility class to build and represent SQL sorting specifications. A {@link Sort} instance represents
+ * a list of columns to sort on, each with a direction to use for sorting.
+ * </p>
+ *
+ * <p>
+ * Usage:
+ * </p>
+ *
+ * <code><pre>
+ * Sort sort = Sort.by("name").and("age", Direction.Descending);
+ * Sort sort2 = Sort.ascending("name", "age");
+ * Sort sort3 = Sort.descending("name", "age");
+ * </pre></code>
+ *
+ * @author Stéphane Épardaud
+ * @see Direction
+ */
+public class Sort {
+
+    /**
+     * Represents an SQL direction in which to sort results.
+     *
+     * @author Stéphane Épardaud
+     */
+    public enum Direction {
+        /**
+         * Sort in ascending order (the default).
+         */
+        Ascending,
+        /**
+         * Sort in descending order (opposite to the default).
+         */
+        Descending;
+    }
+
+    /**
+     * Represents the order of null columns.
+     */
+    public enum NullPrecedence {
+        /**
+         * Sort by the null columns listed first in the resulting query.
+         */
+        NULLS_FIRST,
+        /**
+         * Sort by the null columns listed last in the resulting query.
+         */
+        NULLS_LAST;
+    }
+
+    /**
+     * Represents the case instructions
+     */
+    public enum Case {
+        /**
+         * Sort while ignoring case
+         */
+        IGNORE,
+        /**
+         * Sort by respecting case (default)
+         */
+        RESPECT;
+    }
+
+    public static class Column {
+        private String name;
+        // never null
+        private Direction direction;
+        // can be null for unspecified
+        private NullPrecedence nullPrecedence;
+        // never null
+        private Case caseInstruction;
+
+        public Column(String name) {
+            this(name, Direction.Ascending);
+        }
+
+        public Column(String name, Direction direction) {
+            this(name, direction, null);
+        }
+
+        public Column(String name, Direction direction, NullPrecedence nullPrecedence) {
+            this(name, direction, nullPrecedence, Case.RESPECT);
+        }
+
+        public Column(String name, Direction direction, NullPrecedence nullPrecedence, Case caseInstruction) {
+            this.name = name;
+            this.direction = direction;
+            this.nullPrecedence = nullPrecedence;
+            this.caseInstruction = caseInstruction;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public Direction getDirection() {
+            return direction;
+        }
+
+        public void setDirection(Direction direction) {
+            this.direction = direction;
+        }
+
+        public NullPrecedence getNullPrecedence() {
+            return nullPrecedence;
+        }
+
+        public void setNullPrecedence(NullPrecedence nullPrecedence) {
+            this.nullPrecedence = nullPrecedence;
+        }
+
+        public boolean isIgnoreCase() {
+            return caseInstruction == Case.IGNORE;
+        }
+
+        public void setCase(Case caseInstruction) {
+            this.caseInstruction = caseInstruction;
+        }
+
+        public void setIgnoreCase() {
+            this.caseInstruction = Case.IGNORE;
+        }
+    }
+
+    private List<Column> columns = new ArrayList<>();
+    private boolean escapingEnabled = true;
+
+    private Sort() {
+    }
+
+    /**
+     * Sort by the given column, in ascending order.
+     *
+     * @param column the column to sort on, in ascending order.
+     * @return a new Sort instance which sorts on the given column in ascending order.
+     * @see #by(String, Direction)
+     * @see #by(String...)
+     */
+    public static Sort by(String column) {
+        return new Sort().and(column);
+    }
+
+    /**
+     * Sort by the given column, in the given order.
+     *
+     * @param column the column to sort on, in the given order.
+     * @param direction the direction to sort on.
+     * @return a new Sort instance which sorts on the given column in the given order.
+     * @see #by(String)
+     * @see #by(String...)
+     */
+    public static Sort by(String column, Direction direction) {
+        return new Sort().and(column, direction);
+    }
+
+    /**
+     * Sort by the given column, in the given order and in the given null precedence.
+     *
+     * @param column the column to sort on, in the given order.
+     * @param nullPrecedence the null precedence to use.
+     * @return a new Sort instance which sorts on the given column in the given order and null precedence.
+     * @see #by(String)
+     * @see #by(String...)
+     */
+    public static Sort by(String column, NullPrecedence nullPrecedence) {
+        return by(column, Direction.Ascending, nullPrecedence);
+    }
+
+    /**
+     * Sort by the given column, in the given order and in the given null precedence.
+     *
+     * @param column the column to sort on, in the given order.
+     * @param direction the direction to sort on.
+     * @param nullPrecedence the null precedence to use.
+     * @return a new Sort instance which sorts on the given column in the given order and null precedence.
+     * @see #by(String)
+     * @see #by(String...)
+     */
+    public static Sort by(String column, Direction direction, NullPrecedence nullPrecedence) {
+        return new Sort().and(column, direction, nullPrecedence);
+    }
+
+    /**
+     * Sort by the given columns, in ascending order. Equivalent to {@link #ascending(String...)}.
+     *
+     * @param columns the columns to sort on, in ascending order.
+     * @return a new Sort instance which sorts on the given columns in ascending order.
+     * @see #by(String, Direction)
+     * @see #by(String)
+     * @see #ascending(String...)
+     * @see #descending(String...)
+     */
+    public static Sort by(String... columns) {
+        Sort sort = new Sort();
+        for (String column : columns) {
+            sort.and(column);
+        }
+        return sort;
+    }
+
+    /**
+     * Sort by the given columns, in ascending order. Equivalent to {@link #by(String...)}.
+     *
+     * @param columns the columns to sort on, in ascending order.
+     * @return a new Sort instance which sorts on the given columns in ascending order.
+     * @see #by(String, Direction)
+     * @see #by(String)
+     * @see #by(String...)
+     * @see #descending(String...)
+     */
+    public static Sort ascending(String... columns) {
+        return by(columns);
+    }
+
+    /**
+     * Sort by the given columns, in descending order.
+     *
+     * @param columns the columns to sort on, in descending order.
+     * @return a new Sort instance which sorts on the given columns in descending order.
+     * @see #by(String, Direction)
+     * @see #by(String)
+     * @see #descending(String...)
+     */
+    public static Sort descending(String... columns) {
+        Sort sort = new Sort();
+        for (String column : columns) {
+            sort.and(column, Direction.Descending);
+        }
+        return sort;
+    }
+
+    /**
+     * Sort by the given columns, in ascending order, case-insensitive.
+     *
+     * @param columns the columns to sort on, in ascending order, case-insensitive.
+     * @return a new Sort instance which sorts on the given columns in ascending order, case-insensitive.
+     * @see #descendingIgnoreCase(String...)
+     * @see #ignoreCase()
+     */
+    public static Sort ascendingIgnoreCase(String... columns) {
+        Sort sort = new Sort();
+        for (String column : columns) {
+            Column col = new Column(column, Direction.Ascending);
+            col.setIgnoreCase();
+            sort.columns.add(col);
+        }
+        return sort;
+    }
+
+    /**
+     * Sort by the given columns, in descending order, case-insensitive.
+     *
+     * @param columns the columns to sort on, in descending order, case-insensitive.
+     * @return a new Sort instance which sorts on the given columns in descending order, case-insensitive.
+     * @see #ascendingIgnoreCase(String...)
+     * @see #ignoreCase()
+     */
+    public static Sort descendingIgnoreCase(String... columns) {
+        Sort sort = new Sort();
+        for (String column : columns) {
+            Column col = new Column(column, Direction.Descending);
+            col.setIgnoreCase();
+            sort.columns.add(col);
+        }
+        return sort;
+    }
+
+    /**
+     * Sets the order to descending for all current sort columns.
+     *
+     * @return this instance, modified.
+     * @see #ascending()
+     * @see #direction(Direction)
+     */
+    public Sort descending() {
+        return direction(Direction.Descending);
+    }
+
+    /**
+     * Sets the order to ascending for all current sort columns.
+     *
+     * @return this instance, modified.
+     * @see #descending()
+     * @see #direction(Direction)
+     */
+    public Sort ascending() {
+        return direction(Direction.Ascending);
+    }
+
+    /**
+     * Sets the order to all current sort columns.
+     *
+     * @param direction the direction to use for all current sort columns.
+     * @return this instance, modified.
+     * @see #descending()
+     * @see #ascending()
+     */
+    public Sort direction(Direction direction) {
+        for (Column column : columns) {
+            column.direction = direction;
+        }
+        return this;
+    }
+
+    /**
+     * Sets null precedence to NULLS FIRST for all current sort columns.
+     *
+     * @return this instance, modified.
+     * @see #nullsLast()
+     * @see #nullPrecedence(NullPrecedence)
+     */
+    public Sort nullsFirst() {
+        return nullPrecedence(NullPrecedence.NULLS_FIRST);
+    }
+
+    /**
+     * Sets null precedence to NULLS LAST for all current sort columns.
+     *
+     * @return this instance, modified.
+     * @see #nullsFirst()
+     * @see #nullPrecedence(NullPrecedence)
+     */
+    public Sort nullsLast() {
+        return nullPrecedence(NullPrecedence.NULLS_LAST);
+    }
+
+    /**
+     * Sets null precedence for all current sort columns.
+     *
+     * @return this instance, modified.
+     * @see #nullsFirst()
+     * @see #nullsLast()
+     */
+    public Sort nullPrecedence(NullPrecedence nullPrecedence) {
+        for (Column column : columns) {
+            column.setNullPrecedence(nullPrecedence);
+        }
+        return this;
+    }
+
+    /**
+     * Adds a sort column, in ascending order.
+     *
+     * @param name the new column to sort on, in ascending order.
+     * @return this instance, modified.
+     * @see #and(String, Direction)
+     */
+    public Sort and(String name) {
+        columns.add(new Column(name));
+        return this;
+    }
+
+    /**
+     * Adds a sort column, in the given order.
+     *
+     * @param name the new column to sort on, in the given order.
+     * @param direction the direction to sort on.
+     * @return this instance, modified.
+     * @see #and(String)
+     */
+    public Sort and(String name, Direction direction) {
+        columns.add(new Column(name, direction));
+        return this;
+    }
+
+    /**
+     * Adds a sort column, in the given null precedence.
+     *
+     * @param name the new column to sort on, in the given null precedence.
+     * @param nullPrecedence the null precedence to use.
+     * @return this instance, modified.
+     * @see #and(String)
+     */
+    public Sort and(String name, NullPrecedence nullPrecedence) {
+        return and(name, Direction.Ascending, nullPrecedence);
+    }
+
+    /**
+     * Adds a sort column, in the given order and null precedence.
+     *
+     * @param name the new column to sort on, in the given order and null precedence.
+     * @param direction the direction to sort on.
+     * @param nullPrecedence the null precedence to use.
+     * @return this instance, modified.
+     * @see #and(String)
+     */
+    public Sort and(String name, Direction direction, NullPrecedence nullPrecedence) {
+        columns.add(new Column(name, direction, nullPrecedence));
+        return this;
+    }
+
+    /**
+     * Adds a sort column, in the given order, case-insensitive.
+     *
+     * @param name the new column to sort on, in the given order, case-insensitive.
+     * @param direction the direction to sort on.
+     * @return this instance, modified.
+     * @see #andIgnoreCase(String)
+     * @see #ignoreCase()
+     */
+    public Sort andIgnoreCase(String name, Direction direction) {
+        Column col = new Column(name, direction);
+        col.setIgnoreCase();
+        columns.add(col);
+        return this;
+    }
+
+    /**
+     * Adds a sort column, in ascending order, case-insensitive.
+     *
+     * @param name the new column to sort on, in ascending order, case-insensitive.
+     * @return this instance, modified.
+     * @see #andIgnoreCase(String, Direction)
+     * @see #ignoreCase()
+     */
+    public Sort andIgnoreCase(String name) {
+        return andIgnoreCase(name, Direction.Ascending);
+    }
+
+    /**
+     * Sets case-insensitive sorting for all current sort columns.
+     *
+     * @return this instance, modified.
+     * @see #ignoreCase()
+     * @see #respectCase()
+     */
+    public Sort setCase(Case caseInstruction) {
+        for (Column column : columns) {
+            column.setCase(caseInstruction);
+        }
+        return this;
+    }
+
+    /**
+     * Sets case-sensitive sorting for all current sort columns.
+     *
+     * @return this instance, modified.
+     * @see #ignoreCase()
+     * @see #setCase(Case)
+     */
+    public Sort respectCase() {
+        return setCase(Case.RESPECT);
+    }
+
+    /**
+     * Sets case-insensitive sorting for all current sort columns.
+     *
+     * @return this instance, modified.
+     * @see #respectCase()
+     * @see #setCase(Case)
+     */
+    public Sort ignoreCase() {
+        return setCase(Case.IGNORE);
+    }
+
+    /**
+     * Disables escaping of column names with a backticks during HQL Order By clause generation
+     *
+     * @return this instance, modified.
+     */
+    public Sort disableEscaping() {
+        escapingEnabled = false;
+        return this;
+    }
+
+    /**
+     * Get the sort columns
+     *
+     * @return the sort columns
+     */
+    public List<Column> getColumns() {
+        return columns;
+    }
+
+    /**
+     * Creates an Empty Sort instance. Equivalent to {@link #by()}.
+     *
+     * @return a new empty Sort instance
+     * @see #by(String[])
+     */
+    public static Sort empty() {
+        return by();
+    }
+
+    public boolean isEscapingEnabled() {
+        return escapingEnabled;
+    }
+}

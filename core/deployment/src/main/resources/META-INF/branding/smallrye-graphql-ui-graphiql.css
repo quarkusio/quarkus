@@ -1,0 +1,51 @@
+body {
+    margin: 0;
+}
+
+.graphiql-container, .CodeMirror-info, .CodeMirror-lint-tooltip, reach-portal {
+    --color-primary: 211, 80%, 60% !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    body:not(.graphiql-light) .graphiql-container,body:not(.graphiql-light) .CodeMirror-info,body:not(.graphiql-light) .CodeMirror-lint-tooltip,body:not(.graphiql-light) reach-portal {
+    	--color-base: 210, 10%, 23% !important;
+    }
+}
+
+body.graphiql-dark .graphiql-container,
+body.graphiql-dark .CodeMirror-info,
+body.graphiql-dark .CodeMirror-lint-tooltip,
+body.graphiql-dark reach-portal {
+	--color-base: 210, 10%, 23% !important;
+}
+
+#graphiql {
+    height: 100vh;
+}
+
+#graphQLUiLogoLink {
+    display: flex;
+    justify-content: center;
+    position: relative;
+}
+
+/* CODE BELLOW IS FOR MAKING THE EDGES IN THE QUARKUS LOGO NON-TRANSPARENT*/
+#graphQLUiLogoLink::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  padding: 8px;
+  background-color: hsl(210, 10%, 23%);
+  z-index: 0;
+}
+
+#graphQLUiLogoLink img {
+  display: block;
+  position: relative;
+  z-index: 1; /* Set z-index to 1 to position it in front of the ::before pseudo-element */
+  margin: 0 auto;
+}

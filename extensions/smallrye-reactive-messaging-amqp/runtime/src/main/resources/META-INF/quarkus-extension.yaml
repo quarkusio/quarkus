@@ -1,0 +1,21 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Messaging - AMQP Connector"
+metadata:
+  short-name: "amqp"
+  keywords:
+  - "amqp"
+  - "reactive-amqp"
+  guide: "https://quarkus.io/guides/amqp"
+  categories:
+  - "messaging"
+  status: "stable"
+  config:
+  - "mp.messaging."
+  - "quarkus.messaging."
+  - "quarkus.amqp."
+  codestart:
+    name: "messaging"
+    languages:
+      - "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

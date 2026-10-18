@@ -1,0 +1,96 @@
+package io.quarkus.arc.lookup;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import jakarta.enterprise.inject.Instance;
+
+import io.quarkus.arc.properties.StringValueMatch;
+
+/**
+ * Indicates that a bean should only be obtained by programmatic lookup if the property does not match the provided value.
+ * <p>
+ * This annotation is repeatable and may be put on a stereotype. A bean will be included if all the conditions
+ * defined by the {@link LookupUnlessProperty} and {@link LookupIfProperty} annotations are satisfied.
+ *
+ * <pre>
+ * <code>
+ *  interface Service {
+ *     String name();
+ *  }
+ *
+ *  {@literal @LookupUnlessProperty(name = "service.foo.disabled", stringValue = "true")}
+ *  {@literal @ApplicationScoped}
+ *  class ServiceFoo implements Service {
+ *
+ *     public String name() {
+ *        return "foo";
+ *     }
+ *  }
+ *
+ *  {@literal @ApplicationScoped}
+ *  class ServiceBar implements Service {
+ *
+ *     public String name() {
+ *        return "bar";
+ *     }
+ *  }
+ *
+ *  {@literal @ApplicationScoped}
+ *  class Client {
+ *
+ *     {@literal @Inject}
+ *     Instance&lt;Service&gt; service;
+ *
+ *     void printServiceName() {
+ *        // This would print "bar" if the property of name "service.foo.disabled" is set to true
+ *        // Note that service.get() would normally result in AmbiguousResolutionException
+ *        System.out.println(service.get().name());
+ *     }
+ *  }
+ *  </code>
+ * </pre>
+ *
+ * @see Instance
+ */
+@Repeatable(LookupUnlessProperty.List.class)
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.METHOD, ElementType.TYPE, ElementType.FIELD })
+public @interface LookupUnlessProperty {
+
+    /**
+     * Name of the runtime property to check.
+     */
+    String name();
+
+    /**
+     * Expected {@code String} value of the runtime property (specified by {@code name})
+     * if the bean should NOT be looked up at runtime.
+     */
+    String stringValue();
+
+    /**
+     * Determines if the bean should be looked up when the property specified by {@code name}
+     * has not been specified at all.
+     */
+    boolean lookupIfMissing() default false;
+
+    /**
+     * Defines how the {@code stringValue} is matched against the actual property value.
+     * <p>
+     * By default, exact string equality ({@link StringValueMatch#EQ}) is used.
+     * Set to {@link StringValueMatch#REGEX} to interpret {@code stringValue} as a regular expression.
+     */
+    StringValueMatch match() default StringValueMatch.EQ;
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD, ElementType.TYPE, ElementType.FIELD })
+    @interface List {
+
+        LookupUnlessProperty[] value();
+
+    }
+}

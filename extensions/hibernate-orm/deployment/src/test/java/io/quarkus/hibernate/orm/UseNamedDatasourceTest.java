@@ -1,0 +1,35 @@
+package io.quarkus.hibernate.orm;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusExtensionTest;
+
+public class UseNamedDatasourceTest {
+
+    @RegisterExtension
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClass(MyEntity.class)
+                    .addAsResource("application-named-datasource.properties", "application.properties"));
+
+    @Inject
+    EntityManager entityManager;
+
+    @Test
+    @Transactional
+    public void testPersistenceAndConfigTest() {
+        MyEntity entity = new MyEntity("name");
+        entityManager.persist(entity);
+
+        MyEntity savedEntity = entityManager.find(MyEntity.class, entity.getId());
+        assertEquals(entity.getName(), savedEntity.getName());
+    }
+
+}

@@ -1,0 +1,5 @@
+name: Quarkus Flyway Oracle
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+description: Conditional extension added when Flyway and Oracle extensions are present
+metadata:
+  unlisted: true

@@ -1,0 +1,118 @@
+package io.quarkus.runtime.configuration;
+
+import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime;
+import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime.fail;
+import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime.warn;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.jboss.logging.Logger;
+
+import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.config.ConfigValue;
+import io.smallrye.config.SmallRyeConfig;
+
+@Recorder
+public class ConfigRecorder {
+    private static final Logger log = Logger.getLogger(ConfigRecorder.class);
+
+    public void handleConfigChange(List<ConfigValue> buildTimeRuntimeValues) {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        // Disable the BuildTime RunTime Fixed (has the highest ordinal), because a lookup will get the expected value,
+        // and we have no idea if the user tried to override it in another source.
+        Optional<ConfigSource> builtTimeRunTimeFixedConfigSource = config.getConfigSource("BuildTime RunTime Fixed");
+        if (builtTimeRunTimeFixedConfigSource.isPresent()) {
+            ConfigSource configSource = builtTimeRunTimeFixedConfigSource.get();
+            if (configSource instanceof DisableableConfigSource) {
+                ((DisableableConfigSource) configSource).disable();
+            }
+        }
+
+        List<String> mismatches = new ArrayList<>();
+        for (ConfigValue buildTimeRuntimeValue : buildTimeRuntimeValues) {
+            String propertyName = buildTimeRuntimeValue.getName();
+            ConfigValue currentValue = config.getConfigValue(propertyName);
+            // Check for changes:
+            // - the config source position check tell us if the value is actually present in the config even if null
+            // - compare the ordinals of the recorded to the current value, if higher or equals there is a tentative override
+            // - compare the actual config values, if different there is a mismatch
+            if (currentValue.getConfigSourcePosition() > 0
+                    && currentValue.getSourceOrdinal() >= buildTimeRuntimeValue.getSourceOrdinal()
+                    && !Objects.equals(buildTimeRuntimeValue.getRawValue(), currentValue.getRawValue())) {
+                mismatches.add(
+                        " - " + propertyName + " is set to '" + currentValue.getValue()
+                                + "' but it is build time fixed to '"
+                                + buildTimeRuntimeValue.getValue() + "'. Did you change the property " + propertyName
+                                + " after building the application?");
+            }
+        }
+
+        // Enable the BuildTime RunTime Fixed. It should be fine doing these operations, because this is on startup
+        if (builtTimeRunTimeFixedConfigSource.isPresent()) {
+            ConfigSource configSource = builtTimeRunTimeFixedConfigSource.get();
+            if (configSource instanceof DisableableConfigSource) {
+                ((DisableableConfigSource) configSource).enable();
+            }
+        }
+
+        if (!mismatches.isEmpty()) {
+            String msg = "Build time property cannot be changed at runtime:\n" + String.join("\n", mismatches);
+            // TODO - This should use ConfigConfig, but for some reason, the test fails sometimes with mapping not found when looking ConfigConfig
+            BuildTimeMismatchAtRuntime buildTimeMismatchAtRuntime = config
+                    .getOptionalValue("quarkus.config.build-time-mismatch-at-runtime", BuildTimeMismatchAtRuntime.class)
+                    .orElse(warn);
+            if (fail.equals(buildTimeMismatchAtRuntime)) {
+                throw new IllegalStateException(msg);
+            } else if (warn.equals(buildTimeMismatchAtRuntime)) {
+                log.warn(msg);
+            }
+        }
+    }
+
+    public void handleNativeProfileChange(List<String> buildProfiles) {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        List<String> runtimeProfiles = config.getProfiles();
+
+        if (buildProfiles.size() != runtimeProfiles.size()) {
+            log.warn(
+                    "The profile '" + buildProfiles + "' used to build the native image is different from the runtime profile '"
+                            + runtimeProfiles + "'. This may lead to unexpected results.");
+            return;
+        }
+
+        for (int i = 0; i < buildProfiles.size(); i++) {
+            String buildProfile = buildProfiles.get(i);
+            String runtimeProfile = runtimeProfiles.get(i);
+
+            if (!buildProfile.equals(runtimeProfile)) {
+                log.warn("The profile '" + buildProfile
+                        + "' used to build the native image is different from the runtime profile '" + runtimeProfile
+                        + "'. This may lead to unexpected results.");
+            }
+        }
+    }
+
+    public void deprecatedProperties(Map<String, String> deprecatedProperties) {
+        ConfigDiagnostic.deprecatedProperties(deprecatedProperties);
+    }
+
+    public void unknownConfigFiles() throws Exception {
+        ConfigDiagnostic.unknownConfigFiles(ConfigDiagnostic.configFilesFromLocations());
+    }
+
+    public void releaseConfig(ShutdownContext shutdownContext) {
+        // This is mostly useful to handle restarts in Dev/Test mode.
+        // While this may seem to duplicate code in IsolatedDevModeMain,
+        // it actually does not because it operates on a different instance
+        // of QuarkusConfigFactory from a different classloader.
+
+        shutdownContext.addLastShutdownTask(QuarkusConfigFactory::releaseTCCLConfig);
+    }
+}

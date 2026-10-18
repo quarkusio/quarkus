@@ -1,0 +1,16 @@
+{
+    "errors": [
+        {
+            "message": "argument 'dateTime' with value 'StringValue{value='Today'}' is not a valid 'DateTime'",
+            "locations": [
+                {
+                    "line": 2,
+                    "column": 27
+                }
+            ]
+        }
+    ],
+    "data": {
+        "battle": null
+    }
+}

@@ -1,0 +1,98 @@
+package org.jboss.resteasy.reactive.server.spi;
+
+import java.nio.charset.Charset;
+import java.time.Duration;
+import java.util.List;
+import java.util.OptionalLong;
+
+public class DefaultRuntimeConfiguration implements RuntimeConfiguration {
+    final Duration readTimeout;
+    private final Body body;
+    private final Limits limits;
+
+    public DefaultRuntimeConfiguration(Duration readTimeout, boolean deleteUploadedFilesOnEnd, String uploadsDirectory,
+            List<String> fileContentTypes, long fileSizeThreshold, Charset defaultCharset, OptionalLong maxBodySize,
+            long maxFormAttributeSize, int maxParameters, int maxMultipartPartHeaderSize, int maxMultipartHeaderCount,
+            OptionalLong maxMultipartFileSize) {
+        this.readTimeout = readTimeout;
+        body = new Body() {
+            final Body.MultiPart multiPart = new Body.MultiPart() {
+                @Override
+                public List<String> fileContentTypes() {
+                    return fileContentTypes;
+                }
+
+                @Override
+                public long fileSizeThreshold() {
+                    return fileSizeThreshold;
+                }
+            };
+
+            @Override
+            public boolean deleteUploadedFilesOnEnd() {
+                return deleteUploadedFilesOnEnd;
+            }
+
+            @Override
+            public String uploadsDirectory() {
+                return uploadsDirectory;
+            }
+
+            @Override
+            public Charset defaultCharset() {
+                return defaultCharset;
+            }
+
+            @Override
+            public MultiPart multiPart() {
+                return multiPart;
+            }
+        };
+        limits = new Limits() {
+            @Override
+            public OptionalLong maxBodySize() {
+                return maxBodySize;
+            }
+
+            @Override
+            public long maxFormAttributeSize() {
+                return maxFormAttributeSize;
+            }
+
+            @Override
+            public int maxParameters() {
+                return maxParameters;
+            }
+
+            @Override
+            public int maxMultipartPartHeaderSize() {
+                return maxMultipartPartHeaderSize;
+            }
+
+            @Override
+            public int maxMultipartHeaderCount() {
+                return maxMultipartHeaderCount;
+            }
+
+            @Override
+            public OptionalLong maxMultipartFileSize() {
+                return maxMultipartFileSize;
+            }
+        };
+    }
+
+    @Override
+    public Duration readTimeout() {
+        return readTimeout;
+    }
+
+    @Override
+    public Body body() {
+        return body;
+    }
+
+    @Override
+    public Limits limits() {
+        return limits;
+    }
+}

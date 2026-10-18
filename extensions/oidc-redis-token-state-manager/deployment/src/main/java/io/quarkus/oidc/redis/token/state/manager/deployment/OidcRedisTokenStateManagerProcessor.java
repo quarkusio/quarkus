@@ -1,0 +1,71 @@
+package io.quarkus.oidc.redis.token.state.manager.deployment;
+
+import java.util.function.BooleanSupplier;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.Type;
+
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.oidc.TokenStateManager;
+import io.quarkus.oidc.redis.token.state.manager.runtime.AuthorizationCodeTokensRecord;
+import io.quarkus.oidc.redis.token.state.manager.runtime.OidcRedisTokenStateManagerCreator;
+import io.quarkus.redis.client.RedisClientName;
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
+import io.quarkus.redis.deployment.client.RequestedRedisClientBuildItem;
+import io.quarkus.redis.runtime.client.config.RedisConfig;
+
+@BuildSteps(onlyIf = OidcRedisTokenStateManagerProcessor.IsEnabled.class)
+public class OidcRedisTokenStateManagerProcessor {
+
+    @BuildStep
+    RequestedRedisClientBuildItem requestRedisClient(OidcRedisTokenStateManagerBuildConfig buildConfig) {
+        return new RequestedRedisClientBuildItem(buildConfig.redisClientName());
+    }
+
+    @BuildStep
+    ReflectiveClassBuildItem registerTokenStateRecordForReflection() {
+        return ReflectiveClassBuildItem.builder(AuthorizationCodeTokensRecord.class)
+                .serialization().fields().methods().constructors().build();
+    }
+
+    @BuildStep
+    SyntheticBeanBuildItem createTokenStateManager(OidcRedisTokenStateManagerBuildConfig buildConfig) {
+        var redisClientName = buildConfig.redisClientName();
+        var beanConfigurator = SyntheticBeanBuildItem.configure(TokenStateManager.class)
+                .priority(1)
+                .alternative(true)
+                .unremovable()
+                .scope(ApplicationScoped.class)
+                .creator(OidcRedisTokenStateManagerCreator.class);
+        if (RedisConfig.isDefaultClient(redisClientName)) {
+            beanConfigurator
+                    .addInjectionPoint(Type.create(ReactiveRedisDataSource.class));
+        } else {
+            beanConfigurator
+                    .param(OidcRedisTokenStateManagerCreator.REDIS_CLIENT_NAME_PARAM, redisClientName)
+                    .addInjectionPoint(Type.create(ReactiveRedisDataSource.class),
+                            AnnotationInstance.builder(RedisClientName.class).value(redisClientName).build());
+        }
+        return beanConfigurator.done();
+    }
+
+    static final class IsEnabled implements BooleanSupplier {
+
+        private final boolean enabled;
+
+        IsEnabled(OidcRedisTokenStateManagerBuildConfig buildConfig) {
+            this.enabled = buildConfig.enabled();
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return enabled;
+        }
+    }
+
+}

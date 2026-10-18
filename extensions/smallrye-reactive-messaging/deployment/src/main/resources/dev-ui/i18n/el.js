@@ -1,0 +1,15 @@
+export const templates = {
+    'quarkus-messaging-meta-description': 'Δημιουργήστε και καταναλώστε μηνύματα και υλοποιήστε εφαρμογές που βασίζονται σε γεγονότα και ροές δεδομένων.',
+    'quarkus-smallrye-reactive-messaging-channels': 'Κανάλια',
+    'quarkus-smallrye-reactive-messaging-loading-channels': 'Φόρτωση καναλιών...',
+    'quarkus-smallrye-reactive-messaging-channel': 'Κανάλι',
+    'quarkus-smallrye-reactive-messaging-publishers': 'Εκδότης/Εκδότες',
+    'quarkus-smallrye-reactive-messaging-subscribers': 'Συνδρομητής/Συνδρομητές',
+    'quarkus-smallrye-reactive-messaging-no-subscribers': 'Κανένας συνδρομητής',
+    'quarkus-smallrye-reactive-messaging-no-publishers': 'Χωρίς εκδότες',
+    'quarkus-smallrye-reactive-messaging-publisher': 'εκδότης',
+    'quarkus-smallrye-reactive-messaging-subscriber': 'συνδρομητής',
+    'quarkus-smallrye-reactive-messaging-processor': 'επεξεργαστής',
+    'quarkus-smallrye-reactive-messaging-connector': 'σύνδεσμος',
+    'quarkus-smallrye-reactive-messaging-emitter': 'εκπομπέας',
+};

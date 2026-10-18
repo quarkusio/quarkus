@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.grpc.examples.streaming";
+option java_outer_classname = "StreamingProto";
+option objc_class_prefix = "RTG";
+
+package streaming;
+
+// Interface exported by the server.
+service Streaming {
+    rpc Source(Empty) returns (stream Item) {}
+    rpc Sink(stream Item) returns (Empty) {}
+    rpc Pipe(stream Item) returns (stream Item) {}
+    rpc QuickStringStream (stream StringRequest) returns (StringReply) {}
+    rpc MidStringStream (stream StringRequest) returns (StringReply) {}
+    rpc QuickStringBiDiStream (stream StringRequest) returns (stream StringReply) {}
+    rpc MidStringBiDiStream (stream StringRequest) returns (stream StringReply) {}
+}
+
+message Item {
+    string value = 1;
+}
+
+message Empty {
+}
+
+message StringRequest {
+    string anyValue = 1;
+}
+
+message StringReply {
+    string message = 1;
+}

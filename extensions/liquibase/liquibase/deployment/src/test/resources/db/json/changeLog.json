@@ -1,0 +1,16 @@
+{
+  "databaseChangeLog": [
+    {
+      "include": {
+        "relativeToChangelogFile": true,
+        "file": "create-tables.json"
+      }
+    },
+    {
+      "include": {
+        "relativeToChangelogFile": true,
+        "file": "test/test.json"
+      }
+    }
+  ]
+}

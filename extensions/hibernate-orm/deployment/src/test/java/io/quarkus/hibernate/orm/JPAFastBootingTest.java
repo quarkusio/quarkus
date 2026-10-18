@@ -1,0 +1,42 @@
+package io.quarkus.hibernate.orm;
+
+import jakarta.inject.Inject;
+
+import org.hibernate.Session;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.bootstrap.classloading.ClassLoaderLimiter;
+import io.quarkus.hibernate.orm.enhancer.Address;
+import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.common.constraint.Assert;
+
+/**
+ * Let's run some checks to verify that the optimisations we have
+ * to actually boot efficiently are going to survive other patches.
+ */
+public class JPAFastBootingTest {
+
+    private static final ClassLoaderLimiter limitsChecker = ClassLoaderLimiter.builder()
+            .neverLoadedResource("org/hibernate/jpa/orm_2_1.xsd")
+            .neverLoadedResource("org/hibernate/jpa/orm_2_2.xsd")
+            .neverLoadedClassName("org.hibernate.boot.jaxb.internal.MappingBinder")
+            .build();
+
+    @RegisterExtension
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClass(Address.class))
+            .withConfigurationResource("application.properties")
+            .addClassLoaderEventListener(limitsChecker);
+
+    @Inject
+    Session session;
+
+    @Test
+    public void testInjection() {
+        //Check that Hibernate actually started:
+        Assert.assertNotNull(session);
+    }
+
+}

@@ -1,0 +1,39 @@
+package io.quarkus.micrometer.deployment.export;
+
+import java.util.Set;
+
+import jakarta.inject.Inject;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.quarkus.test.QuarkusExtensionTest;
+
+public class SecondPrometheusTest {
+    @RegisterExtension
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .setFlatClassPath(true)
+            .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
+            .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
+            .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
+            .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
+            .withApplicationRoot((jar) -> jar
+                    .addClass(PrometheusRegistryProcessor.REGISTRY_CLASS)
+                    .addClass(SecondPrometheusProvider.class));
+
+    @Inject
+    MeterRegistry registry;
+
+    @Test
+    public void testMeterRegistryPresent() {
+        // We want a composite that contains both registries.
+        Assertions.assertNotNull(registry, "A registry should be configured");
+        Set<MeterRegistry> subRegistries = ((CompositeMeterRegistry) registry).getRegistries();
+        Assertions.assertEquals(2, subRegistries.size(), "Should be two sub registries");
+    }
+}

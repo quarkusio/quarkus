@@ -1,0 +1,340 @@
+package io.quarkus.deployment.steps;
+
+import static io.quarkus.gizmo2.desc.Descs.MD_Class;
+import static io.quarkus.gizmo2.desc.Descs.MD_Collection;
+import static io.quarkus.gizmo2.desc.Descs.MD_Thread;
+import static java.lang.constant.ConstantDescs.CD_Class;
+import static java.lang.constant.ConstantDescs.CD_MethodType;
+import static java.lang.constant.ConstantDescs.CD_String;
+import static java.lang.constant.ConstantDescs.CD_int;
+
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.MethodTypeDesc;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Stream;
+
+import org.graalvm.nativeimage.hosted.Feature;
+import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
+import org.graalvm.nativeimage.hosted.RuntimeSystemProperties;
+import org.jboss.logging.Logger;
+
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.InterfaceMethodDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
+import io.quarkus.modular.spi.items.AddDependencyBuildItem;
+import io.quarkus.runtime.LocalesBuildTimeConfig;
+import io.quarkus.runtime.graal.GraalVM;
+import io.smallrye.modules.desc.Dependency;
+
+public class NativeImageFeatureStep {
+
+    private static final Logger log = Logger.getLogger(NativeImageFeatureStep.class);
+
+    public static final String GRAAL_FEATURE = "io.quarkus.runner.Feature";
+
+    private static final MethodDesc BUILD_TIME_INITIALIZATION = MethodDesc.of(RuntimeClassInitialization.class,
+            "initializeAtBuildTime", void.class, String[].class);
+    private static final MethodDesc REGISTER_RUNTIME_SYSTEM_PROPERTIES = MethodDesc.of(RuntimeSystemProperties.class,
+            "register", void.class, String.class, String.class);
+    private static final MethodDesc GRAALVM_VERSION_GET_CURRENT = MethodDesc.of(GraalVM.Version.class, "getCurrent",
+            GraalVM.Version.class);
+    private static final MethodDesc GRAALVM_VERSION_COMPARE_TO = MethodDesc.of(GraalVM.Version.class, "compareTo", int.class,
+            int[].class);
+    private static final MethodDesc INITIALIZE_CLASSES_AT_RUN_TIME = MethodDesc.of(RuntimeClassInitialization.class,
+            "initializeAtRunTime", void.class, Class[].class);
+    private static final MethodDesc INITIALIZE_PACKAGES_AT_RUN_TIME = MethodDesc.of(RuntimeClassInitialization.class,
+            "initializeAtRunTime", void.class, String[].class);
+    private static final MethodDesc PRINT_STACK_TRACE = MethodDesc.of(Throwable.class, "printStackTrace", void.class);
+    private static final MethodDesc GET_DECLARED_FIELD = MethodDesc.of(Class.class, "getDeclaredField", Field.class,
+            String.class);
+    private static final MethodDesc REGISTER_AS_UNSAFE_ACCESSED = MethodDesc.of(Feature.BeforeAnalysisAccess.class,
+            "registerAsUnsafeAccessed", void.class, Field.class);
+    private static final MethodDesc GET_CONTEXT_CLASS_LOADER = MethodDesc.of(Thread.class, "getContextClassLoader",
+            ClassLoader.class);
+
+    private static final ClassDesc CD_FeatureImpl_DuringSetupAccessImpl = ClassDesc
+            .of("com.oracle.svm.hosted.FeatureImpl$DuringSetupAccessImpl");
+    private static final ClassDesc CD_Executable = ClassDesc.of("java.lang.reflect.Executable");
+    private static final ClassDesc CD_Method = ClassDesc.of("java.lang.reflect.Method");
+    private static final ClassDesc CD_TypeDescriptor = ClassDesc.of("java.lang.invoke.TypeDescriptor");
+
+    private static final MethodDesc MD_Class_getDeclaredMethod = ClassMethodDesc.of(CD_Class, "getDeclaredMethod", CD_Method,
+            CD_String, CD_Class.arrayType());
+    private static final ClassMethodDesc MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeCondyIncludeList = ClassMethodDesc
+            .of(CD_FeatureImpl_DuringSetupAccessImpl, "registerBuildTimeCondyIncludeList", ConstantDescs.CD_void,
+                    CD_Executable);
+    private static final ClassMethodDesc MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeIndyIncludeList = ClassMethodDesc
+            .of(CD_FeatureImpl_DuringSetupAccessImpl, "registerBuildTimeIndyIncludeList", ConstantDescs.CD_void, CD_Executable);
+
+    private static final MethodDesc MD_DuringSetupAccess_registerBuildTimeBootstrapCondy = InterfaceMethodDesc.of(
+            ClassDesc.of(Feature.DuringSetupAccess.class.getName()), "registerBuildTimeBootstrapCondy",
+            ConstantDescs.CD_void, CD_Executable);
+    private static final MethodDesc MD_DuringSetupAccess_registerBuildTimeBootstrapIndy = InterfaceMethodDesc.of(
+            ClassDesc.of(Feature.DuringSetupAccess.class.getName()), "registerBuildTimeBootstrapIndy",
+            ConstantDescs.CD_void, CD_Executable);
+
+    /**
+     * Exports the {@code com.oracle.svm.hosted} package from the GraalVM native image builder module
+     * so that the generated feature class can access {@code FeatureImpl.DuringSetupAccessImpl} for
+     * registering constant bootstrap methods.
+     *
+     * @return the JPMS export item
+     */
+    @BuildStep
+    JPMSExportBuildItem constantBootstrapJpmsExport() {
+        return new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.hosted");
+    }
+
+    /**
+     * Exports the {@code com.oracle.svm.hosted} package from the GraalVM native image builder module
+     * to the application module so that the generated feature class can access
+     * {@code FeatureImpl.DuringSetupAccessImpl} for registering constant bootstrap methods.
+     *
+     * @param curateOutcomeBuildItem the application model
+     * @return the module export item
+     */
+    @BuildStep
+    ModuleExportBuildItem constantBootstrapModuleExport(
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        String appModuleName = curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getModuleName();
+        return new ModuleExportBuildItem("org.graalvm.nativeimage.builder",
+                appModuleName,
+                "com.oracle.svm.hosted");
+    }
+
+    /**
+     * Adds a module dependency from the application module to the GraalVM native image builder module
+     * so that the generated feature class can access {@code FeatureImpl.DuringSetupAccessImpl} for
+     * registering constant bootstrap methods.
+     *
+     * @param curateOutcomeBuildItem the application model
+     * @return the module dependency item
+     */
+    @BuildStep
+    AddDependencyBuildItem constantBootstrapModuleDependency(
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        String appModuleName = curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getModuleName();
+        return new AddDependencyBuildItem(appModuleName, "org.graalvm.nativeimage.builder",
+                Dependency.Modifier.Set.of(Dependency.Modifier.READ, Dependency.Modifier.LINKED,
+                        Dependency.Modifier.OPTIONAL));
+    }
+
+    @BuildStep
+    void generateFeature(BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
+            List<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems,
+            List<RuntimeInitializedPackageBuildItem> runtimeInitializedPackageBuildItems,
+            List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassBuildItems,
+            List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields,
+            List<ConstantBootstrapBuildItem> constantBootstrapBuildItems,
+            NativeConfig nativeConfig,
+            LocalesBuildTimeConfig localesBuildTimeConfig) {
+
+        Gizmo g = Gizmo.create(new GeneratedClassGizmo2Adaptor(
+                item -> nativeImageClass
+                        .produce(new GeneratedNativeImageClassBuildItem(item.binaryName(), item.getClassData())),
+                item -> {
+                },
+                item -> {
+                },
+                item -> {
+                },
+                false));
+
+        g.class_(GRAAL_FEATURE, cc -> {
+            cc.implements_(Feature.class);
+
+            cc.defaultConstructor();
+
+            cc.method("getDescription", mc -> {
+                mc.returning(String.class);
+                mc.body(b0 -> b0.return_(Const.of("Auto-generated class by Quarkus from the existing extensions")));
+            });
+
+            cc.method("duringSetup", mc -> {
+                ParamVar access = mc.parameter("access", Feature.DuringSetupAccess.class);
+                mc.body(b0 -> {
+                    b0.invokeStatic(BUILD_TIME_INITIALIZATION, b0.newArray(String.class, Const.of("")));
+
+                    if (!constantBootstrapBuildItems.isEmpty()) {
+                        LocalVar graalVMVersion = b0.localVar("graalVMVersion",
+                                b0.invokeStatic(GRAALVM_VERSION_GET_CURRENT));
+                        /* GraalVM >= 25.0.4; see https://github.com/oracle/graal/issues/12453 */
+                        b0.if_(b0.ge(
+                                b0.invokeVirtual(GRAALVM_VERSION_COMPARE_TO,
+                                        graalVMVersion,
+                                        b0.newArray(CD_int, Const.of(25), Const.of(0), Const.of(4))),
+                                0), b1 -> {
+                                    // in order to register constant bootstraps, we must call a method on DuringSetupAccessImpl for each one
+                                    LocalVar accessImpl = b1.localVar("accessImpl",
+                                            b1.cast(access, CD_FeatureImpl_DuringSetupAccessImpl));
+                                    for (ConstantBootstrapBuildItem cb : constantBootstrapBuildItems) {
+                                        MethodTypeDesc mtd = cb.methodTypeDesc();
+                                        ClassDesc typeParamType = mtd.parameterType(2);
+                                        boolean indy = false;
+                                        boolean condy = false;
+                                        if (typeParamType.descriptorString().equals(CD_Class.descriptorString())) {
+                                            condy = true;
+                                        } else if (typeParamType.descriptorString().equals(CD_MethodType.descriptorString())) {
+                                            indy = true;
+                                        } else if (typeParamType.descriptorString()
+                                                .equals(CD_TypeDescriptor.descriptorString())) {
+                                            // it can be used as either type
+                                            indy = condy = true;
+                                        } else {
+                                            log.warnf("Encountered an invalid constant bootstrap build item descriptor: %s",
+                                                    cb.methodTypeDesc().descriptorString());
+                                        }
+                                        LocalVar declaredMethod = b1.localVar("declaredMethod", b1.invokeVirtual(
+                                                MD_Class_getDeclaredMethod, Const.of(cb.classDesc()), Const.of(cb.methodName()),
+                                                b1.newArray(Class.class,
+                                                        mtd.parameterList().stream().map(Const::of).toList())));
+                                        if (condy) {
+                                            // GraalVM 25.4 moved bootstrap registration to the public Feature API.
+                                            b1.ifElse(b1.ge(b1.invokeVirtual(GRAALVM_VERSION_COMPARE_TO, graalVMVersion,
+                                                    b1.newArray(CD_int, Const.of(25), Const.of(4))), 0),
+                                                    b2 -> b2.invokeInterface(
+                                                            MD_DuringSetupAccess_registerBuildTimeBootstrapCondy,
+                                                            access, declaredMethod),
+                                                    b2 -> b2.invokeVirtual(
+                                                            MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeCondyIncludeList,
+                                                            accessImpl, declaredMethod));
+                                        }
+                                        if (indy) {
+                                            b1.ifElse(b1.ge(b1.invokeVirtual(GRAALVM_VERSION_COMPARE_TO, graalVMVersion,
+                                                    b1.newArray(CD_int, Const.of(25), Const.of(4))), 0),
+                                                    b2 -> b2.invokeInterface(
+                                                            MD_DuringSetupAccess_registerBuildTimeBootstrapIndy,
+                                                            access, declaredMethod),
+                                                    b2 -> b2.invokeVirtual(
+                                                            MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeIndyIncludeList,
+                                                            accessImpl, declaredMethod));
+                                        }
+                                    }
+                                });
+                    }
+                    b0.return_();
+                });
+            });
+
+            cc.method("beforeAnalysis", mc -> {
+                ParamVar access = mc.parameter("access", Feature.BeforeAnalysisAccess.class);
+                MethodDesc classForName3 = MethodDesc.of(Class.class, "forName", Class.class, String.class, boolean.class,
+                        ClassLoader.class);
+                mc.body(b0 -> {
+                    b0.try_(t1 -> {
+                        t1.body(b2 -> {
+                            LocalVar cl = b2.localVar("cl", b2.invokeVirtual(MD_Class.getClassLoader, Const.of(cc.type())));
+                            if (localesBuildTimeConfig.defaultLocale().isPresent()) {
+                                Locale defaultLocale = localesBuildTimeConfig.defaultLocale().get();
+                                b2.invokeStatic(REGISTER_RUNTIME_SYSTEM_PROPERTIES, Const.of("user.language"),
+                                        Const.of(defaultLocale.getLanguage()));
+                                b2.invokeStatic(REGISTER_RUNTIME_SYSTEM_PROPERTIES, Const.of("user.country"),
+                                        Const.of(defaultLocale.getCountry()));
+                            } else {
+                                LocalVar graalVMVersion = b2.localVar("graalVMVersion",
+                                        b2.invokeStatic(GRAALVM_VERSION_GET_CURRENT));
+                                /* GraalVM >= 24.2 */
+                                b2.if_(b2.gt(
+                                        b2.invokeVirtual(GRAALVM_VERSION_COMPARE_TO,
+                                                graalVMVersion,
+                                                b2.newArray(int.class, Const.of(24), Const.of(2))),
+                                        0), t3 -> {
+                                            t3.invokeStatic(REGISTER_RUNTIME_SYSTEM_PROPERTIES, Const.of("user.language"),
+                                                    Const.of("en"));
+                                            t3.invokeStatic(REGISTER_RUNTIME_SYSTEM_PROPERTIES, Const.of("user.country"),
+                                                    Const.of("US"));
+                                        });
+                            }
+                            if (!runtimeInitializedClassBuildItems.isEmpty()
+                                    || !runtimeReinitializedClassBuildItems.isEmpty()) {
+                                b2.block(b3 -> {
+                                    // use an arraylist so we don't have null entries
+                                    LocalVar classes = b3.localVar("classes", b3.new_(ArrayList.class,
+                                            Const.of(runtimeInitializedClassBuildItems.size()
+                                                    + runtimeReinitializedClassBuildItems.size())));
+                                    Stream.concat(
+                                            runtimeInitializedClassBuildItems.stream()
+                                                    .map(RuntimeInitializedClassBuildItem::getClassName),
+                                            runtimeReinitializedClassBuildItems.stream()
+                                                    .map(RuntimeReinitializedClassBuildItem::getClassName))
+                                            .forEach(name -> b3.try_(t4 -> {
+                                                t4.body(b5 -> b5.invokeInterface(MD_Collection.add, classes,
+                                                        b5.invokeStatic(classForName3, Const.of(name), Const.of(false), cl)));
+                                                t4.catch_(Throwable.class, "t",
+                                                        (b5, t) -> b5.invokeVirtual(PRINT_STACK_TRACE, t));
+                                            }));
+                                    b3.invokeStatic(INITIALIZE_CLASSES_AT_RUN_TIME,
+                                            b3.cast(
+                                                    b3.invokeVirtual(
+                                                            MethodDesc.of(ArrayList.class, "toArray", Object[].class,
+                                                                    Object[].class),
+                                                            classes,
+                                                            b3.newEmptyArray(Class.class,
+                                                                    b3.invokeInterface(MD_Collection.size, classes))),
+                                                    Class[].class));
+                                });
+                            }
+                            if (!runtimeInitializedPackageBuildItems.isEmpty()) {
+                                b2.block(b3 -> {
+                                    b3.invokeStatic(INITIALIZE_PACKAGES_AT_RUN_TIME, b3.newArray(String.class,
+                                            runtimeInitializedPackageBuildItems.stream()
+                                                    .map(RuntimeInitializedPackageBuildItem::getPackageName)
+                                                    .map(Const::of)
+                                                    .toArray(Expr[]::new)));
+                                });
+                            }
+                            // Ensure registration of fields being accessed through unsafe is done last to ensure that the class
+                            // initialization configuration is done first.  Registering the fields before configuring class initialization
+                            // may results in classes being marked for runtime initialization even if not explicitly requested.
+                            if (!unsafeAccessedFields.isEmpty()) {
+                                for (UnsafeAccessedFieldBuildItem unsafeAccessedField : unsafeAccessedFields) {
+                                    b2.try_(t3 -> {
+                                        t3.body(b4 -> {
+                                            LocalVar declaringClass = b4.localVar("declaringClass",
+                                                    b4.invokeStatic(classForName3,
+                                                            Const.of(unsafeAccessedField.getDeclaringClass()), Const.of(false),
+                                                            cl));
+                                            LocalVar declaredField = b4.localVar("declaredField",
+                                                    b4.invokeVirtual(GET_DECLARED_FIELD, declaringClass,
+                                                            Const.of(unsafeAccessedField.getFieldName())));
+                                            b4.invokeInterface(REGISTER_AS_UNSAFE_ACCESSED, access, declaredField);
+                                        });
+                                        t3.catch_(Throwable.class, "t", (b4, t) -> b4.invokeVirtual(PRINT_STACK_TRACE, t));
+                                    });
+                                }
+                            }
+                        });
+                        t1.catch_(Throwable.class, "t", (b2, t) -> b2.invokeVirtual(PRINT_STACK_TRACE, t));
+                    });
+                    // todo: do not use TCCL here (it's incorrect)
+                    Expr tccl = b0.invokeVirtual(GET_CONTEXT_CLASS_LOADER, b0.invokeStatic(MD_Thread.currentThread));
+                    b0.invokeStatic(classForName3, Const.of("io.quarkus.runner.ApplicationImpl"), Const.of(false), tccl);
+                    b0.return_();
+                });
+            });
+        });
+    }
+
+}

@@ -1,0 +1,2 @@
+certs@quarkus\.io=admin,user
+certs-1@quarkus\.io=user

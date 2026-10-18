@@ -1,0 +1,183 @@
+= Including Native Libraries in the Native Image
+
+* Status: _accepted_
+* Date: 2024-10-21
+* Authors: @cescoffier, @zakkak
+
+== Context and Problem Statement
+
+At Quarkus’ scale, several extensions integrate libraries that require native code.
+Many of these libraries rely on JNI (Java Native Interface) to interact with native code.
+Consequently, these native libraries must be included in the native image, and in some cases, the loading mechanism must be adapted for a native compilation context.
+
+For example, the Kafka Streams extension requires `librocksdbjni.so`, and Vert.x HTTP needs `brotli.so` to be included in the native image (to handle compression).
+
+In JVM mode, these libraries are present on the classpath, and the JVM automatically manages their loading.
+However, in native mode, we must ensure that the correct version of the native library — matching the target platform (OS/architecture) — is bundled into the native image.
+
+This ADR aims to define a standardized approach to managing and including native libraries in the native image for Quarkus extensions when using JNI.
+
+== Including Native Libraries Using GraalVM Feature
+
+One of the main requirements is selecting the native library version that matches the target platform.
+For example, when compiling for `Linux/x86_64`, we must include the `Linux/x86_64` version of the library in the native image.
+
+This selection cannot be efficiently handled in Quarkus’ build steps because platform ambiguity can arise (more on this in the next section). Therefore, we propose using GraalVM’s `Feature` mechanism to manage native libraries.
+
+A `Feature` allows extending the native image generation process.
+It can accurately determine the host platform (since GraalVM doesn’t support cross-compilation) and include the appropriate native library in the image.
+
+Additionally, `Feature` allows configuring various aspects of the native compilation process.
+This enables encapsulating all logic related to native library management in a single location.
+
+The `Feature` implementation is located in the _runtime_ module of the extension as it is executed during nativeimage build meaning deployment has already happened.
+Typically, in a dedicated `graal` package (which contains the `Feature` and any necessary substitutions).
+
+Here’s an example of a Feature implementation:
+
+[source,java]
+----
+package io.quarkus.myextension.runtime.graal; // <1>
+
+import org.graalvm.nativeimage.hosted.Feature; // <2>
+import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
+import org.graalvm.nativeimage.hosted.RuntimeResourceAccess;
+
+public class MyFeature implements Feature {
+
+    @Override
+    public void beforeAnalysis(BeforeAnalysisAccess access) { // <3>
+        // Decide which native library to include based on the target platform
+        // `access` allows adding resources to the native image and configuring
+        // classes for runtime initialization.
+        // ...
+    }
+
+}
+----
+1.	The package containing the Feature implementation.
+2.	Importing the necessary classes from the GraalVM SDK.
+3.	The primary method to implement is beforeAnalysis, which runs before the analysis phase of the native image generation process.
+
+The `Feature` interface is part of the GraalVM SDK and exposes several additional methods.
+To use it, we need to add the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.graalvm.sdk</groupId>
+    <artifactId>nativeimage</artifactId>
+    <scope>provided</scope>
+</dependency>
+----
+
+During the `beforeAnalysis` phase, we can add native libraries and resources to the native executable.
+This is also the point where classes needing runtime initialization can be configured.
+
+Here’s an example that includes `brotli.so` in the native image:
+
+[source,java]
+----
+@Override
+public void beforeAnalysis(BeforeAnalysisAccess access) {
+    String nativeLibName = System.mapLibraryName("brotli");
+    String libPath = "lib/" + getPlatform() + "/" + nativeLibName; // <1>
+    RuntimeResourceAccess.addResource(Brotli4jFeature.class.getModule(), libPath); // <2>
+
+    RuntimeResourceAccess.addResource(Brotli4jFeature.class.getModule(),
+    "META-INF/services/com.aayushatharva.brotli4j.service.BrotliNativeProvider"); // <3>
+
+    RuntimeClassInitialization.initializeAtRunTime("com.aayushatharva.brotli4j.Brotli4jLoader"); // <4>
+
+    // ...
+}
+----
+1.	`getPlatform()` determines the host platform (e.g., Linux/x86_64).
+2.	Adds the appropriate native library to the native image.
+3.	Adds additional required resources (here, an SPI).
+4.	Configures the `Brotli4jLoader` class for runtime initialization to avoid issues with static initialization at build time.
+
+Once the `Feature` for a native library is implemented, it must be enabled during the Quarkus build process.
+In the extension processor, a build step should produce a NativeImageFeatureBuildItem to enable the feature:
+
+[source,java]
+----
+// Simplified code
+@BuildStep
+NativeImageFeatureBuildItem enableBrotliFeature() {
+    return new NativeImageFeatureBuildItem(Brotli4jFeature.class.getName()); // <1>
+}
+----
+1.	This step enables the feature in the native image generation process.
+
+[NOTE]
+====
+Sometimes the registration of a library is only necessary on specific configurations.
+If the configuration can be determined at the Quarkus build process (i.e. in the _deployment_ module) the feature should be conditionally registered depending on that configuration.
+If the configuration can only be determined in the _runtime_ module, then the feature should always be registered and the control logic should be placed in the feature itself.
+====
+
+Several examples of extensions using this approach are available in the Quarkus codebase:
+
+- https://github.com/quarkusio/quarkus/pull/43828[Brotli]
+- https://github.com/quarkusio/quarkus/pull/43905[Snappy]
+- https://github.com/quarkusio/quarkus/pull/43782[RocksDB]
+
+NOTE: In the case of Brotli, the native libraries are packaged in different artifacts (one per platform).
+You need to make sure the correct artifact is included in the build, otherwise the native library won't be found during the build.
+
+== Considered Options
+
+=== Option 1: Using Build Steps in the Extension Processor
+
+Initially, native library management was handled through build steps in the extension processor.
+However, this approach cannot effectively select the correct native library for the target platform, leading to potential mismatches.
+
+Indeed, the native compilation can run:
+
+- directly on the host
+- in a container (used to produce native executables that can be deployed in Linux container)
+- on a different host or container in https://quarkus.io/guides/building-native-image#multistage-docker[multi-stage builds]
+
+In the last two cases, the target platform might be different than the host’s.
+Using `Feature` allows us to accurately determine the target platform and include the appropriate native library.
+Indeed, the `Feature` is executed as part of the native image generation process, which means that it's executed on the actual target platform.
+
+Additionally, this method mixed native library management with other build logic, reducing the clarity of the code.
+
+=== Option 2: Using a Dedicated Processor
+
+This approach moves native library management to a dedicated processor which improves the clarity of the code, but it still doesn’t fully resolve platform ambiguity.
+
+== Consequences
+
+=== Positive
+
+Encapsulating native library management in a Feature offers several advantages:
+
+* Centralizes all logic related to native library handling.
+* Removes ambiguity regarding the target platform.
+* Provides flexibility in configuring native compilation.
+* Clearly separates concerns, encapsulating native library management.
+
+=== Negative
+
+* Separates native library management from the main extension processor code, potentially requiring developers to look in multiple places for extension logic.
+Especially because the `Feature` is a _build time_ concern, located in the _runtime_ module.
+* Requires additional dependencies to use the GraalVM SDK.
+* Makes it harder to verify if the configuration is applied.
+When using _processors_ all the registrations end up in the generated json config files.
+On the other hand, when using features the user can only see if the feature is included in the native compilation, but not what it does (e.g., if it includes some control logic).
+
+
+== Other approaches to load native libraries
+
+=== Java Native Access (JNA)
+
+JNA uses a _thin_ JNI layer to make the invocation of native code easier.
+In this case, _deployment's_ build steps should be enough to include the native libraries.
+However, JNA can be challenging to use in native mode due to the reflection and dynamic class loading it relies on.
+
+=== External libraries
+
+When the native library is not part of the code, but is an external library installed on the file system, the extension should provide a way to configure the path to the native library, but it does not need to include the library in the native executable.

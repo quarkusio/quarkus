@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings
+        xmlns="https://jakarta.ee/xml/ns/persistence/orm"
+        version="3.2">
+
+    <mapped-superclass class="io.quarkus.hibernate.orm.deployment.JpaJandexScavengerTest$XmlOnlyMappedSuperclass" access="FIELD">
+        <attributes>
+            <basic name="superField" />
+        </attributes>
+    </mapped-superclass>
+
+    <entity class="io.quarkus.hibernate.orm.deployment.JpaJandexScavengerTest$XmlOnlyEntity" access="FIELD">
+        <attributes>
+            <id name="id">
+                <generated-value strategy="IDENTITY" />
+            </id>
+            <basic name="name" />
+        </attributes>
+    </entity>
+
+    <embeddable class="io.quarkus.hibernate.orm.deployment.JpaJandexScavengerTest$XmlOnlyEmbeddable" />
+
+</entity-mappings>

@@ -1,0 +1,64 @@
+package io.quarkus.arc.test.wrongannotations;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.util.Collections;
+import java.util.List;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.runtime.util.ExceptionUtil;
+import io.quarkus.test.QuarkusExtensionTest;
+
+public class WrongSingletonTest {
+
+    @RegisterExtension
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .withApplicationRoot(root -> root
+                    .addClasses(EjbSingleton.class, GuiceProducers.class, JavaxSingleton.class))
+            .assertException(t -> {
+                Throwable rootCause = ExceptionUtil.getRootCause(t);
+                assertTrue(rootCause.getMessage().contains("jakarta.ejb.Singleton"), t.toString());
+                assertTrue(rootCause.getMessage().contains("javax.inject.Singleton"), t.toString());
+                assertTrue(rootCause.getMessage().contains("com.google.inject.Singleton"), t.toString());
+            });
+
+    @Test
+    public void testValidationFailed() {
+        // This method should not be invoked
+        fail();
+    }
+
+    @jakarta.ejb.Singleton
+    static class EjbSingleton {
+
+        @Inject
+        @ConfigProperty(name = "unconfigured")
+        String foo;
+
+    }
+
+    @ApplicationScoped
+    static class GuiceProducers {
+
+        @com.google.inject.Singleton
+        @Produces
+        List<String> produceEjbSingleton() {
+            return Collections.emptyList();
+        }
+
+    }
+
+    @javax.inject.Singleton
+    static class JavaxSingleton {
+
+    }
+
+}

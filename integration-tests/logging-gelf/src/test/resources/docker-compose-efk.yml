@@ -1,0 +1,48 @@
+version: '3.2'
+
+services:
+  elasticsearch:
+    image: docker.io/elastic/elasticsearch:7.16.3
+    environment:
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      discovery.type: "single-node"
+      xpack.security.enabled: "false"
+      cluster.routing.allocation.disk.threshold_enabled: "false"
+      # Disable some features that are not needed in our tests and just slow down startup -->
+      xpack.profiling.enabled: "false"
+      xpack.monitoring.templates.enabled: "false"
+      xpack.ml.enabled: "false"
+      xpack.watcher.enabled: "false"
+      xpack.ent_search.enabled: "false"
+      stack.templates.enabled: "false"
+      cluster.deprecation_indexing.enabled: "false"
+      indices.lifecycle.history_index_enabled: "false"
+      slm.history_index_enabled: "false"
+    networks:
+      - efk
+
+  fluentd:
+    build: fluentd
+    ports:
+      - "12201:12201/udp"
+    volumes:
+      - source: $HOME/fluentd
+        target: /fluentd/etc
+        type: bind
+    networks:
+      - efk
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: docker.io/elastic/kibana:7.16.3
+    ports:
+      - "5601:5601"
+    networks:
+      - efk
+    depends_on:
+      - elasticsearch
+
+networks:
+  efk:
+    driver: bridge

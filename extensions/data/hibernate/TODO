@@ -1,0 +1,9 @@
+- When using @Repository and Panache Repository supertypes, it complains about not having a primary entity on the repo
+
+- Ajouter un API pour renvoyer autre chose que le type de l'entité par une query, genre "select avg()". PanacheQuery.cast? Ou prendre le type de retour comme arg optionnel?
+
+- API
+-- Test out PanacheEntity and PanacheRepository and nests
+-- Perhaps PanacheEntitySwitcher and PanacheEntityMarker should be a single interface?
+-- Perhaps split PanacheEntitySwitcher.managedBlocking() into .managed() and .blocking()?
+--- That or make blocking the default

@@ -1,0 +1,24 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "SmallRye GraphQL"
+metadata:
+  short-name: "graphql"  
+  keywords:
+  - "graphql"
+  - "microprofile-graphql"
+  - "smallrye-graphql"
+  - "web"
+  categories:
+  - "web"
+  guide: "https://quarkus.io/guides/smallrye-graphql"
+  status: "stable"
+  config:
+  - "mp.graphql."
+  - "smallrye.graphql."
+  - "quarkus.smallrye-graphql."
+  codestart:
+    name: "smallrye-graphql"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

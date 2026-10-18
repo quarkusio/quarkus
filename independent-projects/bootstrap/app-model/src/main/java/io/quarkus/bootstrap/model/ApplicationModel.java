@@ -1,0 +1,241 @@
+package io.quarkus.bootstrap.model;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.ResolvedDependency;
+
+/**
+ * Application dependency model. Allows to explore application dependencies,
+ * Quarkus platforms found in the project configuration and Quarkus platform configuration properties.
+ */
+public interface ApplicationModel extends Mappable {
+
+    /**
+     * Main application artifact
+     *
+     * @return main application artifact
+     */
+    ResolvedDependency getAppArtifact();
+
+    /**
+     * Returns application dependencies that are included into the runtime and augmentation (Quarkus build time)
+     * classpath.
+     *
+     * @return application runtime and build time dependencies
+     */
+    Collection<ResolvedDependency> getDependencies();
+
+    /**
+     * Returns application dependencies with the requested flags set.
+     *
+     * @param flags dependency flags that must be set for a dependency to be included in the result
+     * @return application dependencies that have requested flags set
+     */
+    Iterable<ResolvedDependency> getDependencies(int flags);
+
+    /**
+     * Returns application dependencies that have any of the flags combined in the value of the {@code flags} arguments set.
+     *
+     * @param flags dependency flags to match
+     * @return application dependencies that matched the flags
+     */
+    Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int flags);
+
+    /**
+     * Returns application dependencies that have any of the flags passed in as arguments set.
+     *
+     * @param flags dependency flags to match
+     * @return application dependencies that matched the flags
+     */
+    default Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int... flags) {
+        if (flags.length == 0) {
+            throw new IllegalArgumentException("Flags are empty");
+        }
+        int combined = flags[0];
+        for (int i = 1; i < flags.length; ++i) {
+            combined |= flags[i];
+        }
+        return getDependenciesWithAnyFlag(combined);
+    }
+
+    /**
+     * Runtime dependencies of an application
+     *
+     * @return runtime dependencies of an application
+     */
+    Collection<ResolvedDependency> getRuntimeDependencies();
+
+    /**
+     * Quarkus platforms (BOMs) found in the configuration of an application
+     *
+     * @return Quarkus platforms (BOMs) found in the configuration of an application
+     */
+    PlatformImports getPlatforms();
+
+    /**
+     * Quarkus platform configuration properties
+     *
+     * @return Quarkus platform configuration properties
+     */
+    default Map<String, String> getPlatformProperties() {
+        final PlatformImports platformImports = getPlatforms();
+        return platformImports == null ? Map.of() : platformImports.getPlatformProperties();
+    }
+
+    /**
+     * Extension capability requirements collected from the extensions found on the classpath of an application
+     *
+     * @return Extension capability requirements collected from the extensions found on the classpath of an application
+     */
+    Collection<ExtensionCapabilities> getExtensionCapabilities();
+
+    /**
+     * Class loading parent-first artifacts
+     *
+     * @return class loading parent-first artifacts
+     */
+    Set<ArtifactKey> getParentFirst();
+
+    /**
+     * Class loading runner parent-first artifacts
+     *
+     * @return class loading runner parent-first artifacts
+     */
+    Set<ArtifactKey> getRunnerParentFirst();
+
+    /**
+     * Class loading lower priority artifacts
+     *
+     * @return class loading lower priority artifacts
+     */
+    Set<ArtifactKey> getLowerPriorityArtifacts();
+
+    /**
+     * Local project dependencies that are live-reloadable in dev mode.
+     *
+     * @return local project dependencies that are live-reloadable in dev mode.
+     */
+    Set<ArtifactKey> getReloadableWorkspaceDependencies();
+
+    /**
+     * Resources that should be removed from the classpath.
+     *
+     * @return resources that should be removed from the classpath
+     */
+    Map<ArtifactKey, Set<String>> getRemovedResources();
+
+    /**
+     * Main workspace module of an application. Could be null, in case the project is not available during the build.
+     *
+     * @return main workspace module of an application, could be null, in case the project is not available during the build
+     */
+    default WorkspaceModule getApplicationModule() {
+        return getAppArtifact().getWorkspaceModule();
+    }
+
+    /**
+     * All the workspace modules found as dependencies of an application
+     *
+     * @return all the workspace modules found as dependencies of an application
+     */
+    default Collection<WorkspaceModule> getWorkspaceModules() {
+        final Map<WorkspaceModuleId, WorkspaceModule> result = new HashMap<>();
+        collectModules(getAppArtifact().getWorkspaceModule(), result);
+        for (ResolvedDependency d : getDependencies()) {
+            collectModules(d.getWorkspaceModule(), result);
+        }
+        return result.values();
+    }
+
+    private static void collectModules(WorkspaceModule module, Map<WorkspaceModuleId, WorkspaceModule> collected) {
+        if (module == null || collected.putIfAbsent(module.getId(), module) != null) {
+            return;
+        }
+
+        WorkspaceModule parent = module.getParent();
+        if (parent != null) {
+            collectModules(parent, collected);
+        }
+
+        for (Dependency d : module.getDirectDependencyConstraints()) {
+            if (Dependency.SCOPE_IMPORT.equals(d.getScope()) && (d instanceof ResolvedDependency resolved)) {
+                collectModules(resolved.getWorkspaceModule(), collected);
+            }
+        }
+    }
+
+    /**
+     * Extension Dev mode configuration options.
+     *
+     * @return extension Dev mode configuration options
+     */
+    Collection<ExtensionDevModeConfig> getExtensionDevModeConfig();
+
+    /**
+     * Quarkus version ranges required by the extensions present in the application model, as declared via the
+     * {@code requires-quarkus-version} property in their {@code META-INF/quarkus-extension.properties}
+     * descriptors, keyed by the extension runtime artifact key. Extensions that do not declare the property
+     * are not present in the map.
+     *
+     * @return required Quarkus version ranges per extension, never null
+     */
+    default Map<ArtifactKey, String> getRequiredQuarkusVersions() {
+        return Map.of();
+    }
+
+    @Override
+    default Map<String, Object> asMap(MappableCollectionFactory factory) {
+        final Map<String, Object> map = factory.newMap();
+        map.put(BootstrapConstants.MAPPABLE_APP_ARTIFACT, getAppArtifact().asMap(factory));
+        map.put(BootstrapConstants.MAPPABLE_DEPENDENCIES,
+                Mappable.iterableAsMaps(
+                        getDependenciesWithAnyFlag(DependencyFlags.DEPLOYMENT_CP | DependencyFlags.COMPILE_ONLY),
+                        factory));
+        map.put(BootstrapConstants.MAPPABLE_PLATFORM_IMPORTS, getPlatforms().asMap(factory));
+        if (!getExtensionCapabilities().isEmpty()) {
+            map.put(BootstrapConstants.MAPPABLE_CAPABILITIES, Mappable.asMaps(getExtensionCapabilities(), factory));
+        }
+        if (!getReloadableWorkspaceDependencies().isEmpty()) {
+            // Sort so the serialized form is deterministic across JVMs: Set.copyOf iteration
+            // order is salted per JVM, which busts the Gradle build cache (see #55619).
+            map.put(BootstrapConstants.MAPPABLE_LOCAL_PROJECTS,
+                    Mappable.toStringCollection(
+                            getReloadableWorkspaceDependencies().stream().sorted().toList(), factory));
+        }
+        if (!getRemovedResources().isEmpty()) {
+            final Map<ArtifactKey, Set<String>> removedResources = getRemovedResources();
+            final Map<String, Object> mappedExcludedResources = factory.newMap(removedResources.size());
+            // getRemovedResources() is a per-JVM-salted Map.copyOf, so sort by key: this fixes the
+            // insertion order into the (HashMap-backed) JSON object, keeping its output stable across
+            // JVMs even when keys collide in a bucket. Sort each value collection for the same reason
+            // as local-projects above (see #55619).
+            removedResources.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> mappedExcludedResources.put(entry.getKey().toString(),
+                            Mappable.toStringCollection(entry.getValue().stream().sorted().toList(), factory)));
+            map.put(BootstrapConstants.MAPPABLE_EXCLUDED_RESOURCES, mappedExcludedResources);
+        }
+        if (!getExtensionDevModeConfig().isEmpty()) {
+            map.put(BootstrapConstants.MAPPABLE_EXTENSION_DEV_CONFIG, Mappable.asMaps(getExtensionDevModeConfig(), factory));
+        }
+        if (!getRequiredQuarkusVersions().isEmpty()) {
+            final Map<ArtifactKey, String> requiredQuarkusVersions = getRequiredQuarkusVersions();
+            final Map<String, Object> mappedRequiredQuarkusVersions = factory.newMap(requiredQuarkusVersions.size());
+            // Sort by key to keep the serialized form deterministic across JVMs (see #55619).
+            requiredQuarkusVersions.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> mappedRequiredQuarkusVersions.put(entry.getKey().toString(), entry.getValue()));
+            map.put(BootstrapConstants.MAPPABLE_REQUIRED_QUARKUS_VERSIONS, mappedRequiredQuarkusVersions);
+        }
+        return map;
+    }
+}

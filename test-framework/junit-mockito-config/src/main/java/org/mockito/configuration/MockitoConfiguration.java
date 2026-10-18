@@ -1,0 +1,28 @@
+package org.mockito.configuration;
+
+import java.lang.reflect.InvocationTargetException;
+
+import org.mockito.stubbing.Answer;
+
+public class MockitoConfiguration extends DefaultMockitoConfiguration {
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Answer<Object> getDefaultAnswer() {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        try {
+            // we need to load it from the TCCL (QuarkusClassLoader) instead of our class loader (JUnit CL)
+            Class<?> mutinyAnswer = cl.loadClass("io.quarkus.test.junit.mockito.internal.MutinyAnswer");
+            return (Answer<Object>) mutinyAnswer.getDeclaredConstructor().newInstance();
+        } catch (ClassNotFoundException | SecurityException | IllegalArgumentException | IllegalAccessException
+                | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
+            throw new RuntimeException("Failed to load MutinyAnswer from the TCCL", e);
+        }
+    }
+
+    // Per-test class loaders + Objenesis name-based cache break thenThrow(Exception.class) across tests (#55093)
+    @Override
+    public boolean enableClassCache() {
+        return false;
+    }
+}

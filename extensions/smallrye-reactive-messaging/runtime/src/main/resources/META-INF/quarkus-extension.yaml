@@ -1,0 +1,15 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Messaging"
+metadata:
+  keywords:
+  - "messaging"
+  - "reactive-messaging"
+  - "reactive"
+  guide: "https://quarkus.io/guides/messaging"
+  categories:
+  - "messaging"
+  status: "stable"
+  config:
+  - "quarkus.messaging."
+  - "mp.messaging."

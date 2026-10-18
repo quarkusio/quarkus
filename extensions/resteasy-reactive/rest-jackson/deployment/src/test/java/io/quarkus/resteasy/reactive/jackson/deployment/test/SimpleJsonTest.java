@@ -1,0 +1,57 @@
+package io.quarkus.resteasy.reactive.jackson.deployment.test;
+
+import java.util.function.Supplier;
+
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.security.test.utils.TestIdentityController;
+import io.quarkus.security.test.utils.TestIdentityProvider;
+import io.quarkus.test.QuarkusExtensionTest;
+
+public class SimpleJsonTest extends AbstractSimpleJsonTest {
+
+    @RegisterExtension
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
+            .setArchiveProducer(new Supplier<>() {
+                @Override
+                public JavaArchive get() {
+                    return ShrinkWrap.create(JavaArchive.class)
+                            .addClasses(Person.class, SimpleJsonResource.class, User.class, Views.class, SuperClass.class,
+                                    OtherPersonResource.class, AbstractPersonResource.class, DataItem.class, Item.class,
+                                    NoopReaderInterceptor.class, TestIdentityProvider.class, TestIdentityController.class,
+                                    AbstractPet.class, Dog.class, Cat.class, Veterinarian.class, AbstractNamedPet.class,
+                                    AbstractUnsecuredPet.class, UnsecuredPet.class, SecuredPersonInterface.class, Frog.class,
+                                    Pond.class, FrogBodyParts.class, FrogBodyParts.BodyPart.class, ContainerDTO.class,
+                                    NestedInterface.class, StateRecord.class, MapWrapper.class, GenericWrapper.class,
+                                    Fruit.class, Price.class, DogRecord.class, ItemExtended.class, Book.class, LombokBook.class,
+                                    PrimitiveTypesBean.class, PrimitiveTypesRecord.class, TokenResponse.class,
+                                    ItemJsonValuePublicMethod.class, ItemJsonValuePublicField.class,
+                                    ItemJsonValuePrivateMethod.class, ItemJsonValuePrivateField.class,
+                                    ItemJsonValueInheritedFromInterface.class,
+                                    ItemJsonValueInheritedFromInterface.HasValue.class,
+                                    ItemJsonValueInheritedFromInterface.AbstractHasValue.class,
+                                    ItemJsonValueInheritedFromInterface.Wrapper.class,
+                                    ItemJsonValueInheritedFromInterface.TwoLevelWrapper.class, StringWrapper.class,
+                                    JsonAliasRecord.class, JsonAliasSameAsFieldNameBean.class,
+                                    AnnotationNamingRequest.class, Pair.class, Score.class,
+                                    ProductPrice.class, DefaultValueHolder.class, OptionalHolder.class, AnySetterRequest.class,
+                                    UnwrappedResult.class, UnwrappedResultsResponse.class, Detail.class, ErrorInfo.class,
+                                    PolymorphicItemResponse.class, PolymorphicItem.class,
+                                    SensorMetadata.class, SensorMetadata.ComponentMetadata.class, SensorUnit.class,
+                                    FinalCollectionHolder.class, RequiredCreatorProperty.class,
+                                    PolymorphicCreatorProperty.class, NoArgConstructorPojo.class,
+                                    MultiConstructorPojo.class, NoMatchingCtorPojo.class)
+                            .addAsResource(new StringAsset("admin-expression=admin\n" +
+                                    "user-expression=user\n" +
+                                    "birth-date-roles=alice,bob\n" +
+                                    "quarkus.jackson.fail-on-unknown-properties=true\n" +
+                                    "quarkus.jackson.fail-on-null-for-primitives=false\n" +
+                                    "quarkus.jackson.default-view-inclusion=true\n" +
+                                    "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=false\n"),
+                                    "application.properties");
+                }
+            });
+}

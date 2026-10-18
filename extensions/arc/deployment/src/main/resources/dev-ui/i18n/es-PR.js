@@ -1,0 +1,17 @@
+export const templates = {
+    'quarkus-arc-meta-description': 'Inyección de dependencias CDI en tiempo de construcción',
+    'quarkus-arc-beans': 'Granos',
+    'quarkus-arc-no-bean-id-provided': 'No se proporcionó ningún ID de bean.',
+    'quarkus-arc-simple-description': 'Descripción simple',
+    'quarkus-arc-bean': 'Grano',
+    'quarkus-arc-associated-interceptors': 'Interceptors Asociados',
+    'quarkus-arc-loading-fired-events': 'Cargando evento de ArC activado...',
+    'quarkus-arc-skip-context-lifecycle-events': 'Saltar la monitorización de eventos del ciclo de vida del contexto.',
+    'quarkus-arc-loading-invocation-trees': 'Cargando árboles de invocación ArC...',
+    'quarkus-arc-start': 'Comenzar',
+    'quarkus-arc-source': 'Origen',
+    'quarkus-arc-async': 'Asincrónico',
+    'quarkus-arc-removed-beans': 'Binas eliminadas',
+    'quarkus-arc-not-yet-implemented': 'TODO: Aún no implementado',
+    'quarkus-arc-interceptor': 'Interceptors',
+};

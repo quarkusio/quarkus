@@ -20,7 +20,7 @@ public interface ExceptionHandlerProvider {
             ServerCall<ReqT, RespT> serverCall, Metadata metadata);
 
     default Throwable transform(Throwable t) {
-        return toStatusException(t, false); // previous default was false
+        return toStatusException(t, true, true);
     }
 
     /**
@@ -31,6 +31,18 @@ public interface ExceptionHandlerProvider {
      * @return Status(Runtime)Exception
      */
     static Exception toStatusException(Throwable t, boolean runtime) {
+        return toStatusException(t, runtime, true);
+    }
+
+    /**
+     * Throw Status exception.
+     *
+     * @param t the throwable to transform
+     * @param runtime true if we should throw StatusRuntimeException, false for StatusException
+     * @param propagateCauses whether to encode the exception cause chain in response trailers
+     * @return Status(Runtime)Exception
+     */
+    static Exception toStatusException(Throwable t, boolean runtime, boolean propagateCauses) {
         if (t instanceof StatusException || t instanceof StatusRuntimeException) {
             if (runtime) {
                 if (t instanceof StatusRuntimeException) {
@@ -57,6 +69,13 @@ public interface ExceptionHandlerProvider {
                 status = Status.INVALID_ARGUMENT.withDescription(desc);
             } else {
                 status = Status.fromThrowable(t).withDescription(desc);
+            }
+            Metadata trailers = new Metadata();
+            if (propagateCauses) {
+                ExceptionCauseSupport.encodeCauses(t, trailers);
+            }
+            if (trailers.containsKey(ExceptionCauseSupport.EXCEPTION_CAUSES_KEY)) {
+                return runtime ? new StatusRuntimeException(status, trailers) : new StatusException(status, trailers);
             }
             return runtime ? status.asRuntimeException() : status.asException();
         }

@@ -258,7 +258,7 @@ public class SpringDataJPAProcessor {
             BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             Set<ClassInfo> crudRepositoriesToImplement, IndexView index) {
 
-        ClassOutput beansClassOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
+        ClassOutput beansClassOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans, constantBootstraps);
         ClassOutput otherClassOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
                 generatedServiceProviders, constantBootstraps, true);
 

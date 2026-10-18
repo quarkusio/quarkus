@@ -281,13 +281,14 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
         context.addToAnyTarget(new ApplyResolveNamesImagePolicyDecorator());
 
         if (config.route() != null) {
-            for (Map.Entry<String, String> annotation : config.route().annotations().entrySet()) {
-                context.add(new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), ROUTE));
-            }
+            config.route().annotations().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(annotation -> context
+                            .add(new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), ROUTE)));
 
-            for (Map.Entry<String, String> label : config.route().labels().entrySet()) {
-                context.add(new AddLabelDecorator(name, label.getKey(), label.getValue(), ROUTE));
-            }
+            config.route().labels().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(label -> context.add(new AddLabelDecorator(name, label.getKey(), label.getValue(), ROUTE)));
 
             // OpenShift rejects any path (including "/") with passthrough TLS termination.
             if (config.route().tls().termination().filter("passthrough"::equalsIgnoreCase).isPresent()) {

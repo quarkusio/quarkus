@@ -24,7 +24,7 @@ public class StorkRegistrarConfigRecorder {
 
     /**
      * Builds or completes the registration config for the current Quarkus application based on the given registrar type
-     * and optional health check URL.
+     * and optional health check path.
      * <p>
      * This method is designed to improve the developer experience by automatically setting up service
      * registration with minimal configuration. It ensures that service instances are registered with
@@ -36,7 +36,7 @@ public class StorkRegistrarConfigRecorder {
      * <li>If no services are explicitly configured with a service registrar, a default configuration
      * is created and registered under the application name.</li>
      * <li>If exactly one service is configured, its configuration is completed with the missing
-     * registrar type or health check URL.</li>
+     * registrar type or health check path.</li>
      * <li>If multiple services are configured for registration and one or more lack a type,
      * the method fails with an exception to avoid ambiguity.</li>
      * </ul>
@@ -45,11 +45,11 @@ public class StorkRegistrarConfigRecorder {
      * Stork is correctly configured, particularly for automatic registration with built-in registrars.
      *
      * @param serviceRegistrarType the type of the service registrar (e.g., "consul", "eureka"); must not be blank
-     * @param healthCheckUrl optional health check URL to register with the service (can be {@code null})
+     * @param healthCheckPath relative path to the health check endpoint (e.g., {@code /q/health/live}); can be {@code null}
      * @throws IllegalArgumentException if {@code serviceRegistrarType} is blank
      * @throws RuntimeException if multiple services are configured for registration and any is missing a registrar type
      */
-    public void setupServiceRegistrarConfig(String serviceRegistrarType, String healthCheckUrl) {
+    public void setupServiceRegistrarConfig(String serviceRegistrarType, String healthCheckPath) {
         StorkConfigUtil.requireRegistrarTypeNotBlank(serviceRegistrarType);
         Config quarkusConfig = ConfigProvider.getConfig();
         List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(runtimeConfig.getValue());
@@ -58,12 +58,12 @@ public class StorkRegistrarConfigRecorder {
         String serviceName = quarkusConfig.getValue("quarkus.application.name", String.class);
         if (registrationConfigs.isEmpty()) {
             runtimeConfig.getValue().serviceConfiguration().put(serviceName,
-                    StorkConfigUtil.buildRegistrarOnlyConfiguration(serviceRegistrarType, healthCheckUrl));
+                    StorkConfigUtil.buildRegistrarOnlyConfiguration(serviceRegistrarType, healthCheckPath));
         } else if (registrationConfigs.size() == 1) {
             serviceName = registrationConfigs.get(0).serviceName();
             runtimeConfig.getValue().serviceConfiguration().computeIfPresent(serviceName,
                     (k, serviceConfiguration) -> StorkConfigUtil.addRegistrarTypeIfAbsent(serviceRegistrarType,
-                            serviceConfiguration, healthCheckUrl));
+                            serviceConfiguration, healthCheckPath));
         } else {
             failOnMissingRegistrarTypesForMultipleRegistrars(registrationConfigs);
         }

@@ -92,6 +92,8 @@ ENV LANGUAGE='en_US:en'
 
 {#insert copy /}
 
+USER root
+RUN chmod 775 /deployments && chown 185:0 /deployments
 EXPOSE 8080
 USER 185
 {#if java.version == '11'}

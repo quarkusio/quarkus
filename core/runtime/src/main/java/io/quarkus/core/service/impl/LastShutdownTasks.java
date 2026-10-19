@@ -17,8 +17,12 @@ import org.jboss.logging.Logger;
  * A static-init service in the deployment module registers a stop handler
  * that calls {@link #runStatic()} to execute all collected tasks.
  *
+ * @deprecated Use service-model shutdown handlers registered via
+ *             {@code ctx.onStop(Runnable)} instead of this legacy recorder bridge.
+ *
  * @see NodeShutdownContext
  */
+@Deprecated(since = "4.0")
 public final class LastShutdownTasks {
 
     private static final Logger LOG = Logger.getLogger("io.quarkus.service");

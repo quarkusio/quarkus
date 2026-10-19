@@ -399,27 +399,29 @@ public class LivenessAsync implements AsyncHealthCheck {
 If you need to react to change of the health status of your application, the Smallrye Health
 extension provides a CDI event that can notify you about the individual health status changes.
 
-To observe the health status change, you can observe the `io.smallrye.health.api.event.HealthStatusChangeEvent`
+To observe the health status change, you can observe the `io.smallrye.health.event.SmallRyeHealthStatusChangeEvent`
 with the standard CDI observation mechanism. Since we cannot guarantee that the observer method
 runs all the time on the worker thread (meaning it can run on the event loop thread), it's
-recommended that you never block in the in observer method.
+recommended that you never block in the observer method.
+
+Note that these events are only fired when the health checks are evaluated, for example when a health endpoint such as `/q/health/ready` is called. They are not fired automatically when the underlying status changes.
 
 [source,java]
 ----
-import io.smallrye.health.api.event.HealthStatusChangeEvent;
+import io.smallrye.health.event.SmallRyeHealthStatusChangeEvent;
 
 @ApplicationScoped
 public class HealthObserver {
 
-    public void observeHealthChange(@Observes @Default HealthStatusChangeEvent event) {
+    public void observeHealthChange(@Observes @Default SmallRyeHealthStatusChangeEvent event) {
         ...
     }
 
-    public void observeReadinessChange(@Observes @Readiness HealthStatusChangeEvent event) {
+    public void observeReadinessChange(@Observes @Readiness SmallRyeHealthStatusChangeEvent event) {
         ...
     }
 
-    public void observeLivenessChange(@Observes @Liveness HealthStatusChangeEvent event) {
+    public void observeLivenessChange(@Observes @Liveness SmallRyeHealthStatusChangeEvent event) {
         ...
     }
 }

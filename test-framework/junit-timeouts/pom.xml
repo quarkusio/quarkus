@@ -18,6 +18,9 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
+            <!-- not transitive: this module is a dependency of every module, and having JUnit Jupiter on the classpath
+                 makes surefire pick the JUnit Platform provider, which breaks the modules running TestNG or JUnit 4 -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

@@ -13,10 +13,13 @@ import java.time.Duration;
 public final class TestTimeouts {
 
     /**
+     * Deliberately not in the {@code quarkus.} namespace, as Quarkus warns about unknown properties in it, which some
+     * tests assert on.
+     * <p>
      * Set by {@link TestTimeoutsExtension} to the value resolved for the running test. A system property is used so
      * that this works when the test code is loaded by a different classloader than the extension.
      */
-    static final String CURRENT_PROPERTY = "quarkus.test.timeout.current";
+    static final String CURRENT_PROPERTY = "test-timeouts.current";
 
     private TestTimeouts() {
     }

@@ -110,7 +110,7 @@ assertThat(latch.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue
   from the most to the least specific key: `<module path>.<Class>.<method>.timeout`, `<module path>.<Class>.timeout`,
   `<module path>.timeout` (then each parent path, such as `extensions.timeout`), `timeout`. For example
   `extensions/redis-client/runtime.timeout=30s`.
-- CI can pass `-Dquarkus.test.timeout=...` to replace the global default and `-Dquarkus.test.timeout.multiplier=3` to
+- CI can pass `-Dtest-timeouts.default=...` to replace the global default and `-Dtest-timeouts.multiplier=3` to
   scale whatever value is found.
 - Do not use it for timeouts that are part of what the test checks, such as "nothing must arrive within 2 seconds".
 - Prefer raising the shared value, or a module override, over inventing a new constant in a test.

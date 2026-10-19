@@ -22,14 +22,14 @@ import java.util.Properties;
  * {@code extensions/redis-client/runtime}, and {@code <Class>} is the class name without its package (nested classes
  * are separated with a dot).
  * <p>
- * The system property {@code quarkus.test.timeout} replaces the global {@code timeout}, and the system property
- * {@code quarkus.test.timeout.multiplier} scales whichever value is found.
+ * The system property {@code test-timeouts.default} replaces the global {@code timeout}, and the system property
+ * {@code test-timeouts.multiplier} scales whichever value is found.
  */
 final class TimeoutResolver {
 
     static final String FILE_NAME = "test-timeouts.properties";
-    static final String DEFAULT_PROPERTY = "quarkus.test.timeout";
-    static final String MULTIPLIER_PROPERTY = "quarkus.test.timeout.multiplier";
+    static final String DEFAULT_PROPERTY = "test-timeouts.default";
+    static final String MULTIPLIER_PROPERTY = "test-timeouts.multiplier";
     static final Duration FALLBACK = Duration.ofSeconds(20);
 
     private static final String SUFFIX = ".timeout";

@@ -85,7 +85,13 @@ public class ResourceProperties {
 
     public String[] getRolesAllowed(String methodName) {
         if (methodProperties.containsKey(methodName)) {
-            return methodProperties.get(methodName).getRolesAllowed();
+            String[] methodRolesAllowed = methodProperties.get(methodName).getRolesAllowed();
+            // Only let the method-level roles override the resource-level roles when they are actually set.
+            // An absent rolesAllowed on @MethodProperties (the default empty array) must not silently erase the
+            // rolesAllowed declared on @ResourceProperties for this method.
+            if (methodRolesAllowed.length > 0) {
+                return methodRolesAllowed;
+            }
         }
 
         return rolesAllowed;

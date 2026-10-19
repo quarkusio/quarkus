@@ -79,6 +79,7 @@ import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.ValueRegistryRuntimeInfoProviderBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
@@ -94,7 +95,6 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.StaticFieldVar;
@@ -297,6 +297,7 @@ public class MainClassBuildStep {
             List<BytecodeRecorderConstantDefinitionBuildItem> constants,
             List<RecordableConstructorBuildItem> recordableConstructorBuildItems,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             LaunchModeBuildItem launchMode,
             LiveReloadBuildItem liveReloadBuildItem,
             ApplicationInfoBuildItem applicationInfo,
@@ -321,8 +322,9 @@ public class MainClassBuildStep {
                 mainMethod, stepGraph, staticPlan.serviceKeys(), buildItemProducers);
 
         // Application class
-        GeneratedClassGizmo2Adaptor gizmoOutput = new GeneratedClassGizmo2Adaptor(generatedClass, null, null, true);
-        Gizmo g = Gizmo.create(gizmoOutput).withLambdaStrategy(LambdaStrategy.CLASSIC);
+        GeneratedClassGizmo2Adaptor gizmoOutput = new GeneratedClassGizmo2Adaptor(generatedClass, null, null,
+                constantBootstraps, true);
+        Gizmo g = Gizmo.create(gizmoOutput);
 
         g.class_(Application.APP_CLASS_NAME, file -> {
             file.extends_(Application.class);

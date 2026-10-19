@@ -16,25 +16,17 @@ public class GeneratedBeanGizmo2Adaptor implements ClassOutput {
     private final Predicate<String> applicationClassPredicate;
     private final BuildProducer<ConstantBootstrapBuildItem> constantBootstraps;
 
+    @Deprecated(since = "4.0")
     public GeneratedBeanGizmo2Adaptor(BuildProducer<GeneratedBeanBuildItem> classOutput) {
-        this(classOutput, new Predicate<>() {
-
-            @Override
-            public boolean test(String t) {
-                return true;
-            }
-        });
+        this(classOutput, (BuildProducer<ConstantBootstrapBuildItem>) null);
     }
 
+    @Deprecated(since = "4.0")
     public GeneratedBeanGizmo2Adaptor(BuildProducer<GeneratedBeanBuildItem> classOutput,
             Predicate<String> applicationClassPredicate) {
         this(classOutput, applicationClassPredicate, null);
     }
 
-    /**
-     * Use this constructor if the generated code may contain lambdas or other constructs which use bootstrap methods,
-     * so that they can be initialized at build time in native image.
-     */
     public GeneratedBeanGizmo2Adaptor(BuildProducer<GeneratedBeanBuildItem> classOutput,
             BuildProducer<ConstantBootstrapBuildItem> constantBootstraps) {
         this(classOutput, new Predicate<>() {
@@ -46,10 +38,6 @@ public class GeneratedBeanGizmo2Adaptor implements ClassOutput {
         }, constantBootstraps);
     }
 
-    /**
-     * Use this constructor if the generated code may contain lambdas or other constructs which use bootstrap methods,
-     * so that they can be initialized at build time in native image.
-     */
     public GeneratedBeanGizmo2Adaptor(BuildProducer<GeneratedBeanBuildItem> classOutput,
             Predicate<String> applicationClassPredicate,
             BuildProducer<ConstantBootstrapBuildItem> constantBootstraps) {

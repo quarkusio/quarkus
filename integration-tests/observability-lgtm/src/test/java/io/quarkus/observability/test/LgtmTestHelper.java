@@ -25,16 +25,19 @@ public abstract class LgtmTestHelper {
         GrafanaClient client = new GrafanaClient(grafanaEndpoint(), prometheusEndpoint(), tempoEndpoint(), "admin",
                 "admin");
 
-        Awaitility.setDefaultPollInterval(5, TimeUnit.SECONDS); // reduce load on the server. Default is .1s
-
-        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(90, TimeUnit.SECONDS).until(
-                client::user,
-                u -> "admin".equals(u.login));
-        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(90, TimeUnit.SECONDS).until(
-                () -> client.query("xvalue_X"),
-                result -> !result.data.result.isEmpty());
-        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(90, TimeUnit.SECONDS).until(
-                () -> client.traces("quarkus-integration-test-observability-lgtm", 20, 3),
-                result -> !result.traces.isEmpty());
+        // Use a local pollInterval to avoid mutating Awaitility's global default,
+        // which would slow down every subsequent test in the same JVM.
+        Awaitility.given().ignoreException(UncheckedIOException.class).pollInterval(2, TimeUnit.SECONDS)
+                .await().atMost(120, TimeUnit.SECONDS).until(
+                        client::user,
+                        u -> "admin".equals(u.login));
+        Awaitility.given().ignoreException(UncheckedIOException.class).pollInterval(2, TimeUnit.SECONDS)
+                .await().atMost(120, TimeUnit.SECONDS).until(
+                        () -> client.query("xvalue_X"),
+                        result -> !result.data.result.isEmpty());
+        Awaitility.given().ignoreException(UncheckedIOException.class).pollInterval(2, TimeUnit.SECONDS)
+                .await().atMost(120, TimeUnit.SECONDS).until(
+                        () -> client.traces("quarkus-integration-test-observability-lgtm", 20, 3),
+                        result -> !result.traces.isEmpty());
     }
 }

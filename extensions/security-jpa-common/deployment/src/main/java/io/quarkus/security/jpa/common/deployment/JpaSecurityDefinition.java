@@ -1,6 +1,9 @@
 package io.quarkus.security.jpa.common.deployment;
 
 import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -10,11 +13,14 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.gizmo2.Jandex2Gizmo;
 
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.bean.JavaBeanUtil;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.creator.BlockCreator;
 
@@ -32,10 +38,16 @@ public class JpaSecurityDefinition {
     public static class FieldOrMethod {
         public final FieldInfo field;
         public final MethodInfo getter;
+        private final Type type;
 
         public FieldOrMethod(FieldInfo field, MethodInfo getter) {
+            this(field, getter, field != null ? field.type() : getter.returnType());
+        }
+
+        FieldOrMethod(FieldInfo field, MethodInfo getter, Type type) {
             this.field = field;
             this.getter = getter;
+            this.type = type;
         }
 
         public AnnotationInstance annotation(DotName annotationName) {
@@ -61,11 +73,7 @@ public class JpaSecurityDefinition {
         }
 
         public Type type() {
-            // FIXME: this doesn't work with generics-inherited types
-            if (field != null) {
-                return field.type();
-            }
-            return getter.returnType();
+            return type;
         }
     }
 
@@ -98,14 +106,47 @@ public class JpaSecurityDefinition {
                 // try to find a getter for this field
                 FieldInfo field = annotatedFieldOrMethod.asField();
                 return new FieldOrMethod(field,
-                        findGetter(index, annotatedClass, field, Modifier.isPublic(field.flags()) && isPanache));
+                        findGetter(index, annotatedClass, field, Modifier.isPublic(field.flags()) && isPanache),
+                        resolveType(index, annotatedClass, field.declaringClass(), field.type()));
             case METHOD:
                 // skip the field entirely
-                return new FieldOrMethod(null, annotatedFieldOrMethod.asMethod());
+                MethodInfo method = annotatedFieldOrMethod.asMethod();
+                return new FieldOrMethod(null, method,
+                        resolveType(index, annotatedClass, method.declaringClass(), method.returnType()));
             default:
                 throw new IllegalArgumentException(
                         "annotatedFieldOrMethod must be a field or method: " + annotatedFieldOrMethod);
         }
+    }
+
+    private static Type resolveType(Index index, ClassInfo annotatedClass, ClassInfo declaringClass, Type type) {
+        List<TypeVariable> typeParameters = declaringClass.typeParameters();
+        if (typeParameters.isEmpty() || declaringClass.name().equals(annotatedClass.name())) {
+            return type;
+        }
+        List<Type> arguments = JandexUtil.resolveTypeParameters(annotatedClass.name(), declaringClass.name(), index);
+        if (arguments.size() != typeParameters.size()) {
+            return type;
+        }
+        Map<String, Type> mapping = new HashMap<>();
+        for (int i = 0; i < typeParameters.size(); i++) {
+            mapping.put(typeParameters.get(i).identifier(), arguments.get(i));
+        }
+        return substitute(type, mapping);
+    }
+
+    private static Type substitute(Type type, Map<String, Type> mapping) {
+        return switch (type.kind()) {
+            case TYPE_VARIABLE -> mapping.getOrDefault(type.asTypeVariable().identifier(), type);
+            case PARAMETERIZED_TYPE -> {
+                ParameterizedType parameterized = type.asParameterizedType();
+                Type[] arguments = parameterized.arguments().stream()
+                        .map(argument -> substitute(argument, mapping))
+                        .toArray(Type[]::new);
+                yield ParameterizedType.create(parameterized.name(), arguments, parameterized.owner());
+            }
+            default -> type;
+        };
     }
 
     public AnnotationValue passwordType() {

@@ -2,6 +2,7 @@ package io.quarkus.redis.lettuce.runtime.internal.value;
 
 import java.util.Map;
 
+import io.quarkus.redis.datasource.string.ReactiveTransactionalStringCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.GetExArgs;
 import io.quarkus.redis.datasource.value.ReactiveTransactionalValueCommands;
@@ -18,12 +19,17 @@ import io.smallrye.mutiny.Uni;
  * to the {@link LettuceTransactionHolder}. The command carries the same result mapper the
  * non-transactional path applies, so {@code TransactionResult.get(index)} yields the same Java type
  * as the Vert.x backend.
+ * <p>
+ * Also implements the deprecated {@link ReactiveTransactionalStringCommands} so that
+ * {@code tx.string(...)} and {@code tx.value(...)} share one implementation, as on the Vert.x
+ * backend. The {@code string}-package argument types extend their {@code value}-package
+ * counterparts, so those overloads simply delegate.
  *
  * @param <K> the key type
  * @param <V> the value type
  */
 public class LettuceReactiveTransactionalValueCommandsImpl<K, V>
-        implements ReactiveTransactionalValueCommands<K, V> {
+        implements ReactiveTransactionalValueCommands<K, V>, ReactiveTransactionalStringCommands<K, V> {
 
     private final ReactiveTransactionalRedisDataSource dataSource;
     private final LettuceReactiveValueCommandsImpl<K, V> reactive;
@@ -69,6 +75,11 @@ public class LettuceReactiveTransactionalValueCommandsImpl<K, V>
     @Override
     public Uni<Void> getex(K key, GetExArgs args) {
         return tx.enqueue(reactive._getex(key, args));
+    }
+
+    @Override
+    public Uni<Void> getex(K key, io.quarkus.redis.datasource.string.GetExArgs args) {
+        return getex(key, (GetExArgs) args);
     }
 
     @Override
@@ -138,6 +149,11 @@ public class LettuceReactiveTransactionalValueCommandsImpl<K, V>
     }
 
     @Override
+    public Uni<Void> set(K key, V value, io.quarkus.redis.datasource.string.SetArgs setArgs) {
+        return set(key, value, (SetArgs) setArgs);
+    }
+
+    @Override
     public Uni<Void> setAndChanged(K key, V value) {
         return tx.enqueue(reactive._set(key, value));
     }
@@ -155,6 +171,11 @@ public class LettuceReactiveTransactionalValueCommandsImpl<K, V>
     @Override
     public Uni<Void> setGet(K key, V value, SetArgs setArgs) {
         return tx.enqueue(reactive._setGet(key, value, setArgs));
+    }
+
+    @Override
+    public Uni<Void> setGet(K key, V value, io.quarkus.redis.datasource.string.SetArgs setArgs) {
+        return setGet(key, value, (SetArgs) setArgs);
     }
 
     @Override

@@ -107,7 +107,11 @@ public class LettuceReactiveTransactionalRedisDataSourceImpl implements Reactive
 
     @Override
     public <K, V> ReactiveTransactionalStringCommands<K, V> string(Class<K> redisKeyType, Class<V> valueType) {
-        throw groupNotImplemented("string");
+        nonNull(redisKeyType, "redisKeyType");
+        nonNull(valueType, "valueType");
+        LettuceReactiveValueCommandsImpl<K, V> reactiveValue = (LettuceReactiveValueCommandsImpl<K, V>) reactive
+                .value(redisKeyType, valueType);
+        return new LettuceReactiveTransactionalValueCommandsImpl<>(this, reactiveValue, tx);
     }
 
     @Override

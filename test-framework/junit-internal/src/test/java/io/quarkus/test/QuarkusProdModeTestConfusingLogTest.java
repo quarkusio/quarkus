@@ -40,7 +40,7 @@ public class QuarkusProdModeTestConfusingLogTest {
         // No tear down, because there's no way to shut down the client explicitly before Java 21 :(
         // We'll just hope no connection is left hanging.
         client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(100))
+                .connectTimeout(Duration.ofSeconds(10))
                 .build();
     }
 

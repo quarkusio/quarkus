@@ -13,25 +13,17 @@ import org.wildfly.security.auth.server.SecurityRealm;
 import org.wildfly.security.password.WildFlyElytronPasswordProvider;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 
-@Recorder
 public class JdbcRecorder {
     private static final Provider[] PROVIDERS = new Provider[] { new WildFlyElytronPasswordProvider() };
 
-    private final RuntimeValue<JdbcSecurityRealmRuntimeConfig> runtimeConfig;
-
-    public JdbcRecorder(final RuntimeValue<JdbcSecurityRealmRuntimeConfig> runtimeConfig) {
-        this.runtimeConfig = runtimeConfig;
-    }
-
     /**
-     * Create a runtime value for a {@linkplain JdbcSecurityRealm}
+     * Create a {@linkplain JdbcSecurityRealm} from the configured principal queries.
      *
-     * @return - runtime value wrapper for the SecurityRealm
+     * @param runtimeConfig - the JDBC realm runtime configuration
+     * @return - the SecurityRealm
      */
-    public RuntimeValue<SecurityRealm> createRealm() {
+    public static SecurityRealm createRealm(JdbcSecurityRealmRuntimeConfig runtimeConfig) {
         Supplier<Provider[]> providers = new Supplier<Provider[]>() {
             @Override
             public Provider[] get() {
@@ -39,14 +31,14 @@ public class JdbcRecorder {
             }
         };
         JdbcSecurityRealmBuilder builder = JdbcSecurityRealm.builder().setProviders(providers);
-        PrincipalQueriesConfig principalQueries = runtimeConfig.getValue().principalQueries();
+        PrincipalQueriesConfig principalQueries = runtimeConfig.principalQueries();
         registerPrincipalQuery(principalQueries.defaultPrincipalQuery(), builder);
         principalQueries.namedPrincipalQueries()
                 .forEach((name, principalQuery) -> registerPrincipalQuery(principalQuery, builder));
-        return new RuntimeValue<>(builder.build());
+        return builder.build();
     }
 
-    private void registerPrincipalQuery(PrincipalQueryConfig principalQuery, JdbcSecurityRealmBuilder builder) {
+    private static void registerPrincipalQuery(PrincipalQueryConfig principalQuery, JdbcSecurityRealmBuilder builder) {
 
         QueryBuilder queryBuilder = builder.principalQuery(principalQuery.sql().orElseThrow(
                 () -> new IllegalStateException("quarkus.security.jdbc.principal-query.sql property must be set")))
@@ -66,7 +58,7 @@ public class JdbcRecorder {
         }
     }
 
-    private DataSource getDataSource(PrincipalQueryConfig principalQuery) {
+    private static DataSource getDataSource(PrincipalQueryConfig principalQuery) {
         if (principalQuery.datasource().isPresent()) {
             return Arc.container()
                     .instance(DataSource.class,

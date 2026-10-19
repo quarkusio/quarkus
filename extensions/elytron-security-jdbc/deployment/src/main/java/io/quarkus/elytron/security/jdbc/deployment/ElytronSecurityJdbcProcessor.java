@@ -1,23 +1,23 @@
 package io.quarkus.elytron.security.jdbc.deployment;
 
-import java.util.List;
+import java.util.function.BooleanSupplier;
 
 import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
-import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.jdbc.JdbcRecorder;
 import io.quarkus.elytron.security.jdbc.JdbcSecurityRealmBuildTimeConfig;
-import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.elytron.security.jdbc.JdbcSecurityRealmRuntimeConfig;
 
 class ElytronSecurityJdbcProcessor {
 
@@ -28,38 +28,43 @@ class ElytronSecurityJdbcProcessor {
         return new FeatureBuildItem(Feature.SECURITY_JDBC);
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsJdbcSecurityEnabled.class)
     void addPasswordProviderToNativeImage(BuildProducer<NativeImageSecurityProviderBuildItem> additionalProviders) {
         additionalProviders.produce(new NativeImageSecurityProviderBuildItem(PASSWORD_PROVIDER));
     }
 
     /**
-     * Check to see if a JdbcRealmConfig was specified and enabled and create a
-     * {@linkplain org.wildfly.security.auth.realm.JdbcSecurityRealmBuildTimeConfig}
-     * runtime value to process the user/roles properties files. This also registers the names of the user/roles properties
-     * files to include the build artifact.
+     * Register a {@linkplain org.wildfly.security.auth.realm.jdbc.JdbcSecurityRealm} service built from the configured
+     * principal queries.
      */
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void configureJdbcRealmAuthConfig(JdbcRecorder recorder,
-            JdbcSecurityRealmBuildTimeConfig jdbcSecurityRealmBuildTimeConfig,
-            BuildProducer<SecurityRealmBuildItem> securityRealm,
-            BeanContainerBuildItem beanContainerBuildItem, //we need this to make sure ArC is initialized
-            List<JdbcDataSourceBuildItem> dataSourcesConfigured) {
-        if (!jdbcSecurityRealmBuildTimeConfig.enabled()) {
-            return;
-        }
-
-        RuntimeValue<SecurityRealm> realm = recorder.createRealm();
-        securityRealm.produce(new SecurityRealmBuildItem(realm, jdbcSecurityRealmBuildTimeConfig.realmName(), null));
+    @BuildStep(onlyIf = IsJdbcSecurityEnabled.class)
+    void configureJdbcRealmAuthConfig(ServiceRegistrar serviceRegistrar,
+            JdbcSecurityRealmBuildTimeConfig jdbcSecurityRealmBuildTimeConfig) {
+        serviceRegistrar.forService(SecurityRealm.class, jdbcSecurityRealmBuildTimeConfig.realmName())
+                .atPhase(Phase.DATA)
+                .after(BeanContainer.class)
+                .afterBuildItem(JdbcDataSourceBuildItem.class)
+                .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class) // ATM relevant Agroal beans are synthetic
+                .require(JdbcSecurityRealmRuntimeConfig.class)
+                .onStart((ctx, runtimeConfig) -> JdbcRecorder.createRealm(runtimeConfig));
     }
 
-    @BuildStep
-    ElytronPasswordMarkerBuildItem marker(JdbcSecurityRealmBuildTimeConfig jdbcSecurityRealmBuildTimeConfig) {
-        if (!jdbcSecurityRealmBuildTimeConfig.enabled()) {
-            return null;
-        }
+    @BuildStep(onlyIf = IsJdbcSecurityEnabled.class)
+    ElytronPasswordMarkerBuildItem marker() {
         return new ElytronPasswordMarkerBuildItem();
     }
 
+    static final class IsJdbcSecurityEnabled implements BooleanSupplier {
+
+        private final boolean enabled;
+
+        IsJdbcSecurityEnabled(JdbcSecurityRealmBuildTimeConfig config) {
+            this.enabled = config.enabled();
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return enabled;
+        }
+    }
 }

@@ -107,7 +107,9 @@ public class WebXmlParsingBuildStep {
             //of the spec. I am not sure how important this is, and it is very complex and does not 100% map to the quarkus
             //deployment model. If there is demand for it, we can look at adding it later
 
-            WebCommonMetaDataMerger.augment(result, webFragment, null, false);
+            // resolveConflicts must be true: with false, the merger dereferences the (null) original web.xml metadata
+            // on conflicting context-params, error pages and mime mappings, resulting in an NPE
+            WebCommonMetaDataMerger.augment(result, webFragment, null, true);
         }
 
         return new WebMetadataBuildItem(result);

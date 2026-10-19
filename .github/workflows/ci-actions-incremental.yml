@@ -1599,7 +1599,7 @@ jobs:
         if: startsWith(matrix.os-name, 'windows')
       - name: Setup GraalVM
         id: setup-graalvm
-        uses: graalvm/setup-graalvm@0426e2e191540e8514dff98dc52a5f5146a2a276 # v1.6.6
+        uses: graalvm/setup-graalvm@27b360dbb857524eaf0b4c4cef364d38e5b4f173 # v1.6.7
         if: startsWith(matrix.os-name, 'windows')
         with:
           version: 'mandrel-latest'
@@ -1904,7 +1904,7 @@ jobs:
         run: tar -xzf m2-content.tgz -C ~
       - name: Setup GraalVM
         id: setup-graalvm
-        uses: graalvm/setup-graalvm@0426e2e191540e8514dff98dc52a5f5146a2a276 # v1.6.6
+        uses: graalvm/setup-graalvm@27b360dbb857524eaf0b4c4cef364d38e5b4f173 # v1.6.7
         with:
           version: 'mandrel-latest'
           java-version: '25'

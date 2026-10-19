@@ -1,7 +1,9 @@
 package io.quarkus.opentelemetry.deployment.instrumentation;
 
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
+import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
+import static io.opentelemetry.semconv.CodeAttributes.CODE_FUNCTION_NAME;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
@@ -36,6 +38,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.instrumentation.annotations.SpanAttribute;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.opentelemetry.deployment.common.SemconvResolver;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporterProvider;
@@ -165,6 +170,31 @@ public class RestClientOpenTelemetryTest {
         assertEquals(client.getTraceId(), server.getTraceId());
     }
 
+    @Test
+    void withSpanOnRestClientMethod() {
+        Response response = client.helloWithSpan("1");
+        assertEquals(HTTP_OK, response.getStatus());
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(3);
+
+        // this module uses the classic RESTEasy client, which has no generated CDI wrapper: the interceptor sees the
+        // interface method itself and must report it as-is. Spans of the Quarkus REST client wrapper are checked in
+        // integration-tests/opentelemetry
+        SpanData withSpan = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
+        assertEquals("HelloClient.helloWithSpan", withSpan.getName());
+        assertEquals(HelloClient.class.getName() + ".helloWithSpan", withSpan.getAttributes().get(CODE_FUNCTION_NAME));
+        assertEquals("1", withSpan.getAttributes().get(AttributeKey.stringKey("query")));
+
+        SpanData client = getSpanByKindAndParentId(spans, CLIENT, withSpan.getSpanId());
+        assertEquals("GET /hello", client.getName());
+        assertSemanticAttribute(client, (long) HTTP_OK, HTTP_RESPONSE_STATUS_CODE);
+        assertSemanticAttribute(client, uri.toString() + "hello?query=1", URL_FULL);
+
+        SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
+        assertEquals("GET /hello", server.getName());
+        assertEquals(withSpan.getTraceId(), client.getTraceId());
+        assertEquals(withSpan.getTraceId(), server.getTraceId());
+    }
+
     @Path("/hello")
     public static class HelloResource {
         @GET
@@ -191,5 +221,9 @@ public class RestClientOpenTelemetryTest {
         @GET
         @Path("/{path}")
         Response path(@PathParam("path") String path);
+
+        @GET
+        @WithSpan
+        Response helloWithSpan(@SpanAttribute("query") @QueryParam("query") String query);
     }
 }

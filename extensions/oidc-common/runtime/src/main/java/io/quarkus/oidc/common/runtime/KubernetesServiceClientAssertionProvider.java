@@ -14,22 +14,21 @@ import io.vertx.core.json.JsonObject;
 
 final class KubernetesServiceClientAssertionProvider implements ClientAssertionProvider, Closeable {
 
-    private record ClientAssertion(String bearerToken, long expiresAt, long timerId) {
+    record ClientAssertion(String bearerToken, long expiresAtMillis, long timerId) {
         private boolean isInvalid() {
-            final long nowSecs = System.currentTimeMillis() / 1000;
-            return nowSecs > expiresAt;
+            return System.currentTimeMillis() > expiresAtMillis;
         }
     }
 
     private static final Logger LOG = Logger.getLogger(KubernetesServiceClientAssertionProvider.class);
     private final Vertx vertx;
     private final Path bearerTokenPath;
-    private volatile ClientAssertion clientAssertion;
+    volatile ClientAssertion clientAssertion;
 
     KubernetesServiceClientAssertionProvider(Vertx vertx, Path bearerTokenPath) {
         this.vertx = vertx;
         this.bearerTokenPath = bearerTokenPath;
-        this.clientAssertion = loadFromFileSystem();
+        this.clientAssertion = loadInitialClientAssertion();
     }
 
     @Override
@@ -50,26 +49,35 @@ final class KubernetesServiceClientAssertionProvider implements ClientAssertionP
     private synchronized ClientAssertion loadClientAssertion() {
         if (isInvalid(clientAssertion)) {
             cancelRefresh();
-            clientAssertion = loadFromFileSystem();
+            var newClientAssertion = loadFromFileSystem();
+            rememberClientAssertion(newClientAssertion);
+            return newClientAssertion;
         }
         return clientAssertion;
     }
 
-    private long scheduleRefresh(long expiresAt) {
+    private long scheduleRefresh(long expiresInMillis) {
         // in K8 and OCP, tokens are proactively rotated at 80 % of their TTL
-        long delay = (long) (expiresAt * 0.85);
-        return vertx.setTimer(delay, new Handler<Long>() {
-            @Override
-            public void handle(Long ignored) {
-                KubernetesServiceClientAssertionProvider.this.clientAssertion = loadFromFileSystem();
-            }
-        });
+        long delay = (long) (expiresInMillis * 0.85);
+        if (delay > 0) {
+            return vertx.setTimer(delay, new Handler<Long>() {
+                @Override
+                public void handle(Long ignored) {
+                    rememberClientAssertion(loadFromFileSystem());
+                }
+            });
+        }
+        return -1;
     }
 
     private void cancelRefresh() {
         if (clientAssertion != null) {
-            vertx.cancelTimer(clientAssertion.timerId);
+            cancelTimer(clientAssertion.timerId);
         }
+    }
+
+    private void cancelTimer(long timerId) {
+        vertx.cancelTimer(timerId);
     }
 
     private ClientAssertion loadFromFileSystem() {
@@ -81,9 +89,14 @@ final class KubernetesServiceClientAssertionProvider implements ClientAssertionP
                             bearerTokenPath));
                     return null;
                 }
-                Long expiresAt = getExpiresAtFromExpClaim(bearerToken);
-                if (expiresAt != null) {
-                    return new ClientAssertion(bearerToken, expiresAt, scheduleRefresh(expiresAt));
+                Long expiresAtMillis = getExpiresAtFromExpClaim(bearerToken);
+                if (expiresAtMillis != null) {
+                    long expiresInMillis = expiresAtMillis - System.currentTimeMillis();
+                    if (expiresInMillis > 0) {
+                        return new ClientAssertion(bearerToken, expiresAtMillis, scheduleRefresh(expiresInMillis));
+                    } else {
+                        LOG.error("Bearer token loaded from filesystem has already expired");
+                    }
                 } else {
                     LOG.error("Bearer token or its expiry claim is invalid");
                 }
@@ -102,14 +115,39 @@ final class KubernetesServiceClientAssertionProvider implements ClientAssertionP
 
     private static Long getExpiresAtFromExpClaim(String bearerToken) {
         JsonObject claims = OidcCommonUtils.decodeJwtContent(bearerToken);
-        if (claims == null || !claims.containsKey(Claims.exp.name())) {
-            return null;
+        if (claims != null) {
+            try {
+                Long expAtSeconds = claims.getLong(Claims.exp.name());
+                if (expAtSeconds != null) {
+                    return expAtSeconds * 1000L;
+                }
+            } catch (IllegalArgumentException ex) {
+                LOG.debug("Bearer token expiry claim can not be converted to Long");
+            }
         }
-        try {
-            return claims.getLong(Claims.exp.name());
-        } catch (IllegalArgumentException ex) {
-            LOG.debug("Bearer token expiry claim can not be converted to Long");
-            return null;
+        return null;
+    }
+
+    private synchronized void rememberClientAssertion(ClientAssertion newClientAssertion) {
+        if (shouldReuseClientAssertion(newClientAssertion)) {
+            var oldClientAssertion = this.clientAssertion;
+            if (oldClientAssertion == null) {
+                this.clientAssertion = newClientAssertion;
+            } else if (newClientAssertion.expiresAtMillis >= oldClientAssertion.expiresAtMillis) {
+                cancelTimer(oldClientAssertion.timerId);
+                this.clientAssertion = newClientAssertion;
+            } else {
+                cancelTimer(newClientAssertion.timerId);
+            }
         }
+    }
+
+    private static boolean shouldReuseClientAssertion(ClientAssertion clientAssertion) {
+        return clientAssertion != null && clientAssertion.timerId >= 0;
+    }
+
+    private ClientAssertion loadInitialClientAssertion() {
+        var newClientAssertion = loadFromFileSystem();
+        return shouldReuseClientAssertion(newClientAssertion) ? newClientAssertion : null;
     }
 }

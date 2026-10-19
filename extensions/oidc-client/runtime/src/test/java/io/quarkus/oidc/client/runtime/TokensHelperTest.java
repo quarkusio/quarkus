@@ -502,8 +502,34 @@ class TokensHelperTest {
     }
 
     @Test
-    void testTokenCacheMaxSizeMustBePositive() {
-        assertThatThrownBy(() -> new TokensHelper(0)).isInstanceOf(IllegalArgumentException.class);
+    void testTokenCacheMaxSizeMustNotBeNegative() {
+        assertThatThrownBy(() -> new TokensHelper(-1)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void testTokensWithParametersAreNotCachedWhenCacheIsDisabled() {
+        helper = new TokensHelper(0);
+        assertIssuedFor(getTokens(SCOPE_A), SCOPE_A);
+        assertIssuedFor(getTokens(SCOPE_A), SCOPE_A);
+        assertThat(client.requests()).hasSize(2);
+        assertThat(client.requests()).allMatch(InMemoryOidcTestClient.Call::isGrant);
+    }
+
+    @Test
+    void testTokensWithoutParametersAreCachedWhenCacheIsDisabled() {
+        helper = new TokensHelper(0);
+        Tokens first = getTokens(NO_PARAMS);
+        Tokens second = getTokens(NO_PARAMS);
+        assertThat(second.getAccessToken()).isEqualTo(first.getAccessToken());
+        assertThat(client.requests()).hasSize(1);
+    }
+
+    @Test
+    void testInitTokensWithParametersDoesNotPrePopulateCacheWhenCacheIsDisabled() {
+        helper = new TokensHelper(0);
+        helper.initTokens(client, SCOPE_A);
+        assertIssuedFor(getTokens(SCOPE_A), SCOPE_A);
+        assertThat(client.requests()).hasSize(2);
     }
 
     @Test

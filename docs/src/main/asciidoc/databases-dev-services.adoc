@@ -222,12 +222,11 @@ consistent:
 
 [NOTE]
 ====
-Container sharing through `shared`/`service-name` is only used in dev mode, and only applies across
-applications. It is not meant to let two datasources of the *same* application share a container; use
-separate `db-name`/`username`/`password` on the same Dev Services container, or point both datasources at the
-same externally-configured database, if you need that instead.
-====
+Container sharing through `shared`/`service-name` is meant to be used across separate applications.
+It is handled only at the Dev Service layer; upper layers, e.g. connection pools, dev UI, etc., are not aware they are relying on the same database.
 
+This means in particular that sharing the Dev Services between two datasources of the *same application* may lead to unwanted behavior, such as the database schema being initialized twice, or transactions involving both datasources requiring XA, and more.
+====
 == Mapping volumes into Dev Services for Database
 
 Mapping volumes from the Docker host's filesystem to the containers is handy to provide files like scripts or configuration, but also to preserve database data and reuse it after an application restart.

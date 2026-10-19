@@ -97,6 +97,13 @@ abstract class AbstractSpiffeClientTest {
     }
 
     @Test
+    void getWorkloadJsonWebTokenIssuerParsed() {
+        WorkloadJsonWebToken svid = fetchSvid(RESOURCE_SERVER_AUD);
+
+        assertThat(svid.issuer()).isEqualTo(TEST_TRUST_DOMAIN);
+    }
+
+    @Test
     void getWorkloadJsonWebTokenPermissionDenied() {
         setServerMode(ServerMode.PERMISSION_DENIED);
         assertThatThrownBy(() -> fetchSvid(RESOURCE_SERVER_AUD))
@@ -135,6 +142,7 @@ abstract class AbstractSpiffeClientTest {
 
         String[] parts = svid.token().split("\\.");
         JsonObject payload = new JsonObject(new String(Base64.getUrlDecoder().decode(parts[1])));
+        assertThat(payload.getString("iss")).isEqualTo(svid.issuer());
         assertThat(payload.getString("sub")).isEqualTo(svid.subject());
         assertThat(payload.getString("aud")).isEqualTo(RESOURCE_SERVER_AUD);
         assertThat(payload.getLong("exp")).isEqualTo(svid.expiry().getEpochSecond());

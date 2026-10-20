@@ -11,6 +11,7 @@ import io.quarkus.core.Phase;
 import io.quarkus.core.deployment.service.impl.Dependency;
 import io.quarkus.core.deployment.service.impl.ServiceMetadataBuildItem;
 import io.quarkus.core.deployment.service.impl.StaticServiceMetadataBuildItem;
+import io.quarkus.value.registry.ValueRegistry;
 
 /**
  * Tests for {@link ServiceDependencyValidator}.
@@ -330,5 +331,32 @@ class ServiceDependencyValidatorTest {
                         "StepB#b", Phase.INFRASTRUCTURE))))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Phase ordering violation");
+    }
+
+    @Test
+    void runtimeServiceMayRequireValueRegistry() {
+        ServiceDependencyValidator.validate(List.of(), List.of(
+                rt(String.class, List.of(),
+                        List.of(new Dependency(ValueRegistry.class, List.of(), Dependency.FL_INJECTED)),
+                        "StepA#a")));
+    }
+
+    @Test
+    void staticInitServiceRequiringValueRegistryDetected() {
+        assertThatThrownBy(() -> ServiceDependencyValidator.validate(
+                List.of(new StaticServiceMetadataBuildItem(String.class, List.of(),
+                        List.of(new Dependency(ValueRegistry.class, List.of(), Dependency.FL_INJECTED)),
+                        "StaticA#a")),
+                List.of()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("only available to runtime-init services");
+    }
+
+    @Test
+    void registeringValueRegistryDetected() {
+        assertThatThrownBy(() -> ServiceDependencyValidator.validate(List.of(), List.of(
+                rt(ValueRegistry.class, List.of(), List.of(), "StepA#a"))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("provided by the application and cannot be registered");
     }
 }

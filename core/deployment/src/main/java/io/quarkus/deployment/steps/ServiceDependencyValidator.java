@@ -28,6 +28,8 @@ import io.quarkus.core.service.impl.ServiceNode;
  * <li>The runtime graph is validated with static-init outputs as pre-existing providers,
  * allowing runtime services to transparently depend on static-init outputs.</li>
  * <li>Cross-phase duplicate detection rejects any service key registered in both phases.</li>
+ * <li>Values provided by the application, such as the {@code ValueRegistry}, are available to runtime services
+ * only and cannot be registered as services.</li>
  * </ol>
  * Within each phase, the following checks are performed:
  * <ul>
@@ -140,14 +142,40 @@ public final class ServiceDependencyValidator {
         // phase 1: validate static-init graph independently
         Set<String> staticProviderKeys = validateGraph(staticMeta, Set.of(), "static-init", errors);
 
-        // phase 2: validate runtime graph with static-init outputs as pre-existing providers
-        Set<String> runtimeProviderKeys = validateGraph(runtimeMeta, staticProviderKeys, "runtime", errors);
+        // phase 2: validate runtime graph with static-init outputs and application-provided values
+        // as pre-existing providers
+        Set<String> runtimePreExisting = new HashSet<>(staticProviderKeys);
+        runtimePreExisting.addAll(ServiceGraphBuilder.RUNTIME_PROVIDED_SERVICE_KEYS);
+        Set<String> runtimeProviderKeys = validateGraph(runtimeMeta, runtimePreExisting, "runtime", errors);
 
         // phase 3: cross-phase duplicate detection
         for (String key : runtimeProviderKeys) {
             if (staticProviderKeys.contains(key)) {
                 errors.add("Cross-phase duplicate: service '" + ServiceNode.displayKey(key)
                         + "' is registered in both the static-init and runtime phases");
+            }
+        }
+
+        // phase 4: application-provided values are neither registered nor available at static-init
+        for (String key : ServiceGraphBuilder.RUNTIME_PROVIDED_SERVICE_KEYS) {
+            for (ServiceMetadata item : staticMeta) {
+                if (item.serviceKey().equals(key)) {
+                    errors.add("Service '" + ServiceNode.displayKey(key) + "' (build step '" + item.buildStepName()
+                            + "') is provided by the application and cannot be registered");
+                }
+                for (Dependency dep : item.dependencies()) {
+                    if (!dep.configDirect() && dep.key().equals(key)) {
+                        errors.add("Static-init service '" + ServiceNode.displayKey(item.serviceKey())
+                                + "' (build step '" + item.buildStepName() + "') depends on '" + dep.displayKey()
+                                + "', which is only available to runtime-init services");
+                    }
+                }
+            }
+            for (ServiceMetadata item : runtimeMeta) {
+                if (item.serviceKey().equals(key)) {
+                    errors.add("Service '" + ServiceNode.displayKey(key) + "' (build step '" + item.buildStepName()
+                            + "') is provided by the application and cannot be registered");
+                }
             }
         }
 

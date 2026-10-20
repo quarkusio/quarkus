@@ -806,6 +806,31 @@ public class ExtensionsResource {
 ----
 <1> the client will use the registered HTTP Client options over the HTTP Client options provided via CDI if any.
 
+[[request-options]]
+== Options for a Single Request
+
+When configuring a REST Client with the Quarkus configuration options, the settings apply to all requests made by the client. In cases where some requests need to use different settings, `org.jboss.resteasy.reactive.client.api.ClientRequestOptions` can be used as method parameter.
+
+[source,java]
+----
+@Path("/reports")
+@RegisterRestClient(configKey = "reports-api")
+public interface ReportsService {
+
+    @GET
+    @Path("/{id}")
+    Report get(@PathParam("id") long id, ClientRequestOptions options); <1>
+}
+----
+<1> The parameter is not sent with the request. Passing `null` keeps the client configuration.
+
+[source,java]
+----
+Report report = reportsService.get(id, ClientRequestOptions.builder()
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build());
+----
+
 [[redirection]]
 == Redirection
 

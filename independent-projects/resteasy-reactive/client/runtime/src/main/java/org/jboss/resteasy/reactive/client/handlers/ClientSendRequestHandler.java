@@ -31,6 +31,7 @@ import jakarta.ws.rs.ext.WriterInterceptor;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.AsyncResultUni;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
+import org.jboss.resteasy.reactive.client.api.ClientRequestOptions;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
@@ -562,6 +563,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         HttpClient httpClient = state.getHttpClient();
         URI uri = state.getUri();
         Object readTimeout = state.getConfiguration().getProperty(QuarkusRestClientProperties.READ_TIMEOUT);
+        Object clientRequestOptions = state.getClientFilterProperties().get(QuarkusRestClientProperties.REQUEST_OPTIONS);
         Uni<RequestOptions> requestOptions;
         state.setMultipartResponsesData(multipartResponseDataMap);
         if (uri.getScheme() == null) { // invalid URI
@@ -606,6 +608,9 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     if (readTimeout instanceof Long) {
                         r.setTimeout((Long) readTimeout);
                     }
+                    if (clientRequestOptions instanceof ClientRequestOptions cro) {
+                        applyClientRequestOptions(r, cro);
+                    }
                 })
                 .onItem().transformToUni(new Function<RequestOptions, Uni<? extends HttpClientRequest>>() {
                     @Override
@@ -613,6 +618,19 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         return AsyncResultUni.toUni(handler -> httpClient.request(options).onComplete(handler));
                     }
                 });
+    }
+
+    // the options set for a single request override the configuration of the client
+    private static void applyClientRequestOptions(RequestOptions requestOptions, ClientRequestOptions clientRequestOptions) {
+        if (clientRequestOptions.getConnectTimeout() != null) {
+            requestOptions.setConnectTimeout(clientRequestOptions.getConnectTimeout());
+        }
+        if (clientRequestOptions.getReadTimeout() != null) {
+            requestOptions.setTimeout(clientRequestOptions.getReadTimeout());
+        }
+        if (clientRequestOptions.getFollowRedirects() != null) {
+            requestOptions.setFollowRedirects(clientRequestOptions.getFollowRedirects());
+        }
     }
 
     private boolean shouldMeasureTime(RestClientRequestContext state) {

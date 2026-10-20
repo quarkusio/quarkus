@@ -1,8 +1,6 @@
 package io.quarkus.cache.redis.deployment;
 
 import static io.quarkus.cache.redis.runtime.RedisCacheBuildRecorder.REDIS_CACHE_TYPE;
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.util.Collections;
@@ -24,17 +22,19 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.cache.CacheManagerInfo;
 import io.quarkus.cache.CompositeCacheKey;
 import io.quarkus.cache.deployment.CacheDeploymentConstants;
-import io.quarkus.cache.deployment.CacheManagerInfoBuildItem;
 import io.quarkus.cache.deployment.CacheNamesBuildItem;
 import io.quarkus.cache.redis.runtime.RedisCacheBuildRecorder;
 import io.quarkus.cache.redis.runtime.RedisCacheBuildTimeConfig;
 import io.quarkus.cache.redis.runtime.RedisCachesBuildTimeConfig;
+import io.quarkus.cache.redis.runtime.RedisCachesRuntimeConfig;
+import io.quarkus.cache.redis.runtime.TypeRef;
 import io.quarkus.cache.runtime.CacheBuildConfig;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.types.TypeParser;
@@ -47,12 +47,6 @@ public class RedisCacheProcessor {
     private static final Logger LOGGER = Logger.getLogger(RedisCacheProcessor.class);
 
     public static final DotName UNI = DotName.createSimple(Uni.class.getName());
-
-    @BuildStep
-    @Record(RUNTIME_INIT)
-    CacheManagerInfoBuildItem cacheManagerInfo(RedisCacheBuildRecorder recorder) {
-        return new CacheManagerInfoBuildItem(recorder.getCacheManagerSupplier());
-    }
 
     @BuildStep
     UnremovableBeanBuildItem redisClientUnremoveable() {
@@ -72,8 +66,7 @@ public class RedisCacheProcessor {
     }
 
     @BuildStep
-    @Record(STATIC_INIT)
-    void determineKeyValueTypes(RedisCacheBuildRecorder recorder, CombinedIndexBuildItem combinedIndex,
+    void cacheManagerInfo(ServiceRegistrar serviceRegistrar, CombinedIndexBuildItem combinedIndex,
             CacheNamesBuildItem cacheNamesBuildItem, CacheBuildConfig cacheBuildConfig,
             RedisCachesBuildTimeConfig buildConfig) {
 
@@ -91,7 +84,6 @@ public class RedisCacheProcessor {
                 keyTypes.put(cacheName, TypeParser.parse(defaultBuildTimeConfig.keyType().get()));
             }
         }
-        recorder.setCacheKeyTypes(keyTypes);
 
         Map<String, Type> resolvedValuesTypesFromAnnotations = valueTypesFromCacheResultAnnotation(combinedIndex);
 
@@ -127,7 +119,21 @@ public class RedisCacheProcessor {
                         + ".value-type' needs to be set");
             }
         }
-        recorder.setCacheValueTypes(valueTypes);
+        Map<String, TypeRef> keyTypeRefs = toTypeRefs(keyTypes);
+        Map<String, TypeRef> valueTypeRefs = toTypeRefs(valueTypes);
+
+        serviceRegistrar.forService(CacheManagerInfo.class, REDIS_CACHE_TYPE)
+                .require(RedisCachesRuntimeConfig.class)
+                .onStart((ctx, runtimeConfig) -> RedisCacheBuildRecorder.getCacheManagerSupplier(buildConfig, runtimeConfig,
+                        keyTypeRefs, valueTypeRefs));
+    }
+
+    private static Map<String, TypeRef> toTypeRefs(Map<String, java.lang.reflect.Type> types) {
+        Map<String, TypeRef> typeRefs = new HashMap<>(types.size());
+        for (Map.Entry<String, java.lang.reflect.Type> entry : types.entrySet()) {
+            typeRefs.put(entry.getKey(), TypeRef.of(entry.getValue()));
+        }
+        return Map.copyOf(typeRefs);
     }
 
     private static boolean isRedisCache(String cacheName, CacheBuildConfig cacheBuildConfig) {

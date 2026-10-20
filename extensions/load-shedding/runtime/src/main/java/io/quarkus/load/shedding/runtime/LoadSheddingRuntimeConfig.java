@@ -1,5 +1,7 @@
 package io.quarkus.load.shedding.runtime;
 
+import java.time.Duration;
+
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -62,6 +64,17 @@ public interface LoadSheddingRuntimeConfig {
      */
     @WithDefault("100")
     int initialLimit();
+
+    /**
+     * The upper bound on the {@code Retry-After} response header sent with a rejected
+     * request.
+     * <p>
+     * The value actually sent is derived from how long the overload has already lasted,
+     * so no lower bound is configurable. This is only a safety measure against telling clients
+     * to stay away hours, if the overload has been going on for long.
+     */
+    @WithDefault("120s")
+    Duration maxRetryAfter();
 
     /**
      * Configuration of priority load shedding.

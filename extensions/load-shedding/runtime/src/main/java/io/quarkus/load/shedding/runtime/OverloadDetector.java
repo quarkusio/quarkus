@@ -44,7 +44,8 @@ public class OverloadDetector {
     private final AtomicLong lowestRequestTime = new AtomicLong(Long.MAX_VALUE);
     private final AtomicLong requestsSinceLastProbe = new AtomicLong();
     private volatile long currentLimit;
-    private volatile boolean overloaded;
+    // when the current overloaded state was entered, or 0 if the application is not overloaded
+    private final AtomicLong overloadedSince = new AtomicLong();
 
     private final ReentrantLock lock = new ReentrantLock();
     // this field is guarded by `lock`
@@ -100,7 +101,7 @@ public class OverloadDetector {
     }
 
     public boolean isOverloaded() {
-        return overloaded;
+        return overloadedSince.get() != 0L;
     }
 
     /**
@@ -234,17 +235,34 @@ public class OverloadDetector {
     }
 
     // the overloaded state is hysteretic: it is entered when the number of concurrent
-    // requests reaches the limit and it is only left when it drops well below it
+    // requests reaches the limit and only left when it drops well below it
     private void updateOverloaded(int currentRequests) {
         long limit = currentLimit;
-        if (overloaded) {
+        long since = overloadedSince.get();
+        if (since != 0L) {
             if (currentRequests < limit * HYSTERESIS_FACTOR) {
-                overloaded = false;
+                overloadedSince.compareAndSet(since, 0L);
             }
         } else {
             if (currentRequests >= limit) {
-                overloaded = true;
+                overloadedSince.compareAndSet(0L, startTimestamp());
             }
         }
+    }
+
+    // 0 means "not overloaded", so we have to guard against `System.nanoTime()`
+    // returning exactly that; a nanosecond skew is not observable
+    private static long startTimestamp() {
+        long now = System.nanoTime();
+        return now == 0L ? 1L : now;
+    }
+
+    /**
+     * Returns how long the current overloaded state has lasted in nanoseconds,
+     * or 0 if the application is not overloaded.
+     */
+    public long overloadDurationNanos() {
+        long since = overloadedSince.get();
+        return since == 0L ? 0L : Math.max(0L, System.nanoTime() - since);
     }
 }

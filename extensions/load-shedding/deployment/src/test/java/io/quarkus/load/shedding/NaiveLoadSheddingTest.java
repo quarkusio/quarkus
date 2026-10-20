@@ -20,8 +20,11 @@ import io.quarkus.load.shedding.runtime.HttpLoadShedding;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.PoolOptions;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 
@@ -29,11 +32,15 @@ public class NaiveLoadSheddingTest {
     private static final int NUM_REQUESTS = 50;
     private static final int INITIAL_LIMIT = 5;
 
+    // way less than the default, so that the test can also verify the configuration
+    private static final int MAX_RETRY_AFTER_SECONDS = 7;
+
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(MyResource.class, RequestCounter.class))
             .overrideConfigKey("quarkus.load-shedding.initial-limit", "" + INITIAL_LIMIT)
             .overrideConfigKey("quarkus.load-shedding.priority.enabled", "false")
+            .overrideConfigKey("quarkus.load-shedding.max-retry-after", MAX_RETRY_AFTER_SECONDS + "s")
             // a single event loop handles all incoming requests one after another, so that
             // the overload check and the following increment of the request counter cannot
             // interleave and permit more requests than the limit allows
@@ -54,6 +61,7 @@ public class NaiveLoadSheddingTest {
     @Test
     public void test() throws InterruptedException {
         AtomicInteger successes = new AtomicInteger();
+        AtomicInteger rejections = new AtomicInteger();
         AtomicInteger errors = new AtomicInteger();
         CountDownLatch done = new CountDownLatch(NUM_REQUESTS);
 
@@ -67,9 +75,10 @@ public class NaiveLoadSheddingTest {
                     client.get(url.getPort(), url.getHost(), "/")
                             .send()
                             .onSuccess(response -> {
-                                int status = response.statusCode();
-                                if (status == 200) {
+                                if (response.statusCode() == 200) {
                                     successes.incrementAndGet();
+                                } else if (isRejectedCorrectly(response)) {
+                                    rejections.incrementAndGet();
                                 } else {
                                     errors.incrementAndGet();
                                 }
@@ -96,7 +105,29 @@ public class NaiveLoadSheddingTest {
         }
 
         assertThat(successes).hasValue(INITIAL_LIMIT);
-        assertThat(errors).hasValue(NUM_REQUESTS - INITIAL_LIMIT);
+        assertThat(rejections).hasValue(NUM_REQUESTS - INITIAL_LIMIT);
+        assertThat(errors).hasValue(0);
+    }
+
+    // A rejected request must not only fail, it must tell the client when to come back.
+    // The overload here lasts well under a second, so the value is at the lower end of the
+    // range. All we can verify is that it is a usable number within the configured bound.
+    private static boolean isRejectedCorrectly(HttpResponse<Buffer> response) {
+        if (response.statusCode() != 503) {
+            return false;
+        }
+
+        String retryAfter = response.getHeader(HttpHeaders.RETRY_AFTER);
+        if (retryAfter == null) {
+            return false;
+        }
+
+        try {
+            long seconds = Long.parseLong(retryAfter);
+            return seconds >= 1 && seconds <= MAX_RETRY_AFTER_SECONDS;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     @Path("/")

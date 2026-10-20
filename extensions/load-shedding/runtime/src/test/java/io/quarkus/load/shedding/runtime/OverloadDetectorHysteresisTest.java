@@ -87,6 +87,46 @@ public class OverloadDetectorHysteresisTest {
         }
     }
 
+    @Test
+    public void overloadDurationIsZeroWhenNotOverloaded() {
+        assertThat(detector.overloadDurationNanos()).isZero();
+
+        begin(LIMIT - 1);
+        assertThat(detector.overloadDurationNanos()).isZero();
+    }
+
+    @Test
+    public void overloadDurationGrowsWhileOverloaded() throws InterruptedException {
+        begin(LIMIT);
+
+        Thread.sleep(10);
+        long first = detector.overloadDurationNanos();
+        assertThat(first).isPositive();
+
+        Thread.sleep(10);
+        long second = detector.overloadDurationNanos();
+        assertThat(second).isGreaterThan(first);
+    }
+
+    @Test
+    public void overloadDurationIsResetWhenOverloadEnds() throws InterruptedException {
+        begin(LIMIT);
+        Thread.sleep(100);
+        long duration = detector.overloadDurationNanos();
+        assertThat(duration).isPositive();
+
+        // down to below 0.8 * limit, so the overloaded state is left
+        end(LIMIT - CLEAR_AT + 1);
+        assertThat(detector.isOverloaded()).isFalse();
+        assertThat(detector.overloadDurationNanos()).isZero();
+
+        // a new overload episode is timed from its own start, not from the previous one,
+        // so its duration must be well below the 100 ms that the first episode lasted
+        begin(LIMIT - CLEAR_AT + 1);
+        assertThat(detector.isOverloaded()).isTrue();
+        assertThat(detector.overloadDurationNanos()).isLessThan(duration);
+    }
+
     private void begin(int count) {
         for (int i = 0; i < count; i++) {
             detector.requestBegin();

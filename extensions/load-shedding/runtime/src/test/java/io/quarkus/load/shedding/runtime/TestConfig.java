@@ -1,5 +1,7 @@
 package io.quarkus.load.shedding.runtime;
 
+import java.time.Duration;
+
 public final class TestConfig implements LoadSheddingRuntimeConfig {
     private final boolean enabled;
     private final int maxLimit;
@@ -7,6 +9,7 @@ public final class TestConfig implements LoadSheddingRuntimeConfig {
     private final int betaFactor;
     private final double probeFactor;
     private final int initialLimit;
+    private final Duration maxRetryAfter;
     private final boolean priorityEnabled;
 
     public TestConfig(Builder builder) {
@@ -16,6 +19,7 @@ public final class TestConfig implements LoadSheddingRuntimeConfig {
         this.betaFactor = builder.betaFactor;
         this.probeFactor = builder.probeFactor;
         this.initialLimit = builder.initialLimit;
+        this.maxRetryAfter = builder.maxRetryAfter;
         this.priorityEnabled = builder.priorityEnabled;
     }
 
@@ -50,6 +54,11 @@ public final class TestConfig implements LoadSheddingRuntimeConfig {
     }
 
     @Override
+    public Duration maxRetryAfter() {
+        return maxRetryAfter;
+    }
+
+    @Override
     public PriorityLoadShedding priority() {
         return new PriorityLoadShedding() {
             @Override
@@ -67,6 +76,7 @@ public final class TestConfig implements LoadSheddingRuntimeConfig {
         private int betaFactor = 6;
         private double probeFactor = 30.0;
         private int initialLimit = 100;
+        private Duration maxRetryAfter = Duration.ofSeconds(120);
         private boolean priorityEnabled = true;
 
         public Builder withEnabled(boolean enabled) {
@@ -101,6 +111,11 @@ public final class TestConfig implements LoadSheddingRuntimeConfig {
 
         public Builder withPriorityEnabled(boolean priorityEnabled) {
             this.priorityEnabled = priorityEnabled;
+            return this;
+        }
+
+        public Builder withMaxRetryAfter(Duration maxRetryAfter) {
+            this.maxRetryAfter = maxRetryAfter;
             return this;
         }
 

@@ -156,6 +156,21 @@ Other "entrypoints" to Quarkus applications, such as messaging, are not supporte
 Further, the load shedding implementation is currently rather basic and not heavily tested in production.
 Improvements may be necessary.
 
+== How rejected requests look
+
+An HTTP request is rejected with the `503 Service Unavailable` status code and a `Retry-After` header.
+
+The connection is deliberately left open.
+Closing it would force the client through a new TCP and TLS handshake, which is expensive and invisible to this load shedding mechanism.
+
+The `Retry-After` value is derived from how long the overload has already lasted.
+The application cannot know when an overload will end, but it does know how long the overload has lasted.
+This is used as a proxy: a brief spike is likely over shortly, while an overload that has been going on for minutes is likely to keep going for a while.
+A client rejected 2 seconds into an overload is therefore told to come back in a few seconds, while a client rejected 5 minutes in is told to stay away for longer.
+
+The value is capped by `quarkus.load-shedding.max-retry-after` (120 seconds by default) and is never shorter than 1 second, which is the granularity of the header.
+It is also jittered, so that clients rejected in the same instant are not advised to come back in the same instant.
+
 == Configuration reference
 
 include::{generated-dir}/config/quarkus-load-shedding.adoc[opts=optional, leveloffset=+1]

@@ -106,4 +106,11 @@ These are documented separately but are noted here for completeness.
 
 `ModuleOpenBuildItem` declares that one module should open specified packages to another module (equivalent to the `--add-opens` JVM flag).
 `ModuleExportBuildItem` declares that one module should export specified packages to another module (equivalent to the `--add-exports` JVM flag).
+During dynamic module reconfiguration in dev and test modes, packages absent from the source module are ignored without warnings.
+It also supplies native-image builder exports (`-J--add-exports`).
+The builder loads application libraries and generated features from the classpath, so their target module names are mapped to `ALL-UNNAMED`, just as for fast-jar runners.
+
+Extension authors should migrate from the deprecated `JPMSExportBuildItem` to `ModuleExportBuildItem`, specifying the module that needs access to the exported packages.
+Version bounds on legacy `JPMSExportBuildItem` instances are ignored.
+
 `ModuleEnableNativeAccessBuildItem` declares that a module requires native access (equivalent to the `--enable-native-access` JVM flag).

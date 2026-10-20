@@ -2336,6 +2336,8 @@ public interface MyNonDefaultPURepository {
 
 Review the https://jakarta.ee/specifications/data/1.0/apidocs/jakarta.data/jakarta/data/repository/repository#dataStore()[Javadoc of the `@Repository` annotation]
 to learn more about the `dataStore` attribute.
+
+Repositories without `@Repository` are assigned to a persistence unit using the same package-based rules as entities, their persistence unit is determined by `quarkus.hibernate-orm."other".packages` or a package-level `@PersistenceUnit` annotation.
 ====
 
 Please refer to the corresponding https://hibernate.org/repositories/[Hibernate Data Repositories]

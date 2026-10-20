@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -74,45 +73,26 @@ public class ConfigMappingListener implements ConfigAnnotationListener {
             throw new IllegalStateException("Either @ConfigRoot or @ConfigMapping is missing on " + configRoot);
         }
 
-        final Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues = configRootAnnotation
-                .getElementValues();
-        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : elementValues.entrySet()) {
-            if ("phase()".equals(entry.getKey().toString())) {
-                configPhase = ConfigPhase.valueOf(entry.getValue().getValue().toString());
-            }
+        Object phase = utils.element().getAnnotationValues(configRootAnnotation).get("phase");
+        if (phase != null) {
+            configPhase = ConfigPhase.valueOf(phase.toString());
         }
 
         validateRuntimeConfigOnDeploymentModules(configPhase, configRoot);
 
-        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configMappingAnnotion.getElementValues()
-                .entrySet()) {
-            if ("prefix()".equals(entry.getKey().toString())) {
-                prefix = entry.getValue().getValue().toString();
-            }
+        String mappingPrefix = (String) utils.element().getAnnotationValues(configMappingAnnotion).get("prefix");
+        if (mappingPrefix != null) {
+            prefix = mappingPrefix;
         }
 
         String overriddenDocPrefix = null;
         if (configDocPrefixAnnotation != null) {
-            for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configDocPrefixAnnotation
-                    .getElementValues()
-                    .entrySet()) {
-                if ("value()".equals(entry.getKey().toString())) {
-                    overriddenDocPrefix = entry.getValue().getValue().toString();
-                    break;
-                }
-            }
+            overriddenDocPrefix = (String) utils.element().getAnnotationValues(configDocPrefixAnnotation).get("value");
         }
 
         String overriddenDocFileName = null;
         if (configDocFileNameAnnotation != null) {
-            for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configDocFileNameAnnotation
-                    .getElementValues()
-                    .entrySet()) {
-                if ("value()".equals(entry.getKey().toString())) {
-                    overriddenDocFileName = entry.getValue().getValue().toString();
-                    break;
-                }
-            }
+            overriddenDocFileName = (String) utils.element().getAnnotationValues(configDocFileNameAnnotation).get("value");
         }
 
         String rootPrefix = ConfigNamingUtil.getRootPrefix(prefix, "", configRoot.getSimpleName().toString(), configPhase);

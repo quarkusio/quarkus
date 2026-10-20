@@ -511,10 +511,15 @@ public class OpenshiftProcessor {
                         .withTimeoutInMillis(openshiftConfig.buildTimeout().toMillis())
                         .fromFile(binaryFile);
             } catch (Exception e) {
+                if (openshiftConfig.failOnBuildArchiveUploadFailure()) {
+                    throw openshiftException(e);
+                }
                 Optional<Build> running = buildsOf(client, buildConfig).stream().findFirst();
                 if (running.isPresent()) {
                     LOG.warn("An exception: '" + e.getMessage()
-                            + " ' occurred while instantiating the build, however the build has been started.");
+                            + " ' occurred while instantiating the build, however the build has been started."
+                            + " The build archive may have been uploaded only partially, in which case the build"
+                            + " can succeed while producing an image with missing files.");
                     return running.get();
                 } else {
                     throw openshiftException(e);

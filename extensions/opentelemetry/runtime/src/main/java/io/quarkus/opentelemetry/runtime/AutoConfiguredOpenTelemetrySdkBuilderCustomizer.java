@@ -17,6 +17,9 @@ import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
 
+import org.jboss.threads.ScheduledViewExecutor;
+import org.jboss.threads.ViewExecutor;
+
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
@@ -341,12 +344,20 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             // Replace the provided metric reader because it uses an unmanaged executor
                             // with a null classloader
                             if (metricReader instanceof PeriodicMetricReader && managedExecutor.isResolvable()) {
+                                // wrap the shared managed executor: the reader assumes it owns its
+                                // executor and shuts it down (with a 5s awaitTermination) on shutdown,
+                                // which must not touch or block on the container-managed pool;
+                                // we'll give it one that it *can* own
+                                ScheduledExecutorService delegateExecutor = managedExecutor.get();
+                                ViewExecutor viewExecutor = ViewExecutor.builder(delegateExecutor)
+                                        .unlimitedParallelism()
+                                        .unlimitedQueueLimit()
+                                        .supportInterruptOnShutdownNow(true)
+                                        .build();
+                                ScheduledViewExecutor sve = new ScheduledViewExecutor(viewExecutor, delegateExecutor);
                                 return PeriodicMetricReader.builder(metricExporterRef.get())
                                         .setInterval(oTelRuntimeConfig.metric().exportInterval())
-                                        // wrap the shared managed executor: the reader assumes it owns its
-                                        // executor and shuts it down (with a 5s awaitTermination) on shutdown,
-                                        // which must not touch or block on the container-managed pool
-                                        .setExecutor(new NonShutdownableScheduledExecutorService(managedExecutor.get()))
+                                        .setExecutor(sve)
                                         .build();
                             }
                             return metricReader;

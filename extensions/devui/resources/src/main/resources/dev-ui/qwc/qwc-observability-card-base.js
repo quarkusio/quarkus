@@ -12,6 +12,26 @@ import { notifier } from 'notifier';
  */
 export class ObservabilityCardBase extends QwcHotReloadElement {
 
+    static properties = {
+        // Set by the dashboard when it renders the component inside a card. The dashboard has
+        // one Export button for every signal on it, so the component drops its own.
+        embedded: { type: Boolean },
+    };
+
+    constructor() {
+        super();
+        this.embedded = false;
+    }
+
+    /**
+     * The rows this signal exports, as {rows, filename}, or null when it has nothing to export.
+     * The dashboard's Export button calls this on every embedded signal component.
+     * @returns {{rows: Array<Object>, filename: string}|null}
+     */
+    exportData() {
+        return null;
+    }
+
     /**
      * Export an array of flat row objects to a downloaded CSV file.
      * @param {Array<Object>} rows

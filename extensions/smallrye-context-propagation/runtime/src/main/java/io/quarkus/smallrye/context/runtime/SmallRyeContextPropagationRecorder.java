@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.context.runtime;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -8,7 +10,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
 
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.ThreadContext;
@@ -16,18 +17,14 @@ import org.eclipse.microprofile.context.spi.ContextManagerExtension;
 import org.eclipse.microprofile.context.spi.ContextManagerProvider;
 import org.eclipse.microprofile.context.spi.ThreadContextProvider;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.context.SmallRyeContextManager;
-import io.smallrye.context.SmallRyeManagedExecutor;
-import io.smallrye.context.SmallRyeThreadContext;
 import io.smallrye.context.impl.DefaultValues;
 
 /**
- * The runtime value service used to create values related to the MP-JWT services
+ * Builds the SmallRye context manager and the managed executors and thread contexts of the application.
+ * <p>
+ * The static methods of this class run from the services that the deployment module registers.
  */
-@Recorder
 public class SmallRyeContextPropagationRecorder {
 
     private static final ExecutorService NOPE_EXECUTOR_SERVICE = new ExecutorService() {
@@ -117,9 +114,27 @@ public class SmallRyeContextPropagationRecorder {
         }
     };
     private static SmallRyeContextManager.Builder builder;
+    private static SmallRyeContextManager contextManager;
 
-    public void configureStaticInit(List<ThreadContextProvider> discoveredProviders,
-            List<ContextManagerExtension> discoveredExtensions) {
+    /**
+     * Register the context manager provider and prepare the context manager builder at static init.
+     * <p>
+     * A manager without context propagation and with an executor that rejects every task is registered
+     * for the boot phase. {@link #configureRuntime(ExecutorService)} replaces it.
+     *
+     * @param providerClasses the discovered thread context provider classes
+     * @param extensionClasses the discovered context manager extension classes
+     */
+    public static void configureStaticInit(List<Class<? extends ThreadContextProvider>> providerClasses,
+            List<Class<? extends ContextManagerExtension>> extensionClasses) {
+        List<ThreadContextProvider> discoveredProviders = new ArrayList<>();
+        for (Class<? extends ThreadContextProvider> provider : providerClasses) {
+            discoveredProviders.add(instantiate(provider));
+        }
+        List<ContextManagerExtension> discoveredExtensions = new ArrayList<>();
+        for (Class<? extends ContextManagerExtension> extension : extensionClasses) {
+            discoveredExtensions.add(instantiate(extension));
+        }
         // build the manager at static init time
         // in the live-reload mode, the provider instance may be already set in the previous start
         if (ContextManagerProvider.INSTANCE.get() == null) {
@@ -145,64 +160,69 @@ public class SmallRyeContextPropagationRecorder {
         ContextManagerProvider.instance().registerContextManager(noContextBuilder.build(), null /* not used */);
     }
 
-    public void configureRuntime(ExecutorService executorService, ShutdownContext shutdownContext) {
+    private static <T> T instantiate(Class<T> clazz) {
+        try {
+            return clazz.getDeclaredConstructor().newInstance();
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            throw new RuntimeException("Failed to instantiate declared ThreadContextProvider class: " + clazz.getName(), e);
+        }
+    }
+
+    /**
+     * Build the context manager with the application executor and register it for the runtime class loader.
+     *
+     * @param executorService the application executor
+     */
+    public static void configureRuntime(ExecutorService executorService) {
         // associate the static init manager to the runtime CL
         ContextManagerProvider contextManagerProvider = ContextManagerProvider.instance();
         // finish building our manager
         builder.withDefaultExecutorService(executorService);
 
-        SmallRyeContextManager contextManager = builder.build();
+        contextManager = builder.build();
 
         contextManagerProvider.registerContextManager(contextManager, Thread.currentThread().getContextClassLoader());
-        //needs to be late, as running threads can re-create an implicit one
-        shutdownContext.addLastShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                contextManagerProvider.releaseContextManager(contextManager);
-            }
-        });
         //Avoid leaking the classloader:
         SmallRyeContextPropagationRecorder.builder = null;
     }
 
-    public Supplier<Object> initializeManagedExecutor(ExecutorService executorService) {
-        return new Supplier<Object>() {
-            @Override
-            public Object get() {
-                ThreadContext threadContext = Arc.container().instance(ThreadContext.class).get();
-                return new SmallRyeManagedExecutor(-1, -1, (SmallRyeThreadContext) threadContext, executorService,
-                        "no-ip") {
-                    @Override
-                    public void shutdown() {
-                        throw new IllegalStateException("This executor is managed by the container and cannot be shut down.");
-                    }
-
-                    @Override
-                    public List<Runnable> shutdownNow() {
-                        throw new IllegalStateException("This executor is managed by the container and cannot be shut down.");
-                    }
-                };
-            }
-        };
+    /**
+     * Release the context manager built by {@link #configureRuntime(ExecutorService)}, if any.
+     */
+    public static void releaseContextManager() {
+        SmallRyeContextManager manager = contextManager;
+        if (manager != null) {
+            contextManager = null;
+            ContextManagerProvider.instance().releaseContextManager(manager);
+        }
     }
 
-    public Supplier<Object> initializeConfiguredThreadContext(String[] cleared, String[] propagated, String[] unchanged) {
-        return new Supplier<Object>() {
-            @Override
-            public Object get() {
-                return ThreadContext.builder().propagated(propagated).cleared(cleared).unchanged(unchanged).build();
-            }
-        };
+    /**
+     * Create a managed executor from the settings of a {@code @ManagedExecutorConfig} injection point.
+     *
+     * @param definition the captured settings
+     * @return the managed executor
+     */
+    public static ManagedExecutor createManagedExecutor(ManagedExecutorDefinition definition) {
+        return ManagedExecutor.builder()
+                .propagated(definition.propagated().toArray(String[]::new))
+                .cleared(definition.cleared().toArray(String[]::new))
+                .maxAsync(definition.maxAsync())
+                .maxQueued(definition.maxQueued())
+                .build();
     }
 
-    public Supplier<Object> initializeConfiguredManagedExecutor(String[] cleared, String[] propagated, int maxAsync,
-            int maxQueued) {
-        return new Supplier<Object>() {
-            @Override
-            public Object get() {
-                return ManagedExecutor.builder().propagated(propagated).cleared(cleared).maxAsync(maxAsync).maxQueued(maxQueued)
-                        .build();
-            }
-        };
+    /**
+     * Create a thread context from the settings of a {@code @ThreadContextConfig} injection point.
+     *
+     * @param definition the captured settings
+     * @return the thread context
+     */
+    public static ThreadContext createThreadContext(ThreadContextDefinition definition) {
+        return ThreadContext.builder()
+                .propagated(definition.propagated().toArray(String[]::new))
+                .cleared(definition.cleared().toArray(String[]::new))
+                .unchanged(definition.unchanged().toArray(String[]::new))
+                .build();
     }
 }

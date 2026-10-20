@@ -294,6 +294,12 @@ public class ParserTest {
                 engine.parse("Hello {name} {||||safe|}end||||}").data("name", "world").render());
         // Multi-pipe CDATA: content with Qute expressions is not parsed
         assertEquals("{name}", engine.parse("{|||{name}|||}").render());
+
+        // Empty unparsed character data - regression #57646
+        assertEquals("", engine.parse("{||}").render());
+        // All-pipe unparsed character data is treated as content (backward compatibility)
+        assertEquals("|", engine.parse("{|||}").render());
+        assertEquals("||", engine.parse("{||||}").render());
     }
 
     @Test

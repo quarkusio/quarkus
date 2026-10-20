@@ -79,6 +79,7 @@ import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.ValueRegistryRuntimeInfoProviderBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
@@ -94,7 +95,6 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.StaticFieldVar;
@@ -123,6 +123,7 @@ import io.quarkus.runtime.util.StepTiming;
 import io.quarkus.value.registry.RuntimeInfoProvider;
 import io.quarkus.value.registry.RuntimeInfoProvider.RuntimeSource;
 import io.quarkus.value.registry.ValueRegistry;
+import io.smallrye.classfile.ClassHierarchyResolver;
 
 public class MainClassBuildStep {
 
@@ -296,6 +297,7 @@ public class MainClassBuildStep {
             List<BytecodeRecorderConstantDefinitionBuildItem> constants,
             List<RecordableConstructorBuildItem> recordableConstructorBuildItems,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             LaunchModeBuildItem launchMode,
             LiveReloadBuildItem liveReloadBuildItem,
             ApplicationInfoBuildItem applicationInfo,
@@ -320,8 +322,9 @@ public class MainClassBuildStep {
                 mainMethod, stepGraph, staticPlan.serviceKeys(), buildItemProducers);
 
         // Application class
-        GeneratedClassGizmo2Adaptor gizmoOutput = new GeneratedClassGizmo2Adaptor(generatedClass, null, null, true);
-        Gizmo g = Gizmo.create(gizmoOutput).withLambdaStrategy(LambdaStrategy.CLASSIC);
+        GeneratedClassGizmo2Adaptor gizmoOutput = new GeneratedClassGizmo2Adaptor(generatedClass, null, null,
+                constantBootstraps, true);
+        Gizmo g = Gizmo.create(gizmoOutput);
 
         g.class_(Application.APP_CLASS_NAME, file -> {
             file.extends_(Application.class);
@@ -795,9 +798,14 @@ public class MainClassBuildStep {
             return Map.of();
         }
 
+        ClassHierarchyResolver classHierarchyResolver = ClassHierarchyResolver
+                .ofResourceParsing(Thread.currentThread().getContextClassLoader())
+                .cached();
         Map<TransliteratedAction, ConsolidatedRef> refs = new IdentityHashMap<>();
-        consolidateBatch(staticActions, "io/quarkus/generated/service/StaticServiceActions", refs, generatedClass);
-        consolidateBatch(runtimeActions, "io/quarkus/generated/service/RuntimeServiceActions", refs, generatedClass);
+        consolidateBatch(staticActions, "io/quarkus/generated/service/StaticServiceActions", refs, generatedClass,
+                classHierarchyResolver);
+        consolidateBatch(runtimeActions, "io/quarkus/generated/service/RuntimeServiceActions", refs, generatedClass,
+                classHierarchyResolver);
         return refs;
     }
 
@@ -813,11 +821,13 @@ public class MainClassBuildStep {
             List<TransliteratedAction> actions,
             String classInternalName,
             Map<TransliteratedAction, ConsolidatedRef> refs,
-            BuildProducer<GeneratedClassBuildItem> generatedClass) {
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            ClassHierarchyResolver classHierarchyResolver) {
         if (actions.isEmpty()) {
             return;
         }
-        Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(classInternalName, actions);
+        Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
+                classInternalName, actions, classHierarchyResolver);
         for (var entry : classes.entrySet()) {
             // service action classes reference application types in their bytecode,
             // so they must be application classes to share the same classloader

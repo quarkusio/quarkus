@@ -11,7 +11,7 @@ import java.util.List;
  * extensions produce services directly, this holder and its consumers can be removed.
  * <p>
  * It is an interface (rather than a record) so that it can be produced by a recorder method and published as a
- * service value via {@code ActionBuilder.aliasRecorderValue()}, which requires a proxyable type.
+ * service value via {@code ServiceRegistrar.aliasRecorderValue()}, which requires a proxyable type.
  */
 public interface LoggingCompatBridge {
 

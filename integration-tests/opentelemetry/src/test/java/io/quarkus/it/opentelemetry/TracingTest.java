@@ -3,6 +3,7 @@ package io.quarkus.it.opentelemetry;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
+import static io.opentelemetry.semconv.CodeAttributes.CODE_FUNCTION_NAME;
 import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ID;
 import static io.opentelemetry.semconv.incubating.UserIncubatingAttributes.USER_ROLES;
 import static io.restassured.RestAssured.get;
@@ -159,7 +160,7 @@ public class TracingTest {
         assertTrue((Boolean) client.get("parent_valid"));
         assertFalse((Boolean) client.get("parent_remote"));
         assertEquals("GET", client.get("attr_http.request.method"));
-        assertEquals("http://localhost:8081", client.get("attr_url.full"));
+        assertEquals("http://localhost:8081/", client.get("attr_url.full"));
         assertEquals("200", client.get("attr_http.response.status_code"));
         assertEquals(client.get("parentSpanId"), server.get("spanId"));
 
@@ -324,6 +325,7 @@ public class TracingTest {
         assertEquals("TracedService.call", cdi.get("name"));
         assertEquals(SpanKind.INTERNAL.toString(), cdi.get("kind"));
         assertEquals(server.get("spanId"), cdi.get("parent_spanId"));
+        assertEquals("io.quarkus.it.opentelemetry.TracedService.call", cdi.get("attr_" + CODE_FUNCTION_NAME.getKey()));
     }
 
     @Test
@@ -613,6 +615,8 @@ public class TracingTest {
         assertNull(fromInterceptor.get("attr_http.request.method"));
         assertNull(fromInterceptor.get("attr_http.response.status_code"));
         assertEquals("one", fromInterceptor.get("attr_message"));
+        assertEquals("io.quarkus.it.opentelemetry.PingPongResource$PingPongRestClient.pingpongIntercept",
+                fromInterceptor.get("attr_" + CODE_FUNCTION_NAME.getKey()));
 
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, fromInterceptor.get("spanId"));
         assertEquals("GET /client/pong/{message}", client.get("name"));
@@ -641,6 +645,43 @@ public class TracingTest {
         assertEquals("200", clientServer.get("attr_http.response.status_code"));
         assertNotNull(clientServer.get("attr_client.address"));
         assertNotNull(clientServer.get("attr_user_agent.original"));
+        assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
+    }
+
+    @Test
+    void testClientTracingWithInheritedInterceptedMethod() {
+        given()
+                .when().get("/client/pong-intercept-inherited/one")
+                .then()
+                .statusCode(200)
+                .body(containsString("one"));
+
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 4);
+        List<Map<String, Object>> spans = getSpans();
+        assertEquals(4, spans.size());
+        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+
+        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
+        assertEquals("GET /client/pong-intercept-inherited/{message}", server.get("name"));
+
+        // the @WithSpan method is declared by the super interface of the REST client, which is what the span name
+        // and the code.function.name attribute must report, as they do for any other CDI bean
+        Map<String, Object> fromInterceptor = getSpanByKindAndParentId(spans, INTERNAL, server.get("spanId"));
+        assertEquals("PingPongBaseRestClient.pingpongInherited", fromInterceptor.get("name"));
+        assertEquals(INTERNAL.toString(), fromInterceptor.get("kind"));
+        assertTrue((Boolean) fromInterceptor.get("ended"));
+        assertTrue((Boolean) fromInterceptor.get("parent_valid"));
+        assertFalse((Boolean) fromInterceptor.get("parent_remote"));
+        assertEquals("one", fromInterceptor.get("attr_message"));
+        assertEquals("io.quarkus.it.opentelemetry.PingPongResource$PingPongBaseRestClient.pingpongInherited",
+                fromInterceptor.get("attr_" + CODE_FUNCTION_NAME.getKey()));
+
+        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, fromInterceptor.get("spanId"));
+        assertEquals("GET /client/pong/{message}", client.get("name"));
+        assertEquals("http://localhost:8081/client/pong/one", client.get("attr_url.full"));
+
+        Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
+        assertEquals("GET /client/pong/{message}", clientServer.get("name"));
         assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
     }
 

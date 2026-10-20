@@ -171,9 +171,16 @@ public class WithSpanInterceptor {
 
         @Override
         public void onStart(AttributesBuilder attributesBuilder, Context context, MethodRequest methodRequest) {
-            attributesBuilder.put(CODE_FUNCTION_NAME,
-                    methodRequest.getMethod().getDeclaringClass().getName() + "." +
-                            methodRequest.getMethod().getName());
+            attributesBuilder.put(CODE_FUNCTION_NAME, codeFunctionName(methodRequest));
+        }
+
+        private static String codeFunctionName(MethodRequest methodRequest) {
+            SpanMethod spanMethod = spanMethod(methodRequest);
+            if (spanMethod != null) {
+                return spanMethod.declaringClass() + "." + spanMethod.method();
+            }
+            return methodRequest.getMethod().getDeclaringClass().getName() + "." +
+                    methodRequest.getMethod().getName();
         }
 
         @Override
@@ -221,10 +228,35 @@ public class WithSpanInterceptor {
                 }
             }
             if (spanName == null || spanName.isEmpty()) {
-                spanName = SpanNames.fromMethod(methodRequest.getMethod());
+                SpanMethod spanMethod = spanMethod(methodRequest);
+                if (spanMethod != null) {
+                    spanName = simpleName(spanMethod.declaringClass()) + "." + spanMethod.method();
+                } else {
+                    spanName = SpanNames.fromMethod(methodRequest.getMethod());
+                }
             }
             return spanName;
         }
+
+        /**
+         * Same result as {@link Class#getSimpleName()} for a top level or nested class given its binary name.
+         */
+        private static String simpleName(String binaryName) {
+            return binaryName.substring(Math.max(binaryName.lastIndexOf('.'), binaryName.lastIndexOf('$')) + 1);
+        }
+    }
+
+    /**
+     * @return the method the span is about when the intercepted method is not the one the user wrote, see
+     *         {@link SpanMethod}, or {@code null} when the intercepted method is to be used
+     */
+    private static SpanMethod spanMethod(MethodRequest methodRequest) {
+        for (Annotation annotation : methodRequest.getAnnotationBindings()) {
+            if (annotation instanceof SpanMethod) {
+                return (SpanMethod) annotation;
+            }
+        }
+        return null;
     }
 
     private static final class WithSpanParameterAttributeNamesExtractor implements ParameterAttributeNamesExtractor {

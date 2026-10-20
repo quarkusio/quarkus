@@ -2954,19 +2954,39 @@ cd rest-json
 ===== Capabilities
 
 A _capability_ represents a technical capability that can be queried by other extensions.
-An extension may provide multiple capabilities and multiple extensions can provide the same capability.
+An extension may provide multiple capabilities, but only a single provider of a given capability is allowed in an application: if more than one is detected, the build fails.
 By default, capabilities are not displayed to users.
 Capabilities should be used when checking for the presence of an extension rather than class path based checks.
 
-Capabilities can be registered in a <<build-step-processors>> method that produces a `CapabilityBuildItem`:
+The preferred way to declare the capabilities an extension provides (or requires) is by configuring the `quarkus-extension-maven-plugin` in the runtime module's `pom.xml`:
+
+[source,xml]
+----
+<plugin>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-extension-maven-plugin</artifactId>
+    <configuration>
+        <capabilities>
+            <provides>org.acme.test-transactions</provides>
+            <provides>org.acme.test-metrics</provides>
+        </capabilities>
+    </configuration>
+</plugin>
+----
+
+See xref:capabilities.adoc[Extension capabilities] for the full details, including required capabilities and the Gradle equivalent.
+
+Capabilities can also be registered in a <<build-step-processors>> method that produces a `CapabilityBuildItem`.
+However, capabilities declared this way are not part of the extension descriptor, so they are not visible to the Quarkus dev tools
+and cannot be taken into account when checking extension compatibility while creating a project or adding extensions:
 
 .TestProcessor#capability()
 [source,java]
 ----
     @BuildStep
     void capabilities(BuildProducer<CapabilityBuildItem> capabilityProducer) {
-        capabilityProducer.produce(new CapabilityBuildItem("org.acme.test-transactions"));
-        capabilityProducer.produce(new CapabilityBuildItem("org.acme.test-metrics"));
+        capabilityProducer.produce(new CapabilityBuildItem("org.acme.test-transactions", "org.acme:test-extension"));
+        capabilityProducer.produce(new CapabilityBuildItem("org.acme.test-metrics", "org.acme:test-extension"));
     }
 ----
 
@@ -2984,7 +3004,7 @@ Extensions can consume registered capabilities using the `Capabilities` build it
 ----
 
 Capabilities should follow the naming conventions of Java packages; e.g. `io.quarkus.security.jpa`.
-Capabilities provided by core extensions should be listed in the `io.quarkus.deployment.Capability` enum and their name should always start with the `io.quarkus` prefix.
+Capabilities provided by core extensions should be listed in the `io.quarkus.deployment.Capability` interface and their name should always start with the `io.quarkus` prefix.
 
 ==== Bean Defining Annotations
 The CDI layer processes CDI beans that are either explicitly registered or that it discovers based on bean defining annotations as defined in https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#bean_defining_annotations[2.5.1. Bean defining annotations]. You can expand this set of annotations to include annotations your extension processes using a `BeanDefiningAnnotationBuildItem` as shown in this `TestProcessor#registerBeanDefinningAnnotations` example:

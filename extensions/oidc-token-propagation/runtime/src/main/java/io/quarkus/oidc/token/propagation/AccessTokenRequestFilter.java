@@ -5,7 +5,7 @@ import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationC
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.Collections;
+import java.util.Map;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.inject.Instance;
@@ -17,7 +17,10 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClients;
+import io.quarkus.oidc.client.runtime.OidcClientConfig;
 import io.quarkus.oidc.client.runtime.OidcClientConfig.Grant;
+import io.quarkus.oidc.client.runtime.OidcClientsConfig;
+import io.quarkus.oidc.client.runtime.TokensHelper;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.token.propagation.runtime.AbstractTokenRequestFilter;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -25,6 +28,7 @@ import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.core.runtime.ContextLocalsVertxServiceProvider;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
+import io.smallrye.config.SmallRyeConfig;
 import io.vertx.core.Vertx;
 
 public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
@@ -38,6 +42,7 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
 
     OidcClient exchangeTokenClient;
     String exchangeTokenProperty;
+    private TokensHelper tokensHelper;
 
     public AccessTokenRequestFilter() {
         this.enabledDuringAuthentication = Boolean.getBoolean(OIDC_PROPAGATE_TOKEN_CREDENTIAL)
@@ -64,7 +69,16 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
                 throw new ConfigurationException("Token exchange is required but OIDC client is configured "
                         + "to use the " + exchangeTokenGrantType.getGrantType() + " grantType");
             }
+            tokensHelper = new TokensHelper(tokenCacheMaxSize(clientName));
         }
+    }
+
+    private static int tokenCacheMaxSize(String clientName) {
+        OidcClientsConfig clientsConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
+                .getConfigMapping(OidcClientsConfig.class);
+        OidcClientConfig clientConfig = clientName != null ? clientsConfig.namedClients().get(clientName)
+                : OidcClientsConfig.getDefaultClient(clientsConfig);
+        return clientConfig.tokenCacheMaxSize();
     }
 
     protected boolean isExchangeToken() {
@@ -90,7 +104,7 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
     private String exchangeTokenIfNeeded(String token) {
         if (exchangeTokenClient != null) {
             // more dynamic parameters can be configured if required
-            return exchangeTokenClient.getTokens(Collections.singletonMap(exchangeTokenProperty, token))
+            return tokensHelper.getTokens(exchangeTokenClient, Map.of(exchangeTokenProperty, token), false)
                     .await().indefinitely().getAccessToken();
         } else {
             return token;

@@ -92,6 +92,8 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientMultipartForm;
+import org.jboss.resteasy.reactive.client.api.ClientRequestOptions;
+import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.handlers.ClientObservabilityHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientSendRequestHandler;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
@@ -1109,6 +1111,7 @@ public class JaxrsClientReactiveProcessor {
                     }
 
                     Integer bodyParameterIdx = null;
+                    ResultHandle clientRequestOptions = null;
                     Map<MethodDescriptor, ResultHandle> invocationBuilderEnrichers = new HashMap<>();
 
                     String[] consumes = extractProducesConsumesValues(
@@ -1270,6 +1273,8 @@ public class JaxrsClientReactiveProcessor {
                                     multipart,
                                     param.mimeType, param.partFileName, param.separator,
                                     jandexMethod.declaringClass().name() + "." + jandexMethod.name());
+                        } else if (isClientRequestOptions(param)) {
+                            clientRequestOptions = methodCreator.getMethodParam(paramIdx);
                         }
                     }
 
@@ -1301,6 +1306,9 @@ public class JaxrsClientReactiveProcessor {
                         methodCreator.assign(builder,
                                 methodCreator.invokeVirtualMethod(invocationBuilderEnricher.getKey(), methodCreator.getThis(),
                                         builder, invocationBuilderEnricher.getValue()));
+                    }
+                    if (clientRequestOptions != null) {
+                        setClientRequestOptions(methodCreator, builder, clientRequestOptions);
                     }
 
                     for (JaxrsClientReactiveEnricherBuildItem enricher : enrichers) {
@@ -1370,6 +1378,22 @@ public class JaxrsClientReactiveProcessor {
                         || param.parameterType == ParameterType.QUERY
                         || param.parameterType == ParameterType.FORM
                         || param.parameterType == ParameterType.MATRIX);
+    }
+
+    private static boolean isClientRequestOptions(MethodParameter param) {
+        return param.parameterType == ParameterType.CUSTOM
+                && ClientRequestOptions.class.getName().equals(param.declaredType);
+    }
+
+    /**
+     * A {@link ClientRequestOptions} parameter is not sent with the request: the invocation gets it as a request property.
+     */
+    private static void setClientRequestOptions(BytecodeCreator creator, AssignableResultHandle builder,
+            ResultHandle clientRequestOptions) {
+        creator.assign(builder, creator.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(Invocation.Builder.class, "property", Invocation.Builder.class, String.class,
+                        Object.class),
+                builder, creator.load(QuarkusRestClientProperties.REQUEST_OPTIONS), clientRequestOptions));
     }
 
     private ResultHandle disableEncodingForWebTarget(BytecodeCreator creator, ResultHandle baseTarget) {
@@ -1772,6 +1796,7 @@ public class JaxrsClientReactiveProcessor {
                     }
 
                     ResultHandle bodyParameterValue = null;
+                    ResultHandle clientRequestOptions = null;
                     AssignableResultHandle formParams = null;
                     Map<MethodDescriptor, ResultHandle> invocationBuilderEnrichers = new HashMap<>();
 
@@ -1935,6 +1960,8 @@ public class JaxrsClientReactiveProcessor {
                             // FIXME: this is weird, it doesn't go via converter nor multipart, looks like a bug
                             subMethodCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
                                     subMethodCreator.load(param.name), paramValue);
+                        } else if (isClientRequestOptions(param)) {
+                            clientRequestOptions = paramValue;
                         }
                     }
                     // handle sub-method parameters:
@@ -2089,6 +2116,8 @@ public class JaxrsClientReactiveProcessor {
                             subMethodCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
                                     subMethodCreator.load(param.name),
                                     subMethodCreator.getMethodParam(paramIdx));
+                        } else if (isClientRequestOptions(param)) {
+                            clientRequestOptions = subMethodCreator.getMethodParam(paramIdx);
                         }
 
                     }
@@ -2129,6 +2158,9 @@ public class JaxrsClientReactiveProcessor {
                                 subMethodCreator.invokeVirtualMethod(invocationBuilderEnricher.getKey(),
                                         subMethodCreator.getThis(),
                                         builder, invocationBuilderEnricher.getValue()));
+                    }
+                    if (clientRequestOptions != null) {
+                        setClientRequestOptions(subMethodCreator, builder, clientRequestOptions);
                     }
 
                     for (JaxrsClientReactiveEnricherBuildItem enricher : enrichers) {

@@ -342,7 +342,7 @@ jobs:
       scalpel_impacted: ${{ steps.get-scalpel-config.outputs.impacted_modules }}
       scalpel_impacted_gav: ${{ steps.get-scalpel-config.outputs.impacted_modules_gav }}
     steps:
-      - uses: runs-on/action@dfae4d98c5537a0dc7bbb7e6b9211f30ba240f6d # v2.4.0
+      - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{ needs.configure.outputs.base-jdk-version }}" >> "$GITHUB_ENV"
@@ -400,7 +400,7 @@ jobs:
       - name: Verify oracle-test-pilot-native-tests.json
         run: ./.github/verify-tests-json.sh oracle-test-pilot-native-tests.json integration-tests/
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
+        uses: gradle/develocity-actions/setup-maven@f852d93dada312948b1ba533226c28e05d756866 # v2.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "Initial JDK ${{ needs.configure.outputs.base-jdk-version }} Build"
@@ -534,7 +534,7 @@ jobs:
       run_quickstarts: ${{ steps.calc-run-flags.outputs.run_quickstarts }}
       run_tcks: ${{ steps.calc-run-flags.outputs.run_tcks }}
     steps:
-      - uses: runs-on/action@dfae4d98c5537a0dc7bbb7e6b9211f30ba240f6d # v2.4.0
+      - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Calculate matrix from native-tests.json
         id: calc-native-matrix
@@ -612,7 +612,7 @@ jobs:
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.jvm_matrix) }}
 
     steps:
-      - uses: runs-on/action@dfae4d98c5537a0dc7bbb7e6b9211f30ba240f6d # v2.4.0
+      - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.java-version}},distribution-${{matrix.java.java-distribution}},${{matrix.java.tag}}" >> "$GITHUB_ENV"
@@ -690,7 +690,7 @@ jobs:
           restore-keys: |
             develocity-cache-${{matrix.java.name}}-${{ github.event.pull_request.number || github.event.ref }}-
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
+        uses: gradle/develocity-actions/setup-maven@f852d93dada312948b1ba533226c28e05d756866 # v2.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "${{ matrix.java.name }}"
@@ -792,7 +792,7 @@ jobs:
             runs-on: false
           }
     steps:
-      - uses: runs-on/action@dfae4d98c5537a0dc7bbb7e6b9211f30ba240f6d # v2.4.0
+      - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}},distribution-${{matrix.java.java-distribution}}" >> "$GITHUB_ENV"
@@ -827,7 +827,7 @@ jobs:
           distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
+        uses: gradle/develocity-actions/setup-maven@f852d93dada312948b1ba533226c28e05d756866 # v2.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "Maven Tests - JDK ${{matrix.java.name}}"
@@ -906,7 +906,7 @@ jobs:
             runs-on: false
           }
     steps:
-      - uses: runs-on/action@dfae4d98c5537a0dc7bbb7e6b9211f30ba240f6d # v2.4.0
+      - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
@@ -941,7 +941,7 @@ jobs:
         if: ${{ !startsWith(matrix.java.os-name, 'windows') }}
         run: ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS -Dscan=false
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
+        uses: gradle/develocity-actions/setup-maven@f852d93dada312948b1ba533226c28e05d756866 # v2.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "Gradle Tests - JDK ${{matrix.java.name}}"
@@ -1003,7 +1003,7 @@ jobs:
             runs-on: false
           }
     steps:
-      - uses: runs-on/action@dfae4d98c5537a0dc7bbb7e6b9211f30ba240f6d # v2.4.0
+      - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}},distribution-${{matrix.java.java-distribution}}" >> "$GITHUB_ENV"
@@ -1033,7 +1033,7 @@ jobs:
           distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
+        uses: gradle/develocity-actions/setup-maven@f852d93dada312948b1ba533226c28e05d756866 # v2.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "Devtools Tests - JDK ${{matrix.java.name}}"
@@ -1096,7 +1096,7 @@ jobs:
             runs-on: true
           }
     steps:
-      - uses: runs-on/action@dfae4d98c5537a0dc7bbb7e6b9211f30ba240f6d # v2.4.0
+      - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}},distribution-${{matrix.java.java-distribution}}" >> "$GITHUB_ENV"
@@ -1126,7 +1126,7 @@ jobs:
           distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
+        uses: gradle/develocity-actions/setup-maven@f852d93dada312948b1ba533226c28e05d756866 # v2.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "Kubernetes Tests - JDK ${{matrix.java.name}}"
@@ -1188,7 +1188,7 @@ jobs:
             runs-on: true
           }
     steps:
-      - uses: runs-on/action@dfae4d98c5537a0dc7bbb7e6b9211f30ba240f6d # v2.4.0
+      - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
@@ -1215,7 +1215,7 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
+        uses: gradle/develocity-actions/setup-maven@f852d93dada312948b1ba533226c28e05d756866 # v2.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "Quickstarts - JDK ${{matrix.java.name}}"
@@ -1304,7 +1304,7 @@ jobs:
             runs-on: true
           }
     steps:
-      - uses: runs-on/action@dfae4d98c5537a0dc7bbb7e6b9211f30ba240f6d # v2.4.0
+      - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
@@ -1331,7 +1331,7 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
+        uses: gradle/develocity-actions/setup-maven@f852d93dada312948b1ba533226c28e05d756866 # v2.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "Platform Tests - JDK ${{matrix.java.name}}"
@@ -1396,7 +1396,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.virtual_threads_matrix) }}
     steps:
-      - uses: runs-on/action@dfae4d98c5537a0dc7bbb7e6b9211f30ba240f6d # v2.4.0
+      - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - name: Gradle Enterprise environment
         run: |
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
@@ -1430,7 +1430,7 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
+        uses: gradle/develocity-actions/setup-maven@f852d93dada312948b1ba533226c28e05d756866 # v2.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
@@ -1473,7 +1473,7 @@ jobs:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
     timeout-minutes: 150
     steps:
-      - uses: runs-on/action@dfae4d98c5537a0dc7bbb7e6b9211f30ba240f6d # v2.4.0
+      - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{ needs.configure.outputs.base-jdk-version }}" >> "$GITHUB_ENV"
@@ -1507,7 +1507,7 @@ jobs:
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
+        uses: gradle/develocity-actions/setup-maven@f852d93dada312948b1ba533226c28e05d756866 # v2.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "MicroProfile TCKs Tests"
@@ -1571,7 +1571,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
     steps:
-      - uses: runs-on/action@dfae4d98c5537a0dc7bbb7e6b9211f30ba240f6d # v2.4.0
+      - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - name: Gradle Enterprise environment
         run: |
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
@@ -1599,7 +1599,7 @@ jobs:
         if: startsWith(matrix.os-name, 'windows')
       - name: Setup GraalVM
         id: setup-graalvm
-        uses: graalvm/setup-graalvm@0426e2e191540e8514dff98dc52a5f5146a2a276 # v1.6.6
+        uses: graalvm/setup-graalvm@27b360dbb857524eaf0b4c4cef364d38e5b4f173 # v1.6.7
         if: startsWith(matrix.os-name, 'windows')
         with:
           version: 'mandrel-latest'
@@ -1628,7 +1628,7 @@ jobs:
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
+        uses: gradle/develocity-actions/setup-maven@f852d93dada312948b1ba533226c28e05d756866 # v2.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "Native Tests - ${{matrix.category}}"
@@ -1702,7 +1702,7 @@ jobs:
       - native-tests
     runs-on: ubuntu-slim
     steps:
-      - uses: runs-on/action@dfae4d98c5537a0dc7bbb7e6b9211f30ba240f6d # v2.4.0
+      - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: build-stats-*
@@ -1798,7 +1798,7 @@ jobs:
           distribution: temurin
           java-version: ${{ needs.configure.outputs.base-jdk-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
+        uses: gradle/develocity-actions/setup-maven@f852d93dada312948b1ba533226c28e05d756866 # v2.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "Oracle Test Pilot ${{matrix.category}} - JDK ${{matrix.java-version}}"
@@ -1904,7 +1904,7 @@ jobs:
         run: tar -xzf m2-content.tgz -C ~
       - name: Setup GraalVM
         id: setup-graalvm
-        uses: graalvm/setup-graalvm@0426e2e191540e8514dff98dc52a5f5146a2a276 # v1.6.6
+        uses: graalvm/setup-graalvm@27b360dbb857524eaf0b4c4cef364d38e5b4f173 # v1.6.7
         with:
           version: 'mandrel-latest'
           java-version: '25'
@@ -1917,7 +1917,7 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
+        uses: gradle/develocity-actions/setup-maven@f852d93dada312948b1ba533226c28e05d756866 # v2.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "Oracle Test Pilot ${{matrix.category}} - Native"
@@ -2064,7 +2064,7 @@ jobs:
     needs: [configure,initial-build,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests,oracle-test-pilot-jvm-tests,oracle-test-pilot-native-tests,pqc-tests]
     if: always() && needs.configure.outputs.run-ci-build == 'true'
     steps:
-      - uses: runs-on/action@dfae4d98c5537a0dc7bbb7e6b9211f30ba240f6d # v2.4.0
+      - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           path: build-reports-artifacts

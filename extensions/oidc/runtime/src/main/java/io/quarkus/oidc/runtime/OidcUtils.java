@@ -186,9 +186,17 @@ public final class OidcUtils {
             return null;
         }
 
-        if (cookies.containsKey(sessionCookieName)) {
+        Cookie sessionCookie = cookies.get(sessionCookieName);
+        if (sessionCookie != null) {
+            if (sessionCookie.getValue().isEmpty()) {
+                // An empty session cookie is most likely a removed cookie which the user agent has not dropped yet.
+                // It means no session is available. The cookie is not registered for the removal because removing it
+                // again would only extend its life in the user agents which keep removed cookies until they expire.
+                LOG.debugf("%s cookie is empty, no session is available", sessionCookieName);
+                return null;
+            }
             context.put(defaultSessionCookieName, List.of(sessionCookieName));
-            return cookies.get(sessionCookieName).getValue();
+            return sessionCookie.getValue();
         } else {
             final String sessionChunkPrefix = sessionCookieName + SESSION_COOKIE_CHUNK;
 
@@ -211,13 +219,16 @@ public final class OidcUtils {
                 }
             }
             if (!sessionCookies.isEmpty()) {
-                context.put(defaultSessionCookieName, new ArrayList<String>(sessionCookies.keySet()));
-
                 StringBuilder sessionCookieValue = new StringBuilder();
                 for (String value : sessionCookies.values()) {
                     sessionCookieValue.append(value);
                 }
-                return sessionCookieValue.toString();
+                if (!sessionCookieValue.isEmpty()) {
+                    context.put(defaultSessionCookieName, new ArrayList<String>(sessionCookies.keySet()));
+                    return sessionCookieValue.toString();
+                }
+                // Empty session cookie chunks are most likely removed cookies which the user agent has not dropped yet
+                LOG.debugf("%s cookie chunks are empty, no session is available", sessionCookieName);
             }
         }
         return null;

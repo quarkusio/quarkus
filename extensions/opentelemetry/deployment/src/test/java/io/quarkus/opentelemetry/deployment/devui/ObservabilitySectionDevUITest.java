@@ -50,4 +50,11 @@ public class ObservabilitySectionDevUITest extends DevUIBuildTimeDataTest {
                 .as("OpenTelemetry should contribute a 'traces' signal to the Observability section")
                 .isTrue();
     }
+
+    @Test
+    public void offersNoMetricNamingWhenMetricsAreNotExportedOverOtlp() throws Exception {
+        // quarkus.otel.metrics.exporter=none: the metrics never reach Prometheus, so there are no names to query.
+        JsonNode naming = super.getBuildTimeData("prometheusNaming");
+        assertThat(naming == null || naming.isNull()).isTrue();
+    }
 }

@@ -7,6 +7,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -204,5 +205,30 @@ public class OpenApiTestCase {
         }
 
         return null;
+    }
+
+    @Test
+    public void testResteasyParamFieldsAndProperties() throws Exception {
+        URLConnection connection = uri.openConnection();
+        connection.setRequestProperty("Accept", "application/json");
+        JsonObject paths;
+        try (InputStream in = connection.getInputStream(); JsonReader parser = Json.createReader(in)) {
+            paths = parser.readObject().getJsonObject("paths");
+        }
+        String path = paths.keySet().stream().filter(p -> p.startsWith("/param-fields/")).findFirst().orElseThrow();
+        Set<String> parameters = new TreeSet<>();
+        Set<String> matrixProperties = Set.of();
+        for (JsonValue value : paths.getJsonObject(path).getJsonArray("parameters")) {
+            JsonObject parameter = value.asJsonObject();
+            if ("matrix".equals(parameter.getString("style", null))) {
+                matrixProperties = parameter.getJsonObject("schema").getJsonObject("properties").keySet();
+            } else {
+                parameters.add(parameter.getString("in") + ":" + parameter.getString("name"));
+            }
+        }
+        Assertions.assertEquals(Set.of("path:pathField", "path:pathProperty", "query:queryField",
+                "query:queryProperty", "header:headerField", "header:headerProperty", "cookie:cookieField",
+                "cookie:cookieProperty"), parameters);
+        Assertions.assertEquals(Set.of("matrixField", "matrixProperty"), matrixProperties);
     }
 }

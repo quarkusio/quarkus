@@ -505,7 +505,7 @@ triage:
       notify: [radcortez]
     - id: core
       labels: [area/core]
-      notify: [aloubyansky, gsmet, geoand, radcortez, Sanne]
+      notify: [aloubyansky, dmlloyd, gsmet, geoand, radcortez, Sanne]
       directories:
         - core/
     - id: dependencies

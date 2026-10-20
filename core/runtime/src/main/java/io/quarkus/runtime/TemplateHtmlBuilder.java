@@ -29,6 +29,7 @@ public class TemplateHtmlBuilder {
                         stElement.innerHTML = originalOrder.innerHTML;
                         stElement.setAttribute('data-current-setting', 'original-stacktrace');
                     }
+                    initStacktraceStyles();
                     return;
                 }
 
@@ -54,8 +55,9 @@ public class TemplateHtmlBuilder {
                 }
 
                 function initStacktraceStyles() {
-                    document.querySelector("#stacktrace code > pre").setAttribute("data-viewmode", "wrap");
-                    stacktrace.querySelector("#stacktrace code").classList.add("wrap-code");
+                    var pre = document.querySelector("#stacktrace code > pre");
+                    pre.setAttribute("data-viewmode", "wrap");
+                    pre.classList.add("wrap-code");
                 }
 
                 function changeViewMode() {

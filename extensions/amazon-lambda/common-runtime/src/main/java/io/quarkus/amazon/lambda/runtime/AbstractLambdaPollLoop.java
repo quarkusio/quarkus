@@ -10,12 +10,14 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.jboss.logging.MDC;
 
+import io.quarkus.core.StartContext;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
@@ -84,6 +86,14 @@ public abstract class AbstractLambdaPollLoop {
     }
 
     public void startPollLoop(ValueRegistry valueRegistry, ShutdownContext context) {
+        startPollLoop(valueRegistry, (Consumer<Runnable>) context::addShutdownTask);
+    }
+
+    public void startPollLoop(ValueRegistry valueRegistry, StartContext context) {
+        startPollLoop(valueRegistry, (Consumer<Runnable>) context::onStop);
+    }
+
+    private void startPollLoop(ValueRegistry valueRegistry, Consumer<Runnable> onStop) {
         final AtomicBoolean running = new AtomicBoolean(true);
         // flag to check whether to interrupt.
         final AtomicBoolean shouldInterrupt = new AtomicBoolean(true);
@@ -279,7 +289,7 @@ public abstract class AbstractLambdaPollLoop {
             }
         }, "Lambda Thread (" + launchMode + ")");
         pollingThread.setDaemon(true);
-        context.addShutdownTask(() -> {
+        onStop.accept(() -> {
             running.set(false);
             try {
                 //note that interrupting does not seem to be 100% reliable in unblocking the thread

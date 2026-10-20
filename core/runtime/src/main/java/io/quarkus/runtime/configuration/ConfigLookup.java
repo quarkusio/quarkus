@@ -10,7 +10,7 @@ import io.smallrye.config.SmallRyeConfig;
  * Bootstrap methods for resolving configuration mappings as dynamic constants.
  * <p>
  * This class provides the {@code condy} (constant dynamic) bootstrap method used by
- * the ActionBuilder lambda transliteration system. When a lambda captures a
+ * the ServiceRegistrar lambda transliteration system. When a lambda captures a
  * {@code @ConfigRoot(phase = BUILD_AND_RUN_TIME_FIXED)} configuration mapping,
  * the transliterator replaces the capture with a {@code CONSTANT_Dynamic} entry
  * whose bootstrap method is {@link #configMapping(MethodHandles.Lookup, String, Class)}.

@@ -7,7 +7,11 @@ package io.quarkus.runtime;
  * for example in AppCDS generation.
  * It can also be used for sidecar type scenarios where the sidecar is the same application but only performs
  * a small part of the bootstrap steps.
+ *
+ * @deprecated This exception is part of the legacy recorder infrastructure. Use
+ *             the service mechanism instead, which provides structured startup control.
  */
+@Deprecated(since = "4.0", forRemoval = true)
 public final class PreventFurtherStepsException extends RuntimeException {
 
     private final int exitCode;

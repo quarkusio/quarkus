@@ -1,19 +1,21 @@
 package io.quarkus.jdbc.oracle.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.jdbc.oracle.runtime.OracleInitRecorder;
 
 public final class ExtendedCharactersSupport {
 
-    @Record(STATIC_INIT)
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    public void preinitializeCharacterSets(NativeConfig config, OracleInitRecorder recorder) {
-        recorder.setupCharSets(config.addAllCharsets());
+    public void preinitializeCharacterSets(NativeConfig config, ServiceRegistrar serviceRegistrar) {
+        boolean addAllCharsets = config.addAllCharsets();
+        serviceRegistrar
+                .forService("io.quarkus.jdbc.oracle.preinitialize-charsets")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> OracleInitRecorder.setupCharSets(addAllCharsets));
     }
 
 }

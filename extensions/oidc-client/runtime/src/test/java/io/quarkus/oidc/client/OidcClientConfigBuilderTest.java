@@ -41,6 +41,7 @@ public class OidcClientConfigBuilderTest {
         assertFalse(config.absoluteExpiresIn());
         assertTrue(config.grantOptions().isEmpty());
         assertTrue(config.earlyTokensAcquisition());
+        assertEquals(15, config.tokenCacheMaxSize());
         assertTrue(config.headers().isEmpty());
         var grant = config.grant();
         assertNotNull(grant);
@@ -130,6 +131,7 @@ public class OidcClientConfigBuilderTest {
                 .grantOptions("four", Map.of("five", "six"))
                 .grantOptions(Map.of("seven", Map.of("eight", "nine")))
                 .earlyTokensAcquisition(false)
+                .tokenCacheMaxSize(5)
                 .headers("one", "two")
                 .headers(Map.of("three", "four"))
                 // OidcClientCommonConfig methods
@@ -215,6 +217,7 @@ public class OidcClientConfigBuilderTest {
         assertTrue(grantOptions.containsKey("seven"));
         assertEquals("nine", grantOptions.get("seven").get("eight"));
         assertFalse(config.earlyTokensAcquisition());
+        assertEquals(5, config.tokenCacheMaxSize());
         var headers = config.headers();
         assertNotNull(headers);
         assertEquals(2, headers.size());
@@ -310,6 +313,7 @@ public class OidcClientConfigBuilderTest {
                 .grantOptions("four", Map.of("five", "six"))
                 .grantOptions(Map.of("seven", Map.of("eight", "nine")))
                 .earlyTokensAcquisition(false)
+                .tokenCacheMaxSize(5)
                 .headers("one", "two")
                 .headers(Map.of("three", "four"))
                 .build();
@@ -344,6 +348,7 @@ public class OidcClientConfigBuilderTest {
         assertTrue(grantOptions.containsKey("seven"));
         assertEquals("nine", grantOptions.get("seven").get("eight"));
         assertFalse(existingConfig.earlyTokensAcquisition());
+        assertEquals(5, existingConfig.tokenCacheMaxSize());
         var headers = existingConfig.headers();
         assertNotNull(headers);
         assertEquals(2, headers.size());
@@ -362,6 +367,7 @@ public class OidcClientConfigBuilderTest {
                 .expiresInProperty("expires_in_test-CHANGED")
                 .end()
                 .earlyTokensAcquisition(true)
+                .tokenCacheMaxSize(7)
                 .build();
 
         // OidcClientConfig methods
@@ -396,6 +402,7 @@ public class OidcClientConfigBuilderTest {
         assertTrue(grantOptions.containsKey("seven"));
         assertEquals("nine", grantOptions.get("seven").get("eight"));
         assertTrue(newConfig.earlyTokensAcquisition());
+        assertEquals(7, newConfig.tokenCacheMaxSize());
         headers = newConfig.headers();
         assertNotNull(headers);
         assertEquals(2, headers.size());

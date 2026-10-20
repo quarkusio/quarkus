@@ -1,13 +1,13 @@
 package io.quarkus.smallrye.context.deployment;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -19,6 +19,7 @@ import org.eclipse.microprofile.context.spi.ThreadContextProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
@@ -30,16 +31,17 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.InjectionPointsTransformer;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.smallrye.context.deployment.spi.ThreadContextProviderBuildItem;
+import io.quarkus.smallrye.context.runtime.ConfiguredManagedExecutorCreator;
+import io.quarkus.smallrye.context.runtime.ConfiguredThreadContextCreator;
+import io.quarkus.smallrye.context.runtime.ManagedExecutorCreator;
 import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationProvider;
 import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationRecorder;
 import io.smallrye.context.SmallRyeManagedExecutor;
@@ -51,6 +53,10 @@ import io.smallrye.context.api.ThreadContextConfig;
  */
 class SmallRyeContextPropagationProcessor {
 
+    private static final String MANAGER_BUILDER_SERVICE = "io.quarkus.smallrye-context-propagation.manager-builder";
+    private static final String MANAGER_SERVICE = "io.quarkus.smallrye-context-propagation.manager";
+    private static final String MANAGER_RELEASE_SERVICE = "io.quarkus.smallrye-context-propagation.manager-release";
+
     private static final String NAME_DELIMITER = "/";
 
     @BuildStep
@@ -60,47 +66,40 @@ class SmallRyeContextPropagationProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void buildStatic(SmallRyeContextPropagationRecorder recorder, List<ThreadContextProviderBuildItem> threadContextProviders)
+    void buildStatic(ServiceRegistrar serviceRegistrar, List<ThreadContextProviderBuildItem> threadContextProviders)
             throws ClassNotFoundException, IOException {
-        List<ThreadContextProvider> discoveredProviders = new ArrayList<>();
-        List<ContextManagerExtension> discoveredExtensions = new ArrayList<>();
         List<Class<?>> providers = threadContextProviders.stream().map(ThreadContextProviderBuildItem::getProvider)
                 .collect(Collectors.toCollection(ArrayList::new));
         ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
                 "META-INF/services/" + ThreadContextProvider.class.getName()).forEach(providers::add);
-        for (Class<?> provider : providers) {
-            try {
-                discoveredProviders.add((ThreadContextProvider) provider.getDeclaredConstructor().newInstance());
-            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-                throw new RuntimeException("Failed to instantiate declared ThreadContextProvider class: " + provider.getName(),
-                        e);
-            }
-        }
-        for (Class<?> extension : ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
-                "META-INF/services/" + ContextManagerExtension.class.getName())) {
-            try {
-                discoveredExtensions.add((ContextManagerExtension) extension.getDeclaredConstructor().newInstance());
-            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-                throw new RuntimeException("Failed to instantiate declared ThreadContextProvider class: " + extension.getName(),
-                        e);
-            }
-        }
+        List<Class<?>> extensions = new ArrayList<>();
+        ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
+                "META-INF/services/" + ContextManagerExtension.class.getName()).forEach(extensions::add);
+        List<Class<?>> providerClasses = List.copyOf(providers);
+        List<Class<?>> extensionClasses = List.copyOf(extensions);
 
-        recorder.configureStaticInit(discoveredProviders, discoveredExtensions);
+        serviceRegistrar.forService(MANAGER_BUILDER_SERVICE)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> SmallRyeContextPropagationRecorder.configureStaticInit(providerClasses, extensionClasses));
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void build(SmallRyeContextPropagationRecorder recorder,
-            ExecutorBuildItem executorBuildItem,
-            ShutdownContextBuildItem shutdownContextBuildItem,
+    void build(ServiceRegistrar serviceRegistrar,
             BuildProducer<ContextPropagationInitializedBuildItem> cpInitializedBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_CONTEXT_PROPAGATION));
 
-        recorder.configureRuntime(executorBuildItem.getExecutorProxy(), shutdownContextBuildItem);
+        serviceRegistrar.forService(MANAGER_SERVICE)
+                .atPhase(Phase.INFRASTRUCTURE)
+                .require(ScheduledExecutorService.class)
+                .onStart((ctx, executorService) -> SmallRyeContextPropagationRecorder.configureRuntime(executorService));
+
+        // the manager is released after the executor has stopped, as running tasks can re-create an implicit one
+        serviceRegistrar.forService(MANAGER_RELEASE_SERVICE)
+                .atPhase(Phase.INFRASTRUCTURE)
+                .before(ScheduledExecutorService.class)
+                .onStart(ctx -> ctx.onStop(SmallRyeContextPropagationRecorder::releaseContextManager));
 
         // Synthetic bean for ManagedExecutor
         syntheticBeans.produce(
@@ -109,7 +108,8 @@ class SmallRyeContextPropagationProcessor {
                         .addType(ManagedExecutor.class)
                         .defaultBean()
                         .unremovable()
-                        .supplier(recorder.initializeManagedExecutor(executorBuildItem.getExecutorProxy()))
+                        .addInjectionPoint(ClassType.create(DotName.createSimple(ThreadContext.class)))
+                        .creator(ManagedExecutorCreator.class)
                         .setRuntimeInit().done());
 
         cpInitializedBuildItem.produce(new ContextPropagationInitializedBuildItem());
@@ -171,9 +171,8 @@ class SmallRyeContextPropagationProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
     void createSynthBeansForConfiguredInjectionPoints(BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
-            SmallRyeContextPropagationRecorder recorder, BeanDiscoveryFinishedBuildItem bdFinishedBuildItem) {
+            BeanDiscoveryFinishedBuildItem bdFinishedBuildItem) {
         Map<String, ExecutorConfig> executorMap = new HashMap<>();
         Set<String> unconfiguredExecutorIPs = new HashSet<>();
         Map<String, ThreadConfig> threadContextMap = new HashMap<>();
@@ -303,8 +302,11 @@ class SmallRyeContextPropagationProcessor {
                     .scope(ApplicationScoped.class)
                     .addQualifier().annotation(DotNames.NAMED_INSTANCE).addValue("value", entry.getKey())
                     .done()
-                    .supplier(recorder.initializeConfiguredManagedExecutor(entry.getValue().cleared,
-                            entry.getValue().propagated, entry.getValue().maxAsync, entry.getValue().maxQueued))
+                    .creator(ConfiguredManagedExecutorCreator.class)
+                    .param(ConfiguredManagedExecutorCreator.CLEARED, entry.getValue().cleared)
+                    .param(ConfiguredManagedExecutorCreator.PROPAGATED, entry.getValue().propagated)
+                    .param(ConfiguredManagedExecutorCreator.MAX_ASYNC, entry.getValue().maxAsync)
+                    .param(ConfiguredManagedExecutorCreator.MAX_QUEUED, entry.getValue().maxQueued)
                     // disposers should be unnecessary as all beans run on Quarkus thread pool
                     .done());
         }
@@ -317,11 +319,14 @@ class SmallRyeContextPropagationProcessor {
                     .setRuntimeInit()
                     .scope(ApplicationScoped.class)
                     .addQualifier().annotation(DotNames.NAMED_INSTANCE).addValue("value", ipName).done()
-                    .supplier(recorder.initializeConfiguredManagedExecutor(
-                            ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.cleared(),
-                            ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.propagated(),
-                            ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.maxAsync(),
-                            ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.maxQueued()))
+                    .creator(ConfiguredManagedExecutorCreator.class)
+                    .param(ConfiguredManagedExecutorCreator.CLEARED, ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.cleared())
+                    .param(ConfiguredManagedExecutorCreator.PROPAGATED,
+                            ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.propagated())
+                    .param(ConfiguredManagedExecutorCreator.MAX_ASYNC,
+                            ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.maxAsync())
+                    .param(ConfiguredManagedExecutorCreator.MAX_QUEUED,
+                            ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.maxQueued())
                     // disposers should be unnecessary as all beans run on Quarkus thread pool
                     .done());
         }
@@ -335,9 +340,10 @@ class SmallRyeContextPropagationProcessor {
                     .scope(ApplicationScoped.class)
                     .addQualifier().annotation(DotNames.NAMED_INSTANCE).addValue("value", entry.getKey())
                     .done()
-                    .supplier(recorder.initializeConfiguredThreadContext(entry.getValue().cleared,
-                            entry.getValue().propagated,
-                            entry.getValue().unchanged))
+                    .creator(ConfiguredThreadContextCreator.class)
+                    .param(ConfiguredThreadContextCreator.CLEARED, entry.getValue().cleared)
+                    .param(ConfiguredThreadContextCreator.PROPAGATED, entry.getValue().propagated)
+                    .param(ConfiguredThreadContextCreator.UNCHANGED, entry.getValue().unchanged)
                     // disposers should be unnecessary as all beans run on Quarkus thread pool
                     .done());
         }
@@ -350,10 +356,10 @@ class SmallRyeContextPropagationProcessor {
                     .setRuntimeInit()
                     .scope(ApplicationScoped.class)
                     .addQualifier().annotation(DotNames.NAMED_INSTANCE).addValue("value", ipName).done()
-                    .supplier(recorder.initializeConfiguredThreadContext(
-                            ThreadContextConfig.Literal.DEFAULT_INSTANCE.cleared(),
-                            ThreadContextConfig.Literal.DEFAULT_INSTANCE.propagated(),
-                            ThreadContextConfig.Literal.DEFAULT_INSTANCE.unchanged()))
+                    .creator(ConfiguredThreadContextCreator.class)
+                    .param(ConfiguredThreadContextCreator.CLEARED, ThreadContextConfig.Literal.DEFAULT_INSTANCE.cleared())
+                    .param(ConfiguredThreadContextCreator.PROPAGATED, ThreadContextConfig.Literal.DEFAULT_INSTANCE.propagated())
+                    .param(ConfiguredThreadContextCreator.UNCHANGED, ThreadContextConfig.Literal.DEFAULT_INSTANCE.unchanged())
                     // disposers should be unnecessary as all beans run on Quarkus thread pool
                     .done());
         }

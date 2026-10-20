@@ -24,10 +24,10 @@ class VirtualThreadExecutorSupplierTest {
 
     @BeforeEach
     void configRecorder() {
-        VirtualThreadsRecorder.config = new SmallRyeConfigBuilder()
+        VirtualThreadsRecorder.setConfig(new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
                 .withMapping(VirtualThreadsConfig.class)
-                .build().getConfigMapping(VirtualThreadsConfig.class);
+                .build().getConfigMapping(VirtualThreadsConfig.class));
     }
 
     @Test

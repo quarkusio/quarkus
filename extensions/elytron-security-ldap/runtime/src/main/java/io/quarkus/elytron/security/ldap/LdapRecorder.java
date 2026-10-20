@@ -21,27 +21,11 @@ import io.quarkus.elytron.security.ldap.config.AttributeMappingConfig;
 import io.quarkus.elytron.security.ldap.config.DirContextConfig;
 import io.quarkus.elytron.security.ldap.config.IdentityMappingConfig;
 import io.quarkus.elytron.security.ldap.config.LdapSecurityRealmRuntimeConfig;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 
-@Recorder
 public class LdapRecorder {
     private static final Logger log = LoggerFactory.getLogger(LdapRecorder.class);
 
-    private final RuntimeValue<LdapSecurityRealmRuntimeConfig> runtimeConfig;
-
-    public LdapRecorder(final RuntimeValue<LdapSecurityRealmRuntimeConfig> runtimeConfig) {
-        this.runtimeConfig = runtimeConfig;
-    }
-
-    /**
-     * Create a runtime value for a {@linkplain LdapSecurityRealm}
-     *
-     * @return runtime value wrapper for the SecurityRealm
-     */
-    public RuntimeValue<SecurityRealm> createRealm() {
-        LdapSecurityRealmRuntimeConfig runtimeConfig = this.runtimeConfig.getValue();
-
+    public static SecurityRealm createRealm(LdapSecurityRealmRuntimeConfig runtimeConfig) {
         LdapSecurityRealmBuilder.IdentityMappingBuilder identityMappingBuilder = LdapSecurityRealmBuilder.builder()
                 .setDirContextSupplier(createDirContextSupplier(runtimeConfig.dirContext()))
                 .identityMapping();
@@ -72,7 +56,7 @@ public class LdapRecorder {
             }
         }
 
-        return new RuntimeValue<>(ldapRealm);
+        return ldapRealm;
     }
 
     private static ExceptionSupplier<DirContext, NamingException> createDirContextSupplier(DirContextConfig dirContext) {

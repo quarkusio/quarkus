@@ -51,6 +51,7 @@ import org.jboss.resteasy.microprofile.client.RestClientProxy;
 import org.jboss.resteasy.microprofile.client.async.AsyncInterceptorRxInvokerProvider;
 import org.jboss.resteasy.microprofile.client.publisher.MpPublisherMessageBodyReader;
 import org.jboss.resteasy.plugins.providers.sse.client.SseEventSourceImpl;
+import org.jboss.resteasy.spi.InjectorFactory;
 import org.jboss.resteasy.spi.ResteasyConfiguration;
 
 import io.quarkus.arc.BeanDestroyer;
@@ -62,13 +63,13 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.InterceptorInfo;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -100,7 +101,6 @@ import io.quarkus.restclient.runtime.RestClientBase;
 import io.quarkus.restclient.runtime.RestClientRecorder;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.RestClientBuildItem;
-import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.runtime.metrics.MetricsFactory;
@@ -147,15 +147,16 @@ class RestClientProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void setup(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            RestClientRecorder restClientRecorder) {
+            ServiceRegistrar serviceRegistrar) {
 
         feature.produce(new FeatureBuildItem(Feature.RESTEASY_CLIENT));
 
-        restClientRecorder.setRestClientBuilderResolver();
+        serviceRegistrar.forService("io.quarkus.resteasy-client.builder-resolver")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> RestClientRecorder.setRestClientBuilderResolver());
 
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
 
@@ -437,28 +438,35 @@ class RestClientProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void registerProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
             List<IgnoreClientProviderBuildItem> ignoreClientProviderBuildItems,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            ResteasyInjectionReadyBuildItem injectorFactory,
-            RestClientRecorder restClientRecorder, Capabilities capabilities) {
+            ServiceRegistrar serviceRegistrar, Capabilities capabilities) {
 
         for (IgnoreClientProviderBuildItem item : ignoreClientProviderBuildItems) {
             jaxrsProvidersToRegisterBuildItem.getProviders().remove(item.getProviderClassName());
             jaxrsProvidersToRegisterBuildItem.getContributedProviders().remove(item.getProviderClassName());
         }
 
-        restClientRecorder.initializeResteasyProviderFactory(injectorFactory.getInjectorFactory(),
-                jaxrsProvidersToRegisterBuildItem.useBuiltIn(),
-                jaxrsProvidersToRegisterBuildItem.getProviders(), jaxrsProvidersToRegisterBuildItem.getContributedProviders());
+        boolean useBuiltIn = jaxrsProvidersToRegisterBuildItem.useBuiltIn();
+        Set<String> providersToRegister = Set.copyOf(jaxrsProvidersToRegisterBuildItem.getProviders());
+        Set<String> contributedProviders = Set.copyOf(jaxrsProvidersToRegisterBuildItem.getContributedProviders());
+        // ResteasyProviderFactory will use our implementation when accessing instance statically. That's not
+        // necessary when RESTEasy classic is present as then provider factory with correct provider classes is generated.
+        boolean setProviderFactoryInstance = !capabilities.isPresent(Capability.RESTEASY)
+                && !capabilities.isPresent(Capability.RESTEASY_REACTIVE);
 
-        if (!capabilities.isPresent(Capability.RESTEASY) && !capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
-            // ResteasyProviderFactory will use our implementation when accessing instance statically. That's not
-            // necessary when RESTEasy classic is present as then provider factory with correct provider classes is generated.
-            restClientRecorder.setResteasyProviderFactoryInstance();
-        }
+        serviceRegistrar.forService("io.quarkus.resteasy-client.provider-factory")
+                .atPhase(Phase.STATIC_INIT)
+                .require(InjectorFactory.class)
+                .onStart((ctx, injectorFactory) -> {
+                    RestClientRecorder.initializeResteasyProviderFactory(injectorFactory, useBuiltIn, providersToRegister,
+                            contributedProviders);
+                    if (setProviderFactoryInstance) {
+                        RestClientRecorder.setResteasyProviderFactoryInstance();
+                    }
+                });
 
         // register the providers for reflection
         for (String providerToRegister : jaxrsProvidersToRegisterBuildItem.getProviders()) {

@@ -4,8 +4,6 @@ import static io.opentelemetry.sdk.common.internal.ScopeConfiguratorBuilder.name
 import static java.lang.Boolean.TRUE;
 import static java.util.Collections.emptyList;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -49,6 +47,7 @@ import io.quarkus.opentelemetry.runtime.tracing.SimpleSpanProcessorWithBatchShut
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.TracerUtil;
 import io.quarkus.runtime.ApplicationConfig;
+import io.smallrye.common.net.HostName;
 
 public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
@@ -133,7 +132,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             })
                             .orElse(null);
 
-                    String hostname = getHostname();
+                    String hostname = HostName.getHostName();
 
                     // Merge resource instances with env attributes
                     Resource resource = resources.stream()
@@ -389,16 +388,4 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             }
         }
     }
-
-    private static String getHostname() {
-        // must be resolved at startup, once.
-        String hostname = null;
-        try {
-            hostname = InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException e) {
-            hostname = "unknown";
-        }
-        return hostname;
-    }
-
 }

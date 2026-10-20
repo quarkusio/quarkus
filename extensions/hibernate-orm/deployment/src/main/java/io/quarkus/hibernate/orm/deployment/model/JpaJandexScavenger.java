@@ -40,6 +40,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.hibernate.orm.deployment.ClassNames;
 import io.quarkus.hibernate.orm.deployment.JpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.xml.QuarkusMappingFileParser;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -100,6 +101,8 @@ public final class JpaJandexScavenger {
         enlistPotentialClassReferences(collector, ClassNames.ID_GENERATOR_TYPE, "value");
         enlistPotentialClassReferences(collector, ClassNames.VALUE_GENERATION_TYPE, "generatedBy");
 
+        enlistJakartaDataRepositories(collector, index);
+
         for (JpaModelPersistenceUnitContributionBuildItem persistenceUnitContribution : persistenceUnitContributions) {
             enlistExplicitMappings(collector, persistenceUnitContribution);
         }
@@ -155,7 +158,7 @@ public final class JpaJandexScavenger {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(forReflection).constructors().build());
 
         return new JpaModelBuildItem(collector.packages, collector.entityTypes, managedClassNames,
-                collector.potentialCdiBeanTypes, collector.xmlMappingsByPU);
+                collector.potentialCdiBeanTypes, collector.xmlMappingsByPU, collector.repositoryPersistenceUnits);
     }
 
     public JpaModelBuildItem discoverModelAndRegisterForReflection() throws BuildException {
@@ -442,6 +445,86 @@ public final class JpaJandexScavenger {
         }
     }
 
+    /**
+     * Discovers Jakarta Data repository interfaces (both those annotated with {@code @Repository} and unannotated
+     * interfaces declaring repository method annotations such as {@code @Find}/{@code @Query}) and registers them as
+     * model types, so they go through the same reflection registration and persistence unit assignment as other model
+     * classes.
+     * <p>
+     * The persistence unit of each repository (an annotated repository's own data store, the data store inherited by an
+     * unannotated superinterface from its annotated subinterfaces, the enclosing entity's persistence unit for a nested
+     * repository, or the default persistence unit otherwise) is recorded in {@link Collector#repositoryPersistenceUnits}.
+     */
+    static void enlistJakartaDataRepositories(Collector collector, IndexView index) {
+        for (DotName repositoryName : findRepositoryInterfaceNames(index)) {
+            collector.modelTypes.add(repositoryName.toString());
+            Set<String> persistenceUnits = resolveRepositoryPersistenceUnits(index, repositoryName);
+            if (persistenceUnits != null) {
+                collector.repositoryPersistenceUnits.put(repositoryName.toString(), persistenceUnits);
+            }
+        }
+    }
+
+    private static Set<DotName> findRepositoryInterfaceNames(IndexView index) {
+        Set<DotName> repositoryNames = new HashSet<>();
+        for (AnnotationInstance annotation : index.getAnnotations(ClassNames.JAKARTA_DATA_REPOSITORY)) {
+            if (annotation.target().kind() == AnnotationTarget.Kind.CLASS && annotation.target().asClass().isInterface()) {
+                repositoryNames.add(annotation.target().asClass().name());
+            }
+        }
+
+        // Hibernate ORM 8 registers static queries only for interfaces explicitly listed in the persistence unit.
+        for (DotName methodAnnotation : ClassNames.REPOSITORY_METHOD_ANNOTATIONS) {
+            for (AnnotationInstance annotation : index.getAnnotations(methodAnnotation)) {
+                if (annotation.target().kind() == AnnotationTarget.Kind.METHOD
+                        && annotation.target().asMethod().declaringClass().isInterface()) {
+                    repositoryNames.add(annotation.target().asMethod().declaringClass().name());
+                }
+            }
+        }
+        return repositoryNames;
+    }
+
+    /**
+     * @return the persistence units a repository interface is assigned to;
+     *         an empty set if it is a nested interface inheriting the persistence unit of its enclosing entity.
+     */
+    private static Set<String> resolveRepositoryPersistenceUnits(IndexView index, DotName repositoryName) {
+        ClassInfo repository = index.getClassByName(repositoryName);
+        AnnotationInstance explicitAnnotation = repository.declaredAnnotation(ClassNames.JAKARTA_DATA_REPOSITORY);
+        if (explicitAnnotation != null) {
+            return Set.of(repositoryPersistenceUnitName(explicitAnnotation));
+        }
+
+        // An unannotated superinterface inherits the PU of its annotated repository subinterfaces.
+        Set<String> inherited = new HashSet<>();
+        for (ClassInfo subinterface : index.getAllKnownSubinterfaces(repositoryName)) {
+            AnnotationInstance subinterfaceAnnotation = subinterface.declaredAnnotation(ClassNames.JAKARTA_DATA_REPOSITORY);
+            if (subinterfaceAnnotation != null) {
+                inherited.add(repositoryPersistenceUnitName(subinterfaceAnnotation));
+            }
+        }
+        if (!inherited.isEmpty()) {
+            return inherited;
+        }
+
+        // Nested interfaces inherit their enclosing entity's PU when the model is built.
+        ClassInfo enclosingClass = repository.enclosingClass() == null ? null
+                : index.getClassByName(repository.enclosingClass());
+        if (enclosingClass != null && enclosingClass.declaredAnnotation(ClassNames.JPA_ENTITY) != null) {
+            return Set.of();
+        }
+
+        // Unannotated top-level repository (or one nested in a non-entity): the default persistence unit.
+        return Set.of(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+    }
+
+    private static String repositoryPersistenceUnitName(AnnotationInstance repositoryAnnotation) {
+        var dataStoreValue = repositoryAnnotation.value("dataStore");
+        String dataStore = dataStoreValue != null ? dataStoreValue.asString() : null;
+        return dataStore != null && !dataStore.isEmpty() ? dataStore : PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+    }
+
     private void enlistPotentialCdiBeanClasses(Collector collector, DotName dotName) {
         Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
 
@@ -637,5 +720,6 @@ public final class JpaJandexScavenger {
         public final Set<String> javaTypes = new HashSet<>();
         public final Set<DotName> unindexedClasses = new HashSet<>();
         public final Map<String, List<RecordableXmlMapping>> xmlMappingsByPU = new HashMap<>();
+        public final Map<String, Set<String>> repositoryPersistenceUnits = new HashMap<>();
     }
 }

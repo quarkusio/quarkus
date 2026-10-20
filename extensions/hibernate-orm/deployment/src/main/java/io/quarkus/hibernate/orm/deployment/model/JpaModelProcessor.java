@@ -292,16 +292,28 @@ final class JpaModelProcessor {
             }
         }
 
+        Map<String, Set<String>> repositoryPersistenceUnits = jpaModel.getRepositoryPersistenceUnits();
+
         for (String modelClassName : jpaModel.getAllModelClassNames()) {
+            Set<String> repositoryPersistenceUnitsForClass = repositoryPersistenceUnits.get(modelClassName);
+            if (repositoryPersistenceUnitsForClass != null && repositoryPersistenceUnitsForClass.isEmpty()) {
+                // Nested repository interface with no explicit persistence unit:
+                // assigned below to the persistence unit of its enclosing entity.
+                continue;
+            }
+
             ClassInfo modelClassInfo = index.getClassByName(DotName.createSimple(modelClassName));
             Set<String> relatedModelClassNames = getRelatedModelClassNames(index, jpaModel.getAllModelClassNames(),
                     modelClassInfo);
 
-            // A class-level @PersistenceUnit annotation takes precedence over a package-level one:
-            // only apply package rules to classes without an explicit class-level assignment.
+            // Explicit persistence unit assignments (a repository's @Repository(dataStore=...), or a class-level
+            // @PersistenceUnit annotation) take precedence over package-level rules:
+            // only apply package rules to classes without an explicit assignment.
             Set<String> classPersistenceUnits = classLevelPersistenceUnitAssignments.get(modelClassName);
             Set<String> persistenceUnits = new HashSet<>();
-            if (classPersistenceUnits != null) {
+            if (repositoryPersistenceUnitsForClass != null) {
+                persistenceUnits.addAll(repositoryPersistenceUnitsForClass);
+            } else if (classPersistenceUnits != null) {
                 persistenceUnits.addAll(classPersistenceUnits);
             } else {
                 for (Entry<String, Set<String>> packageRuleEntry : packageRules.entrySet()) {
@@ -337,6 +349,16 @@ final class JpaModelProcessor {
         assignedModelClassAndPackageNames.addAll(classLevelPersistenceUnitAssignments.keySet());
 
         List<ClassInfo> nestedRepositories = new ArrayList<>();
+        // Nested Jakarta Data repository interfaces (empty value in the map) are resolved after all explicit entity
+        // assignments, so their persistence unit can be taken from their enclosing entity regardless of ordering.
+        for (Entry<String, Set<String>> repositoryEntry : repositoryPersistenceUnits.entrySet()) {
+            if (repositoryEntry.getValue().isEmpty()) {
+                var nestedInterface = index.getClassByName(DotName.createSimple(repositoryEntry.getKey()));
+                if (nestedInterface != null && nestedInterface.isInterface() && nestedInterface.enclosingClass() != null) {
+                    nestedRepositories.add(nestedInterface);
+                }
+            }
+        }
         for (AdditionalJpaModelBuildItem additionalJpaModel : additionalJpaModelBuildItems) {
             var className = additionalJpaModel.getClassName();
             var persistenceUnits = additionalJpaModel.getPersistenceUnits();

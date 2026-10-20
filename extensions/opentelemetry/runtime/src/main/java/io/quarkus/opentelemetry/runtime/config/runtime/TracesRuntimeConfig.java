@@ -51,11 +51,13 @@ public interface TracesRuntimeConfig {
     Boolean includeStaticResources();
 
     /**
-     * Sampler argument. Depends on the `quarkus.otel.traces.sampler` property.
-     * Fallbacks to the legacy property <code>quarkus.opentelemetry.tracer.sampler.ratio</code>.
+     * Sampler ratio argument. Depends on the `quarkus.otel.traces.sampler` property,
+     * when set to `traceidratio` or `parentbased_traceidratio`.
      * <p>
-     * When setting the stock sampler to `traceidratio` or `parentbased_traceidratio` you need to set a `double` compatible
-     * value between `0.0d` and `1.0d`, like `0.01d` or `0.5d`. It is kept as a `String` to allow the flexible customisation of
+     * Accepts `double` compatible value between `0.0d` and `1.0d`, like `0.01d` or `0.5d`.
+     * Where `0.0d` is 0% and drops all spans and `1.0d` is 100% and samples all spans.
+     * <p>
+     * This configuration is kept as a `String` to allow the flexible customization of
      * alternative samplers.
      */
     @WithName("sampler.arg")

@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.deployment.devmode;
+package io.quarkus.devui.deployment;
 
 import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.spi.DeploymentFailedStartHandler;

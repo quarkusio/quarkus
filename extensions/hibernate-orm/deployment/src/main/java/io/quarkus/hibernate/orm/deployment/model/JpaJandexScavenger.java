@@ -451,9 +451,10 @@ public final class JpaJandexScavenger {
      * model types, so they go through the same reflection registration and persistence unit assignment as other model
      * classes.
      * <p>
-     * The persistence unit of each repository (an annotated repository's own data store, the data store inherited by an
-     * unannotated superinterface from its annotated subinterfaces, the enclosing entity's persistence unit for a nested
-     * repository, or the default persistence unit otherwise) is recorded in {@link Collector#repositoryPersistenceUnits}.
+     * The explicit persistence unit of annotated repositories (and of unannotated superinterfaces inheriting it from
+     * annotated subinterfaces, or of nested repositories inheriting it from their enclosing entity) is recorded in
+     * {@link Collector#repositoryPersistenceUnits}. Unannotated top-level repositories are left out of that map so that
+     * {@code JpaModelProcessor} applies the regular package-based assignment rules to them.
      */
     static void enlistJakartaDataRepositories(Collector collector, IndexView index) {
         for (DotName repositoryName : findRepositoryInterfaceNames(index)) {
@@ -486,8 +487,9 @@ public final class JpaJandexScavenger {
     }
 
     /**
-     * @return the persistence units a repository interface is assigned to;
-     *         an empty set if it is a nested interface inheriting the persistence unit of its enclosing entity.
+     * @return the persistence units a repository interface is explicitly assigned to;
+     *         an empty set if it is a nested interface inheriting the persistence unit of its enclosing entity;
+     *         or {@code null} if it should follow the regular package-based assignment rules.
      */
     private static Set<String> resolveRepositoryPersistenceUnits(IndexView index, DotName repositoryName) {
         ClassInfo repository = index.getClassByName(repositoryName);
@@ -515,8 +517,8 @@ public final class JpaJandexScavenger {
             return Set.of();
         }
 
-        // Unannotated top-level repository (or one nested in a non-entity): the default persistence unit.
-        return Set.of(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+        // Unannotated top-level repository (or one nested in a non-entity): follow package-based assignment rules.
+        return null;
     }
 
     private static String repositoryPersistenceUnitName(AnnotationInstance repositoryAnnotation) {

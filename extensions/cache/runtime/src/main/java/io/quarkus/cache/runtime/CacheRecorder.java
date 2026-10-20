@@ -17,9 +17,26 @@ public class CacheRecorder {
 
     /**
      * Registers a {@link CacheSpecialMethodHandler}. Companion extensions call this from a recorded build step.
+     *
+     * @deprecated Use {@link #addSpecialMethodHandler(CacheSpecialMethodHandler)} from a service instead.
      */
+    @Deprecated(since = "4.0", forRemoval = true)
     public void registerSpecialMethodHandler(CacheSpecialMethodHandler handler) {
+        addSpecialMethodHandler(handler);
+    }
+
+    /**
+     * Registers a {@link CacheSpecialMethodHandler}. Companion extensions call this from a service.
+     */
+    public static void addSpecialMethodHandler(CacheSpecialMethodHandler handler) {
         specialMethodHandlers.add(Objects.requireNonNull(handler));
+    }
+
+    /**
+     * Removes a {@link CacheSpecialMethodHandler} added by {@link #addSpecialMethodHandler(CacheSpecialMethodHandler)}.
+     */
+    public static void removeSpecialMethodHandler(CacheSpecialMethodHandler handler) {
+        specialMethodHandlers.remove(handler);
     }
 
     /**

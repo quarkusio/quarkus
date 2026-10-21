@@ -70,6 +70,10 @@ public class Tokens {
         return refreshTokenTimeSkew;
     }
 
+    public Long getMinRemainingAccessTokenLifespan() {
+        return minRemainingAccessTokenLifespan;
+    }
+
     /**
      * Whether this access token has enough of its lifespan left to still be worth sending while it is
      * being refreshed, so that it does not expire in transit or while the target service is processing

@@ -101,9 +101,11 @@ public class TokensHelper {
                     if (tokensBeingRefreshed.hasMinRemainingAccessTokenLifespan()) {
                         return Uni.createFrom().item(tokensBeingRefreshed);
                     }
-                    LOG.debugf("Access token being refreshed for client %s will not be reused because too little"
-                            + " of its lifespan is left, waiting for the refreshed tokens instead",
-                            tokensBeingRefreshed.getClientId());
+                    if (tokensBeingRefreshed.getMinRemainingAccessTokenLifespan() != null) {
+                        LOG.debugf("Access token being refreshed for client %s will not be reused because less than"
+                                + " %d seconds of its lifespan is left, waiting for the refreshed tokens instead",
+                                tokensBeingRefreshed.getClientId(), tokensBeingRefreshed.getMinRemainingAccessTokenLifespan());
+                    }
                 }
                 return currentState.tokenUni;
             } else if (forceNewTokens) {

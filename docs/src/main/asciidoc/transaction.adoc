@@ -3,13 +3,14 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using transactions in Quarkus
+= Using transactions
 include::_attributes.adoc[]
 :diataxis-type: reference
 :topics: data,jpa,jta,transactions,narayana
 :extensions: io.quarkus:quarkus-narayana-jta
 
-The `quarkus-narayana-jta` extension provides a Transaction Manager that coordinates and exposes transactions to your applications as described in the link:https://jakarta.ee/specifications/transactions/[Jakarta Transactions] specification, formerly known as Java Transaction API (JTA).
+With {project-name}, you manage transactions in your application through the Transaction Manager that the `quarkus-narayana-jta` extension provides.
+The Transaction Manager coordinates transactions and exposes them to your application as described in the link:https://jakarta.ee/specifications/transactions/[Jakarta Transactions] specification, formerly known as Java Transaction API (JTA).
 
 When discussing Quarkus transactions, this guide refers to Jakarta Transactions transaction style and uses only the term _transaction_ to address them.
 

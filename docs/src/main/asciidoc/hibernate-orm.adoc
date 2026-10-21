@@ -1397,7 +1397,7 @@ This limitation might be removed in the future.
 Transaction Manager integration::
 You don't need to set this up, Quarkus automatically injects the reference to the Narayana Transaction Manager.
 The dependency is included automatically as a transitive dependency of the Hibernate ORM extension.
-All configuration is optional; for more details see xref:transaction.adoc[Using Transactions in Quarkus].
+All configuration is optional; for more details see xref:transaction.adoc[Using transactions].
 
 Connection pool::
 Don't need to choose one either. Quarkus automatically includes the Agroal connection pool;

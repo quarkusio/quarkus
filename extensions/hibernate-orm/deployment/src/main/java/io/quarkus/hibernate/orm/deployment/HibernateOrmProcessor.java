@@ -20,6 +20,7 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
@@ -55,6 +56,15 @@ public final class HibernateOrmProcessor {
     @BuildStep
     NativeImageFeatureBuildItem registerStateManagementForReflection() {
         return new NativeImageFeatureBuildItem(RegisterStateManagementForReflectionFeature.class);
+    }
+
+    @BuildStep
+    void delayJakartaJsonIntegrationInitialization(Capabilities capabilities,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+        if (!capabilities.isPresent(Capability.JSONB)) {
+            runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem(
+                    "org.hibernate.type.format.jakartajson.JakartaJsonIntegration"));
+        }
     }
 
     @BuildStep

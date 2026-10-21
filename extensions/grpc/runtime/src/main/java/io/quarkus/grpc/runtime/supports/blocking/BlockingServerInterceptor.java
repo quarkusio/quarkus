@@ -18,6 +18,7 @@ import jakarta.enterprise.inject.spi.Prioritized;
 import org.jboss.logging.Logger;
 
 import io.grpc.Context;
+import io.grpc.ForwardingServerCall;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerCall;
@@ -169,11 +170,12 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             ContextState state = requestContext.getState();
             boolean deferHalfCloseUntilMessage = deferHalfCloseUntilMessage(call.getMethodDescriptor().getType());
             VirtualReplayListener<ReqT> replay = new VirtualReplayListener<>(state, deferHalfCloseUntilMessage);
+            ServerCall<ReqT, RespT> requestOnEventLoopCall = requestOnEventLoop(call);
             virtualThreadExecutor.execute(() -> {
                 ServerCall.Listener<ReqT> listener;
                 try {
                     requestContext.activate(state);
-                    listener = next.startCall(call, headers);
+                    listener = next.startCall(requestOnEventLoopCall, headers);
                 } finally {
                     requestContext.deactivate();
                 }
@@ -188,11 +190,12 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             ContextState state = requestContext.getState();
             boolean deferHalfCloseUntilMessage = deferHalfCloseUntilMessage(call.getMethodDescriptor().getType());
             ReplayListener<ReqT> replay = new ReplayListener<>(state, deferHalfCloseUntilMessage);
+            ServerCall<ReqT, RespT> requestOnEventLoopCall = requestOnEventLoop(call);
             vertx.executeBlocking(() -> {
                 ServerCall.Listener<ReqT> listener;
                 try {
                     requestContext.activate(state);
-                    listener = next.startCall(call, headers);
+                    listener = next.startCall(requestOnEventLoopCall, headers);
                 } finally {
                     requestContext.deactivate();
                 }
@@ -209,6 +212,27 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
     @Override
     public int getPriority() {
         return Interceptors.BLOCKING_HANDLER;
+    }
+
+    /**
+     * The actual {@code startCall} runs on a worker thread and calls {@code call.request(n)} from there, while the Vert.x
+     * gRPC bridge keeps going on the event loop and initializes the read side of the call. Its {@code ReadStreamAdapter}
+     * is not thread-safe, so a {@code request(n)} that overlaps with that initialization can be lost, and the call then
+     * hangs because the request message is never delivered.
+     * <p>
+     * Dispatching {@code request(n)} to the event loop makes it run after the initialization has completed.
+     */
+    private static <ReqT, RespT> ServerCall<ReqT, RespT> requestOnEventLoop(ServerCall<ReqT, RespT> call) {
+        io.vertx.core.Context vertxContext = Vertx.currentContext();
+        if (vertxContext == null) {
+            return call;
+        }
+        return new ForwardingServerCall.SimpleForwardingServerCall<>(call) {
+            @Override
+            public void request(int numMessages) {
+                vertxContext.runOnContext(ignored -> delegate().request(numMessages));
+            }
+        };
     }
 
     /**

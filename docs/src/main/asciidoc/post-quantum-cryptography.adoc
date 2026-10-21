@@ -1,14 +1,14 @@
 [id="post-quantum-cryptography"]
 = Post-Quantum Key Exchange in Quarkus
 include::_attributes.adoc[]
-:categories: security-core
+:categories: security
+:diataxis-type: howto
 :summary: How to enable post-quantum key exchange in Quarkus using X25519MLKEM768, covering TLS background, Diffie-Hellman, ML-KEM, and a step-by-step guide regardless of JDK version.
 :numbered:
 :sectnums:
 :sectnumlevels: 4
 :topics: security, TLS, cryptography, pqc, post-quantum
 :extensions: io.quarkus:quarkus-tls-registry
-:imagesdir: /assets/images/posts/pqc-quarkus
 
 Quantum computing is progressing, and its implications for cryptography are well understood. Post-quantum cryptography addresses a concrete near-term threat: it is possible to collect encrypted internet traffic today, in order to decrypt it once sufficiently capable quantum computers become available. This pattern is known as _harvest now, decrypt later_.
 
@@ -27,9 +27,9 @@ This article explains the relevant background on TLS and key exchange, describes
 
 A TLS session combines three cryptographic mechanisms: key exchange to establish a shared secret, authentication to verify the identity of the server (and optionally the client, in mTLS), and symmetric encryption to encode application data once the handshake is complete.
 
-In TLS 1.3, these three mechanisms are orchestrated in a single round trip. The client sends a `ClientHello` containing its supported key exchange groups along with an initial key share for its preferred group. The server replies with a `ServerHello` that selects a group and contributes its own key share; both sides can then independently derive the same shared secret. The server immediately uses that secret to encrypt the rest of its handshake messages, and sends its certificate together with a signature over the transcript, proving ownership of the private key associated with the certificate. The client verifies the certificate against its trust store and checks the signature, completing authentication. From that point on, all application data is encrypted with AES using a symmetric key derived from the shared secret (link:https://www.rfc-editor.org/info/rfc8446/#section-4[RFC 8446, section 4]).
+In link:https://en.wikipedia.org/wiki/Transport_Layer_Security#TLS_1.3[TLS 1.3], these three mechanisms are orchestrated in a single round trip. The client sends a `ClientHello` containing its supported key exchange groups along with an initial key share for its preferred group. The server replies with a `ServerHello` that selects a group and contributes its own key share; both sides can then independently derive the same shared secret. The server immediately uses that secret to encrypt the rest of its handshake messages, and sends its certificate together with a signature over the transcript, proving ownership of the private key associated with the certificate. The client verifies the certificate against its trust store and checks the signature, completing authentication. From that point on, all application data is encrypted with AES using a symmetric key derived from the shared secret (link:https://www.rfc-editor.org/info/rfc8446/#section-4[RFC 8446, section 4]).
 
-image::tls_13_handshake.png[TLS 1.3 handshake overview, align="center"]
+image::tls_13_handshake.svg[TLS 1.3 handshake overview, align="center"]
 
 This section covers each mechanism in turn.
 
@@ -100,7 +100,7 @@ secretS
 
 ...and they get the same result.
 
-image::dh.png[Diffie-Hellman key exchange overview, align="center"]
+image::dh.svg[Diffie-Hellman key exchange overview, align="center"]
 
 The mathematical hardness making it intractable for modern supercomputers to find `privKey` from `pubKey` is the _discrete logarithm problem_: given `pubKey`, `g`, and `p`, finding `x` such that `g^x mod p = pubKey` is hard to solve. Certain attacks against it exist: the *Index Calculus* algorithm and the *General Number Field Sieve* enable finding `x` in sub-exponential time. Keys must be quite large (2048 bits or 4096 bits) to remain secure.
 
@@ -121,13 +121,13 @@ Quantum computers pose a threat to both symmetric and asymmetric cryptography. W
 
 === Attacking symmetric cryptography: Grover's algorithm
 
-Grover's algorithm is a quantum search algorithm that finds a target element in an unsorted list in O(N^1/2^) steps instead of O(N).
+link:https://en.wikipedia.org/wiki/Grover%27s_algorithm[Grover's algorithm] is a quantum search algorithm that finds a target element in an unsorted list in O(N^1/2^) steps instead of O(N).
 In other words, a spy could record encrypted conversations and break the symmetric key used to encode them faster. An n-bit key could be brute-forced in 2^n/2^ operations, compared to the 2^n^ operations required by traditional brute-force attacks. AES keys are effectively "halved" by this attack, and a switch to AES-256 from AES-128 still provides 128-bit post-quantum security, which is considered sufficient.
 
 === Attacking asymmetric cryptography: Shor's algorithm
 
 In X25519, the public key is derived from the private key, `curve25519`, and `G`, a point on `curve25519`. It is virtually impossible for today's supercomputers to reverse this operation and deduce the private key from a public key, but quantum computers are able to do so.
-Shor's algorithm can solve the elliptic curve discrete logarithm problem (finding `privKeyC` given `pubKeyC`, `curve25519`, and `G`) in polynomial time on a quantum computer, compared to the exponential time required by classical computers.
+link:https://en.wikipedia.org/wiki/Shor%27s_algorithm[Shor's algorithm] can solve the elliptic curve discrete logarithm problem (finding `privKeyC` given `pubKeyC`, `curve25519`, and `G`) in polynomial time on a quantum computer, compared to the exponential time required by classical computers.
 One could thus record the traffic today, and store `curve25519`, `G`, `pubKeyC`, and `pubKeyS`. When a sufficiently powerful quantum computer becomes available, one could use it to find `privKeyC` from `pubKeyC`, `curve25519`, and `G`. Knowing `privKeyC`, it would be able to compute `secret = f(curve25519, G, privKeyC, pubKeyS)`, and thus decode the entire conversation between the client and the server.
 
 [cols="1,1,1,1", options="header"]
@@ -136,17 +136,17 @@ One could thus record the traffic today, and store `curve25519`, `G`, `pubKeyC`,
 
 | Symmetric encryption
 | AES-128
-| Grover halves key strength
+| link:https://en.wikipedia.org/wiki/Grover%27s_algorithm[Grover's algorithm] halves key strength
 | Low — AES-128 (`TLS_AES_128_GCM_SHA256`) is generally considered adequate
 
 | Key exchange
 | X25519 (ECDH)
-| Shor breaks it in polynomial time
+| link:https://en.wikipedia.org/wiki/Shor%27s_algorithm[Shor's algorithm] breaks it in polynomial time
 | High — harvest now, decrypt later applies today
 
 | Authentication
 | RSA / ECDSA
-| Shor breaks it in polynomial time
+| link:https://en.wikipedia.org/wiki/Shor%27s_algorithm[Shor's algorithm] breaks it in polynomial time
 | Low — requires a real-time capable quantum computer
 |===
 
@@ -163,7 +163,7 @@ Contrary to X25519 which is a key exchange mechanism, ML-KEM-768 is a _Key Encap
 . the server generates a secret `s`, encrypts it using `ek`, and sends the resulting ciphertext `ct` to the client;
 . the client decapsulates `ct` using its private decapsulation key `dk` and finds `s`.
 
-image::mlkem_encapsulation.png[ML-KEM-768 key encapsulation overview, align="center"]
+image::mlkem768.svg[ML-KEM-768 key encapsulation overview, align="center"]
 
 The next section provides mathematical details about ML-KEM-768 to describe how the cryptographic tools used for encapsulating and decapsulating the secret differ from those of DH-based protocols.
 
@@ -183,7 +183,7 @@ Cracking `dk` amounts to finding `s` such that `t = A*s+e`. It is worth noting t
 
 X25519 has been around for decades and guarantees security against classical computers. ML-KEM-768 is new, and mathematical weaknesses may be discovered in the future. The standard opted for a combined use of both protocols. The client and the server build two secrets: one using X25519 and the other using ML-KEM-768. These secrets are concatenated and a symmetric key is derived from the result to encode every communication. The derivation ensures that if at least one of the input secrets is secure, the output is. The resulting protocol is naturally named *X25519MLKEM768*.
 
-image::x25519mlkem768_2.png[X25519MLKEM768 hybrid key exchange overview, align="center"]
+image::x25519mlkem768.svg[X25519MLKEM768 hybrid key exchange overview, align="center"]
 
 == Supporting PQC in Quarkus
 

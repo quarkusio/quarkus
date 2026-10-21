@@ -731,7 +731,7 @@ Incorrect configuration can lead to data loss, data unavailability, or both, due
 ====
 
 For more information, see the <<configuration-reference,Configuration reference>> section below.
-To facilitate the storage of transaction logs in a database by using JDBC, see the xref:transaction.adoc#jdbcstore[Configuring transaction logs to be stored in a datasource] section of the xref:transaction.adoc[Using transactions in Quarkus] guide.
+To facilitate the storage of transaction logs in a database by using JDBC, see the xref:transaction.adoc#jdbcstore[Configuring transaction logs to be stored in a datasource] section of the xref:transaction.adoc[Using transactions] guide.
 
 [[in-memory-databases]]
 === Testing with in-memory databases

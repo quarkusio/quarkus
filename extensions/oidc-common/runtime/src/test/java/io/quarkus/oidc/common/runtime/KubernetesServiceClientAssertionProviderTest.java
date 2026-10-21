@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.Vertx;
 
-public class KubernetesServiceClientAssertionProviderTest {
+class KubernetesServiceClientAssertionProviderTest {
 
     @Test
     public void testJwtBearerTokenRefresh() {
@@ -28,14 +28,17 @@ public class KubernetesServiceClientAssertionProviderTest {
         storeNewJwtBearerToken(jwtBearerTokenPath, jwtBearerToken);
         try (var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, jwtBearerTokenPath)) {
             // assert first token is loaded
-            assertEquals(jwtBearerToken, clientAssertionProvider.getClientAssertion());
+            assertEquals(jwtBearerToken, clientAssertionProvider.clientAssertion.bearerToken());
 
             // create a new token
             String secondJwtBearerToken = createJwtBearerToken();
             storeNewJwtBearerToken(jwtBearerTokenPath, secondJwtBearerToken);
 
-            Awaitility.await().atMost(Duration.ofSeconds(10))
-                    .untilAsserted(() -> assertEquals(secondJwtBearerToken, clientAssertionProvider.getClientAssertion()));
+            Awaitility.await()
+                    .atLeast(Duration.ofSeconds(2))
+                    .atMost(Duration.ofSeconds(7))
+                    .untilAsserted(
+                            () -> assertEquals(secondJwtBearerToken, clientAssertionProvider.clientAssertion.bearerToken()));
         } finally {
             vertx.close().toCompletionStage().toCompletableFuture().join();
         }

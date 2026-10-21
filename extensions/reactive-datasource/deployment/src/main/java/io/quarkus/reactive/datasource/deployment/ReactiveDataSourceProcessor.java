@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,13 +25,17 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.devui.Name;
+import io.quarkus.arc.processor.BeanConfiguratorBase;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -37,8 +43,12 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.reactive.datasource.PoolCreator;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
+import io.quarkus.reactive.datasource.runtime.MutinyPoolCreator;
 import io.quarkus.reactive.datasource.runtime.ReactivePoolRecorder;
 import io.quarkus.reactive.datasource.runtime.ReactivePoolsHealthConfig;
 import io.quarkus.reactive.datasource.spi.ReactivePoolBuildItem;
@@ -102,6 +112,7 @@ class ReactiveDataSourceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void registerReactivePools(
             ReactivePoolRecorder recorder,
+            ServiceRegistrar serviceRegistrar,
             List<ReactivePoolBuildItem> poolBuildItems,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<VertxPoolBuildItem> vertxPool) {
@@ -114,6 +125,7 @@ class ReactiveDataSourceProcessor {
 
         for (ReactivePoolBuildItem poolBuildItem : poolBuildItems) {
             String dataSourceName = poolBuildItem.getDataSourceName();
+            Supplier<ActiveResult> checkActive = recorder.poolCheckActiveSupplier(dataSourceName);
 
             // Register the bare Vert.x Pool as a synthetic bean
             ExtendedBeanConfigurator poolBeanConfigurator = SyntheticBeanBuildItem.configure(Pool.class)
@@ -121,42 +133,64 @@ class ReactiveDataSourceProcessor {
                     .addType(Pool.class)
                     .scope(ApplicationScoped.class)
                     .qualifiers(qualifiers(dataSourceName))
-                    .addInjectionPoint(POOL_CREATOR_INJECTION_TYPE, qualifier(dataSourceName))
-                    .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
-                    .createWith(poolBuildItem.getPool())
+                    .checkActive(checkActive)
                     .unremovable()
                     .setRuntimeInit()
                     .startup();
+            if (poolBuildItem.getPool() != null) {
+                poolBeanConfigurator
+                        .addInjectionPoint(POOL_CREATOR_INJECTION_TYPE, qualifier(dataSourceName))
+                        .createWith(poolBuildItem.getPool());
+            } else {
+                poolBeanConfigurator.serviceValue(Pool.class, dataSourceName);
+            }
             syntheticBeans.produce(poolBeanConfigurator.done());
 
             // Register the Mutiny Pool as a synthetic bean
-            ExtendedBeanConfigurator mutinyPoolConfigurator = SyntheticBeanBuildItem
+            syntheticBeans.produce(SyntheticBeanBuildItem
                     .configure(io.vertx.mutiny.sqlclient.Pool.class)
                     .defaultBean()
                     .addType(io.vertx.mutiny.sqlclient.Pool.class)
                     .scope(ApplicationScoped.class)
                     .qualifiers(qualifiers(dataSourceName))
                     .addInjectionPoint(POOL_TYPE, qualifier(dataSourceName))
-                    .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
-                    .createWith(recorder.mutinyPool(dataSourceName))
+                    .checkActive(mutinyPoolCheckActive(dataSourceName))
+                    .creator(MutinyPoolCreator.class)
+                    .param(MutinyPoolCreator.DATA_SOURCE_NAME, dataSourceName)
                     .unremovable()
                     .setRuntimeInit()
-                    .startup();
-            syntheticBeans.produce(mutinyPoolConfigurator.done());
+                    .startup()
+                    .done());
 
             healthSqlMap.put(dataSourceName, poolBuildItem.getHealthCheckSql());
         }
 
         // Register the health config bean
+        Map<String, String> healthCheckSqlByDataSource = Map.copyOf(healthSqlMap);
+        serviceRegistrar.forService(ReactivePoolsHealthConfig.class)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> new ReactivePoolsHealthConfig(healthCheckSqlByDataSource));
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(ReactivePoolsHealthConfig.class)
                 .scope(Singleton.class)
                 .unremovable()
-                .runtimeValue(recorder.createHealthConfig(healthSqlMap))
+                .serviceValue(ReactivePoolsHealthConfig.class)
                 .setRuntimeInit()
                 .done());
 
         // Produce VertxPoolBuildItem for backwards compatibility (Hibernate Reactive consumes it)
         vertxPool.produce(new VertxPoolBuildItem());
+    }
+
+    private static Consumer<BeanConfiguratorBase.CheckActiveGeneration> mutinyPoolCheckActive(String dataSourceName) {
+        return new Consumer<>() {
+            @Override
+            public void accept(BeanConfiguratorBase.CheckActiveGeneration cag) {
+                BlockCreator b0 = cag.checkActiveMethod();
+                b0.return_(b0.invokeStatic(
+                        MethodDesc.of(MutinyPoolCreator.class, "checkActive", ActiveResult.class, String.class),
+                        Const.of(dataSourceName)));
+            }
+        };
     }
 
     /**

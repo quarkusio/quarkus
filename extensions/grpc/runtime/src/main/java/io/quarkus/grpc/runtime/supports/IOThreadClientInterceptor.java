@@ -13,6 +13,7 @@ import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.Status;
 import io.quarkus.grpc.GlobalInterceptor;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
@@ -35,12 +36,16 @@ public class IOThreadClientInterceptor implements ClientInterceptor, Prioritized
                 Context context = Vertx.currentContext();
                 boolean isOnIOThread = context != null && Context.isOnEventLoopThread();
 
+                Context callbackContext = isOnIOThread
+                        ? VertxContext.getOrCreateDuplicatedContext(context)
+                        : context;
+
                 super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
 
                     @Override
                     public void onReady() {
                         if (isOnIOThread) {
-                            context.runOnContext(unused -> super.onReady());
+                            callbackContext.runOnContext(unused -> super.onReady());
                         } else {
                             super.onReady();
                         }
@@ -49,7 +54,7 @@ public class IOThreadClientInterceptor implements ClientInterceptor, Prioritized
                     @Override
                     public void onHeaders(Metadata headers) {
                         if (isOnIOThread) {
-                            context.runOnContext(unused -> super.onHeaders(headers));
+                            callbackContext.runOnContext(unused -> super.onHeaders(headers));
                         } else {
                             super.onHeaders(headers);
                         }
@@ -58,7 +63,7 @@ public class IOThreadClientInterceptor implements ClientInterceptor, Prioritized
                     @Override
                     public void onMessage(RespT message) {
                         if (isOnIOThread) {
-                            context.runOnContext(unused -> super.onMessage(message));
+                            callbackContext.runOnContext(unused -> super.onMessage(message));
                         } else {
                             super.onMessage(message);
                         }
@@ -67,7 +72,7 @@ public class IOThreadClientInterceptor implements ClientInterceptor, Prioritized
                     @Override
                     public void onClose(Status status, Metadata trailers) {
                         if (isOnIOThread) {
-                            context.runOnContext(unused -> super.onClose(status, trailers));
+                            callbackContext.runOnContext(unused -> super.onClose(status, trailers));
                         } else {
                             super.onClose(status, trailers);
                         }

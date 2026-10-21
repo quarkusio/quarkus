@@ -874,11 +874,11 @@ class TokensHelperTest {
      */
     @Test
     void testShortLivedTokensStillServedWhileRefreshIsInFlight() throws Exception {
-        // A 3s skew means a refresh starts once fewer than 3s of life remain, so 2s remaining
-        // both triggers the refresh and leaves the tokens usable while it runs.
-        final long nowSecs = System.currentTimeMillis() / 1000;
-        Tokens current = new Tokens("current", nowSecs + 2, Duration.ofSeconds(3), null, null,
-                new JsonObject(), "client", MIN_REMAINING_LIFESPAN);
+        // A 6s skew means a refresh starts once fewer than 6s of life remain, so 5s remaining
+        // both triggers the refresh and leaves the tokens usable while it runs. The expiry is
+        // tracked in whole seconds, so the 1s minimum leaves 4s for the test to run before the
+        // tokens stop being served.
+        Tokens current = tokens("current", 5, Duration.ofSeconds(6), Duration.ofSeconds(1));
         assertFalse(current.isAccessTokenExpired());
         assertTrue(current.isAccessTokenWithinRefreshInterval());
 

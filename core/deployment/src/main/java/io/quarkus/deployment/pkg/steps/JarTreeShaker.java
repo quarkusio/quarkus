@@ -19,6 +19,7 @@ import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -783,7 +784,7 @@ class JarTreeShaker {
      * (type insns, field/method owners, LDC class constants, invokedynamic handles),
      * and {@code Class.forName()}/{@code ClassLoader.loadClass()} calls with string constants.
      */
-    private Set<String> extractReferencesFromBytecode(byte[] bytecode) {
+    static Set<String> extractReferencesFromBytecode(byte[] bytecode) {
         final Set<String> refs = new HashSet<>();
         ClassReader reader = new ClassReader(bytecode);
         reader.accept(new RefCollectingClassVisitor(refs), ClassReader.SKIP_FRAMES | ClassReader.SKIP_DEBUG);
@@ -1020,6 +1021,8 @@ class JarTreeShaker {
                         addClassRef(elem.getInternalName(), refs);
                     }
                 }
+            } else if (value instanceof ConstantDynamic condy) {
+                addConstantDynamic(condy, refs);
             }
         }
 
@@ -1054,11 +1057,7 @@ class JarTreeShaker {
             addHandleType(bootstrapMethodHandle, refs);
             if (bootstrapMethodArguments != null) {
                 for (Object arg : bootstrapMethodArguments) {
-                    if (arg instanceof org.objectweb.asm.Type type) {
-                        addAsmType(type, refs);
-                    } else if (arg instanceof Handle) {
-                        addHandleType((Handle) arg, refs);
-                    }
+                    addBootstrapArgument(arg, refs);
                 }
             }
         }
@@ -1147,6 +1146,40 @@ class JarTreeShaker {
             addAsmType(argType, refs);
         }
         addAsmType(org.objectweb.asm.Type.getReturnType(descriptor), refs);
+    }
+
+    /**
+     * Adds the references of a dynamic constant: its type, its bootstrap method
+     * and the bootstrap arguments (e.g. the class descriptor that
+     * {@code io.quarkus.core.Bootstraps.loadClass} loads).
+     */
+    private static void addConstantDynamic(ConstantDynamic condy, Set<String> refs) {
+        addDescriptorType(condy.getDescriptor(), refs);
+        addHandleType(condy.getBootstrapMethod(), refs);
+        for (int i = 0; i < condy.getBootstrapMethodArgumentCount(); i++) {
+            addBootstrapArgument(condy.getBootstrapMethodArgument(i), refs);
+        }
+    }
+
+    private static void addBootstrapArgument(Object arg, Set<String> refs) {
+        if (arg instanceof org.objectweb.asm.Type type) {
+            addAsmType(type, refs);
+        } else if (arg instanceof Handle handle) {
+            addHandleType(handle, refs);
+        } else if (arg instanceof ConstantDynamic condy) {
+            addConstantDynamic(condy, refs);
+        } else if (arg instanceof String str && isFieldDescriptor(str)) {
+            addDescriptorType(str, refs);
+        }
+    }
+
+    private static boolean isFieldDescriptor(String str) {
+        int i = 0;
+        while (i < str.length() && str.charAt(i) == '[') {
+            i++;
+        }
+        return i < str.length() - 2 && str.charAt(i) == 'L' && str.endsWith(";") && str.indexOf('/') > i
+                && str.indexOf('.') < 0;
     }
 
     /**

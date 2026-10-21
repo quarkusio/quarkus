@@ -87,10 +87,17 @@ public class TokensHelper {
                     return newState.tokenUni;
                 }
                 //rerun the CAS loop
+            } else if (currentState.tokenUni != null && currentState.tokensBeingRefreshed != null && forceNewTokens) {
+                // Stop serving the old tokensBeingRefreshed and make clients wait for the refresh in flight
+                newState = new TokenRequestState(currentState.tokenUni);
+                if (tokenRequestStateUpdater.compareAndSet(holder, currentState, newState)) {
+                    return newState.tokenUni;
+                }
+                //rerun the CAS loop
             } else if (currentState.tokenUni != null) {
                 // Serve token getting refreshed if it has enough lifespan left
                 final Tokens tokensBeingRefreshed = currentState.tokensBeingRefreshed;
-                if (tokensBeingRefreshed != null && !forceNewTokens) {
+                if (tokensBeingRefreshed != null) {
                     if (tokensBeingRefreshed.hasMinRemainingAccessTokenLifespan()) {
                         return Uni.createFrom().item(tokensBeingRefreshed);
                     }

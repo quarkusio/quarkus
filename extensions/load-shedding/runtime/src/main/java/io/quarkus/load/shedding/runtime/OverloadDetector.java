@@ -50,10 +50,16 @@ public class OverloadDetector {
     // precisely to 1.0 at full saturation.
     private static final double TANH_MAX = Math.tanh(K / 2.0);
 
+    // The lowest request time only ever decreases, apart from probes. Probes only occur
+    // after certain number of requests, or after this interval since the last probe.
+    // This is to avoid pretending that an old value is relevant to current situation.
+    private static final long MAX_PROBE_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(30);
+
     private final int maxLimit;
     private final int alphaFactor;
     private final int betaFactor;
     private final double probeFactor;
+    private final long maxProbeIntervalNanos;
 
     private final AtomicInteger currentRequests = new AtomicInteger();
     private final AtomicLong lowestRequestTime = new AtomicLong(Long.MAX_VALUE);
@@ -63,8 +69,9 @@ public class OverloadDetector {
     private final AtomicLong overloadedSince = new AtomicLong();
 
     private final ReentrantLock lock = new ReentrantLock();
-    // this field is guarded by `lock`
+    // these fields are guarded by `lock`
     private double probeJitter;
+    private long lastProbeNanos;
 
     // Which clock interval was last reported, see `logInterval()`. Deliberately neither
     // volatile nor compared-and-set: this only has to keep the log from filling up,
@@ -74,17 +81,27 @@ public class OverloadDetector {
 
     @Inject
     public OverloadDetector(LoadSheddingRuntimeConfig config) {
+        this(config, MAX_PROBE_INTERVAL_NANOS);
+    }
+
+    // visible for testing
+    OverloadDetector(LoadSheddingRuntimeConfig config, long maxProbeIntervalNanos) {
         validate(config);
 
         maxLimit = config.maxLimit();
         alphaFactor = config.alphaFactor();
         betaFactor = config.betaFactor();
         probeFactor = config.probeFactor();
+        this.maxProbeIntervalNanos = maxProbeIntervalNanos;
         currentLimit = config.initialLimit();
 
         lock.lock();
-        probeJitter = ThreadLocalRandom.current().nextDouble(0.5, 1);
-        lock.unlock();
+        try {
+            probeJitter = ThreadLocalRandom.current().nextDouble(0.5, 1);
+            lastProbeNanos = System.nanoTime();
+        } finally {
+            lock.unlock();
+        }
 
         // so that the first transition is always reported, whatever interval the clock starts in
         lastLogInterval = logInterval() - 1;
@@ -214,10 +231,13 @@ public class OverloadDetector {
             return;
         }
         try {
+            long now = System.nanoTime();
             long probeCount = requestsSinceLastProbe.get(); // must read inside the lock
-            if (probeFactor * probeJitter * currentLimit <= probeCount) {
+            if (now - lastProbeNanos >= maxProbeIntervalNanos
+                    || probeFactor * probeJitter * currentLimit <= probeCount) {
                 probeJitter = ThreadLocalRandom.current().nextDouble(0.5, 1);
                 requestsSinceLastProbe.set(0);
+                lastProbeNanos = now;
                 lowestRequestTime.set(requestTime);
                 return;
             }

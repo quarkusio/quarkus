@@ -2,6 +2,8 @@ package io.quarkus.load.shedding.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Test;
 
 /**
@@ -197,6 +199,26 @@ public class OverloadDetectorAdaptationTest {
         assertThat(detector.currentLimit())
                 .describedAs("the limit only moves if a probe raised the baseline")
                 .isGreaterThan(10);
+    }
+
+    @Test
+    public void staleLowestRequestTimeForcesAProbe() throws InterruptedException {
+        // the probe factor is set so high that the request-counted probe can never fire;
+        // the only way the baseline can be refreshed is the ceiling on its staleness
+        OverloadDetector detector = new OverloadDetector(new TestConfig.Builder()
+                .withInitialLimit(10)
+                .withMaxLimit(1_000)
+                .withProbeFactor(NO_PROBE)
+                .build(), TimeUnit.MILLISECONDS.toNanos(40));
+        begin(detector, 10);
+        sample(detector, BASELINE);
+
+        Thread.sleep(400);
+
+        sample(detector, 2_222); // fires the forced probe and becomes the new lowest
+        sample(detector, 2_222); // matches the lowest, estimated queue length is 0, grow
+
+        assertThat(detector.currentLimit()).isEqualTo(10 + 12);
     }
 
     private OverloadDetector detector(int initialLimit) {

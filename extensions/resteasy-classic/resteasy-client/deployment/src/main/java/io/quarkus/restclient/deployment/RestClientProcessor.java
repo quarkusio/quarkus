@@ -444,14 +444,16 @@ class RestClientProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             ServiceRegistrar serviceRegistrar, Capabilities capabilities) {
 
+        Set<String> effectiveProviders = new HashSet<>(jaxrsProvidersToRegisterBuildItem.getProviders());
+        Set<String> effectiveContributedProviders = new HashSet<>(jaxrsProvidersToRegisterBuildItem.getContributedProviders());
         for (IgnoreClientProviderBuildItem item : ignoreClientProviderBuildItems) {
-            jaxrsProvidersToRegisterBuildItem.getProviders().remove(item.getProviderClassName());
-            jaxrsProvidersToRegisterBuildItem.getContributedProviders().remove(item.getProviderClassName());
+            effectiveProviders.remove(item.getProviderClassName());
+            effectiveContributedProviders.remove(item.getProviderClassName());
         }
 
         boolean useBuiltIn = jaxrsProvidersToRegisterBuildItem.useBuiltIn();
-        Set<String> providersToRegister = Set.copyOf(jaxrsProvidersToRegisterBuildItem.getProviders());
-        Set<String> contributedProviders = Set.copyOf(jaxrsProvidersToRegisterBuildItem.getContributedProviders());
+        Set<String> providersToRegister = Set.copyOf(effectiveProviders);
+        Set<String> contributedProviders = Set.copyOf(effectiveContributedProviders);
         // ResteasyProviderFactory will use our implementation when accessing instance statically. That's not
         // necessary when RESTEasy classic is present as then provider factory with correct provider classes is generated.
         boolean setProviderFactoryInstance = !capabilities.isPresent(Capability.RESTEASY)
@@ -469,7 +471,7 @@ class RestClientProcessor {
                 });
 
         // register the providers for reflection
-        for (String providerToRegister : jaxrsProvidersToRegisterBuildItem.getProviders()) {
+        for (String providerToRegister : effectiveProviders) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(providerToRegister).build());
         }
 

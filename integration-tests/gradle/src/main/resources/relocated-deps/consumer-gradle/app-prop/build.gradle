@@ -1,0 +1,26 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+}
+
+group = 'org.acme'
+version = '1.0.0'
+
+repositories {
+    mavenLocal {
+        content {
+            includeGroup 'new.group'
+            includeGroup 'old.group'
+            includeGroupByRegex 'io.quarkus.*'
+            includeGroup 'org.hibernate.orm'
+        }
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-rest'
+    implementation 'new.group:lib-prop:2'
+    implementation 'new.group:new-api:2'
+}

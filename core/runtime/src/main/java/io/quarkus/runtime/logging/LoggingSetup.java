@@ -169,6 +169,7 @@ public final class LoggingSetup {
             final Supplier<String> bannerSupplier,
             boolean includeFilters) {
         boolean color = false;
+        Supplier<String> deferredBannerSupplier = null;
         if (formatter == null) {
             if (isColorEnabled(consoleRuntimeConfig, config)) {
                 formatter = new ColorPatternFormatter(config.darken(), config.format());
@@ -176,13 +177,16 @@ public final class LoggingSetup {
             } else {
                 formatter = new PatternFormatter(config.format());
             }
-            if (bannerSupplier != null) {
-                formatter = new TextBannerFormatter(bannerSupplier, ExtFormatter.wrap(formatter, false));
-            }
+            deferredBannerSupplier = bannerSupplier;
         }
         final ConsoleHandler consoleHandler = new ConsoleHandler(
                 config.stderr() ? ConsoleHandler.Target.SYSTEM_ERR : ConsoleHandler.Target.SYSTEM_OUT, formatter);
-        // Use current System.out/err, not the static reference captured at class-load time
+        if (deferredBannerSupplier != null) {
+            consoleHandler.setFormatter(
+                    new TextBannerFormatter(deferredBannerSupplier, ExtFormatter.wrap(formatter, false)));
+        }
+        // Use current System.out/err, not the static reference captured at class-load time;
+        // this also triggers writeHead, which prints the banner exactly once to the correct stream
         consoleHandler.setOutputStream(config.stderr() ? System.err : System.out);
         consoleHandler.setLevel(config.level());
         consoleHandler.setErrorManager(errorManager);

@@ -1,8 +1,6 @@
 package io.quarkus.security.spi;
 
 import java.util.Objects;
-import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
@@ -12,25 +10,16 @@ import io.quarkus.builder.item.MultiBuildItem;
  */
 public final class RolesAllowedConfigExpResolverBuildItem extends MultiBuildItem {
     private final String roleConfigExpr;
-    private final BiConsumer<String, Supplier<String[]>> configValueRecorder;
 
     /**
-     * @param roleConfigExpr roles allowed configuration expression
-     * @param configValueRecorder roles allowed supplier will be recorded to this consumer created during static-init;
-     *        runtime roles allowed expressions are supplied correctly only when runtime config is ready
+     * @param roleConfigExpr configuration expression used in place of a role name
      */
-    public RolesAllowedConfigExpResolverBuildItem(String roleConfigExpr,
-            BiConsumer<String, Supplier<String[]>> configValueRecorder) {
+    public RolesAllowedConfigExpResolverBuildItem(String roleConfigExpr) {
         this.roleConfigExpr = Objects.requireNonNull(roleConfigExpr);
-        this.configValueRecorder = Objects.requireNonNull(configValueRecorder);
     }
 
     public String getRoleConfigExpr() {
         return roleConfigExpr;
-    }
-
-    public BiConsumer<String, Supplier<String[]>> getConfigValueRecorder() {
-        return configValueRecorder;
     }
 
     public static boolean isSecurityConfigExpressionCandidate(String configExpression) {

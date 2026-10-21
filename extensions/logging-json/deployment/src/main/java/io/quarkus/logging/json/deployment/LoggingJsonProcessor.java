@@ -26,38 +26,31 @@ public final class LoggingJsonProcessor {
 
     @BuildStep
     void setUpFormatters(ServiceRegistrar serviceRegistrar,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws IOException {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            JsonLogConfig config, ApplicationConfig applicationConfig) throws IOException {
         List<String> providerClassNames = providerClassNames();
         if (!providerClassNames.isEmpty()) {
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(providerClassNames.toArray(String[]::new)).build());
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(providerClassNames).build());
         }
         serviceRegistrar.forService(Formatter.class, "console")
                 .atPhase(Phase.LOGGING)
-                .require(JsonLogConfig.class)
-                .require(ApplicationConfig.class)
                 .optional()
-                .onStart((ctx, config, applicationConfig) -> LoggingJsonRecorder.createFormatter(config.consoleJson(),
+                .onStart(ctx -> LoggingJsonRecorder.createFormatter(config.consoleJson(),
                         providerClassNames, applicationConfig));
         serviceRegistrar.forService(Formatter.class, "file")
                 .atPhase(Phase.LOGGING)
-                .require(JsonLogConfig.class)
-                .require(ApplicationConfig.class)
                 .optional()
-                .onStart((ctx, config, applicationConfig) -> LoggingJsonRecorder.createFormatter(config.fileJson(),
+                .onStart(ctx -> LoggingJsonRecorder.createFormatter(config.fileJson(),
                         providerClassNames, applicationConfig));
         serviceRegistrar.forService(Formatter.class, "syslog")
                 .atPhase(Phase.LOGGING)
-                .require(JsonLogConfig.class)
-                .require(ApplicationConfig.class)
                 .optional()
-                .onStart((ctx, config, applicationConfig) -> LoggingJsonRecorder.createFormatter(config.syslogJson(),
+                .onStart(ctx -> LoggingJsonRecorder.createFormatter(config.syslogJson(),
                         providerClassNames, applicationConfig));
         serviceRegistrar.forService(Formatter.class, "socket")
                 .atPhase(Phase.LOGGING)
-                .require(JsonLogConfig.class)
-                .require(ApplicationConfig.class)
                 .optional()
-                .onStart((ctx, config, applicationConfig) -> LoggingJsonRecorder.createFormatter(config.socketJson(),
+                .onStart(ctx -> LoggingJsonRecorder.createFormatter(config.socketJson(),
                         providerClassNames, applicationConfig));
     }
 

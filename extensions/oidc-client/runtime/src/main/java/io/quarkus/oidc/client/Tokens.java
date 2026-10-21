@@ -21,6 +21,17 @@ public class Tokens {
     final private JsonObject grantResponse;
     final private String clientId;
 
+    /**
+     * @deprecated Use {@link #Tokens(String, Long, Duration, String, Long, JsonObject, String, Duration)} instead.
+     *             Tokens created with this constructor are never reused while they are being refreshed.
+     */
+    @Deprecated(since = "4.0", forRemoval = true)
+    public Tokens(String accessToken, Long accessTokenExpiresAt, Duration refreshTokenTimeSkewDuration, String refreshToken,
+            Long refreshTokenExpiresAt, JsonObject grantResponse, String clientId) {
+        this(accessToken, accessTokenExpiresAt, refreshTokenTimeSkewDuration, refreshToken, refreshTokenExpiresAt,
+                grantResponse, clientId, null);
+    }
+
     public Tokens(String accessToken, Long accessTokenExpiresAt, Duration refreshTokenTimeSkewDuration, String refreshToken,
             Long refreshTokenExpiresAt, JsonObject grantResponse, String clientId,
             Duration minRemainingAccessTokenLifespanDuration) {

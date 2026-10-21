@@ -1047,6 +1047,21 @@ class TokensHelperTest {
     }
 
     /**
+     * The deprecated constructor predates the minimum remaining lifespan, so tokens created with it
+     * must keep the previous behaviour and never be reused while they are being refreshed.
+     */
+    @Test
+    @SuppressWarnings("removal")
+    void testDeprecatedConstructorDoesNotConfigureMinRemainingLifespan() {
+        final long nowSecs = System.currentTimeMillis() / 1000;
+        Tokens tokens = new Tokens("current", nowSecs + 8, TIME_SKEW, "refresh", nowSecs + 300, new JsonObject(),
+                "client");
+        assertThat(tokens.isAccessTokenExpired()).isFalse();
+        assertThat(tokens.isAccessTokenWithinRefreshInterval()).isTrue();
+        assertThat(tokens.hasMinRemainingAccessTokenLifespan()).isFalse();
+    }
+
+    /**
      * Reusing the tokens being refreshed is opt-in: when no minimum remaining lifespan is configured
      * the callers wait for the refresh, which is the behaviour of an OIDC client that has not enabled
      * this. Without it, upgrading would change how every existing deployment behaves.

@@ -357,16 +357,6 @@ public class StartupActionImpl implements StartupAction {
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException("Failed to set dev services config", e);
         }
-
-        try {
-            Class<?> overrideConfigSourceClass = runtimeClassLoader
-                    .loadClass("io.quarkus.devservice.runtime.config.DevServicesOverrideConfigSource");
-            overrideConfigSourceClass.getMethod("setConfig", Map.class).invoke(null, startResult.overrideConfigs());
-        } catch (ClassNotFoundException e) {
-            // devservices runtime module not available
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException("Failed to set dev services override config", e);
-        }
     }
 
     /**

@@ -1,6 +1,7 @@
 package io.quarkus.cache.infinispan;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
@@ -222,6 +223,36 @@ public class InfinispanCacheTest {
         assertThat(remoteCache.get(id)).isEqualTo("thread1");
         assertThat(valueObtainedByThread1).isEqualTo("thread1");
         assertThat(valueObtainedByThread2).isEqualTo("thread1");
+    }
+
+    @Test
+    public void testGetWithExceptionDoesNotLeakComputation() {
+        Cache cache = getCache();
+        String id = generateId();
+
+        // The value loader throws: the Uni must fail and the in-flight computation must be cleaned up.
+        assertThatThrownBy(() -> awaitUni(cache.get(id, key -> {
+            throw new RuntimeException("boom");
+        }))).hasMessageContaining("boom");
+
+        // Subsequent lookups for the same key must not reuse the previous (never-completed) computation.
+        // Before the fix, this call would hang until the await timeout.
+        String value = awaitUni(cache.get(id, key -> "recovered"));
+        assertThat(value).isEqualTo("recovered");
+        assertThat(remoteCache.get(id)).isEqualTo("recovered");
+    }
+
+    @Test
+    public void testGetAsyncWithExceptionDoesNotLeakComputation() {
+        Cache cache = getCache();
+        String id = generateId();
+
+        assertThatThrownBy(() -> awaitUni(cache.getAsync(id,
+                key -> Uni.createFrom().failure(new RuntimeException("boom"))))).hasMessageContaining("boom");
+
+        String value = awaitUni(cache.getAsync(id, key -> Uni.createFrom().item("recovered")));
+        assertThat(value).isEqualTo("recovered");
+        assertThat(remoteCache.get(id)).isEqualTo("recovered");
     }
 
     @Test

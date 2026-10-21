@@ -1,4 +1,4 @@
-package io.quarkus.devtools.plugin;
+package io.quarkus.cli.plugin;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-public class PluginCatalogServiceTest {
+public class PluginCatalogPathTest {
 
     PluginCatalogService service = new PluginCatalogService();
 

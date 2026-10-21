@@ -1,7 +1,7 @@
-package io.quarkus.devtools.plugin;
+package io.quarkus.cli.plugin;
 
-import static io.quarkus.devtools.plugin.PluginManagerUtil.ALIAS_SEPARATOR;
-import static io.quarkus.devtools.plugin.PluginManagerUtil.getTransitives;
+import static io.quarkus.cli.plugin.PluginManagerUtil.ALIAS_SEPARATOR;
+import static io.quarkus.cli.plugin.PluginManagerUtil.getTransitives;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

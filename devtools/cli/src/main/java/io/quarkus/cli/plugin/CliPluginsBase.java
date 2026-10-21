@@ -6,9 +6,6 @@ import java.util.function.Predicate;
 
 import io.quarkus.cli.BaseBuildCommand;
 import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
-import io.quarkus.devtools.plugin.Plugin;
-import io.quarkus.devtools.plugin.PluginManager;
-import io.quarkus.devtools.plugin.PluginType;
 import io.quarkus.devtools.project.QuarkusProject;
 import picocli.CommandLine;
 

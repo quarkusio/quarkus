@@ -1,4 +1,4 @@
-package io.quarkus.devtools.plugin;
+package io.quarkus.cli.plugin;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

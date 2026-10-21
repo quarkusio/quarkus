@@ -4,7 +4,6 @@ import static org.apache.commons.codec.binary.Base64.encodeBase64URLSafeString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URL;
-import java.time.Duration;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -21,13 +20,13 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.http.HttpClientRequest;
 
 public class JakartaRestAuthenticationWithMatrixTest {
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(20);
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
@@ -145,12 +144,12 @@ public class JakartaRestAuthenticationWithMatrixTest {
                         return Uni.createFrom().nullItem();
                     })
                     .await()
-                    .atMost(REQUEST_TIMEOUT);
+                    .atMost(TestTimeouts.get());
         } finally {
             httpClient
                     .close()
                     .await()
-                    .atMost(REQUEST_TIMEOUT);
+                    .atMost(TestTimeouts.get());
         }
     }
 }

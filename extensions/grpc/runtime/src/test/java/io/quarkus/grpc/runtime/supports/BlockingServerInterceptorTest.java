@@ -10,7 +10,6 @@ import java.util.concurrent.CountDownLatch;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import io.grpc.Context;
 import io.grpc.Metadata;
@@ -20,6 +19,7 @@ import io.grpc.ServerCallHandler;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.grpc.runtime.supports.blocking.BlockingServerInterceptor;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.vertx.core.Vertx;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -50,7 +50,7 @@ class BlockingServerInterceptorTest {
     }
 
     @Test
-    @Timeout(10)
+    @TimeLimit
     void testContextPropagation() throws Exception {
         final ServerCall serverCall = mock(ServerCall.class);
         final BlockingServerCallHandler serverCallHandler = new BlockingServerCallHandler();

@@ -5,13 +5,13 @@ import static org.hamcrest.Matchers.equalTo;
 
 import java.time.Duration;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 @QuarkusTestResource(KeycloakRealmUserPasswordCustomFilterManager.class)
@@ -48,7 +48,7 @@ public class OidcClientUserPasswordCustomFilterTestCase {
 
         // Wait until the access token has expired
         long expiredTokenTime = System.currentTimeMillis() + 5000;
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .pollInterval(Duration.ofSeconds(3))
                 .until(new Callable<Boolean>() {
                     @Override

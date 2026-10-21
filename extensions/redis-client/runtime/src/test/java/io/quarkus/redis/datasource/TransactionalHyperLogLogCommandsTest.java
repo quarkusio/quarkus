@@ -13,6 +13,7 @@ import io.quarkus.redis.datasource.hyperloglog.TransactionalHyperLogLogCommands;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @RequiresRedis6OrHigher
 public class TransactionalHyperLogLogCommandsTest extends DatasourceTestBase {
@@ -57,7 +58,7 @@ public class TransactionalHyperLogLogCommandsTest extends DatasourceTestBase {
                     .chain(() -> hll.pfcount(key))
                     .chain(() -> hll.pfadd(key, "a", "d", "e"))
                     .chain(() -> hll.pfcount(key));
-        }).await().atMost(Duration.ofSeconds(5));
+        }).await().atMost(TestTimeouts.get());
         assertThat(result.size()).isEqualTo(4);
         assertThat(result.discarded()).isFalse();
         assertThat((boolean) result.get(0)).isTrue();

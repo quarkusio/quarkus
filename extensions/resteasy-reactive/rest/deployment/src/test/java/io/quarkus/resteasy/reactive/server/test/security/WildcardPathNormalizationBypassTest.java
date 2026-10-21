@@ -4,7 +4,6 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URL;
-import java.time.Duration;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -21,6 +20,7 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.client.WebClient;
@@ -31,8 +31,6 @@ import io.vertx.ext.web.client.WebClient;
  * is present.
  */
 public class WildcardPathNormalizationBypassTest {
-
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(20);
 
     @RegisterExtension
     static QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -103,7 +101,7 @@ public class WildcardPathNormalizationBypassTest {
             req.basicAuthentication(auth, auth);
         }
         var result = req.send();
-        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        await().atMost(TestTimeouts.get()).until(result::isComplete);
         assertEquals(expectedStatusCode, result.result().statusCode(),
                 "Path: " + path + " (auth=" + auth + ")");
     }

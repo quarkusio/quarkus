@@ -9,13 +9,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
@@ -24,7 +24,7 @@ public class StaticResourceTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        await().atMost(5, TimeUnit.SECONDS).until(() -> {
+        await().atMost(TestTimeouts.get()).until(() -> {
             List<Map<String, Object>> spans = getSpans();
             if (spans.size() == 0) {
                 return true;

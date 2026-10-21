@@ -2,8 +2,6 @@ package io.quarkus.grpc.server.blocking;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-
 import jakarta.transaction.Transactional;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -21,6 +19,7 @@ import com.dam.MutinyBlocking3Grpc;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Uni;
@@ -48,42 +47,42 @@ public class TransactionalAsBlockingTest {
     @Test
     void shouldNotOffloadNonBlockingTransactional() {
         Uni<ThreadName> reply = client1.returnThread1(EMPTY);
-        ThreadName threadName = reply.await().atMost(Duration.ofSeconds(10));
+        ThreadName threadName = reply.await().atMost(TestTimeouts.get());
         assertThat(threadName.getName()).contains("eventloop");
     }
 
     @Test
     void shouldOffloadTransactionalMethod() {
         Uni<ThreadName> reply = client1.returnThread2(EMPTY);
-        ThreadName threadName = reply.await().atMost(Duration.ofSeconds(10));
+        ThreadName threadName = reply.await().atMost(TestTimeouts.get());
         assertThat(threadName.getName()).contains("executor-thread");
     }
 
     @Test
     void shouldOffloadTransactionalOnClass() {
         Uni<ThreadName> reply = client2.returnThread1(EMPTY);
-        ThreadName threadName = reply.await().atMost(Duration.ofSeconds(10));
+        ThreadName threadName = reply.await().atMost(TestTimeouts.get());
         assertThat(threadName.getName()).contains("executor-thread");
     }
 
     @Test
     void shouldNotOffloadNonBlockingMethodOnTransactionalClass() {
         Uni<ThreadName> reply = client2.returnThread2(EMPTY);
-        ThreadName threadName = reply.await().atMost(Duration.ofSeconds(10));
+        ThreadName threadName = reply.await().atMost(TestTimeouts.get());
         assertThat(threadName.getName()).contains("eventloop");
     }
 
     @Test
     void shouldNotOffloadTransactionalClassWithNonBlocking() {
         Uni<ThreadName> reply = client3.returnThread1(EMPTY);
-        ThreadName threadName = reply.await().atMost(Duration.ofSeconds(10));
+        ThreadName threadName = reply.await().atMost(TestTimeouts.get());
         assertThat(threadName.getName()).contains("eventloop");
     }
 
     @Test
     void shouldOffloadBlockingMethodRegardlessOfClassAnnotations() {
         Uni<ThreadName> reply = client3.returnThread2(EMPTY);
-        ThreadName threadName = reply.await().atMost(Duration.ofSeconds(10));
+        ThreadName threadName = reply.await().atMost(TestTimeouts.get());
         assertThat(threadName.getName()).contains("executor-thread");
     }
 

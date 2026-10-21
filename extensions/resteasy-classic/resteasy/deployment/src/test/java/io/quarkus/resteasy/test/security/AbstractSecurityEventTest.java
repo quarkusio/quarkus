@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -31,6 +30,7 @@ import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.SecurityEvent;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.restassured.RestAssured;
 import io.vertx.ext.web.RoutingContext;
@@ -278,7 +278,7 @@ public abstract class AbstractSecurityEventTest {
     }
 
     private void assertAsyncAuthZFailureObserved(int count) {
-        Awaitility.await().atMost(Duration.ofSeconds(2))
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertEquals(count, observer.asyncAuthZFailureEvents.size()));
         if (count > 0) {
             assertTrue(observer.asyncAuthZFailureEvents.stream().allMatch(e -> e.getSecurityIdentity() != null));

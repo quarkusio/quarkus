@@ -41,6 +41,7 @@ import io.quarkus.observation.opentelemetry.deployment.common.TestSpanExporter;
 import io.quarkus.observation.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.observation.opentelemetry.handler.OpenTelemetryObservationHandler;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 public class ObservationContextPropagationTest {
@@ -78,7 +79,7 @@ public class ObservationContextPropagationTest {
     }
 
     private void awaitObservations(int count) {
-        Awaitility.await().atMost(2, TimeUnit.SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> TestObservationRegistryAssert.assertThat(registry)
                         .hasNumberOfObservationsEqualTo(count));
     }

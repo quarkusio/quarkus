@@ -2,7 +2,6 @@ package io.quarkus.it.opentelemetry.scheduler;
 
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -20,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
 
@@ -67,7 +67,7 @@ public class OpenTelemetrySchedulerTest {
 
     private List<Map<String, Object>> getSpans(String... expectedNames) {
         AtomicReference<List<Map<String, Object>>> ret = new AtomicReference<>(Collections.emptyList());
-        await().atMost(15, SECONDS).until(() -> {
+        await().atMost(TestTimeouts.get()).until(() -> {
             List<Map<String, Object>> spans = get("/export").body().as(new TypeRef<>() {
             });
             for (String name : expectedNames) {

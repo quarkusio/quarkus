@@ -3,8 +3,6 @@ package io.quarkus.opentelemetry.deployment.devui;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 
-import java.time.Duration;
-
 import org.awaitility.Awaitility;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -17,6 +15,7 @@ import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.opentelemetry.deployment.common.HelloResource;
 import io.quarkus.opentelemetry.deployment.common.TracerRouter;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import tools.jackson.databind.JsonNode;
 
@@ -47,7 +46,7 @@ public class OpenTelemetryDevUIReloadTest extends DevUIJsonRPCTest {
     public void capturedTracesSurviveLiveReload() throws Exception {
         // Capture a span before the reload.
         RestAssured.when().get("/hello").then().statusCode(200);
-        Awaitility.await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             JsonNode snapshot = super.executeJsonRPCMethod("getSnapshot");
             assertThat(snapshot.toString()).contains("/hello");
         });
@@ -58,7 +57,7 @@ public class OpenTelemetryDevUIReloadTest extends DevUIJsonRPCTest {
 
         // The pre-reload "/hello" span must still be present after the restart. We do NOT
         // hit "/hello" again, so its presence proves the buffer survived the reload.
-        Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             JsonNode snapshot = super.executeJsonRPCMethod("getSnapshot");
             assertThat(snapshot.toString())
                     .as("traces captured before a live reload should survive the reload")

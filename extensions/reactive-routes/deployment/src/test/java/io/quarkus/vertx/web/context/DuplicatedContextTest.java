@@ -2,7 +2,6 @@ package io.quarkus.vertx.web.context;
 
 import static io.restassured.RestAssured.get;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.web.Route;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.vertx.ContextLocals;
@@ -55,7 +55,7 @@ public class DuplicatedContextTest {
 
         Uni.join().all(unis).andFailFast()
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                .await().atMost(Duration.ofSeconds(10));
+                .await().atMost(TestTimeouts.get());
     }
 
     @Test

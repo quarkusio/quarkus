@@ -8,7 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
+
+import io.quarkus.test.timeouts.TestTimeouts;
 
 abstract class AbstractMultipartTest {
 
@@ -33,7 +34,7 @@ abstract class AbstractMultipartTest {
     }
 
     protected void awaitUploadDirectoryToEmpty(Path uploadDir) {
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .pollInterval(Duration.ofSeconds(1))
                 .until(new Callable<Boolean>() {
                     @Override

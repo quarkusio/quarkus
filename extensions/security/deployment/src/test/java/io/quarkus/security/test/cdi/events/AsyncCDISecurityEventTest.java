@@ -8,8 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Duration;
-
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
@@ -26,6 +24,7 @@ import io.quarkus.security.test.cdi.app.denied.unnanotated.BeanWithSecurityAnnot
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public class AsyncCDISecurityEventTest {
 
@@ -65,9 +64,9 @@ public class AsyncCDISecurityEventTest {
     public void testAuthSuccessAsyncObserverNotified() {
         assertSuccess(beanWithSecurityAnnotations::restricted, "accessibleForAdminOnly", ADMIN);
         assertEquals(1, observer.getObserverEvents().size());
-        Awaitility.await().atMost(Duration.ofSeconds(2))
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertEquals(1, asyncObserver.getObserverEvents().size()));
-        Awaitility.await().atMost(Duration.ofSeconds(2))
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertEquals(1, asyncAuthZSuccessEventObserver.getObserverEvents().size()));
         assertEquals(0, asyncAuthZFailureObserver.getObserverEvents().size());
     }
@@ -76,9 +75,9 @@ public class AsyncCDISecurityEventTest {
     public void testAuthFailureAsyncObserverNotified() {
         assertFailureFor(beanWithSecurityAnnotations::restricted, UnauthorizedException.class, ANONYMOUS);
         assertEquals(1, observer.getObserverEvents().size());
-        Awaitility.await().atMost(Duration.ofSeconds(2))
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertEquals(1, asyncObserver.getObserverEvents().size()));
-        Awaitility.await().atMost(Duration.ofSeconds(2))
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertEquals(1, asyncAuthZFailureObserver.getObserverEvents().size()));
         AuthorizationFailureEvent event = asyncAuthZFailureObserver.getObserverEvents().get(0);
         assertTrue(event.getAuthorizationFailure() instanceof UnauthorizedException);

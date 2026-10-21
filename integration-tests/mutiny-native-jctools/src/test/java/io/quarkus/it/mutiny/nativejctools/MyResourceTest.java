@@ -5,7 +5,6 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,6 +17,7 @@ import jakarta.ws.rs.sse.SseEventSource;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 @QuarkusTest
@@ -55,7 +55,7 @@ public class MyResourceTest {
                 () -> done.set(true));
         eventSource.open();
 
-        await().atMost(Duration.ofSeconds(10))
+        await().atMost(TestTimeouts.get())
                 .until(() -> done.get() || failure.get() != null);
 
         if (failure.get() != null) {

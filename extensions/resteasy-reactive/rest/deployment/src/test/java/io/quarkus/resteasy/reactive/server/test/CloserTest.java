@@ -7,7 +7,6 @@ import static org.hamcrest.Matchers.equalTo;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -25,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.Closer;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 
 public class CloserTest {
@@ -61,7 +61,7 @@ public class CloserTest {
                 .then()
                 .statusCode(200)
                 .body(equalTo("1"));
-        await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             get("/counter/singleton")
                     .then()
                     .body(equalTo("2"));
@@ -84,7 +84,7 @@ public class CloserTest {
         get("/counter/singleton")
                 .then()
                 .body(equalTo("2"));
-        await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             get("/counter/uni-singleton")
                     .then()
                     .body(equalTo("2"));
@@ -107,7 +107,7 @@ public class CloserTest {
         get("/counter/uni-singleton")
                 .then()
                 .body(equalTo("2"));
-        await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             get("/counter/per-request")
                     .then()
                     .body(equalTo("2"));

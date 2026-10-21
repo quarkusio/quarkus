@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Vertx;
 
 @QuarkusTestResource(KeycloakRealmUserPasswordManager.class)
@@ -92,7 +93,7 @@ class OidcClientProxyTest {
             assertNotNull(tokens.getAccessToken());
 
             // assert proxy configuration
-            Awaitility.await().atMost(10, TimeUnit.SECONDS)
+            Awaitility.await().atMost(TestTimeouts.get())
                     .until(() -> HEADERS.containsKey("host") && HEADERS.containsKey("proxy-authorization"));
             assertTrue(HEADERS.get("host").contains("localhost:"),
                     () -> "Expected host header '%s' to contain 'localhost:'".formatted(HEADERS.get("host")));

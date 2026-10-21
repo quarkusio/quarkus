@@ -3,7 +3,6 @@ package io.quarkus.it.observation.reactive;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -29,6 +28,7 @@ import io.quarkus.runtime.Startup;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 
@@ -42,7 +42,7 @@ public class ObservationAtStartupTest {
     @Test
     void observedMethodAtStartupProducesSpans() {
         // Wait for startup spans to arrive
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<Map<String, Object>> spans = getSpans();
             assertThat(spans).hasSizeGreaterThanOrEqualTo(2);
         });

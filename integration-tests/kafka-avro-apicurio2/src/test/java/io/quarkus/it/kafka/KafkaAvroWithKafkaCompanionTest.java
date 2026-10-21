@@ -2,7 +2,6 @@ package io.quarkus.it.kafka;
 
 import static io.apicurio.registry.serde.avro.AvroSerdeConfig.USE_SPECIFIC_AVRO_READER;
 import static io.restassured.RestAssured.given;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -24,6 +23,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.http.ContentType;
 import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
@@ -63,7 +63,7 @@ public class KafkaAvroWithKafkaCompanionTest {
 
         List<ConsumerRecord<String, Pet>> received = consumer.awaitRecords(2, Duration.ofSeconds(5L)).getRecords();
         // check if, after at most 5 seconds, we have at least 2 items collected, and they are what we expect
-        await().atMost(5, SECONDS).until(() -> received.size() >= 2);
+        await().atMost(TestTimeouts.get()).until(() -> received.size() >= 2);
         List<String> pets = received.stream().map(r -> r.value().getName()).toList();
         assertThat(pets, Matchers.hasItems("Fluffy", "Fang"));
     }

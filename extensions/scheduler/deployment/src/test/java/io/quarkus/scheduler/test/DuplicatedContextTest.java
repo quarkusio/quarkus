@@ -2,7 +2,6 @@ package io.quarkus.scheduler.test;
 
 import static org.awaitility.Awaitility.await;
 
-import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.inject.Inject;
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
@@ -33,14 +33,14 @@ public class DuplicatedContextTest {
     @Test
     public void testBlocking() {
         await()
-                .atMost(Duration.ofSeconds(3))
+                .atMost(TestTimeouts.get())
                 .until(() -> scheduled.blockingCalled() > 0);
     }
 
     @Test
     public void testNonBlocking() {
         await()
-                .atMost(Duration.ofSeconds(3))
+                .atMost(TestTimeouts.get())
                 .until(() -> scheduled.nonBlockingCalled() > 0);
     }
 

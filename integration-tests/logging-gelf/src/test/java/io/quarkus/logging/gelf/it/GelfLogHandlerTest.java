@@ -4,11 +4,10 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
@@ -29,7 +28,7 @@ public class GelfLogHandlerTest {
         //we need to await for a certain time as logstash needs to create the index template,
         // then elasticsearch create the index
         // then some logs being indexed.
-        await().atMost(40, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .untilAsserted(
                         () -> {
                             RestAssured.given().when().get("/gelf-log-handler").then().statusCode(204);

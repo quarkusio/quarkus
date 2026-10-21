@@ -1,7 +1,5 @@
 package io.quarkus.mailer;
 
-import java.time.Duration;
-
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -11,6 +9,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Location;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 
 public class MailTemplateLocationTest {
@@ -28,7 +27,7 @@ public class MailTemplateLocationTest {
 
     @Test
     public void testLocation() {
-        mailTemplates.send().await().atMost(Duration.ofSeconds(5));
+        mailTemplates.send().await().atMost(TestTimeouts.get());
     }
 
     @Singleton

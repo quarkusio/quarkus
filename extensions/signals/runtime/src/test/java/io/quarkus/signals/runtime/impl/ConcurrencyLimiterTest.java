@@ -15,6 +15,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.timeouts.TestTimeouts;
+
 public class ConcurrencyLimiterTest {
 
     @Test
@@ -220,7 +222,7 @@ public class ConcurrencyLimiterTest {
             });
         }
 
-        assertThat(allDone.await(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(allDone.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
         submitter.shutdown();
         completer.shutdown();
 

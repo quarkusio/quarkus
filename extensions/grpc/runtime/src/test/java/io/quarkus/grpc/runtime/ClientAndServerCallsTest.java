@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -29,12 +28,12 @@ import io.quarkus.grpc.ExceptionHandler;
 import io.quarkus.grpc.ExceptionHandlerProvider;
 import io.quarkus.grpc.stubs.ClientCalls;
 import io.quarkus.grpc.stubs.ServerCalls;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 public class ClientAndServerCallsTest {
 
-    protected static final Duration TIMEOUT = Duration.ofSeconds(5);
     private FakeServiceClient client = new FakeServiceClient();
 
     private static class EHP implements ExceptionHandlerProvider {
@@ -70,13 +69,13 @@ public class ClientAndServerCallsTest {
             o.onNext(i);
             o.onCompleted();
         });
-        assertThat(result.await().atMost(TIMEOUT)).isEqualTo("hello");
+        assertThat(result.await().atMost(TestTimeouts.get())).isEqualTo("hello");
     }
 
     @Test
     public void oneToOneFailure() {
         Uni<String> result = ClientCalls.oneToOne("hello", (i, o) -> o.onError(new IOException("boom")));
-        assertThatThrownBy(() -> result.await().atMost(TIMEOUT)).isInstanceOf(CompletionException.class)
+        assertThatThrownBy(() -> result.await().atMost(TestTimeouts.get())).isInstanceOf(CompletionException.class)
                 .hasCauseInstanceOf(IOException.class)
                 .hasMessageContaining("boom");
     }
@@ -87,22 +86,23 @@ public class ClientAndServerCallsTest {
             o.onNext(i);
             o.onError(new IOException("too late"));
         });
-        assertThat(result.await().atMost(TIMEOUT)).isEqualTo("hello");
+        assertThat(result.await().atMost(TestTimeouts.get())).isEqualTo("hello");
     }
 
     @Test
     public void testOneToOne() {
-        assertThat(client.oneToOne("hello").await().atMost(TIMEOUT)).isEqualTo("HELLO");
+        assertThat(client.oneToOne("hello").await().atMost(TestTimeouts.get())).isEqualTo("HELLO");
     }
 
     @Test
     public void testOneToMany() {
-        assertThat(client.oneToMany("hello").collect().asList().await().atMost(TIMEOUT)).containsExactly("HELLO", "HELLO");
+        assertThat(client.oneToMany("hello").collect().asList().await().atMost(TestTimeouts.get())).containsExactly("HELLO",
+                "HELLO");
     }
 
     @Test
     public void testManyToOne() {
-        assertThat(client.manyToOne(Multi.createFrom().items("hello", "world")).await().atMost(TIMEOUT))
+        assertThat(client.manyToOne(Multi.createFrom().items("hello", "world")).await().atMost(TestTimeouts.get()))
                 .containsExactly("HELLO", "WORLD");
     }
 
@@ -110,13 +110,13 @@ public class ClientAndServerCallsTest {
     public void testManyToMany() {
         assertThat(client.manyToMany(Multi.createFrom().items("hello", "world"))
                 .collect().asList()
-                .await().atMost(TIMEOUT)).containsExactly("HELLO", "WORLD");
+                .await().atMost(TestTimeouts.get())).containsExactly("HELLO", "WORLD");
     }
 
     @Test
     public void testFailureReporting() {
         FailingServiceClient client = new FailingServiceClient();
-        assertThatThrownBy(() -> client.propagateFailure("hello").await().atMost(TIMEOUT))
+        assertThatThrownBy(() -> client.propagateFailure("hello").await().atMost(TestTimeouts.get()))
                 .isInstanceOf(CompletionException.class)
                 .hasCauseInstanceOf(StatusException.class)
                 .cause().satisfies(t -> {
@@ -125,7 +125,7 @@ public class ClientAndServerCallsTest {
                     assertThat((t).getMessage()).contains("boom").contains("Exception");
                 });
 
-        assertThatThrownBy(() -> client.immediateFailure("hello").await().atMost(TIMEOUT))
+        assertThatThrownBy(() -> client.immediateFailure("hello").await().atMost(TestTimeouts.get()))
                 .isInstanceOf(CompletionException.class)
                 .hasCauseInstanceOf(StatusException.class)
                 .cause().satisfies(t -> {
@@ -134,7 +134,7 @@ public class ClientAndServerCallsTest {
                     assertThat((t).getMessage()).contains("runtime boom").contains("RuntimeException");
                 });
 
-        assertThatThrownBy(() -> client.illegalArgumentException("hello").await().atMost(TIMEOUT))
+        assertThatThrownBy(() -> client.illegalArgumentException("hello").await().atMost(TestTimeouts.get()))
                 .isInstanceOf(CompletionException.class)
                 .hasCauseInstanceOf(StatusException.class)
                 .cause().satisfies(t -> {
@@ -143,7 +143,7 @@ public class ClientAndServerCallsTest {
                     assertThat((t).getMessage()).contains("bad").contains("IllegalArgumentException");
                 });
 
-        assertThatThrownBy(() -> client.npe("hello").await().atMost(TIMEOUT))
+        assertThatThrownBy(() -> client.npe("hello").await().atMost(TestTimeouts.get()))
                 .isInstanceOf(CompletionException.class)
                 .hasCauseInstanceOf(StatusException.class)
                 .cause().satisfies(t -> {

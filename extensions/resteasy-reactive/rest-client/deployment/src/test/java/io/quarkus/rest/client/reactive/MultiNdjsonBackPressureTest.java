@@ -22,6 +22,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.rest.client.reactive.MultiDownloadBackPressureTest.CountingSubscriber;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 
@@ -47,13 +48,13 @@ public class MultiNdjsonBackPressureTest {
         CountingSubscriber subscriber = new CountingSubscriber();
         client.lines().subscribe().withSubscriber(subscriber);
         subscriber.request(2);
-        await().atMost(Duration.ofSeconds(10)).until(() -> subscriber.received.get() == 2);
-        await().during(Duration.ofSeconds(2)).atMost(Duration.ofSeconds(10))
+        await().atMost(TestTimeouts.get()).until(() -> subscriber.received.get() == 2);
+        await().during(Duration.ofSeconds(2)).atMost(TestTimeouts.get())
                 .until(() -> subscriber.received.get() == 2 && Resource.emitted.get() < 512);
 
         long lineLength = subscriber.bytes.get() / subscriber.received.get();
         subscriber.request(Long.MAX_VALUE);
-        assertThat(subscriber.completed.await(120, TimeUnit.SECONDS)).isTrue();
+        assertThat(subscriber.completed.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
         assertThat(subscriber.failure.get()).isNull();
         assertThat(subscriber.bytes.get()).isEqualTo((long) LINES * lineLength);
         assertThat(Resource.emitted.get()).isEqualTo(LINES);
@@ -67,10 +68,10 @@ public class MultiNdjsonBackPressureTest {
         CountingSubscriber subscriber = new CountingSubscriber();
         client.lines().subscribe().withSubscriber(subscriber);
         subscriber.request(Long.MAX_VALUE);
-        await().atMost(Duration.ofSeconds(10)).until(() -> subscriber.received.get() > 0);
+        await().atMost(TestTimeouts.get()).until(() -> subscriber.received.get() > 0);
         subscriber.subscription.cancel();
         AtomicInteger lastSeen = new AtomicInteger(-1);
-        await().during(Duration.ofSeconds(2)).atMost(Duration.ofSeconds(10))
+        await().during(Duration.ofSeconds(2)).atMost(TestTimeouts.get())
                 .until(() -> {
                     int now = Resource.emitted.get();
                     return now == lastSeen.getAndSet(now);
@@ -88,11 +89,11 @@ public class MultiNdjsonBackPressureTest {
         for (int i = 1; i <= SHORT_LINES; i++) {
             subscriber.request(1);
             int expected = i;
-            await().atMost(Duration.ofSeconds(10)).until(() -> subscriber.received.get() == expected);
+            await().atMost(TestTimeouts.get()).until(() -> subscriber.received.get() == expected);
         }
         // the demand is met exactly at the end of the body, so completion is signalled on the next request
         subscriber.request(1);
-        assertThat(subscriber.completed.await(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(subscriber.completed.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
         assertThat(subscriber.failure.get()).isNull();
         assertThat(subscriber.received.get()).isEqualTo(SHORT_LINES);
     }
@@ -104,11 +105,11 @@ public class MultiNdjsonBackPressureTest {
         CountingSubscriber subscriber = new CountingSubscriber();
         client.emptyLines().subscribe().withSubscriber(subscriber);
         subscriber.request(1);
-        await().atMost(Duration.ofSeconds(10)).until(() -> subscriber.received.get() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> subscriber.received.get() == 1);
         subscriber.request(1);
-        await().atMost(Duration.ofSeconds(10)).until(() -> subscriber.received.get() == 2);
+        await().atMost(TestTimeouts.get()).until(() -> subscriber.received.get() == 2);
         subscriber.request(1);
-        assertThat(subscriber.completed.await(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(subscriber.completed.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
         assertThat(subscriber.failure.get()).isNull();
     }
 

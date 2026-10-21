@@ -25,6 +25,7 @@ import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.test.common.TestLog;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.KeyStoreOptions;
@@ -88,7 +89,7 @@ public class BouncyCastleFipsJsseTestCase {
 
     protected void checkLog(boolean serverOnly) {
         given().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {

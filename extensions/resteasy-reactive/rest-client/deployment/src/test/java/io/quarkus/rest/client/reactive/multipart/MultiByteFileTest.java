@@ -29,11 +29,11 @@ import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 import io.vertx.core.Vertx;
@@ -128,7 +128,7 @@ public class MultiByteFileTest {
     }
 
     @Test
-    @Timeout(10)
+    @TimeLimit
     void shouldBehaveWellWithErrorOnMulti() {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 

@@ -13,6 +13,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+import io.quarkus.test.timeouts.TestTimeouts;
+
 /**
  * Checking logs, support methods, utils.
  */
@@ -39,7 +41,7 @@ public class TestUtil {
     public static void checkLog(final Pattern lineMatchRegexp, final String name, final Path logPath) {
         final Path accessLogFilePath = logPath.toAbsolutePath();
         org.awaitility.Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(3, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     assertTrue(Files.exists(accessLogFilePath), "Quarkus log file " + accessLogFilePath + " is missing");
                     boolean found = false;

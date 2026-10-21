@@ -37,7 +37,6 @@ import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
@@ -50,6 +49,7 @@ import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeClient;
 import io.quarkus.test.junit.common.DisabledOnSemeru;
 import io.quarkus.test.junit.common.EnabledOnSemeru;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.smallrye.common.process.ProcessUtil;
 
 @DisableForNative
@@ -373,7 +373,7 @@ public class JarRunnerIT extends MojoTestBase {
     }
 
     @Test
-    @Timeout(80) // windows might need more time
+    @TimeLimit(multiplier = 4)
     public void reaugmentationWithRemovedArtifactsUsingSystemProperties() throws Exception {
         File testDir = initProject("projects/extension-removed-resources",
                 "projects/extension-removed-artifacts-reaugmentation");

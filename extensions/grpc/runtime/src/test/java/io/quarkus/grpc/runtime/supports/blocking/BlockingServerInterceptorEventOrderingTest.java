@@ -15,7 +15,6 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
@@ -23,6 +22,7 @@ import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.vertx.core.Vertx;
 
 /**
@@ -76,7 +76,7 @@ class BlockingServerInterceptorEventOrderingTest {
      * {@code onHalfClose}.
      */
     @Test
-    @Timeout(10)
+    @TimeLimit
     void virtualThreadPath_deliversOnMessageBeforeOnHalfClose_evenIfEnqueuedInReverse() throws Exception {
         BlockingServerInterceptor interceptor = newInterceptor(Collections.emptyList(),
                 Collections.singletonList("unary"));
@@ -118,7 +118,7 @@ class BlockingServerInterceptorEventOrderingTest {
      * is still in-flight, then we await replay completion via the recording handler's latch.
      */
     @Test
-    @Timeout(10)
+    @TimeLimit
     void blockingPath_deliversOnMessageBeforeOnHalfClose_evenIfEnqueuedInReverse() throws Exception {
         BlockingServerInterceptor interceptor = newInterceptor(Collections.singletonList("unary"),
                 Collections.emptyList());
@@ -159,7 +159,7 @@ class BlockingServerInterceptorEventOrderingTest {
      * The reordering logic must not disturb a queue that is already correctly ordered.
      */
     @Test
-    @Timeout(10)
+    @TimeLimit
     void virtualThreadPath_preservesCorrectOrderWhenEventsArriveInOrder() throws Exception {
         BlockingServerInterceptor interceptor = newInterceptor(Collections.emptyList(),
                 Collections.singletonList("unary"));
@@ -189,7 +189,7 @@ class BlockingServerInterceptorEventOrderingTest {
      * Happy-path: events arrive in the correct order on the blocking path.
      */
     @Test
-    @Timeout(10)
+    @TimeLimit
     void blockingPath_preservesCorrectOrderWhenEventsArriveInOrder() throws Exception {
         BlockingServerInterceptor interceptor = newInterceptor(Collections.singletonList("unary"),
                 Collections.emptyList());
@@ -227,7 +227,7 @@ class BlockingServerInterceptorEventOrderingTest {
      * Expected after fix: [onMessage:first, onMessage:second, onHalfClose]
      */
     @Test
-    @Timeout(10)
+    @TimeLimit
     void virtualThreadPath_promotesMultipleMessagesBeforeHalfClose() throws Exception {
         BlockingServerInterceptor interceptor = newInterceptor(Collections.emptyList(),
                 Collections.singletonList("unary"));
@@ -258,7 +258,7 @@ class BlockingServerInterceptorEventOrderingTest {
      * Same multi-message promotion on the blocking ({@code @Blocking}) path.
      */
     @Test
-    @Timeout(10)
+    @TimeLimit
     void blockingPath_promotesMultipleMessagesBeforeHalfClose() throws Exception {
         BlockingServerInterceptor interceptor = newInterceptor(Collections.singletonList("unary"),
                 Collections.emptyList());
@@ -294,7 +294,7 @@ class BlockingServerInterceptorEventOrderingTest {
      * after {@code setDelegate}.
      */
     @Test
-    @Timeout(10)
+    @TimeLimit
     void virtualThreadPath_deliversOnMessageBeforeOnHalfClose_whenMessageArrivesAfterSetDelegate() throws Exception {
         BlockingServerInterceptor interceptor = newInterceptor(Collections.emptyList(),
                 Collections.singletonList("unary"));
@@ -323,7 +323,7 @@ class BlockingServerInterceptorEventOrderingTest {
      * Same deferred-message race on the {@code @Blocking} path.
      */
     @Test
-    @Timeout(10)
+    @TimeLimit
     void blockingPath_deliversOnMessageBeforeOnHalfClose_whenMessageArrivesAfterSetDelegate() throws Exception {
         BlockingServerInterceptor interceptor = newInterceptor(Collections.singletonList("unary"),
                 Collections.emptyList());
@@ -353,7 +353,7 @@ class BlockingServerInterceptorEventOrderingTest {
     }
 
     @Test
-    @Timeout(10)
+    @TimeLimit
     void serverStreaming_virtualThreadPath_defersHalfCloseUntilRequestMessage() throws Exception {
         BlockingServerInterceptor interceptor = newInterceptor(Collections.emptyList(),
                 Collections.singletonList("serverStreaming"));
@@ -379,7 +379,7 @@ class BlockingServerInterceptorEventOrderingTest {
     }
 
     @Test
-    @Timeout(10)
+    @TimeLimit
     void clientStreaming_virtualThreadPath_promotesMultipleMessagesBeforeHalfClose() throws Exception {
         BlockingServerInterceptor interceptor = newInterceptor(Collections.emptyList(),
                 Collections.singletonList("clientStreaming"));
@@ -403,7 +403,7 @@ class BlockingServerInterceptorEventOrderingTest {
     }
 
     @Test
-    @Timeout(10)
+    @TimeLimit
     void clientStreaming_virtualThreadPath_allowsHalfCloseWithoutRequestMessage() throws Exception {
         BlockingServerInterceptor interceptor = newInterceptor(Collections.emptyList(),
                 Collections.singletonList("clientStreaming"));
@@ -425,7 +425,7 @@ class BlockingServerInterceptorEventOrderingTest {
     }
 
     @Test
-    @Timeout(10)
+    @TimeLimit
     void virtualThreadPath_messageReceivedSetUnderLockBeforeSetDelegateDrains() throws Exception {
         BlockingServerInterceptor interceptor = newInterceptor(Collections.emptyList(),
                 Collections.singletonList("unary"));

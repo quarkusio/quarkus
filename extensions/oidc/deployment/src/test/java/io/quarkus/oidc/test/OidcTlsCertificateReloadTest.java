@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
 import io.smallrye.certs.Format;
@@ -93,7 +94,7 @@ class OidcTlsCertificateReloadTest {
         Files.copy(new File("target/certs/oidc-reload-B-truststore.p12").toPath(),
                 new File(certs, "truststore.p12").toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-        await().atMost(15, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(() -> callProtectedEndpoint().statusCode(401));
     }

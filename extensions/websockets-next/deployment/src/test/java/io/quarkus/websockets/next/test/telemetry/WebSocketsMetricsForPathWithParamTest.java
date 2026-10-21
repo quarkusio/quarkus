@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.List;
 
 import jakarta.inject.Inject;
@@ -19,6 +18,7 @@ import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.PathParam;
 import io.quarkus.websockets.next.WebSocket;
@@ -64,7 +64,7 @@ public class WebSocketsMetricsForPathWithParamTest {
             assertEquals("monty go", client.sendAndAwaitReply("payload").toString());
         }
 
-        Awaitility.await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             var body = RestAssured.given().get("/q/metrics").then().statusCode(200).extract().asString();
             assertNotNull(body);
             var urisNotUsingPathParams = body

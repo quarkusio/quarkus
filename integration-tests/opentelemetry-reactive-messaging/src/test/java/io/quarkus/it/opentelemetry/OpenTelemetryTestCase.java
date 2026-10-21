@@ -4,7 +4,6 @@ import static io.opentelemetry.instrumentation.api.incubator.semconv.messaging.M
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,6 +31,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 
@@ -50,7 +50,7 @@ public class OpenTelemetryTestCase {
     @BeforeEach
     @AfterEach
     void reset() {
-        await().atMost(5, SECONDS).until(() -> {
+        await().atMost(TestTimeouts.get()).until(() -> {
             List<Map<String, Object>> spans = getSpans();
             if (spans.size() == 0) {
                 return true;

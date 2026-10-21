@@ -2,7 +2,6 @@ package io.quarkus.grpc.server.blocking;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -11,7 +10,6 @@ import org.assertj.core.api.Assertions;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.google.protobuf.ByteString;
@@ -25,6 +23,8 @@ import io.quarkus.grpc.blocking.MutinyBlockingTestServiceGrpc;
 import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.BlockingMutinyTestService;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -41,8 +41,6 @@ public class BlockingMethodsWithMutinyImplTest {
                             .addClasses(BlockingMutinyTestService.class, AssertHelper.class))
             .withConfigurationResource("blocking-test-config.properties");
 
-    protected static final Duration TIMEOUT = Duration.ofSeconds(5);
-
     @GrpcClient("blocking-test")
     BlockingTestServiceGrpc.BlockingTestServiceBlockingStub service;
 
@@ -50,7 +48,7 @@ public class BlockingMethodsWithMutinyImplTest {
     MutinyBlockingTestServiceGrpc.MutinyBlockingTestServiceStub mutiny;
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testEmpty() {
         EmptyProtos.Empty empty = service
                 .emptyCall(EmptyProtos.Empty.newBuilder().build());
@@ -58,7 +56,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testBlockingEmpty() {
         EmptyProtos.Empty empty = service
                 .emptyCallBlocking(EmptyProtos.Empty.newBuilder().build());
@@ -66,7 +64,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testUnaryMethod() {
         Messages.SimpleResponse response = service
                 .unaryCall(Messages.SimpleRequest.newBuilder().build());
@@ -74,7 +72,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testUnaryMethodBlocking() {
         Messages.SimpleResponse response = service
                 .unaryCallBlocking(Messages.SimpleRequest.newBuilder().build());
@@ -82,7 +80,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testStreamingOutMethod() {
         Iterator<Messages.StreamingOutputCallResponse> iterator = service
                 .streamingOutputCall(Messages.StreamingOutputCallRequest.newBuilder().build());
@@ -96,7 +94,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testStreamingOutMethodBlocking() {
         Iterator<Messages.StreamingOutputCallResponse> iterator = service
                 .streamingOutputCallBlocking(Messages.StreamingOutputCallRequest.newBuilder().build());
@@ -111,29 +109,29 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testStreamingInMethodWithMutinyClient() {
         Multi<Messages.StreamingInputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
                 .map(p -> Messages.StreamingInputCallRequest.newBuilder().setPayload(p).build());
         Uni<Messages.StreamingInputCallResponse> done = mutiny.streamingInputCall(input);
         assertThat(done).isNotNull();
-        done.await().atMost(TIMEOUT);
+        done.await().atMost(TestTimeouts.get());
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testStreamingInMethodBlockingWithMutinyClient() {
         Multi<Messages.StreamingInputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
                 .map(p -> Messages.StreamingInputCallRequest.newBuilder().setPayload(p).build());
         Uni<Messages.StreamingInputCallResponse> done = mutiny.streamingInputCallBlocking(input);
         assertThat(done).isNotNull();
-        done.await().atMost(TIMEOUT);
+        done.await().atMost(TestTimeouts.get());
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testFullDuplexMethodWithMutinyClient() {
         Multi<Messages.StreamingOutputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
@@ -141,13 +139,13 @@ public class BlockingMethodsWithMutinyImplTest {
         List<String> response = mutiny.fullDuplexCall(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
                 .collect().asList()
-                .await().atMost(TIMEOUT);
+                .await().atMost(TestTimeouts.get());
         assertThat(response).isNotNull().hasSize(4)
                 .containsExactly("a1", "b2", "c3", "d4");
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testFullDuplexMethodBlockingWithMutinyClient() {
         Multi<Messages.StreamingOutputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
@@ -155,13 +153,13 @@ public class BlockingMethodsWithMutinyImplTest {
         List<String> response = mutiny.fullDuplexCallBlocking(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
                 .collect().asList()
-                .await().atMost(TIMEOUT);
+                .await().atMost(TestTimeouts.get());
         assertThat(response).isNotNull().hasSize(4)
                 .containsExactly("a1", "b2", "c3", "d4");
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testHalfDuplexMethodWithMutinyClient() {
         Multi<Messages.StreamingOutputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
@@ -169,13 +167,13 @@ public class BlockingMethodsWithMutinyImplTest {
         List<String> response = mutiny.halfDuplexCall(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
                 .collect().asList()
-                .await().atMost(TIMEOUT);
+                .await().atMost(TestTimeouts.get());
         assertThat(response).isNotNull().hasSize(4).containsExactly("A", "B", "C", "D");
 
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testHalfDuplexMethodBlockingWithMutinyClient() {
         Multi<Messages.StreamingOutputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
@@ -183,7 +181,7 @@ public class BlockingMethodsWithMutinyImplTest {
         List<String> response = mutiny.halfDuplexCallBlocking(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
                 .collect().asList()
-                .await().atMost(TIMEOUT);
+                .await().atMost(TestTimeouts.get());
         assertThat(response).isNotNull().hasSize(4)
                 .containsExactly("A", "B", "C", "D");
     }

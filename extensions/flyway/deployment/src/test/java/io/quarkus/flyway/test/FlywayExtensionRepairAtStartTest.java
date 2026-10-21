@@ -3,8 +3,6 @@ package io.quarkus.flyway.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import java.util.concurrent.TimeUnit;
-
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -18,6 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.runtime.util.ExceptionUtil;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 public class FlywayExtensionRepairAtStartTest {
@@ -43,7 +42,7 @@ public class FlywayExtensionRepairAtStartTest {
         // trigger application restart
         RestAssured.get("/");
 
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertThat(config.getLogRecords()).anySatisfy(r -> {
                 assertThat(r.getMessage()).contains("Failed to start application");
                 assertThat(ExceptionUtil.getRootCause(r.getThrown()).getMessage())
@@ -58,7 +57,7 @@ public class FlywayExtensionRepairAtStartTest {
         // trigger application restart
         RestAssured.get("/");
 
-        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertThat(config.getLogRecords()).anySatisfy(
                     r -> assertThat(r.getMessage()).contains("Successfully repaired schema history table"));
             assertThat(RestAssured.get("/flyway/current-version").then().statusCode(200).extract().asString())

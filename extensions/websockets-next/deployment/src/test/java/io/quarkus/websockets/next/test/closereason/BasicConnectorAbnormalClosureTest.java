@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker13;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.BasicWebSocketConnector;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.Closed;
@@ -89,7 +90,7 @@ class BasicConnectorAbnormalClosureTest {
         assertThat(closeReason).succeedsWithin(Duration.ofSeconds(5))
                 .extracting(CloseReason::getCode)
                 .isEqualTo(CloseReason.ABNORMAL.getCode());
-        Awaitility.await().atMost(Duration.ofSeconds(5))
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertThat(ClosedConnections.IDS).contains(connection.id()));
     }
 

@@ -10,7 +10,6 @@ import static io.quarkus.websockets.next.test.telemetry.MetricsAsserter.stringTo
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
@@ -22,6 +21,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.WebSocketConnector;
 import io.quarkus.websockets.next.test.telemetry.endpoints.onerror.ErroneousClient_NoOnError;
 import io.quarkus.websockets.next.test.telemetry.endpoints.onerror.ErroneousClient_OverloadedOnError;
@@ -248,7 +248,7 @@ public class MicrometerWebSocketsOnErrorTest {
                 // without this header the client would receive 404
                 .header("Sec-WebSocket-Key", "foo")
                 .get(path).then().statusCode(400);
-        Awaitility.await().atMost(Duration.ofSeconds(12)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             getMetrics()
                     .body(assertServerConnectionOpenedTotal(asserter.serverConnectionOpenedCount))
                     .body(assertServerConnectionOpenedTotal(path, 1))

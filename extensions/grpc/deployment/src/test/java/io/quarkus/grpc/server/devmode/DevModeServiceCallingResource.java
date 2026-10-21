@@ -1,13 +1,12 @@
 package io.quarkus.grpc.server.devmode;
 
-import java.time.Duration;
-
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import devmodetest.v1.DevModeService;
 import devmodetest.v1.Devmodetest;
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Multi;
 
 @Path("/dev-mode-test")
@@ -28,7 +27,7 @@ public class DevModeServiceCallingResource {
     }
 
     String responseFor(Multi<Devmodetest.DevModeResponse> response) {
-        Devmodetest.DevModeResponse r = response.toUni().await().atMost(Duration.ofSeconds(10));
+        Devmodetest.DevModeResponse r = response.toUni().await().atMost(TestTimeouts.get());
         return r.getStatus() == Devmodetest.DevModeResponse.Status.NOT_SERVING
                 ? "OKAY"
                 : "UNEXPECTED_STATUS: " + r.getStatus();

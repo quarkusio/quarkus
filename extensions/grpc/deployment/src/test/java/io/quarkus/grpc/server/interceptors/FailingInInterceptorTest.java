@@ -2,8 +2,6 @@ package io.quarkus.grpc.server.interceptors;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.time.Duration;
-
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -27,6 +25,7 @@ import io.quarkus.grpc.GlobalInterceptor;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 
 public class FailingInInterceptorTest {
@@ -43,7 +42,7 @@ public class FailingInInterceptorTest {
     @Test
     void test() {
         Uni<HelloReply> result = greeter.sayHello(HelloRequest.newBuilder().setName("ServiceA").build());
-        assertThatThrownBy(() -> result.await().atMost(Duration.ofSeconds(4)))
+        assertThatThrownBy(() -> result.await().atMost(TestTimeouts.get()))
                 .isInstanceOf(StatusRuntimeException.class)
                 .hasMessageContaining("INVALID_ARGUMENT");
     }

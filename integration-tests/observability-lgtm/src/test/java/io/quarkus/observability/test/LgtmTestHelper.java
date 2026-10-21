@@ -7,6 +7,7 @@ import org.awaitility.Awaitility;
 import org.jboss.logging.Logger;
 
 import io.quarkus.observability.test.utils.GrafanaClient;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 public abstract class LgtmTestHelper {
@@ -27,13 +28,13 @@ public abstract class LgtmTestHelper {
 
         Awaitility.setDefaultPollInterval(5, TimeUnit.SECONDS); // reduce load on the server. Default is .1s
 
-        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(90, TimeUnit.SECONDS).until(
+        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(TestTimeouts.get()).until(
                 client::user,
                 u -> "admin".equals(u.login));
-        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(90, TimeUnit.SECONDS).until(
+        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(TestTimeouts.get()).until(
                 () -> client.query("xvalue_X"),
                 result -> !result.data.result.isEmpty());
-        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(90, TimeUnit.SECONDS).until(
+        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(TestTimeouts.get()).until(
                 () -> client.traces("quarkus-integration-test-observability-lgtm", 20, 3),
                 result -> !result.traces.isEmpty());
     }

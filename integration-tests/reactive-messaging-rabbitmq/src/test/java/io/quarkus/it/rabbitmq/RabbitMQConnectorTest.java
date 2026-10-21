@@ -1,7 +1,6 @@
 package io.quarkus.it.rabbitmq;
 
 import static io.restassured.RestAssured.get;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.http.ContentType;
@@ -39,7 +39,7 @@ public class RabbitMQConnectorTest {
 
     @Test
     public void test() {
-        await().atMost(30, SECONDS)
+        await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> Assertions.assertEquals(6, get("/rabbitmq/people").as(TYPE_REF).size()));
     }
 

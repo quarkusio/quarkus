@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -18,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.util.ExceptionUtil;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
@@ -63,7 +63,7 @@ public abstract class AbstractHttpUpgradeCheckTestBase {
     public void testHttpUpgradePermitted() {
         try (WSClient client = new WSClient(vertx)) {
             client.connect(openingUri);
-            Awaitility.await().atMost(Duration.ofSeconds(2)).until(() -> OpeningHttpUpgradeCheck.INVOKED.get() == 1);
+            Awaitility.await().atMost(TestTimeouts.get()).until(() -> OpeningHttpUpgradeCheck.INVOKED.get() == 1);
         }
     }
 

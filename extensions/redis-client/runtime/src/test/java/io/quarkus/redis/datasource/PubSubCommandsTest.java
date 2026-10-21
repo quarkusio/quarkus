@@ -23,6 +23,7 @@ import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.datasource.pubsub.RedisPubSubMessage;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.Cancellable;
@@ -37,7 +38,7 @@ public class PubSubCommandsTest extends DatasourceTestBase {
 
     @BeforeEach
     void initialize() {
-        ds = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(5));
+        ds = new BlockingRedisDataSourceImpl(vertx, redis, api, TestTimeouts.get());
         pubsub = ds.pubsub(Person.class);
 
         var reactiveDS = new ReactiveRedisDataSourceImpl(vertx, redis, api);

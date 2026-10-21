@@ -2,7 +2,6 @@ package io.quarkus.redis.datasource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.runtime.datasource.ReactivePubSubCommandsImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.Cancellable;
 
@@ -32,7 +32,7 @@ public class PubSubTest extends DatasourceTestBase {
 
     @AfterEach
     void tearDown() {
-        ds.flushall().await().atMost(Duration.ofSeconds(10));
+        ds.flushall().await().atMost(TestTimeouts.get());
     }
 
     @Test
@@ -44,14 +44,14 @@ public class PubSubTest extends DatasourceTestBase {
     void testWithSingleChannel() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(3);
         ReactivePubSubCommands.ReactiveRedisSubscriber subscriber = ps.subscribe("people",
-                p -> latch.countDown()).await().atMost(Duration.ofSeconds(10));
-        ps.publish("people", person1).await().atMost(Duration.ofSeconds(10));
-        ps.publish("people", person2).await().atMost(Duration.ofSeconds(10));
+                p -> latch.countDown()).await().atMost(TestTimeouts.get());
+        ps.publish("people", person1).await().atMost(TestTimeouts.get());
+        ps.publish("people", person2).await().atMost(TestTimeouts.get());
         ds.value(String.class, String.class)
-                .set("hello", "foo").await().atMost(Duration.ofSeconds(10));
-        ps.publish("people", person2).await().atMost(Duration.ofSeconds(10));
-        assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-        subscriber.unsubscribe().await().atMost(Duration.ofSeconds(10));
+                .set("hello", "foo").await().atMost(TestTimeouts.get());
+        ps.publish("people", person2).await().atMost(TestTimeouts.get());
+        assertThat(latch.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
+        subscriber.unsubscribe().await().atMost(TestTimeouts.get());
     }
 
     @Test
@@ -59,38 +59,38 @@ public class PubSubTest extends DatasourceTestBase {
         CountDownLatch latch = new CountDownLatch(3);
         ReactivePubSubCommands.ReactiveRedisSubscriber subscriber = ps.subscribeToPattern("peo*e", p -> {
             latch.countDown();
-        }).await().atMost(Duration.ofSeconds(10));
+        }).await().atMost(TestTimeouts.get());
 
-        ps.publish("people", person1).await().atMost(Duration.ofSeconds(10));
-        ps.publish("people", person2).await().atMost(Duration.ofSeconds(10));
+        ps.publish("people", person1).await().atMost(TestTimeouts.get());
+        ps.publish("people", person2).await().atMost(TestTimeouts.get());
 
         ds.value(String.class, String.class)
-                .set("hello", "foo").await().atMost(Duration.ofSeconds(10));
+                .set("hello", "foo").await().atMost(TestTimeouts.get());
 
-        ps.publish("people", person2).await().atMost(Duration.ofSeconds(10));
+        ps.publish("people", person2).await().atMost(TestTimeouts.get());
 
-        assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+        assertThat(latch.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
 
-        subscriber.unsubscribe().await().atMost(Duration.ofSeconds(10));
+        subscriber.unsubscribe().await().atMost(TestTimeouts.get());
     }
 
     @Test
     void testWithMultipleChannels() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(3);
         ReactivePubSubCommands.ReactiveRedisSubscriber subscriber = ps
-                .subscribe(List.of("people1", "people2"), p -> latch.countDown()).await().atMost(Duration.ofSeconds(10));
+                .subscribe(List.of("people1", "people2"), p -> latch.countDown()).await().atMost(TestTimeouts.get());
 
-        ps.publish("people1", person1).await().atMost(Duration.ofSeconds(10));
-        ps.publish("people2", person2).await().atMost(Duration.ofSeconds(10));
+        ps.publish("people1", person1).await().atMost(TestTimeouts.get());
+        ps.publish("people2", person2).await().atMost(TestTimeouts.get());
 
         ds.value(String.class, String.class)
-                .set("hello", "foo").await().atMost(Duration.ofSeconds(10));
+                .set("hello", "foo").await().atMost(TestTimeouts.get());
 
-        ps.publish("people1", person2).await().atMost(Duration.ofSeconds(10));
+        ps.publish("people1", person2).await().atMost(TestTimeouts.get());
 
-        assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+        assertThat(latch.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
 
-        subscriber.unsubscribe().await().atMost(Duration.ofSeconds(10));
+        subscriber.unsubscribe().await().atMost(TestTimeouts.get());
     }
 
     @Test
@@ -98,23 +98,23 @@ public class PubSubTest extends DatasourceTestBase {
         CountDownLatch latch1 = new CountDownLatch(3);
         CountDownLatch latch2 = new CountDownLatch(2);
         ReactivePubSubCommands.ReactiveRedisSubscriber s1 = ps
-                .subscribeToPattern("people*", p -> latch1.countDown()).await().atMost(Duration.ofSeconds(10));
+                .subscribeToPattern("people*", p -> latch1.countDown()).await().atMost(TestTimeouts.get());
         ReactivePubSubCommands.ReactiveRedisSubscriber s2 = ps
-                .subscribeToPattern("p*ple1", p -> latch2.countDown()).await().atMost(Duration.ofSeconds(10));
+                .subscribeToPattern("p*ple1", p -> latch2.countDown()).await().atMost(TestTimeouts.get());
 
-        ps.publish("people1", person1).await().atMost(Duration.ofSeconds(10));
-        ps.publish("people2", person2).await().atMost(Duration.ofSeconds(10));
+        ps.publish("people1", person1).await().atMost(TestTimeouts.get());
+        ps.publish("people2", person2).await().atMost(TestTimeouts.get());
 
         ds.value(String.class, String.class)
-                .set("hello", "foo").await().atMost(Duration.ofSeconds(10));
+                .set("hello", "foo").await().atMost(TestTimeouts.get());
 
-        ps.publish("people1", person2).await().atMost(Duration.ofSeconds(10));
+        ps.publish("people1", person2).await().atMost(TestTimeouts.get());
 
-        assertThat(latch1.await(5, TimeUnit.SECONDS)).isTrue();
-        assertThat(latch2.await(5, TimeUnit.SECONDS)).isTrue();
+        assertThat(latch1.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
+        assertThat(latch2.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
 
-        s1.unsubscribe().await().atMost(Duration.ofSeconds(10));
-        s2.unsubscribe().await().atMost(Duration.ofSeconds(10));
+        s1.unsubscribe().await().atMost(TestTimeouts.get());
+        s2.unsubscribe().await().atMost(TestTimeouts.get());
     }
 
     @Test
@@ -125,13 +125,13 @@ public class PubSubTest extends DatasourceTestBase {
         Cancellable cancellable = multi.subscribe().with(p -> latch.countDown());
 
         for (int i = 0; i < 1000; i++) {
-            ps.publish("people", new Person("p" + i, "")).await().atMost(Duration.ofSeconds(10));
+            ps.publish("people", new Person("p" + i, "")).await().atMost(TestTimeouts.get());
         }
 
         ds.value(String.class, String.class)
-                .set("hello", "foo").await().atMost(Duration.ofSeconds(10));
+                .set("hello", "foo").await().atMost(TestTimeouts.get());
 
-        assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+        assertThat(latch.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
 
         cancellable.cancel();
     }

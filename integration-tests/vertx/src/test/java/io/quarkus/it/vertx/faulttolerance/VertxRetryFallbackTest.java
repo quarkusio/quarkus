@@ -3,7 +3,6 @@ package io.quarkus.it.vertx.faulttolerance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.inject.Inject;
@@ -12,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.mutiny.core.Vertx;
 
 @QuarkusTest
@@ -35,7 +35,7 @@ public class VertxRetryFallbackTest {
             service.hello().subscribe().with(result::set, result::set);
         });
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> result.get() != null);
+        await().atMost(TestTimeouts.get()).until(() -> result.get() != null);
 
         assertThat(result.get()).isEqualTo("Hello fallback!");
 

@@ -3,7 +3,6 @@ package io.quarkus.micrometer.deployment.devui;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import tools.jackson.databind.JsonNode;
 
@@ -43,7 +43,7 @@ public class MetricsDevUITest extends DevUIJsonRPCTest {
         RestAssured.get("/metrics-test/hit").then().statusCode(200);
 
         // Catalog eventually lists demo.hits (poll; sampler runs every 200ms).
-        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             JsonNode catalog = super.executeJsonRPCMethod("getCatalog");
             assertThat(hasMetric(catalog, "demo.hits")).isTrue();
         });
@@ -56,7 +56,7 @@ public class MetricsDevUITest extends DevUIJsonRPCTest {
         // correct metadata: the design requires asserting the cumulative flag and tag set,
         // and at least two points (so the client has something to derive a rate from).
         super.executeJsonRPCMethod("setSelection", Map.of("names", List.of("demo.hits")));
-        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             RestAssured.get("/metrics-test/hit");
             JsonNode snap = super.executeJsonRPCMethod("getSnapshot");
             JsonNode sections = snap.get("sections");

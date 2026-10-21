@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +24,7 @@ import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.WebSocketConnector;
 import io.quarkus.websockets.next.test.telemetry.endpoints.ontextmessage.BounceClient;
 import io.quarkus.websockets.next.test.telemetry.endpoints.ontextmessage.BounceEndpoint;
@@ -121,7 +121,7 @@ public class TracesDisabledWebSocketsTest {
 
     private void waitForInitialRequestTrace() {
         Awaitility.await()
-                .atMost(Duration.ofSeconds(5))
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertEquals(1, spanExporter.getFinishedSpanItems().size()));
     }
 

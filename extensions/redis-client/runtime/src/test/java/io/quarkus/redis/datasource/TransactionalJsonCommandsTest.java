@@ -15,6 +15,7 @@ import io.quarkus.redis.datasource.json.TransactionalJsonCommands;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -109,7 +110,7 @@ public class TransactionalJsonCommandsTest extends DatasourceTestBase {
                     .chain(() -> json.jsonGet("sister", Person.class))
                     .chain(() -> json.jsonSet("someone", person3))
                     .chain(() -> json.jsonGetObject("someone"));
-        }).await().atMost(Duration.ofSeconds(5));
+        }).await().atMost(TestTimeouts.get());
         assertThat(result.size()).isEqualTo(14);
         assertThat(result.discarded()).isFalse();
 

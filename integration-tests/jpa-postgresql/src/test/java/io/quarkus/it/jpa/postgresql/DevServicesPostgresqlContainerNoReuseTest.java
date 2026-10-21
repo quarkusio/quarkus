@@ -22,6 +22,7 @@ import com.github.dockerjava.api.model.ContainerPort;
 import io.quarkus.maven.it.MojoTestBase;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 /**
  * Verifies that DevServices PostgreSQL does NOT reuse containers across runs
@@ -79,7 +80,7 @@ class DevServicesPostgresqlContainerNoReuseTest extends MojoTestBase {
         // Container shutdown may not be instantaneous: for some reason,
         // Quarkus doesn't shut down containers itself but lets Ryuk take care of it.
         // See https://quarkusio.zulipchat.com/#narrow/channel/187038-dev/topic/Hibernate.20test.20failures.20on.20CI/near/608660701
-        await().atMost(30, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(() -> assertThat(findContainerOnPort(FIXED_PORT))
                         .as("Container on port %d should be stopped after the first run"

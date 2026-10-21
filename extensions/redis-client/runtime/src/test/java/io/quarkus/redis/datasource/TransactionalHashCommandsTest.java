@@ -13,6 +13,7 @@ import io.quarkus.redis.datasource.hash.TransactionalHashCommands;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @RequiresRedis6OrHigher
 public class TransactionalHashCommandsTest extends DatasourceTestBase {
@@ -99,7 +100,7 @@ public class TransactionalHashCommandsTest extends DatasourceTestBase {
                     .chain(() -> hash.hget(KEY, "field")) // 2 -> "hello
                     .chain(() -> hash.hdel(KEY, "field", "field2")) // 3 -> 1
                     .chain(() -> hash.hget(KEY, "field")); // 4 -> null
-        }).await().atMost(Duration.ofSeconds(5));
+        }).await().atMost(TestTimeouts.get());
         assertThat(result.size()).isEqualTo(5);
         assertThat(result.discarded()).isFalse();
         assertThat((Void) result.get(0)).isNull();
@@ -118,7 +119,7 @@ public class TransactionalHashCommandsTest extends DatasourceTestBase {
                     .chain(() -> hash.hget(KEY, "field")) // 2 -> "hello
                     .chain(() -> hash.hdel(KEY, "field", "field2")) // 3 -> 1
                     .chain(() -> hash.hget(KEY, "field")); // 4 -> null
-        }, KEY).await().atMost(Duration.ofSeconds(5));
+        }, KEY).await().atMost(TestTimeouts.get());
         assertThat(result.size()).isEqualTo(5);
         assertThat(result.discarded()).isFalse();
         assertThat((Void) result.get(0)).isNull();
@@ -138,7 +139,7 @@ public class TransactionalHashCommandsTest extends DatasourceTestBase {
                     .chain(() -> reactive.hash(String.class).hset(KEY, "a", "b"))
                     .chain(() -> hash.hdel(KEY, "field", "field2"))
                     .chain(() -> hash.hget(KEY, "field"));
-        }, KEY).await().atMost(Duration.ofSeconds(5));
+        }, KEY).await().atMost(TestTimeouts.get());
         assertThat(result.size()).isEqualTo(0);
         assertThat(result.discarded()).isTrue();
     }

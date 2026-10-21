@@ -13,6 +13,7 @@ import java.util.concurrent.Callable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Vertx;
 
 public class MemoryCacheTest {
@@ -51,7 +52,7 @@ public class MemoryCacheTest {
 
         assertTrue(cache.isTimerRunning());
 
-        await().atMost(Duration.ofSeconds(5)).until(new Callable<Boolean>() {
+        await().atMost(TestTimeouts.get()).until(new Callable<Boolean>() {
 
             @Override
             public Boolean call() throws Exception {

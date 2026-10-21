@@ -15,6 +15,7 @@ import io.quarkus.test.QuarkusProdModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 @DisabledOnOs(OS.WINDOWS)
@@ -48,7 +49,7 @@ public class DeregistrationTest {
 
         // Wait until service is deregistered (404)
         await()
-                .atMost(20, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(() -> RestAssured.get("http://localhost:8500/v1/catalog/service/consul-deregistration-test")
                         .then()

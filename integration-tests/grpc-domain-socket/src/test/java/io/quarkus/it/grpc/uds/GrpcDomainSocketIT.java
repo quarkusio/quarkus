@@ -2,8 +2,6 @@ package io.quarkus.it.grpc.uds;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +12,7 @@ import org.junit.jupiter.api.condition.OS;
 import io.grpc.Channel;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.grpcio.client.GrpcIoClient;
@@ -54,7 +53,7 @@ public class GrpcDomainSocketIT {
     public void testGrpcOverDomainSocket() {
         HelloReply reply = MutinyGreeterGrpc.newMutinyStub(channel)
                 .sayHello(HelloRequest.newBuilder().setName("World").build())
-                .await().atMost(Duration.ofSeconds(10));
+                .await().atMost(TestTimeouts.get());
         assertThat(reply.getMessage()).isEqualTo("Hello World");
     }
 

@@ -17,6 +17,7 @@ import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.quarkus.test.keycloak.client.KeycloakTestClient.Tls;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 public abstract class AbstractBearerTokenAuthorizationTest {
@@ -269,7 +270,7 @@ public abstract class AbstractBearerTokenAuthorizationTest {
 
         await()
                 .pollDelay(3, TimeUnit.SECONDS)
-                .atMost(5, TimeUnit.SECONDS).until(
+                .atMost(TestTimeouts.get()).until(
                         () -> RestAssured.given().auth().oauth2(token).when()
                                 .get("/api/users/me").thenReturn().statusCode() == 401);
     }

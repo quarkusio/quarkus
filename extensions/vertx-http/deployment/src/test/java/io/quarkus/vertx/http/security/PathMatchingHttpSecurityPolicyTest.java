@@ -4,7 +4,6 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URL;
-import java.time.Duration;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -27,6 +26,7 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
@@ -37,7 +37,6 @@ import io.vertx.ext.web.client.WebClient;
 
 public abstract class PathMatchingHttpSecurityPolicyTest {
 
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(20);
     private static WebClient client;
 
     protected static QuarkusExtensionTest createQuarkusExtensionTest(String applicationProperties,
@@ -386,7 +385,7 @@ public abstract class PathMatchingHttpSecurityPolicyTest {
             req.putHeader(header, header);
         }
         var result = req.send();
-        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        await().atMost(TestTimeouts.get()).until(result::isComplete);
         assertEquals(expectedStatusCode, result.result().statusCode(), path);
         if (body != null) {
             Assertions.assertTrue(result.result().bodyAsString().contains(body), path);

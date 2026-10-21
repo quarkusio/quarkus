@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URL;
-import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 
@@ -24,14 +23,13 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
 public class CsrfReactiveTest {
-
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     @TestHTTPResource
     URL url;
@@ -431,7 +429,7 @@ public class CsrfReactiveTest {
         var result = req.sendForm(io.vertx.core.MultiMap.caseInsensitiveMultiMap()
                 .add("csrf-header", "X-CSRF-TOKEN"));
 
-        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        await().atMost(TestTimeouts.get()).until(result::isComplete);
         assertEquals(expectedStatus, result.result().statusCode(), path);
         if (responseBody != null) {
             assertEquals(responseBody, result.result().bodyAsString(), path);
@@ -453,7 +451,7 @@ public class CsrfReactiveTest {
 
         var result = req.sendJson(new JsonObject("{}"));
 
-        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        await().atMost(TestTimeouts.get()).until(result::isComplete);
         assertEquals(expectedStatus, result.result().statusCode(), path);
         if (responseBody != null) {
             assertEquals(responseBody, result.result().bodyAsString(), path);

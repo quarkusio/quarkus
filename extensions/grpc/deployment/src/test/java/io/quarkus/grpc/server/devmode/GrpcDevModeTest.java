@@ -30,6 +30,7 @@ import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Multi;
 
 public class GrpcDevModeTest {
@@ -106,7 +107,7 @@ public class GrpcDevModeTest {
     public void testEchoStreamReload() {
         final CopyOnWriteArrayList<String> results = new CopyOnWriteArrayList<>();
         CompletionStage<Boolean> firstStreamFinished = callEcho("foo", results);
-        Awaitility.await().atMost(10, TimeUnit.SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .until(() -> results, Matchers.hasItem("echo::foo"));
 
         test.modifySourceFile("DevModeTestStreamService.java",
@@ -114,7 +115,7 @@ public class GrpcDevModeTest {
 
         final CopyOnWriteArrayList<String> newResults = new CopyOnWriteArrayList<>();
         callEcho("foo", newResults);
-        Awaitility.await().atMost(10, TimeUnit.SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .until(() -> newResults, Matchers.hasItem("newecho::foo"));
         // TODO Investigate this change of behavior, the assertion passed with Vert.x 4
         //Awaitility.await().untilAsserted(() -> assertThat(firstStreamFinished).isCompleted());

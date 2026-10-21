@@ -3,7 +3,6 @@ package io.quarkus.it.mailer;
 import static org.awaitility.Awaitility.await;
 
 import java.io.File;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,6 +12,7 @@ import org.testcontainers.utility.MountableFile;
 
 import io.quarkus.test.common.DockerImageNames;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.smallrye.certs.CertificateGenerator;
 import io.smallrye.certs.CertificateRequest;
@@ -47,10 +47,10 @@ public class MailpitFullTlsTestResource implements QuarkusTestResourceLifecycleM
 
         server.start();
 
-        await().atMost(Duration.ofSeconds(10)).until(() -> server.isRunning()
+        await().atMost(TestTimeouts.get()).until(() -> server.isRunning()
                 && server.getMappedPort(8025) > 0
                 && server.getMappedPort(1025) > 0);
-        await().atMost(Duration.ofSeconds(10)).catchUncaughtExceptions().untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).catchUncaughtExceptions().untilAsserted(() -> {
             try {
                 int status = RestAssured.get("http://" + server.getHost() + ":" + server.getMappedPort(8025) + "/api/v1/info")
                         .statusCode();

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.SafeVertxContext;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
@@ -48,7 +49,7 @@ public class SafeVertxContextTest {
             latch.countDown();
         });
 
-        Assertions.assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
+        Assertions.assertThat(latch.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
     }
 
     @Test
@@ -62,7 +63,7 @@ public class SafeVertxContextTest {
             latch.countDown();
         });
 
-        Assertions.assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
+        Assertions.assertThat(latch.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
     }
 
     @Test
@@ -81,7 +82,7 @@ public class SafeVertxContextTest {
             latch.countDown();
         });
 
-        Assertions.assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
+        Assertions.assertThat(latch.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
     }
 
     @Test
@@ -104,7 +105,7 @@ public class SafeVertxContextTest {
             latch.countDown();
         });
 
-        Assertions.assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
+        Assertions.assertThat(latch.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
     }
 
     @Test

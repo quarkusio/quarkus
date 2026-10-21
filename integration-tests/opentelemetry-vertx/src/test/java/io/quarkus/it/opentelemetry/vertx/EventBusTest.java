@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import io.opentelemetry.api.trace.SpanId;
 import io.opentelemetry.api.trace.SpanKind;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.http.ContentType;
 import io.vertx.core.json.JsonObject;
 
@@ -26,7 +26,7 @@ public class EventBusTest extends SpanExporterBaseTest {
     @BeforeEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().isEmpty());
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().isEmpty());
     }
 
     @Test
@@ -36,7 +36,7 @@ public class EventBusTest extends SpanExporterBaseTest {
                 .post("/event-bus/person")
                 .then().statusCode(200).body(equalTo("Hello Bob Morane"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() >= 3);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() >= 3);
         List<Map<String, Object>> spans = getSpans();
 
         Map<String, Object> serverCall = getSpanByKindAndParentId(spans, SpanKind.SERVER, SpanId.getInvalid());
@@ -68,7 +68,7 @@ public class EventBusTest extends SpanExporterBaseTest {
                 // For some reason Multimap.toString() has \n at the end.
                 .body(CoreMatchers.startsWith("Hello Bob Morane, header=headerValue\n"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() >= 3);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() >= 3);
         List<Map<String, Object>> spans = getSpans();
 
         Map<String, Object> serverCall = getSpanByKindAndParentId(spans, SpanKind.SERVER, SpanId.getInvalid());
@@ -95,7 +95,7 @@ public class EventBusTest extends SpanExporterBaseTest {
                 .post("/event-bus/pet")
                 .then().statusCode(200).body(equalTo("Hello Neo (rabbit)"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() >= 3);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() >= 3);
         List<Map<String, Object>> spans = getSpans();
 
         Map<String, Object> serverCall = getSpanByKindAndParentId(spans, SpanKind.SERVER, SpanId.getInvalid());

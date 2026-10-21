@@ -43,6 +43,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.config.HttpClientConfig;
@@ -113,7 +114,7 @@ public class AccessLogFileTestCase {
         RestAssured.given(requestSpec).get("/does-not-exist?foo=" + paramValue);
 
         Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {

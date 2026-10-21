@@ -48,6 +48,7 @@ import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import io.smallrye.jwt.build.Jwt;
@@ -958,7 +959,7 @@ public class CodeFlowTest {
             String idToken = getIdToken(sessionCookie);
 
             //wait now so that we reach the ID token timeout
-            await().atMost(10, TimeUnit.SECONDS)
+            await().atMost(TestTimeouts.get())
                     .pollInterval(Duration.ofSeconds(2))
                     .until(new Callable<Boolean>() {
                         @Override
@@ -993,7 +994,7 @@ public class CodeFlowTest {
             // cache-control is only expected when the session cookie is returned
             assertNull(page.getWebResponse().getResponseHeaderValue("cache-control"));
             //wait now so that we reach the refresh timeout
-            await().atMost(20, TimeUnit.SECONDS)
+            await().atMost(TestTimeouts.get())
                     .pollInterval(Duration.ofSeconds(1))
                     .until(new Callable<Boolean>() {
                         @Override

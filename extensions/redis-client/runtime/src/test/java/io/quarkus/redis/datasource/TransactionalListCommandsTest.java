@@ -13,6 +13,7 @@ import io.quarkus.redis.datasource.list.TransactionalListCommands;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @RequiresRedis6OrHigher
 public class TransactionalListCommandsTest extends DatasourceTestBase {
@@ -60,7 +61,7 @@ public class TransactionalListCommandsTest extends DatasourceTestBase {
                     .chain(() -> list.lpos(key, "c"))
                     .chain(() -> list.llen(key))
                     .chain(() -> list.lpop(key));
-        }).await().atMost(Duration.ofSeconds(5));
+        }).await().atMost(TestTimeouts.get());
         assertThat(result.size()).isEqualTo(5);
         assertThat(result.discarded()).isFalse();
         assertThat((long) result.get(0)).isEqualTo(4);

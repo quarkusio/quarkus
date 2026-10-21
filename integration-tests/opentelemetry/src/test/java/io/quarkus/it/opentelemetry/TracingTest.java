@@ -29,7 +29,6 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matchers;
@@ -48,6 +47,7 @@ import io.opentelemetry.context.propagation.TextMapSetter;
 import io.quarkus.it.opentelemetry.util.SocketClient;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.specification.RequestSpecification;
@@ -66,7 +66,7 @@ public class TracingTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        await().atMost(5, SECONDS).until(() -> {
+        await().atMost(TestTimeouts.get()).until(() -> {
             List<Map<String, Object>> spans = getSpans();
             if (spans.size() == 0) {
                 return true;
@@ -126,7 +126,7 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("No path trace"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 3);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 3);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(3, spans.size());
         assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
@@ -193,7 +193,7 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("No path trace"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 3);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 3);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(3, spans.size());
         assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
@@ -259,7 +259,7 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("baggage-value"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 3);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 3);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(3, spans.size());
         assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
@@ -296,7 +296,7 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("Chained trace"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 2);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 2);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(2, spans.size());
         assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
@@ -351,7 +351,7 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("Direct trace"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 1);
         Map<String, Object> spanData = getSpans().get(0);
         assertNotNull(spanData);
         assertNotNull(spanData.get("spanId"));
@@ -386,7 +386,7 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("Deep url path"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 1);
         Map<String, Object> spanData = getSpans().get(0);
         assertNotNull(spanData);
         assertNotNull(spanData.get("spanId"));
@@ -421,7 +421,7 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("ParameterId: 12345"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 1);
         Map<String, Object> spanData = getSpans().get(0);
         assertNotNull(spanData);
         assertNotNull(spanData.get("spanId"));
@@ -456,7 +456,7 @@ public class TracingTest {
                 .statusCode(200)
                 .body(containsString("one"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 3);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 3);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(3, spans.size());
         assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
@@ -519,7 +519,7 @@ public class TracingTest {
                 .statusCode(200)
                 .body(containsString("one"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 3);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 3);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(3, spans.size());
         assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
@@ -581,7 +581,7 @@ public class TracingTest {
                 .statusCode(200)
                 .body(containsString("one"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 4);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 4);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(4, spans.size());
         assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
@@ -694,7 +694,7 @@ public class TracingTest {
                 .statusCode(200)
                 .body(containsString("Received: something"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 1);
         Map<String, Object> spanData = getSpans().get(0);
         assertNotNull(spanData);
         assertNotNull(spanData.get("spanId"));
@@ -729,7 +729,7 @@ public class TracingTest {
                 .statusCode(200)
                 .body(containsString("one"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 3);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(3, spans.size());
         assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
@@ -756,7 +756,7 @@ public class TracingTest {
         } catch (IOException e) {
             fail("Not failing graciously. Got: " + e.getMessage());
         }
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 1);
     }
 
     /**
@@ -777,7 +777,7 @@ public class TracingTest {
                 .get("/otel/enduser/roles-allowed-only-writer-role")
                 .then()
                 .statusCode(403);
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() > 1);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() > 1);
         List<Map<String, Object>> spans = getSpans();
         Assertions.assertTrue(spans
                 .stream()

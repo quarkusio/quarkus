@@ -1,7 +1,6 @@
 package io.quarkus.it.micrometer.prometheus;
 
 import static io.restassured.RestAssured.get;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 
@@ -45,7 +45,7 @@ public class ConnectionResetTagsTest {
                 "outcome=\"CLIENT_ERROR\",registry=\"prometheus\",status=\"RESET\"," +
                 "uri=\"/slow\"}";
 
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             String body = get("/q/metrics").then().extract().asString();
             assertTrue(body.contains(metricMatch),
                     "Expected metric with all contributor tags not found. Looking for:\n" + metricMatch);

@@ -2,7 +2,6 @@ package io.quarkus.websockets.next.test.telemetry;
 
 import java.net.URI;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 
@@ -16,6 +15,7 @@ import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.WebSocketConnector;
 import io.quarkus.websockets.next.test.telemetry.endpoints.ontextmessage.BounceClient;
 import io.quarkus.websockets.next.test.telemetry.endpoints.ontextmessage.BounceEndpoint;
@@ -43,7 +43,7 @@ public class MetricsDisabledWebSocketsTest {
         var clientConnection = bounceClientConnector.baseUri(baseUri).connectAndAwait();
         try {
             clientConnection.sendTextAndAwait("Merry Christmas");
-            Awaitility.await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
                 Assertions.assertEquals(1, BounceEndpoint.MESSAGES.size());
                 Assertions.assertEquals("Merry Christmas", BounceEndpoint.MESSAGES.get(0));
                 Assertions.assertEquals(1, BounceClient.MESSAGES.size());

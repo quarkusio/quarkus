@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -38,6 +37,7 @@ import io.quarkus.security.spi.runtime.SecurityEvent;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
 import io.restassured.RestAssured;
@@ -98,7 +98,7 @@ public class HttpSecurityPolicySecurityEventTest {
     public void testAuthenticationEvents() {
         RestAssured.given().auth().preemptive().basic("unknown", "unknown").get("/authenticated").then().statusCode(401);
         assertEquals(0, observer.authZFailureStorage.size());
-        Awaitility.await().atMost(Duration.ofSeconds(2))
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertEquals(1, observer.asyncAuthNFailureEventStorage.size()));
         assertAllEvents(1);
         AuthenticationFailureEvent event = observer.asyncAuthNFailureEventStorage.get(0);
@@ -239,7 +239,7 @@ public class HttpSecurityPolicySecurityEventTest {
         assertInstanceOf(ForbiddenException.class, second.getAuthorizationFailure());
         assertEquals(PathMatchingHttpSecurityPolicy.class.getName(), first.getAuthorizationContext());
         assertAllEvents(3);
-        Awaitility.await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertEquals(1,
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> assertEquals(1,
                 observer.asyncAllEventsStorage.stream().filter(se -> se instanceof AuthenticationSuccessEvent).count()));
         AuthenticationSuccessEvent event = (AuthenticationSuccessEvent) observer.asyncAllEventsStorage.stream()
                 .filter(se -> se instanceof AuthenticationSuccessEvent).findFirst().get();
@@ -296,7 +296,7 @@ public class HttpSecurityPolicySecurityEventTest {
 
     private void assertAllEvents(int expectedCount) {
         assertEquals(expectedCount, observer.allEventsStorage.size());
-        Awaitility.await().atMost(Duration.ofSeconds(2))
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertEquals(expectedCount, observer.asyncAllEventsStorage.size()));
     }
 

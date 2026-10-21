@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.client.WebClient;
@@ -39,7 +40,7 @@ public class HttpMethodTagsTest {
         latch.await(5, SECONDS);
         client.close();
 
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             String body = get("/q/metrics").then().extract().asString();
             assertTrue(body.contains("method=\"UNKNOWN\""),
                     "Non-standard HTTP method should be recorded as UNKNOWN");
@@ -52,7 +53,7 @@ public class HttpMethodTagsTest {
     void testStandardMethodIsPreserved() throws Exception {
         get("/message").then().statusCode(200);
 
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             String body = get("/q/metrics").then().extract().asString();
             assertTrue(body.contains("method=\"GET\""),
                     "Standard HTTP method GET should be preserved in metrics");

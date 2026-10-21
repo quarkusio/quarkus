@@ -14,6 +14,7 @@ import io.quarkus.redis.datasource.string.TransactionalStringCommands;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @SuppressWarnings("deprecation")
 @RequiresRedis6OrHigher
@@ -62,7 +63,7 @@ public class TransactionalStringCommandsTest extends DatasourceTestBase {
                     .chain(() -> string.append(key, "-1"))
                     .chain(() -> string.get(key))
                     .chain(() -> string.strlen("k2"));
-        }).await().atMost(Duration.ofSeconds(5));
+        }).await().atMost(TestTimeouts.get());
         assertThat(result.size()).isEqualTo(5);
         assertThat(result.discarded()).isFalse();
         assertThat(result.<Void> get(0)).isNull();

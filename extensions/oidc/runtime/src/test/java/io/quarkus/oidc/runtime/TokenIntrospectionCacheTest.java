@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.OidcTenantConfigBuilder;
 import io.quarkus.oidc.TokenIntrospection;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public class TokenIntrospectionCacheTest {
     DefaultTokenIntrospectionUserInfoCache cache = new DefaultTokenIntrospectionUserInfoCache(createOidcConfig(), null);
@@ -36,7 +37,7 @@ public class TokenIntrospectionCacheTest {
         assertNotNull(cache.getIntrospection("tokenValidFor10secs", tenantConfig, null).await().indefinitely());
         assertNotNull(cache.getIntrospection("tokenValidFor3secs", tenantConfig, null).await().indefinitely());
 
-        await().atMost(Duration.ofSeconds(5)).pollInterval(1, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get()).pollInterval(1, TimeUnit.SECONDS)
                 .until(new Callable<Boolean>() {
 
                     @Override

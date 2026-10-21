@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.TestLog;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 @QuarkusTest
@@ -86,7 +87,7 @@ public class OidcClientTest {
 
         // Wait until the access token has expired
         long expiredTokenTime = System.currentTimeMillis() + 5000;
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .pollInterval(Duration.ofSeconds(3))
                 .until(new Callable<Boolean>() {
                     @Override
@@ -105,7 +106,7 @@ public class OidcClientTest {
 
     private void checkLog() {
         given().await().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {

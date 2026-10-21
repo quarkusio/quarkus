@@ -18,6 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.http.HttpServerStart;
 import io.quarkus.vertx.http.HttpsServerStart;
 import io.restassured.RestAssured;
@@ -46,8 +47,8 @@ public class IndependentSslHostTest {
 
     @Test
     public void testIndependentSslHost() throws InterruptedException {
-        assertThat(HostListener.HTTP.await(5, TimeUnit.SECONDS)).isTrue();
-        assertThat(HostListener.HTTPS.await(5, TimeUnit.SECONDS)).isTrue();
+        assertThat(HostListener.HTTP.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
+        assertThat(HostListener.HTTPS.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
         assertThat(HostListener.httpHost).isEqualTo("127.0.0.1");
         assertThat(HostListener.httpsHost).isEqualTo("0.0.0.0");
 

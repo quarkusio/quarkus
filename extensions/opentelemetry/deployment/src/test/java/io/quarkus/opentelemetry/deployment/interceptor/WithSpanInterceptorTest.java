@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.time.Duration;
 import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -40,6 +39,7 @@ import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -154,7 +154,7 @@ public class WithSpanInterceptorTest {
 
     @Test
     void spanUni() {
-        assertEquals("hello Uni", spanBean.spanUni().await().atMost(Duration.ofSeconds(1)));
+        assertEquals("hello Uni", spanBean.spanUni().await().atMost(TestTimeouts.get()));
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
 
         final SpanData parent = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
@@ -166,7 +166,7 @@ public class WithSpanInterceptorTest {
     @Test
     void spanUniWithException() {
         try {
-            spanBean.spanUniWithException().await().atMost(Duration.ofSeconds(1));
+            spanBean.spanUniWithException().await().atMost(TestTimeouts.get());
             fail("Exception expected");
         } catch (Exception e) {
             assertThrows(RuntimeException.class, () -> {
@@ -186,7 +186,7 @@ public class WithSpanInterceptorTest {
 
     @Test
     void spanMulti() {
-        assertEquals("hello Multi 2", spanBean.spanMulti().collect().last().await().atMost(Duration.ofSeconds(1)));
+        assertEquals("hello Multi 2", spanBean.spanMulti().collect().last().await().atMost(TestTimeouts.get()));
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
 
         final SpanData parent = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
@@ -198,7 +198,7 @@ public class WithSpanInterceptorTest {
     @Test
     void spanMultiWithException() {
         try {
-            spanBean.spanMultiWithException().collect().last().await().atMost(Duration.ofSeconds(1));
+            spanBean.spanMultiWithException().collect().last().await().atMost(TestTimeouts.get());
             fail("Exception expected");
         } catch (Exception e) {
             assertThrows(RuntimeException.class, () -> {

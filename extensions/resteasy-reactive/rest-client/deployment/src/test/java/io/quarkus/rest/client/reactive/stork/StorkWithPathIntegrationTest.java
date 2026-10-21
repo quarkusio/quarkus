@@ -12,10 +12,10 @@ import jakarta.ws.rs.core.UriBuilder;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.smallrye.stork.api.NoSuchServiceDefinitionException;
 
 public class StorkWithPathIntegrationTest {
@@ -68,7 +68,7 @@ public class StorkWithPathIntegrationTest {
     }
 
     @Test
-    @Timeout(20)
+    @TimeLimit
     void shouldFailOnUnknownService() {
         HelloClient client = RestClientBuilder.newBuilder()
                 .baseUri(URI.create("stork://nonexistent-service"))

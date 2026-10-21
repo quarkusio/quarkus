@@ -3,7 +3,6 @@ package io.quarkus.it.opentelemetry;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 
@@ -14,13 +13,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @QuarkusTest
 public class OpenTelemetryTest extends BaseTest {
 
     @BeforeEach
     void reset() {
-        await().atMost(5, SECONDS).until(() -> {
+        await().atMost(TestTimeouts.get()).until(() -> {
             List<Map<String, Object>> spans = getSpans();
             if (spans.size() == 0) {
                 return true;
@@ -38,6 +38,6 @@ public class OpenTelemetryTest extends BaseTest {
                 .then()
                 .statusCode(200)
                 .body(is("Hello from Quarkus REST"));
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 1);
     }
 }

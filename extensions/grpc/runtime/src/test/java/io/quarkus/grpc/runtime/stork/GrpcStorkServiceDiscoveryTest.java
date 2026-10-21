@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -19,6 +18,7 @@ import io.grpc.NameResolver;
 import io.grpc.NameResolver.ConfigOrError;
 import io.grpc.Status;
 import io.grpc.SynchronizationContext;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.stork.Stork;
 import io.smallrye.stork.api.ServiceDefinition;
 import io.smallrye.stork.api.config.ConfigWithType;
@@ -52,10 +52,10 @@ class GrpcStorkServiceDiscoveryTest {
         NameResolver resolver = createResolver();
 
         resolver.start(listener);
-        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(listener.results.get()).isEqualTo(1));
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> assertThat(listener.results.get()).isEqualTo(1));
 
         resolver.refresh();
-        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(listener.results.get()).isEqualTo(2));
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> assertThat(listener.results.get()).isEqualTo(2));
         assertThat(listener.errors.get()).isZero();
     }
 
@@ -66,13 +66,13 @@ class GrpcStorkServiceDiscoveryTest {
         NameResolver resolver = createResolver();
 
         resolver.start(listener);
-        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(listener.errors.get()).isEqualTo(1));
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> assertThat(listener.errors.get()).isEqualTo(1));
         assertThat(listener.results.get()).isZero();
         assertThat(listener.lastError.get().getCode()).isEqualTo(Status.Code.UNAVAILABLE);
 
         // If resolving stayed true after the async failure, refresh() would no-op.
         resolver.refresh();
-        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(listener.results.get()).isEqualTo(1));
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> assertThat(listener.results.get()).isEqualTo(1));
         assertThat(listener.errors.get()).isEqualTo(1);
     }
 
@@ -88,7 +88,7 @@ class GrpcStorkServiceDiscoveryTest {
         resolver.shutdown();
 
         // The delayed failure must not notify the listener once shutdown has completed.
-        await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertThat(listener.errors.get()).isZero();
             assertThat(listener.results.get()).isZero();
         });
@@ -107,7 +107,7 @@ class GrpcStorkServiceDiscoveryTest {
         resolver.shutdown();
 
         // The delayed empty resolution must not notify the listener once shutdown has completed.
-        await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertThat(listener.errors.get()).isZero();
             assertThat(listener.results.get()).isZero();
         });

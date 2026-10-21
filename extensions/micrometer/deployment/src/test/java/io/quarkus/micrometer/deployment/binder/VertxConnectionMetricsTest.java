@@ -27,6 +27,7 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.vertx.mutiny.ext.web.Router;
 
@@ -94,7 +95,7 @@ public class VertxConnectionMetricsTest {
             });
         }
 
-        Assertions.assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+        Assertions.assertThat(latch.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
         Gauge max = registry.find("vertx.http.connections.max").gauge();
         Gauge current = registry.find("vertx.http.connections.current").gauge();
         Assertions.assertThat(max).isNotNull();

@@ -1,7 +1,6 @@
 package io.quarkus.opentelemetry.deployment.traces;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,6 +25,7 @@ import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 public class OpenTelemetrySamplerParentBasedTest {
@@ -62,7 +62,7 @@ public class OpenTelemetrySamplerParentBasedTest {
                 .body(is("hello"));
 
         await().pollDelay(500, MILLISECONDS)
-                .atMost(2, SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     List<SpanData> spans = spanExporter.getPartialFinishedSpanItems();
                     assertEquals(0, spans.size());

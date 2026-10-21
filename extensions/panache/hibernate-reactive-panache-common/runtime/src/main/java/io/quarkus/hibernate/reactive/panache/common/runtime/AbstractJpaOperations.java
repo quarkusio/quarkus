@@ -7,10 +7,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import jakarta.data.restrict.Restriction;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 
 import org.hibernate.LockMode;
 import org.hibernate.internal.util.LockModeConverter;
+import org.hibernate.query.SelectionQuery;
+import org.hibernate.query.restriction.JakartaDataRestriction;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.panache.common.Parameters;
@@ -39,6 +47,12 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType> {
             String originalQuery,
             Sort sort,
             Object paramsArrayOrMap);
+
+    /**
+     * Create a PanacheQuery from a pre-built SelectionQuery (e.g., from Criteria API)
+     */
+    protected abstract PanacheQueryType createPanacheQuery(Uni<SessionType> session, Class<?> entityClass,
+            Uni<? extends SelectionQuery<?>> prebuiltQuery);
 
     protected abstract Uni<List<?>> list(PanacheQueryType query);
 
@@ -74,6 +88,21 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType> {
     protected abstract <R> Mutiny.Query<R> createNamedQuery(SessionType session, String var1);
 
     protected abstract Mutiny.MutationQuery createMutationQuery(SessionType session, String var1);
+
+    /**
+     * Get CriteriaBuilder from the session
+     */
+    protected abstract CriteriaBuilder getCriteriaBuilder(SessionType session);
+
+    /**
+     * Create a query from a CriteriaQuery
+     */
+    protected abstract <R> Mutiny.SelectionQuery<R> createCriteriaQuery(SessionType session, CriteriaQuery<R> criteria);
+
+    /**
+     * Create a mutation query from a CriteriaDelete
+     */
+    protected abstract <R> Mutiny.MutationQuery createCriteriaMutationQuery(SessionType session, CriteriaDelete<R> criteria);
 
     //
     // Queries
@@ -414,5 +443,49 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType> {
         return getSession(DEFAULT_PERSISTENCE_UNIT_NAME)
                 .chain(session -> bindParameters(createMutationQuery(session, query), params)
                         .executeUpdate());
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> PanacheQueryType find(Class<?> entityClass, Restriction<T> restriction) {
+        Uni<SessionType> session = getSession(entityClass);
+        Uni<Mutiny.SelectionQuery<T>> query = session.map(s -> {
+            CriteriaBuilder builder = getCriteriaBuilder(s);
+            CriteriaQuery<T> criteria = (CriteriaQuery<T>) builder.createQuery(entityClass);
+            Root<T> root = (Root<T>) criteria.from(entityClass);
+            JakartaDataRestriction.applyRestriction(restriction, criteria, root, builder);
+            return createCriteriaQuery(s, criteria);
+        });
+        return createPanacheQuery(session, entityClass, (Uni<? extends SelectionQuery<?>>) (Object) query);
+    }
+
+    public <T> Uni<List<?>> list(Class<?> entityClass, Restriction<T> restriction) {
+        return list(find(entityClass, restriction));
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> Uni<Long> count(Class<?> entityClass, Restriction<T> restriction) {
+        return getSession(entityClass).chain(session -> {
+            CriteriaBuilder builder = getCriteriaBuilder(session);
+            CriteriaQuery<Long> criteria = builder.createQuery(Long.class);
+            Root<T> root = (Root<T>) criteria.from(entityClass);
+            criteria.select(builder.count(root));
+            JakartaDataRestriction.applyRestriction(restriction, criteria, root, builder);
+            return createCriteriaQuery(session, criteria).getSingleResult();
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> Uni<Long> delete(Class<?> entityClass, Restriction<T> restriction) {
+        return getSession(entityClass).chain(session -> {
+            CriteriaBuilder builder = getCriteriaBuilder(session);
+            CriteriaDelete<T> criteria = (CriteriaDelete<T>) builder.createCriteriaDelete(entityClass);
+            Root<T> root = criteria.from((Class<T>) entityClass);
+            // Convert Jakarta Data Restriction to Hibernate Restriction, then to Predicate
+            org.hibernate.query.restriction.Restriction<T> hibernateRestriction = JakartaDataRestriction
+                    .adaptRestriction(restriction);
+            Predicate predicate = hibernateRestriction.toPredicate(root, builder);
+            criteria.where(predicate);
+            return createCriteriaMutationQuery(session, criteria).executeUpdate().map(Long::valueOf);
+        });
     }
 }

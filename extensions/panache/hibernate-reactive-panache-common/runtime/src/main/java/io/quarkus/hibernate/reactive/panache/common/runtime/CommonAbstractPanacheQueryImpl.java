@@ -41,6 +41,10 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
      * Otherwise we do not use this, and rely on ORM to generate count queries
      */
     protected String customCountQueryForSpring;
+    /**
+     * Pre-built selection query (e.g., from Criteria API). When set, this takes precedence over HQL string query.
+     */
+    private Uni<? extends Mutiny.SelectionQuery<?>> prebuiltQuery;
     private Sort sort;
 
     // We can only have one of page|range|keyedPage set at the same time, they're mutually exclusive
@@ -70,6 +74,16 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
         this.originalQuery = originalQuery;
         this.sort = sort;
         this.paramsArrayOrMap = paramsArrayOrMap;
+    }
+
+    /**
+     * Constructor for pre-built queries (e.g., from Criteria API)
+     */
+    public CommonAbstractPanacheQueryImpl(Uni<SessionType> em, Class<?> entityClass,
+            Uni<? extends Mutiny.SelectionQuery<?>> prebuiltQuery) {
+        this.em = em;
+        this.entityClass = entityClass;
+        this.prebuiltQuery = prebuiltQuery;
     }
 
     protected CommonAbstractPanacheQueryImpl(CommonAbstractPanacheQueryImpl<?, SessionType> previousQuery,
@@ -311,26 +325,35 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
     public Uni<Long> count() {
         if (count == null) {
             // FIXME: question about caching the result here
-            count = em.flatMap(session -> {
-                if (customCountQueryForSpring != null) {
-                    Mutiny.SelectionQuery<Long> countQuery = session.createSelectionQuery(customCountQueryForSpring,
-                            Long.class);
-                    if (paramsArrayOrMap instanceof Map)
-                        AbstractJpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
-                    else
-                        AbstractJpaOperations.bindParameters(countQuery, (Object[]) paramsArrayOrMap);
-                    return applyFilters(session, () -> countQuery.getSingleResult());
-                } else {
-                    Mutiny.SelectionQuery<?> query = createBaseQuery(session);
-                    return applyFilters(session, () -> query.getResultCount());
-                }
-            });
+            if (prebuiltQuery != null) {
+                // For prebuilt queries, just call getResultCount
+                count = prebuiltQuery.flatMap(q -> q.getResultCount());
+            } else {
+                count = em.flatMap(session -> {
+                    if (customCountQueryForSpring != null) {
+                        Mutiny.SelectionQuery<Long> countQuery = session.createSelectionQuery(customCountQueryForSpring,
+                                Long.class);
+                        if (paramsArrayOrMap instanceof Map)
+                            AbstractJpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
+                        else
+                            AbstractJpaOperations.bindParameters(countQuery, (Object[]) paramsArrayOrMap);
+                        return applyFilters(session, () -> countQuery.getSingleResult());
+                    } else {
+                        Mutiny.SelectionQuery<?> query = createBaseQuery(session);
+                        return applyFilters(session, () -> query.getResultCount());
+                    }
+                });
+            }
         }
         return count;
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T extends Entity> Uni<List<T>> list() {
+        if (prebuiltQuery != null) {
+            // For prebuilt queries, directly call getResultList
+            return prebuiltQuery.chain(q -> ((Mutiny.SelectionQuery<T>) q).getResultList());
+        }
         if (keyedPage != null) {
             return em.flatMap(session -> {
                 Mutiny.SelectionQuery hibernateQuery = createBaseQuery(session);
@@ -421,7 +444,13 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
     @SuppressWarnings("unchecked")
     private Mutiny.SelectionQuery<?> createBaseQuery(SessionType em) {
         Mutiny.SelectionQuery<?> hibernateQuery;
-        if (PanacheJpaUtil.isNamedQuery(query)) {
+
+        // If we have a pre-built query (e.g., from Criteria API), use it
+        // Note: This won't actually be called when prebuiltQuery is set because
+        // the calling code resolves the Uni<SelectionQuery> directly
+        if (prebuiltQuery != null) {
+            throw new IllegalStateException("createBaseQuery called with prebuiltQuery set");
+        } else if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
             hibernateQuery = projectionType == null ? em.createNamedQuery(namedQuery)
                     : em.createNamedQuery(namedQuery, projectionType);
@@ -434,9 +463,10 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
             }
         }
 
+        // Only bind parameters if we don't have a prebuilt query
         if (paramsArrayOrMap instanceof Map) {
             AbstractJpaOperations.bindParameters(hibernateQuery, (Map<String, Object>) paramsArrayOrMap);
-        } else {
+        } else if (paramsArrayOrMap != null) {
             AbstractJpaOperations.bindParameters(hibernateQuery, (Object[]) paramsArrayOrMap);
         }
 

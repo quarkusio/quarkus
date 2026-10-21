@@ -3,13 +3,14 @@ package io.quarkus.resteasy.reactive.links.runtime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.ws.rs.core.Link;
 import jakarta.ws.rs.core.UriInfo;
 
 import io.quarkus.resteasy.reactive.links.RestLinksProvider;
 
-final class RestLinksProviderImpl implements RestLinksProvider {
+public final class RestLinksProviderImpl implements RestLinksProvider {
 
     private static LinksContainer linksContainer;
 
@@ -17,12 +18,9 @@ final class RestLinksProviderImpl implements RestLinksProvider {
 
     private final UriInfo uriInfo;
 
-    static void setLinksContainer(LinksContainer context) {
-        RestLinksProviderImpl.linksContainer = context;
-    }
-
-    static void setGetterAccessorsContainer(GetterAccessorsContainer getterAccessorsContainer) {
-        RestLinksProviderImpl.getterAccessorsContainer = getterAccessorsContainer;
+    public static void initialize(Map<String, List<LinkInfo>> links, Map<String, Map<String, String>> accessorClassNames) {
+        linksContainer = new LinksContainer(links);
+        getterAccessorsContainer = GetterAccessorsContainer.of(accessorClassNames);
     }
 
     RestLinksProviderImpl(UriInfo uriInfo) {
@@ -36,7 +34,7 @@ final class RestLinksProviderImpl implements RestLinksProvider {
         List<LinkInfo> linkInfoList = linksContainer.getForClass(elementType);
         List<Link> links = new ArrayList<>(linkInfoList.size());
         for (LinkInfo linkInfo : linkInfoList) {
-            if (linkInfo.getPathParameters().size() == 0) {
+            if (linkInfo.pathParameters().size() == 0) {
                 links.add(linkBuilderFor(linkInfo).build());
             }
         }
@@ -56,23 +54,23 @@ final class RestLinksProviderImpl implements RestLinksProvider {
     }
 
     private Link.Builder linkBuilderFor(LinkInfo linkInfo) {
-        Link.Builder builder = Link.fromUriBuilder(uriInfo.getBaseUriBuilder().path(linkInfo.getPath()))
-                .rel(linkInfo.getRel());
-        if (linkInfo.getTitle() != null) {
-            builder.title(linkInfo.getTitle());
+        Link.Builder builder = Link.fromUriBuilder(uriInfo.getBaseUriBuilder().path(linkInfo.path()))
+                .rel(linkInfo.rel());
+        if (linkInfo.title() != null) {
+            builder.title(linkInfo.title());
         }
 
-        if (linkInfo.getType() != null) {
-            builder.type(linkInfo.getType());
+        if (linkInfo.type() != null) {
+            builder.type(linkInfo.type());
         }
 
         return builder;
     }
 
     private Object[] getPathParameterValues(LinkInfo linkInfo, Object instance) {
-        List<Object> values = new ArrayList<>(linkInfo.getPathParameters().size());
-        for (String name : linkInfo.getPathParameters()) {
-            GetterAccessor accessor = getterAccessorsContainer.get(linkInfo.getEntityType(), name);
+        List<Object> values = new ArrayList<>(linkInfo.pathParameters().size());
+        for (String name : linkInfo.pathParameters()) {
+            GetterAccessor accessor = getterAccessorsContainer.get(linkInfo.entityType(), name);
             if (accessor != null) {
                 values.add(accessor.get(instance));
             } else {

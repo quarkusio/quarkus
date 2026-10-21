@@ -33,11 +33,11 @@ public class NestedGroupCommandDiscoveryTest {
     public void testNestedGroupIsDiscovered() {
         // The root group should be discovered
         var rootCmd = aeshContext.getCommands().stream()
-                .filter(c -> "root".equals(c.getCommandName()))
+                .filter(c -> "root".equals(c.commandName()))
                 .findFirst();
         Assertions.assertThat(rootCmd).isPresent();
-        Assertions.assertThat(rootCmd.get().isGroupCommand()).isTrue();
-        Assertions.assertThat(rootCmd.get().getSubCommandClassNames())
+        Assertions.assertThat(rootCmd.get().groupCommand()).isTrue();
+        Assertions.assertThat(rootCmd.get().subCommandClassNames())
                 .contains(SubGroup.class.getName());
     }
 
@@ -45,21 +45,21 @@ public class NestedGroupCommandDiscoveryTest {
     public void testNestedGroupSubCommandsAreDiscovered() {
         // The sub-group should also be discovered as a group command
         var subCmd = aeshContext.getCommands().stream()
-                .filter(c -> "sub".equals(c.getCommandName()))
+                .filter(c -> "sub".equals(c.commandName()))
                 .findFirst();
         Assertions.assertThat(subCmd).isPresent();
-        Assertions.assertThat(subCmd.get().isGroupCommand()).isTrue();
-        Assertions.assertThat(subCmd.get().getSubCommandClassNames())
+        Assertions.assertThat(subCmd.get().groupCommand()).isTrue();
+        Assertions.assertThat(subCmd.get().subCommandClassNames())
                 .contains(LeafCommand.class.getName());
     }
 
     @Test
     public void testLeafCommandIsDiscovered() {
         var leafCmd = aeshContext.getCommands().stream()
-                .filter(c -> "leaf".equals(c.getCommandName()))
+                .filter(c -> "leaf".equals(c.commandName()))
                 .findFirst();
         Assertions.assertThat(leafCmd).isPresent();
-        Assertions.assertThat(leafCmd.get().isGroupCommand()).isFalse();
+        Assertions.assertThat(leafCmd.get().groupCommand()).isFalse();
     }
 
     @CommandDefinition(name = "root", description = "Root group", groupCommands = { SubGroup.class })

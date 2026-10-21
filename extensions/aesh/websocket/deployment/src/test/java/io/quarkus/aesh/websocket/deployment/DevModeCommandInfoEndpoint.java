@@ -24,7 +24,7 @@ public class DevModeCommandInfoEndpoint {
             if (sb.length() > 0) {
                 sb.append(",");
             }
-            sb.append(cmd.getCommandName());
+            sb.append(cmd.commandName());
         }
         return sb.toString();
     }

@@ -50,26 +50,33 @@ if [ $BRANCH == "main" ] && [ "$QUARKUS_RELEASE" == "true" ]; then
   TARGET_GENERATED_DOC=${TARGET_DIR}/content/_generated-doc/latest
   TARGET_INDEX=${TARGET_DIR}/_data/versioned/latest/index
 else
-  TARGET_GUIDES=${TARGET_DIR}/content/versions/${BRANCH}/guides
-  TARGET_GENERATED_DOC=${TARGET_DIR}/content/_generated-doc/${BRANCH}
-  TARGET_INDEX=${TARGET_DIR}/_data/versioned/${BRANCH//[.]/-}/index
+  # Emergency releases (e.g. 3.33.4-emergency) publish into their stream (3.33):
+  # the docs must update the existing version, not create a new one.
+  VERSION_DIR=$(echo "$BRANCH" | sed -E 's/^([0-9]+\.[0-9]+)\.[0-9]+-emergency$/\1/')
+
+  TARGET_GUIDES=${TARGET_DIR}/content/versions/${VERSION_DIR}/guides
+  TARGET_GENERATED_DOC=${TARGET_DIR}/content/_generated-doc/${VERSION_DIR}
+  TARGET_INDEX=${TARGET_DIR}/_data/versioned/${VERSION_DIR//[.]/-}/index
   mkdir -p ${TARGET_GUIDES}
   mkdir -p ${TARGET_INDEX}
 
   if [ "$QUARKUS_RELEASE" == "true" ]; then
     if [ ! -f ${TARGET_GUIDES}/_attributes-local.adoc ]; then
       cat <<EOF > ${TARGET_GUIDES}/_attributes-local.adoc
+:idprefix:
+:idseparator: -
 // tag::xref-attributes[]
 :doc-examples: ./_examples
-:generated-dir: ../../../../_generated-doc/${BRANCH}
+:generated-dir: ../../../_generated-doc/${VERSION_DIR}
 :code-examples: {generated-dir}/examples
-:imagesdir: ./images
+:imagesdir: /version/${VERSION_DIR}/guides/images
 :includes: ./_includes
+:sectanchors:
 //
-:quickstarts-clone-url: -b ${BRANCH} https://github.com/quarkusio/quarkus-quickstarts.git
-:quickstarts-archive-url: https://github.com/quarkusio/quarkus-quickstarts/archive/${BRANCH}.zip
-:quickstarts-blob-url: https://github.com/quarkusio/quarkus-quickstarts/blob/${BRANCH}
-:quickstarts-tree-url: https://github.com/quarkusio/quarkus-quickstarts/tree/${BRANCH}
+:quickstarts-clone-url: -b ${VERSION_DIR} https://github.com/quarkusio/quarkus-quickstarts.git
+:quickstarts-archive-url: https://github.com/quarkusio/quarkus-quickstarts/archive/${VERSION_DIR}.zip
+:quickstarts-blob-url: https://github.com/quarkusio/quarkus-quickstarts/blob/${VERSION_DIR}
+:quickstarts-tree-url: https://github.com/quarkusio/quarkus-quickstarts/tree/${VERSION_DIR}
 // end::xref-attributes[]
 EOF
     fi
@@ -79,17 +86,17 @@ EOF
 ---
 layout: documentation
 title: Guides
-link: /version/${BRANCH}/guides/
+link: /version/${VERSION_DIR}/guides/
 ---
 EOF
     fi
 
-    BRANCH_WITH_DASH=${BRANCH/./-}
+    BRANCH_WITH_DASH=${VERSION_DIR/./-}
     if [ ! -f _data/guides-${BRANCH_WITH_DASH}.yaml ]; then
       echo
       echo "##############################################################################################################"
       echo "#"
-      echo "# Make sure to create a _data/guides-${BRANCH_WITH_DASH}.yaml index file with a guide index consistent with the ${BRANCH} branch"
+      echo "# Make sure to create a _data/guides-${BRANCH_WITH_DASH}.yaml index file with a guide index consistent with the ${VERSION_DIR} branch"
       echo "#"
       echo "##############################################################################################################"
       echo
@@ -131,10 +138,13 @@ done
 
 # Ensure index.html files exist in resource directories
 echo "Ensuring index.html exists in resource directories..."
-for subdir in images javascript assets; do
+for subdir in images javascript assets stylesheet; do
   dir="$TARGET_GUIDES/$subdir"
   if [ -d "$dir" ] && [ ! -f "$dir/index.html" ]; then
     rel_path=$(echo "$dir" | sed "s|${TARGET_DIR}/content/||")
+    # The on-disk "versions" directory is served under the singular "version"
+    # collection link (site.collections.versions.link=/version/:dir[1]/:name/).
+    rel_path=$(echo "$rel_path" | sed 's|^versions/|version/|')
     printf '%s\n' '---' "link: /${rel_path}/" '---' '<html><body></body></html>' > "$dir/index.html"
     echo "Created index.html for $subdir/"
   fi

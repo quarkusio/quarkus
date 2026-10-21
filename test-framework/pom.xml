@@ -26,6 +26,7 @@
         <module>junit-component</module>
         <module>junit-mockito</module>
         <module>junit-mockito-config</module>
+        <module>junit-kubernetes</module>
         <module>vertx</module>
         <module>hibernate-reactive-panache</module>
         <module>arquillian</module>

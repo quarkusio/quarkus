@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.ServiceLoader;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.junit.jupiter.api.Assertions;
@@ -193,8 +192,8 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 ConfigInjector.set(context, newConfig);
 
                 ArtifactLauncher<?> launcher = null;
-                ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
-                for (ArtifactLauncherProvider launcherProvider : loader) {
+                for (ArtifactLauncherProvider launcherProvider : IntegrationTestUtil
+                        .loadArtifactLauncherProviders(testConfig)) {
                     if (launcherProvider.supportsArtifactType(artifactType, testConfig.integrationTestProfile())) {
                         launcher = launcherProvider.create(
                                 new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context, requiredTestClass,

@@ -1,6 +1,7 @@
 package io.quarkus.security.deployment;
 
 import static io.quarkus.arc.processor.DotNames.NO_CLASS_INTERCEPTORS;
+import static io.quarkus.deployment.pkg.steps.NativeImageFutureDefault.RUN_TIME_INITIALIZE_SECURITY_PROVIDERS;
 import static io.quarkus.gizmo2.desc.MethodDesc.of;
 import static io.quarkus.security.deployment.DotNames.AUTHENTICATED;
 import static io.quarkus.security.deployment.DotNames.DENY_ALL;
@@ -38,10 +39,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import jakarta.annotation.security.DenyAll;
@@ -49,7 +50,6 @@ import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Dependent;
-import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -78,13 +78,15 @@ import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.core.Phase;
+import io.quarkus.core.StartContext;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
+import io.quarkus.core.deployment.service.VoidAction1;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -97,7 +99,6 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -113,7 +114,6 @@ import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.Authenticated;
@@ -124,8 +124,9 @@ import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.IdentityProviderManagerCreator;
 import io.quarkus.security.runtime.PrincipalProducer;
 import io.quarkus.security.runtime.QuarkusPermissionSecurityIdentityAugmentor;
+import io.quarkus.security.runtime.QuarkusPermissionSecurityIdentityAugmentorCreator;
 import io.quarkus.security.runtime.QuarkusSecurityRolesAllowedConfigBuilder;
-import io.quarkus.security.runtime.SecurityCheckRecorder;
+import io.quarkus.security.runtime.SecurityCheckFactory;
 import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.quarkus.security.runtime.SecurityIdentityProxy;
 import io.quarkus.security.runtime.SecurityProviderRecorder;
@@ -137,9 +138,10 @@ import io.quarkus.security.runtime.interceptor.PermissionsAllowedInterceptor;
 import io.quarkus.security.runtime.interceptor.PermitAllInterceptor;
 import io.quarkus.security.runtime.interceptor.RolesAllowedInterceptor;
 import io.quarkus.security.runtime.interceptor.RunAsUserInterceptor;
-import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
+import io.quarkus.security.runtime.interceptor.check.MethodSecurityCheckSpec;
+import io.quarkus.security.runtime.interceptor.check.SecurityCheckSpec;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
 import io.quarkus.security.spi.AdditionalSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
@@ -161,7 +163,9 @@ import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.DevModeDisabledAuthorizationController;
 import io.quarkus.security.spi.runtime.MethodDescription;
+import io.quarkus.security.spi.runtime.RolesAllowedConfigExpressions;
 import io.quarkus.security.spi.runtime.SecurityCheck;
+import io.quarkus.security.spi.runtime.SecurityCheckContribution;
 import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 
 public class SecurityProcessor {
@@ -296,12 +300,24 @@ public class SecurityProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void configureJCAProvidersAtRuntime(SecurityProviderRecorder recorder,
-            List<JCAProviderBuildItem> jcaProviders) {
-        for (JCAProviderBuildItem provider : jcaProviders) {
-            recorder.configureProvider(provider.getProviderName(), provider.getProviderConfigs());
+    void configureJCAProvidersAtRuntime(ServiceRegistrar serviceRegistrar, List<JCAProviderBuildItem> jcaProviders) {
+        if (jcaProviders.isEmpty()) {
+            return;
         }
+        // the providers are registered in the order of the build items as the registration order determines
+        // the provider precedence; a captured map does not preserve the iteration order
+        final List<String> providerNames = jcaProviders.stream().map(JCAProviderBuildItem::getProviderName).distinct()
+                .toList();
+        final Map<String, List<String>> providerConfigs = Map.copyOf(jcaProviders.stream()
+                .collect(Collectors.groupingBy(JCAProviderBuildItem::getProviderName, Collectors
+                        .flatMapping(item -> item.getProviderConfigs().stream(), Collectors.toUnmodifiableList()))));
+        serviceRegistrar.forService("io.quarkus.security.configure-jca-providers")
+                .atPhase(Phase.INFRASTRUCTURE)
+                .onStart(ctx -> {
+                    for (String providerName : providerNames) {
+                        SecurityProviderRecorder.configureProvider(providerName, providerConfigs.get(providerName));
+                    }
+                });
     }
 
     @BuildStep
@@ -470,38 +486,34 @@ public class SecurityProcessor {
         runtimeReInitialized.produce(new RuntimeInitializedClassBuildItem("sun.security.pkcs11.P11Util"));
     }
 
-    @BuildStep(onlyIfNot = NativeImageFutureDefault.RunTimeInitializeSecurityProvider.class)
-    @Record(ExecutionTime.STATIC_INIT)
-    void recordBouncyCastleProvidersStaticInit(SecurityProviderRecorder recorder,
-            List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
-            List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
-        recordBouncyCastleProviders(recorder, bouncyCastleProviders, bouncyCastleJsseProviders);
-    }
-
-    @BuildStep(onlyIf = NativeImageFutureDefault.RunTimeInitializeSecurityProvider.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void recordBouncyCastleProvidersRuntimeInit(SecurityProviderRecorder recorder,
-            List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
-            List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
-        recordBouncyCastleProviders(recorder, bouncyCastleProviders, bouncyCastleJsseProviders);
-    }
-
-    void recordBouncyCastleProviders(SecurityProviderRecorder recorder,
-            List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
-            List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
-        Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
+    @BuildStep
+    void configureBouncyCastleProviders(List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
+            List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders,
+            ServiceRegistrar serviceRegistrar, NativeConfig nativeConfig) {
+        final VoidAction1<StartContext> action;
+        final Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
         if (bouncyCastleJsseProvider.isPresent()) {
             if (bouncyCastleJsseProvider.get().isInFipsMode()) {
-                recorder.addBouncyCastleFipsJsseProvider();
+                action = ctx -> SecurityProviderRecorder.addBouncyCastleFipsJsseProvider();
             } else {
-                recorder.addBouncyCastleJsseProvider();
+                action = ctx -> SecurityProviderRecorder.addBouncyCastleJsseProvider();
             }
         } else {
             Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
             if (bouncyCastleProvider.isPresent()) {
-                recorder.addBouncyCastleProvider(bouncyCastleProvider.get().isInFipsMode());
+                final boolean inFipsMode = bouncyCastleProvider.get().isInFipsMode();
+                action = ctx -> SecurityProviderRecorder.addBouncyCastleProvider(inFipsMode);
+            } else {
+                return;
             }
         }
+        final Phase phase;
+        if (RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(nativeConfig)) {
+            phase = Phase.INFRASTRUCTURE;
+        } else {
+            phase = Phase.STATIC_INIT;
+        }
+        serviceRegistrar.forService("io.quarkus.security.configure-bouncy-castle-providers").atPhase(phase).onStart(action);
     }
 
     @BuildStep
@@ -686,37 +698,29 @@ public class SecurityProcessor {
         return providerClasses;
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep
-    void recordRuntimeConfigReady(SecurityCheckRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem,
-            LaunchModeBuildItem launchModeBuildItem) {
-        recorder.setRuntimeConfigReady();
-        if (launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT) {
-            recorder.unsetRuntimeConfigReady(shutdownContextBuildItem);
-        }
-    }
-
-    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void registerSecurityInterceptors(BuildProducer<InterceptorBindingRegistrarBuildItem> registrars,
-            BuildProducer<AdditionalBeanBuildItem> beans,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer, SecurityCheckRecorder recorder,
+            BuildProducer<AdditionalBeanBuildItem> beans, ServiceRegistrar serviceRegistrar,
             Optional<AdditionalSecurityConstrainerEventPropsBuildItem> additionalSecurityConstrainerEventsItem) {
         registrars.produce(new InterceptorBindingRegistrarBuildItem(new SecurityAnnotationsRegistrar()));
         Class<?>[] interceptors = { AuthenticatedInterceptor.class, DenyAllInterceptor.class, PermitAllInterceptor.class,
                 RolesAllowedInterceptor.class, PermissionsAllowedInterceptor.class };
         beans.produce(new AdditionalBeanBuildItem(interceptors));
         beans.produce(new AdditionalBeanBuildItem(SecurityHandler.class));
+        beans.produce(new AdditionalBeanBuildItem(SecurityConstrainer.class));
 
-        var additionalEventsSupplier = additionalSecurityConstrainerEventsItem
-                .map(AdditionalSecurityConstrainerEventPropsBuildItem::getAdditionalEventPropsSupplier)
-                .orElse(null);
-        syntheticBeanProducer.produce(SyntheticBeanBuildItem
-                .configure(SecurityConstrainer.class)
-                .unremovable()
-                .scope(Singleton.class)
-                .supplier(recorder.createSecurityConstrainer(additionalEventsSupplier))
-                .done());
+        if (additionalSecurityConstrainerEventsItem.isPresent()) {
+            // the supplier is captured by the service action, see the build item documentation
+            final Supplier<Map<String, Object>> additionalEventPropsSupplier = additionalSecurityConstrainerEventsItem.get()
+                    .getAdditionalEventPropsSupplier();
+            serviceRegistrar
+                    .forService("io.quarkus.security.set-additional-security-event-properties-supplier")
+                    .atPhase(Phase.STATIC_INIT)
+                    .onStart(ctx -> {
+                        SecurityConstrainer.setAdditionalSecurityEventPropsSupplier(additionalEventPropsSupplier);
+                        ctx.onStop(SecurityConstrainer::clearAdditionalSecurityEventPropsSupplier);
+                    });
+        }
     }
 
     /*
@@ -864,10 +868,9 @@ public class SecurityProcessor {
                         && methodInfo.hasDeclaredAnnotation(BLOCKING));
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void configurePermissionCheckers(PermissionSecurityChecksBuilderBuildItem checkerBuilder,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer, SecurityCheckRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
             BeanDiscoveryFinishedBuildItem beanDiscoveryFinishedBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassProducer,
             BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
@@ -885,7 +888,7 @@ public class SecurityProcessor {
                     .scope(Dependent.class)
                     .unremovable()
                     .addInjectionPoint(Type.create(BlockingSecurityExecutor.class))
-                    .createWith(recorder.createPermissionAugmentor());
+                    .creator(QuarkusPermissionSecurityIdentityAugmentorCreator.class);
 
             checkerBuilder.instance.getPermissionCheckers().stream().forEach(checkerMethod -> {
                 var checkerClassType = Type.create(checkerMethod.declaringClass().name(), Type.Kind.CLASS);
@@ -923,24 +926,22 @@ public class SecurityProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     MethodSecurityChecks gatherSecurityChecks(
             BuildProducer<ConfigExpRolesAllowedSecurityCheckBuildItem> configExpSecurityCheckProducer,
-            List<RolesAllowedConfigExpResolverBuildItem> rolesAllowedConfigExpResolverBuildItems,
             BeanArchiveIndexBuildItem beanArchiveBuildItem,
-            BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer,
             List<AdditionalSecuredMethodsBuildItem> additionalSecuredMethods,
-            SecurityCheckRecorder recorder,
+            ServiceRegistrar serviceRegistrar,
             BuildProducer<ClassSecurityCheckStorageBuildItem> classSecurityCheckStorageProducer,
             List<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
-            List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks,
             PermissionSecurityChecksBuilderBuildItem permissionSecurityChecksBuilderBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
             BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProvidersProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer,
-            SecurityTransformerBuildItem securityTransformerBuildItem) {
+            SecurityTransformerBuildItem securityTransformerBuildItem,
+            List<RolesAllowedConfigExpResolverBuildItem> rolesAllowedConfigExpResolverBuildItems,
+            BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer) {
 
         final Map<MethodDescription, AdditionalSecured> additionalSecured = new HashMap<>();
         for (AdditionalSecuredMethodsBuildItem securedMethods : additionalSecuredMethods) {
@@ -955,17 +956,15 @@ public class SecurityProcessor {
                 securityTransformerBuildItem);
         Predicate<MethodInfo> hasAdditionalSecAnn = mi -> securityTransformer.hasSecurityAnnotation(mi,
                 AUTHORIZATION_POLICY);
-        Map<MethodInfo, SecurityCheck> securityChecks = gatherSecurityAnnotations(index, configExpSecurityCheckProducer,
-                additionalSecured.values(), security.denyUnannotatedMembers(), recorder, configBuilderProducer,
-                reflectiveClassBuildItemBuildProducer, rolesAllowedConfigExpResolverBuildItems,
+        // artificial configuration keys of the @RolesAllowed configuration expressions
+        final RolesAllowedConfigExpressionKeys configExpressionKeys = new RolesAllowedConfigExpressionKeys();
+        Map<MethodInfo, SecurityCheckSpec> securityChecks = gatherSecurityAnnotations(index, configExpSecurityCheckProducer,
+                additionalSecured.values(), security.denyUnannotatedMembers(), serviceRegistrar, configExpressionKeys,
+                reflectiveClassBuildItemBuildProducer,
                 registerClassSecurityCheckBuildItems, classSecurityCheckStorageProducer, hasAdditionalSecAnn,
                 permissionSecurityChecksBuilderBuildItem.instance,
                 generatedClassesProducer, generatedResourcesProducer, generatedServiceProvidersProducer,
                 reflectiveClassesProducer, securityTransformer);
-        for (AdditionalSecurityCheckBuildItem additionalSecurityCheck : additionalSecurityChecks) {
-            securityChecks.put(additionalSecurityCheck.getMethodInfo(),
-                    additionalSecurityCheck.getSecurityCheck());
-        }
         Set<String> standardSecurityInterceptors = Set.of(DenyAllInterceptor.class.getName(),
                 PermitAllInterceptor.class.getName(), RolesAllowedInterceptor.class.getName(),
                 AuthenticatedInterceptor.class.getName(), PermissionsAllowedInterceptor.class.getName());
@@ -980,30 +979,63 @@ public class SecurityProcessor {
                 })
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
+        registerRolesAllowedConfigExpressions(rolesAllowedConfigExpResolverBuildItems, configExpressionKeys,
+                serviceRegistrar, configBuilderProducer);
+
         return new MethodSecurityChecks(securityChecks);
+    }
+
+    private static void registerRolesAllowedConfigExpressions(
+            List<RolesAllowedConfigExpResolverBuildItem> rolesAllowedConfigExpResolverBuildItems,
+            RolesAllowedConfigExpressionKeys configExpressionKeys, ServiceRegistrar serviceRegistrar,
+            BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer) {
+        // the same allocator that assigned the keys to the expressions of the security annotations assigns the keys
+        // to the expressions other extensions resolve through the service registered below
+        final Map<String, Integer> resolvedExpressionKeys = new HashMap<>();
+        for (String configExpression : rolesAllowedConfigExpResolverBuildItems.stream()
+                .map(RolesAllowedConfigExpResolverBuildItem::getRoleConfigExpr).sorted().distinct().toList()) {
+            resolvedExpressionKeys.put(configExpression, configExpressionKeys.keyFor(configExpression));
+        }
+        final Map<Integer, String> keyToConfigExpression = configExpressionKeys.keyToExpression();
+        if (keyToConfigExpression.isEmpty()) {
+            return;
+        }
+
+        // register config source with the Config system
+        configBuilderProducer
+                .produce(new RunTimeConfigBuilderBuildItem(QuarkusSecurityRolesAllowedConfigBuilder.class.getName()));
+        // this single service replaces the properties of the config source on every application start,
+        // which also discards the properties of an application previously started in the same JVM
+        serviceRegistrar.forService("io.quarkus.security.roles-allowed-config-expression-properties")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> QuarkusSecurityRolesAllowedConfigBuilder.setProperties(keyToConfigExpression));
+
+        if (!resolvedExpressionKeys.isEmpty()) {
+            final Map<String, Integer> capturedResolvedExpressionKeys = Map.copyOf(resolvedExpressionKeys);
+            serviceRegistrar.forService(RolesAllowedConfigExpressions.class)
+                    .atPhase(Phase.STATIC_INIT)
+                    .onStart(ctx -> SecurityCheckFactory
+                            .createRolesAllowedConfigExpressions(capturedResolvedExpressionKeys));
+        }
     }
 
     @Consume(Capabilities.class) // make sure extension combinations are validated before default security check
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void createSecurityCheckStorage(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ApplicationClassPredicateBuildItem> classPredicate,
-            SecurityCheckRecorder recorder, MethodSecurityChecks securityChecksItem,
+            ServiceRegistrar serviceRegistrar, MethodSecurityChecks securityChecksItem,
             List<DefaultSecurityCheckBuildItem> defaultSecurityCheckBuildItem) {
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorageAppPredicate()));
 
-        RuntimeValue<SecurityCheckStorageBuilder> builder = recorder.newBuilder();
-        for (Map.Entry<MethodInfo, SecurityCheck> methodEntry : securityChecksItem.securityChecks.entrySet().stream()
+        final List<MethodSecurityCheckSpec> methodChecks = new ArrayList<>(securityChecksItem.securityChecks.size());
+        for (Map.Entry<MethodInfo, SecurityCheckSpec> methodEntry : securityChecksItem.securityChecks.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey(Comparator.comparing(MethodInfo::toString))).toList()) {
             MethodInfo method = methodEntry.getKey();
-            String[] params = new String[method.parametersCount()];
-            for (int i = 0; i < method.parametersCount(); ++i) {
-                params[i] = method.parameterType(i).name().toString();
-            }
-            recorder.addMethod(builder, method.declaringClass().name().toString(), method.name(), params,
-                    methodEntry.getValue());
+            methodChecks.add(new MethodSecurityCheckSpec(method.declaringClass().name().toString(), method.name(),
+                    parameterTypeNames(method), methodEntry.getValue()));
         }
 
+        final SecurityCheckSpec defaultCheck;
         if (!defaultSecurityCheckBuildItem.isEmpty()) {
             if (defaultSecurityCheckBuildItem.size() > 1) {
                 int itemCount = defaultSecurityCheckBuildItem.size();
@@ -1013,37 +1045,67 @@ public class SecurityProcessor {
 
             var roles = defaultSecurityCheckBuildItem.get(0).getRolesAllowed();
             if (roles == null) {
-                recorder.registerDefaultSecurityCheck(builder, recorder.denyAll());
+                defaultCheck = SecurityCheckSpec.Standard.DENY_ALL;
             } else {
-                recorder.registerDefaultSecurityCheck(builder, recorder.rolesAllowed(roles.toArray(new String[0])));
+                defaultCheck = SecurityCheckSpec.RolesAllowed.of(roles);
             }
+        } else {
+            defaultCheck = null;
         }
+
+        final List<MethodSecurityCheckSpec> capturedMethodChecks = List.copyOf(methodChecks);
+        // the factory is a service, so that it can resolve the configuration expressions of the checks it creates
+        // once the runtime configuration is available
+        serviceRegistrar.forService(SecurityCheckFactory.class)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> new SecurityCheckFactory());
+        serviceRegistrar.forService(SecurityCheckStorage.class)
+                .atPhase(Phase.STATIC_INIT)
+                .require(SecurityCheckFactory.class)
+                // security checks contributed by other extensions for the methods they secure
+                .consumeAll(SecurityCheckContribution.class)
+                // class-level checks
+                .consumeAll(SecurityCheck.class)
+                .onStart((ctx, factory, contributions, securityCheckServices) -> factory.createStorage(
+                        capturedMethodChecks, defaultCheck, contributions, securityCheckServices));
         syntheticBeans.produce(
                 SyntheticBeanBuildItem.configure(SecurityCheckStorage.class)
                         .scope(ApplicationScoped.class)
                         .unremovable()
-                        .runtimeProxy(recorder.create(builder))
+                        .serviceValue(SecurityCheckStorage.class)
                         .done());
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void resolveConfigExpressionRoles(Optional<ConfigExpRolesAllowedSecurityCheckBuildItem> configExpRolesChecks,
-            SecurityCheckRecorder recorder) {
+    void resolveConfigExpressionRoles(Optional<ConfigExpRolesAllowedSecurityCheckBuildItem> configExpRolesChecks,
+            ServiceRegistrar serviceRegistrar) {
         if (configExpRolesChecks.isPresent()) {
             // we created supplier security check for each role set with at least one config expression
             // now we need to resolve config expression so that if there are any failures they happen when app starts
             // rather than first time request is checked (which would be more likely to affect end user)
-            recorder.resolveRolesAllowedConfigExpRoles();
+            // the factory resolves the checks it created for the storage; the storage itself cannot be required here,
+            // because creating the SecurityCheckStorage CDI bean drains the storage service value, and the bean
+            // can be created during the static init (e.g. Quarkus REST looks up the checks to create the deployment)
+            serviceRegistrar.forService("io.quarkus.security.resolve-roles-allowed-config-expressions")
+                    .atPhase(Phase.INIT)
+                    .require(SecurityCheckFactory.class)
+                    .onStart((ctx, factory) -> factory.resolveRolesAllowedConfigExpressions());
         }
     }
 
-    private static Map<MethodInfo, SecurityCheck> gatherSecurityAnnotations(IndexView index,
+    private static List<String> parameterTypeNames(MethodInfo method) {
+        List<String> parameterTypes = new ArrayList<>(method.parametersCount());
+        for (int i = 0; i < method.parametersCount(); ++i) {
+            parameterTypes.add(method.parameterType(i).name().toString());
+        }
+        return parameterTypes;
+    }
+
+    private static Map<MethodInfo, SecurityCheckSpec> gatherSecurityAnnotations(IndexView index,
             BuildProducer<ConfigExpRolesAllowedSecurityCheckBuildItem> configExpSecurityCheckProducer,
-            Collection<AdditionalSecured> additionalSecuredMethods, boolean denyUnannotated, SecurityCheckRecorder recorder,
-            BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer,
+            Collection<AdditionalSecured> additionalSecuredMethods, boolean denyUnannotated,
+            ServiceRegistrar serviceRegistrar, RolesAllowedConfigExpressionKeys configExpressionKeys,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
-            List<RolesAllowedConfigExpResolverBuildItem> rolesAllowedConfigExpResolverBuildItems,
             List<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckBuildItems,
             BuildProducer<ClassSecurityCheckStorageBuildItem> classSecurityCheckStorageProducer,
             Predicate<MethodInfo> hasAdditionalSecurityAnnotations,
@@ -1055,17 +1117,20 @@ public class SecurityProcessor {
             SecurityTransformer securityTransformer) {
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
         Map<ClassInfo, AnnotationInstance> classAnnotations = new HashMap<>();
-        Map<MethodInfo, SecurityCheck> result = new HashMap<>();
+        Map<MethodInfo, SecurityCheckSpec> result = new HashMap<>();
         var permitAllGatherer = new SecurityAnnotationGatherer(securityTransformer.getAnnotations(PERMIT_ALL),
                 methodToInstanceCollector,
-                ((m, i) -> result.put(m, recorder.permitAll())), classAnnotations, hasAdditionalSecurityAnnotations);
+                ((m, i) -> result.put(m, SecurityCheckSpec.Standard.PERMIT_ALL)), classAnnotations,
+                hasAdditionalSecurityAnnotations);
         var authenticatedGatherer = new SecurityAnnotationGatherer(
                 securityTransformer.getAnnotations(DotNames.AUTHENTICATED),
-                methodToInstanceCollector, ((m, i) -> result.put(m, recorder.authenticated())), classAnnotations,
+                methodToInstanceCollector, ((m, i) -> result.put(m, SecurityCheckSpec.Standard.AUTHENTICATED)),
+                classAnnotations,
                 hasAdditionalSecurityAnnotations);
         var denyAllGatherer = new SecurityAnnotationGatherer(securityTransformer.getAnnotations(DENY_ALL),
                 methodToInstanceCollector,
-                ((m, i) -> result.put(m, recorder.denyAll())), classAnnotations, hasAdditionalSecurityAnnotations);
+                ((m, i) -> result.put(m, SecurityCheckSpec.Standard.DENY_ALL)), classAnnotations,
+                hasAdditionalSecurityAnnotations);
         // here we just collect all methods annotated with @RolesAllowed
         Map<MethodInfo, String[]> methodToRoles = new HashMap<>();
         var rolesAllowedGatherer = new SecurityAnnotationGatherer(securityTransformer.getAnnotations(ROLES_ALLOWED),
@@ -1080,7 +1145,7 @@ public class SecurityProcessor {
         rolesAllowedGatherer.gatherMethodSecurityAnnotations();
 
         // gather @PermissionsAllowed security checks
-        final Map<DotName, SecurityCheck> classNameToPermCheck;
+        final Map<DotName, SecurityCheckSpec> classNameToPermCheck;
         if (permissionCheckBuilder.foundPermissionsAllowedInstances()) {
             var additionalClassInstances = registerClassSecurityCheckBuildItems
                     .stream()
@@ -1088,7 +1153,7 @@ public class SecurityProcessor {
                     .map(RegisterClassSecurityCheckBuildItem::getSecurityAnnotationInstance)
                     .toList();
             var securityChecks = permissionCheckBuilder
-                    .prepareParamConverterGenerator(recorder, generatedClassesProducer, generatedResourcesProducer,
+                    .prepareParamConverterGenerator(generatedClassesProducer, generatedResourcesProducer,
                             generatedServiceProvidersProducer, reflectiveClassesProducer)
                     .gatherPermissionsAllowedAnnotations(methodToInstanceCollector, classAnnotations, additionalClassInstances,
                             hasAdditionalSecurityAnnotations)
@@ -1157,7 +1222,7 @@ public class SecurityProcessor {
                 }
             } else {
                 if (alreadyExistingInstance == null) {
-                    result.put(additionalSecuredMethod.methodInfo, recorder.denyAll());
+                    result.put(additionalSecuredMethod.methodInfo, SecurityCheckSpec.Standard.DENY_ALL);
                 } else if (alreadyHasAnnotation(alreadyExistingInstance, DENY_ALL)) {
                     // we should not try to add second @DenyAll
                     throw new IllegalStateException("Method " + additionalSecuredMethod.methodInfo.declaringClass() + "#"
@@ -1169,14 +1234,14 @@ public class SecurityProcessor {
 
         // create roles allowed security checks
         // we create only one security check for each role set
-        Map<Set<String>, SecurityCheck> cache = new HashMap<>();
-        final AtomicInteger keyIndex = new AtomicInteger(0);
+        Map<Set<String>, SecurityCheckSpec> cache = new HashMap<>();
         final AtomicBoolean hasRolesAllowedCheckWithConfigExp = new AtomicBoolean(false);
         for (Map.Entry<MethodInfo, String[]> entry : methodToRoles.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey(Comparator.comparing(MethodInfo::toString))).toList()) {
             final MethodInfo methodInfo = entry.getKey();
             result.put(methodInfo,
-                    computeRolesAllowedCheck(cache, hasRolesAllowedCheckWithConfigExp, keyIndex, recorder, entry.getValue()));
+                    computeRolesAllowedCheck(cache, hasRolesAllowedCheckWithConfigExp, configExpressionKeys,
+                            entry.getValue()));
         }
 
         if (!registerClassSecurityCheckBuildItems.isEmpty()) {
@@ -1185,50 +1250,38 @@ public class SecurityProcessor {
                     .sorted(Comparator.comparing(item -> item.getClassName().toString())).forEach(item -> {
                         var securityAnnotationName = item.getSecurityAnnotationInstance().name();
 
-                        final SecurityCheck securityCheck;
+                        final SecurityCheckSpec securityCheck;
                         if (DENY_ALL.equals(securityAnnotationName)) {
-                            securityCheck = recorder.denyAll();
+                            securityCheck = SecurityCheckSpec.Standard.DENY_ALL;
                         } else if (PERMIT_ALL.equals(securityAnnotationName)) {
-                            securityCheck = recorder.permitAll();
+                            securityCheck = SecurityCheckSpec.Standard.PERMIT_ALL;
                         } else if (AUTHENTICATED.equals(securityAnnotationName)) {
-                            securityCheck = recorder.authenticated();
+                            securityCheck = SecurityCheckSpec.Standard.AUTHENTICATED;
                         } else if (ROLES_ALLOWED.equals(securityAnnotationName)) {
                             var allowedRoles = item.getSecurityAnnotationInstance().value().asStringArray();
-                            securityCheck = computeRolesAllowedCheck(cache, hasRolesAllowedCheckWithConfigExp, keyIndex,
-                                    recorder,
-                                    allowedRoles);
+                            securityCheck = computeRolesAllowedCheck(cache, hasRolesAllowedCheckWithConfigExp,
+                                    configExpressionKeys, allowedRoles);
                         } else if (PERMISSIONS_ALLOWED.equals(securityAnnotationName)) {
                             securityCheck = Objects.requireNonNull(classNameToPermCheck.get(item.getClassName()));
                         } else {
                             throw new IllegalStateException("Found unknown security annotation: " + securityAnnotationName);
                         }
 
-                        classStorageBuilder.addSecurityCheck(item.getClassName(), securityCheck);
+                        // class-level checks are services, other extensions pass them to their recorders as proxies
+                        final String serviceName = item.getClassName().toString();
+                        serviceRegistrar.forService(SecurityCheck.class, serviceName)
+                                .atPhase(Phase.STATIC_INIT)
+                                .onStart(ctx -> SecurityCheckFactory.create(securityCheck));
+                        classStorageBuilder.addSecurityCheck(item.getClassName(),
+                                serviceRegistrar.getRecorderProxy(SecurityCheck.class, serviceName));
                     });
             classSecurityCheckStorageProducer.produce(classStorageBuilder.build());
-        }
-
-        final boolean registerRolesAllowedConfigSource;
-        // way to resolve roles allowed configuration expressions specified via annotations to configuration values
-        if (!rolesAllowedConfigExpResolverBuildItems.isEmpty()) {
-            registerRolesAllowedConfigSource = true;
-            for (RolesAllowedConfigExpResolverBuildItem item : rolesAllowedConfigExpResolverBuildItems) {
-                recorder.recordRolesAllowedConfigExpression(item.getRoleConfigExpr(), keyIndex.getAndIncrement(),
-                        item.getConfigValueRecorder());
-            }
-        } else {
-            registerRolesAllowedConfigSource = hasRolesAllowedCheckWithConfigExp.get();
         }
 
         if (hasRolesAllowedCheckWithConfigExp.get()) {
             // make sure config expressions are eagerly resolved inside security checks when app starts
             configExpSecurityCheckProducer
                     .produce(new ConfigExpRolesAllowedSecurityCheckBuildItem());
-        }
-        if (registerRolesAllowedConfigSource) {
-            // register config source with the Config system
-            configBuilderProducer
-                    .produce(new RunTimeConfigBuilderBuildItem(QuarkusSecurityRolesAllowedConfigBuilder.class.getName()));
         }
 
         /*
@@ -1251,7 +1304,7 @@ public class SecurityProcessor {
                     if (hasAdditionalSecurityAnnotations.test(methodInfo)) {
                         continue;
                     }
-                    result.put(methodInfo, recorder.denyAll());
+                    result.put(methodInfo, SecurityCheckSpec.Standard.DENY_ALL);
                 }
             }
         }
@@ -1259,30 +1312,32 @@ public class SecurityProcessor {
         return result;
     }
 
-    private static SecurityCheck computeRolesAllowedCheck(Map<Set<String>, SecurityCheck> cache,
-            AtomicBoolean hasRolesAllowedCheckWithConfigExp, AtomicInteger keyIndex, SecurityCheckRecorder recorder,
+    private static SecurityCheckSpec computeRolesAllowedCheck(Map<Set<String>, SecurityCheckSpec> cache,
+            AtomicBoolean hasRolesAllowedCheckWithConfigExp, RolesAllowedConfigExpressionKeys configExpressionKeys,
             String[] allowedRoles) {
-        return cache.computeIfAbsent(getSetForKey(allowedRoles), new Function<Set<String>, SecurityCheck>() {
+        return cache.computeIfAbsent(getSetForKey(allowedRoles), new Function<Set<String>, SecurityCheckSpec>() {
             @Override
-            public SecurityCheck apply(Set<String> allowedRolesSet) {
+            public SecurityCheckSpec apply(Set<String> allowedRolesSet) {
                 final int[] configExpressionPositions = configExpressionPositions(allowedRoles);
                 if (configExpressionPositions.length > 0) {
-                    // we need to use supplier check as security checks are created during static init
+                    // the security checks are created during static init
                     // while config expressions are resolved during runtime
                     hasRolesAllowedCheckWithConfigExp.set(true);
 
                     // we don't create security check for each method, therefore we need artificial keys
                     // we can safely use numbers as RolesAllowed config source prefix all keys
-                    final int[] configKeys = new int[configExpressionPositions.length];
-                    for (int i = 0; i < configExpressionPositions.length; i++) {
+                    final List<Integer> expressionPositions = new ArrayList<>(configExpressionPositions.length);
+                    final List<Integer> configKeys = new ArrayList<>(configExpressionPositions.length);
+                    for (int configExpressionPosition : configExpressionPositions) {
+                        expressionPositions.add(configExpressionPosition);
                         // now we just collect artificial keys, but
                         // before we add the property to the Config system, we prefix it, e.g.
                         // @RolesAllowed("${admin}") -> QuarkusSecurityRolesAllowedConfigSource.property-0=${admin}
-                        configKeys[i] = keyIndex.getAndIncrement();
+                        configKeys.add(configExpressionKeys.keyFor(allowedRoles[configExpressionPosition]));
                     }
-                    return recorder.rolesAllowedSupplier(allowedRoles, configExpressionPositions, configKeys);
+                    return new SecurityCheckSpec.RolesAllowed(List.of(allowedRoles), expressionPositions, configKeys);
                 }
-                return recorder.rolesAllowed(allowedRoles);
+                return SecurityCheckSpec.RolesAllowed.of(List.of(allowedRoles));
             }
         });
     }
@@ -1502,9 +1557,9 @@ public class SecurityProcessor {
     }
 
     static final class MethodSecurityChecks extends SimpleBuildItem {
-        Map<MethodInfo, SecurityCheck> securityChecks;
+        final Map<MethodInfo, SecurityCheckSpec> securityChecks;
 
-        MethodSecurityChecks(Map<MethodInfo, SecurityCheck> securityChecks) {
+        MethodSecurityChecks(Map<MethodInfo, SecurityCheckSpec> securityChecks) {
             this.securityChecks = securityChecks;
         }
     }

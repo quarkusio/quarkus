@@ -5,6 +5,7 @@ import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_
 
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -13,8 +14,6 @@ import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Singleton;
-
-import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
@@ -31,31 +30,22 @@ import io.smallrye.mutiny.Uni;
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
  */
 @Singleton
-public class SecurityConstrainer {
+public final class SecurityConstrainer {
 
     public static final Object CHECK_OK = new Object();
+    private static volatile Supplier<Map<String, Object>> additionalEventPropsSupplier = Map::of;
     private final SecurityCheckStorage storage;
     private final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> securityEventHelper;
     private final Instance<CurrentIdentityAssociation> securityIdentityAssociation;
-    private final Supplier<Map<String, Object>> additionalEventPropsSupplier;
 
-    public SecurityConstrainer(SecurityCheckStorage storage, BeanManager beanManager,
+    SecurityConstrainer(SecurityCheckStorage storage, BeanManager beanManager,
             Event<AuthorizationFailureEvent> authZFailureEvent, Event<AuthorizationSuccessEvent> authZSuccessEvent,
-            boolean runtimeConfigReady, Instance<CurrentIdentityAssociation> securityIdentityAssociation,
-            Supplier<Map<String, Object>> additionalEventPropsSupplier) {
+            Instance<CurrentIdentityAssociation> securityIdentityAssociation) {
         this.securityIdentityAssociation = securityIdentityAssociation;
-        this.additionalEventPropsSupplier = additionalEventPropsSupplier;
         this.storage = storage;
-        if (runtimeConfigReady) {
-            boolean securityEventsEnabled = ConfigProvider.getConfig().getValue("quarkus.security.events.enabled",
-                    Boolean.class);
-            this.securityEventHelper = new SecurityEventHelper<>(authZSuccessEvent, authZFailureEvent, AUTHORIZATION_SUCCESS,
-                    AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);
-        } else {
-            // static interceptors are initialized during the static init, therefore we need to initialize the helper lazily
-            this.securityEventHelper = SecurityEventHelper.lazilyOf(authZSuccessEvent, authZFailureEvent,
-                    AUTHORIZATION_SUCCESS, AUTHORIZATION_FAILURE, beanManager);
-        }
+        // static interceptors are initialized during the static init, therefore we need to initialize the helper lazily
+        this.securityEventHelper = SecurityEventHelper.lazilyOf(authZSuccessEvent, authZFailureEvent,
+                AUTHORIZATION_SUCCESS, AUTHORIZATION_FAILURE, beanManager);
     }
 
     public void check(Method method, Object[] parameters) {
@@ -141,5 +131,13 @@ public class SecurityConstrainer {
         securityEventHelper
                 .fireFailureEvent(new AuthorizationFailureEvent(identity, failure, securityCheck.getClass().getName(),
                         additionalEventPropsSupplier.get(), MethodDescription.ofMethod(method)));
+    }
+
+    public static void setAdditionalSecurityEventPropsSupplier(Supplier<Map<String, Object>> additionalEventPropsSupplier) {
+        SecurityConstrainer.additionalEventPropsSupplier = Objects.requireNonNull(additionalEventPropsSupplier);
+    }
+
+    public static void clearAdditionalSecurityEventPropsSupplier() {
+        SecurityConstrainer.additionalEventPropsSupplier = Map::of;
     }
 }

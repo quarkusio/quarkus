@@ -939,6 +939,50 @@ class TokensHelperTest {
     }
 
     /**
+     * Once a caller has forced the acquisition of new tokens while a refresh is in flight, the tokens
+     * being refreshed are known to have been rejected, so they must not be served to anyone else
+     * either: every caller arriving afterwards waits for the refresh too.
+     */
+    @Test
+    void testTokensBeingRefreshedNotServedAfterForcedAcquisition() throws Exception {
+        Tokens current = tokens("current", 8);
+        BlockingOidcClient client = new BlockingOidcClient(tokens("refreshed", 300));
+        TokensHelper helper = new TokensHelper();
+        helper.initTokens(new ImmediateOidcClient(current), Map.of());
+
+        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {
+        }, t -> {
+        });
+        client.awaitInFlight();
+
+        // Before the forcing, the tokens being refreshed are still served, so what follows is down to it.
+        assertThat(helper.getTokens(client, Map.of(), false).await().atMost(Duration.ofSeconds(2))).isSameAs(current);
+
+        final CountDownLatch forcedCompleted = new CountDownLatch(1);
+        helper.getTokens(client, Map.of(), true).subscribe().with(t -> forcedCompleted.countDown(),
+                t -> forcedCompleted.countDown());
+
+        final AtomicReference<Tokens> served = new AtomicReference<>();
+        final CountDownLatch completed = new CountDownLatch(1);
+        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {
+            served.set(t);
+            completed.countDown();
+        }, t -> completed.countDown());
+
+        assertThat(completed.await(1, TimeUnit.SECONDS))
+                .as("rejected tokens must not be served to callers arriving after the forced acquisition")
+                .isFalse();
+
+        client.release.countDown();
+        assertThat(forcedCompleted.await(10, TimeUnit.SECONDS)).as("the forcing caller should have completed").isTrue();
+        assertThat(completed.await(10, TimeUnit.SECONDS)).as("the caller should have completed").isTrue();
+        assertThat(served.get().getAccessToken()).isEqualTo("refreshed");
+        assertThat(client.acquisitions.get())
+                .as("the forced acquisition should have joined the refresh in flight rather than start another")
+                .isEqualTo(1);
+    }
+
+    /**
      * Tokens which are still valid but too close to expiry are not served while a refresh is in
      * flight: they could expire in transit, or while the target service handles the request. Such a
      * caller waits for the refreshed tokens instead.

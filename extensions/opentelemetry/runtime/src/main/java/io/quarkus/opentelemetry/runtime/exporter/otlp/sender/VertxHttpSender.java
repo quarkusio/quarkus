@@ -57,6 +57,7 @@ public final class VertxHttpSender implements HttpSender {
     private final String contentType;
     private final HttpClient client;
     private final String signalPath;
+    private final long idleTimeoutMillis;
 
     public VertxHttpSender(
             URI baseUri,
@@ -72,8 +73,8 @@ public final class VertxHttpSender implements HttpSender {
         this.compressionEnabled = compressionEnabled;
         this.headers = headersMap;
         this.contentType = contentType;
+        this.idleTimeoutMillis = timeout.toMillis();
         var httpClientOptions = new HttpClientOptions()
-                .setReadIdleTimeout((int) timeout.getSeconds())
                 .setDefaultHost(baseUri.getHost())
                 .setDefaultPort(getPort(baseUri))
                 .setTracingPolicy(TracingPolicy.IGNORE); // needed to avoid tracing the calls from this http client
@@ -123,7 +124,7 @@ public final class VertxHttpSender implements HttpSender {
         var clientRequestSuccessHandler = new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
                 contentType,
                 onHttpResponseRead,
-                onError, requestBodyWriter, 1, isShutdown::get);
+                onError, requestBodyWriter, 1, isShutdown::get, idleTimeoutMillis);
         initiateSend(client, requestURI, MAX_ATTEMPTS, clientRequestSuccessHandler, new Consumer<>() {
             @Override
             public void accept(Throwable throwable) {
@@ -234,6 +235,7 @@ public final class VertxHttpSender implements HttpSender {
 
         private final int attemptNumber;
         private final Supplier<Boolean> isShutdown;
+        private final long idleTimeoutMillis;
 
         public ClientRequestSuccessHandler(HttpClient client,
                 String requestURI, Map<String, String> headers,
@@ -243,7 +245,8 @@ public final class VertxHttpSender implements HttpSender {
                 Consumer<Throwable> onError,
                 MessageWriter requestBodyWriter,
                 int attemptNumber,
-                Supplier<Boolean> isShutdown) {
+                Supplier<Boolean> isShutdown,
+                long idleTimeoutMillis) {
             this.client = client;
             this.requestURI = requestURI;
             this.headers = headers;
@@ -254,10 +257,14 @@ public final class VertxHttpSender implements HttpSender {
             this.requestBodyWriter = requestBodyWriter;
             this.attemptNumber = attemptNumber;
             this.isShutdown = isShutdown;
+            this.idleTimeoutMillis = idleTimeoutMillis;
         }
 
         @Override
         public void handle(HttpClientRequest request) {
+            // A read idle timeout on the client would count from the last read on the connection and could close it
+            // while this request is in flight, after the collector has received it, and the retry would send it twice
+            request.idleTimeout(idleTimeoutMillis);
 
             request.response().onComplete(new Handler<>() {
                 @Override
@@ -351,7 +358,7 @@ public final class VertxHttpSender implements HttpSender {
         public ClientRequestSuccessHandler newAttempt() {
             return new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
                     contentType, onHttpResponseRead,
-                    onError, requestBodyWriter, attemptNumber + 1, isShutdown);
+                    onError, requestBodyWriter, attemptNumber + 1, isShutdown, idleTimeoutMillis);
         }
     }
 }

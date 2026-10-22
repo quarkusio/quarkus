@@ -31,16 +31,11 @@ import java.util.regex.Pattern;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import jakarta.json.JsonException;
+
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
-import org.jose4j.jwa.AlgorithmConstraints;
-import org.jose4j.jwe.JsonWebEncryption;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.lang.JoseException;
 
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.AuthorizationCodeFlow;
@@ -74,8 +69,14 @@ import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
+import io.smallrye.jwe.JweDecrypter;
+import io.smallrye.jwe.JweEncrypter;
+import io.smallrye.jwe.JweException;
+import io.smallrye.jwk.AsymmetricJsonWebKey;
+import io.smallrye.jwk.JsonWebKey;
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
+import io.smallrye.jwt.common.JwtClaims;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
@@ -396,7 +397,7 @@ public final class OidcUtils {
             jwtClaims.setClaim(Claims.raw_token.name(), credential.getToken());
             jwtPrincipal = new OidcJwtCallerPrincipal(jwtClaims, credential,
                     config.token().principalClaim().isPresent() ? config.token().principalClaim().get() : null);
-        } catch (InvalidJwtException e) {
+        } catch (JsonException e) {
             throw new AuthenticationFailedException(e);
         }
         builder.addAttribute(QUARKUS_IDENTITY_EXPIRE_TIME, jwtPrincipal.getExpirationTime());
@@ -698,12 +699,11 @@ public final class OidcUtils {
     }
 
     public static String encryptString(String jweString, Key key, KeyEncryptionAlgorithm algorithm) throws Exception {
-        JsonWebEncryption jwe = new JsonWebEncryption();
-        jwe.setAlgorithmHeaderValue(algorithm.getAlgorithm());
-        jwe.setEncryptionMethodHeaderParameter(ContentEncryptionAlgorithm.A256GCM.getAlgorithm());
-        jwe.setKey(key);
-        jwe.setPlaintext(jweString);
-        return jwe.getCompactSerialization();
+        return JweEncrypter.builder(key)
+                .keyAlgorithm(algorithm)
+                .contentAlgorithm(ContentEncryptionAlgorithm.A256GCM)
+                .build()
+                .encrypt(jweString);
     }
 
     public static JsonObject decryptJson(String jweString, Key key) throws Exception {
@@ -714,13 +714,11 @@ public final class OidcUtils {
         return decryptString(jweString, key, KeyEncryptionAlgorithm.A256GCMKW);
     }
 
-    public static String decryptString(String jweString, Key key, KeyEncryptionAlgorithm algorithm) throws JoseException {
-        JsonWebEncryption jwe = new JsonWebEncryption();
-        jwe.setAlgorithmConstraints(new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
-                algorithm.getAlgorithm()));
-        jwe.setKey(key);
-        jwe.setCompactSerialization(jweString);
-        return jwe.getPlaintextString();
+    public static String decryptString(String jweString, Key key, KeyEncryptionAlgorithm algorithm) throws JweException {
+        return JweDecrypter.builder(key)
+                .keyAlgorithm(algorithm)
+                .build()
+                .decrypt(jweString);
     }
 
     public static boolean isFormUrlEncodedRequest(RoutingContext context) {
@@ -970,12 +968,14 @@ public final class OidcUtils {
 
         String keyContent = KeyUtils.readKeyContent(decryptionKeyLocation);
         if (keyContent != null) {
-            List<JsonWebKey> keys = KeyUtils.loadJsonWebKeys(keyContent);
-            if (keys != null && keys.size() == 1 &&
-                    (keys.get(0).getAlgorithm() == null
-                            || keys.get(0).getAlgorithm().equals(algorithm.getAlgorithm()))
-                    && ("enc".equals(keys.get(0).getUse()) || keys.get(0).getUse() == null)) {
-                key = PublicJsonWebKey.class.cast(keys.get(0)).getPrivateKey();
+            io.smallrye.jwk.JsonWebKeySet keys = KeyUtils.loadJsonWebKeys(keyContent);
+            if (keys != null && keys.keys().size() == 1) {
+                JsonWebKey jwk = keys.keys().get(0);
+                if (jwk instanceof AsymmetricJsonWebKey asymmetricJwk
+                        && (jwk.algorithm() == null || jwk.algorithm().equals(algorithm.getAlgorithm()))
+                        && (jwk.keyUse() == null || JoseConstants.ENCRYPTION_USE.equals(jwk.keyUse()))) {
+                    key = asymmetricJwk.privateKey();
+                }
             }
         }
         if (key == null) {
@@ -1008,7 +1008,7 @@ public final class OidcUtils {
 
             try {
                 return OidcUtils.decryptString(token, decryptionKey, encryptionAlgorithm);
-            } catch (JoseException ex) {
+            } catch (JweException ex) {
                 LOG.warnf("Failed to decrypt a token: %s", ex.getMessage());
             }
         }

@@ -23,7 +23,6 @@ import javax.crypto.SecretKey;
 
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
-import org.jose4j.jwx.HeaderParameterNames;
 import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -904,7 +903,7 @@ public class BearerTokenAuthorizationTest {
                 .groups(groups)
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
-                .jws().header(HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT, "123")
+                .jws().header("x5t", "123")
                 .sign("privateKeyWithoutKid.jwk");
     }
 
@@ -922,7 +921,7 @@ public class BearerTokenAuthorizationTest {
                 .groups(groups)
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
-                .jws().header(HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT, "123")
+                .jws().header("x5t#S256", "123")
                 .sign("privateKeyWithoutKid.jwk");
     }
 

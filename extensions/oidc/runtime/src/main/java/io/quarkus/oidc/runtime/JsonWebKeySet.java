@@ -8,24 +8,21 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.lang.InvalidAlgorithmException;
-import org.jose4j.lang.JoseException;
 
 import io.quarkus.oidc.OIDCException;
+import io.smallrye.jwk.AsymmetricJsonWebKey;
+import io.smallrye.jwk.JsonWebKey;
+import io.smallrye.jwk.JsonWebKeyException;
+import io.smallrye.jws.JsonWebSignature;
+import io.smallrye.jws.JwsException;
+import io.smallrye.jws.JwsVerifier;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 public class JsonWebKeySet {
 
     private static final Logger LOG = Logger.getLogger(JsonWebKeySet.class);
-    private static final String RSA_KEY_TYPE = "RSA";
-    private static final String ELLIPTIC_CURVE_KEY_TYPE = "EC";
-    // This key type is used when EdDSA algorithm is used
-    private static final String OCTET_KEY_PAIR_TYPE = "OKP";
-    private static final Set<String> KEY_TYPES = Set.of(RSA_KEY_TYPE, ELLIPTIC_CURVE_KEY_TYPE, OCTET_KEY_PAIR_TYPE);
-
-    private static final String SIGNATURE_USE = "sig";
+    private static final Set<String> KEY_TYPES = Set.of(JoseConstants.RSA_KEY_TYPE,
+            JoseConstants.ELLIPTIC_CURVE_KEY_TYPE, JoseConstants.OCTET_KEY_PAIR_KEY_TYPE);
 
     private Map<String, Key> keysWithKeyId = new HashMap<>();
     private Map<String, Key> keysWithThumbprints = new HashMap<>();
@@ -38,80 +35,114 @@ public class JsonWebKeySet {
     }
 
     private void initKeys(String json) {
+        io.smallrye.jwk.JsonWebKeySet jwkSet;
         try {
-            org.jose4j.jwk.JsonWebKeySet jwkSet = new org.jose4j.jwk.JsonWebKeySet(json);
-            for (JsonWebKey jwkKey : jwkSet.getJsonWebKeys()) {
-                if (isSupportedJwkKey(jwkKey)) {
-                    addKeyToListInMap(jwkKey, allKeys);
-
-                    if (jwkKey.getKeyId() != null) {
-                        keysWithKeyId.put(jwkKey.getKeyId(), jwkKey.getKey());
-                    }
-                    // 'x5t' may not be available but the certificate `x5c` may be so 'x5t' can be calculated early
-                    boolean calculateThumbprintIfMissing = true;
-                    String x5t = ((PublicJsonWebKey) jwkKey).getX509CertificateSha1Thumbprint(calculateThumbprintIfMissing);
-                    if (x5t != null && jwkKey.getKey() != null) {
-                        keysWithThumbprints.put(x5t, jwkKey.getKey());
-                    }
-                    String x5tS256 = ((PublicJsonWebKey) jwkKey)
-                            .getX509CertificateSha256Thumbprint(calculateThumbprintIfMissing);
-                    if (x5tS256 != null && jwkKey.getKey() != null) {
-                        keysWithS256Thumbprints.put(x5tS256, jwkKey.getKey());
-                    }
-                    if (jwkKey.getKeyId() == null && x5t == null && x5tS256 == null && jwkKey.getKeyType() != null) {
-                        addKeyToListInMap(jwkKey, keysWithoutKeyIdAndThumbprint);
-                    }
-                }
-            }
-        } catch (JoseException ex) {
+            jwkSet = io.smallrye.jwk.JsonWebKeySet.parse(json);
+        } catch (JsonWebKeyException ex) {
             throw new OIDCException(ex);
         }
+
+        for (JsonWebKey jwkKey : jwkSet.keys()) {
+            if (isSupportedJwkKey(jwkKey)) {
+                Key key;
+                try {
+                    key = extractKey(jwkKey);
+                } catch (JsonWebKeyException ex) {
+                    logKeyExtractionFailure(jwkKey, ex);
+                    continue;
+                }
+                final String keyType = jwkKey.keyType();
+
+                addKeyToListInMap(keyType, key, allKeys);
+
+                if (jwkKey.keyId() != null) {
+                    keysWithKeyId.put(jwkKey.keyId(), key);
+                }
+
+                // The thumbprints are calculated from the certificate chain if they are not set
+                String x5t = jwkKey.x509CertificateThumbprint();
+                String x5tS256 = jwkKey.x509CertificateS256Thumbprint();
+
+                if (x5t != null) {
+                    keysWithThumbprints.put(x5t, key);
+                }
+                if (x5tS256 != null) {
+                    keysWithS256Thumbprints.put(x5tS256, key);
+                }
+
+                if (jwkKey.keyId() == null && x5t == null && x5tS256 == null && keyType != null) {
+                    addKeyToListInMap(keyType, key, keysWithoutKeyIdAndThumbprint);
+                }
+            }
+        }
+    }
+
+    private static Key extractKey(JsonWebKey jwkKey) throws JsonWebKeyException {
+        // only the asymmetric key types are supported, see isSupportedJwkKey()
+        return ((AsymmetricJsonWebKey) jwkKey).publicKey();
+    }
+
+    private static void logKeyExtractionFailure(JsonWebKey jwkKey, JsonWebKeyException ex) {
+        LOG.warnf(ex, "Supported JWK of type '%s' with key id '%s' can not be converted to a key and will be ignored",
+                jwkKey.keyType(), jwkKey.keyId());
     }
 
     private static boolean isSupportedJwkKey(JsonWebKey jwkKey) {
-        return (jwkKey.getKeyType() == null || KEY_TYPES.contains(jwkKey.getKeyType()))
-                && (SIGNATURE_USE.equals(jwkKey.getUse()) || jwkKey.getUse() == null);
+        String keyType = jwkKey.keyType();
+        String use = jwkKey.keyUse();
+        return (keyType == null || KEY_TYPES.contains(keyType))
+                && (JoseConstants.SIGNATURE_USE.equals(use) || use == null);
     }
 
-    private void addKeyToListInMap(JsonWebKey key, Map<String, List<Key>> map) {
-        List<Key> keys = map.get(key.getKeyType());
+    private void addKeyToListInMap(String keyType, Key key, Map<String, List<Key>> map) {
+        List<Key> keys = map.get(keyType);
 
         if (keys == null) {
             keys = new ArrayList<>();
-            map.put(key.getKeyType(), keys);
+            map.put(keyType, keys);
         }
 
-        keys.add(key.getKey());
+        keys.add(key);
     }
 
-    public Key findKeyInAllKeys(JsonWebSignature jws) {
+    public Key findKeyInAllKeys(JsonWebSignature jws, Set<SignatureAlgorithm> allowedAlgorithms) {
         LOG.debug("Evaluating all keys to find a matching one");
-        final Key initialKey = jws.getKey();
-        final String keyType;
 
-        try {
-            keyType = jws.getKeyType();
-        } catch (InvalidAlgorithmException e) {
-            LOG.debug("No key type available, cannot determine keys to check", e);
+        String alg = jws.headers().algorithm();
+        if (allowedAlgorithms.stream().noneMatch(a -> a.getAlgorithm().equals(alg))) {
+            LOG.debugf("Token algorithm %s is not allowed", alg);
+            return null;
+        }
+        String keyType = getKeyTypeFromAlgorithm(alg);
+        if (keyType == null) {
+            LOG.debug("No key type available, cannot determine keys to check");
             return null;
         }
 
         for (Key key : allKeys.getOrDefault(keyType, List.of())) {
-            jws.setKey(key);
-
             try {
-                if (jws.verifySignature()) {
-                    jws.setKey(initialKey);
-                    LOG.debugf("Found matching key %s", key.toString());
-                    return key;
-                }
-            } catch (JoseException e) {
+                JwsVerifier.builder(key).algorithms(allowedAlgorithms).build().verify(jws);
+                LOG.debugf("Found matching key %s", key.toString());
+                return key;
+            } catch (JwsException e) {
                 LOG.debugf(e, "Verifying signature with key %s failed.", key.toString());
             }
         }
 
-        jws.setKey(initialKey);
         LOG.debug("No matching key found");
+        return null;
+    }
+
+    static String getKeyTypeFromAlgorithm(String alg) {
+        if (alg.startsWith("RS") || alg.startsWith("PS")) {
+            return JoseConstants.RSA_KEY_TYPE;
+        }
+        if (alg.startsWith("ES")) {
+            return JoseConstants.ELLIPTIC_CURVE_KEY_TYPE;
+        }
+        if (alg.equals("EdDSA")) {
+            return JoseConstants.OCTET_KEY_PAIR_KEY_TYPE;
+        }
         return null;
     }
 

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,7 +18,6 @@ import jakarta.inject.Inject;
 import org.awaitility.Awaitility;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jose4j.base64url.Base64;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -99,7 +99,8 @@ class OidcClientProxyTest {
             String proxyAuthorization = HEADERS.get("proxy-authorization");
             assertTrue(proxyAuthorization.contains("Basic "),
                     () -> "Proxy authorization does not contain basic authentication credentials: " + proxyAuthorization);
-            String basicCredentials = new String(Base64.decode(proxyAuthorization.substring("Basic ".length()).trim()),
+            String basicCredentials = new String(
+                    Base64.getDecoder().decode(proxyAuthorization.substring("Basic ".length()).trim()),
                     StandardCharsets.UTF_8);
             Assertions.assertEquals("name:pwd", basicCredentials);
         } finally {

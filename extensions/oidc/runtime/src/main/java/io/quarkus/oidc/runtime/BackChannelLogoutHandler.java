@@ -12,7 +12,6 @@ import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
-import org.jose4j.jwt.consumer.InvalidJwtException;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.OIDCException;
@@ -23,6 +22,7 @@ import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher;
+import io.smallrye.jwt.auth.InvalidJWTException;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
@@ -194,7 +194,7 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
                                         } else {
                                             context.response().setStatusCode(400);
                                         }
-                                    } catch (InvalidJwtException e) {
+                                    } catch (InvalidJWTException e) {
                                         LOG.warn("Back channel logout token is invalid");
                                         context.response().setStatusCode(400);
 

@@ -4,13 +4,12 @@ import static org.hamcrest.Matchers.equalTo;
 
 import java.security.PrivateKey;
 
-import org.jose4j.jws.AlgorithmIdentifiers;
-import org.jose4j.jws.JsonWebSignature;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
+import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
 
 public class JwtParserUnitTest {
@@ -45,17 +44,11 @@ public class JwtParserUnitTest {
     }
 
     private String generateTokenWithoutIssuedAt() throws Exception {
-        String payload = "{"
-                + "\"sub\":\"alice\","
-                + "\"iss\":\"https://server.example.com\","
-                + "\"exp\":" + (System.currentTimeMillis() / 1000 + 5) + ","
-                + "}";
-
-        JsonWebSignature jws = new JsonWebSignature();
-        jws.setPayload(payload);
-        jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
+        // 'smallrye.jwt.new-token.add-default-claims' is set to 'false' so that no 'iat' claim is added
         PrivateKey privateKey = KeyUtils.readPrivateKey("privateKey.pem");
-        jws.setKey(privateKey);
-        return jws.getCompactSerialization();
+        return Jwt.subject("alice")
+                .issuer("https://server.example.com")
+                .expiresAt(System.currentTimeMillis() / 1000 + 5)
+                .sign(privateKey);
     }
 }

@@ -54,6 +54,21 @@ After successfully securing your Quarkus application with Basic authentication, 
 
 For guidance on testing Quarkus Security features and ensuring that your Quarkus applications are securely protected, see the xref:security-testing.adoc[Security testing] guide.
 
+[id="programmatic-set-up"]
+== Programmatic setup
+
+You can set up several Quarkus Security features in code instead of the `application.properties` file, for example, to build the setup from values that your code reads when the application starts.
+For instructions, see the following sections:
+
+* xref:security-authorize-web-endpoints-reference.adoc#path-specific-authz-programmatic-set-up[Programmatic path-specific authorization]
+* xref:security-basic-authentication.adoc#basic-auth-programmatic-set-up[Set up Basic authentication programmatically]
+* xref:security-authentication-mechanisms.adoc#form-based-auth-programmatic-set-up[Set up Form-based authentication programmatically]
+* xref:security-authentication-mechanisms.adoc#mtls-programmatic-set-up[Set up the mutual TLS client authentication programmatically]
+* xref:security-openid-connect-multitenancy.adoc#programmatic-startup[Programmatic OIDC start-up for multitenant application]
+* xref:security-oidc-expanded-configuration.adoc#creating-tenants-programmatically[Creating OIDC configuration programmatically]
+* xref:security-cors.adoc#cors-filter-programmatic-set-up[Configuring the CORS filter programmatically]
+* xref:security-csrf-prevention.adoc#csrf-prevention-programmatic-set-up[Configuring the CSRF prevention programmatically]
+
 == More about security features in Quarkus
 
 === WebSockets Next security

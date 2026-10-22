@@ -428,6 +428,18 @@ public final class HibernateProcessorSupport {
                 throw new IllegalStateException(
                         "Cache region '" + cacheName + "': 'weigher-class' requires 'maximum-weight' to be set.");
             }
+            if (memory.maximumWeight().isPresent() && memory.weigherClass().isEmpty()) {
+                throw new IllegalStateException(
+                        "Cache region '" + cacheName + "': 'maximum-weight' requires 'weigher-class' to be set.");
+            }
+            if (memory.objectCount().isPresent() && memory.objectCount().getAsLong() < 0) {
+                throw new IllegalStateException(
+                        "Cache region '" + cacheName + "': 'object-count' must not be negative.");
+            }
+            if (memory.maximumWeight().isPresent() && memory.maximumWeight().getAsLong() < 0) {
+                throw new IllegalStateException(
+                        "Cache region '" + cacheName + "': 'maximum-weight' must not be negative.");
+            }
 
             caches.put(cacheName, new QuarkusPersistenceUnitCacheConfiguration.Cache(
                     memory.objectCount().orElse(QuarkusPersistenceUnitCacheConfiguration.Cache.DEFAULT.maxSize()),

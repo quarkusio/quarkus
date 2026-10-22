@@ -1,5 +1,10 @@
 package io.quarkus.vertx.http.tls;
 
+import java.util.Locale;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
+
 import jakarta.inject.Inject;
 
 import io.netty.handler.ssl.OpenSsl;
@@ -26,6 +31,25 @@ public abstract class AbstractHybridKeyExchangeTest {
 
     static boolean isJdk27OrLater() {
         return Runtime.version().feature() >= 27;
+    }
+
+    static boolean isPqcSupported() {
+        try {
+            // SSLParameters#getNamedGroups() is only available as of JDK 20
+            SSLParameters parameters = SSLContext.getDefault().getSupportedSSLParameters();
+            String[] groups = (String[]) SSLParameters.class.getMethod("getNamedGroups").invoke(parameters);
+            if (groups != null) {
+                for (String group : groups) {
+                    String g = group.toLowerCase(Locale.ROOT);
+                    if (g.contains("mlkem") || g.contains("kyber")) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Ignore, default to false
+        }
+        return false;
     }
 
 }

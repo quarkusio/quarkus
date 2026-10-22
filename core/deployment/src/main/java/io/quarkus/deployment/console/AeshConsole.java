@@ -166,10 +166,17 @@ public class AeshConsole extends QuarkusConsole {
     private void end(Connection conn) {
         conn.setAttributes(attributes);
         StringBuilder sb = new StringBuilder();
-        sb.append("\u001B[0m\n");
+        synchronized (this) {
+            closed = true;
+            if (totalStatusLines > 0 && totalStatusLines < size.getHeight()) {
+                clearStatusMessages(sb);
+                sb.append("\u001B[0m");
+            } else {
+                sb.append("\u001B[0m\n");
+            }
+        }
         writeQueue.add(sb.toString());
         deadlockSafeWrite();
-        closed = true;
     }
 
     private void deadlockSafeWrite() {

@@ -48,6 +48,10 @@ This skips tests, ITs, docs, native, and validation.
 
 # Native integration tests
 ./mvnw verify -f integration-tests/<name>/ -Dstart-containers -Dtest-containers -Dnative
+
+# Integration tests against an already released Quarkus, without building Quarkus locally.
+# Use a version from the same release stream. See integration-tests/README.md.
+./mvnw verify -f integration-tests/<name>/ -Dquarkus.version=<released version>
 ```
 
 ## Incremental Build
@@ -68,6 +72,8 @@ This skips tests, ITs, docs, native, and validation.
 | `-DskipTests` / `-DskipITs` | Skip unit / integration tests |
 | `-Dno-test-modules` | Skip building test modules |
 | `-Dincremental` | Only build changed modules |
+| `-Dquarkus.version=<version>` | Build `integration-tests/*` against a released Quarkus instead of the reactor |
+| `-Dquarkus.platform.group-id=io.quarkus.platform` | Import an assembled platform BOM rather than the core BOM |
 
 ## Justfile
 

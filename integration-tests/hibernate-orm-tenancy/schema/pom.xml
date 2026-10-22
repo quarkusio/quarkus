@@ -60,7 +60,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-flyway-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -73,7 +73,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -86,7 +86,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -99,7 +99,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -112,7 +112,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -125,7 +125,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-undertow-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>

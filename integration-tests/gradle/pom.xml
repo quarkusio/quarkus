@@ -29,13 +29,13 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>io.quarkus.gradle.plugin</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
         </dependency>
         <dependency>
             <groupId>io.quarkus.extension</groupId>
             <artifactId>io.quarkus.extension.gradle.plugin</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
         </dependency>
         <dependency>
@@ -223,7 +223,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-agroal-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -236,7 +236,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -249,7 +249,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-avro-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -262,7 +262,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-config-yaml-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -275,7 +275,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-container-image-jib-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -288,7 +288,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -301,7 +301,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -314,7 +314,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -327,7 +327,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-panache-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -340,7 +340,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-rest-data-panache-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -353,7 +353,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-reactive-panache-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -366,7 +366,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-search-orm-elasticsearch-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -379,7 +379,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-validator-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -392,7 +392,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jacoco-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -405,7 +405,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-h2-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -418,7 +418,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-mysql-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -431,7 +431,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -444,7 +444,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kotlin-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -457,7 +457,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-client-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -470,7 +470,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-liquibase-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -483,7 +483,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-pg-client-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -496,7 +496,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -509,7 +509,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client-jackson-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -522,7 +522,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -535,7 +535,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -548,7 +548,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -561,7 +561,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-graphql-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -574,7 +574,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -587,7 +587,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-undertow-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -600,7 +600,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-http-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>

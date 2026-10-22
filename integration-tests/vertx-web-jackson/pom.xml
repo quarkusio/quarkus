@@ -37,7 +37,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-routes-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -50,7 +50,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jackson-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>

@@ -16,6 +16,13 @@
     <packaging>pom</packaging>
 
     <properties>
+        <!-- Version of the Quarkus artifacts (io.quarkus:*) this build compiles and tests against.
+             Defaults to the version of the module being built, i.e. the locally built reactor output.
+             Override with -Dquarkus.version=<released version> to build integration-tests/* against an
+             already released Quarkus of the same release stream, without rebuilding Quarkus locally.
+             See integration-tests/README.md. Do NOT override this for a full repository build. -->
+        <quarkus.version>${project.version}</quarkus.version>
+
         <!-- Plugin versions (please keep in alphabetical order) -->
         <version.archetype.plugin>3.4.1</version.archetype.plugin>
         <version.buildhelper.plugin>3.6.2</version.buildhelper.plugin>
@@ -370,7 +377,7 @@
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
                             <groupId>io.quarkus</groupId>
-                            <version>${project.version}</version>
+                            <version>${quarkus.version}</version>
                         </dependency>
                     </dependencies>
                     <configuration>

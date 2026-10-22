@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 
 import jakarta.enterprise.inject.Instance;
@@ -116,6 +116,20 @@ final class StaticTenantResolver {
         return Uni.createFrom().nullItem();
     }
 
+    /**
+     * Decides whether a not-yet-initialized issuer-resolved tenant may be (re-)initialized now.
+     *
+     * @param previousAttemptMillis epoch millis of the last attempt, or 0 if none yet
+     * @param nowMillis current epoch millis
+     * @param retryIntervalMillis minimum interval between attempts; <= 0 disables retries after the first one
+     */
+    static boolean shouldRetryInitialization(long previousAttemptMillis, long nowMillis, long retryIntervalMillis) {
+        if (previousAttemptMillis == 0) {
+            return true; // first attempt, on the first request
+        }
+        return retryIntervalMillis > 0 && (nowMillis - previousAttemptMillis) >= retryIntervalMillis;
+    }
+
     private static final class DefaultStaticTenantResolver implements TenantResolver {
         private static final String PATH_SEPARATOR = "/";
         private final TenantConfigBean tenantConfigBean;
@@ -184,13 +198,13 @@ final class StaticTenantResolver {
 
         private final TenantConfigContext[] tenantConfigContexts;
         private final boolean detectedTenantWithoutMetadata;
-        private final Map<String, AtomicBoolean> tenantToRetry;
+        private final Map<String, AtomicLong> lastInitAttempt;
 
         private IssuerBasedTenantResolver(TenantConfigContext[] tenantConfigContexts, boolean detectedTenantWithoutMetadata,
-                Map<String, AtomicBoolean> tenantToRetry) {
+                Map<String, AtomicLong> lastInitAttempt) {
             this.tenantConfigContexts = tenantConfigContexts;
             this.detectedTenantWithoutMetadata = detectedTenantWithoutMetadata;
-            this.tenantToRetry = tenantToRetry;
+            this.lastInitAttempt = lastInitAttempt;
         }
 
         private Uni<String> resolveTenant(RoutingContext context) {
@@ -250,12 +264,25 @@ final class StaticTenantResolver {
         }
 
         /**
-         * When static tenant couldn't be initialized on Quarkus application startup,
-         * this strategy permits one more attempt on the first request when the issuer-based tenant resolver is applied.
+         * A static tenant whose OIDC metadata was not available at application startup is (re-)initialized
+         * lazily while resolving a tenant from the bearer token issuer.
+         * <p>
+         * The first attempt happens on the first request. Further attempts are only made when
+         * this tenant's 'initialization-retry-interval' is positive, and then at most once per that
+         * interval per tenant, allowing the tenant to recover after the OIDC provider becomes available
+         * again without an application restart.
          */
         private boolean tryToInitialize(TenantConfigContext context) {
             var tenantId = context.oidcConfig().tenantId().get();
-            return this.tenantToRetry.get(tenantId).compareAndExchange(true, false);
+            AtomicLong lastAttempt = lastInitAttempt.get(tenantId);
+            long previous = lastAttempt.get();
+            long now = System.currentTimeMillis();
+            long retryIntervalMillis = context.oidcConfig().initializationRetryInterval().toMillis();
+            if (shouldRetryInitialization(previous, now, retryIntervalMillis)) {
+                // only one concurrent request wins the right to (re-)initialize this tenant
+                return lastAttempt.compareAndSet(previous, now);
+            }
+            return false;
         }
 
         private static String getTenantId(RoutingContext context, TenantConfigContext tenantContext) {
@@ -337,14 +364,14 @@ final class StaticTenantResolver {
         private static IssuerBasedTenantResolver of(Map<String, TenantConfigContext> tenantConfigContexts) {
             var contextsWithIssuer = new ArrayList<TenantConfigContext>();
             boolean detectedTenantWithoutMetadata = false;
-            Map<String, AtomicBoolean> tenantToRetry = new HashMap<>();
+            Map<String, AtomicLong> lastInitAttempt = new HashMap<>();
             for (TenantConfigContext context : tenantConfigContexts.values()) {
                 if (context.oidcConfig().tenantEnabled() && !OidcUtils.isWebApp(context.oidcConfig())) {
                     if (context.getOidcMetadata() == null) {
                         // if the tenant metadata are not available, we can't decide now
                         detectedTenantWithoutMetadata = true;
                         contextsWithIssuer.add(context);
-                        tenantToRetry.put(context.oidcConfig().tenantId().get(), new AtomicBoolean(true));
+                        lastInitAttempt.put(context.oidcConfig().tenantId().get(), new AtomicLong(0));
                     } else if (isTenantWithIssuer(context)) {
                         contextsWithIssuer.add(context);
                     }
@@ -353,9 +380,9 @@ final class StaticTenantResolver {
             if (contextsWithIssuer.isEmpty()) {
                 return null;
             } else {
-                var tenantInitStrategy = detectedTenantWithoutMetadata ? Map.copyOf(tenantToRetry) : null;
+                var attempts = detectedTenantWithoutMetadata ? Map.copyOf(lastInitAttempt) : Map.<String, AtomicLong> of();
                 return new IssuerBasedTenantResolver(contextsWithIssuer.toArray(new TenantConfigContext[0]),
-                        detectedTenantWithoutMetadata, tenantInitStrategy);
+                        detectedTenantWithoutMetadata, attempts);
             }
         }
 

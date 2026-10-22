@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
@@ -45,6 +46,7 @@ import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.autoconfigure.spi.AutoConfigurationCustomizerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigurablePropagatorProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
+import io.opentelemetry.sdk.autoconfigure.spi.internal.ComponentProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider;
@@ -330,6 +332,31 @@ public class OpenTelemetryProcessor {
 
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
                 ConfigurableSamplerProvider.class.getName()));
+
+        // Declarative-config components, resolved by name through the ComponentProvider SPI. The upstream OTLP
+        // ComponentProviders depend on an HTTP sender the user has to add (e.g. OkHttp), so they are only
+        // registered when an exporter is explicitly set to "otlp" — the otlp_http/otlp_grpc model shapes resolve
+        // exclusively through them.
+        final boolean otlpExporterRequested = Stream
+                .of(config.traces().exporter(), config.metrics().exporter(), config.logs().exporter())
+                .flatMap(List::stream)
+                .anyMatch(ExporterType.Constants.OTLP_VALUE::equals);
+        final List<String> componentProviders = ServiceUtil.classNamesNamedIn(
+                Thread.currentThread().getContextClassLoader(),
+                SPI_ROOT + ComponentProvider.class.getName())
+                .stream()
+                .filter(p -> otlpExporterRequested || !p.startsWith("io.opentelemetry.exporter.otlp."))
+                .collect(toList());
+        if (!componentProviders.isEmpty()) {
+            services.produce(new ServiceProviderBuildItem(ComponentProvider.class.getName(), componentProviders));
+        }
+        // remove the service file that contains the upstream OTLP ComponentProviders, matching the
+        // Configurable*ExporterProvider blocks above
+        if (!otlpExporterRequested) {
+            removedResources.produce(new RemovedResourceBuildItem(
+                    ArtifactKey.fromString("io.opentelemetry:opentelemetry-exporter-otlp"),
+                    Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.internal.ComponentProvider")));
+        }
 
         // The following are added but not officially supported, yet.
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(

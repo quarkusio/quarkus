@@ -25,7 +25,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-openshift-client</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>io.fabric8</groupId>
@@ -48,7 +48,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-kubernetes-client</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -76,7 +76,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-openshift-client-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -89,7 +89,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>

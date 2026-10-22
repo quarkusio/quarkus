@@ -48,6 +48,10 @@ This skips tests, ITs, docs, native, and validation.
 
 # Native integration tests
 ./mvnw verify -f integration-tests/<name>/ -Dstart-containers -Dtest-containers -Dnative
+
+# Integration tests against an already released Quarkus, without building Quarkus locally.
+# Use a version from the same release stream. See integration-tests/README.md.
+./mvnw verify -f integration-tests/<name>/ -Dquarkus.version=<released version>
 ```
 
 ## Incremental Build
@@ -70,6 +74,8 @@ This skips tests, ITs, docs, native, and validation.
 | `-Dincremental` | Only build changed modules |
 | `-Dno-build-cache` | Run the build instead of replaying the Develocity build cache |
 | `-DskipTests=false` | Force the tests of modules that Scalpel marks as unchanged |
+| `-Dquarkus.version=<version>` | Build `integration-tests/*` against a released Quarkus instead of the reactor |
+| `-Dquarkus.platform.group-id=io.quarkus.platform` | Import an assembled platform BOM rather than the core BOM |
 
 ## Confirm that the tests ran
 

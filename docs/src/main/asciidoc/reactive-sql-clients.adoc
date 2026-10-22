@@ -815,6 +815,37 @@ NOTE: The default pool cleaner period is 1 second.
 quarkus.datasource.reactive.pool-cleaner-period=5S
 ----
 
+== Detecting dead connections
+
+When the database host disappears without closing its connections, for example after a network failure or when a firewall silently drops the connections, the client may wait for a response that never comes.
+Two kinds of settings help detect such connections.
+
+TCP keep-alive lets the operating system probe connections that carry no traffic and close them when the database host does not answer:
+
+[source,properties]
+----
+quarkus.datasource.reactive.tcp-keep-alive=true
+# The following settings are only effective with a native transport (epoll or io_uring).
+# With the NIO transport, the operating system settings apply.
+quarkus.datasource.reactive.tcp-keep-alive-idle=60S
+quarkus.datasource.reactive.tcp-keep-alive-interval=10S
+quarkus.datasource.reactive.tcp-keep-alive-count=3
+----
+
+The `socket-read-idle-timeout` closes a connection when no data has been received from the database for the given time.
+Unlike keep-alive, it works with every transport:
+
+[source,properties]
+----
+quarkus.datasource.reactive.socket-read-idle-timeout=10M
+----
+
+WARNING: The `socket-read-idle-timeout` applies to every connection, including connections waiting for the result of a query and connections unused in the pool.
+It must be larger than the longest query you expect to run.
+
+NOTE: These settings are disabled by default.
+They are not supported by the Oracle client, which does not use the Vert.x network stack; configure the Oracle JDBC driver through `additional-properties` instead.
+
 == TLS configuration
 
 All reactive SQL clients support TLS configuration through the Quarkus TLS registry.
@@ -896,6 +927,9 @@ public class CustomPoolCreator implements PoolCreator {
 ----
 
 For a named datasource, annotate the bean with `@ReactiveDataSource("datasource-name")`.
+
+NOTE: `Pool.pool(...)` does not apply the TCP keep-alive and `socket-*-idle-timeout` settings.
+To keep them, pass `input.netClientOptions()` to the client builder, for example `PgBuilder.pool().with(input.poolOptions()).with(input.netClientOptions())`.
 
 TIP: `PoolCreator` is also the way to set Vert.x options that cannot be expressed as configuration properties, such as `SqlConnectOptions.setPreparedStatementCacheSqlFilter(Predicate<String>)`.
 

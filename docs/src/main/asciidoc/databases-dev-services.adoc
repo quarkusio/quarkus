@@ -170,6 +170,63 @@ you can disable this feature for a specific Dev Service by setting the configura
 xref:quarkus-datasource_quarkus-datasource-devservices_quarkus-datasource-devservices-reuse[`quarkus.datasource.devservices.reuse`/`quarkus.datasource."datasource-name".devservices.reuse`]
 to `false`.
 
+[[sharing-datasource]]
+=== Sharing a Dev Services database between several applications
+
+By default, each application starts its own Dev Services database container, and so do each of its
+datasources. If you have several Quarkus applications (for example in a monorepo) and want them to share a
+single database in dev mode, set
+xref:quarkus-datasource_quarkus-datasource-devservices_quarkus-datasource-devservices-shared[`quarkus.datasource.devservices.shared`/`quarkus.datasource."datasource-name".devservices.shared`]
+to `true` on the matching datasource in each application:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.devservices.shared=true
+----
+
+With this configuration, the first application to start creates the container and labels it for discovery.
+Any other application setting `shared=true` for a datasource of the same kind then discovers and reuses that
+same container instead of starting a new one.
+
+This mirrors the `shared`/`service-name` configuration already available for other Dev Services, such as
+xref:kafka-dev-services.adoc#shared-broker[Kafka's shared broker]. Unlike most other Dev Services, `shared`
+defaults to `false` here: this configuration is shared by every database kind and by every datasource (default
+and named) in an application, so defaulting to `true` would mean every Quarkus application on a machine
+silently starts reusing the same database container -- and therefore the same data -- for a given `db-kind`.
+Opt in explicitly when you want it.
+
+By default, the discovery label used is the datasource's `db-kind` (e.g. `postgresql`). If you need several,
+independently-shared databases of the same kind, differentiate them with
+xref:quarkus-datasource_quarkus-datasource-devservices_quarkus-datasource-devservices-service-name[`quarkus.datasource.devservices.service-name`/`quarkus.datasource."datasource-name".devservices.service-name`]:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.devservices.shared=true
+quarkus.datasource.devservices.service-name=my-shared-db
+----
+
+[IMPORTANT]
+====
+The configuration of the application reusing an existing Dev Service will not affect the Dev Service, since it
+was started beforehand.
+
+Thus, the applications are responsible for ensuring their configuration for a given Dev Service is
+consistent:
+
+* Same `devservices.*` properties (image name, init scripts, volumes, ...)
+* Same `db-kind`
+* Etc.
+====
+
+[NOTE]
+====
+Container sharing through `shared`/`service-name` is meant to be used across separate applications.
+It is handled only at the Dev Service layer; upper layers, e.g. connection pools, dev UI, etc., are not aware they are relying on the same database.
+
+This means in particular that sharing the Dev Services between two datasources of the *same application* may lead to unwanted behavior, such as the database schema being initialized twice, or transactions involving both datasources requiring XA, and more.
+====
 == Mapping volumes into Dev Services for Database
 
 Mapping volumes from the Docker host's filesystem to the containers is handy to provide files like scripts or configuration, but also to preserve database data and reuse it after an application restart.

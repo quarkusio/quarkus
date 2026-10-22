@@ -20,6 +20,7 @@ import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
@@ -40,7 +41,11 @@ public class MSSQLDevServicesProcessor {
      */
     private static final String DEFAULT_USERNAME = "sa";
 
+    static final String DEV_SERVICE_LABEL = "quarkus-dev-service-mssql";
+
     private static final MSSQLDatasourceServiceConfigurator configurator = new MSSQLDatasourceServiceConfigurator();
+    private static final ContainerLocator mssqlContainerLocator = ContainerLocator
+            .locateContainerWithLabels(MS_SQL_SERVER_PORT, true, DEV_SERVICE_LABEL);
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMSSQL(
@@ -78,6 +83,8 @@ public class MSSQLDevServicesProcessor {
                 container.withPassword(effectivePassword)
                         .withReuse(containerConfig.isReuse());
                 Labels.addDataSourceLabel(container, datasourceName);
+                ConfigureUtil.configureSharedServiceLabel(container, launchMode, DEV_SERVICE_LABEL,
+                        containerConfig.getServiceName());
                 Volumes.addVolumes(container, containerConfig.getVolumes());
 
                 container.withEnv(containerConfig.getContainerEnv());
@@ -97,6 +104,14 @@ public class MSSQLDevServicesProcessor {
                 }
 
                 return new DatasourceStartableContainer<>(container);
+            }
+
+            @Override
+            public Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningSharedDatasource(
+                    LaunchMode launchMode, DevServicesDatasourceContainerConfig containerConfig) {
+                return mssqlContainerLocator
+                        .locateContainer(containerConfig.getServiceName(), containerConfig.isShared(), launchMode)
+                        .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
 
             @Override

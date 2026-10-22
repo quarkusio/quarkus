@@ -5,19 +5,14 @@ import java.util.Objects;
 
 import io.quarkus.scheduler.Scheduled;
 
-public final class ImmutableScheduledMethod implements ScheduledMethod {
+public record ImmutableScheduledMethod(String invokerClassName, String declaringClassName, String methodName,
+        List<Scheduled> schedules) implements ScheduledMethod {
 
-    private final String invokerClassName;
-    private final String declaringClassName;
-    private final String methodName;
-    private final List<Scheduled> schedules;
-
-    public ImmutableScheduledMethod(String invokerClassName, String declaringClassName, String methodName,
-            List<Scheduled> schedules) {
-        this.invokerClassName = Objects.requireNonNull(invokerClassName);
-        this.declaringClassName = Objects.requireNonNull(declaringClassName);
-        this.methodName = Objects.requireNonNull(methodName);
-        this.schedules = List.copyOf(schedules);
+    public ImmutableScheduledMethod {
+        Objects.requireNonNull(invokerClassName);
+        Objects.requireNonNull(declaringClassName);
+        Objects.requireNonNull(methodName);
+        schedules = List.copyOf(schedules);
     }
 
     public String getInvokerClassName() {

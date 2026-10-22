@@ -54,7 +54,6 @@ import org.jboss.resteasy.plugins.providers.sse.client.SseEventSourceImpl;
 import org.jboss.resteasy.spi.InjectorFactory;
 import org.jboss.resteasy.spi.ResteasyConfiguration;
 
-import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.InterceptorResolverBuildItem;
@@ -310,7 +309,7 @@ class RestClientProcessor {
                         rtInterface, rtBaseUri, rtConfigKey, rtRestClientProviders);
                 bc.return_(bc.invokeVirtual(MethodDesc.of(RestClientBase.class, "create", Object.class), base));
             });
-            configurator.destroyer(BeanDestroyer.CloseableDestroyer.class);
+            configurator.autoClose(true);
             syntheticBeans.produce(configurator.done());
         }
     }

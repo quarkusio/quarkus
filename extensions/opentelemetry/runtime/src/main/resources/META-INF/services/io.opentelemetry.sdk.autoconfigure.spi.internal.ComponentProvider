@@ -1,0 +1,4 @@
+io.quarkus.opentelemetry.runtime.tracing.spi.SpanExporterCDIProvider
+io.quarkus.opentelemetry.runtime.metrics.spi.MetricsExporterCDIProvider
+io.quarkus.opentelemetry.runtime.logs.spi.LogsExporterCDIProvider
+io.quarkus.opentelemetry.runtime.declarativeconfig.spi.QuarkusDropTargetsSamplerProvider

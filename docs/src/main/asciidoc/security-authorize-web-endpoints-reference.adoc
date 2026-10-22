@@ -60,7 +60,7 @@ You can define role-based policies that allow users with specific roles to acces
 ----
 quarkus.http.auth.policy.role-policy1.roles-allowed=user,admin                  <1>
 ----
-<1> This defines a role-based policy that allows users with the `user` and `admin` roles.
+<1> This defines a role-based policy that allows users with the `user` role or the `admin` role.
 
 You can reference a custom policy by configuring the built-in permission sets that are defined in the `application.properties` file, as outlined in the following configuration example:
 
@@ -78,7 +78,7 @@ quarkus.http.auth.permission.roles1.paths=/roles-secured/*,/other/*,/api/*      
 quarkus.http.auth.permission.roles1.policy=role-policy1
 ----
 <1> This permission references the default built-in `permit` policy to allow `GET` methods to `/public`.
-In this case, the demonstrated setting would not affect this example because this request is allowed anyway.
+Because the permission lists only `GET`, requests with other methods to the same paths are denied.
 <2> This permission references the built-in `deny` policy for both `/forbidden` and `/forbidden/` paths.
 It is an exact path match because it does not end with `*`.
 <3> This permission set references the previously defined policy.
@@ -110,8 +110,8 @@ If you need to permit access to the `/forbidden/` path, please add new permissio
 
 [source,properties]
 ----
-quarkus.http.auth.permission.permit1.paths=/forbidden/ <1>
-quarkus.http.auth.permission.permit1.policy=permit
+quarkus.http.auth.permission.permit2.paths=/forbidden/ <1>
+quarkus.http.auth.permission.permit2.policy=permit
 ----
 <1> The `/forbidden/` path is not secured.
 ====
@@ -152,7 +152,7 @@ public class CustomNamedHttpSecPolicy implements HttpSecurityPolicy {
     }
 }
 ----
-<1> Named HTTP Security policy will only be applied to requests matched by the `application.properties` path matching rules.
+<1> Named HTTP Security policy will only be applied to the requests that you assign it to, for example, with the `application.properties` path matching rules.
 
 .Example of custom named HttpSecurityPolicy referenced from configuration file
 [source,properties]
@@ -394,7 +394,7 @@ Defaults to `false`.
 
 === Disabling permissions
 
-Permissions can be disabled at build time with an `enabled` property for each declared permission, such as:
+Permissions can be disabled with an `enabled` property for each declared permission, such as:
 
 [source,properties]
 ----
@@ -411,7 +411,7 @@ Permissions can be reenabled at runtime with a system property or environment va
 
 The `quarkus.http.root-path` configuration property changes the xref:http-reference.adoc#context-path[http endpoint context path].
 
-By default, `quarkus.http.root-path` is prepended automatically to configured permission paths then do not use a forward slash, for example:
+By default, `quarkus.http.root-path` is prepended automatically to configured permission paths that do not start with a forward slash, for example:
 
 [source,properties]
 ----
@@ -663,6 +663,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
 
+import io.quarkus.security.Authenticated;
+
 @Path("subject")
 public class SubjectExposingResource {
 
@@ -710,7 +712,7 @@ This returns `non-null` for a secured endpoint.
 <4> The `/subject/unsecured` endpoint allows for unauthenticated access by specifying the `@PermitAll` annotation.
 <5> The call to obtain the user principal returns `null` if the caller is unauthenticated and `non-null` if the caller is authenticated.
 <6> The `/subject/denied` endpoint declares the `@DenyAll` annotation, disallowing all direct access to it as a REST method, regardless of the user calling it.
-The method is still invokable internally by other methods in this class.
+Calls to the method from other methods in this class are also denied.
 
 [CAUTION]
 ====
@@ -993,7 +995,7 @@ quarkus.http.auth.permission.roles3.policy=role-policy3
 Similarly, for the `@PermissionsAllowed` annotation, `io.quarkus.security.StringPermission` is used by default.
 <2> Permissions `create`, `update`, and `read` are mapped to the role `admin`.
 <3> The role policy `role-policy1` allows only authenticated requests to access `/crud/modify` and `/crud/id` sub-paths.
-For more information about the path-matching algorithm, see <<matching-multiple-paths>> later in this guide.
+For more information about the path-matching algorithm, see <<matching-multiple-paths>>.
 <4> You can specify a custom implementation of the `java.security.Permission` class.
 Your custom class must define exactly one constructor that accepts the permission name and optionally some actions, for example, `String` array.
 In this scenario, the permission `list` is added to the `SecurityIdentity` instance as `new CustomPermission("list")`.
@@ -1212,14 +1214,14 @@ public class PermissionsIdentityAugmentor implements SecurityIdentityAugmentor {
 }
 ----
 <1> Add a `media-library` permission with `read`, `write`, and `list` actions.
-Because `MediaLibrary` is the `TvLibrary` class parent, a user with the `admin` role is also permitted to modify `TvLibrary`.
+Because `MediaLibrary` is the `TvLibrary` class parent, the user `admin` is also permitted to modify `TvLibrary`.
 
 CAUTION: Annotation-based permissions do not work with custom xref:security-customization.adoc#jaxrs-security-context[Jakarta REST SecurityContexts] because there are no permissions in `jakarta.ws.rs.core.SecurityContext`.
 
 [[permission-checker]]
 ==== Create permission checkers
 
-By default, `SecurityIdentity` must be configured with permissions which can be used to check if this identity passes `@PermissionAllowed` authorization restrictions.
+By default, `SecurityIdentity` must be configured with permissions which can be used to check if this identity passes `@PermissionsAllowed` authorization restrictions.
 Alternatively, you can use a `@PermissionChecker` annotation to mark any CDI bean method as a permission checker.
 The `@PermissionChecker` annotation value should match required permission declared by the `@PermissionsAllowed` annotation value.
 For example, a permission checker can be created like this:
@@ -1272,6 +1274,7 @@ Instead of declaring the `rename-project` permission checker directly on the res
 package org.acme.security.rest.resource;
 
 import io.quarkus.security.PermissionChecker;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -1300,8 +1303,11 @@ Matching between the `@PermissionsAllowed` values and the `@PermissionChecker` v
 ----
 package org.acme.security;
 
+import java.nio.file.Path;
+
 import io.quarkus.security.PermissionChecker;
 import io.quarkus.security.PermissionsAllowed;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped

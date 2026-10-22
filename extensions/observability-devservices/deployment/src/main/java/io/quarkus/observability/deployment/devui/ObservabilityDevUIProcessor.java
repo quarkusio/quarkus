@@ -1,6 +1,9 @@
 package io.quarkus.observability.deployment.devui;
 
+import java.util.List;
 import java.util.function.BooleanSupplier;
+
+import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
@@ -25,12 +28,24 @@ import io.quarkus.observability.runtime.config.ObservabilityConfiguration;
         ObservabilityDevUIProcessor.IsLgtmDevUiEnabled.class })
 public class ObservabilityDevUIProcessor {
 
+    private static final List<String> EXPLICIT_ENDPOINT_PROPERTIES = List.of(
+            "quarkus.otel.exporter.otlp.endpoint",
+            "quarkus.otel.exporter.otlp.traces.endpoint",
+            "quarkus.otel.exporter.otlp.metrics.endpoint",
+            "quarkus.otel.exporter.otlp.logs.endpoint",
+            "quarkus.micrometer.export.otlp.url");
+
     public static class IsLgtmDevUiEnabled implements BooleanSupplier {
         ObservabilityConfiguration config;
 
         @Override
         public boolean getAsBoolean() {
-            return config.enabled() && !config.devResources() && config.lgtm().enabled();
+            if (!config.enabled() || config.devResources() || !config.lgtm().enabled()) {
+                return false;
+            }
+            var cfg = ConfigProvider.getConfig();
+            return EXPLICIT_ENDPOINT_PROPERTIES.stream()
+                    .noneMatch(key -> cfg.getOptionalValue(key, String.class).isPresent());
         }
     }
 

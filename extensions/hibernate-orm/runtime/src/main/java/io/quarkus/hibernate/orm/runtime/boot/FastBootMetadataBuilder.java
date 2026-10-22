@@ -144,7 +144,7 @@ public class FastBootMetadataBuilder {
 
         this.providedServices = ssrBuilder.getProvidedServices();
 
-        /**
+        /*
          * This is required to properly integrate Hibernate Envers.
          *
          * The EnversService requires multiple steps to be properly built, the most important ones are:

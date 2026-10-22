@@ -21,6 +21,7 @@ import io.quarkus.qute.TemplateContents;
 import io.quarkus.qute.TemplateEnum;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator;
+import io.quarkus.qute.TemplateParam;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.i18n.LocaleAware;
 import io.quarkus.qute.i18n.Localized;
@@ -34,6 +35,7 @@ final class Names {
     static final DotName BUNDLE = DotName.createSimple(MessageBundle.class.getName());
     static final DotName MESSAGE = DotName.createSimple(Message.class.getName());
     static final DotName MESSAGE_PARAM = DotName.createSimple(MessageParam.class.getName());
+    static final DotName TEMPLATE_PARAM = DotName.createSimple(TemplateParam.class.getName());
     static final DotName LOCALIZED = DotName.createSimple(Localized.class.getName());
     static final DotName LOCALE_AWARE = DotName.createSimple(LocaleAware.class.getName());
     static final DotName TEMPLATE = DotName.createSimple(Template.class.getName());

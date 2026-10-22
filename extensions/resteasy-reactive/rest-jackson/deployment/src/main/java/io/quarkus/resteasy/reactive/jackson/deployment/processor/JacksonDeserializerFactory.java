@@ -1010,7 +1010,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         Type fieldType = fieldSpecs.fieldType;
         String fieldTypeName = fieldType.name().toString();
         if (JacksonSerializationUtils.isBasicJsonType(fieldType)) {
-            return readValueForPrimitiveFields(bytecode, fieldType, valueNode);
+            return readValueForPrimitiveFields(bytecode, fieldType, valueNode, deserializationContext);
         }
 
         if (hasJsonTypeInfoInTypeChain(fieldType)) {
@@ -1122,18 +1122,18 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     }
 
     private static ResultHandle readValueForPrimitiveFields(BytecodeCreator bytecode, Type fieldType,
-            ResultHandle valueNode) {
+            ResultHandle valueNode, ResultHandle deserializationContext) {
         AssignableResultHandle result = bytecode.createVariable(DescriptorUtils.typeToString(fieldType));
 
         BranchResult isValueNull = bytecode.ifNull(valueNode);
 
         BytecodeCreator isValueNullTrue = isValueNull.trueBranch();
-        isValueNullTrue.assign(result, JacksonSerializationUtils.getDefaultValue(isValueNullTrue, fieldType));
+        handleNullForPrimitiveType(isValueNullTrue, fieldType, deserializationContext, result);
 
         BranchResult isNullNode = isValueNull.falseBranch()
                 .ifTrue(isValueNull.falseBranch().invokeVirtualMethod(ofMethod(JsonNode.class, "isNull", boolean.class),
                         valueNode));
-        isNullNode.trueBranch().assign(result, JacksonSerializationUtils.getDefaultValue(isNullNode.trueBranch(), fieldType));
+        handleNullForPrimitiveType(isNullNode.trueBranch(), fieldType, deserializationContext, result);
 
         BytecodeCreator isValueNullFalse = isNullNode.falseBranch();
 
@@ -1454,7 +1454,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         String fieldTypeName = fieldType.name().toString();
 
         if (JacksonSerializationUtils.isBasicJsonType(fieldType)) {
-            return readPrimitiveFromParser(bytecode, fieldType, parser);
+            return readPrimitiveFromParser(bytecode, fieldType, parser, deserializationContext);
         }
 
         if (hasJsonTypeInfoInTypeChain(fieldType)) {
@@ -1483,7 +1483,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     }
 
     private static ResultHandle readPrimitiveFromParser(BytecodeCreator bytecode, Type fieldType,
-            ResultHandle parser) {
+            ResultHandle parser, ResultHandle deserializationContext) {
         AssignableResultHandle result = bytecode.createVariable(DescriptorUtils.typeToString(fieldType));
 
         ResultHandle currentToken = bytecode.invokeVirtualMethod(
@@ -1492,7 +1492,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 FieldDescriptor.of(JsonToken.class, "VALUE_NULL", JsonToken.class));
         BranchResult isNull = bytecode.ifReferencesEqual(currentToken, nullToken);
 
-        isNull.trueBranch().assign(result, JacksonSerializationUtils.getDefaultValue(isNull.trueBranch(), fieldType));
+        handleNullForPrimitiveType(isNull.trueBranch(), fieldType, deserializationContext, result);
 
         BytecodeCreator notNull = isNull.falseBranch();
 
@@ -1525,6 +1525,38 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
         notNull.assign(result, convertedValue);
         return result;
+    }
+
+    private static void handleNullForPrimitiveType(BytecodeCreator bytecode, Type fieldType,
+            ResultHandle deserializationContext, AssignableResultHandle result) {
+        if (fieldType.kind() != Type.Kind.PRIMITIVE) {
+            bytecode.assign(result, JacksonSerializationUtils.getDefaultValue(bytecode, fieldType));
+            return;
+        }
+
+        ResultHandle failOnNullFeature = bytecode.readStaticField(
+                FieldDescriptor.of(DeserializationFeature.class, "FAIL_ON_NULL_FOR_PRIMITIVES",
+                        DeserializationFeature.class));
+        ResultHandle isFailOnNullEnabled = bytecode.invokeVirtualMethod(
+                ofMethod(DeserializationContext.class, "isEnabled", boolean.class, DeserializationFeature.class),
+                deserializationContext, failOnNullFeature);
+
+        BranchResult shouldFail = bytecode.ifTrue(isFailOnNullEnabled);
+        BytecodeCreator failBranch = shouldFail.trueBranch();
+
+        String primitiveTypeName = fieldType.name().toString();
+        ResultHandle targetClass = failBranch.loadClassFromTCCL(primitiveTypeName);
+        ResultHandle message = failBranch.load(
+                "Cannot map `null` into type " + primitiveTypeName
+                        + " (set DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES to false to allow)");
+        ResultHandle exception = failBranch.invokeStaticMethod(
+                ofMethod(MismatchedInputException.class, "from", MismatchedInputException.class,
+                        JsonParser.class, Class.class, String.class),
+                failBranch.loadNull(), targetClass, message);
+        failBranch.throwException(exception);
+
+        BytecodeCreator allowBranch = shouldFail.falseBranch();
+        allowBranch.assign(result, JacksonSerializationUtils.getDefaultValue(allowBranch, fieldType));
     }
 
     private void generateStreamingUnknownFieldHandler(ClassInfo classInfo, BytecodeCreator bytecode,

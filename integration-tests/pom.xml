@@ -163,6 +163,7 @@
                 <module>core</module>
                 <module>agroal</module>
                 <module>avro-reload</module>
+                <module>banner</module>
                 <module>awt</module>
                 <module>awt-packaging</module>
                 <module>no-awt</module>

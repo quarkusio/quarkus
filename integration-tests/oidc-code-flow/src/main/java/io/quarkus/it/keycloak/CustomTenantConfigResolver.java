@@ -38,6 +38,19 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
     @Override
     public Uni<OidcTenantConfig> resolve(RoutingContext context, OidcRequestContext<OidcTenantConfig> requestContext) {
+        if (context.request().path().contains("tenant-attestation-dynamic")) {
+            return Uni.createFrom().item(io.quarkus.oidc.OidcTenantConfig.builder()
+                    .tenantId("tenant-attestation-dynamic")
+                    .authServerUrl(authServerUrl)
+                    .clientId("quarkus-app-attestation-dynamic")
+                    .applicationType(io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType.WEB_APP)
+                    .credentials()
+                    .attestation()
+                    .enabled()
+                    .end()
+                    .end()
+                    .build());
+        }
         if (context.request().path().contains("callback-before-wrong-redirect")) {
             List<String> stateParam = context.queryParam("state");
             if (stateParam.size() == 1 &&

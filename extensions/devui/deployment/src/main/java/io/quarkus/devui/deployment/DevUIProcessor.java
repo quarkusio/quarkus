@@ -47,19 +47,17 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.ArtifactInfoUtil;
-import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devjsonrpc.deployment.DeploymentMethodBuildItem;
-import io.quarkus.devjsonrpc.deployment.DevJsonRpcProcessor;
 import io.quarkus.devjsonrpc.deployment.JsonRPCRuntimeMethodsBuildItem;
 import io.quarkus.devjsonrpc.deployment.JsonRpcCodecCustomizerBuildItem;
-import io.quarkus.devjsonrpc.runtime.DevJsonRpcRecorder;
-import io.quarkus.devjsonrpc.runtime.jsonrpc.json.JsonMapper;
+import io.quarkus.devjsonrpc.deployment.JsonRpcRouterBuildItem;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.deployment.extension.Codestart;
 import io.quarkus.devui.deployment.extension.Extension;
@@ -121,6 +119,7 @@ public class DevUIProcessor {
     private static final String WEB_JAR_ROOT = DEVUI + SLASH;
     private static final String SLASH_ALL = SLASH + "*";
     private static final String JSONRPC = "json-rpc-ws";
+    private static final int JSONRPC_ROUTE_ORDER = -1;
 
     private final ClassLoader tccl = Thread.currentThread().getContextClassLoader();
 
@@ -157,15 +156,28 @@ public class DevUIProcessor {
         }));
     }
 
+    /**
+     * The websocket for JsonRPC comms. This is registered at runtime init, after the JsonRPC router is initialized, so
+     * that on a dev mode restart (where the HTTP server keeps accepting connections) a client that reconnects never
+     * reaches a router that is still being initialized.
+     */
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void initializeJsonRpcCodec(DevUIRecorder recorder,
-            BeanContainerBuildItem beanContainer,
-            LaunchModeBuildItem launchModeBuildItem) {
+    @Consume(JsonRpcRouterBuildItem.class)
+    void registerJsonRpcWebSocket(DevUIRecorder recorder,
+            BuildProducer<RouteBuildItem> routeProducer,
+            LaunchModeBuildItem launchModeBuildItem,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         if (launchModeBuildItem.isNotLocalDevModeType()) {
             return;
         }
-        recorder.initializeJsonRpcCodec(beanContainer.getValue());
+        // Ordered explicitly: this step is not ordered relative to the one registering the other Dev UI routes, which
+        // include a dev-ui/* route that reroutes everything to index.html. -1 still comes after the filters.
+        routeProducer.produce(
+                nonApplicationRootPathBuildItem
+                        .routeBuilder().orderedRoute(DEVUI + SLASH + JSONRPC, JSONRPC_ROUTE_ORDER)
+                        .handler(recorder.devUIWebSocketHandler())
+                        .build());
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
@@ -176,7 +188,6 @@ public class DevUIProcessor {
             MvnpmBuildItem mvnpmBuildItem,
             List<DevUIRoutesBuildItem> devUIRoutesBuildItems,
             List<StaticContentBuildItem> staticContentBuildItems,
-            List<JsonRpcCodecCustomizerBuildItem> codecCustomizers,
             BuildProducer<RouteBuildItem> routeProducer,
             DevUIRecorder recorder,
             LaunchModeBuildItem launchModeBuildItem,
@@ -187,10 +198,6 @@ public class DevUIProcessor {
         if (launchModeBuildItem.isNotLocalDevModeType()) {
             return;
         }
-
-        DevConsoleManager.setGlobal(DevJsonRpcRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY,
-                JsonMapper.Factory.deploymentLinker()
-                        .createLinkData(DevJsonRpcProcessor.createCodecFactory(codecCustomizers)));
 
         routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .orderedRoute(DEVUI + SLASH_ALL, -2 * SecurityHandlerPriorities.CORS)
@@ -203,13 +210,6 @@ public class DevUIProcessor {
                     .handler(recorder.createDevUICorsFilter(devUIConfig.hosts().orElse(null)))
                     .build());
         }
-
-        // Websocket for JsonRPC comms
-        routeProducer.produce(
-                nonApplicationRootPathBuildItem
-                        .routeBuilder().route(DEVUI + SLASH + JSONRPC)
-                        .handler(recorder.devUIWebSocketHandler())
-                        .build());
 
         // Static handler for components
         for (DevUIRoutesBuildItem devUIRoutesBuildItem : devUIRoutesBuildItems) {

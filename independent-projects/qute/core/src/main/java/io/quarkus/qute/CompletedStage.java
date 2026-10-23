@@ -326,9 +326,7 @@ public final class CompletedStage<T> implements CompletionStage<T>, Supplier<T> 
         if (exception == null) {
             return CompletableFuture.completedFuture(result);
         }
-        CompletableFuture<T> ret = new CompletableFuture<>();
-        ret.completeExceptionally(exception);
-        return ret;
+        return CompletableFuture.failedFuture(exception);
     }
 
     private static <T> CompletionException wrap(final Throwable e) {

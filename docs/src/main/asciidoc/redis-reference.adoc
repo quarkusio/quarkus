@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :topics: data,redis,nosql
-:extensions: io.quarkus:quarkus-redis-client
+:extensions: io.quarkus:quarkus-redis-client,io.quarkus:quarkus-redis-client-lettuce
 
 Redis is an in-memory data store used as a database, cache, streaming engine, and message broker.
 The Quarkus Redis extension allows integrating Quarkus applications with Redis.
@@ -341,7 +341,7 @@ As a result, some replicas are likely to be underutilized.
 
 === Connect to Redis Cloud
 
-To connect to redis cloud, you need the following properties:
+To connect to Redis cloud, you need the following properties:
 
 [source,properties]
 ----
@@ -349,6 +349,7 @@ quarkus.redis.hosts=<the redis cloud url such as redis://redis-12436.c14.us-east
 quarkus.redis.password=<the password>
 ----
 
+[#use-tls]
 === Use TLS
 
 To use TLS, you need to:
@@ -1061,6 +1062,11 @@ The host provider can be used to configure the redis client like shown below
 quarkus.redis.hosts-provider-name=hosts-provider
 ----
 
+The provider is consulted by the Vert.x client and by the <<lettuce-backend,Lettuce backend>> alike. The Lettuce
+backend calls it once the beans of the application are initialized at startup, so it may inject any bean, the
+Vert.x instance or a data source included, to discover the hosts.
+When both `hosts` and `hosts-provider-name` are set, `hosts` is used and the provider is not called.
+
 == Customize the Redis options programmatically
 
 You can expose a bean implementing the `io.quarkus.redis.client.RedisOptionsCustomizer` interface to customize the Redis client options.
@@ -1086,6 +1092,334 @@ public static class MyExampleCustomizer implements RedisOptionsCustomizer {
 === Use the Redis Dev Services
 
 See xref:redis-dev-services.adoc[Redis Dev Service].
+
+[[lettuce-backend]]
+== Use the Lettuce backend
+
+[CAUTION]
+====
+The Lettuce backend is considered experimental.
+
+In _experimental_ mode, early feedback is requested to mature the idea.
+There is no guarantee of stability nor long term presence in the platform until the solution matures.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
+
+By default, `RedisDataSource` and `ReactiveRedisDataSource` are backed by the Vert.x Redis client.
+To route both data sources through https://lettuce.io/[Lettuce] instead, add the `quarkus-redis-client-lettuce`
+extension to your application:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-redis-client-lettuce</artifactId>
+</dependency>
+----
+
+Adding the dependency is the only switch: the extension builds on `quarkus-redis-client`, so clients are
+configured with the same `quarkus.redis.*` properties and the Redis Dev Services work unchanged.
+The Lettuce data sources apply `quarkus.redis[.<name>].hosts` or `hosts-provider-name` (see
+<<configure-redis-hosts-programmatically>>), `client-type` (`standalone`, the default, `cluster`,
+see <<lettuce-cluster>>, `sentinel` and `replication`, see <<lettuce-sentinel>>), `username`, `password`, `tls.*`,
+`tls-configuration-name`, `timeout`, `active`, `max-pool-size`, `max-pool-waiting`, `pool-recycle-timeout` and
+`pool-cleaner-interval` (see <<connection-pooling-and-blocking-commands>>), `max-waiting-handlers`, `protocol-negotiation`,
+`preferred-protocol-version`, `client-name`, `configure-client-name`, `reconnect-interval` and the `tcp.*` properties
+of <<lettuce-properties>>, for a cluster `replicas` and `topology-cache-ttl`, for a Sentinel client `master-name`,
+`role`, `auto-failover` and `replicas`, and for a replication client `topology` and `replicas`:
+
+* A standalone client connects to the first URI of `hosts`; a cluster client discovers the cluster from all of them;
+a Sentinel client takes them as the sentinels; a replication client as the nodes, or discovers the nodes from the
+first one.
+The URIs come from `hosts`, or from the `RedisHostsProvider` bean named by `hosts-provider-name` when `hosts` is
+not set; `hosts` wins when both are set, as with the Vert.x client.
+* The credentials are set with `username` and `password` or encoded in the URI, for example
+`redis://user:password@host:6379` or `redis://:password@host:6379`.
+The URI is read as the Vert.x Redis client reads it: a username or a password encoded in the URI takes precedence
+over the `username` and `password` properties, and a user info without a colon (`redis://user@host:6379`) is a
+username.
+The `user` and `password` query parameters (`redis://host:6379?password=secret`) are fallbacks, as with the
+Vert.x client.
+* TLS is enabled by a `rediss://` URI or by `tls.enabled=true`.
+The trust and key material, `tls.trust-all` and `tls.hostname-verification-algorithm` are read from the `tls.*`
+properties, or from the named TLS registry configuration referenced by `tls-configuration-name`, as described in
+<<use-tls>> and <<configure-the-authentication>>.
+As with the Vert.x client, `trust-all` skips the certificate chain validation only: the host name is verified
+whenever a hostname verification algorithm other than `NONE` is configured.
+
+* The connections are named, as with the Vert.x client, when `configure-client-name=true`: with `client-name`, or
+with the name of the Quarkus client without it. The `client` query parameter of a host URI
+(`redis://host:6379?client=my-app`) always names the connection and takes precedence. `client-name` without
+`configure-client-name` is not applied. A cluster client names the connections to the nodes it discovers after the
+first host, a Sentinel client the sentinels, the master and the replicas alike.
+* RESP3 is negotiated by default, falling back to RESP2 when the server does not know `HELLO`, which is also what
+`preferred-protocol-version=resp3` does. `preferred-protocol-version=resp2`, or `protocol-negotiation=false`,
+selects RESP2 without `HELLO`: Lettuce then authenticates with `AUTH`.
+* `max-waiting-handlers`, when set, bounds the commands queued on a connection, those awaiting their reply as well as
+those buffered while a lost connection is being re-established; a command beyond the bound fails at once. The Vert.x
+client applies its default of 2048 to each pooled connection, whereas the ordinary commands share one connection
+here, so the default is not applied: the queue is unbounded unless the property is set.
+* A lost connection is reconnected until it succeeds. `reconnect-interval` (overridden by `tcp.reconnect-interval`,
+as with the Vert.x client) sets the fixed delay between the attempts; when neither property is set, Lettuce backs off
+exponentially, from 100 milliseconds up to 30 seconds. The initial connection is not retried, so `reconnect-attempts`
+does not apply.
+* The `tcp.*` socket options of <<lettuce-properties>> are set on the connections, and the TLS handshake uses
+`tcp.secure-transport-protocols`. Only the set properties are applied: the Lettuce defaults (a ten seconds connect
+timeout, keep-alive and no-delay on) hold otherwise, not the Vert.x ones.
+
+The Lettuce data sources deliberately differ from the Vert.x client in a few details:
+
+* An empty password encoded in the URI (`redis://user:@host:6379`) counts as absent, so the `password` property
+applies. The Vert.x client authenticates with the empty password.
+* The values of the `user` and `password` query parameters are split and then URL-decoded, like the user info, so
+a percent-encoded `&` or `=` is part of the value and a `+` is a space. The Vert.x client keeps the `+` and cuts
+the value at a percent-encoded `&`.
+* The `LDAPS` hostname verification algorithm verifies the host name with the `HTTPS` rules, the only ones Lettuce
+supports.
+* The collections returned by the command groups (`List`, `Set`, `Map`, including the ones nested in
+`StreamMessage`, `XPendingSummary` and the search responses) are unmodifiable. The Vert.x client returns mutable
+collections for non-empty replies.
+
+[[lettuce-properties]]
+.The client properties on the Lettuce backend
+[cols="1,2", options="header"]
+|===
+|Property |Lettuce backend
+
+|`hosts-provider-name`
+|The hosts, when `hosts` is not set, from the `RedisHostsProvider` bean of that name (see
+<<configure-redis-hosts-programmatically>>).
+
+|`max-waiting-handlers`
+|The request queue size of a connection, when set (see above).
+
+|`protocol-negotiation`, `preferred-protocol-version`
+|The protocol version requested in the handshake (see above).
+
+|`client-name`, `configure-client-name`
+|The connection name, with the `client` query parameter of the host URIs (see above).
+
+|`reconnect-interval`, `tcp.reconnect-interval`
+|The delay between the attempts to reconnect a lost connection (see above).
+
+|`reconnect-attempts`, `tcp.reconnect-attempts`
+|Not applied: Lettuce reconnects a lost connection until it succeeds and does not retry the initial connection.
+
+|`max-nested-arrays`
+|Not applied: Lettuce does not limit the nesting of replies.
+
+|`pool-recycle-timeout`, `pool-cleaner-interval`
+|How long a pooled connection may stay idle before it is closed, and how often the idle connections are checked (see
+<<connection-pooling-and-blocking-commands>>).
+
+|`cluster-transactions`
+|Not applied: Lettuce does not route `MULTI`/`EXEC` on a cluster (see <<lettuce-cluster>>).
+
+|`tcp.connection-timeout`, `tcp.keep-alive`, `tcp.no-delay`
+|The connect timeout, `SO_KEEPALIVE` and `TCP_NODELAY` socket options of the connections. A connect timeout of `0`
+(no timeout, on the Vert.x client) is not applied: Lettuce requires a positive one, so its default of ten seconds
+holds.
+
+|`tcp.receive-buffer-size`, `tcp.send-buffer-size`, `tcp.so-linger`, `tcp.traffic-class`, `tcp.reuse-address`
+|The `SO_RCVBUF`, `SO_SNDBUF`, `SO_LINGER` (in seconds), `IP_TOS` and `SO_REUSEADDR` socket options of the
+connections.
+
+|`tcp.local-address`
+|The local address the connections are bound to.
+
+|`tcp.secure-transport-protocols`
+|The TLS protocol versions of the handshake.
+
+|`tcp.idle-timeout`, `tcp.read-idle-timeout`, `tcp.write-idle-timeout`
+|Not applied: Lettuce does not close idle connections.
+
+|`tcp.alpn`, `tcp.application-layer-protocols`
+|Not applied: the Redis protocol has no ALPN.
+
+|`tcp.proxy-configuration-name`
+|Not applied: Lettuce does not connect through a proxy.
+
+|`tcp.reuse-port`, `tcp.cork`, `tcp.fast-open`, `tcp.quick-ack`
+|Not applied: options of the Linux native transport.
+|===
+
+The extension logs a warning at startup naming the configured properties it does not apply, with the reason.
+Lettuce and the libraries it needs in native mode (`LatencyUtils`, `HdrHistogram`) are pulled in transitively.
+Project Reactor is excluded: the data sources use Mutiny, and Lettuce only needs Reactor for its own reactive API
+(`RedisReactiveCommands` and the other reactive command interfaces of the Lettuce beans).
+To use that API, add `io.projectreactor:reactor-core` to your application; without it, requesting the reactive API
+fails: in native mode with an `UnsupportedOperationException` that names the missing dependency, in JVM mode with a
+`NoClassDefFoundError`.
+
+[[lettuce-cluster]]
+=== Redis cluster
+
+With `quarkus.redis[.<name>].client-type=cluster`, the data sources are backed by a Lettuce cluster client, configured
+as described in <<use-the-cluster-mode>>:
+
+[source,properties]
+----
+quarkus.redis.hosts=redis://node1:7000,redis://node2:7000,redis://node3:7000
+quarkus.redis.client-type=cluster
+quarkus.redis.replicas=share # defaults to "never"
+----
+
+The client discovers the cluster topology from the configured hosts (the _seed_ nodes, which need not be all the
+members) and routes every command to the node owning its key, following `MOVED` and `ASK` redirects.
+Its view of the topology is refreshed every `topology-cache-ttl` (default `1s`), and as soon as a redirect, an
+uncovered slot, an unknown node or a node that keeps failing to reconnect reveals a change. A non-positive TTL
+disables the periodic refresh and leaves the adaptive one.
+`replicas` selects the nodes read-only commands are sent to: `never` reads from the upstream nodes only,
+`share` from any node and `always` from the replicas, falling back to the upstream node of a shard that has no
+usable replica, as with the Vert.x client; writes always go to the upstream nodes.
+Lettuce only reads from a replica whose replication offset it has seen advance, so on a cluster that has not
+replicated anything yet `always` reads from the upstream nodes until the topology refresh that follows the first
+write.
+The credentials and the TLS settings apply to every node.
+
+The command groups work unchanged on a cluster, with the limits of Redis cluster itself:
+
+* Multi-key commands fail with a `CROSSSLOT` error from the server when their keys hash to different slots, unless
+the keys share a hashtag (`{user:1}:a` and `{user:1}:b`), as with the Vert.x client.
+`MGET`, `MSET`, `DEL`, `UNLINK`, `EXISTS` and `TOUCH` are split per slot and work across slots.
+* `withTransaction(...)` fails with an `UnsupportedOperationException` before any command is sent: Redis does not
+support `MULTI`/`EXEC`/`WATCH` across nodes and Lettuce does not route them.
+The Vert.x client fails the same way unless `cluster-transactions=single-node` is set, which the Lettuce backend
+does not support.
+* `select(...)` is rejected by the server: a cluster only has database `0`, and a database selected in a host URI
+(`redis://node1:7000/1`) is ignored and reported in the startup warning.
+* `flushall()` runs on every upstream node, and `SCAN` visits every upstream node in turn.
+* A raw `execute(...)` command is routed by its key like the typed commands, using the key positions the Vert.x
+client knows for every Redis command; a command unknown to it, such as a module command, is sent to a default node.
+
+Blocking commands, `withConnection(...)` and `withTransaction(...)` borrow cluster connections from the pool
+described in <<connection-pooling-and-blocking-commands>>; each pooled cluster connection has its own connections to
+the nodes.
+
+The Lettuce beans of a cluster client are `io.lettuce.core.cluster.RedisClusterClient` and
+`io.lettuce.core.cluster.api.StatefulRedisClusterConnection<String, String>` (see below); the `RedisClient` and
+`StatefulRedisConnection<String, String>` beans of such a client are inactive and name the types to inject instead.
+
+[[lettuce-sentinel]]
+=== Redis Sentinel and replication
+
+With `quarkus.redis[.<name>].client-type=sentinel` the data sources connect to the master that the configured hosts,
+the sentinels, monitor under `master-name`; with `client-type=replication` they connect to a master and its replicas
+addressed directly, as described in <<use-the-sentinel-mode>> and <<use-the-replication-mode>>:
+
+[source,properties]
+----
+quarkus.redis.hosts=redis://sentinel1:26379,redis://sentinel2:26379,redis://sentinel3:26379
+quarkus.redis.client-type=sentinel
+quarkus.redis.master-name=mymaster
+----
+
+Both are the same Lettuce feature, a master/replica connection: the writes go to the master, the read-only commands
+to the nodes selected by `replicas`, as for a cluster. The connection behaves like a standalone one otherwise:
+transactions, `WATCH`, `SELECT` and scoped connections work as described above. The Lettuce beans of such a client
+are `io.lettuce.core.RedisClient`, `io.lettuce.core.api.StatefulRedisConnection<String, String>` and, for the same
+connection, `io.lettuce.core.masterreplica.StatefulRedisMasterReplicaConnection<String, String>`.
+
+For a Sentinel client:
+
+* The credentials and the TLS settings apply to the sentinels as well as to the data nodes, as with the Vert.x client.
+* `role=master` (the default) and `role=replica` select the nodes the read-only commands go to; with `role=replica`
+the writes still go to the master, where the Vert.x client sends them to the replica, which rejects them.
+`role=sentinel` connects the Vert.x client to a sentinel node itself; a sentinel has no data commands, so the Lettuce
+backend rejects it at startup.
+* `replicas` is applied, where the Vert.x client ignores it in Sentinel mode: with `replicas=share` or `always`, the
+reads go to the replicas the sentinels report. With `role=replica`, which already sends the reads to the replicas,
+`replicas` is not applied, and the startup warning says so.
+* A failover is always followed: Lettuce subscribes to the sentinel events and switches to the newly elected master
+on its own, whatever `auto-failover` says. There is no mode without it.
+* `topology-cache-ttl` has no equivalent: the topology is pushed by the sentinels.
+
+For a replication client:
+
+* With `topology=discover` (the default), the master and its replicas are discovered through `INFO replication` when
+a connection is opened, from the first host that answers: the hosts are tried in order, as the Vert.x client tries
+its endpoints. With `topology=static`, the hosts are the nodes, and only them; Lettuce asks each for its role rather
+than trusting the configured order, so the master need not be the first host.
+* The topology is discovered when a connection is opened and kept for its lifetime: it is not refreshed
+periodically, and `topology-cache-ttl` has no effect. Use a Sentinel client when the master can change.
+
+The key, value (string), hash, list, set, sorted set, bitmap, hyperloglog, geo, stream, pub/sub, JSON, search, autosuggest, bloom, cuckoo,
+count-min and top-k command groups are implemented on the Lettuce backend, including their transactional variants (excluding pub/sub).
+The other groups (graph and time series) are not implemented yet and throw an
+`UnsupportedOperationException` when requested from a data source.
+
+The data source methods exposing Vert.x types, such as `ReactiveRedisDataSource.getRedis()`, are not supported
+by the Lettuce backend and throw an `UnsupportedOperationException`; use `execute(...)` instead.
+
+Adding the extension routes every `RedisDataSource` and `ReactiveRedisDataSource` of the application through
+Lettuce, including the ones injected by other extensions. In this initial version the Vert.x Redis client is still
+created for the same clients: the health check pings it, and `quarkus-redis-cache` and the Micrometer Redis
+metrics keep using it. The OpenTelemetry spans of the Redis commands are recorded by the Vert.x client too, so the
+commands sent through the Lettuce backend are not traced yet. This is transitional; a Lettuce-based health check,
+metrics and tracing are planned.
+
+[#connection-pooling-and-blocking-commands]
+=== Connection pooling and blocking commands
+
+Ordinary commands share one multiplexed, pipelined connection per client, Lettuce's intended design.
+Blocking commands (`BLPOP`, `BZPOPMIN` and the other blocking list and sorted set commands, and `XREAD` and
+`XREADGROUP` when `BLOCK` is set) instead borrow a connection, for their duration, from a bounded pool
+sized by `quarkus.redis.max-pool-size` (default `6`), with up to `quarkus.redis.max-pool-waiting` (default
+`24`) additional callers allowed to queue before a further caller fails immediately. This keeps a blocked
+consumer from starving every other command on the same data source. `withConnection(...)` and
+`withTransaction(...)` borrow from the same pool for the duration of the block or
+transaction, instead of opening a fresh TCP connection per call.
+
+Idle pooled connections are recycled as with the Vert.x client: every `quarkus.redis.pool-cleaner-interval` (default
+`30s`), the connections idle for longer than `quarkus.redis.pool-recycle-timeout` (default `3m`) are closed; a
+connection in use is never recycled. Setting either property to `0` keeps the idle connections open. The most
+recently released connection is handed out first, so that a pool sized for a peak shrinks back to the connections a
+lighter load needs.
+
+Because `max-pool-size` bounds only blocking commands and scoped connections on this backend — rather than
+every command, as on the Vert.x backend — the same configured value gives noticeably higher effective
+capacity here. The ordinary commands share one connection, whose command queue `quarkus.redis.max-waiting-handlers`
+bounds when set (see <<lettuce-properties>>).
+
+Pub/Sub subscribers do not use the pool either. Each subscriber (one `subscribe(...)` or `subscribeToPattern(...)`
+call) opens its own dedicated Pub/Sub connection, keeps it for as long as at least one of its channels or patterns
+is subscribed, and closes it when the last one is unsubscribed. These connections are not counted against
+`max-pool-size` or `max-pool-waiting`, so adding subscribers never starves blocking commands or scoped
+connections, and `max-pool-size` does not need to be raised to accommodate them as it does on the Vert.x
+backend. The number of concurrent subscribers is bounded only by the Redis server's `maxclients` limit.
+Where a subscriber's connection goes follows the client type: to the server of a standalone client, to a node of
+the cluster Lettuce picks (a cluster delivers every message to every node), to the master the sentinels report
+for a Sentinel client, following a failover when the connection is re-established, and to the first configured
+host that answers for a replication client, master or replica (Redis propagates `PUBLISH` to the replicas, so a
+subscriber on a replica receives the messages published to the master).
+
+A subscriber's `onEnd` callback runs, and the `Multi` returned by the streaming `subscribe(...)` methods completes,
+when the last channel or pattern is unsubscribed and when the client is shut down with the application. A
+subscriber's connection that is lost (the server restarted, the network failed) is re-established and
+re-subscribed by Lettuce transparently: messages published in the meantime are missed, as with any Pub/Sub
+subscriber, but the subscription goes on and `onEnd` is not called, where the Vert.x backend ends the subscription.
+`onException` receives the I/O errors reported on the connection and the failures to decode a message.
+
+A blocking command issued from inside `withConnection(...)` runs on that pinned connection directly: it
+does not borrow a second connection from the pool, and it blocks that connection for its own duration, as
+it would without pooling.
+
+As on the Vert.x backend, a borrowed connection goes back to the pool only when Redis answers the blocking
+command, not when the caller stops waiting: the blocking API gives up after `quarkus.redis.timeout` and a
+reactive subscriber can cancel, but neither unblocks the command on the server, so the connection stays out
+of the pool until the command's own duration elapses or a value arrives. Keep that duration (the `BLPOP`
+timeout, the `BLOCK` of `XREAD`) below `quarkus.redis.timeout` when using the blocking API, and only block
+indefinitely (a zero duration) from the reactive API, where the subscriber keeps waiting for the value: a
+blocked command nobody waits for holds its connection until a value arrives, and `max-pool-size` of them
+exhaust the pool.
+
+The extension also exposes the Lettuce client itself as CDI beans for every client that is injected through a
+Lettuce type (using `@RedisClientName` for named clients): `io.lettuce.core.RedisClient` and
+`io.lettuce.core.api.StatefulRedisConnection<String, String>` for a standalone, Sentinel or replication client (for
+the last two also as `io.lettuce.core.masterreplica.StatefulRedisMasterReplicaConnection<String, String>`),
+`io.lettuce.core.cluster.RedisClusterClient` and
+`io.lettuce.core.cluster.api.StatefulRedisClusterConnection<String, String>` for a cluster client, and the shared
+`io.lettuce.core.resource.ClientResources` (backed by the Vert.x event loops).
 
 == Configure Redis observability
 

@@ -93,6 +93,7 @@
         <module>mailer</module>
         <module>grpc</module>
         <module>redis-client</module>
+        <module>redis-client-lettuce</module>
         <module>redis-cache</module>
 
         <!-- Data access and validation -->

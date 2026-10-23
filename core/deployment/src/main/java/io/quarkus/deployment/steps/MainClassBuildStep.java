@@ -325,7 +325,8 @@ public class MainClassBuildStep {
         // Application class
         GeneratedClassGizmo2Adaptor gizmoOutput = new GeneratedClassGizmo2Adaptor(generatedClass, null, null,
                 constantBootstraps, true);
-        Gizmo g = Gizmo.create(gizmoOutput).withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
+        Gizmo g = Gizmo.create(gizmoOutput)
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS); // This ensures compatibility in both JVM and native modes
 
         g.class_(Application.APP_CLASS_NAME, file -> {
             file.extends_(Application.class);

@@ -270,6 +270,10 @@ public class ClientImpl implements Client {
         log.debug("Client is closed");
     }
 
+    boolean isClosed() {
+        return isClosed;
+    }
+
     void abortIfClosed() {
         if (isClosed)
             throw new IllegalStateException("Client is closed");

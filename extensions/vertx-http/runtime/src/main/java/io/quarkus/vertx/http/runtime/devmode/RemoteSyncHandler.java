@@ -385,16 +385,14 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         }
     }
 
-    private static boolean constantTimeEquals(String expected, String actual) {
+    static boolean constantTimeEquals(String expected, String actual) {
         byte[] expectedBytes = expected.getBytes(StandardCharsets.US_ASCII);
         byte[] actualBytes = new byte[expectedBytes.length];
         boolean valid = actual != null && actual.length() == expectedBytes.length;
         if (valid) {
             for (int i = 0; i < actual.length(); i++) {
                 char value = actual.charAt(i);
-                if (Character.digit(value, 16) == -1) {
-                    valid = false;
-                }
+                valid &= value <= 127;
                 actualBytes[i] = (byte) value;
             }
         }

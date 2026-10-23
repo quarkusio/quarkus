@@ -474,6 +474,22 @@ class RemoteSyncHandlerTest {
         verify(request.connection(), never()).close();
     }
 
+    @Test
+    void constantTimeEquals() {
+        assertThat(RemoteSyncHandler.constantTimeEquals("0123456789abcdefABCDEF",
+                "0123456789abcdefABCDEF")).isTrue();
+
+        assertThat(RemoteSyncHandler.constantTimeEquals("abc", null)).isFalse();
+        assertThat(RemoteSyncHandler.constantTimeEquals("abc", "")).isFalse();
+        assertThat(RemoteSyncHandler.constantTimeEquals("abc", "abcabc")).isFalse();
+        assertThat(RemoteSyncHandler.constantTimeEquals("abc", "abc\0abc")).isFalse();
+        assertThat(RemoteSyncHandler.constantTimeEquals("abcabc", "abc")).isFalse();
+        // U+0661 cast to `byte` would erroneously be equal to U+0061
+        assertThat(RemoteSyncHandler.constantTimeEquals("aaa", "a\u0661a")).isFalse();
+        // U+FF41 = Fullwidth Latin Small Letter A
+        assertThat(RemoteSyncHandler.constantTimeEquals("a", "\uFF41")).isFalse();
+    }
+
     private HttpServerRequest request(String path, byte[] body) {
         RemoteSyncHandler.sessionState = new RemoteSyncHandler.SessionState(
                 SESSION, 0, System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(1));

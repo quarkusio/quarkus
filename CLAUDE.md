@@ -17,6 +17,8 @@ guidance before starting work:
   when working with runtime-dev modules, conditional dependencies, or debugging classloading.
 - **Creating extensions** — Read `.agents/skills/creating-extensions/SKILL.md`
   when creating a new extension or understanding the full module layout.
+- **Asynchronous programming** — Read `.agents/skills/async-programming/SKILL.md`
+  when writing or modifying async code with CompletionStage, Mutiny, or Vert.x Future.
 - **Coding style** — Read `.agents/skills/coding-style/SKILL.md`
   when unsure about formatting, naming, visibility, or logging conventions.
 - **Building and testing** — Read `.agents/skills/building-and-testing/SKILL.md`

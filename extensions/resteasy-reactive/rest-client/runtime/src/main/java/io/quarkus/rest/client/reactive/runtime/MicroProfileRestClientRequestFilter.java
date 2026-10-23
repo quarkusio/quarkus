@@ -74,9 +74,14 @@ public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClie
                         new Consumer<>() {
                             @Override
                             public void accept(MultivaluedMap<String, String> newHeaders) {
-                                for (var headerEntry : newHeaders.entrySet()) {
-                                    requestContext.getHeaders()
-                                            .put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
+                                try {
+                                    for (var headerEntry : newHeaders.entrySet()) {
+                                        requestContext.getHeaders()
+                                                .put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
+                                    }
+                                } catch (Throwable t) {
+                                    requestContext.resume(t);
+                                    return;
                                 }
                                 requestContext.resume();
                             }

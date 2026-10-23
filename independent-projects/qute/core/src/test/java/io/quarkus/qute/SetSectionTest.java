@@ -1,8 +1,13 @@
 package io.quarkus.qute;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
@@ -109,6 +114,38 @@ public class SetSectionTest {
                 engine.parse("{#let foo=true}{#if baz}{foo}{/}").data("baz", true).render());
         assertEquals("true::null",
                 engine.parse("{#if baz}{#let foo=true}{foo}{/if}::{foo ?: 'null'}").data("baz", true).render());
+    }
+
+    @Test
+    public void testSynchronousFailureInBlockDoesNotHang() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addNamespaceResolver(new ThrowingNamespaceResolver())
+                .useAsyncTimeout(false)
+                .build();
+        // Control: the same failure outside of a let section
+        assertRenderFails(engine.parse("A{bad:foo}B"));
+        assertRenderFails(engine.parse("A{#let x=1}{bad:foo}{/let}B"));
+    }
+
+    private static void assertRenderFails(Template template) {
+        CompletableFuture<String> rendered = template.instance().renderAsync().toCompletableFuture();
+        assertThatExceptionOfType(ExecutionException.class)
+                .isThrownBy(() -> rendered.get(5, TimeUnit.SECONDS))
+                .withRootCauseInstanceOf(IllegalStateException.class);
+    }
+
+    static class ThrowingNamespaceResolver implements NamespaceResolver {
+
+        @Override
+        public String getNamespace() {
+            return "bad";
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            throw new IllegalStateException("boom");
+        }
     }
 
 }

@@ -60,8 +60,12 @@ public class StrEvalNamespaceResolver implements NamespaceResolver, EngineListen
                 if (t != null) {
                     ret.completeExceptionally(t);
                 } else {
-                    resolve(ret, context,
-                            parse(r.toString(), context.resolutionContext().getTemplate().getVariant().orElse(null)));
+                    try {
+                        resolve(ret, context,
+                                parse(r.toString(), context.resolutionContext().getTemplate().getVariant().orElse(null)));
+                    } catch (Throwable e) {
+                        ret.completeExceptionally(e);
+                    }
                 }
             });
         }
@@ -94,9 +98,13 @@ public class StrEvalNamespaceResolver implements NamespaceResolver, EngineListen
             if (t != null) {
                 ret.completeExceptionally(t);
             } else {
-                StringBuilder sb = new StringBuilder();
-                r.process(sb::append);
-                ret.complete(new RawString(sb.toString()));
+                try {
+                    StringBuilder sb = new StringBuilder();
+                    r.process(sb::append);
+                    ret.complete(new RawString(sb.toString()));
+                } catch (Throwable e) {
+                    ret.completeExceptionally(e);
+                }
             }
         });
     }

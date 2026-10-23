@@ -75,32 +75,34 @@ public class FragmentNamespaceResolver implements NamespaceResolver, EngineListe
                     if (t != null) {
                         ret.completeExceptionally(t);
                     } else {
-                        Map<String, Object> args = new HashMap<>();
-                        for (int i = 0; i < context.getParams().size(); i++) {
-                            try {
-                                Object result = params.getResult(i);
-                                if (result instanceof NamedArgument arg) {
-                                    args.put(arg.getName(), arg.getValue());
-                                } else {
-                                    ret.completeExceptionally(
-                                            new TemplateException("Named argument expected: " + result.getClass()));
-                                    break;
-                                }
-                            } catch (InterruptedException | ExecutionException e) {
-                                ret.completeExceptionally(e);
-                            }
-                        }
-                        ResolutionContext child = context.resolutionContext().createChild(Mapper.wrap(args), null);
-                        fragment.getRootNode().resolve(child, Map.of(Template.Fragment.ATTRIBUTE, true))
-                                .whenComplete((r2, t2) -> {
-                                    if (t2 != null) {
-                                        ret.completeExceptionally(t2);
+                        try {
+                            Map<String, Object> args = new HashMap<>();
+                            for (int i = 0; i < context.getParams().size(); i++) {
+                                try {
+                                    Object result = params.getResult(i);
+                                    if (result instanceof NamedArgument arg) {
+                                        args.put(arg.getName(), arg.getValue());
                                     } else {
-                                        StringBuilder sb = new StringBuilder();
-                                        r2.process(sb::append);
-                                        ret.complete(sb.toString());
+                                        ret.completeExceptionally(
+                                                new TemplateException("Named argument expected: " + result.getClass()));
+                                        break;
                                     }
-                                });
+                                } catch (InterruptedException | ExecutionException e) {
+                                    ret.completeExceptionally(e);
+                                }
+                            }
+                            ResolutionContext child = context.resolutionContext().createChild(Mapper.wrap(args), null);
+                            fragment.getRootNode().resolve(child, Map.of(Template.Fragment.ATTRIBUTE, true))
+                                    .whenComplete((r2, t2) -> {
+                                        if (t2 != null) {
+                                            ret.completeExceptionally(t2);
+                                        } else {
+                                            processResult(r2, ret);
+                                        }
+                                    });
+                        } catch (Throwable e) {
+                            ret.completeExceptionally(e);
+                        }
                     }
                 });
             } else {
@@ -109,15 +111,23 @@ public class FragmentNamespaceResolver implements NamespaceResolver, EngineListe
                             if (t != null) {
                                 ret.completeExceptionally(t);
                             } else {
-                                StringBuilder sb = new StringBuilder();
-                                r.process(sb::append);
-                                ret.complete(sb.toString());
+                                processResult(r, ret);
                             }
                         });
             }
             return ret;
         }
         return Results.notFound(context);
+    }
+
+    private static void processResult(ResultNode resultNode, CompletableFuture<Object> ret) {
+        try {
+            StringBuilder sb = new StringBuilder();
+            resultNode.process(sb::append);
+            ret.complete(sb.toString());
+        } catch (Throwable e) {
+            ret.completeExceptionally(e);
+        }
     }
 
     @Override

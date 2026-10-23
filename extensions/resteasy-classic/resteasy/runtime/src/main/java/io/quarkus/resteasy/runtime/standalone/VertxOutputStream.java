@@ -3,7 +3,7 @@ package io.quarkus.resteasy.runtime.standalone;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import jakarta.ws.rs.core.HttpHeaders;
 
@@ -166,33 +166,28 @@ public class VertxOutputStream extends AsyncOutputStream {
         }
         pooledBuffer.writeBytes(wrappedBuffer, Math.min(pooledBuffer.writableBytes(), wrappedBuffer.readableBytes()));
         if (pooledBuffer.writableBytes() == 0) {
-            CompletableFuture<Void> cf = new CompletableFuture<>();
-            ret = cf;
-            ByteBuf filled = pooledBuffer;
-            pooledBuffer = null;
-            response.writeNonBlocking(filled, false).whenComplete(new BiConsumer<Void, Throwable>() {
-                @Override
-                public void accept(Void unused, Throwable throwable) {
-                    if (throwable != null) {
-                        cf.completeExceptionally(throwable);
-                        return;
-                    }
-                    pooledBuffer = allocator.allocateBuffer();
-                    pooledBuffer.writeBytes(wrappedBuffer,
-                            Math.min(pooledBuffer.writableBytes(), wrappedBuffer.readableBytes()));
-
-                    if (pooledBuffer.writableBytes() == 0) {
-                        ByteBuf filled = pooledBuffer;
-                        pooledBuffer = null;
-                        response.writeNonBlocking(filled, false).whenComplete(this);
-                    } else {
-                        cf.complete(null);
-                    }
-                }
-            });
+            ret = drainBuffer(wrappedBuffer).toCompletableFuture();
         }
 
         return ret.thenCompose(v -> asyncUpdateWritten(len));
+    }
+
+    private CompletionStage<Void> drainBuffer(ByteBuf wrappedBuffer) {
+        ByteBuf filled = pooledBuffer;
+        pooledBuffer = null;
+        return response.writeNonBlocking(filled, false)
+                .thenCompose(new Function<Void, CompletionStage<Void>>() {
+                    @Override
+                    public CompletionStage<Void> apply(Void unused) {
+                        pooledBuffer = allocator.allocateBuffer();
+                        pooledBuffer.writeBytes(wrappedBuffer,
+                                Math.min(pooledBuffer.writableBytes(), wrappedBuffer.readableBytes()));
+                        if (pooledBuffer.writableBytes() == 0) {
+                            return drainBuffer(wrappedBuffer);
+                        }
+                        return CompletableFuture.completedFuture(null);
+                    }
+                });
     }
 
     CompletionStage<Void> asyncUpdateWritten(final long len) {

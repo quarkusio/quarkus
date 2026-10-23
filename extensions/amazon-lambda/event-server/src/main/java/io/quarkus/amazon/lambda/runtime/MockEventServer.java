@@ -83,10 +83,6 @@ public class MockEventServer implements Closeable {
         if (maybeMaxHeadersSize.isPresent()) {
             options.setMaxHeaderSize(maybeMaxHeadersSize.get().asIntValue());
         }
-        Optional<Boolean> enableCompression = config.getOptionalValue("quarkus.http.enable-compression", Boolean.class);
-        if (enableCompression.isPresent()) {
-            options.setCompressionSupported(enableCompression.get());
-        }
 
         httpServer = vertx.createHttpServer(options);
         router = Router.router(vertx);

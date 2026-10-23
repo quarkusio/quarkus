@@ -124,7 +124,9 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                 }
                 if (msg instanceof LastHttpContent) {
                     if (baos != null) {
-                        if (isText(responseBuilder.getMultiValueHeaders().getFirst("Content-Type"))) {
+                        Headers headers = responseBuilder.getMultiValueHeaders();
+                        if (isText(headers.getFirst("Content-Type"))
+                                && !isEncoded(headers.getFirst("Content-Encoding"))) {
                             responseBuilder.setBody(baos.toString(StandardCharsets.UTF_8));
                         } else {
                             responseBuilder.setBase64Encoded(true);
@@ -250,5 +252,9 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                     || ct.contains("yaml"));
         }
         return false;
+    }
+
+    private boolean isEncoded(String contentEncoding) {
+        return contentEncoding != null && !contentEncoding.equalsIgnoreCase("identity");
     }
 }

@@ -370,7 +370,8 @@ public class HttpServerOptionsUtils {
                 .setUseSemicolonAsDelimiter(httpConfig.useSemicolonAsQueryParamDelimiter()));
 
         // Compression config
-        applyCompressionConfig(config, httpBuildTimeConfig, httpConfig.compressionContentSizeThreshold());
+        config.setCompressionConfig(
+                createCompressionConfig(httpBuildTimeConfig, httpConfig.compressionContentSizeThreshold()));
 
         // Logging
         if (httpConfig.logActivity()) {
@@ -485,9 +486,9 @@ public class HttpServerOptionsUtils {
                 .setUseSemicolonAsDelimiter(managementConfig.useSemicolonAsQueryParamDelimiter()));
 
         // Compression
-        applyCompressionConfig(config, managementBuildTimeConfig.enableCompression(),
+        config.setCompressionConfig(createCompressionConfig(managementBuildTimeConfig.enableCompression(),
                 managementBuildTimeConfig.enableDecompression(), Optional.empty(),
-                managementBuildTimeConfig.compressionLevel(), managementConfig.compressionContentSizeThreshold());
+                managementBuildTimeConfig.compressionLevel(), managementConfig.compressionContentSizeThreshold()));
 
         // Logging
         if (managementConfig.logActivity()) {
@@ -643,14 +644,14 @@ public class HttpServerOptionsUtils {
         return sslOptions;
     }
 
-    private static void applyCompressionConfig(HttpServerConfig config, VertxHttpBuildTimeConfig httpBuildTimeConfig,
+    public static CompressionConfig createCompressionConfig(VertxHttpBuildTimeConfig httpBuildTimeConfig,
             int contentSizeThreshold) {
-        applyCompressionConfig(config, httpBuildTimeConfig.enableCompression(),
+        return createCompressionConfig(httpBuildTimeConfig.enableCompression(),
                 httpBuildTimeConfig.enableDecompression(), httpBuildTimeConfig.compressors(),
                 httpBuildTimeConfig.compressionLevel(), contentSizeThreshold);
     }
 
-    private static void applyCompressionConfig(HttpServerConfig config, boolean enableCompression,
+    private static CompressionConfig createCompressionConfig(boolean enableCompression,
             boolean enableDecompression, Optional<List<String>> compressors, OptionalInt compressionLevel,
             int contentSizeThreshold) {
         CompressionConfig compression = new CompressionConfig();
@@ -695,7 +696,7 @@ public class HttpServerOptionsUtils {
         }
 
         compression.setContentSizeThreshold(contentSizeThreshold);
-        config.setCompressionConfig(compression);
+        return compression;
     }
 
     private static TrafficShapingOptions buildTrafficShapingOptions(VertxHttpConfig httpConfig) {

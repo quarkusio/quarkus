@@ -98,6 +98,7 @@ import io.quarkus.kafka.client.serialization.JsonbDeserializer;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
+import io.quarkus.kafka.client.tls.KafkaCertificateUpdateEventListener;
 import io.quarkus.kafka.client.tls.QuarkusKafkaSslEngineFactory;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -428,6 +429,8 @@ public class KafkaProcessor {
     public AdditionalBeanBuildItem runtimeConfig() {
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(KafkaRuntimeConfigProducer.class)
+                // looked up programmatically by QuarkusKafkaSslEngineFactory, which Kafka instantiates reflectively
+                .addBeanClass(KafkaCertificateUpdateEventListener.class)
                 .setUnremovable()
                 .build();
     }

@@ -266,6 +266,8 @@ public class SecurityProcessor {
                     "org.bouncycastle.jcajce.provider.asymmetric.EC$Mappings",
                     "org.bouncycastle.jcajce.provider.asymmetric.RSA",
                     "org.bouncycastle.jcajce.provider.asymmetric.RSA$Mappings",
+                    "org.bouncycastle.jcajce.provider.asymmetric.MLKEM",
+                    "org.bouncycastle.jcajce.provider.asymmetric.MLKEM$Mappings",
                     "org.bouncycastle.jcajce.provider.drbg.DRBG",
                     "org.bouncycastle.jcajce.provider.drbg.DRBG$Mappings").methods().fields()
                     .build());

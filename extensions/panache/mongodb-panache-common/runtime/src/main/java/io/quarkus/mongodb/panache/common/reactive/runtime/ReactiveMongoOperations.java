@@ -246,7 +246,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     // Private stuff
 
     public Uni<Void> nullUni() {
-        return Uni.createFrom().item((Void) null);
+        return Uni.createFrom().voidItem();
     }
 
     private Uni<Void> persist(ReactiveMongoCollection collection, Object entity) {

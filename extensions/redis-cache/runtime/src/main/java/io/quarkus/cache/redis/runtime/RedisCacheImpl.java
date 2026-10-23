@@ -208,14 +208,12 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                                                 throw new IllegalArgumentException("Cannot cache `null` value");
                                             }
                                             byte[] encodedValue = marshaller.encode(value);
-                                            Uni<V> result;
+                                            Uni<?> result;
                                             if (cacheInfo.useOptimisticLocking) {
                                                 result = multi(connection,
-                                                        set(connection, encodedKey, encodedValue, expiresAfter))
-                                                        .replaceWith(value);
+                                                        set(connection, encodedKey, encodedValue, expiresAfter));
                                             } else {
-                                                result = set(connection, encodedKey, encodedValue, expiresAfter)
-                                                        .replaceWith(value);
+                                                result = set(connection, encodedKey, encodedValue, expiresAfter);
                                             }
                                             if (isWorkerThread) {
                                                 return result.runSubscriptionOn(
@@ -296,15 +294,13 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                             } else {
                                 Uni<V> getter = valueLoader.apply(key);
                                 return getter
-                                        .chain(value -> {
+                                        .call(value -> {
                                             byte[] encodedValue = marshaller.encode(value);
                                             if (cacheInfo.useOptimisticLocking) {
                                                 return multi(connection,
-                                                        set(connection, encodedKey, encodedValue, expiresAfter))
-                                                        .replaceWith(value);
+                                                        set(connection, encodedKey, encodedValue, expiresAfter));
                                             } else {
-                                                return set(connection, encodedKey, encodedValue, expiresAfter)
-                                                        .replaceWith(value);
+                                                return set(connection, encodedKey, encodedValue, expiresAfter);
                                             }
                                         });
                             }

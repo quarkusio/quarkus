@@ -118,6 +118,7 @@ public class OverloadDetectorAdaptationTest {
     @Test
     public void limitNeverExceedsTheMaximum() {
         OverloadDetector detector = new OverloadDetector(new TestConfig.Builder()
+                .withMinLimit(1)
                 .withInitialLimit(10)
                 .withMaxLimit(15)
                 .withProbeFactor(NO_PROBE)
@@ -159,6 +160,7 @@ public class OverloadDetectorAdaptationTest {
         // factor of 0 would do, and the reason the configuration rejects it: the limit is
         // frozen at its initial value no matter what the application does
         OverloadDetector detector = new OverloadDetector(new TestConfig.Builder()
+                .withMinLimit(1)
                 .withInitialLimit(10)
                 .withProbeFactor(1e-9)
                 .build());
@@ -182,6 +184,7 @@ public class OverloadDetectorAdaptationTest {
         // (the jitter puts the threshold between 0.5 and 1 times the limit) and leaves
         // at least 4 non-probe samples after each one
         OverloadDetector detector = new OverloadDetector(new TestConfig.Builder()
+                .withMinLimit(1)
                 .withInitialLimit(10)
                 .withMaxLimit(1_000)
                 .withProbeFactor(1.0)
@@ -206,6 +209,7 @@ public class OverloadDetectorAdaptationTest {
         // the probe factor is set so high that the request-counted probe can never fire;
         // the only way the baseline can be refreshed is the ceiling on its staleness
         OverloadDetector detector = new OverloadDetector(new TestConfig.Builder()
+                .withMinLimit(1)
                 .withInitialLimit(10)
                 .withMaxLimit(1_000)
                 .withProbeFactor(NO_PROBE)
@@ -223,6 +227,7 @@ public class OverloadDetectorAdaptationTest {
 
     private OverloadDetector detector(int initialLimit) {
         return new OverloadDetector(new TestConfig.Builder()
+                .withMinLimit(1)
                 .withInitialLimit(initialLimit)
                 .withProbeFactor(NO_PROBE)
                 .build());

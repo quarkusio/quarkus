@@ -20,6 +20,7 @@ public class LoadSheddingMetricsTest {
     private long nextRequestTime = 1_000_000;
 
     private final LoadSheddingRuntimeConfig config = new TestConfig.Builder()
+            .withMinLimit(1)
             .withInitialLimit(LIMIT)
             .withProbeFactor(Double.MAX_VALUE)
             .build();

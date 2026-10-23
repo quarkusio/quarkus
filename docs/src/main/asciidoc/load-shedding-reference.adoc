@@ -76,7 +76,7 @@ If the current number of concurrent in-flight requests reaches the limit, overlo
 
 That is not very interesting, but the algorithm dynamically adjusts the limit based on the size of the request queue.
 If the queue is short, more requests can be handled and the limit increases; if the queue is long, fewer requests can be handled and the limit decreases.
-The limit cannot be increased indefinitely; there's a configurable maximum, by default 1000.
+The limit cannot increase or decrease indefinitely; there's a configurable minimum, by default 20, and configurable maximum, by default 1000.
 
 There's no actual queue of requests that we could monitor, though, so the algorithm estimates the current length of a request queue based on previously seen response times.
 The longer recent requests take, compared to the recent lowest response time, the longer the queue is supposed to be.

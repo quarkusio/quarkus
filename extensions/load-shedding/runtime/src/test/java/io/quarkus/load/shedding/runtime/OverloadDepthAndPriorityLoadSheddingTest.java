@@ -190,6 +190,7 @@ public class OverloadDepthAndPriorityLoadSheddingTest {
 
     private OverloadDetector detector(int initialLimit) {
         return new OverloadDetector(new TestConfig.Builder()
+                .withMinLimit(1)
                 .withInitialLimit(initialLimit)
                 .withMaxLimit(MAX_LIMIT)
                 .build());

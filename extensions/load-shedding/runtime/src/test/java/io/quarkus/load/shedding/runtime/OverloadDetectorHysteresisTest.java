@@ -23,6 +23,7 @@ public class OverloadDetectorHysteresisTest {
     private long nextRequestTime = 1_000_000;
 
     private final OverloadDetector detector = new OverloadDetector(new TestConfig.Builder()
+            .withMinLimit(1)
             .withInitialLimit(LIMIT)
             .withProbeFactor(Double.MAX_VALUE)
             .build());

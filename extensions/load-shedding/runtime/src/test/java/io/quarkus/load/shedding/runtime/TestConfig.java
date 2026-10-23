@@ -4,6 +4,7 @@ import java.time.Duration;
 
 public final class TestConfig implements LoadSheddingRuntimeConfig {
     private final boolean enabled;
+    private final int minLimit;
     private final int maxLimit;
     private final int alphaFactor;
     private final int betaFactor;
@@ -14,6 +15,7 @@ public final class TestConfig implements LoadSheddingRuntimeConfig {
 
     public TestConfig(Builder builder) {
         this.enabled = builder.enabled;
+        this.minLimit = builder.minLimit;
         this.maxLimit = builder.maxLimit;
         this.alphaFactor = builder.alphaFactor;
         this.betaFactor = builder.betaFactor;
@@ -26,6 +28,11 @@ public final class TestConfig implements LoadSheddingRuntimeConfig {
     @Override
     public boolean enabled() {
         return enabled;
+    }
+
+    @Override
+    public int minLimit() {
+        return minLimit;
     }
 
     @Override
@@ -71,6 +78,7 @@ public final class TestConfig implements LoadSheddingRuntimeConfig {
     public static final class Builder {
         // defaults follow `LoadSheddingRuntimeConfig`
         private boolean enabled = true;
+        private int minLimit = 20;
         private int maxLimit = 1000;
         private int alphaFactor = 3;
         private int betaFactor = 6;
@@ -81,6 +89,11 @@ public final class TestConfig implements LoadSheddingRuntimeConfig {
 
         public Builder withEnabled(boolean enabled) {
             this.enabled = enabled;
+            return this;
+        }
+
+        public Builder withMinLimit(int minLimit) {
+            this.minLimit = minLimit;
             return this;
         }
 

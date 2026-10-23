@@ -23,6 +23,7 @@ public class OverloadDetectorConcurrencyTest {
     @Test
     public void everyRequestThatBeginsAlsoEnds() throws InterruptedException {
         OverloadDetector detector = new OverloadDetector(new TestConfig.Builder()
+                .withMinLimit(1)
                 .withInitialLimit(INITIAL_LIMIT)
                 .withMaxLimit(MAX_LIMIT)
                 .build());
@@ -65,6 +66,7 @@ public class OverloadDetectorConcurrencyTest {
     @Test
     public void drainedBurstDoesNotLeaveTheStateInOverloaded() throws InterruptedException {
         OverloadDetector detector = new OverloadDetector(new TestConfig.Builder()
+                .withMinLimit(1)
                 .withInitialLimit(INITIAL_LIMIT)
                 .withMaxLimit(MAX_LIMIT)
                 .withProbeFactor(Double.MAX_VALUE)

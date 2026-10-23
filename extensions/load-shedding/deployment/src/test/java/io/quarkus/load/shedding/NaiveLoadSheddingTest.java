@@ -39,6 +39,8 @@ public class NaiveLoadSheddingTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(MyResource.class, RequestCounter.class))
             .overrideConfigKey("quarkus.load-shedding.initial-limit", "" + INITIAL_LIMIT)
+            // the default minimum is above the limits this test uses
+            .overrideConfigKey("quarkus.load-shedding.min-limit", "1")
             .overrideConfigKey("quarkus.load-shedding.priority.enabled", "false")
             .overrideConfigKey("quarkus.load-shedding.max-retry-after", MAX_RETRY_AFTER_SECONDS + "s")
             // a single event loop handles all incoming requests one after another, so that

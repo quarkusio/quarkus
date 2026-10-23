@@ -19,9 +19,17 @@ public interface LoadSheddingRuntimeConfig {
     boolean enabled();
 
     /**
+     * The minimum number of concurrent requests allowed.
+     * <p>
+     * Must be at least 1 and less than or equal to {@code max-limit}; the application fails to start otherwise.
+     */
+    @WithDefault("20")
+    int minLimit();
+
+    /**
      * The maximum number of concurrent requests allowed.
      * <p>
-     * Must be at least 1; the application fails to start otherwise.
+     * Must be greater than or equal to {@code min-limit}; the application fails to start otherwise.
      */
     @WithDefault("1000")
     int maxLimit();
@@ -59,8 +67,8 @@ public interface LoadSheddingRuntimeConfig {
     /**
      * The initial limit of concurrent requests allowed.
      * <p>
-     * Must be at least 1 and less than or equal to {@code max-limit}; the application fails
-     * to start otherwise.
+     * Must be greater than or equal to {@code min-limit} and less than or equal to {@code max-limit};
+     * the application fails to start otherwise.
      */
     @WithDefault("100")
     int initialLimit();

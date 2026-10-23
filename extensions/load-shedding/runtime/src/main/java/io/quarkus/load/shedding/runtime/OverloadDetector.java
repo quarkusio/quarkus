@@ -55,6 +55,7 @@ public class OverloadDetector {
     // This is to avoid pretending that an old value is relevant to current situation.
     private static final long MAX_PROBE_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(30);
 
+    private final int minLimit;
     private final int maxLimit;
     private final int alphaFactor;
     private final int betaFactor;
@@ -88,6 +89,7 @@ public class OverloadDetector {
     OverloadDetector(LoadSheddingRuntimeConfig config, long maxProbeIntervalNanos) {
         validate(config);
 
+        minLimit = config.minLimit();
         maxLimit = config.maxLimit();
         alphaFactor = config.alphaFactor();
         betaFactor = config.betaFactor();
@@ -113,19 +115,21 @@ public class OverloadDetector {
      * here would otherwise produce load shedding that looks like it works and does not.
      */
     private static void validate(LoadSheddingRuntimeConfig config) {
-        if (config.maxLimit() < 1) {
-            throw new ConfigurationException("quarkus.load-shedding.max-limit must be at least 1, but is "
+        if (config.minLimit() < 1) {
+            throw new ConfigurationException("quarkus.load-shedding.min-limit must be at least 1, but is "
+                    + config.minLimit());
+        }
+        if (config.maxLimit() < config.minLimit()) {
+            throw new ConfigurationException("quarkus.load-shedding.max-limit must be at least min-limit, but is "
                     + config.maxLimit());
         }
-        if (config.initialLimit() < 1) {
-            throw new ConfigurationException("quarkus.load-shedding.initial-limit must be at least 1, but is "
+        if (config.initialLimit() < config.minLimit()) {
+            throw new ConfigurationException("quarkus.load-shedding.initial-limit must be at least min-limit, but is "
                     + config.initialLimit());
         }
-        // we could technically fail on `>=`, but it is a valid configuration (if a bit strange)
-        // and makes a lot of tests easier to write
         if (config.initialLimit() > config.maxLimit()) {
-            throw new ConfigurationException("quarkus.load-shedding.initial-limit must be less than or equal to"
-                    + " max-limit, but is " + config.initialLimit() + " and max-limit is " + config.maxLimit());
+            throw new ConfigurationException("quarkus.load-shedding.initial-limit must be at most max-limit, but is "
+                    + config.initialLimit());
         }
         if (config.alphaFactor() < 1) {
             throw new ConfigurationException("quarkus.load-shedding.alpha-factor must be at least 1, but is "
@@ -302,7 +306,7 @@ public class OverloadDetector {
                 return;
             }
 
-            newLimit = Math.clamp(newLimit, 1, maxLimit);
+            newLimit = Math.clamp(newLimit, minLimit, maxLimit);
             this.currentLimit = newLimit;
         } finally {
             lock.unlock();

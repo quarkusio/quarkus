@@ -40,6 +40,8 @@ public class MetricsLoadSheddingTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(MyResource.class, RequestCounter.class))
+            // the default minimum is above the limits this test uses
+            .overrideConfigKey("quarkus.load-shedding.min-limit", "1")
             .overrideConfigKey("quarkus.load-shedding.initial-limit", "" + INITIAL_LIMIT)
             .overrideConfigKey("quarkus.load-shedding.max-limit", "" + MAX_LIMIT)
             .overrideConfigKey("quarkus.load-shedding.priority.enabled", "false")

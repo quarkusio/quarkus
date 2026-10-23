@@ -55,6 +55,8 @@ public class NeverRequestsSurviveLoadSheddingTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(RouterInit.class))
+            // the default minimum is above the limits this test uses
+            .overrideConfigKey("quarkus.load-shedding.min-limit", "1")
             // in this test, we always stay in the 2nd phase of overload
             .overrideConfigKey("quarkus.load-shedding.initial-limit", "" + LIMIT)
             .overrideConfigKey("quarkus.load-shedding.max-limit", "" + LIMIT)

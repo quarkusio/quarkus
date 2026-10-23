@@ -29,13 +29,41 @@ public class OverloadDetectorConfigTest {
     }
 
     @Test
+    public void nonPositiveMinLimitIsRejected() {
+        assertThatThrownBy(() -> new OverloadDetector(new TestConfig.Builder().withMinLimit(0).build()))
+                .isInstanceOf(ConfigurationException.class)
+                .hasMessageContaining("quarkus.load-shedding.min-limit");
+    }
+
+    @Test
     public void initialLimitHigherThanMaxLimitIsRejected() {
         assertThatThrownBy(() -> new OverloadDetector(new TestConfig.Builder()
+                .withMinLimit(1)
                 .withInitialLimit(10)
                 .withMaxLimit(5)
                 .build()))
                 .isInstanceOf(ConfigurationException.class)
                 .hasMessageContaining("quarkus.load-shedding.initial-limit");
+    }
+
+    @Test
+    public void initialLimitLowerThanMinLimitIsRejected() {
+        assertThatThrownBy(() -> new OverloadDetector(new TestConfig.Builder()
+                .withMinLimit(20)
+                .withInitialLimit(10)
+                .build()))
+                .isInstanceOf(ConfigurationException.class)
+                .hasMessageContaining("quarkus.load-shedding.initial-limit");
+    }
+
+    @Test
+    public void minLimitHigherThanMaxLimitIsRejected() {
+        assertThatThrownBy(() -> new OverloadDetector(new TestConfig.Builder()
+                .withMinLimit(20)
+                .withMaxLimit(10)
+                .build()))
+                .isInstanceOf(ConfigurationException.class)
+                .hasMessageContaining("quarkus.load-shedding.max-limit");
     }
 
     @Test

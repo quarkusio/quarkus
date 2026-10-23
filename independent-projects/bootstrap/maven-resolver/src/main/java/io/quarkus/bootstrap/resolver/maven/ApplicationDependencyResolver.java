@@ -1084,6 +1084,7 @@ public class ApplicationDependencyResolver {
             rtNode.setVersionConstraint(new BootstrapArtifactVersionConstraint(
                     new BootstrapArtifactVersion(artifact.getVersion())));
             rtNode.setRepositories(parent.ext.runtimeNode.getRepositories());
+            DependencyTreeConflictResolver.markConditionalDependency(rtNode);
             conditionalDep = new AppDep(parent, rtNode);
             conditionalDep.ext = info == null ? null : new ExtensionDependency(info, rtNode, parent.ext.exclusions);
         }

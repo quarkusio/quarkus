@@ -22,6 +22,7 @@ import io.grpc.Status;
 import io.grpc.StatusException;
 import io.quarkus.grpc.ExceptionHandlerProvider;
 import io.quarkus.grpc.GlobalInterceptor;
+import io.quarkus.grpc.runtime.GrpcContextLocalsProvider;
 import io.quarkus.grpc.runtime.Interceptors;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
@@ -63,6 +64,11 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
         io.grpc.Context current = io.grpc.Context.current();
         return onClose -> {
             io.grpc.Context previous = current.attach();
+            Context dc = Vertx.currentContext();
+            boolean isDuplicated = dc != null && VertxContext.isDuplicatedContext(dc);
+            if (isDuplicated) {
+                GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.put(dc, () -> current.detach(previous));
+            }
             try {
                 var forwardingCall = new ForwardingServerCall<ReqT, RespT>() {
                     @Override
@@ -73,12 +79,24 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
                     @Override
                     public void close(Status status, Metadata trailers) {
                         onClose.run();
-                        super.close(status, trailers);
+                        try {
+                            super.close(status, trailers);
+                        } finally {
+                            if (isDuplicated) {
+                                Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(dc);
+                                if (cleanup != null) {
+                                    GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(dc);
+                                    cleanup.run();
+                                }
+                            }
+                        }
                     }
                 };
                 return next.startCall(forwardingCall, headers);
             } finally {
-                current.detach(previous);
+                if (!isDuplicated) {
+                    current.detach(previous);
+                }
             }
         };
     }
@@ -181,12 +199,29 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
 
         @Override
         public void onCancel() {
-            invoke(ServerCall.Listener::onCancel);
+            invoke(listener -> {
+                // Notify inner interceptors first so they can still read context keys in their
+                // onCancel() handlers, then clean up because close() may never be called
+                // when the client cancels.
+                listener.onCancel();
+                Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(context);
+                if (cleanup != null) {
+                    GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(context);
+                    cleanup.run();
+                }
+            });
         }
 
         @Override
         public void onComplete() {
-            invoke(ServerCall.Listener::onComplete);
+            invoke(listener -> {
+                listener.onComplete();
+                Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(context);
+                if (cleanup != null) {
+                    GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(context);
+                    cleanup.run();
+                }
+            });
         }
     }
 }

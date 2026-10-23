@@ -2,6 +2,8 @@ package io.quarkus.hibernate.orm.runtime.boot;
 
 import java.io.Serializable;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.sql.DataSource;
 
@@ -13,15 +15,17 @@ import org.hibernate.HibernateException;
 import org.hibernate.Interceptor;
 import org.hibernate.SessionFactory;
 import org.hibernate.SessionFactoryObserver;
+import org.hibernate.boot.SessionFactoryBuilder;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
 import org.hibernate.boot.model.process.spi.ManagedResources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.MetadataImplementor;
+import org.hibernate.boot.spi.SessionFactoryBuilderFactory;
 import org.hibernate.bytecode.internal.SessionFactoryObserverForBytecodeEnhancer;
 import org.hibernate.bytecode.spi.BytecodeProvider;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.proxy.EntityNotFoundDelegate;
 import org.hibernate.resource.jdbc.spi.StatementInspector;
@@ -88,13 +92,36 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         try {
             final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
             populate(puDescriptor.getName(), optionsBuilder, standardServiceRegistry);
-            return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions(),
-                    metadata.getTypeConfiguration().getMetadataBuildingContext().getBootstrapContext());
+            return getSessionFactoryBuilder(optionsBuilder).build();
         } catch (Exception e) {
             throw persistenceException("Unable to build Hibernate SessionFactory", e);
         } finally {
             closeImportScripts();
         }
+    }
+
+    /**
+     * Like Hibernate ORM, lets a {@link SessionFactoryBuilderFactory} service replace the default builder,
+     * e.g., to build a custom {@link SessionFactory} implementation.
+     */
+    private SessionFactoryBuilder getSessionFactoryBuilder(SessionFactoryOptionsBuilder optionsBuilder) {
+        final FastBootSessionFactoryBuilder defaultBuilder = new FastBootSessionFactoryBuilder(metadata, optionsBuilder,
+                metadata.getTypeConfiguration().getMetadataBuildingContext().getBootstrapContext());
+        SessionFactoryBuilder builder = defaultBuilder;
+        final List<String> activeFactoryNames = new ArrayList<>();
+        for (SessionFactoryBuilderFactory factory : standardServiceRegistry.requireService(ClassLoaderService.class)
+                .loadJavaServices(SessionFactoryBuilderFactory.class)) {
+            final SessionFactoryBuilder factoryBuilder = factory.getSessionFactoryBuilder(metadata, defaultBuilder);
+            if (factoryBuilder != null) {
+                activeFactoryNames.add(factory.getClass().getName());
+                builder = factoryBuilder;
+            }
+        }
+        if (activeFactoryNames.size() > 1) {
+            throw new HibernateException("Multiple active SessionFactoryBuilderFactory definitions were discovered: "
+                    + String.join(", ", activeFactoryNames));
+        }
+        return builder;
     }
 
     @Override

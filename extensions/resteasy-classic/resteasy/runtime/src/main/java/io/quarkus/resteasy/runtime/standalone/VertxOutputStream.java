@@ -139,9 +139,7 @@ public class VertxOutputStream extends AsyncOutputStream {
 
     private CompletionStage<Void> asyncFlush(boolean isLast) {
         if (closed) {
-            CompletableFuture<Void> ret = new CompletableFuture<>();
-            ret.completeExceptionally(new IOException("Stream is closed"));
-            return ret;
+            return CompletableFuture.failedFuture(new IOException("Stream is closed"));
         }
         if (pooledBuffer != null) {
             ByteBuf sentBuffer = pooledBuffer;
@@ -157,9 +155,7 @@ public class VertxOutputStream extends AsyncOutputStream {
             return CompletableFuture.completedFuture(null);
         }
         if (closed) {
-            CompletableFuture<Void> ret = new CompletableFuture<>();
-            ret.completeExceptionally(new IOException("Stream is closed"));
-            return ret;
+            return CompletableFuture.failedFuture(new IOException("Stream is closed"));
         }
 
         CompletableFuture<Void> ret = CompletableFuture.completedFuture(null);

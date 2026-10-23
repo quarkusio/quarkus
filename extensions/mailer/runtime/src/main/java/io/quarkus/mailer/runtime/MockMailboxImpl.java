@@ -39,7 +39,7 @@ public class MockMailboxImpl implements MockMailbox {
                 send(email, mailMessage, to);
             }
         }
-        return Uni.createFrom().item(() -> null);
+        return Uni.createFrom().voidItem();
     }
 
     private void validateEmailAddress(String to) {

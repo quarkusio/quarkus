@@ -190,9 +190,7 @@ public class VertxHttpResponse implements HttpResponse {
         try {
             prepareWrite(buffer, finished);
         } catch (IOException e) {
-            CompletableFuture<Void> ret = new CompletableFuture<>();
-            ret.completeExceptionally(e);
-            return ret;
+            return CompletableFuture.failedFuture(e);
         }
         return output.writeNonBlocking(buffer, finished);
     }

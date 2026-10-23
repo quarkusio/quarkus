@@ -98,15 +98,10 @@ public class GoogleCloudFunctionsProcessor {
         List<GoogleCloudFunctionInfo> functionInfos = cloudFunctions.stream()
                 .map(CloudFunctionBuildItem::build)
                 .toList();
-        List<String> beanNames = functionInfos.stream().map(GoogleCloudFunctionInfo::getBeanName).toList();
-        List<String> classNames = functionInfos.stream().map(GoogleCloudFunctionInfo::getClassName).toList();
-        List<GoogleCloudFunctionInfo.FunctionType> functionTypes = functionInfos.stream()
-                .map(GoogleCloudFunctionInfo::getFunctionType).toList();
         serviceRegistrar
                 .forService("io.quarkus.google-cloud-functions.delegates")
                 .atPhase(Phase.APPLICATION)
                 .require(GoogleCloudFunctionsConfig.class)
-                .onStart((ctx, config) -> GoogleCloudFunctionRecorder.selectDelegate(ctx, config, beanNames, classNames,
-                        functionTypes));
+                .onStart((ctx, config) -> GoogleCloudFunctionRecorder.selectDelegate(ctx, config, functionInfos));
     }
 }

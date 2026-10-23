@@ -6,6 +6,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
 
@@ -57,6 +59,55 @@ public class OverloadDetectorConcurrencyTest {
         for (Thread thread : threads) {
             thread.join(Duration.ofSeconds(10));
             assertThat(thread.isAlive()).isFalse();
+        }
+    }
+
+    @Test
+    public void drainedBurstDoesNotLeaveTheStateInOverloaded() throws InterruptedException {
+        OverloadDetector detector = new OverloadDetector(new TestConfig.Builder()
+                .withInitialLimit(INITIAL_LIMIT)
+                .withMaxLimit(MAX_LIMIT)
+                .withProbeFactor(Double.MAX_VALUE)
+                .build());
+
+        for (int round = 0; round < 2_000; round++) {
+            burst(detector);
+
+            assertThat(detector.currentRequests()).isZero();
+            assertThat(detector.isOverloaded()).isFalse();
+            assertThat(detector.overloadDurationNanos()).isZero();
+        }
+    }
+
+    private void burst(OverloadDetector detector)
+            throws InterruptedException {
+        AtomicLong nextRequestTime = new AtomicLong(1_000_000L);
+        CountDownLatch arrived = new CountDownLatch(THREADS);
+        CountDownLatch leave = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(THREADS);
+        List<Thread> burstThreads = new ArrayList<>();
+        for (int i = 0; i < THREADS; i++) {
+            Thread thread = new Thread(() -> {
+                detector.requestBegin();
+                arrived.countDown();
+                try {
+                    leave.await();
+                } catch (InterruptedException e) {
+                    // interruption is meaningless in this test
+                }
+                detector.requestEnd(nextRequestTime.getAndDecrement());
+                done.countDown();
+            });
+            thread.start();
+            burstThreads.add(thread);
+        }
+
+        arrived.await();
+        leave.countDown();
+
+        assertThat(done.await(10, TimeUnit.SECONDS)).isTrue();
+        for (Thread thread : burstThreads) {
+            thread.join();
         }
     }
 }

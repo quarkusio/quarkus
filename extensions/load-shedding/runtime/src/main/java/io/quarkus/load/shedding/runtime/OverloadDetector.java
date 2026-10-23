@@ -141,8 +141,25 @@ public class OverloadDetector {
         }
     }
 
+    /**
+     * Returns whether the application is currently overloaded.
+     */
     public boolean isOverloaded() {
-        return overloadedSince.get() != 0L;
+        long since = overloadedSince.get();
+        if (since == 0L) {
+            return false;
+        }
+
+        int current = currentRequests.get();
+        long limit = currentLimit;
+        if (current >= limit * HYSTERESIS_FACTOR) {
+            return true;
+        }
+
+        if (overloadedSince.compareAndSet(since, 0L)) {
+            logTransition(false, current, limit);
+        }
+        return false;
     }
 
     /**
@@ -323,7 +340,13 @@ public class OverloadDetector {
      */
     public long overloadDurationNanos() {
         long since = overloadedSince.get();
-        return since == 0L ? 0L : Math.max(0L, System.nanoTime() - since);
+        if (since == 0L) {
+            return 0L;
+        }
+        if (currentRequests.get() < currentLimit * HYSTERESIS_FACTOR) {
+            return 0L;
+        }
+        return Math.max(0L, System.nanoTime() - since);
     }
 
     private void logTransition(boolean entered, int currentRequests, long limit) {

@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -7,6 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
@@ -159,6 +163,40 @@ public class FragmentTest {
                 {/}
                 """);
         assertEquals("OK01", delta.getFragment("nested").render().replaceAll("\\s", ""));
+    }
+
+    @Test
+    public void testFrgNamespaceFragmentFailureDoesNotHang() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addNamespaceResolver(new FragmentNamespaceResolver())
+                .useAsyncTimeout(false)
+                .build();
+        CompletableFuture<String> rendered = engine
+                .parse("A{frg:f}B{#fragment id=f rendered=false}F{missing}{/fragment}")
+                .instance()
+                .renderAsync()
+                .toCompletableFuture();
+        assertThatExceptionOfType(ExecutionException.class)
+                .isThrownBy(() -> rendered.get(5, TimeUnit.SECONDS))
+                .withRootCauseInstanceOf(TemplateException.class);
+    }
+
+    @Test
+    public void testFrgNamespaceNullArgumentDoesNotHang() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addNamespaceResolver(new FragmentNamespaceResolver())
+                .useAsyncTimeout(false)
+                .build();
+        CompletableFuture<String> rendered = engine
+                .parse("A{frg:f(foo)}B{#fragment id=f rendered=false}F{/fragment}")
+                .data("foo", null)
+                .renderAsync()
+                .toCompletableFuture();
+        assertThatExceptionOfType(ExecutionException.class)
+                .isThrownBy(() -> rendered.get(5, TimeUnit.SECONDS))
+                .withRootCauseInstanceOf(NullPointerException.class);
     }
 
 }

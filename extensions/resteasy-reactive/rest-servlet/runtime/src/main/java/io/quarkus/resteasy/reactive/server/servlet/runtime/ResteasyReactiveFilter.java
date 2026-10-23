@@ -12,12 +12,17 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 
+import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.undertow.servlet.handlers.ServletRequestContext;
 import io.undertow.servlet.spec.HttpServletRequestImpl;
 
 public class ResteasyReactiveFilter extends HttpFilter {
 
     private final RestInitialHandler initialHandler;
+
+    public ResteasyReactiveFilter() {
+        this(ResteasyReactiveRecorder.getCurrentDeployment());
+    }
 
     public ResteasyReactiveFilter(Deployment deployment) {
         this.initialHandler = new RestInitialHandler(deployment);

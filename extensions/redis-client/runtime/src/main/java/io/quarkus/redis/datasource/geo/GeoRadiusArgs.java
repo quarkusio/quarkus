@@ -75,7 +75,7 @@ public class GeoRadiusArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * By default all the matching items are returned. It is possible to limit the results to the first N matching items
+     * By default, all the matching items are returned. It is possible to limit the results to the first N matching items
      * by using the {@code COUNT &lt;count&gt;} option.
      *
      * @param count the count value
@@ -127,7 +127,9 @@ public class GeoRadiusArgs implements RedisCommandExtraArguments {
             list.add("ANY");
         }
 
-        list.add(direction);
+        if (direction != null) {
+            list.add(direction);
+        }
 
         return list;
     }

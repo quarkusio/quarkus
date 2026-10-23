@@ -269,7 +269,14 @@ public final class CompletedStage<T> implements CompletionStage<T>, Supplier<T> 
 
     @Override
     public <U> CompletionStage<U> handle(BiFunction<? super T, Throwable, ? extends U> fn) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(fn);
+        final U u;
+        try {
+            u = fn.apply(result, exception);
+        } catch (Throwable e) {
+            return new CompletedStage<>(null, e);
+        }
+        return new CompletedStage<>(u, null);
     }
 
     @Override
@@ -326,9 +333,7 @@ public final class CompletedStage<T> implements CompletionStage<T>, Supplier<T> 
         if (exception == null) {
             return CompletableFuture.completedFuture(result);
         }
-        CompletableFuture<T> ret = new CompletableFuture<>();
-        ret.completeExceptionally(exception);
-        return ret;
+        return CompletableFuture.failedFuture(exception);
     }
 
     private static <T> CompletionException wrap(final Throwable e) {

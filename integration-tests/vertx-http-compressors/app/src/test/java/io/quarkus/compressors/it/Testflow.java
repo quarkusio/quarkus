@@ -43,8 +43,10 @@ public class Testflow {
     // Vert.x/Netty versions over time.
     public static final int COMPRESSION_TOLERANCE_PERCENT = 2;
 
-    static {
-        // Our test code does compression
+    private static void ensureBrotliAvailability() {
+        // Our test code does compression. Brotli4J is an optional dependency of quarkus-vertx-http, so this is
+        // deliberately not done in a static initializer: modules that never exercise the "br" algorithm must not
+        // need it on their classpath.
         Brotli4jLoader.ensureAvailability();
     }
 
@@ -170,6 +172,7 @@ public class Testflow {
             }
             return Buffer.buffer(byteStream.toByteArray());
         } else if ("br".equalsIgnoreCase(algorithm)) {
+            ensureBrotliAvailability();
             try (BrotliOutputStream brotliStream = new BrotliOutputStream(byteStream)) {
                 brotliStream.write(payload.getBytes(StandardCharsets.UTF_8));
             } catch (IOException e) {
@@ -203,6 +206,7 @@ public class Testflow {
             } else if ("deflate".equalsIgnoreCase(algorithm)) {
                 channel = new EmbeddedChannel(newZlibDecoder(ZlibWrapper.ZLIB, 0));
             } else if ("br".equalsIgnoreCase(algorithm)) {
+                ensureBrotliAvailability();
                 channel = new EmbeddedChannel(new BrotliDecoder());
             } else if ("snappy".equalsIgnoreCase(algorithm)) {
                 channel = new EmbeddedChannel(new SnappyFrameDecoder());

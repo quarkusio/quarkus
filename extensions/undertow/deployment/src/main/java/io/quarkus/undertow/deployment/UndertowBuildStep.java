@@ -171,7 +171,8 @@ public class UndertowBuildStep {
 
     private boolean jacksonOnClasspath(CurateOutcomeBuildItem curateOutcomeBuildItem) {
         for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
-            if (appDep.getArtifactId().equals("jackson-core")) {
+            if (appDep.getGroupId().equals("com.fasterxml.jackson.core") &&
+                    appDep.getArtifactId().equals("jackson-core")) {
                 return true;
             }
         }

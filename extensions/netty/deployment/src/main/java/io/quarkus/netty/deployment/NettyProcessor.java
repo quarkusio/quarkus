@@ -1,5 +1,6 @@
 package io.quarkus.netty.deployment;
 
+import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
@@ -38,10 +39,10 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedRuntimeSystemPropertyBuildItem;
@@ -75,12 +76,16 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.EmptyByteBufStub;
+import io.quarkus.netty.runtime.EventLoopGroupSupplier;
 import io.quarkus.netty.runtime.MachineIdGenerator;
 import io.quarkus.netty.runtime.NettyRecorder;
 import io.quarkus.netty.runtime.NettySharable;
 import io.quarkus.runtime.util.JavaVersionGreaterOrEqual25;
 
 class NettyProcessor {
+
+    private static final String BOSS_EVENT_LOOP_GROUP = "boss";
+    private static final String MAIN_EVENT_LOOP_GROUP = "main";
 
     private static final Logger log = Logger.getLogger(NettyProcessor.class);
 
@@ -438,41 +443,45 @@ class NettyProcessor {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
     void registerEventLoopBeans(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             Optional<EventLoopSupplierBuildItem> loopSupplierBuildItem,
-            NettyRecorder recorder,
+            ServiceRegistrar serviceRegistrar,
             BuildProducer<EventLoopGroupBuildItem> eventLoopGroups) {
         Supplier<EventLoopGroup> boss;
         Supplier<EventLoopGroup> main;
-        if (loopSupplierBuildItem.isPresent()) {
-            boss = (Supplier) loopSupplierBuildItem.get().getBossSupplier();
-            main = (Supplier) loopSupplierBuildItem.get().getMainSupplier();
-        } else {
-            boss = recorder.createEventLoop(1);
-            main = recorder.createEventLoop(0);
-        }
-
         // IMPLEMENTATION NOTE:
         // We use Singleton scope for both beans. ApplicationScoped causes problems with EventLoopGroup.next()
         // which overrides the EventExecutorGroup.next() method but since Netty 4 is compiled with JDK6 the corresponding bridge method
         // is not generated and the invocation upon the client proxy results in an AbstractMethodError
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
-                .supplier(boss)
-                .scope(Singleton.class)
-                .addQualifier(BossEventLoopGroup.class)
-                .unremovable()
-                .setRuntimeInit()
-                .done());
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
-                .supplier(main)
-                .scope(Singleton.class)
-                .addQualifier(MainEventLoopGroup.class)
-                .unremovable()
-                .setRuntimeInit()
-                .done());
+        if (loopSupplierBuildItem.isPresent()) {
+            boss = (Supplier) loopSupplierBuildItem.get().getBossSupplier();
+            main = (Supplier) loopSupplierBuildItem.get().getMainSupplier();
+            syntheticBeans.produce(eventLoopGroupBean(BossEventLoopGroup.class).supplier(boss).done());
+            syntheticBeans.produce(eventLoopGroupBean(MainEventLoopGroup.class).supplier(main).done());
+        } else {
+            serviceRegistrar.forService(EventLoopGroup.class, BOSS_EVENT_LOOP_GROUP)
+                    .atPhase(Phase.INFRASTRUCTURE)
+                    .onStart(ctx -> NettyRecorder.createEventLoop(ctx, 1));
+            serviceRegistrar.forService(EventLoopGroup.class, MAIN_EVENT_LOOP_GROUP)
+                    .atPhase(Phase.INFRASTRUCTURE)
+                    .onStart(ctx -> NettyRecorder.createEventLoop(ctx, 0));
+            boss = new EventLoopGroupSupplier(serviceRegistrar.getRecorderProxy(EventLoopGroup.class, BOSS_EVENT_LOOP_GROUP));
+            main = new EventLoopGroupSupplier(serviceRegistrar.getRecorderProxy(EventLoopGroup.class, MAIN_EVENT_LOOP_GROUP));
+            syntheticBeans.produce(eventLoopGroupBean(BossEventLoopGroup.class)
+                    .serviceValue(EventLoopGroup.class, BOSS_EVENT_LOOP_GROUP).done());
+            syntheticBeans.produce(eventLoopGroupBean(MainEventLoopGroup.class)
+                    .serviceValue(EventLoopGroup.class, MAIN_EVENT_LOOP_GROUP).done());
+        }
 
         eventLoopGroups.produce(new EventLoopGroupBuildItem(boss, main));
+    }
+
+    private static SyntheticBeanBuildItem.ExtendedBeanConfigurator eventLoopGroupBean(Class<? extends Annotation> qualifier) {
+        return SyntheticBeanBuildItem.configure(EventLoopGroup.class)
+                .scope(Singleton.class)
+                .addQualifier(qualifier)
+                .unremovable()
+                .setRuntimeInit();
     }
 
     @BuildStep
@@ -1610,9 +1619,7 @@ class NettyProcessor {
      * }</pre>
      */
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void transformIsSharable(CombinedIndexBuildItem indexBuildItem,
-            NettyRecorder recorder,
             BuildProducer<BytecodeTransformerBuildItem> producer) {
         IndexView index = indexBuildItem.getIndex();
 

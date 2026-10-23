@@ -1,31 +1,16 @@
 package io.quarkus.netty.runtime;
 
-import java.util.function.Supplier;
+import java.util.concurrent.TimeUnit;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.core.StartContext;
 
-@Recorder
 public class NettyRecorder {
 
-    public Supplier<EventLoopGroup> createEventLoop(int nThreads) {
-        return new Supplier<>() {
-
-            volatile EventLoopGroup val;
-
-            @Override
-            public EventLoopGroup get() {
-                if (val == null) {
-                    synchronized (this) {
-                        if (val == null) {
-                            val = new NioEventLoopGroup(nThreads);
-                        }
-                    }
-                }
-
-                return val;
-            }
-        };
+    public static EventLoopGroup createEventLoop(StartContext ctx, int nThreads) {
+        NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(nThreads);
+        ctx.onStop(() -> eventLoopGroup.shutdownGracefully(0, 0, TimeUnit.MILLISECONDS));
+        return eventLoopGroup;
     }
 }

@@ -60,6 +60,10 @@ public class LogStreamJsonRPCService {
         Enumeration<String> loggerNames = logContext.getLoggerNames();
         while (loggerNames.hasMoreElements()) {
             String loggerName = loggerNames.nextElement();
+            if (loggerName.isEmpty()) {
+                // The root logger is available via getLogger("")
+                continue;
+            }
             JsonObject jsonObject = getLogger(loggerName);
             if (jsonObject != null) {
                 values.add(jsonObject);
@@ -71,9 +75,10 @@ public class LogStreamJsonRPCService {
     @NonBlocking
     @JsonRpcDescription("Get a specific logger in this Quarkus application")
     @DevMCPEnableByDefault
-    public JsonObject getLogger(@JsonRpcDescription("The name of the logger") String loggerName) {
+    public JsonObject getLogger(
+            @JsonRpcDescription("The name of the logger, use an empty name for the root logger") String loggerName) {
         LogContext logContext = LogContext.getLogContext();
-        if (loggerName != null && !loggerName.isEmpty()) {
+        if (loggerName != null) {
             Logger logger = logContext.getLogger(loggerName);
             return JsonObject.of(
                     "name", loggerName,
@@ -86,7 +91,8 @@ public class LogStreamJsonRPCService {
     @NonBlocking
     @JsonRpcDescription("Update a specific logger's log level in this Quarkus application")
     @DevMCPEnableByDefault
-    public JsonObject updateLogLevel(@JsonRpcDescription("The name of the logger") String loggerName,
+    public JsonObject updateLogLevel(
+            @JsonRpcDescription("The name of the logger, use an empty name for the root logger") String loggerName,
             @JsonRpcDescription("The new level of the logger") String levelValue) {
         LogContext logContext = LogContext.getLogContext();
         Logger logger = logContext.getLogger(loggerName);

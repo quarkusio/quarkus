@@ -162,6 +162,15 @@ Since native executables are not currently attached to projects as Maven artifac
 
 As in the case of an Uber JAR, runtime components in an SBOM generated for an native executable will not include `evidence.occurrences.location` since their corresponding code and resources are included in a single native executable file.
 
+==== Extracting the embedded SBOM using Mandrel
+
+In addition to `syft`, the embedded SBOM can also be extracted using the `native-image-configure` tool included in Mandrel version `25.0.4` or later. See also the https://github.com/graalvm/mandrel/releases/tag/mandrel-25.0.4.0-Final[Mandrel 25.0.4.0-Final release notes]:
+
+[source,bash]
+----
+$GRAALVM_HOME/bin/native-image-configure extract-sbom --image-path=/path/to/quarkus-app --output-file=quarkus-app.sbom.json
+----
+
 === Mutable JAR
 
 Mutable JAR distribution is similar to the Fast JAR one except it also includes build time dependencies to support re-augmentation (re-building) of an application.

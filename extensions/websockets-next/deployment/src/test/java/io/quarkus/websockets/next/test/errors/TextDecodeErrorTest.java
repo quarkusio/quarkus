@@ -36,10 +36,11 @@ public class TextDecodeErrorTest {
 
     @Test
     void testError() {
-        WSClient client = WSClient.create(vertx).connect(testUri);
-        client.send("not a json");
-        client.waitForMessages(1);
-        assertEquals("Problem decoding: not a json", client.getLastMessage().toString());
+        try (WSClient client = WSClient.create(vertx).connect(testUri)) {
+            client.send("not a json");
+            client.waitForMessages(1);
+            assertEquals("Problem decoding: not a json", client.getLastMessage().toString());
+        }
     }
 
     @WebSocket(path = "/echo")

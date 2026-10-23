@@ -33,25 +33,26 @@ public class MixedErrorHandlersTest {
 
     @Test
     void test() {
-        WSClient client = WSClient.create(vertx).connect(testUri);
+        try (WSClient client = WSClient.create(vertx).connect(testUri)) {
 
-        client.send("0");
-        assertEquals("OK", client.waitForNextMessage().toString());
+            client.send("0");
+            assertEquals("OK", client.waitForNextMessage().toString());
 
-        client.send("1");
-        assertEquals("IAE", client.waitForNextMessage().toString());
+            client.send("1");
+            assertEquals("IAE", client.waitForNextMessage().toString());
 
-        client.send("2");
-        assertEquals("ISE", client.waitForNextMessage().toString());
+            client.send("2");
+            assertEquals("ISE", client.waitForNextMessage().toString());
 
-        client.send("3");
-        assertEquals("RE", client.waitForNextMessage().toString());
+            client.send("3");
+            assertEquals("RE", client.waitForNextMessage().toString());
 
-        client.send("4");
-        assertEquals("E", client.waitForNextMessage().toString());
+            client.send("4");
+            assertEquals("E", client.waitForNextMessage().toString());
 
-        client.send("5");
-        assertEquals("OK", client.waitForNextMessage().toString());
+            client.send("5");
+            assertEquals("OK", client.waitForNextMessage().toString());
+        }
     }
 
     @WebSocket(path = "/echo")

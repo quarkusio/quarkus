@@ -651,6 +651,39 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testKeycloakTokenTypeCheckedWithoutOidcServer() {
+        // An access token issued by Keycloak in a JWT format has a `typ` claim set to `Bearer`.
+        // It must be accepted when the token is verified locally without contacting the OIDC server.
+        String bearerToken = Jwt.preferredUserName("alice")
+                .groups(Set.of("user"))
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .claim("typ", "Bearer")
+                .sign();
+
+        RestAssured.given().auth().oauth2(bearerToken).when()
+                .get("/api/users/me/bearer")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("alice"));
+
+        // A refresh token issued by Keycloak in a JWT format has a `typ` claim set to `Refresh`.
+        // It must be rejected even when the token is verified locally without contacting the OIDC server.
+        String refreshToken = Jwt.preferredUserName("alice")
+                .groups(Set.of("user"))
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .claim("typ", "Refresh")
+                .sign();
+
+        RestAssured.given().auth().oauth2(refreshToken).when()
+                .get("/api/users/me/bearer")
+                .then()
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("Bearer"));
+    }
+
+    @Test
     public void testBearerTokenWrongIssuer() {
         String token = getAccessTokenWrongIssuer("alice", Set.of("user"));
 

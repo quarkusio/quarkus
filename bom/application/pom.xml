@@ -19,7 +19,7 @@
         <bouncycastle.version>1.86.1</bouncycastle.version>
         <bouncycastle.fips.version>2.1.2</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>2.1.22</bouncycastle.tls.fips.version>
-        <cyclonedx.version>12.1.0</cyclonedx.version>
+        <cyclonedx.version>12.2.0</cyclonedx.version>
         <expressly.version>6.0.0</expressly.version>
         <findbugs.version>3.0.2</findbugs.version>
         <jandex.version>3.5.3</jandex.version>
@@ -120,7 +120,7 @@
         <quartz.version>2.5.2</quartz.version>
         <h2.version>2.4.240</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
-        <postgresql-jdbc.version>42.7.13</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.7.14</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.5.9</mariadb-jdbc.version>
         <mysql-jdbc.version>9.6.0</mysql-jdbc.version>
         <mssql-jdbc.version>13.2.1.jre11</mssql-jdbc.version>
@@ -207,10 +207,10 @@
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.16.1</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>10.7</strimzi-oauth.nimbus.version>
-        <jose4j.version>0.9.6</jose4j.version>
+        <jose4j.version>0.9.7</jose4j.version>
         <java-buildpack-client.version>0.0.14</java-buildpack-client.version>
         <crac.version>1.5.0</crac.version>
-        <sshd-common.version>2.19.0</sshd-common.version>
+        <sshd-common.version>2.20.0</sshd-common.version>
         <mime4j.version>0.8.12</mime4j.version>
         <mutiny-zero.version>1.1.1</mutiny-zero.version>
         <pulsar-client.version>3.3.0</pulsar-client.version>
@@ -5336,6 +5336,11 @@
             <dependency>
                 <groupId>org.apache.sshd</groupId>
                 <artifactId>sshd-core</artifactId>
+                <version>${sshd-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-sftp</artifactId>
                 <version>${sshd-common.version}</version>
             </dependency>
             <dependency>

@@ -50,9 +50,10 @@ public class SignatureTest {
     @ParameterizedTest(name = "{index} Checking the reception of message for method returning {0}")
     @MethodSource("methods")
     void verifyExecutionOfOnMessage(String path, int id) {
-        WSClient client = WSClient.create(vertx).connect(WSClient.toWS(uri, "/ws/%s/%d".formatted(path, id)));
-        Buffer resp = client.sendAndAwaitReply("hello");
-        assertThat(resp.toString()).isEqualTo("WS " + id + " received: hello");
+        try (WSClient client = WSClient.create(vertx).connect(WSClient.toWS(uri, "/ws/%s/%d".formatted(path, id)))) {
+            Buffer resp = client.sendAndAwaitReply("hello");
+            assertThat(resp.toString()).isEqualTo("WS " + id + " received: hello");
+        }
     }
 
     @WebSocket(path = "/ws/string/{id}")

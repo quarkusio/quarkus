@@ -28,15 +28,6 @@ public class AgroalRecorder {
         this.jdbcRuntimeConfig = jdbcRuntimeConfig;
     }
 
-    public Supplier<AgroalDataSourceSupport> dataSourceSupportSupplier(AgroalDataSourceSupport agroalDataSourceSupport) {
-        return new Supplier<AgroalDataSourceSupport>() {
-            @Override
-            public AgroalDataSourceSupport get() {
-                return agroalDataSourceSupport;
-            }
-        };
-    }
-
     public Supplier<ActiveResult> agroalDataSourceCheckActiveSupplier(String dataSourceName) {
         return new Supplier<>() {
             @Override

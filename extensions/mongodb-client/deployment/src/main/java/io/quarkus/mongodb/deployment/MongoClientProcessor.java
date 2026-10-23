@@ -65,6 +65,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.mongodb.MongoClientName;
+import io.quarkus.mongodb.deployment.spi.MongoClientBuildItem.Type;
 import io.quarkus.mongodb.deployment.spi.MongoClientsBuildItem;
 import io.quarkus.mongodb.metrics.MicrometerCommandListener;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
@@ -266,16 +267,7 @@ public class MongoClientProcessor {
 
     @BuildStep
     MongoClientsBuildItem mongoClients(List<io.quarkus.mongodb.deployment.spi.MongoClientBuildItem> mongoClients) {
-        Map<String, io.quarkus.mongodb.deployment.spi.MongoClientBuildItem> names = new HashMap<>();
-        for (io.quarkus.mongodb.deployment.spi.MongoClientBuildItem mongoClient : mongoClients) {
-            io.quarkus.mongodb.deployment.spi.MongoClientBuildItem existent = names.put(mongoClient.getName(), mongoClient);
-            if (existent == null) {
-                names.put(mongoClient.getName(), mongoClient);
-            } else if (existent.isUnremovable() && !mongoClient.isUnremovable()) {
-                names.put(mongoClient.getName(), existent);
-            }
-        }
-        return MongoClientsBuildItem.of(names.values().stream().toList());
+        return MongoClientsBuildItem.of(mongoClients);
     }
 
     @BuildStep
@@ -388,15 +380,16 @@ public class MongoClientProcessor {
         }
 
         for (io.quarkus.mongodb.deployment.spi.MongoClientBuildItem mongoClient : mongoClients.getMongoClients()) {
-            boolean unremovable = mongoClient.isUnremovable() || !unremovableClients.isEmpty();
-            // unremovable clients may be looked up programmatically, so both types are registered
-            if (unremovable || blockingClients.contains(mongoClient.getName())) {
+            // unremovable client types may be looked up programmatically, so they are registered without injection points
+            boolean blockingUnremovable = !unremovableClients.isEmpty() || mongoClient.isUnremovable(Type.BLOCKING);
+            boolean reactiveUnremovable = !unremovableClients.isEmpty() || mongoClient.isUnremovable(Type.REACTIVE);
+            if (blockingUnremovable || blockingClients.contains(mongoClient.getName())) {
                 syntheticBeanBuildItemBuildProducer
-                        .produce(createBlockingSyntheticBean(recorder, unremovable, mongoClient.getName()));
+                        .produce(createBlockingSyntheticBean(recorder, blockingUnremovable, mongoClient.getName()));
             }
-            if (unremovable || reactiveClients.contains(mongoClient.getName())) {
+            if (reactiveUnremovable || reactiveClients.contains(mongoClient.getName())) {
                 syntheticBeanBuildItemBuildProducer
-                        .produce(createReactiveSyntheticBean(recorder, unremovable, mongoClient.getName()));
+                        .produce(createReactiveSyntheticBean(recorder, reactiveUnremovable, mongoClient.getName()));
             }
         }
 
@@ -448,7 +441,7 @@ public class MongoClientProcessor {
 
     private SyntheticBeanBuildItem applyCommonBeanConfig(boolean unremovable, String clientName,
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator) {
-        if (!unremovable) {
+        if (unremovable) {
             configurator.unremovable();
         }
 

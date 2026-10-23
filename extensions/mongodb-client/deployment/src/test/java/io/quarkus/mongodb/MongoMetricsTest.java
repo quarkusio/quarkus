@@ -55,7 +55,7 @@ class MongoMetricsTest extends MongoTestBase {
 
         // doing this here instead of in another method in order to avoid messing with the initialization stats
         assertThat(Arc.container().instance(MongoClient.class).get()).isNotNull();
-        assertThat(Arc.container().instance(ReactiveMongoClient.class).get()).isNull();
+        assertThat(Arc.container().select(ReactiveMongoClient.class).isUnsatisfied()).isTrue();
     }
 
     private Double getMetric(String metricName) {

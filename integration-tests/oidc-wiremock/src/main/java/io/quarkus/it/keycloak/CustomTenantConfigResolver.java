@@ -109,11 +109,14 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
             return Uni.createFrom().item(config);
         } else if (path.endsWith("bearer-certificate-full-chain-root-only")) {
-            OidcTenantConfig config = new OidcTenantConfig();
-            config.setTenantId("bearer-certificate-full-chain-root-only");
-            config.getCertificateChain().setTrustStoreFile(Path.of("target/chain/truststore-rootcert.p12"));
-            config.getCertificateChain().setTrustStorePassword("storepassword");
-            config.getCertificateChain().setLeafCertificateName("www.quarkustest.com");
+            OidcTenantConfig config = OidcTenantConfig.builder()
+                    .tenantId("bearer-certificate-full-chain-root-only")
+                    .certificateChain()
+                    .trustStoreFile(Path.of("target/chain/truststore-rootcert.p12"))
+                    .trustStorePassword("storepassword")
+                    .leafCertificateName("www.quarkustest.com")
+                    .end()
+                    .build();
             return Uni.createFrom().item(config);
         }
 

@@ -40,12 +40,12 @@ public class TenantRefresh {
 
             String[] pair = sessionExpired.split("\\|");
             OidcTenantConfig oidcConfig = tenantConfig.getStaticTenant(pair[1]).getOidcTenantConfig();
-            JsonWebToken jwt = new DefaultJWTParser().decrypt(pair[0], oidcConfig.credentials.secret.get());
+            JsonWebToken jwt = new DefaultJWTParser().decrypt(pair[0], oidcConfig.credentials().secret().get());
 
             OidcUtils.removeCookie(context, oidcConfig, "session_expired");
 
             return jwt.getClaim(Claims.preferred_username) + ", your session has expired. "
-                    + "Please login again at http://localhost:8081/" + oidcConfig.tenantId.get();
+                    + "Please login again at http://localhost:8081/" + oidcConfig.tenantId().get();
         }
 
         throw new RuntimeException("Invalid session expired page redirect");

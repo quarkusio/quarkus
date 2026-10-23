@@ -42,7 +42,7 @@ public class DynamicTenantPolicyConfigResolver implements TenantPolicyConfigReso
     public Uni<KeycloakPolicyEnforcerTenantConfig> resolve(RoutingContext routingContext, OidcTenantConfig tenantConfig,
             OidcRequestContext<KeycloakPolicyEnforcerTenantConfig> requestContext) {
         String path = routingContext.normalizedPath();
-        String tenantId = tenantConfig.tenantId.orElse(null);
+        String tenantId = tenantConfig.tenantId().orElse(null);
         if (DEFAULT_TENANT_ID.equals(tenantId) && path.startsWith("/api/permission/scopes/dynamic-way")) {
             return Uni.createFrom().item(enhancedTenantConfig);
         } else if ("api-permission-tenant".equals(tenantId) && path.equals("/dynamic-permission-tenant")) {

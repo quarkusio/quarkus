@@ -1,32 +1,33 @@
 package io.quarkus.gcp.functions;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import io.quarkus.core.StartContext;
 
+/**
+ * Recorder for Google Cloud Functions.
+ */
 public class GoogleCloudFunctionRecorder {
 
-    public static void selectDelegate(StartContext context, GoogleCloudFunctionsConfig config, List<String> beanNames,
-            List<String> classNames, List<GoogleCloudFunctionInfo.FunctionType> functionTypes) {
-        List<GoogleCloudFunctionInfo> cloudFunctions = new ArrayList<>(beanNames.size());
-        for (int i = 0; i < beanNames.size(); i++) {
-            GoogleCloudFunctionInfo info = new GoogleCloudFunctionInfo();
-            info.setBeanName(beanNames.get(i));
-            info.setClassName(classNames.get(i));
-            info.setFunctionType(functionTypes.get(i));
-            cloudFunctions.add(info);
-        }
+    /**
+     * Select the appropriate delegate function based on runtime configuration and registered functions.
+     *
+     * @param context the startup context
+     * @param config the google cloud functions configuration
+     * @param cloudFunctions the list of discovered cloud functions
+     */
+    public static void selectDelegate(StartContext context, GoogleCloudFunctionsConfig config,
+            List<GoogleCloudFunctionInfo> cloudFunctions) {
         Map<GoogleCloudFunctionInfo.FunctionType, String> delegates = new HashMap<>();
         // if a function name is defined, check that it exists
         if (config.function().isPresent()) {
             String functionName = config.function().get();
             boolean found = false;
             for (GoogleCloudFunctionInfo info : cloudFunctions) {
-                if (functionName.equals(info.getBeanName())) {
-                    delegates.put(info.getFunctionType(), info.getClassName());
+                if (functionName.equals(info.beanName())) {
+                    delegates.put(info.functionType(), info.className());
                     found = true;
                 }
             }
@@ -36,11 +37,11 @@ public class GoogleCloudFunctionRecorder {
             }
         } else {
             for (GoogleCloudFunctionInfo info : cloudFunctions) {
-                if (delegates.containsKey(info.getFunctionType())) {
+                if (delegates.containsKey(info.functionType())) {
                     throw new RuntimeException(
                             "Multiple functions found, please use 'quarkus.google-cloud-functions.function' to select one");
                 }
-                delegates.put(info.getFunctionType(), info.getClassName());
+                delegates.put(info.functionType(), info.className());
             }
         }
         QuarkusHttpFunction.setDelegate(delegates.get(GoogleCloudFunctionInfo.FunctionType.HTTP));

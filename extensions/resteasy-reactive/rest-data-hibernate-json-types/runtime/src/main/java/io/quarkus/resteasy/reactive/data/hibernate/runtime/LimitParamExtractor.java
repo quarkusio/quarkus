@@ -21,9 +21,15 @@ import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
  */
 public class LimitParamExtractor implements ParameterExtractor {
 
+    public final String parameterName;
+
+    public LimitParamExtractor(String parameterName) {
+        this.parameterName = parameterName;
+    }
+
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
-        String limitStr = (String) context.getQueryParameter("limit", true, false);
+        String limitStr = (String) context.getQueryParameter(parameterName, true, false);
         String startAtStr = (String) context.getQueryParameter("startAt", true, false);
         String endAtStr = (String) context.getQueryParameter("endAt", true, false);
 

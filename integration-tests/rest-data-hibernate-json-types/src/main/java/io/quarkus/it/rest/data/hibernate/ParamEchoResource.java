@@ -15,6 +15,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.RestQuery;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -99,6 +101,142 @@ public class ParamEchoResource {
     public Page<AnnotatedItem> pageAnnotated() {
         List<AnnotatedItem> items = List.of(new AnnotatedItem("Alice", 30, "s3cret"));
         return new PageRecord<>(PageRequest.ofPage(1, 10, true), items, 1);
+    }
+
+    /**
+     * Echoes an Order parameter with a custom parameter name specified via @RestQuery.
+     * Accepts query parameters like ?orderBy=name or ?orderBy=-age
+     */
+    @GET
+    @Path("order-custom-name")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> orderWithCustomName(@RestQuery("orderBy") Order<?> customOrder) {
+        if (customOrder == null || customOrder.sorts().isEmpty()) {
+            return Map.of("message", "No sorting provided");
+        }
+        List<Map<String, Object>> sorts = customOrder.sorts().stream()
+                .map(s -> Map.<String, Object> of(
+                        "property", s.property(),
+                        "ascending", s.isAscending()))
+                .toList();
+        return Map.of(
+                "parameterName", "orderBy",
+                "sorts", sorts);
+    }
+
+    /**
+     * Echoes a Sort parameter with a custom parameter name specified via @RestQuery.
+     * Accepts query parameters like ?sortBy=name or ?sortBy=-age
+     */
+    @GET
+    @Path("sort-custom-name")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> sortWithCustomName(@RestQuery("sortBy") Sort<?> customSort) {
+        if (customSort == null) {
+            return Map.of("message", "No sorting provided");
+        }
+        return Map.of(
+                "parameterName", "sortBy",
+                "property", customSort.property(),
+                "ascending", customSort.isAscending());
+    }
+
+    /**
+     * Echoes an Order parameter with an empty @RestQuery value.
+     * Falls back to the default "sort" parameter name.
+     */
+    @GET
+    @Path("empty-query-name")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> testEmptyQueryName(@RestQuery("") Order<?> order) {
+        if (order == null || order.sorts().isEmpty()) {
+            return Map.of("message", "No sorting provided");
+        }
+        List<Map<String, Object>> sorts = order.sorts().stream()
+                .map(s -> Map.<String, Object> of(
+                        "property", s.property(),
+                        "ascending", s.isAscending()))
+                .toList();
+        return Map.of(
+                "message", "Empty @RestQuery value",
+                "sorts", sorts);
+    }
+
+    /**
+     * Echoes multiple Jakarta Data parameters with different custom names.
+     * Demonstrates that different parameters can use independent custom names.
+     */
+    @GET
+    @Path("multiple-custom-params")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> testMultipleCustomParams(
+            @RestQuery("orderBy") Order<?> ordering,
+            @RestQuery("filterBy") Sort<?> filter) {
+        Map<String, Object> result = new java.util.HashMap<>();
+
+        if (ordering != null && !ordering.sorts().isEmpty()) {
+            List<Map<String, Object>> sorts = ordering.sorts().stream()
+                    .map(s -> Map.<String, Object> of(
+                            "property", s.property(),
+                            "ascending", s.isAscending()))
+                    .toList();
+            result.put("ordering", sorts);
+        }
+
+        if (filter != null) {
+            result.put("filter", Map.of(
+                    "property", filter.property(),
+                    "ascending", filter.isAscending()));
+        }
+
+        return result;
+    }
+
+    /**
+     * Echoes Jakarta Data parameters using both default and custom names.
+     * The Sort parameter uses the default "sort" name, while Order uses a custom name.
+     */
+    @GET
+    @Path("mixed-params")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> testMixedParams(
+            Sort<?> defaultSort,
+            @RestQuery("customOrder") Order<?> customOrder) {
+        Map<String, Object> result = new java.util.HashMap<>();
+
+        if (defaultSort != null) {
+            result.put("defaultSort", Map.of(
+                    "property", defaultSort.property(),
+                    "ascending", defaultSort.isAscending()));
+        }
+
+        if (customOrder != null && !customOrder.sorts().isEmpty()) {
+            List<Map<String, Object>> sorts = customOrder.sorts().stream()
+                    .map(s -> Map.<String, Object> of(
+                            "property", s.property(),
+                            "ascending", s.isAscending()))
+                    .toList();
+            result.put("customOrder", sorts);
+        }
+
+        return result;
+    }
+
+    /**
+     * Echoes a Sort parameter with a custom name containing an underscore.
+     * Verifies that parameter names with special characters are supported.
+     */
+    @GET
+    @Path("special-chars")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> testSpecialChars(@RestQuery("order_by") Sort<?> orderBy) {
+        if (orderBy == null) {
+            return Map.of("message", "No sorting provided");
+        }
+        return Map.of(
+                "parameterName", "order_by",
+                "property", orderBy.property(),
+                "ascending", orderBy.isAscending());
     }
 
     public static class Item {

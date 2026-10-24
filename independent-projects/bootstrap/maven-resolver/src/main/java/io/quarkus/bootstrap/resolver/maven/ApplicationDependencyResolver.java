@@ -79,12 +79,41 @@ public class ApplicationDependencyResolver {
     }
 
     /**
-     * Returns a task runner.
+     * Returns a {@link BlockingModelResolutionTaskRunner} instance for synchronous task execution.
+     * <p>
+     * <strong>Rationale:</strong> Using a blocking (sequential) task runner instead of a non-blocking
+     * (parallel) runner prevents a deadlock condition that can occur during test bootstrap when the
+     * {@code FacadeClassLoader} is involved in dependency resolution.
+     * <p>
+     * <strong>Deadlock Scenario:</strong> The deadlock occurs due to circular wait between threads:
+     * <ol>
+     * <li><strong>Main thread:</strong> Holds {@code FacadeClassLoader.loadClass()} monitor
+     * (synchronized method in {@code ClassLoader})</li>
+     * <li>Main thread invokes {@code collectDeploymentDeps()} which spawns parallel tasks
+     * in {@code ForkJoinPool.commonPool()} (if using non-blocking runner)</li>
+     * <li>Main thread waits at {@code Phaser.arriveAndAwaitAdvance()} for workers to complete</li>
+     * <li><strong>Worker thread:</strong> Downloads Maven artifact via {@code MavenArtifactResolver}</li>
+     * <li>Maven's {@code AbstractMavenTransferListener} prints "Downloading from..." to {@code System.out}</li>
+     * <li>Surefire's {@code ConsoleOutputCapture} intercepts the output</li>
+     * <li>{@code StackWalkerStrategy.<clinit>} attempts class loading via {@code FacadeClassLoader.loadClass()}</li>
+     * <li>Worker thread <strong>blocks</strong> waiting for monitor held by main thread</li>
+     * <li><strong>Result:</strong> Main waits for worker, worker waits for main → deadlock</li>
+     * </ol>
+     * <p>
+     * <strong>Solution:</strong> By using {@link BlockingModelResolutionTaskRunner}, all tasks execute
+     * synchronously on the calling thread (the main thread that holds the {@code FacadeClassLoader} monitor).
+     * No worker threads are spawned, eliminating the possibility of cross-thread monitor contention.
+     * <p>
+     * <strong>Trade-off:</strong> Sequential execution is slower than parallel execution
+     * (estimated 100-500ms additional overhead during test bootstrap for typical projects),
+     * but correctness and reliability take precedence over performance.
      *
-     * @return task runner
+     * @return a blocking task runner that executes all tasks synchronously on the calling thread
+     * @see BlockingModelResolutionTaskRunner
+     * @see <a href="https://github.com/quarkusio/quarkus/issues/57751">Issue #57751 - Deadlock in @QuarkusTest</a>
      */
     private static ModelResolutionTaskRunner getTaskRunner() {
-        return ModelResolutionTaskRunnerFactory.newTaskRunner();
+        return ModelResolutionTaskRunnerFactory.getBlockingTaskRunner();
     }
 
     private final ExtensionInfo EXT_INFO_NONE = new ExtensionInfo();
@@ -365,14 +394,7 @@ public class ApplicationDependencyResolver {
 
     private Collection<AppDep> collectDeploymentDeps() {
         final ConcurrentLinkedDeque<AppDep> injectQueue = new ConcurrentLinkedDeque<>();
-        final ModelResolutionTaskRunner taskRunner;
-        if (deploymentInjectionPoints.size() == 1 || ModelResolutionTaskRunnerFactory.isDefaultRunnerBlocking()) {
-            taskRunner = ModelResolutionTaskRunnerFactory.getBlockingTaskRunner();
-        } else {
-            // We've been running into Maven resolver failures to acquire a lock to a local fail when resolving dependencies lately.
-            // This error handler will catch those errors and will re-try the corresponding tasks with the blocking task runner.
-            taskRunner = ModelResolutionTaskRunnerFactory.getNonBlockingTaskRunner(new RetryLockAcquisitionErrorHandler());
-        }
+        final ModelResolutionTaskRunner taskRunner = getTaskRunner();
         for (AppDep extDep : deploymentInjectionPoints) {
             extDep.scheduleCollectDeploymentDeps(taskRunner, injectQueue);
         }

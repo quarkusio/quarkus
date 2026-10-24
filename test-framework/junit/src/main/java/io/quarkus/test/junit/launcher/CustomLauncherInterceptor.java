@@ -2,7 +2,6 @@ package io.quarkus.test.junit.launcher;
 
 import java.util.Optional;
 
-import org.junit.jupiter.api.ClassOrderer;
 import org.junit.platform.launcher.LauncherDiscoveryListener;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
 import org.junit.platform.launcher.LauncherSession;
@@ -10,15 +9,10 @@ import org.junit.platform.launcher.LauncherSessionListener;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestPlan;
 
-import io.quarkus.test.config.QuarkusClassOrderer;
 import io.quarkus.test.junit.classloading.FacadeClassLoader;
-import io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer;
 
 public class CustomLauncherInterceptor
         implements LauncherDiscoveryListener, LauncherSessionListener, TestExecutionListener {
-
-    private static final Class<? extends ClassOrderer> DESIRED_CLASS_ORDERER = QuarkusTestProfileAwareClassOrderer.class;
-    private static final Class<? extends ClassOrderer> CONFIG_SETTING_DESIRED_CLASS_ORDERER = QuarkusClassOrderer.class;
 
     private static FacadeClassLoader facadeLoader = null;
     // Also use a static variable to store a 'first' starting state that we can reset to
@@ -138,41 +132,14 @@ public class CustomLauncherInterceptor
 
             }
 
-            Optional<String> orderer = request.getConfigurationParameters().get("junit.jupiter.testclass.order.default");
+            Optional<String> orderer = request.getConfigurationParameters().get(JUnitOrdererMisconfiguration.ORDERER_PROPERTY);
 
-            if (orderer.isEmpty() || !(orderer.get()
-                    .equals(DESIRED_CLASS_ORDERER.getName())
-                    || orderer.get().equals(CONFIG_SETTING_DESIRED_CLASS_ORDERER.getName()))) {
-                if (facadeLoader != null && facadeLoader.hasMultipleClassLoaders()) {
-                    String message = getFailureMessageForJUnitMisconfiguration(orderer);
+            if (facadeLoader != null && facadeLoader.hasMultipleClassLoaders()) {
+                JUnitOrdererMisconfiguration.failureMessage(orderer).ifPresent(message -> {
                     throw new IllegalStateException(message);
-                }
+                });
             }
         }
-    }
-
-    private static String getFailureMessageForJUnitMisconfiguration(Optional<String> orderer) {
-        String generalExplanation = """
-                Critical failure. Quarkus tests would fail with corrupted application errors.
-                The reason is that they would not run in the right order, because the Quarkus JUnit configuration has been overridden.
-                When there are multiple test profiles or resources, Quarkus uses a JUnit ClassOrderer to sort tests so that test with the same profile run one after each other.
-                Running tests with a different sorting risks tests running on an application that has been cleaned up.
-                """;
-
-        String message;
-        if (orderer.isPresent()) {
-            message = String.format(
-                    "%sTo set a test order while preserving the Quarkus required sorting, please use the Quarkus configuration to set junit.quarkus.orderer.secondary-orderer=%s, and remove the junit-platform.properties (if any) from the classpath.",
-                    generalExplanation, orderer.get());
-        } else {
-            message = String.format(
-                    """
-                            %sIt looks like there is a junit-platform.properties configuration file on the project classpath.
-                            The JUnit framework will only read the first properties it finds, which prevents Quarkus from setting the class orderer it needs.
-                            Please either add junit.jupiter.testclass.order.default=%s to your project's junit-platform.properties file, or remove the file and use system properties to configure JUnit.""",
-                    generalExplanation, DESIRED_CLASS_ORDERER.getName());
-        }
-        return message;
     }
 
     @Override

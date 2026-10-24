@@ -126,6 +126,12 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
+    public List<Supplier<BuildCommandArgs>> prepareRemoteDevMode(DevOptions commonOptions, DebugOptions debugOptions,
+            List<String> params) {
+        throw new UnsupportedOperationException("Remote dev mode is not supported for JBang projects");
+    }
+
+    @Override
     public Path getProjectRoot() {
         return projectRoot;
     }

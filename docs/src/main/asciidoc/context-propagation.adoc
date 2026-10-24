@@ -219,6 +219,10 @@ their extensions:
 |N/A
 |The Quarkus REST or RESTEasy Classic context
 
+|`MDC`
+|N/A
+|The logging MDC (see xref:logging.adoc#mdc-propagation[MDC propagation])
+
 |`Application`
 |https://javadoc.io/doc/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.3/org/eclipse/microprofile/context/ThreadContext.html#APPLICATION[`ThreadContext.APPLICATION`]
 |The current `ThreadContextClassLoader`

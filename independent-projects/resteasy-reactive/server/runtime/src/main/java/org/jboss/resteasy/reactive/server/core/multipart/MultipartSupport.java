@@ -29,6 +29,7 @@ import jakarta.ws.rs.ext.MessageBodyReader;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.EntityPartImpl;
+import org.jboss.resteasy.reactive.common.providers.serialisers.MessageReaderUtil;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -205,7 +206,7 @@ public final class MultipartSupport {
         // this is only for the TCK and regular form params
         if (value.isFileItem()) {
             try {
-                return new String(value.getFileItem().getInputStream().readAllBytes());
+                return new String(value.getFileItem().getInputStream().readAllBytes(), partCharset(value));
             } catch (IOException e) {
                 throw new MultipartPartReadingException(e);
             }
@@ -214,6 +215,14 @@ public final class MultipartSupport {
                 return Encode.encodeQueryParam(value.getValue());
             return value.getValue();
         }
+    }
+
+    private static Charset partCharset(FormValue value) {
+        String contentType = value.getHeaders() != null ? value.getHeaders().getFirst("Content-Type") : null;
+        if (contentType == null) {
+            return StandardCharsets.UTF_8;
+        }
+        return Charset.forName(MessageReaderUtil.charsetFromMediaType(MediaType.valueOf(contentType)));
     }
 
     public static List<String> getStrings(String formName, ResteasyReactiveRequestContext context) {
@@ -231,7 +240,7 @@ public final class MultipartSupport {
         for (FormValue value : values) {
             if (value.isFileItem()) {
                 try {
-                    ret.add(new String(readAllBytes(value.getFileItem()), Charset.defaultCharset()));
+                    ret.add(new String(readAllBytes(value.getFileItem()), partCharset(value)));
                 } catch (IOException e) {
                     throw new MultipartPartReadingException(e);
                 }
@@ -449,9 +458,9 @@ public final class MultipartSupport {
             }
             mediaType = contentType != null ? MediaType.valueOf(contentType) : MediaType.APPLICATION_OCTET_STREAM_TYPE;
         } else {
-            content = new ByteArrayInputStream(value.getValue().getBytes(
-                    value.getCharset() != null ? Charset.forName(value.getCharset()) : StandardCharsets.UTF_8));
-            mediaType = MediaType.TEXT_PLAIN_TYPE;
+            Charset charset = value.getCharset() != null ? Charset.forName(value.getCharset()) : StandardCharsets.UTF_8;
+            content = new ByteArrayInputStream(value.getValue().getBytes(charset));
+            mediaType = new MediaType("text", "plain", charset.name());
         }
 
         MultivaluedMap<String, String> headers = new QuarkusMultivaluedHashMap<>();

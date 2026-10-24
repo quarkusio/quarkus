@@ -207,6 +207,8 @@ public class MainClassBuildStep {
             ValueRegistry.class);
     private static final MethodDesc MD_StartupContext_putValue = MethodDesc.of(StartupContext.class, "putValue", void.class,
             String.class, Object.class);
+    private static final MethodDesc MD_StartupContext_putServiceValue = MethodDesc.of(StartupContext.class,
+            "putServiceValue", void.class, String.class, Object.class);
     private static final MethodDesc MD_StartupContext_setCommandLineArguments = MethodDesc.of(StartupContext.class,
             "setCommandLineArguments", void.class, String[].class);
     private static final MethodDesc MD_StartupContext_getServiceValue = MethodDesc.of(StartupContext.class, "getServiceValue",
@@ -319,8 +321,10 @@ public class MainClassBuildStep {
         Map<String, Set<String>> buildItemProducers = buildContext.getBuildItemProducers();
         ServiceGraphBuilder.GraphPlan staticPlan = ServiceGraphBuilder.buildStaticInit(
                 staticInitTasks, stepGraph, buildItemProducers);
+        Set<String> runtimeProvidedKeys = new HashSet<>(staticPlan.serviceKeys());
+        runtimeProvidedKeys.addAll(ServiceGraphBuilder.RUNTIME_PROVIDED_SERVICE_KEYS);
         ServiceGraphBuilder.GraphPlan runtimePlan = ServiceGraphBuilder.buildRuntime(
-                mainMethod, stepGraph, staticPlan.serviceKeys(), buildItemProducers);
+                mainMethod, stepGraph, runtimeProvidedKeys, buildItemProducers);
 
         // Application class
         GeneratedClassGizmo2Adaptor gizmoOutput = new GeneratedClassGizmo2Adaptor(generatedClass, null, null,
@@ -454,6 +458,9 @@ public class MainClassBuildStep {
                     LocalVar valueRegistry = b0.localVar("valueRegistry",
                             b0.invokeVirtual(MD_Application_getValueRegistry, file.this_()));
                     b0.invokeVirtual(MD_StartupContext_putValue, sc, Const.of(ValueRegistry.class.getName()), valueRegistry);
+                    // and with the service values, so runtime-init services can require it
+                    b0.invokeVirtual(MD_StartupContext_putServiceValue, sc,
+                            Const.of(ServiceGraphBuilder.VALUE_REGISTRY_SERVICE_KEY), valueRegistry);
 
                     // Make sure we set properties in doStartup as well. This is necessary because setting them in the static-init
                     // sets them at build-time, on the host JVM, while SVM has substitutions for System. get/setProperty at

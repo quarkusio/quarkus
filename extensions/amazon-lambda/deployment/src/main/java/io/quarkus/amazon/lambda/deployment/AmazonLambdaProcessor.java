@@ -26,9 +26,7 @@ import io.quarkus.amazon.lambda.runtime.AmazonLambdaRecorder.RequestHandlerClass
 import io.quarkus.amazon.lambda.runtime.FunctionError;
 import io.quarkus.amazon.lambda.runtime.LambdaBuildTimeConfig;
 import io.quarkus.amazon.lambda.runtime.LambdaConfig;
-import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.builder.BuildException;
@@ -313,8 +311,7 @@ public final class AmazonLambdaProcessor {
             LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode launchMode = launchModeBuildItem.getLaunchMode();
         pollLoopService(serviceRegistrar)
-                .onStart((ctx, container) -> AmazonLambdaRecorder.startPollLoop(
-                        container.instance(ValueRegistry.class).get(), ctx, launchMode));
+                .onStart((ctx, valueRegistry) -> AmazonLambdaRecorder.startPollLoop(valueRegistry, ctx, launchMode));
     }
 
     @BuildStep(onlyIfNot = NativeBuild.class)
@@ -322,19 +319,17 @@ public final class AmazonLambdaProcessor {
             LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode launchMode = launchModeBuildItem.getLaunchMode();
         pollLoopService(serviceRegistrar)
-                .onStart((ctx, container) -> AmazonLambdaRecorder.startPollLoopIfDevOrTestOrExplicit(
-                        container.instance(ValueRegistry.class).get(), ctx, launchMode));
+                .onStart((ctx, valueRegistry) -> AmazonLambdaRecorder.startPollLoopIfDevOrTestOrExplicit(
+                        valueRegistry, ctx, launchMode));
     }
 
-    private static VoidServiceBuilder1<ArcContainer> pollLoopService(ServiceRegistrar serviceRegistrar) {
+    private static VoidServiceBuilder1<ValueRegistry> pollLoopService(ServiceRegistrar serviceRegistrar) {
         return serviceRegistrar
                 .forService("io.quarkus.amazon-lambda.poll-loop")
                 .atPhase(Phase.SERVING)
                 .after(STATIC_HANDLER_SERVICE)
                 .after(HANDLER_SERVICE)
-                .require(ArcContainer.class)
-                // the value registry is a runtime-init synthetic bean
-                .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                .require(ValueRegistry.class)
                 // start polling once the other services have started
                 .afterBuildItem(ServiceStartBuildItem.class);
     }

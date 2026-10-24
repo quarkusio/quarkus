@@ -12,11 +12,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import io.quarkus.core.deployment.service.impl.LambdaTransliterator;
 import io.quarkus.core.deployment.service.impl.TransliteratedAction;
 import io.quarkus.core.service.impl.ServiceNode;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
+import io.quarkus.value.registry.ValueRegistry;
 
 /**
  * Builds a topologically-sorted graph of service nodes from build items
@@ -41,6 +43,18 @@ import io.quarkus.deployment.recording.BytecodeRecorderImpl;
  * </ol>
  */
 final class ServiceGraphBuilder {
+
+    /**
+     * The service key of the application's {@link ValueRegistry}, which the generated application
+     * puts into the service values before the runtime-init graph starts.
+     */
+    static final String VALUE_REGISTRY_SERVICE_KEY = LambdaTransliterator.serviceKey(ValueRegistry.class, List.of());
+
+    /**
+     * Service keys that the generated application provides to the runtime-init graph
+     * without a registered service.
+     */
+    static final Set<String> RUNTIME_PROVIDED_SERVICE_KEYS = Set.of(VALUE_REGISTRY_SERVICE_KEY);
 
     private ServiceGraphBuilder() {
     }

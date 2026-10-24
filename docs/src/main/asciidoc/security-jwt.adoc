@@ -325,19 +325,14 @@ The {mp-jwt} specification requires JWTs signed with the RSA-256 signature algor
 This in turn requires an RSA public key pair.
 On the REST endpoint server side, you need to configure the location of the RSA public key to use to verify the JWT sent along with requests.
 The `mp.jwt.verify.publickey.location=publicKey.pem` setting configured previously expects that the public key is available on the classpath as `publicKey.pem`.
-To accomplish this, copy the following content to a `security-jwt-quickstart/src/main/resources/publicKey.pem` file.
+To accomplish this, generate an RSA key pair as described in <<generating-keys-with-the-quarkus-cli>> or <<generating-keys-with-openssl>>, and place the public key in a `security-jwt-quickstart/src/main/resources/publicKey.pem` file.
+The file looks like this:
 
 .RSA public key PEM content
 [source, text]
 ----
 -----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlivFI8qB4D0y2jy0CfEq
-Fyy46R0o7S8TKpsx5xbHKoU1VWg6QkQm+ntyIv1p4kE1sPEQO73+HY8+Bzs75XwR
-TYL1BmR1w8J5hmjVWjc6R2BTBGAYRPFRhor3kpM6ni2SPmNNhurEAHw7TaqszP5e
-UF/F9+KEBWkwVta+PZ37bwqSE4sCb1soZFrVz/UT/LF4tYpuVYt3YbqToZ3pZOZ9
-AX2o1GCG3xwOjkc4x0W7ezbQZdC9iftPxVHR8irOijJRRjcPDtA6vPKpzLl6CyYn
-sIYPd99ltwxTHjr3npfv/3Lw50bAkbT4HeLFxTx4flEoZLKO/g0bAoV2uqBhkA9x
-nQIDAQAB
+<you will see a multi-line public key here>
 -----END PUBLIC KEY-----
 ----
 
@@ -387,39 +382,16 @@ public class GenerateToken {
 <4> Adds a `birthdate` claim.
     Because this can be considered sensitive information, consider encrypting claims as described in xref:security-jwt-build.adoc[Generate JWT tokens with SmallRye JWT].
 
-Note that for this code to work, you need the content of the RSA private key corresponding to the public key you have in the `TokenSecuredResource` application.
-Take the following PEM content and place it into `security-jwt-quickstart/src/test/resources/privateKey.pem`:
+Note that for this code to work, you need the RSA private key that corresponds to the public key you have in the `TokenSecuredResource` application.
+Place the private key of the pair you generated into `security-jwt-quickstart/src/test/resources/privateKey.pem`.
+Do not reuse a key pair published in documentation or in a sample repository: anyone who reads it can sign tokens that your application accepts.
+The file looks like this:
 
 .RSA private key PEM content
 [source, text]
 ----
 -----BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCWK8UjyoHgPTLa
-PLQJ8SoXLLjpHSjtLxMqmzHnFscqhTVVaDpCRCb6e3Ii/WniQTWw8RA7vf4djz4H
-OzvlfBFNgvUGZHXDwnmGaNVaNzpHYFMEYBhE8VGGiveSkzqeLZI+Y02G6sQAfDtN
-qqzM/l5QX8X34oQFaTBW1r49nftvCpITiwJvWyhkWtXP9RP8sXi1im5Vi3dhupOh
-nelk5n0BfajUYIbfHA6ORzjHRbt7NtBl0L2J+0/FUdHyKs6KMlFGNw8O0Dq88qnM
-uXoLJiewhg9332W3DFMeOveel+//cvDnRsCRtPgd4sXFPHh+UShkso7+DRsChXa6
-oGGQD3GdAgMBAAECggEAAjfTSZwMHwvIXIDZB+yP+pemg4ryt84iMlbofclQV8hv
-6TsI4UGwcbKxFOM5VSYxbNOisb80qasb929gixsyBjsQ8284bhPJR7r0q8h1C+jY
-URA6S4pk8d/LmFakXwG9Tz6YPo3pJziuh48lzkFTk0xW2Dp4SLwtAptZY/+ZXyJ6
-96QXDrZKSSM99Jh9s7a0ST66WoxSS0UC51ak+Keb0KJ1jz4bIJ2C3r4rYlSu4hHB
-Y73GfkWORtQuyUDa9yDOem0/z0nr6pp+pBSXPLHADsqvZiIhxD/O0Xk5I6/zVHB3
-zuoQqLERk0WvA8FXz2o8AYwcQRY2g30eX9kU4uDQAQKBgQDmf7KGImUGitsEPepF
-KH5yLWYWqghHx6wfV+fdbBxoqn9WlwcQ7JbynIiVx8MX8/1lLCCe8v41ypu/eLtP
-iY1ev2IKdrUStvYRSsFigRkuPHUo1ajsGHQd+ucTDf58mn7kRLW1JGMeGxo/t32B
-m96Af6AiPWPEJuVfgGV0iwg+HQKBgQCmyPzL9M2rhYZn1AozRUguvlpmJHU2DpqS
-34Q+7x2Ghf7MgBUhqE0t3FAOxEC7IYBwHmeYOvFR8ZkVRKNF4gbnF9RtLdz0DMEG
-5qsMnvJUSQbNB1yVjUCnDAtElqiFRlQ/k0LgYkjKDY7LfciZl9uJRl0OSYeX/qG2
-tRW09tOpgQKBgBSGkpM3RN/MRayfBtmZvYjVWh3yjkI2GbHA1jj1g6IebLB9SnfL
-WbXJErCj1U+wvoPf5hfBc7m+jRgD3Eo86YXibQyZfY5pFIh9q7Ll5CQl5hj4zc4Y
-b16sFR+xQ1Q9Pcd+BuBWmSz5JOE/qcF869dthgkGhnfVLt/OQzqZluZRAoGAXQ09
-nT0TkmKIvlza5Af/YbTqEpq8mlBDhTYXPlWCD4+qvMWpBII1rSSBtftgcgca9XLB
-MXmRMbqtQeRtg4u7dishZVh1MeP7vbHsNLppUQT9Ol6lFPsd2xUpJDc6BkFat62d
-Xjr3iWNPC9E9nhPPdCNBv7reX7q81obpeXFMXgECgYEAmk2Qlus3OV0tfoNRqNpe
-Mb0teduf2+h3xaI1XDIzPVtZF35ELY/RkAHlmWRT4PCdR0zXDidE67L6XdJyecSt
-FdOUH8z5qUraVVebRFvJqf/oGsXc4+ex1ZKUTbY0wqY1y9E39yvB3MaTmZFuuqk8
-f3cg+fr8aou7pr9SHhJlZCU=
+<you will see a very long multi-line private key here>
 -----END PRIVATE KEY-----
 ----
 
@@ -448,6 +420,7 @@ quarkus jwt generate-key --algo RSA --size 4096
 The keys are written to `src/main/resources/privateKey.pem` and `src/main/resources/publicKey.pem` in PKCS#8 format, and the required JWT configuration properties are automatically added to `application.properties`.
 ====
 
+[[generating-keys-with-openssl]]
 [NOTE]
 .Generating keys with OpenSSL
 ====
@@ -777,7 +750,7 @@ import io.smallrye.jwt.build.Jwt;
 
 @Path("/secured")
 public class SecuredResource {
-    private static final String SECRET = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
+    private static final String SECRET = "<a-secret-of-at-least-32-characters>";
 
     @Inject
     JWTParser parser;

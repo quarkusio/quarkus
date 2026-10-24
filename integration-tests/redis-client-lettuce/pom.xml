@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-integration-tests-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>quarkus-integration-test-redis-client-lettuce</artifactId>
+    <name>Quarkus - Integration Tests - Redis Client - Lettuce backend</name>
+
+    <properties>
+        <redis.url>localhost:6379</redis.url>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-redis-client-lettuce</artifactId>
+        </dependency>
+
+        <!-- test dependencies -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-redis-client-lettuce-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-jackson-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <!-- Self-signed server certificate (CN localhost) for the TLS-only Redis server of the docker-redis profile,
+                 written to target/certificates in the generate-resources phase, i.e. before the containers are started
+                 in the compile phase -->
+            <plugin>
+                <groupId>io.smallrye.certs</groupId>
+                <artifactId>smallrye-certificate-generator-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <certificates>
+                        <certificate>
+                            <name>redis</name>
+                            <formats>
+                                <format>PEM</format>
+                            </formats>
+                            <cn>localhost</cn>
+                            <duration>2</duration>
+                            <client>true</client>
+                        </certificate>
+                    </certificates>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>test-redis</id>
+            <activation>
+                <property>
+                    <name>test-containers</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skip>false</skip>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <skip>false</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>docker-redis</id>
+            <activation>
+                <property>
+                    <name>start-containers</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <name>redis:8-alpine</name>
+                                    <alias>quarkus-test-redis</alias>
+                                    <run>
+                                        <ports>
+                                            <port>6379:6379</port>
+                                        </ports>
+                                        <log>
+                                            <prefix>Redis:</prefix>
+                                            <date>default</date>
+                                            <color>cyan</color>
+                                        </log>
+                                        <wait>
+                                            <time>5000</time>
+                                            <exec>
+                                                <postStart>redis-cli PING</postStart>
+                                            </exec>
+                                        </wait>
+                                    </run>
+                                </image>
+                                <image>
+                                    <name>redis:8-alpine</name>
+                                    <alias>quarkus-test-redis-tls</alias>
+                                    <run>
+                                        <ports>
+                                            <port>6380:6380</port>
+                                        </ports>
+                                        <volumes>
+                                            <bind>
+                                                <volume>${project.build.directory}/certificates:/certs${volume.access.modifier}</volume>
+                                            </bind>
+                                        </volumes>
+                                        <cmd>redis-server --port 0 --tls-port 6380 --tls-cert-file /certs/redis.crt --tls-key-file /certs/redis.key --tls-ca-cert-file /certs/redis-server-ca.crt --tls-auth-clients no</cmd>
+                                        <log>
+                                            <prefix>Redis TLS:</prefix>
+                                            <date>default</date>
+                                            <color>magenta</color>
+                                        </log>
+                                        <wait>
+                                            <time>5000</time>
+                                            <log>Ready to accept connections</log>
+                                        </wait>
+                                    </run>
+                                </image>
+                                <!-- Six-node cluster (three upstream nodes with one replica each) in one container, started
+                                     by the script the deployment tests use too (extensions/redis-client-lettuce/deployment/
+                                     src/test/resources/redis/start-cluster.sh): the nodes announce 127.0.0.1 and
+                                     their own port, so every port is published on the same host port -->
+                                <image>
+                                    <name>redis:8-alpine</name>
+                                    <alias>quarkus-test-redis-cluster</alias>
+                                    <run>
+                                        <ports>
+                                            <port>6400:6400</port>
+                                            <port>6401:6401</port>
+                                            <port>6402:6402</port>
+                                            <port>6403:6403</port>
+                                            <port>6404:6404</port>
+                                            <port>6405:6405</port>
+                                        </ports>
+                                        <volumes>
+                                            <bind>
+                                                <volume>${project.basedir}/../../extensions/redis-client-lettuce/deployment/src/test/resources/redis:/redis${volume.access.modifier}</volume>
+                                            </bind>
+                                        </volumes>
+                                        <cmd>sh /redis/start-cluster.sh 6400 6401 6402 6403 6404 6405</cmd>
+                                        <log>
+                                            <prefix>Redis cluster:</prefix>
+                                            <date>default</date>
+                                            <color>yellow</color>
+                                        </log>
+                                        <wait>
+                                            <time>120000</time>
+                                            <log>CLUSTER READY</log>
+                                        </wait>
+                                    </run>
+                                </image>
+                                <!-- Sentinel deployment (a master, its replica and three sentinels) in one container, started
+                                     by the script the deployment tests use too (extensions/redis-client-lettuce/deployment/
+                                     src/test/resources/redis/start-sentinel.sh): every process announces 127.0.0.1
+                                     and its own port, so every port is published on the same host port -->
+                                <image>
+                                    <name>redis:8-alpine</name>
+                                    <alias>quarkus-test-redis-sentinel</alias>
+                                    <run>
+                                        <ports>
+                                            <port>6500:6500</port>
+                                            <port>6501:6501</port>
+                                            <port>6502:6502</port>
+                                            <port>6503:6503</port>
+                                            <port>6504:6504</port>
+                                        </ports>
+                                        <env>
+                                            <MASTER_NAME>mymaster</MASTER_NAME>
+                                        </env>
+                                        <volumes>
+                                            <bind>
+                                                <volume>${project.basedir}/../../extensions/redis-client-lettuce/deployment/src/test/resources/redis:/redis${volume.access.modifier}</volume>
+                                            </bind>
+                                        </volumes>
+                                        <cmd>sh /redis/start-sentinel.sh 6500 6501 6502 6503 6504</cmd>
+                                        <log>
+                                            <prefix>Redis sentinel:</prefix>
+                                            <date>default</date>
+                                            <color>green</color>
+                                        </log>
+                                        <wait>
+                                            <time>120000</time>
+                                            <log>SENTINEL READY</log>
+                                        </wait>
+                                    </run>
+                                </image>
+                            </images>
+                            <allContainers>true</allContainers>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>docker-start</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>stop</goal>
+                                    <goal>start</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>docker-stop</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>stop</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

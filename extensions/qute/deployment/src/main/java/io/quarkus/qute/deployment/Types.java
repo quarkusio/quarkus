@@ -215,6 +215,26 @@ public final class Types {
         }
     }
 
+    private static final Map<DotName, Set<DotName>> WIDENING_NUMERIC_CONVERSIONS = Map.of(
+            DotNames.BYTE, Set.of(DotNames.SHORT, DotNames.INTEGER, DotNames.LONG, DotNames.FLOAT, DotNames.DOUBLE),
+            DotNames.SHORT, Set.of(DotNames.INTEGER, DotNames.LONG, DotNames.FLOAT, DotNames.DOUBLE),
+            DotNames.CHARACTER, Set.of(DotNames.INTEGER, DotNames.LONG, DotNames.FLOAT, DotNames.DOUBLE),
+            DotNames.INTEGER, Set.of(DotNames.LONG, DotNames.FLOAT, DotNames.DOUBLE),
+            DotNames.LONG, Set.of(DotNames.FLOAT, DotNames.DOUBLE),
+            DotNames.FLOAT, Set.of(DotNames.DOUBLE));
+
+    /**
+     * @return {@code true} if a value of the first type can be converted to the second type by a widening primitive
+     *         conversion (JLS 5.1.2), where both types are considered in their boxed form
+     */
+    static boolean isWideningNumericConversion(Type from, Type to) {
+        if (from == null || to == null) {
+            return false;
+        }
+        Set<DotName> targets = WIDENING_NUMERIC_CONVERSIONS.get(box(from).name());
+        return targets != null && targets.contains(box(to).name());
+    }
+
     static boolean isImplementorOf(ClassInfo target, DotName interfaceName, IndexView index) {
         if (target.interfaceNames().contains(interfaceName)) {
             // Direct implementor

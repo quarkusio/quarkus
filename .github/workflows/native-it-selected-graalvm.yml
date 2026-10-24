@@ -249,7 +249,7 @@ jobs:
             ${{ needs.initial-build.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.initial-build.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-io-quarkus
           path: .
@@ -354,7 +354,7 @@ jobs:
             ${{ needs.initial-build.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.initial-build.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-io-quarkus
           path: .
@@ -415,7 +415,7 @@ jobs:
     needs: [initial-build,native-tests,virtual-thread-native-tests]
     if: always()
     steps:
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           path: build-reports-artifacts
       - name: Set up JDK ${{ needs.initial-build.outputs.base-jdk-version }}

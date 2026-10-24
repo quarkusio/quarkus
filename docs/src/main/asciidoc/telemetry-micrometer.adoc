@@ -524,6 +524,8 @@ The Micrometer extension automatically times HTTP server requests. Following Pro
 timers, look for `http_server_requests_seconds_count`, `http_server_requests_seconds_sum`, and
 `http_server_requests_seconds_max`. Dimensional labels have been added for the requested uri, the HTTP method
 (GET, POST, etc.), the status code (200, 302, 404, etc.), and a more general outcome field.
+The uri label holds the request path, so the query string is not part of it, and the patterns described below are
+matched against the path as well.
 
 .Ignoring endpoints
 

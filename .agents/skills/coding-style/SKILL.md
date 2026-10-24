@@ -52,6 +52,20 @@ description: >
   This helps during bisects and makes it easier to revert changes when needed
 - Don't use deprecated methods or classes in new code
 
+## Comments and Javadoc
+
+- Write a Javadoc block for every new or rewritten type, constructor, public or
+  package-private method, record (one `@param` per component), enum and enum
+  constant in `main` code. One sentence plus `@param`/`@return` is enough, and a
+  trivial accessor still gets one (`Get the bean name.`). Reviewers add missing
+  Javadoc themselves otherwise (#57806)
+- In a long method, one `//` comment per logical block that names what the block
+  does is welcome (`// tabulate any used JDK modules.`)
+- Do not comment single statements that restate the code, and do not explain in a
+  comment why a one-line fix exists; that belongs in the commit message
+- A `// TODO` names the issue that tracks it
+- No Javadoc on test classes
+
 ## Logging
 
 - Use JBoss Logging (`org.jboss.logging.Logger`) as the logging API

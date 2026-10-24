@@ -1015,7 +1015,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         LOG.debug("Authorization code has been exchanged, verifying ID token");
                         return authenticate(identityProviderManager, context,
                                 new IdTokenCredential(idToken, internalIdToken))
-                                .flatMap(new AuthenticationCompletionCall(context, tokens))
+                                .call(new Function<SecurityIdentity, Uni<?>>() {
+                                    @Override
+                                    public Uni<?> apply(SecurityIdentity identity) {
+                                        AuthenticationCompletionContext ac = new AuthenticationCompletionContext(
+                                                context, tokens, identity, authenticationCompletionActionContext);
+                                        return runAuthenticationCompletionActions(
+                                                resolver.authenticationCompletionActions(), 0, ac);
+                                    }
+                                })
                                 .call(new Function<SecurityIdentity, Uni<?>>() {
                                     @Override
                                     public Uni<Void> apply(SecurityIdentity identity) {
@@ -1750,35 +1758,17 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return Map.of(OidcConstants.ID_TOKEN_VALUE, token);
     }
 
-    private class AuthenticationCompletionCall implements Function<SecurityIdentity, Uni<? extends SecurityIdentity>> {
-        final RoutingContext context;
-        final AuthorizationCodeTokens codeTokens;
-
-        AuthenticationCompletionCall(RoutingContext context, AuthorizationCodeTokens codeTokens) {
-            this.context = context;
-            this.codeTokens = codeTokens;
+    private static Uni<Void> runAuthenticationCompletionActions(List<AuthenticationCompletionAction> actions,
+            int i, AuthenticationCompletionContext ac) {
+        if (i == actions.size()) {
+            return Uni.createFrom().voidItem();
         }
-
-        @Override
-        public Uni<SecurityIdentity> apply(SecurityIdentity identity) {
-            AuthenticationCompletionContext ac = new AuthenticationCompletionContext(context, codeTokens, identity,
-                    authenticationCompletionActionContext);
-            return runAuthenticationCompletionActions(resolver.authenticationCompletionActions(), 0, ac)
-                    .replaceWith(identity);
-        }
-
-        private Uni<Void> runAuthenticationCompletionActions(List<AuthenticationCompletionAction> actions,
-                int i, AuthenticationCompletionContext ac) {
-            if (i == actions.size()) {
-                return Uni.createFrom().voidItem();
-            }
-            return actions.get(i).action(ac)
-                    .onItem().transformToUni(new Function<Void, Uni<? extends Void>>() {
-                        @Override
-                        public Uni<? extends Void> apply(Void v) {
-                            return runAuthenticationCompletionActions(actions, i + 1, ac);
-                        }
-                    });
-        }
+        return actions.get(i).action(ac)
+                .onItem().transformToUni(new Function<Void, Uni<? extends Void>>() {
+                    @Override
+                    public Uni<? extends Void> apply(Void v) {
+                        return runAuthenticationCompletionActions(actions, i + 1, ac);
+                    }
+                });
     }
 }

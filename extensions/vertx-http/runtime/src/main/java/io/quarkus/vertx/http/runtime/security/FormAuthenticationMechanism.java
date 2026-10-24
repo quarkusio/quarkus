@@ -148,11 +148,11 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                                     .subscribe().with(new Consumer<SecurityIdentity>() {
                                         @Override
                                         public void accept(SecurityIdentity identity) {
-                                            if (isFormAuthEventObserver) {
-                                                fire(formAuthEvent, createLoginEvent(identity));
-                                            }
-
                                             try {
+                                                if (isFormAuthEventObserver) {
+                                                    fire(formAuthEvent, createLoginEvent(identity));
+                                                }
+
                                                 loginManager.save(identity, exchange, null, exchange.request().isSSL());
                                                 if (redirectToLandingPage
                                                         || exchange.request().getCookie(locationCookie) != null) {

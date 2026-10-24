@@ -287,21 +287,7 @@ public final class VertxGrpcSender implements GrpcSender {
                         response.exceptionHandler(new Handler<>() {
                             @Override
                             public void handle(Throwable t) {
-                                if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                                    // retry
-                                    initiateSend(client, server,
-                                            MAX_ATTEMPTS - attemptNumber,
-                                            newAttempt(), exportTimeout,
-                                            new Consumer<>() {
-                                                @Override
-                                                public void accept(Throwable throwable) {
-                                                    failOnClientRequest(throwable, onError, attemptNumber);
-                                                }
-                                            });
-
-                                } else {
-                                    failOnClientRequest(t, onError, attemptNumber);
-                                }
+                                retryOrFail(t);
                             }
                         }).errorHandler(new Handler<>() {
                             @Override
@@ -469,20 +455,7 @@ public final class VertxGrpcSender implements GrpcSender {
                 }).onFailure(new Handler<>() {
                     @Override
                     public void handle(Throwable t) {
-                        if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                            // retry
-                            initiateSend(client, server,
-                                    MAX_ATTEMPTS - attemptNumber,
-                                    newAttempt(), exportTimeout,
-                                    new Consumer<>() {
-                                        @Override
-                                        public void accept(Throwable throwable) {
-                                            failOnClientRequest(throwable, onError, attemptNumber);
-                                        }
-                                    });
-                        } else {
-                            failOnClientRequest(t, onError, attemptNumber);
-                        }
+                        retryOrFail(t);
                     }
                 });
             } catch (IOException e) {
@@ -492,6 +465,23 @@ public final class VertxGrpcSender implements GrpcSender {
                         + (e.getMessage() == null ? e.getClass().getName() : e.getMessage());
                 logger.log(Level.WARNING, message);
                 onError.accept(e);
+            }
+        }
+
+        private void retryOrFail(Throwable t) {
+            if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
+                // retry
+                initiateSend(client, server,
+                        MAX_ATTEMPTS - attemptNumber,
+                        newAttempt(), exportTimeout,
+                        new Consumer<>() {
+                            @Override
+                            public void accept(Throwable throwable) {
+                                failOnClientRequest(throwable, onError, attemptNumber);
+                            }
+                        });
+            } else {
+                failOnClientRequest(t, onError, attemptNumber);
             }
         }
 

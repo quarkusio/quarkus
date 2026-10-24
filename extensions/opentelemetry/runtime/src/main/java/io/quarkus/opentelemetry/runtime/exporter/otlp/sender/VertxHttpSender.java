@@ -11,6 +11,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -26,7 +27,6 @@ import io.opentelemetry.sdk.common.internal.ThrottlingLogger;
 import io.quarkus.vertx.core.runtime.BufferOutputStream;
 import io.smallrye.common.annotation.SuppressForbidden;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -259,26 +259,14 @@ public final class VertxHttpSender implements HttpSender {
         @Override
         public void handle(HttpClientRequest request) {
 
-            request.response().onComplete(new Handler<>() {
-                @Override
-                public void handle(AsyncResult<HttpClientResponse> callResult) {
-                    if (callResult.succeeded()) {
-                        HttpClientResponse clientResponse = callResult.result();
-                        clientResponse.body().onComplete(new Handler<>() {
-                            @Override
-                            public void handle(AsyncResult<Buffer> bodyResult) {
-                                if (bodyResult.succeeded()) {
-                                    if (clientResponse.statusCode() >= 500) {
-                                        if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                                            // we should retry for 5xx error as they might be recoverable
-                                            initiateSend(client, requestURI,
-                                                    MAX_ATTEMPTS - attemptNumber,
-                                                    newAttempt(),
-                                                    onError);
-                                            return;
-                                        }
-                                    }
-                                    onHttpResponseRead.accept(new HttpResponse() {
+            request.response()
+                    .compose(new Function<HttpClientResponse, Future<HttpResponse>>() {
+                        @Override
+                        public Future<HttpResponse> apply(HttpClientResponse clientResponse) {
+                            return clientResponse.body().map(new Function<Buffer, HttpResponse>() {
+                                @Override
+                                public HttpResponse apply(Buffer body) {
+                                    return new HttpResponse() {
                                         @Override
                                         public int getStatusCode() {
                                             return clientResponse.statusCode();
@@ -291,35 +279,30 @@ public final class VertxHttpSender implements HttpSender {
 
                                         @Override
                                         public byte[] getResponseBody() {
-                                            return bodyResult.result().getBytes();
+                                            return body.getBytes();
                                         }
-                                    });
-                                } else {
-                                    if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                                        // retry
-                                        initiateSend(client, requestURI,
-                                                MAX_ATTEMPTS - attemptNumber,
-                                                newAttempt(),
-                                                onError);
-                                    } else {
-                                        onError.accept(bodyResult.cause());
-                                    }
+                                    };
                                 }
-                            }
-                        });
-                    } else {
-                        if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                            // retry
-                            initiateSend(client, requestURI,
-                                    MAX_ATTEMPTS - attemptNumber,
-                                    newAttempt(),
-                                    onError);
-                        } else {
-                            onError.accept(callResult.cause());
+                            });
                         }
-                    }
-                }
-            });
+                    })
+                    .onComplete(new Handler<HttpResponse>() {
+                        @Override
+                        public void handle(HttpResponse response) {
+                            // we should retry for 5xx error as they might be recoverable
+                            if (response.getStatusCode() >= 500 && retry()) {
+                                return;
+                            }
+                            onHttpResponseRead.accept(response);
+                        }
+                    }, new Handler<Throwable>() {
+                        @Override
+                        public void handle(Throwable failure) {
+                            if (!retry()) {
+                                onError.accept(failure);
+                            }
+                        }
+                    });
             request.putHeader("Content-Type", contentType);
 
             Buffer buffer = Buffer.buffer(requestBodyWriter.getContentLength());
@@ -346,6 +329,17 @@ public final class VertxHttpSender implements HttpSender {
             }
 
             request.send(buffer);
+        }
+
+        private boolean retry() {
+            if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
+                initiateSend(client, requestURI,
+                        MAX_ATTEMPTS - attemptNumber,
+                        newAttempt(),
+                        onError);
+                return true;
+            }
+            return false;
         }
 
         public ClientRequestSuccessHandler newAttempt() {

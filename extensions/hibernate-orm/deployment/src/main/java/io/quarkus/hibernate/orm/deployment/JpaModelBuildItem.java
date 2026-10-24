@@ -26,6 +26,11 @@ public final class JpaModelBuildItem extends SimpleBuildItem {
     private final Set<DotName> potentialCdiBeanClassNames = new TreeSet<>();
     private final Set<String> allModelClassNames = new TreeSet<>();
     private final Map<String, List<RecordableXmlMapping>> xmlMappingsByPU = new HashMap<>();
+    // Jakarta Data repository interfaces with an explicit persistence unit assignment.
+    // The value is the set of persistence units the repository is explicitly assigned to;
+    // an empty set marks a nested repository interface whose persistence unit is that of its enclosing entity.
+    // Repository interfaces that should follow the regular package-based assignment rules are absent from this map.
+    private final Map<String, Set<String>> repositoryPersistenceUnits = new HashMap<>();
 
     public JpaModelBuildItem(Set<String> allModelPackageNames, Set<String> entityClassNames,
             Set<String> managedClassNames, Set<DotName> potentialCdiBeanClassNames,
@@ -41,6 +46,14 @@ public final class JpaModelBuildItem extends SimpleBuildItem {
             this.allModelClassNames.add(potentialCdiBeanClassName.toString());
         }
         this.xmlMappingsByPU.putAll(xmlMappingsByPU);
+    }
+
+    public JpaModelBuildItem(Set<String> allModelPackageNames, Set<String> entityClassNames,
+            Set<String> managedClassNames, Set<DotName> potentialCdiBeanClassNames,
+            Map<String, List<RecordableXmlMapping>> xmlMappingsByPU,
+            Map<String, Set<String>> repositoryPersistenceUnits) {
+        this(allModelPackageNames, entityClassNames, managedClassNames, potentialCdiBeanClassNames, xmlMappingsByPU);
+        this.repositoryPersistenceUnits.putAll(repositoryPersistenceUnits);
     }
 
     /**
@@ -84,6 +97,15 @@ public final class JpaModelBuildItem extends SimpleBuildItem {
      */
     public Map<String, List<RecordableXmlMapping>> getXmlMappingsByPU() {
         return xmlMappingsByPU;
+    }
+
+    /**
+     * @return the Jakarta Data repository interfaces with an explicit persistence unit assignment, keyed by class name.
+     *         An empty value marks a nested repository interface whose persistence unit is that of its enclosing entity.
+     *         Repository interfaces following the regular package-based assignment rules are absent from this map.
+     */
+    public Map<String, Set<String>> getRepositoryPersistenceUnits() {
+        return repositoryPersistenceUnits;
     }
 
     /**

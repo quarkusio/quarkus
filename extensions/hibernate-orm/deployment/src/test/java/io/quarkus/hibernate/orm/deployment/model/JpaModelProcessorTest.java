@@ -16,6 +16,7 @@ import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildIt
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.ClassNames;
+import io.quarkus.hibernate.orm.deployment.JpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.ProcessorTestStubs;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem;
@@ -167,6 +168,64 @@ class JpaModelProcessorTest {
 
         assertThat(result.getModelPerPersistenceUnit().get(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)
                 .entityClassNames()).containsExactly(DefaultEntity.class.getName());
+    }
+
+    @Test
+    void unannotatedRepositoryUsesPackageBasedPersistenceUnitAssignment() throws IOException {
+        var config = ProcessorTestStubs.hibernateORMConfig(Map.of(
+                "quarkus.hibernate-orm.packages", DefaultEntity.class.getPackageName(),
+                "quarkus.hibernate-orm.\"other\".packages", MyEntity.class.getPackageName()));
+
+        // An unannotated repository living in the "other" package must be assigned to the "other" persistence unit
+        // through the regular package-based rules, not forced to the default persistence unit.
+        String repositoryInOtherPackage = MyEntity.class.getPackageName() + ".MyRepository";
+
+        var model = new JpaModelBuildItem(
+                Set.of(DefaultEntity.class.getPackageName(), MyEntity.class.getPackageName()),
+                Set.of(DefaultEntity.class.getName()),
+                Set.of(DefaultEntity.class.getName(), repositoryInOtherPackage),
+                Set.of(),
+                Map.of(),
+                Map.of());
+
+        Index index = Index.of(DefaultEntity.class, MyEntity.class, PersistenceUnit.class, PersistenceUnit.List.class);
+
+        var result = processor.buildJpaModelPerPersistenceUnit(
+                config, List.of(), model, new CombinedIndexBuildItem(index, index));
+
+        assertThat(result.getModelPerPersistenceUnit().get("other").allModelClassNames())
+                .contains(repositoryInOtherPackage);
+        assertThat(result.getModelPerPersistenceUnit().get(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)
+                .allModelClassNames()).doesNotContain(repositoryInOtherPackage);
+    }
+
+    @Test
+    void repositoryExplicitPersistenceUnitOverridesPackageRules() throws IOException {
+        var config = ProcessorTestStubs.hibernateORMConfig(Map.of(
+                "quarkus.hibernate-orm.packages", DefaultEntity.class.getPackageName(),
+                "quarkus.hibernate-orm.\"other\".packages", MyEntity.class.getPackageName()));
+
+        // A repository physically in the default package but explicitly assigned (e.g. @Repository(dataStore="other"))
+        // must land in "other", overriding the package-based rules.
+        String repositoryInDefaultPackage = DefaultEntity.class.getPackageName() + ".MyRepository";
+
+        var model = new JpaModelBuildItem(
+                Set.of(DefaultEntity.class.getPackageName(), MyEntity.class.getPackageName()),
+                Set.of(DefaultEntity.class.getName()),
+                Set.of(DefaultEntity.class.getName(), repositoryInDefaultPackage),
+                Set.of(),
+                Map.of(),
+                Map.of(repositoryInDefaultPackage, Set.of("other")));
+
+        Index index = Index.of(DefaultEntity.class, MyEntity.class, PersistenceUnit.class, PersistenceUnit.List.class);
+
+        var result = processor.buildJpaModelPerPersistenceUnit(
+                config, List.of(), model, new CombinedIndexBuildItem(index, index));
+
+        assertThat(result.getModelPerPersistenceUnit().get("other").allModelClassNames())
+                .contains(repositoryInDefaultPackage);
+        assertThat(result.getModelPerPersistenceUnit().get(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)
+                .allModelClassNames()).doesNotContain(repositoryInDefaultPackage);
     }
 
 }

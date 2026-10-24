@@ -9,6 +9,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.it.hibernate.processor.data.pudefault.MyEntity;
+import io.quarkus.it.hibernate.processor.data.puother.MyOtherEntity;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 
@@ -107,6 +108,33 @@ public class HibernateOrmDataTest {
             given()
                     .pathParam("name", "unannotated-repository")
                     .when().delete("/data/by/name/{name}")
+                    .then()
+                    .statusCode(204);
+        }
+    }
+
+    @Test
+    public void testUnannotatedRepositoryInNonDefaultPersistenceUnit() {
+        given()
+                .body(new MyOtherEntity("unannotated-other-repository"))
+                .contentType(ContentType.JSON)
+                .when().post("/data/other")
+                .then()
+                .statusCode(204);
+
+        try {
+            // Fails unless the unannotated repository was assigned to the "other" persistence unit via package rules.
+            given()
+                    .pathParam("name", "unannotated-other-repository")
+                    .when().get("/data/other/unannotated/by/name/{name}")
+                    .then()
+                    .statusCode(200)
+                    .body("size()", equalTo(1))
+                    .body("[0].name", equalTo("unannotated-other-repository"));
+        } finally {
+            given()
+                    .pathParam("name", "unannotated-other-repository")
+                    .when().delete("/data/other/by/name/{name}")
                     .then()
                     .statusCode(204);
         }

@@ -42,6 +42,7 @@ import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.SchemaToolingUtil;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.observers.QuarkusSessionFactoryObserverForDbVersionCheck;
+import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForDataPopulation;
 import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForNamedQueryValidation;
 import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForSchemaExport;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
@@ -58,14 +59,15 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
 
     protected final MultiTenancyStrategy multiTenancyStrategy;
     protected final boolean shouldApplySchemaMigration;
-    private final SchemaToolingUtil.PreparedImportScripts importScripts;
+    private final List<SchemaToolingUtil.PreparedImportScripts> importScripts;
+    private final boolean populateAfterBoot;
 
     public FastBootEntityManagerFactoryBuilder(
             QuarkusPersistenceUnitDescriptor puDescriptor,
             PrevalidatedQuarkusMetadata metadata,
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
             Object cdiBeanManager, MultiTenancyStrategy multiTenancyStrategy, boolean shouldApplySchemaMigration,
-            SchemaToolingUtil.PreparedImportScripts importScripts) {
+            List<SchemaToolingUtil.PreparedImportScripts> importScripts, boolean populateAfterBoot) {
         this.puDescriptor = puDescriptor;
         this.metadata = metadata;
         this.standardServiceRegistry = standardServiceRegistry;
@@ -75,6 +77,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         this.multiTenancyStrategy = multiTenancyStrategy;
         this.shouldApplySchemaMigration = shouldApplySchemaMigration;
         this.importScripts = importScripts;
+        this.populateAfterBoot = populateAfterBoot;
     }
 
     @Override
@@ -94,9 +97,8 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
             populate(puDescriptor.getName(), optionsBuilder, standardServiceRegistry);
             return getSessionFactoryBuilder(optionsBuilder).build();
         } catch (Exception e) {
-            throw persistenceException("Unable to build Hibernate SessionFactory", e);
-        } finally {
             closeImportScripts();
+            throw persistenceException("Unable to build Hibernate SessionFactory", e);
         }
     }
 
@@ -140,7 +142,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     }
 
     protected final void closeImportScripts() {
-        importScripts.close();
+        importScripts.forEach(SchemaToolingUtil.PreparedImportScripts::close);
     }
 
     protected PersistenceException persistenceException(String message, Exception cause) {
@@ -197,12 +199,21 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
 
         options.addSessionFactoryObservers(new ServiceRegistryCloser());
 
+        // The data init script can still be executed after startup (SchemaManager, Dev UI reset),
+        // so unzipped import scripts are only deleted once the session factory is closed
+        options.addSessionFactoryObservers(new ImportScriptsCloser(importScripts));
+
         //New in ORM 6.2:
         options.addSessionFactoryObservers(new SessionFactoryObserverForNamedQueryValidation(metadata));
 
         // We should avoid running schema migrations multiple times
         if (shouldApplySchemaMigration) {
             options.addSessionFactoryObservers(new SessionFactoryObserverForSchemaExport(metadata));
+            // Same for the data init script, which for some schema management strategies
+            // is not executed as part of schema management
+            if (populateAfterBoot) {
+                options.addSessionFactoryObservers(new SessionFactoryObserverForDataPopulation());
+            }
         }
         //Vanilla ORM registers this one as well; we don't:
         //options.addSessionFactoryObservers( new SessionFactoryObserverForRegistration() );
@@ -273,6 +284,20 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
             sfi.getServiceRegistry().destroy();
             ServiceRegistry basicRegistry = sfi.getServiceRegistry().getParentServiceRegistry();
             ((ServiceRegistryImplementor) basicRegistry).destroy();
+        }
+    }
+
+    private static class ImportScriptsCloser implements SessionFactoryObserver {
+
+        private final List<SchemaToolingUtil.PreparedImportScripts> importScripts;
+
+        ImportScriptsCloser(List<SchemaToolingUtil.PreparedImportScripts> importScripts) {
+            this.importScripts = importScripts;
+        }
+
+        @Override
+        public void sessionFactoryClosed(SessionFactory sessionFactory) {
+            importScripts.forEach(SchemaToolingUtil.PreparedImportScripts::close);
         }
     }
 

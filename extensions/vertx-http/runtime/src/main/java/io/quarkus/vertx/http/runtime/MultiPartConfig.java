@@ -17,6 +17,12 @@ public interface MultiPartConfig {
      * part.
      * <p>
      * You can use this setting to force HTTP-based extensions to parse a message part as a file based on its content type.
+     * The media type of the part is compared without its parameters and ignoring case.
+     * <p>
+     * This setting does not restrict the uploads that are accepted: a part with a file name is always handled as a
+     * file, and no part is rejected because of its content type. To validate uploaded files, check
+     * {@code FileUpload#contentType()}, which is the client-supplied value, or the content of the file, in the resource
+     * method or in a request filter.
      * <p>
      * For now, this setting only works when using RESTEasy Reactive.
      */

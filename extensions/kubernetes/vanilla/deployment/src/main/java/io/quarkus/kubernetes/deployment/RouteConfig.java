@@ -20,6 +20,12 @@ public interface RouteConfig {
     Optional<String> host();
 
     /**
+     * The path under which the application is going to be exposed on the host, for example {@code /api}.
+     * Ignored with passthrough TLS termination, which does not allow a path.
+     */
+    Optional<String> path();
+
+    /**
      * The target named port. If not provided, it will be deducted from the Service resource ports.
      * Options are: "http" and "https".
      */

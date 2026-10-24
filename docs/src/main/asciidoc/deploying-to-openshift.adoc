@@ -287,6 +287,17 @@ Instead, you can pass it as a command-line argument:
 The same applies to all properties listed below.
 ====
 
+To expose the application under a path of a host shared with other routes, set the host and the path of the `Route`:
+
+[source,properties]
+----
+quarkus.openshift.route.expose=true
+quarkus.openshift.route.host=example.com
+quarkus.openshift.route.path=/api
+----
+
+NOTE: OpenShift does not allow a path on a route with passthrough TLS termination; `quarkus.openshift.route.path` is ignored, with a warning, in that case.
+
 ==== Securing the Route resource
 
 To secure the incoming connections, OpenShift provides several types of TLS termination to serve certifications.

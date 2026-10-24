@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.FileInputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Multi;
+import io.vertx.core.buffer.Buffer;
 
 public class MultipartProgrammaticTest {
 
@@ -51,11 +53,28 @@ public class MultipartProgrammaticTest {
         assertThat(result).isEqualTo("fileFormName/fileName-test");
     }
 
+    @Test
+    void shouldUploadInMemoryContentWithADynamicFileName() {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+
+        byte[] bytes = "in-memory content".getBytes(StandardCharsets.UTF_8);
+        String fileName = "report-" + System.nanoTime() + ".bin";
+        String result = client.postNames(ClientMultipartForm.create()
+                .binaryFileUpload("fileFormName", fileName, Buffer.buffer(bytes), MediaType.APPLICATION_OCTET_STREAM)
+                .stringFileUpload("otherFormName", "whatever", "test", MediaType.TEXT_PLAIN));
+        assertThat(result).isEqualTo("fileFormName/" + fileName + "/" + bytes.length + "-test");
+    }
+
     @Path("/multipart")
     public interface Client {
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         String postMultipart(ClientMultipartForm form);
+
+        @POST
+        @Path("/names")
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        String postNames(ClientMultipartForm form);
     }
 
     @Path("/multipart")
@@ -65,6 +84,13 @@ public class MultipartProgrammaticTest {
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         public String upload(FormData form) {
             return verifyFile(form.file, BYTES_SENT, position -> (byte) (((1 + position) % 123))) + "-" + form.other;
+        }
+
+        @Path("/names")
+        @POST
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        public String names(FormData form) {
+            return form.file.name() + "/" + form.file.fileName() + "/" + form.file.size() + "-" + form.other;
         }
 
         private String verifyFile(FileUpload upload, int expectedSize, Function<Integer, Byte> expectedByte) {

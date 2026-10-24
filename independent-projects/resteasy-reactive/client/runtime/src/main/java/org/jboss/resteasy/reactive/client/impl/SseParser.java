@@ -135,11 +135,12 @@ public class SseParser implements Handler<Buffer> {
     }
 
     private void parseEvent() {
-        // optional BOM
-        if (firstByte && i == 0 && 1 < bytes.length) {
-            if (bytes[0] == (byte) 0xFE
-                    && bytes[1] == (byte) 0xFF) {
-                i = 2;
+        // optional UTF-8 BOM
+        if (firstByte && i == 0 && 2 < bytes.length) {
+            if (bytes[0] == (byte) 0xEF
+                    && bytes[1] == (byte) 0xBB
+                    && bytes[2] == (byte) 0xBF) {
+                i = 3;
             }
         }
         // comment or field

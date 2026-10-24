@@ -645,7 +645,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          * This is useful for entities with highly variable sizes (e.g., JSON blobs).
          * <p>
          * Mutually exclusive with {@code object-count}. Requires a {@code weigher-class} to assign
-         * weights to entries; without one, each entry has a default weight of 1.
+         * weights to entries.
          */
         OptionalLong maximumWeight();
 
@@ -653,7 +653,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          * The fully qualified class name of a {@code com.github.benmanes.caffeine.cache.Weigher}
          * implementation used to assign weights to cache entries.
          * <p>
-         * Only used when {@code maximum-weight} is set. The class must have a public no-arg constructor.
+         * Required when {@code maximum-weight} is set. The class must have a public no-arg constructor.
          */
         Optional<String> weigherClass();
     }

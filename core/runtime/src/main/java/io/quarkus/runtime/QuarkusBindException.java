@@ -27,7 +27,8 @@ public class QuarkusBindException extends BindException {
     }
 
     public static boolean isKnownHost(String host) {
-        return "localhost".equals(host) || "127.0.0.1".equals(host) || "0.0.0.0".equals(host);
+        return "localhost".equals(host) || "127.0.0.1".equals(host) || "0.0.0.0".equals(host)
+                || "::1".equals(host) || "[::1]".equals(host) || "::".equals(host) || "[::]".equals(host);
     }
 
     public String getHost() {

@@ -1,7 +1,6 @@
 package io.quarkus.test.junit;
 
 import static io.quarkus.runtime.LaunchMode.NORMAL;
-import static io.quarkus.test.common.ListeningAddress.LOCAL_BASE_URI;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
@@ -397,9 +396,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             invokeBeforeEachCallbacks(tuple.getKey(), tuple.getValue());
             String endpointPath = getEndpointPath(context, testHttpEndpointProviders);
             ValueRegistry valueRegistry = ValueRegistryInjector.get(context);
-            if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
-                RestAssuredStateManager.setTestUri(valueRegistry.get(LOCAL_BASE_URI), endpointPath);
-            }
+            RestAssuredStateManager.setTestUri(valueRegistry, endpointPath);
             TestScopeManager.setup(false);
         } else {
             throwBootFailureException();

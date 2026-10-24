@@ -133,18 +133,31 @@ public class NettyMetricsTest {
     private void testAllocatorMetricsValues(Set<Tag> tags) {
         List<Meter> meters = registry.getMeters();
 
-        Double heap0 = getValue(meters, tags(tags, HEAP_MEMORY));
-        Assertions.assertNotNull(heap0);
-        Double direct0 = getValue(meters, tags(tags, DIRECT_MEMORY));
-        Assertions.assertNotNull(direct0);
+        assertGaugesReport(meters, tags, "before the request");
 
         RestAssured.get("/hello/Netty").then().body(Matchers.equalTo("hello Netty"));
 
-        Double heap1 = getValue(meters, tags(tags, HEAP_MEMORY));
-        Double direct1 = getValue(meters, tags(tags, DIRECT_MEMORY));
+        assertGaugesReport(meters, tags, "after the request");
+    }
 
-        Assertions.assertTrue(heap0 <= heap1);
-        Assertions.assertTrue(direct0 <= direct1);
+    /**
+     * The allocator gauges report the memory that is in use at the moment they are read rather than
+     * a running total, so the value drops back as soon as the buffers behind it are released. That
+     * holds for the pooled allocators too, once a chunk is emptied, so there is nothing to assert
+     * about the way the value moves across a request. What is worth asserting is that both gauges
+     * are registered and still reporting a number, since a gauge whose source has gone away keeps
+     * its place in the registry and reports NaN.
+     */
+    private static void assertGaugesReport(List<Meter> meters, Set<Tag> tags, String when) {
+        Double heap = getValue(meters, tags(tags, HEAP_MEMORY));
+        Assertions.assertNotNull(heap, () -> "no heap memory gauge for " + tags + " " + when);
+        Assertions.assertFalse(heap.isNaN(),
+                () -> "heap memory gauge for " + tags + " reports NaN " + when);
+
+        Double direct = getValue(meters, tags(tags, DIRECT_MEMORY));
+        Assertions.assertNotNull(direct, () -> "no direct memory gauge for " + tags + " " + when);
+        Assertions.assertFalse(direct.isNaN(),
+                () -> "direct memory gauge for " + tags + " reports NaN " + when);
     }
 
     @Test

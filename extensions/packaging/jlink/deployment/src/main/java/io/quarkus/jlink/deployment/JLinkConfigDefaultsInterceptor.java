@@ -17,8 +17,8 @@ public final class JLinkConfigDefaultsInterceptor implements ConfigSourceInterce
 
     public ConfigValue getValue(final ConfigSourceInterceptorContext context, final String name) {
         return switch (name) {
-            // TODO: https://github.com/quarkusio/quarkus/issues/54283
-            //case "quarkus.jlink.launcher-name" -> defaults.launcherName(context);
+
+            case "quarkus.jlink.launcher-name" -> defaults.launcherName(context);
 
             // TODO: https://github.com/quarkusio/quarkus/issues/54283
             //case "quarkus.jlink.output-directory" -> defaults.outputDirectory(context);

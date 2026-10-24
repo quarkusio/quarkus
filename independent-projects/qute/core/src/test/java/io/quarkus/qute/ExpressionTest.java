@@ -178,6 +178,43 @@ public class ExpressionTest {
         }
     }
 
+    @Test
+    public void testPartLineCharacterStart() {
+        Engine engine = Engine.builder().addDefaults().build();
+
+        List<Part> parts = engine.parse("{item.name.length}").getExpressions().get(0).getParts();
+        assertEquals(2, parts.get(0).getLineCharacterStart());
+        assertEquals(7, parts.get(1).getLineCharacterStart());
+        assertEquals(12, parts.get(2).getLineCharacterStart());
+
+        parts = engine.parse("Hello {cdi:foo.bar}!").getExpressions().get(0).getParts();
+        assertEquals(12, parts.get(0).getLineCharacterStart());
+        assertEquals(16, parts.get(1).getLineCharacterStart());
+
+        parts = engine.parse("{item.get(1).name}").getExpressions().get(0).getParts();
+        assertEquals(2, parts.get(0).getLineCharacterStart());
+        assertEquals(7, parts.get(1).getLineCharacterStart());
+        assertEquals(11, parts.get(1).asVirtualMethod().getParameters().get(0).getParts().get(0).getLineCharacterStart());
+        assertEquals(14, parts.get(2).getLineCharacterStart());
+
+        parts = engine.parse("{item['foo'].bar}").getExpressions().get(0).getParts();
+        assertEquals(2, parts.get(0).getLineCharacterStart());
+        assertEquals(6, parts.get(1).getLineCharacterStart());
+        assertEquals(14, parts.get(2).getLineCharacterStart());
+
+        parts = engine.parse("{item.name??}").getExpressions().get(0).getParts();
+        assertEquals(7, parts.get(1).getLineCharacterStart());
+        assertEquals(11, parts.get(2).getLineCharacterStart());
+
+        parts = engine.parse("{foo or bar}").getExpressions().get(0).getParts();
+        assertEquals(2, parts.get(0).getLineCharacterStart());
+        assertEquals(-1, parts.get(1).getLineCharacterStart());
+
+        parts = engine.parse("{#if item.name}x{/if}").getExpressions().get(0).getParts();
+        assertEquals(-1, parts.get(0).getLineCharacterStart());
+        assertEquals(-1, parts.get(1).getLineCharacterStart());
+    }
+
     private Part name(String name) {
         return name(name, null);
     }

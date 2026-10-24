@@ -33,6 +33,8 @@ import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.Capabilities;
@@ -65,26 +67,8 @@ class AgroalProcessor {
         feature.produce(new FeatureBuildItem(Feature.AGROAL));
     }
 
-    private AgroalDataSourceSupport getDataSourceSupport(
-            List<JdbcDataSourceDefinitionBuildItem> aggregatedBuildTimeConfigBuildItems,
-            SslNativeConfigBuildItem sslNativeConfig, Capabilities capabilities) {
-        Map<String, AgroalDataSourceSupport.Entry> dataSourceSupportEntries = new HashMap<>();
-        for (JdbcDataSourceDefinitionBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedBuildTimeConfigBuildItems) {
-            String dataSourceName = aggregatedDataSourceBuildTimeConfig.getName();
-            dataSourceSupportEntries.put(dataSourceName,
-                    new AgroalDataSourceSupport.Entry(dataSourceName, aggregatedDataSourceBuildTimeConfig.getDbKind(),
-                            aggregatedDataSourceBuildTimeConfig.getDataSourceConfig().dbVersion(),
-                            aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass(),
-                            aggregatedDataSourceBuildTimeConfig.isDefault()));
-        }
-
-        return new AgroalDataSourceSupport(sslNativeConfig.isExplicitlyDisabled(),
-                capabilities.isPresent(Capability.METRICS), dataSourceSupportEntries);
-    }
-
-    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    void generateDataSourceSupportBean(AgroalRecorder recorder,
+    void generateDataSourceSupportBean(ServiceRegistrar serviceRegistrar,
             List<JdbcDataSourceDefinitionBuildItem> aggregatedBuildTimeConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
             Capabilities capabilities,
@@ -108,11 +92,19 @@ class AgroalProcessor {
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AgroalPoolInterceptor.class));
 
         // create the AgroalDataSourceSupport bean that DataSources/DataSourceHealthCheck use as a dependency
-        AgroalDataSourceSupport agroalDataSourceSupport = getDataSourceSupport(aggregatedBuildTimeConfigBuildItems,
-                sslNativeConfig,
-                capabilities);
+        Map<String, AgroalDataSourceSupport.Entry> entries = new HashMap<>();
+        for (JdbcDataSourceDefinitionBuildItem dataSource : aggregatedBuildTimeConfigBuildItems) {
+            entries.put(dataSource.getName(), new AgroalDataSourceSupport.Entry(dataSource.getName(), dataSource.getDbKind(),
+                    dataSource.getDataSourceConfig().dbVersion(), dataSource.getResolvedDriverClass(), dataSource.isDefault()));
+        }
+        boolean disableSslSupport = sslNativeConfig.isExplicitlyDisabled();
+        boolean mpMetricsPresent = capabilities.isPresent(Capability.METRICS);
+        Map<String, AgroalDataSourceSupport.Entry> capturedEntries = Map.copyOf(entries);
+        serviceRegistrar.forService(AgroalDataSourceSupport.class)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> new AgroalDataSourceSupport(disableSslSupport, mpMetricsPresent, capturedEntries));
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(AgroalDataSourceSupport.class)
-                .supplier(recorder.dataSourceSupportSupplier(agroalDataSourceSupport))
+                .serviceValue(AgroalDataSourceSupport.class)
                 .scope(Singleton.class)
                 .unremovable()
                 .setRuntimeInit()

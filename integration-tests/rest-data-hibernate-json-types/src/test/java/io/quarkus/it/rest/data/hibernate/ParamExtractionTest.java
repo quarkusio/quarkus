@@ -302,4 +302,193 @@ public class ParamExtractionTest {
                 .body("content[0]", not(hasKey("secret")))
                 .body("content[0].age", is(30));
     }
+
+    // --- Custom parameter names with @RestQuery ---
+
+    @Test
+    public void testOrderWithCustomParameterName() {
+        given()
+                .queryParam("orderBy", "name")
+                .queryParam("orderBy", "-age")
+                .when().get("/echo/order-custom-name")
+                .then()
+                .statusCode(200)
+                .body("parameterName", is("orderBy"))
+                .body("sorts", hasSize(2))
+                .body("sorts[0].property", is("name"))
+                .body("sorts[0].ascending", is(true))
+                .body("sorts[1].property", is("age"))
+                .body("sorts[1].ascending", is(false));
+    }
+
+    @Test
+    public void testOrderWithCustomParameterNameAbsent() {
+        given()
+                .when().get("/echo/order-custom-name")
+                .then()
+                .statusCode(200)
+                .body("message", is("No sorting provided"));
+    }
+
+    @Test
+    public void testOrderWithCustomParameterNameIgnoresDefaultName() {
+        given()
+                .queryParam("sort", "name")
+                .when().get("/echo/order-custom-name")
+                .then()
+                .statusCode(200)
+                .body("message", is("No sorting provided"));
+    }
+
+    @Test
+    public void testSortWithCustomParameterName() {
+        given()
+                .queryParam("sortBy", "name")
+                .when().get("/echo/sort-custom-name")
+                .then()
+                .statusCode(200)
+                .body("parameterName", is("sortBy"))
+                .body("property", is("name"))
+                .body("ascending", is(true));
+    }
+
+    @Test
+    public void testSortWithCustomParameterNameDescending() {
+        given()
+                .queryParam("sortBy", "-age")
+                .when().get("/echo/sort-custom-name")
+                .then()
+                .statusCode(200)
+                .body("parameterName", is("sortBy"))
+                .body("property", is("age"))
+                .body("ascending", is(false));
+    }
+
+    @Test
+    public void testSortWithCustomParameterNameAbsent() {
+        given()
+                .when().get("/echo/sort-custom-name")
+                .then()
+                .statusCode(200)
+                .body("message", is("No sorting provided"));
+    }
+
+    @Test
+    public void testSortWithCustomParameterNameIgnoresDefaultName() {
+        given()
+                .queryParam("sort", "name")
+                .when().get("/echo/sort-custom-name")
+                .then()
+                .statusCode(200)
+                .body("message", is("No sorting provided"));
+    }
+
+    // --- Additional custom parameter name tests ---
+
+    @Test
+    public void testEmptyRestQueryFallsBackToDefault() {
+        given()
+                .queryParam("sort", "name")
+                .queryParam("sort", "-age")
+                .when().get("/echo/empty-query-name")
+                .then()
+                .statusCode(200)
+                .body("message", is("Empty @RestQuery value"))
+                .body("sorts", hasSize(2))
+                .body("sorts[0].property", is("name"))
+                .body("sorts[0].ascending", is(true));
+    }
+
+    @Test
+    public void testMultipleCustomParametersInSameEndpoint() {
+        given()
+                .queryParam("orderBy", "name")
+                .queryParam("orderBy", "-age")
+                .queryParam("filterBy", "status")
+                .when().get("/echo/multiple-custom-params")
+                .then()
+                .statusCode(200)
+                .body("ordering", hasSize(2))
+                .body("ordering[0].property", is("name"))
+                .body("ordering[0].ascending", is(true))
+                .body("ordering[1].property", is("age"))
+                .body("ordering[1].ascending", is(false))
+                .body("filter.property", is("status"))
+                .body("filter.ascending", is(true));
+    }
+
+    @Test
+    public void testMultipleCustomParametersPartial() {
+        given()
+                .queryParam("orderBy", "name")
+                .when().get("/echo/multiple-custom-params")
+                .then()
+                .statusCode(200)
+                .body("ordering", hasSize(1))
+                .body("ordering[0].property", is("name"))
+                .body("$", not(hasKey("filter")));
+    }
+
+    @Test
+    public void testMixedDefaultAndCustomParameters() {
+        given()
+                .queryParam("sort", "name")
+                .queryParam("customOrder", "age")
+                .when().get("/echo/mixed-params")
+                .then()
+                .statusCode(200)
+                .body("defaultSort.property", is("name"))
+                .body("defaultSort.ascending", is(true))
+                .body("customOrder", hasSize(1))
+                .body("customOrder[0].property", is("age"))
+                .body("customOrder[0].ascending", is(true));
+    }
+
+    @Test
+    public void testMixedParametersOnlyDefault() {
+        given()
+                .queryParam("sort", "name")
+                .when().get("/echo/mixed-params")
+                .then()
+                .statusCode(200)
+                .body("defaultSort.property", is("name"))
+                .body("$", not(hasKey("customOrder")));
+    }
+
+    @Test
+    public void testMixedParametersOnlyCustom() {
+        given()
+                .queryParam("customOrder", "-salary")
+                .when().get("/echo/mixed-params")
+                .then()
+                .statusCode(200)
+                .body("$", not(hasKey("defaultSort")))
+                .body("customOrder", hasSize(1))
+                .body("customOrder[0].property", is("salary"))
+                .body("customOrder[0].ascending", is(false));
+    }
+
+    @Test
+    public void testParameterNameWithUnderscore() {
+        given()
+                .queryParam("order_by", "name")
+                .when().get("/echo/special-chars")
+                .then()
+                .statusCode(200)
+                .body("parameterName", is("order_by"))
+                .body("property", is("name"))
+                .body("ascending", is(true));
+    }
+
+    @Test
+    public void testParameterNameWithUnderscoreDescending() {
+        given()
+                .queryParam("order_by", "-age")
+                .when().get("/echo/special-chars")
+                .then()
+                .statusCode(200)
+                .body("parameterName", is("order_by"))
+                .body("property", is("age"))
+                .body("ascending", is(false));
+    }
 }

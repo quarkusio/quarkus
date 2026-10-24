@@ -18,13 +18,19 @@ public class PageRequestParamExtractor implements ParameterExtractor {
     private static final int DEFAULT_PAGE_NUMBER = 1;
     private static final int DEFAULT_PAGE_SIZE = 10;
 
+    public final String parameterName;
+
+    public PageRequestParamExtractor(String parameterName) {
+        this.parameterName = parameterName;
+    }
+
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
         long page = DEFAULT_PAGE_NUMBER;
         int size = DEFAULT_PAGE_SIZE;
         boolean requestTotal = true;
 
-        String pageStr = (String) context.getQueryParameter("page", true, false);
+        String pageStr = (String) context.getQueryParameter(parameterName, true, false);
         if (pageStr != null) {
             page = Long.parseLong(pageStr);
         }

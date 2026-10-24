@@ -10,18 +10,24 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 
 /**
- * Extracts a single {@link Sort} criterion from the HTTP query parameter {@code sort}.
+ * Extracts a single {@link Sort} criterion from an HTTP query parameter.
  * <ul>
- * <li>{@code sort} — property name to sort by; prefix with {@code -} for descending (default: {@code null})</li>
+ * <li>Query parameter — property name to sort by; prefix with {@code -} for descending (default: {@code null})</li>
  * </ul>
  * Examples: {@code ?sort=name} produces {@code Sort.asc("name")},
  * {@code ?sort=-salary} produces {@code Sort.desc("salary")}.
  */
 public class SortParamExtractor implements ParameterExtractor {
 
+    public final String parameterName;
+
+    public SortParamExtractor(String parameterName) {
+        this.parameterName = parameterName;
+    }
+
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
-        String value = (String) context.getQueryParameter("sort", true, false);
+        String value = (String) context.getQueryParameter(parameterName, true, false);
         if (value == null) {
             return null;
         }

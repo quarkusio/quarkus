@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.context.runtime;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -8,26 +10,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
 
-import org.eclipse.microprofile.context.ManagedExecutor;
-import org.eclipse.microprofile.context.ThreadContext;
 import org.eclipse.microprofile.context.spi.ContextManagerExtension;
 import org.eclipse.microprofile.context.spi.ContextManagerProvider;
 import org.eclipse.microprofile.context.spi.ThreadContextProvider;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.context.SmallRyeContextManager;
-import io.smallrye.context.SmallRyeManagedExecutor;
-import io.smallrye.context.SmallRyeThreadContext;
 import io.smallrye.context.impl.DefaultValues;
 
-/**
- * The runtime value service used to create values related to the MP-JWT services
- */
-@Recorder
 public class SmallRyeContextPropagationRecorder {
 
     private static final ExecutorService NOPE_EXECUTOR_SERVICE = new ExecutorService() {
@@ -117,9 +107,17 @@ public class SmallRyeContextPropagationRecorder {
         }
     };
     private static SmallRyeContextManager.Builder builder;
+    private static SmallRyeContextManager contextManager;
 
-    public void configureStaticInit(List<ThreadContextProvider> discoveredProviders,
-            List<ContextManagerExtension> discoveredExtensions) {
+    public static void configureStaticInit(List<Class<?>> providerClasses, List<Class<?>> extensionClasses) {
+        List<ThreadContextProvider> discoveredProviders = new ArrayList<>();
+        for (Class<?> provider : providerClasses) {
+            discoveredProviders.add((ThreadContextProvider) instantiate(provider));
+        }
+        List<ContextManagerExtension> discoveredExtensions = new ArrayList<>();
+        for (Class<?> extension : extensionClasses) {
+            discoveredExtensions.add((ContextManagerExtension) instantiate(extension));
+        }
         // build the manager at static init time
         // in the live-reload mode, the provider instance may be already set in the previous start
         if (ContextManagerProvider.INSTANCE.get() == null) {
@@ -145,64 +143,32 @@ public class SmallRyeContextPropagationRecorder {
         ContextManagerProvider.instance().registerContextManager(noContextBuilder.build(), null /* not used */);
     }
 
-    public void configureRuntime(ExecutorService executorService, ShutdownContext shutdownContext) {
+    private static Object instantiate(Class<?> clazz) {
+        try {
+            return clazz.getDeclaredConstructor().newInstance();
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            throw new RuntimeException("Failed to instantiate declared ThreadContextProvider class: " + clazz.getName(), e);
+        }
+    }
+
+    public static void configureRuntime(ExecutorService executorService) {
         // associate the static init manager to the runtime CL
         ContextManagerProvider contextManagerProvider = ContextManagerProvider.instance();
         // finish building our manager
         builder.withDefaultExecutorService(executorService);
 
-        SmallRyeContextManager contextManager = builder.build();
+        contextManager = builder.build();
 
         contextManagerProvider.registerContextManager(contextManager, Thread.currentThread().getContextClassLoader());
-        //needs to be late, as running threads can re-create an implicit one
-        shutdownContext.addLastShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                contextManagerProvider.releaseContextManager(contextManager);
-            }
-        });
         //Avoid leaking the classloader:
         SmallRyeContextPropagationRecorder.builder = null;
     }
 
-    public Supplier<Object> initializeManagedExecutor(ExecutorService executorService) {
-        return new Supplier<Object>() {
-            @Override
-            public Object get() {
-                ThreadContext threadContext = Arc.container().instance(ThreadContext.class).get();
-                return new SmallRyeManagedExecutor(-1, -1, (SmallRyeThreadContext) threadContext, executorService,
-                        "no-ip") {
-                    @Override
-                    public void shutdown() {
-                        throw new IllegalStateException("This executor is managed by the container and cannot be shut down.");
-                    }
-
-                    @Override
-                    public List<Runnable> shutdownNow() {
-                        throw new IllegalStateException("This executor is managed by the container and cannot be shut down.");
-                    }
-                };
-            }
-        };
-    }
-
-    public Supplier<Object> initializeConfiguredThreadContext(String[] cleared, String[] propagated, String[] unchanged) {
-        return new Supplier<Object>() {
-            @Override
-            public Object get() {
-                return ThreadContext.builder().propagated(propagated).cleared(cleared).unchanged(unchanged).build();
-            }
-        };
-    }
-
-    public Supplier<Object> initializeConfiguredManagedExecutor(String[] cleared, String[] propagated, int maxAsync,
-            int maxQueued) {
-        return new Supplier<Object>() {
-            @Override
-            public Object get() {
-                return ManagedExecutor.builder().propagated(propagated).cleared(cleared).maxAsync(maxAsync).maxQueued(maxQueued)
-                        .build();
-            }
-        };
+    public static void releaseContextManager() {
+        SmallRyeContextManager manager = contextManager;
+        if (manager != null) {
+            contextManager = null;
+            ContextManagerProvider.instance().releaseContextManager(manager);
+        }
     }
 }

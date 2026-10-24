@@ -1246,6 +1246,8 @@ Qute executes the tag as an _isolated_ template, i.e. without access to the cont
 However, sometimes it might be useful to change the default behavior and disable the isolation.
 In this case, just add `_isolated=false` or `_unisolated` argument to the call site, for example `{#itemDetail item showImage=true _isolated=false /}` or `{#itemDetail item showImage=true _unisolated /}`.
 
+NOTE: <<global_variables,Global variables>> are part of the data of the calling template, so an isolated tag template, and any template it includes, cannot reference them directly; `{year}` results in a "key not found" error even if a global variable `year` exists. Use the `global:` namespace instead, for example `{global:year}`.
+
 ===== Arguments
 
 Named arguments can be accessed directly in the tag template.
@@ -2718,6 +2720,8 @@ Colors: {#each myColors}{it}{#if it_hasNext}, {/if}{/each} <3>
 <3> `myColors` resolves to `Globals#myColors()`.
 
 NOTE: Note that global variables implicitly add <<typesafe_expressions,parameter declarations>> to all templates and so any expression that references a global variable is validated during build.
+
+IMPORTANT: Global variables are added to the data of the template instance that is rendered. They are therefore not visible in <<user_tags,user tags>>, which are isolated by default, nor in templates included from an isolated tag. In these templates, always use the `global:` namespace, for example `{global:age}`, or call the tag with `_unisolated`.
 
 .The Output
 [source,html]

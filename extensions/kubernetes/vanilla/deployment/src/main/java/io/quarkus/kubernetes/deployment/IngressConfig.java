@@ -27,6 +27,12 @@ public interface IngressConfig {
     String targetPort();
 
     /**
+     * The path type of the Ingress rule generated for the host and the path of the target port.
+     * One of "Prefix", "Exact" or "ImplementationSpecific". If not set, the generated rule uses "Prefix".
+     */
+    Optional<String> pathType();
+
+    /**
      * The class of the Ingress. If the ingressClassName is omitted, a default Ingress class is used.
      */
     Optional<String> ingressClassName();

@@ -788,6 +788,9 @@ quarkus.kubernetes.ingress.expose=true
 quarkus.kubernetes.ingress.host=prod.svc.url
 # To change the Ingress path of the generated Ingress rule. By default, it's "/".
 quarkus.kubernetes.ports.http.path=/prod
+# To change the path type of the generated Ingress rule. By default, it's "Prefix".
+# Use "ImplementationSpecific" for paths that the Ingress controller interprets, such as regular expressions.
+quarkus.kubernetes.ingress.path-type=Prefix
 ----
 
 This would generate the following Ingress resource:

@@ -83,11 +83,16 @@ public class ExceptionMapping {
         return nonBlockingProblemPredicate;
     }
 
+    /**
+     * Registers a mapper for the given exception type. Between the mappers of one exception type, the mapper with the
+     * highest priority (i.e. the lowest priority value) wins, and the mapper registered first wins when the priorities are
+     * equal.
+     */
     public <T extends Throwable> void addExceptionMapper(String exceptionClass, ResourceExceptionMapper<T> mapper) {
         ResourceExceptionMapper<? extends Throwable> existing = mappers.get(exceptionClass);
         if (existing != null) {
-            if (existing.getPriority() < mapper.getPriority()) {
-                // we already have a lower priority mapper registered
+            if (existing.getPriority() <= mapper.getPriority()) {
+                // we already have a mapper registered with the same or a higher priority
                 return;
             } else {
                 mappers.remove(exceptionClass);

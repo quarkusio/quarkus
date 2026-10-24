@@ -844,6 +844,38 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("[1]", Matchers.is(99));
     }
 
+    // --- @JsonFormat(shape = ARRAY) deserialized through setters ---
+
+    @Test
+    public void testFormatArrayShapeDeserializationWithMissingPrimitive() {
+        // As in Jackson, a primitive missing from a too short array keeps its default value,
+        // even with FAIL_ON_NULL_FOR_PRIMITIVES enabled (the default)
+        given()
+                .contentType("application/json")
+                .body("[\"world\"]")
+                .when()
+                .post("/generated/format-array-shape-no-creator")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", Matchers.hasSize(2))
+                .body("[0]", Matchers.is("world"))
+                .body("[1]", Matchers.is(0));
+    }
+
+    @Test
+    public void testFormatArrayShapeDeserializationWithNullPrimitive() {
+        // With FAIL_ON_NULL_FOR_PRIMITIVES enabled (the default), an explicit null for a primitive must be rejected
+        given()
+                .contentType("application/json")
+                .body("[\"world\",null]")
+                .when()
+                .post("/generated/format-array-shape-no-creator")
+                .then()
+                .statusCode(400)
+                .body("attributeName", Matchers.is("value"));
+    }
+
     // --- @JsonFormat(shape = STRING) on primitives ---
 
     @Test

@@ -145,6 +145,33 @@ public class MainHttpServerTlsCertificateReloadTest {
                 .toCompletionStage().toCompletableFuture().join();
 
         assertThat(response2).isEqualTo(response3);
+
+        // Restore the original certificate (A -> B -> A)
+        Files.copy(new File("target/certificates/reload-A.crt").toPath(),
+                new File(certs, "/tls.crt").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(new File("target/certificates/reload-A.key").toPath(),
+                new File(certs, "/tls.key").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+        // Trigger the reload
+        TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
+
+        // The client using the B truststore should now fail.
+        assertThatThrownBy(() -> vertx.createHttpClient(options2)
+                .request(HttpMethod.GET, "/hello")
+                .flatMap(HttpClientRequest::send)
+                .flatMap(HttpClientResponse::body)
+                .map(Buffer::toString)
+                .toCompletionStage().toCompletableFuture().join()).hasCauseInstanceOf(SSLHandshakeException.class);
+
+        // The server should present certificate A again.
+        var response4 = vertx.createHttpClient(options)
+                .request(HttpMethod.GET, "/hello")
+                .flatMap(HttpClientRequest::send)
+                .flatMap(HttpClientResponse::body)
+                .map(Buffer::toString)
+                .toCompletionStage().toCompletableFuture().join();
+
+        assertThat(response4).isEqualTo(response1);
     }
 
     public static class MyBean {

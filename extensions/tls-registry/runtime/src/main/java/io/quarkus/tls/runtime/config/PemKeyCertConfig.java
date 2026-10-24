@@ -67,9 +67,12 @@ public interface PemKeyCertConfig {
             if (config.password().isPresent()) {
                 byte[] content = read(config.key());
                 String contentAsString = new String(content, StandardCharsets.UTF_8);
-                Buffer decrypted = new EncryptedPKCS8Parser().decryptKey(contentAsString, config.password().get());
-                if (decrypted == null) {
-                    throw new IllegalArgumentException("Unable to decrypt the key file: " + config.key());
+                Buffer decrypted;
+                try {
+                    decrypted = new EncryptedPKCS8Parser().decryptKeyOrFail(contentAsString, config.password().get());
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException(
+                            "Unable to decrypt the key file " + config.key() + ": " + e.getMessage(), e);
                 }
                 options.addKeyValue(decrypted);
             } else {

@@ -3,9 +3,11 @@ package io.quarkus.jlink.deployment;
 import java.nio.file.Path;
 import java.util.Optional;
 
+import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
 /**
@@ -42,16 +44,15 @@ public interface JLinkConfig {
 
     /**
      * The name of the launcher script generated in the image's {@code bin/} directory.
+     * Defaults to the package output name ({@code quarkus.package.output-name}).
      */
-    //TODO TEMPORARY DEFAULT
-    @WithDefault("my-app")
     String launcherName();
 
     /**
      * The base output directory for the {@code jlink} build.
+     * Defaults to the package output directory ({@code quarkus.package.output-directory}).
      */
-    // TODO: this should be based on some build system configuration
-    @WithDefault("target/jlink-output")
+    @WithConverter(PackageConfig.OutputDirectoryConverter.class)
     Path outputDirectory();
 
     /**

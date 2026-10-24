@@ -36,7 +36,7 @@ After adding the extension, build the project normally:
 
 include::{includes}/devtools/build.adoc[]
 
-The `jlink` image is written to the output directory (by default, `target/jlink-output/image`).
+The `jlink` image is written to the output directory. By default, this is the package output directory (`quarkus.package.output-directory`, `quarkus-app` for the default jar type), resolved from the working directory of the build, so `quarkus-app/image`.
 
 == Running the image
 
@@ -47,8 +47,7 @@ To run the application, execute the launcher script in the image's `bin` directo
 ./target/jlink-output/image/bin/<launcher-name>
 ----
 
-The launcher name currently defaults to `my-app`.
-A future release will derive the default from `quarkus.package.output-name`.
+The launcher name defaults to the package output name (`quarkus.package.output-name`), which is the build's base name, for example `my-app-1.0.0-SNAPSHOT` with Maven.
 
 == Image layout
 

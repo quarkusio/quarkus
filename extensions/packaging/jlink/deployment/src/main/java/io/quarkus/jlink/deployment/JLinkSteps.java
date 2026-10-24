@@ -253,7 +253,7 @@ public final class JLinkSteps {
         }
         // produce the dynamic lib files
         // bundle dynamic modules into the image
-        Path lib = config.outputDirectory().resolve(config.imagePath()).resolve("lib").resolve("quarkus");
+        Path lib = imagePath.resolve("lib").resolve("quarkus");
         Files.createDirectories(lib);
         final AppModuleModel model = moduleInfoItem.model();
         Map<String, ModuleInfo> modulesByName = model.modulesByName();

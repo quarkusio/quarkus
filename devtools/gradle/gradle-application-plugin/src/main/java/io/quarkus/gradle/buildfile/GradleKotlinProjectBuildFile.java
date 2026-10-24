@@ -1,4 +1,4 @@
-package io.quarkus.devtools.project.buildfile;
+package io.quarkus.gradle.buildfile;
 
 import org.gradle.api.Project;
 
@@ -16,12 +16,12 @@ public class GradleKotlinProjectBuildFile extends GradleProjectBuildFile {
     }
 
     @Override
-    String getSettingsGradlePath() {
+    protected String getSettingsGradlePath() {
         return SETTINGS_GRADLE_PATH;
     }
 
     @Override
-    String getBuildGradlePath() {
+    protected String getBuildGradlePath() {
         return BUILD_GRADLE_PATH;
     }
 

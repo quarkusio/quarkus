@@ -22,7 +22,8 @@ public interface ServerLimitsConfig {
     Optional<MemorySize> maxBodySize();
 
     /**
-     * The max HTTP chunk size, up to {@code Integer.MAX_VALUE} bytes.
+     * The maximum size of an HTTP/1.1 chunk of a request body delivered to the application, up to
+     * {@code Integer.MAX_VALUE} bytes. It does not affect how responses are framed.
      */
     @WithDefault("8192")
     MemorySize maxChunkSize();

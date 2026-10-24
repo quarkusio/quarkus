@@ -412,10 +412,29 @@ public class QuteProcessor {
                 List<String> parameterNames = new ArrayList<>(parameters.size());
                 for (int i = 0; i < parameters.size(); i++) {
                     Type type = parameters.get(i);
-                    String name = method.parameterName(i);
-                    if (name == null) {
-                        throw new TemplateException("Parameter names not recorded for " + targetClass.name()
-                                + ": compile the class with -parameters");
+                    String name;
+
+                    // Check for @TemplateParam annotation first
+                    final int paramPosition = i;
+                    AnnotationInstance templateParam = Annotations.find(
+                            Annotations.getParameterAnnotations(method.annotations()).stream()
+                                    .filter(a -> a.target().asMethodParameter().position() == paramPosition)
+                                    .collect(Collectors.toList()),
+                            Names.TEMPLATE_PARAM);
+                    if (templateParam != null) {
+                        name = templateParam.value().asString();
+                        if (name == null || name.isBlank()) {
+                            throw new TemplateException(
+                                    "@TemplateParam value cannot be null or blank for parameter " + i + " of "
+                                            + targetClass.name() + "#" + method.name());
+                        }
+                    } else {
+                        // Fallback to parameter name from bytecode (requires -parameters)
+                        name = method.parameterName(i);
+                        if (name == null) {
+                            throw new TemplateException("Parameter names not recorded for " + targetClass.name()
+                                    + ": compile the class with -parameters or use @TemplateParam");
+                        }
                     }
                     bindings.put(name, getCheckedTemplateParameterTypeName(type));
                     parameterNames.add(name);
@@ -489,10 +508,29 @@ public class QuteProcessor {
                 List<Type> parameters = canonicalConstructor.parameterTypes();
                 for (int i = 0; i < parameters.size(); i++) {
                     Type type = parameters.get(i);
-                    String name = canonicalConstructor.parameterName(i);
-                    if (name == null) {
-                        throw new TemplateException("Parameter names not recorded for " + recordClass.name()
-                                + ": compile the class with -parameters");
+                    String name;
+
+                    // Check for @TemplateParam annotation first
+                    final int paramPosition = i;
+                    AnnotationInstance templateParam = Annotations.find(
+                            Annotations.getParameterAnnotations(canonicalConstructor.annotations()).stream()
+                                    .filter(a -> a.target().asMethodParameter().position() == paramPosition)
+                                    .collect(Collectors.toList()),
+                            Names.TEMPLATE_PARAM);
+                    if (templateParam != null) {
+                        name = templateParam.value().asString();
+                        if (name == null || name.isBlank()) {
+                            throw new TemplateException(
+                                    "@TemplateParam value cannot be null or blank for parameter " + i + " of "
+                                            + recordClass.name());
+                        }
+                    } else {
+                        // Fallback to parameter name from bytecode (requires -parameters)
+                        name = canonicalConstructor.parameterName(i);
+                        if (name == null) {
+                            throw new TemplateException("Parameter names not recorded for " + recordClass.name()
+                                    + ": compile the class with -parameters or use @TemplateParam");
+                        }
                     }
                     if (reservedNames.contains(name)) {
                         throw new TemplateException("Template record component [" + name

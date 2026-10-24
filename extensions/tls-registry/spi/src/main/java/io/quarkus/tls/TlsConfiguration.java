@@ -102,12 +102,30 @@ public interface TlsConfiguration {
     boolean usesSni();
 
     /**
-     * Reloads the configuration.
-     * It usually means reloading the key store and trust store, especially when they are files.
+     * Reloads the configuration from its source (e.g., file system).
      *
-     * @return {@code true} if the configuration has been reloaded, {@code false} otherwise.
+     * @return {@code true} if the reload succeeded (whether or not the content changed),
+     *         {@code false} if the reload failed or the configuration is not reloadable.
      */
     boolean reload();
+
+    /**
+     * Returns a value identifying the key store, trust store and CRL content currently loaded.
+     * <p>
+     * The value changes when, and only when, a {@link #reload()} loads different content. A component applying
+     * this configuration - an HTTP server updating its SSL options, a client rebuilding its connections - can
+     * remember the value it last applied and compare it with the current one to know whether it has to apply the
+     * configuration again. Each component keeps its own value, so a reload triggered by one of them does not hide
+     * the change from the others.
+     * <p>
+     * A negative value means the implementation cannot tell whether the content changed; callers must then treat
+     * every successful reload as a change.
+     *
+     * @return the version of the currently loaded content, or a negative value when it cannot be determined.
+     */
+    default long getContentVersion() {
+        return -1;
+    }
 
     /**
      * Returns the SSL engine options to use, if explicitly configured.

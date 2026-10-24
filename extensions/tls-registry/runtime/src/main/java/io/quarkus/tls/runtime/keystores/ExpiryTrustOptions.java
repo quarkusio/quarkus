@@ -225,6 +225,11 @@ public class ExpiryTrustOptions implements TrustOptions {
         return false;
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(delegate, policy);
+    }
+
     public String toString() {
         return "ExpiryTrustOptions[" +
                 "delegate=" + delegate + ", " +

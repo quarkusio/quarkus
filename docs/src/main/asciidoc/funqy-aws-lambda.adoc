@@ -103,7 +103,7 @@ The `target/manage.sh` script is for managing your Funqy function using the AWS 
 your convenience. Examine the output of the `manage.sh` script if you want to learn what aws commands are executed
 to create, delete, and update your functions.
 
-`manage.sh` supports four operation:  `create`, `delete`, `update`, and `invoke`.
+`manage.sh` supports four operations:  `create`, `delete`, `update`, and `invoke`.
 
 NOTE: To verify your setup, that you have the AWS CLI installed, executed aws configure for the AWS access keys,
 and set up the `LAMBDA_ROLE_ARN` environment variable (as described above), please execute `manage.sh` without any parameters.

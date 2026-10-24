@@ -7,7 +7,10 @@ import io.quarkus.credentials.CredentialsProvider;
 public class CredentialsProviderFinder {
 
     public static CredentialsProvider find(String type) {
-        ArcContainer container = Arc.container();
+        return find(Arc.container(), type);
+    }
+
+    public static CredentialsProvider find(ArcContainer container, String type) {
         CredentialsProvider credentialsProvider = type != null
                 ? (CredentialsProvider) container.instance(type).get()
                 : container.instance(CredentialsProvider.class).get();

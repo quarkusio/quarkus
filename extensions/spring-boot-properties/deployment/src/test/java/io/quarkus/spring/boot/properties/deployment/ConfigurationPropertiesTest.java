@@ -27,7 +27,8 @@ class ConfigurationPropertiesTest {
                             """
                                     config.spring.map.one=one
                                     config.spring.map.two=two
-                                    config.spring.servers.one=host: localhost, port: 8080
+                                    config.spring.servers.one.host=localhost
+                                    config.spring.servers.one.port=8080
                                     config.spring.required.one=one
                                     """), "application.properties"));
 

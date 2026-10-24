@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
@@ -20,8 +19,7 @@ public class CharArrayMessageBodyHandler implements MessageBodyReader<char[]>, M
 
     public void writeTo(char[] o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-        // FIXME: use response encoding
-        entityStream.write(new String(o).getBytes(StandardCharsets.UTF_8));
+        entityStream.write(new String(o).getBytes(MessageReaderUtil.charsetFromMediaType(mediaType)));
     }
 
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {

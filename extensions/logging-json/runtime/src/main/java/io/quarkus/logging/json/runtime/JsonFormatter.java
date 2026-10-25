@@ -1,5 +1,6 @@
 package io.quarkus.logging.json.runtime;
 
+import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.LEVEL_VALUE;
 import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.SPAN_ID;
 import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.TRACE;
 import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.TRACE_SAMPLED;
@@ -26,6 +27,7 @@ import jakarta.json.stream.JsonGeneratorFactory;
 
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.ExtLogRecord;
+import org.jboss.logmanager.Level;
 import org.jboss.logmanager.formatters.StructuredFormatter.Key;
 
 import io.quarkus.logging.json.runtime.JsonLogConfig.JsonConfig.LogFormat;
@@ -39,6 +41,18 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
      * access-log field. Kept in sync with the constant of the same name in that class.
      */
     static final String ACCESS_LOG_MDC_PREFIX = "__access__";
+
+    private static final int[] LOGSTASH_JBOSS_LEVELS = {
+            Level.FINEST.intValue(),
+            Level.FINER.intValue(),
+            Level.FINE.intValue(),
+            Level.CONFIG.intValue(),
+            Level.INFO.intValue(),
+            Level.WARNING.intValue(),
+            Level.SEVERE.intValue(),
+            Level.FATAL.intValue()
+    };
+    private static final int[] LOGSTASH_LEVEL_VALUES = { 2_500, 5_000, 10_000, 15_000, 20_000, 30_000, 40_000, 50_000 };
 
     private Set<String> excludedKeys;
     private Map<String, AdditionalField> additionalFields;
@@ -59,7 +73,8 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         SERVICE_ENVIRONMENT("service.environment"),
         TRACE("trace"),
         SPAN_ID("spanId"),
-        TRACE_SAMPLED("traceSampled");
+        TRACE_SAMPLED("traceSampled"),
+        LEVEL_VALUE("level_value");
 
         private final String key;
 
@@ -198,12 +213,14 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
     @Override
     protected Generator createGenerator(final Writer writer) {
-        // In ECS mode, pass the resolved stack trace key so the generator can strip
+        // In ECS and Logstash modes, pass the resolved stack trace key so the generator can strip
         // the leading ": " that jboss's StackTraceFormatter unconditionally prepends
         // to the rendered stack trace string.
         // Also pass the process name key so the generator can extract just the basename
         // from the full JVM path (e.g. /usr/lib/jvm/.../bin/java → java).
-        String stackTraceKeyToTrim = logFormat.equals(LogFormat.ECS) ? getKey(Key.STACK_TRACE) : null;
+        String stackTraceKeyToTrim = logFormat.equals(LogFormat.ECS) || logFormat.equals(LogFormat.LOGSTASH)
+                ? getKey(Key.STACK_TRACE)
+                : null;
         String processNameKey = logFormat.equals(LogFormat.ECS) ? getKey(Key.PROCESS_NAME) : null;
         return new FormatterJsonGenerator(getJsonGeneratorFactory().createGenerator(writer), this.excludedKeys,
                 stackTraceKeyToTrim, processNameKey, this.flatMdc, this.mdcKeyOverrides, this.structuredAccessLog);
@@ -246,6 +263,8 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
                 // fast path
                 addToGenerator(additionalFields, generator);
             }
+        } else if (logFormat.equals(LogFormat.LOGSTASH)) {
+            generator.add(LEVEL_VALUE.getKey(), logstashLevelValue(record.getLevel().intValue()));
         }
 
         // fast path for additional fields (GCP already handled above, ECS falls through here)
@@ -403,6 +422,33 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
                     break;
             }
         }
+    }
+
+    /**
+     * Maps a JBoss LogManager level value to the Logback level value convention used by the
+     * logstash-logback-encoder, so records from Quarkus and Logback services can be filtered uniformly.
+     * <p>
+     * Levels with a Logback counterpart (ERROR 40000, WARN 30000, INFO 20000, DEBUG 10000, TRACE 5000)
+     * map exactly. {@code FATAL}, {@code CONFIG} and {@code FINEST} have none, so they are placed on the
+     * same scale at 50000, 15000 and 2500. Any other value, such as a custom level, is linearly interpolated
+     * between its two nearest known levels, and values outside the known range are clamped to its ends.
+     */
+    private static int logstashLevelValue(final int levelValue) {
+        final int last = LOGSTASH_JBOSS_LEVELS.length - 1;
+        if (levelValue <= LOGSTASH_JBOSS_LEVELS[0]) {
+            return LOGSTASH_LEVEL_VALUES[0];
+        }
+        if (levelValue >= LOGSTASH_JBOSS_LEVELS[last]) {
+            return LOGSTASH_LEVEL_VALUES[last];
+        }
+        int upper = 1;
+        while (levelValue > LOGSTASH_JBOSS_LEVELS[upper]) {
+            upper++;
+        }
+        final int lower = upper - 1;
+        final long levelSpan = LOGSTASH_JBOSS_LEVELS[upper] - LOGSTASH_JBOSS_LEVELS[lower];
+        final long valueSpan = LOGSTASH_LEVEL_VALUES[upper] - LOGSTASH_LEVEL_VALUES[lower];
+        return LOGSTASH_LEVEL_VALUES[lower] + (int) ((levelValue - LOGSTASH_JBOSS_LEVELS[lower]) * valueSpan / levelSpan);
     }
 
     /**

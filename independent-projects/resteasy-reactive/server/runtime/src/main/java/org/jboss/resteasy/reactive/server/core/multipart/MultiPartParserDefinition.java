@@ -275,7 +275,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     }
                 }
                 if (!parser.isComplete()) {
-                    throw new IOException("Connection terminated parsing multipart request");
+                    throw new WebApplicationException(Response.Status.BAD_REQUEST);
                 }
                 exchange.setFormData(data);
             }
@@ -465,7 +465,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     exchange.setFormData(data);
                     exchange.resume();
                 } else {
-                    exchange.resume(new IOException("Connection terminated reading multipart data"));
+                    exchange.resume(new WebApplicationException(Response.Status.BAD_REQUEST));
                 }
             }
 

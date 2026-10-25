@@ -2,12 +2,14 @@ package io.quarkus.devtools.project.update.rewrite;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.update.ExtensionUpdateInfo;
+import io.quarkus.devtools.project.update.PlatformInfo;
 import io.quarkus.devtools.project.update.ProjectExtensionsUpdateInfo;
 import io.quarkus.devtools.project.update.rewrite.QuarkusUpdatesRepository.FetchResult;
 import io.quarkus.devtools.project.update.rewrite.operations.DropDependencyVersionOperation;
@@ -15,6 +17,8 @@ import io.quarkus.devtools.project.update.rewrite.operations.UpdateDependencyVer
 import io.quarkus.devtools.project.update.rewrite.operations.UpdateJavaVersionOperation;
 import io.quarkus.devtools.project.update.rewrite.operations.UpdatePropertyOperation;
 import io.quarkus.devtools.project.update.rewrite.operations.UpgradeGradlePluginOperation;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.platform.tools.ToolsConstants;
 
 public final class QuarkusUpdates {
 
@@ -89,6 +93,15 @@ public final class QuarkusUpdates {
                 break;
         }
 
+        for (PlatformInfo platform : request.platformVersionUpdates) {
+            final ArtifactCoords importedBom = platform.getImported();
+            if (isDefaultQuarkusPlatformBom(importedBom)) {
+                continue;
+            }
+            recipe.addOperation(new UpdateDependencyVersionOperation(importedBom.getGroupId(),
+                    importedBom.getArtifactId(), platform.getRecommendedVersion()));
+        }
+
         for (ExtensionUpdateInfo versionUpdates : request.projectExtensionsUpdateInfo
                 .getSimpleVersionUpdates()) {
             if (versionUpdates.getVersionUpdateType()
@@ -108,6 +121,17 @@ public final class QuarkusUpdates {
         return recipe;
     }
 
+    private static boolean isDefaultQuarkusPlatformBom(ArtifactCoords bom) {
+        if (ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID.equals(bom.getGroupId())) {
+            return ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID.equals(bom.getArtifactId());
+        }
+        if ("io.quarkus".equals(bom.getGroupId())) {
+            return ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID.equals(bom.getArtifactId())
+                    || ToolsConstants.UNIVERSE_PLATFORM_BOM_ARTIFACT_ID.equals(bom.getArtifactId());
+        }
+        return false;
+    }
+
     public static class ProjectUpdateRequest {
 
         public final BuildTool buildTool;
@@ -118,6 +142,7 @@ public final class QuarkusUpdates {
         public final String surefirePluginVersion;
         public final Optional<Integer> updateJavaVersion;
         public final ProjectExtensionsUpdateInfo projectExtensionsUpdateInfo;
+        public final List<PlatformInfo> platformVersionUpdates;
 
         public ProjectUpdateRequest(String currentVersion, String targetVersion, String kotlinVersion,
                 Optional<Integer> updateJavaVersion, ProjectExtensionsUpdateInfo projectExtensionsUpdateInfo) {
@@ -135,6 +160,14 @@ public final class QuarkusUpdates {
         public ProjectUpdateRequest(BuildTool buildTool, String currentVersion, String targetVersion,
                 String kotlinVersion, String compilerPluginVersion, String surefirePluginVersion,
                 Optional<Integer> updateJavaVersion, ProjectExtensionsUpdateInfo projectExtensionsUpdateInfo) {
+            this(buildTool, currentVersion, targetVersion, kotlinVersion, compilerPluginVersion, surefirePluginVersion,
+                    updateJavaVersion, projectExtensionsUpdateInfo, List.of());
+        }
+
+        public ProjectUpdateRequest(BuildTool buildTool, String currentVersion, String targetVersion,
+                String kotlinVersion, String compilerPluginVersion, String surefirePluginVersion,
+                Optional<Integer> updateJavaVersion, ProjectExtensionsUpdateInfo projectExtensionsUpdateInfo,
+                List<PlatformInfo> platformVersionUpdates) {
             this.buildTool = buildTool;
             this.currentVersion = currentVersion;
             this.targetVersion = targetVersion;
@@ -143,6 +176,7 @@ public final class QuarkusUpdates {
             this.surefirePluginVersion = surefirePluginVersion;
             this.updateJavaVersion = updateJavaVersion;
             this.projectExtensionsUpdateInfo = projectExtensionsUpdateInfo;
+            this.platformVersionUpdates = platformVersionUpdates;
         }
     }
 }

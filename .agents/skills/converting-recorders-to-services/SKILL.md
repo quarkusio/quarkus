@@ -275,6 +275,46 @@ Use whichever is the cleanest fit:
 - **Both**: register a service *and* a `serviceValue()` synthetic bean.
   Drop the synthetic bean only if no application code injects it.
 
+#### A service starts eagerly, a bean creator starts lazily
+
+A service runs at startup whether or not anything injects its bean. A
+`BeanCreator` runs on the first injection, and never runs when ArC
+disables the bean. Keep a bean creator, not a `serviceValue()` bean, when:
+
+- the bean has `@DefaultBean` and the application may override it. The
+  service would still run and read beans the application replaced.
+  `CustomProducersTest` in `integration-tests/smallrye-context-propagation`
+  covers this case.
+- the value depends on another CDI bean, such as a user-provided
+  `ThreadContext`, rather than on a service. Read it through an injection
+  point on the creator, not through `Arc.container()` in a service.
+- creating the value is expensive and most applications never inject it.
+
+#### One service per qualified bean
+
+A bean with a qualifier such as `@NamedInstance("x")` maps to a named
+service. Register one service per name, and put the qualifier on the
+`serviceValue()` bean. Capture the settings of the bean in one record.
+
+```java
+for (Map.Entry<String, ExecutorDefinition> entry : executors.entrySet()) {
+    String name = entry.getKey();
+    ExecutorDefinition definition = entry.getValue();
+    serviceRegistrar.forService(ManagedExecutor.class, name)
+        .after(MANAGER_SERVICE)
+        .onStart(ctx -> ExecutorFactory.create(definition));
+    syntheticBeans.produce(SyntheticBeanBuildItem.configure(ManagedExecutor.class)
+        .serviceValue(ManagedExecutor.class, name)
+        .scope(ApplicationScoped.class)
+        .addQualifier().annotation(DotNames.NAMED_INSTANCE).addValue("value", name).done()
+        .done());
+}
+```
+
+The service name may contain any character. Two services must not share a
+type and a name. Build the names from the injection points and remove the
+duplicates first.
+
 ### 8. Shutdown handlers
 
 Register cleanup via `ctx.onStop(Runnable)` or

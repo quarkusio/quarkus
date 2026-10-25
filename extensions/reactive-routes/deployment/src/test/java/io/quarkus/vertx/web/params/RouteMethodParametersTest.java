@@ -78,6 +78,7 @@ public class RouteMethodParametersTest {
                 .post("/hello-body-pojo-empty").then().statusCode(200).body(is("null"));
         when().get("/hello-params-conversion?id=22&size=100&valid=false&doubles=2").then().statusCode(200)
                 .body(is("id=22,size=100,valid=false,doubles=[2.0]"));
+        when().get("/hello-params-conversion?id=foo").then().statusCode(400);
         when().get("/hello-param-conversion-optional").then().statusCode(200)
                 .body(is("hello 42"));
         when().get("/hello-param-conversion-optional?id=1").then().statusCode(200)

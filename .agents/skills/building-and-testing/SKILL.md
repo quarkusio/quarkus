@@ -68,6 +68,38 @@ This skips tests, ITs, docs, native, and validation.
 | `-DskipTests` / `-DskipITs` | Skip unit / integration tests |
 | `-Dno-test-modules` | Skip building test modules |
 | `-Dincremental` | Only build changed modules |
+| `-Dno-build-cache` | Run the build instead of replaying the Develocity build cache |
+| `-DskipTests=false` | Force the tests of modules that Scalpel marks as unchanged |
+
+## Confirm that the tests ran
+
+A green build is not proof that the tests ran. The Develocity build cache
+replays a cached result, and Scalpel skips the tests of modules it
+considers unchanged. When a test result matters, for example before and
+after a change:
+
+```bash
+./mvnw verify -f extensions/<name>/ -Dno-build-cache -DskipTests=false -Dstart-containers -Dtest-containers
+```
+
+Then look for a `Tests run: N` line for the module in the output, or count
+the tests in `target/surefire-reports/TEST-*.xml`. Report the count, not
+"the build passed".
+
+## Read a CI failure before acting on it
+
+The `quarkus-bot` status comment on a pull request lists the failing jobs
+and the failing tests with a `History` link. Before changing code:
+
+1. Open the `History` link. A test that fails on main and on unrelated
+   pull requests is a flake. The change did not break it.
+2. Compare with the latest run on main. If the same test fails on main,
+   say so in the pull request and do not rework the change.
+3. A module that the change does not touch, and that no changed module
+   depends on, cannot fail because of the change. Say that too.
+
+Do not push an empty commit to rerun CI. Rebase on main instead, so the
+new run includes the fixes that landed since.
 
 ## Justfile
 

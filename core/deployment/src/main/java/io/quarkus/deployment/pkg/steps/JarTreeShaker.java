@@ -19,6 +19,7 @@ import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -828,9 +829,18 @@ class JarTreeShaker {
      * and {@code Class.forName()}/{@code ClassLoader.loadClass()} calls with string constants.
      */
     private Set<String> extractReferencesFromBytecode(byte[] bytecode) {
+        return extractReferencesFromBytecode(bytecode, referencedJdkPackages);
+    }
+
+    /**
+     * Extracts the class references of the given bytecode.
+     *
+     * @param jdkPkgs the set that collects the referenced JDK packages, or {@code null} to not collect them
+     */
+    static Set<String> extractReferencesFromBytecode(byte[] bytecode, Set<String> jdkPkgs) {
         final Set<String> refs = new HashSet<>();
         ClassReader reader = new ClassReader(bytecode);
-        reader.accept(new RefCollectingClassVisitor(refs, referencedJdkPackages),
+        reader.accept(new RefCollectingClassVisitor(refs, jdkPkgs),
                 ClassReader.SKIP_FRAMES | ClassReader.SKIP_DEBUG);
         return refs;
     }
@@ -1070,6 +1080,8 @@ class JarTreeShaker {
                         addClassRef(elem.getInternalName(), refs, jdkPkgs);
                     }
                 }
+            } else if (value instanceof ConstantDynamic condy) {
+                addConstantDynamic(condy, refs, jdkPkgs);
             }
         }
 
@@ -1104,11 +1116,7 @@ class JarTreeShaker {
             addHandleType(bootstrapMethodHandle, refs, jdkPkgs);
             if (bootstrapMethodArguments != null) {
                 for (Object arg : bootstrapMethodArguments) {
-                    if (arg instanceof org.objectweb.asm.Type type) {
-                        addAsmType(type, refs, jdkPkgs);
-                    } else if (arg instanceof Handle) {
-                        addHandleType((Handle) arg, refs, jdkPkgs);
-                    }
+                    addBootstrapArgument(arg, refs, jdkPkgs);
                 }
             }
         }
@@ -1217,6 +1225,40 @@ class JarTreeShaker {
             addAsmType(argType, refs, jdkPkgs);
         }
         addAsmType(org.objectweb.asm.Type.getReturnType(descriptor), refs, jdkPkgs);
+    }
+
+    /**
+     * Adds the references of a dynamic constant: its type, its bootstrap method
+     * and the bootstrap arguments (e.g. the class descriptor that
+     * {@code io.quarkus.core.Bootstraps.loadClass} loads).
+     */
+    private static void addConstantDynamic(ConstantDynamic condy, Set<String> refs, Set<String> jdkPkgs) {
+        addDescriptorType(condy.getDescriptor(), refs, jdkPkgs);
+        addHandleType(condy.getBootstrapMethod(), refs, jdkPkgs);
+        for (int i = 0; i < condy.getBootstrapMethodArgumentCount(); i++) {
+            addBootstrapArgument(condy.getBootstrapMethodArgument(i), refs, jdkPkgs);
+        }
+    }
+
+    private static void addBootstrapArgument(Object arg, Set<String> refs, Set<String> jdkPkgs) {
+        if (arg instanceof org.objectweb.asm.Type type) {
+            addAsmType(type, refs, jdkPkgs);
+        } else if (arg instanceof Handle handle) {
+            addHandleType(handle, refs, jdkPkgs);
+        } else if (arg instanceof ConstantDynamic condy) {
+            addConstantDynamic(condy, refs, jdkPkgs);
+        } else if (arg instanceof String str && isFieldDescriptor(str)) {
+            addDescriptorType(str, refs, jdkPkgs);
+        }
+    }
+
+    private static boolean isFieldDescriptor(String str) {
+        int i = 0;
+        while (i < str.length() && str.charAt(i) == '[') {
+            i++;
+        }
+        return i < str.length() - 2 && str.charAt(i) == 'L' && str.endsWith(";") && str.indexOf('/') > i
+                && str.indexOf('.') < 0;
     }
 
     /**

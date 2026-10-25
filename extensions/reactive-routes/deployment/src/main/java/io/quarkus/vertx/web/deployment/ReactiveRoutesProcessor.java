@@ -1385,9 +1385,9 @@ class ReactiveRoutesProcessor {
                         } else if (paramType.name().equals(DotNames.BUFFER)) {
                             return bc.invokeInterface(Methods.REQUEST_BODY_BUFFER, body);
                         } else if (paramType.name().equals(DotNames.JSON_OBJECT)) {
-                            return bc.invokeInterface(Methods.REQUEST_BODY_AS_JSON_OBJECT, body);
+                            return bc.invokeStatic(Methods.ROUTE_HANDLERS_BODY_AS_JSON_OBJECT, body);
                         } else if (paramType.name().equals(DotNames.JSON_ARRAY)) {
-                            return bc.invokeInterface(Methods.REQUEST_BODY_AS_JSON_ARRAY, body);
+                            return bc.invokeStatic(Methods.ROUTE_HANDLERS_BODY_AS_JSON_ARRAY, body);
                         }
                         // This should never happen
                         throw new IllegalArgumentException("Unsupported param type: " + paramType);
@@ -1408,7 +1408,7 @@ class ReactiveRoutesProcessor {
                         registerForReflection(paramType, reflectiveHierarchy);
                         Expr body = b0.invokeInterface(Methods.BODY, routingContext);
                         LocalVar bodyAsJson = b0.localVar("bodyAsJson",
-                                b0.invokeInterface(Methods.REQUEST_BODY_AS_JSON_OBJECT, body));
+                                b0.invokeStatic(Methods.ROUTE_HANDLERS_BODY_AS_JSON_OBJECT, body));
                         LocalVar result = b0.localVar("result", Const.ofDefault(Object.class));
                         b0.ifNotNull(bodyAsJson, b1 -> {
                             // TODO load `paramType` class from TCCL

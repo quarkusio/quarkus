@@ -4,7 +4,12 @@ import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
 
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.DecodeException;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.RequestBody;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.HttpException;
 
 public final class RouteHandlers {
 
@@ -31,4 +36,19 @@ public final class RouteHandlers {
         });
     }
 
+    public static JsonObject bodyAsJsonObject(RequestBody body) {
+        try {
+            return body.asJsonObject();
+        } catch (DecodeException e) {
+            throw new HttpException(400, e);
+        }
+    }
+
+    public static JsonArray bodyAsJsonArray(RequestBody body) {
+        try {
+            return body.asJsonArray();
+        } catch (DecodeException e) {
+            throw new HttpException(400, e);
+        }
+    }
 }

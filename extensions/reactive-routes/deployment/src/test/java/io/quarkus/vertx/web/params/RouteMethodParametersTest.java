@@ -84,6 +84,16 @@ public class RouteMethodParametersTest {
                 .body(is("hello 1"));
     }
 
+    @Test
+    public void testInvalidJsonBody() {
+        given().contentType("application/json").body("{\"name\":")
+                .post("/hello-body-json-object").then().statusCode(400);
+        given().contentType("application/json").body("[11,")
+                .post("/hello-body-json-array").then().statusCode(400);
+        given().contentType("application/json").body("{\"name\":")
+                .post("/hello-body-pojo").then().statusCode(400);
+    }
+
     static class SimpleBean {
 
         @Route(path = "/hello")

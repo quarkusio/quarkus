@@ -13,6 +13,6 @@ public class DevServiceKubernetes implements QuarkusTestProfile {
 
         return Map.of("quarkus.kubernetes-client.devservices.api-version", API_VERSION,
                 "quarkus.kubernetes-client.devservices.image-name",
-                "quay.io/giantswarm/kube-apiserver:v%s".formatted(API_VERSION));
+                "registry.k8s.io/kube-apiserver:v%s".formatted(API_VERSION));
     }
 }

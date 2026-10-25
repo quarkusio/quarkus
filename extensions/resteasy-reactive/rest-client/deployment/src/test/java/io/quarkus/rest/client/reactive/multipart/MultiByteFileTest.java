@@ -25,7 +25,6 @@ import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.junit.jupiter.api.Test;
@@ -188,14 +187,14 @@ public class MultiByteFileTest {
         @Path("/from-slow")
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        public String uploadFromSlow(@MultipartForm FormData form) {
+        public String uploadFromSlow(FormData form) {
             return verifyFile(form.myFile, 10, position -> (byte) (12 + position));
         }
 
         @Path("/null")
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        public String uploadNull(@MultipartForm FormDataWithFile form) {
+        public String uploadNull(FormDataWithFile form) {
             return form.myFile != null ? "NON_NULL_FILE_FROM_NULL_MULTI" : "NULL_FILE";
         }
 
@@ -203,7 +202,7 @@ public class MultiByteFileTest {
         @POST
         @Produces(MediaType.TEXT_PLAIN)
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        public String chunked(@Context HttpHeaders headers, @MultipartForm FormData form) {
+        public String chunked(@Context HttpHeaders headers, FormData form) {
             String filename = verifyFile(form.myFile, 10, b -> (byte) 'A');
             return filename + "/" + headers.getLength() + "/" + headers.getHeaderString("transfer-encoding");
         }
@@ -211,21 +210,21 @@ public class MultiByteFileTest {
         @Path("/")
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        public String upload(@MultipartForm FormData form) {
+        public String upload(FormData form) {
             return verifyFile(form.myFile, BYTES_SENT, position -> (byte) (((1 + position) % 123)));
         }
 
         @Path("/empty")
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        public String uploadEmpty(@MultipartForm FormData form) {
+        public String uploadEmpty(FormData form) {
             return verifyFile(form.myFile, 0, b -> (byte) 0);
         }
 
         @Path("/two-files")
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        public String uploadEmpty(@MultipartForm FormWithTwoFiles form) {
+        public String uploadEmpty(FormWithTwoFiles form) {
             return verifyFile(form.file1, 100, position -> (byte) 4)
                     + verifyFile(form.file2, 100, position -> (byte) 7);
         }
@@ -295,42 +294,42 @@ public class MultiByteFileTest {
     public interface Client {
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        String postMultipart(@MultipartForm ClientForm clientForm);
+        String postMultipart(ClientForm clientForm);
 
         @Path("/chunked")
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        String chunked(@MultipartForm ClientForm clientForm);
+        String chunked(ClientForm clientForm);
 
         @Path("/two-files")
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        String postMultipartWithTwoFiles(@MultipartForm ClientFormWithTwoFiles twoFiles);
+        String postMultipartWithTwoFiles(ClientFormWithTwoFiles twoFiles);
 
         @Path("/from-slow")
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        String postMultipartFromSlowMulti(@MultipartForm ClientForm clientForm);
+        String postMultipartFromSlowMulti(ClientForm clientForm);
 
         @Path("/null")
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        String postNull(@MultipartForm ClientForm clientForm);
+        String postNull(ClientForm clientForm);
 
         @Path("/empty")
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        String postEmpty(@MultipartForm ClientForm form);
+        String postEmpty(ClientForm form);
 
         @Path("/type")
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        String postMultipartToType(@MultipartForm ClientForm clientForm);
+        String postMultipartToType(ClientForm clientForm);
 
         @Path("/type")
         @POST
         @Consumes("multipart/mixed")
-        String postMultipartMixedToType(@MultipartForm ClientForm clientForm);
+        String postMultipartMixedToType(ClientForm clientForm);
     }
 
     public static class ClientForm {

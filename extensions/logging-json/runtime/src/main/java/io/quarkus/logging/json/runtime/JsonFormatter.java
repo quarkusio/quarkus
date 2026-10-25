@@ -1,5 +1,6 @@
 package io.quarkus.logging.json.runtime;
 
+import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.LEVEL_VALUE;
 import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.SPAN_ID;
 import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.TRACE;
 import static io.quarkus.logging.json.runtime.JsonFormatter.AdditionalKey.TRACE_SAMPLED;
@@ -15,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 
 import jakarta.enterprise.inject.spi.CDI;
 
@@ -52,7 +54,8 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         SERVICE_ENVIRONMENT("service.environment"),
         TRACE("trace"),
         SPAN_ID("spanId"),
-        TRACE_SAMPLED("traceSampled");
+        TRACE_SAMPLED("traceSampled"),
+        LEVEL_VALUE("level_value");
 
         private final String key;
 
@@ -164,12 +167,14 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
     @Override
     protected Generator createGenerator(final Writer writer) {
         Generator superGenerator = super.createGenerator(writer);
-        // In ECS mode, pass the resolved stack trace key so the generator can strip
+        // In ECS and Logstash modes, pass the resolved stack trace key so the generator can strip
         // the leading ": " that jboss's StackTraceFormatter unconditionally prepends
         // to the rendered stack trace string.
         // Also pass the process name key so the generator can extract just the basename
         // from the full JVM path (e.g. /usr/lib/jvm/.../bin/java → java).
-        String stackTraceKeyToTrim = logFormat.equals(LogFormat.ECS) ? getKey(Key.STACK_TRACE) : null;
+        String stackTraceKeyToTrim = logFormat.equals(LogFormat.ECS) || logFormat.equals(LogFormat.LOGSTASH)
+                ? getKey(Key.STACK_TRACE)
+                : null;
         String processNameKey = logFormat.equals(LogFormat.ECS) ? getKey(Key.PROCESS_NAME) : null;
         return new FormatterJsonGenerator(superGenerator, this.excludedKeys, stackTraceKeyToTrim, processNameKey, this.flatMdc,
                 this.mdcKeyOverrides, this.structuredAccessLog);
@@ -212,6 +217,8 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
                 // fast path
                 addToGenerator(additionalFields, generator);
             }
+        } else if (logFormat.equals(LogFormat.LOGSTASH)) {
+            generator.add(LEVEL_VALUE.getKey(), logstashLevelValue(record.getLevel().intValue()));
         }
 
         // fast path for additional fields (GCP already handled above, ECS falls through here)
@@ -369,6 +376,27 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
                     break;
             }
         }
+    }
+
+    /**
+     * Maps a JBoss LogManager level value to the Logback level value convention used by the
+     * logstash-logback-encoder (ERROR 40000, WARN 30000, INFO 20000, DEBUG 10000, TRACE 5000),
+     * so records from Quarkus and Logback services can be filtered uniformly.
+     */
+    private static int logstashLevelValue(final int levelValue) {
+        if (levelValue >= Level.SEVERE.intValue()) {
+            return 40_000;
+        }
+        if (levelValue >= Level.WARNING.intValue()) {
+            return 30_000;
+        }
+        if (levelValue >= Level.INFO.intValue()) {
+            return 20_000;
+        }
+        if (levelValue >= Level.FINE.intValue()) {
+            return 10_000;
+        }
+        return 5_000;
     }
 
     /**

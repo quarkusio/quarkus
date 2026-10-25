@@ -114,6 +114,8 @@ public class LoggingJsonRecorder {
             overridableJsonConfig = addEcsFieldOverrides(overridableJsonConfig);
         } else if (config.logFormat() == JsonConfig.LogFormat.GCP) {
             overridableJsonConfig = addGCPFieldOverrides(overridableJsonConfig);
+        } else if (config.logFormat() == JsonConfig.LogFormat.LOGSTASH) {
+            overridableJsonConfig = addLogstashFieldOverrides(overridableJsonConfig);
         }
 
         return getDefaultFormatter(config, overridableJsonConfig, providers, applicationConfig);
@@ -135,7 +137,7 @@ public class LoggingJsonRecorder {
         if (JsonConfig.LogFormat.GCP == config.logFormat()) {
             formatter.setTracePrefix("projects/" + applicationConfig.name().orElse("") + "/traces/");
         }
-        formatter.setFlatMdc(config.mdcFlatFields());
+        formatter.setFlatMdc(config.mdcFlatFields() || config.logFormat() == JsonConfig.LogFormat.LOGSTASH);
         formatter.setMdcKeyOverrides(config.mdcKeyOverrides());
         formatter.setStructuredAccessLog(config.structuredAccessLog());
         formatter.setExcludedKeys(overridableJsonConfig.excludedKeys());
@@ -154,6 +156,12 @@ public class LoggingJsonRecorder {
                 formatter.setExceptionOutputType(
                         config.exceptionOutputType() == StructuredFormatter.ExceptionOutputType.DETAILED
                                 ? StructuredFormatter.ExceptionOutputType.DETAILED_AND_FORMATTED
+                                : config.exceptionOutputType());
+                break;
+            case LOGSTASH:
+                formatter.setExceptionOutputType(
+                        config.exceptionOutputType() == StructuredFormatter.ExceptionOutputType.DETAILED
+                                ? StructuredFormatter.ExceptionOutputType.FORMATTED
                                 : config.exceptionOutputType());
                 break;
             default:
@@ -218,6 +226,33 @@ public class LoggingJsonRecorder {
         additionalFields.computeIfAbsent(TRACE.getKey(), k -> new AdditionalField("", Type.STRING));
         additionalFields.computeIfAbsent(SPAN_ID.getKey(), k -> new AdditionalField("", Type.STRING));
         additionalFields.computeIfAbsent(TRACE_SAMPLED.getKey(), k -> new AdditionalField("", Type.STRING));
+
+        return new OverridableJsonConfig(PropertyValues.mapToString(keyOverrides), excludedKeys, additionalFields);
+    }
+
+    /**
+     * Field conventions of the logstash-logback-encoder, so records from Quarkus services can be
+     * ingested by the same Logstash or ELK pipelines as Logback-based services.
+     */
+    private static OverridableJsonConfig addLogstashFieldOverrides(OverridableJsonConfig overridableJsonConfig) {
+        EnumMap<Key, String> keyOverrides = PropertyValues.stringToEnumMap(Key.class, overridableJsonConfig.keyOverrides());
+        keyOverrides.putIfAbsent(Key.TIMESTAMP, "@timestamp");
+        keyOverrides.putIfAbsent(Key.LOGGER_NAME, "logger_name");
+        keyOverrides.putIfAbsent(Key.THREAD_NAME, "thread_name");
+        keyOverrides.putIfAbsent(Key.STACK_TRACE, "stack_trace");
+
+        Set<String> excludedKeys = new HashSet<>(overridableJsonConfig.excludedKeys());
+        excludedKeys.add(Key.SEQUENCE.getKey());
+        excludedKeys.add(Key.LOGGER_CLASS_NAME.getKey());
+        excludedKeys.add(Key.HOST_NAME.getKey());
+        excludedKeys.add(Key.PROCESS_ID.getKey());
+        excludedKeys.add(Key.PROCESS_NAME.getKey());
+        excludedKeys.add(Key.THREAD_ID.getKey());
+        excludedKeys.add(Key.RECORD.getKey());
+        excludedKeys.add(Key.NDC.getKey());
+
+        Map<String, AdditionalField> additionalFields = new LinkedHashMap<>(overridableJsonConfig.additionalFields());
+        additionalFields.computeIfAbsent("@version", k -> new AdditionalField("1", Type.STRING));
 
         return new OverridableJsonConfig(PropertyValues.mapToString(keyOverrides), excludedKeys, additionalFields);
     }

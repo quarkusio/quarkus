@@ -110,7 +110,8 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                     compilerPluginVersion,
                     surefirePluginVersion,
                     updateJavaVersion,
-                    extensionsUpdateInfo);
+                    extensionsUpdateInfo,
+                    platformUpdateInfo.getImportVersionUpdates());
             Path recipe = null;
             try {
                 final Path projectDir = invocation.getQuarkusProject().getProjectDirPath();

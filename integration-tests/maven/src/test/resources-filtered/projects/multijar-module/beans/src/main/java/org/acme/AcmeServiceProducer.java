@@ -1,14 +1,16 @@
 package org.acme;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Produces;
-import io.quarkus.arc.DefaultBean;
+import jakarta.enterprise.inject.Reserve;
 
 @Dependent
 public class AcmeServiceProducer {
 
     @Produces
-    @DefaultBean
+    @Reserve
+    @Priority(0)
     public Service getAcmeService() {
         return new AcmeService();
     }

@@ -20,6 +20,7 @@ import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCus
  * NOTE: NO class-level scope annotation — registered as a bean only by the dev-only build
  * step (which supplies {@code @Singleton}).
  */
+@SuppressWarnings("removal")
 public class DevUiMetricsSdkBuilderCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
     // Produced by MetricsStoreProducer in the quarkus-devui runtime; the sampling interval is

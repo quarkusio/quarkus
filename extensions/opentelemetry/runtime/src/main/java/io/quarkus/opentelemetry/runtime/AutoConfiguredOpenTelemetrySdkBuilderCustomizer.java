@@ -52,6 +52,17 @@ import io.quarkus.opentelemetry.runtime.tracing.TracerUtil;
 import io.quarkus.runtime.ApplicationConfig;
 import io.smallrye.common.net.HostName;
 
+/**
+ * @deprecated OpenTelemetry SDK initialization is moving from
+ *             {@link io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk} to the OpenTelemetry
+ *             declarative configuration model, where no {@link AutoConfiguredOpenTelemetrySdkBuilder} exists and
+ *             implementations of this interface will no longer be invoked. Instead, contribute CDI beans of the
+ *             component types directly: {@link io.opentelemetry.sdk.trace.samplers.Sampler},
+ *             {@link io.opentelemetry.sdk.trace.IdGenerator}, {@link io.opentelemetry.sdk.trace.SpanProcessor},
+ *             {@link io.opentelemetry.sdk.resources.Resource} or
+ *             {@link io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer}.
+ */
+@Deprecated(since = "4.0", forRemoval = true)
 public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
     void customize(AutoConfiguredOpenTelemetrySdkBuilder builder);

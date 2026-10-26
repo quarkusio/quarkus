@@ -381,6 +381,21 @@ public class IncludeTest {
     }
 
     @Test
+    public void testSelfClosingBlockInInclude() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("base", engine.parse(
+                "{#insert header}default header{/insert}::{#insert footer}default footer{/insert}"));
+
+        // Self-closing block overrides insert with empty content
+        assertEquals("::default footer",
+                engine.parse("{#include base}{#header/}{/include}").render());
+
+        // Self-closing block doesn't corrupt subsequent blocks
+        assertEquals("::custom footer",
+                engine.parse("{#include base}{#header/}{#footer}custom footer{/footer}{/include}").render());
+    }
+
+    @Test
     public void testTemplateNameWithUnderscorePrefix() {
         Engine engine = Engine.builder().addDefaults().build();
         engine.putTemplate("_root", engine.parse("<html><body>{#insert foo /}</body></html>"));

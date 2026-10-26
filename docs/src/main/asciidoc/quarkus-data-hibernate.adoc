@@ -79,8 +79,8 @@ public class Cat extends ManagedEntity {
 }
 ----
 
-Instances of `ManagedEntity` are managed by Hibernate ORM. After an instance is persisted, changes to its fields are
-automatically sent to the database without an explicit `update` instruction.
+When an instance of `ManagedEntity` is persisted or obtained using a stateful session, Hibernate ORM manages it.
+Changes to its fields are automatically sent to the database without an explicit `update` instruction.
 
 [[entity-field-access]]
 === Entity field access
@@ -571,7 +571,7 @@ and `RecordRepository` for its repository. Compared with a managed entity:
 - Changes to entity fields must be explicitly pushed to the database by calling `update()` on the entity or repository.
 - Call `insert()` instead of `persist()` to insert the entity.
 - The session type is `StatelessSession` instead of `Session`.
-- Accessing an unfetched lazy association does not trigger automatic loading. Fetch the associations you need as part
+- Accessing an unfetched lazy association throws an exception. Fetch the associations you need as part
 of a repository query, using a `join fetch` clause in `@Query`. Alternatively, fetch an association explicitly with
 `repo.getSession().fetch(association)`. Managed blocking sessions can load lazy associations automatically while the
 session is open.
@@ -597,6 +597,7 @@ For reactive access:
 - The repository extends `ManagedRepository.Reactive`.
 - Operations return `Uni<T>` instead of `T`, which is the standard Mutiny reactive type.
 - Use `jakarta.transaction.Transactional` for transaction boundaries and compose operations as usual with Mutiny.
+  For reactive methods, only `Transactional.TxType.REQUIRED` (the default) is supported.
 
 [source,java]
 ----
@@ -678,7 +679,7 @@ public Uni<Void> renameCat(String name, String newName) {
 ----
 
 The xref:quarkus-data-hibernate-getting-started.adoc#reactive[getting started tutorial] describes the
-required dependencies and reactive datasource configuration. You can use any of the
+required dependencies for reactive access. You can use any of the
 xref:hibernate-reactive.adoc#hr-getting-started[supported reactive drivers].
 
 [[entity-and-repository-type-matrix]]
@@ -911,7 +912,7 @@ The `totalElements` and `totalPages` fields are only included when the `PageRequ
 === Example endpoint
 
 Here is an example of a REST endpoint that uses `PageRequest` and `Order` to return a paginated, sorted
-list of cats. Paging and sorting are configured on the `PanacheQuery` returned by `findAll()`:
+list of cats. Paging and sorting are configured on the `BlockingDataQuery` returned by `findAll()`:
 
 [source,java]
 ----
@@ -940,7 +941,7 @@ public class CatResource {
 
 A client can then call:
 
-[source]
+[source,http]
 ----
 GET /cats?page=1&size=20&sort=name&sort=-birth
 ----

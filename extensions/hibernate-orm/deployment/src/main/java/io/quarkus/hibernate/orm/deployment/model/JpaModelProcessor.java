@@ -28,6 +28,7 @@ import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -67,15 +68,23 @@ final class JpaModelProcessor {
 
     @BuildStep
     void includeArchivesHostingEntityPackagesInIndex(HibernateOrmConfig hibernateOrmConfig,
-            BuildProducer<io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem> additionalApplicationArchiveMarkers) {
+            List<AdditionalPersistenceUnitBuildItem> additionalPersistenceUnits,
+            BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> additionalApplicationArchiveMarkers) {
         for (HibernateOrmConfigPersistenceUnit persistenceUnit : hibernateOrmConfig.persistenceUnits()
                 .values()) {
             if (persistenceUnit.packages().isPresent()) {
                 for (String pakkage : persistenceUnit.packages().get()) {
                     additionalApplicationArchiveMarkers
-                            .produce(new io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem(
+                            .produce(new AdditionalApplicationArchiveMarkerBuildItem(
                                     pakkage.replace('.', '/')));
                 }
+            }
+        }
+        for (AdditionalPersistenceUnitBuildItem additionalPersistenceUnit : additionalPersistenceUnits) {
+            for (String pakkage : additionalPersistenceUnit.getPackageNames()) {
+                additionalApplicationArchiveMarkers
+                        .produce(new AdditionalApplicationArchiveMarkerBuildItem(
+                                pakkage.replace('.', '/')));
             }
         }
     }
@@ -215,6 +224,7 @@ final class JpaModelProcessor {
     @BuildStep
     public JpaModelPerPersistenceUnitBuildItem buildJpaModelPerPersistenceUnit(HibernateOrmConfig hibernateOrmConfig,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
+            List<AdditionalPersistenceUnitBuildItem> additionalPersistenceUnits,
             JpaModelBuildItem jpaModel,
             CombinedIndexBuildItem indexBuildItem) {
         IndexView index = indexBuildItem.getIndex();
@@ -289,6 +299,15 @@ final class JpaModelProcessor {
                             .add(persistenceUnitName);
                     persistenceUnitsConfiguredThroughClassLevelAnnotations.add(persistenceUnitName);
                 }
+            }
+        }
+
+        // Packages declared by SPI-contributed persistence units are an independent, extension-driven channel:
+        // merge them in regardless of which (mutually exclusive) user-configuration mechanism was used above.
+        for (AdditionalPersistenceUnitBuildItem additionalPersistenceUnit : additionalPersistenceUnits) {
+            for (String packageName : additionalPersistenceUnit.getPackageNames()) {
+                packageRules.computeIfAbsent(normalizePackage(packageName), p -> new HashSet<>())
+                        .add(additionalPersistenceUnit.getPersistenceUnitName());
             }
         }
 

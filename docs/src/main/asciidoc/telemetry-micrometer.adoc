@@ -582,11 +582,11 @@ These Netty metrics help evaluate how much room is needed.
 ====
 
 ==== Pooling Mechanism
-Netty uses **PooledByteBufAllocator** to reduce memory allocation overhead and fragmentation. It is based on a **jemalloc-style arena system** (see https://github.com/jemalloc/jemalloc[jemalloc/jemalloc]), which includes:
+Since Netty 4.2, the default allocator is **AdaptiveByteBufAllocator**, which uses an adaptive pooling strategy with dynamically sized chunks (128 KiB to 8 MiB). The pooled allocator metrics described below come from Netty's **PooledByteBufAllocator**, which is only active when explicitly configured (e.g., via `io.netty.allocator.type=pooled`). When pooled allocation is used, it is based on a **jemalloc-style arena system** (see https://github.com/jemalloc/jemalloc[jemalloc/jemalloc]), which includes:
 
 - **Arenas**: Large memory blocks that manage allocations.
-- **Chunks**: Memory segments within arenas (typically 16MB in size).
-- **Pages**: Fixed-size portions of a chunk (usually 8KB).
+- **Chunks**: Memory segments within arenas (64 KiB with Quarkus's default `maxOrder=3`).
+- **Pages**: Fixed-size portions of a chunk (8 KiB).
 - **Subpages**: Smaller allocations within a page for tiny objects.
 - **Thread-local Caches**: Per-thread cache for frequently used small buffers, reducing contention.
 

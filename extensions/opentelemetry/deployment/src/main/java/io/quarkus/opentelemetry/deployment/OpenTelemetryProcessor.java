@@ -136,6 +136,7 @@ public class OpenTelemetryProcessor {
         }
     }
 
+    @SuppressWarnings("removal")
     @BuildStep
     AdditionalBeanBuildItem ensureProducerIsRetained() {
         return AdditionalBeanBuildItem.builder()
@@ -206,6 +207,7 @@ public class OpenTelemetryProcessor {
         return null;
     }
 
+    @SuppressWarnings({ "deprecation", "removal" })
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void openTelemetryBean(OpenTelemetryRecorder recorder,

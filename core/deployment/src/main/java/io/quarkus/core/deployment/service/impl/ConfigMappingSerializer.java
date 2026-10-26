@@ -12,7 +12,8 @@ import io.smallrye.serial.spi.ObjectSerializer;
  * <p>
  * Config mapping instances are SmallRye Config proxies that are not serializable.
  * At runtime, they are resolved directly from SmallRye Config via
- * {@code ConfigLookup.getConfigMapping(type)}.
+ * {@code ConfigLookup.getConfigMapping(type, prefix)}, with both the type and the prefix
+ * determined at build time.
  * <p>
  * Registered at a priority above {@code PRIORITY_REPLACE} to intercept before
  * any default serializer attempts to serialize the config proxy.
@@ -31,7 +32,8 @@ final class ConfigMappingSerializer implements ObjectSerializer {
     public Serialized serialize(Context ctxt, Object object) throws IOException {
         Class<?> configInterface = ConfigMappingDetector.findConfigMappingInterface(object.getClass());
         if (configInterface != null && ConfigMappingDetector.findConfigRoot(object.getClass()) != null) {
-            return new SerializedConfigMapping(configInterface.describeConstable().orElseThrow());
+            return new SerializedConfigMapping(configInterface.describeConstable().orElseThrow(),
+                    ConfigMappingDetector.prefix(configInterface));
         }
         return ctxt.next();
     }

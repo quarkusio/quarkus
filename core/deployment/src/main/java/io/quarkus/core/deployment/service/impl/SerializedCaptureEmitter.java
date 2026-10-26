@@ -202,14 +202,16 @@ final class SerializedCaptureEmitter {
     // ── Config mappings ──
 
     /**
-     * Emit a config mapping lookup via ConfigLookup.getConfigMapping(type).
+     * Emit a config mapping lookup via ConfigLookup.getConfigMapping(type, prefix).
      */
     private static CaptureEmitter emitConfigMapping(SerializedConfigMapping cm) {
         ClassDesc configType = cm.configInterface();
+        String prefix = cm.prefix();
         return code -> {
             code.loadConstant(configType);
+            code.loadConstant(prefix);
             code.invokestatic(CD_ConfigLookup, "getConfigMapping",
-                    MethodTypeDesc.of(CD_Object, CD_Class));
+                    MethodTypeDesc.of(CD_Object, CD_Class, CD_String));
             code.checkcast(configType);
         };
     }

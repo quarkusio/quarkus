@@ -511,9 +511,11 @@ public final class LambdaTransliterator {
             }
             if (dep.configDirect()) {
                 // config-direct dep: resolve directly from SmallRye Config
+                // (type and prefix are build-time constants)
                 code.loadConstant(dep.type().describeConstable().orElseThrow());
+                code.loadConstant(ConfigMappingDetector.prefix(dep.type()));
                 code.invokestatic(configLookupDesc, "getConfigMapping",
-                        MethodTypeDesc.of(objectDesc, classDesc));
+                        MethodTypeDesc.of(objectDesc, classDesc, stringDesc));
                 code.checkcast(dep.type().describeConstable().orElseThrow());
             } else if (dep.consumeAll()) {
                 // consumeAll: expanded to multiple consecutive dependency slots by

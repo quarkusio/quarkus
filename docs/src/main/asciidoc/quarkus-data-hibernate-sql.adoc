@@ -1,8 +1,10 @@
 ////
 This guide is maintained in the main Quarkus repository.
 ////
-= Native SQL Queries with Quarkus Data Hibernate
+[id="quarkus-data-hibernate-sql-tutorial"]
+= Native SQL queries with Quarkus
 include::_attributes.adoc[]
+:diataxis-type: tutorial
 :categories: data
 :summary: A step-by-step guide to native SQL database access in Quarkus
 :topics: data,hibernate-orm,sql,getting-started
@@ -11,14 +13,14 @@ include::_attributes.adoc[]
 
 include::{includes}/extension-status.adoc[]
 
-== Overview
-
 Sometimes you need full control over the SQL sent to the database, or need to use database-specific SQL syntax that is not portable across databases.
 This guide shows you how to write native SQL queries in Quarkus using `@NativeQuery` annotations and Java records, with compile-time generated implementations.
 The examples work directly with query results and do not require entity classes.
 
 You can also use native SQL with mapped entities.
-See the xref:quarkus-data-hibernate.adoc#our-first-repository[Quarkus Data Hibernate reference guide] for repository queries with entities, or the xref:quarkus-data-hibernate-getting-started.adoc[Getting Started with Quarkus Data Hibernate] guide to learn about entity mapping.
+See the xref:quarkus-data-hibernate.adoc#repositories[Quarkus Data Hibernate reference guide] for repository queries with entities, or the xref:quarkus-data-hibernate-getting-started.adoc[Getting Started with Quarkus Data Hibernate] guide to learn about entity mapping.
+
+NOTE: Native SQL syntax and database column names are checked by the database when a statement executes, rather than by the annotation processor at build time.
 
 == Prerequisites
 
@@ -49,8 +51,9 @@ The second dependency, `quarkus-jdbc-postgresql`, is the JDBC driver that tells 
 This tutorial uses blocking database access, which requires a JDBC driver.
 For other databases, choose the corresponding `quarkus-jdbc-*` driver (see xref:datasource.adoc#configure-a-jdbc-datasource[Configure a JDBC datasource]) and adapt the SQL initialization script below to that database's syntax.
 
+== Configuration
+
 Quarkus Data Hibernate uses the Quarkus Data annotation processor, which reads your repository interfaces at compile time and generates implementation classes.
-It validates HQL queries at compile time, but native SQL queries are checked by the database when executed.
 These generated classes are compiled together with your code and wired up automatically by Quarkus. They are also simple to read, in case you want to understand how it works internally.
 
 To enable it, add the annotation processor configuration to your build file.
@@ -72,19 +75,12 @@ You don't need to restart Quarkus testing, it will re-run tests continuously aft
 TIP: A _datasource_ provides connections to your database. In dev and test modes, if you don't configure a database connection, Quarkus can automatically start a PostgreSQL container for you via xref:dev-services.adoc[Dev Services]. See the xref:datasource.adoc[Datasource guide] for more details.
 
 Since we're writing raw SQL without entity mapping, we'll create the schema and sample data ourselves.
-Tell Dev Services to run `import.sql` when it initializes the database.
-Add this to `src/main/resources/application.properties`:
-
-[source,properties]
-----
-quarkus.datasource.devservices.init-script-path=import.sql
-----
-
-Now create an `import.sql` file in `src/main/resources/` to prepopulate your database. This will be useful for this tutorial:
+Create an `import.sql` file in `src/main/resources/`.
+Hibernate ORM automatically runs this script during schema initialization in dev and test modes.
 
 [source,sql]
 ----
-CREATE SEQUENCE IF NOT EXISTS Publisher_SEQ START WITH 5 INCREMENT BY 50;
+CREATE SEQUENCE IF NOT EXISTS Publisher_SEQ;
 
 CREATE TABLE IF NOT EXISTS Publisher (
     id BIGINT PRIMARY KEY DEFAULT nextval('Publisher_SEQ'),
@@ -93,7 +89,7 @@ CREATE TABLE IF NOT EXISTS Publisher (
     allowsDiscounts BOOLEAN
 );
 
-CREATE SEQUENCE IF NOT EXISTS Book_SEQ START WITH 9 INCREMENT BY 50;
+CREATE SEQUENCE IF NOT EXISTS Book_SEQ;
 
 CREATE TABLE IF NOT EXISTS Book (
     id BIGINT PRIMARY KEY DEFAULT nextval('Book_SEQ'),
@@ -119,22 +115,25 @@ INSERT INTO Book (id, title, isbn, price, publisher_id) VALUES (5, 'The Pragmati
 INSERT INTO Book (id, title, isbn, price, publisher_id) VALUES (6, 'Head First Design Patterns', '978-0596007126', 38.00, 3);
 INSERT INTO Book (id, title, isbn, price, publisher_id) VALUES (7, 'Java Concurrency in Practice', '978-0321349606', 48.00, 4);
 INSERT INTO Book (id, title, isbn, price, publisher_id) VALUES (8, 'Kotlin in Action', '978-1617293290', 44.00, 4);
+
+-- Set each sequence to the largest imported ID so the next generated ID does not collide.
+SELECT setval('Publisher_SEQ', (SELECT MAX(id) FROM Publisher));
+SELECT setval('Book_SEQ', (SELECT MAX(id) FROM Book));
 ----
 
 This SQL script creates sequences for ID generation, the `Publisher` and `Book` tables, and inserts sample data.
 Each book is linked to a publisher.
-The sequences start past the imported data so that new IDs don't collide.
-The `quarkus.datasource.devservices.init-script-path` setting makes Dev Services load this script for the tutorial's database.
+The final statements set each sequence to the largest imported ID, so the next generated ID follows the sample data even if you add more rows to the script.
 
-== Simple SQL query
+== Querying data
 
-The simplest thing you can do to access your database is to write native SQL queries directly. Create a file called `BookQueries.java` in the package `org.acme`:
+Create a file called `BookQueries.java` in the package `org.acme` to query books by title:
 
 [source,java]
 ----
 package org.acme;
 
-import jakarta.persistence.NativeQuery;
+import jakarta.persistence.query.NativeQuery;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -145,13 +144,10 @@ public interface BookQueries { // <1>
 
     @NativeQuery("SELECT id, title, isbn, price FROM Book WHERE title = :title") // <3>
     List<BookRecord> findByTitle(String title); // <4>
-
-    @NativeQuery("SELECT id, title, isbn, price FROM Book WHERE proce < :maxPrice")
-    List<BookRecord> cheaperThan(BigDecimal maxPrice);
 }
 ----
 <1> A repository interface that groups all your query methods for books. The annotation processor generates the implementation for you.
-<2> A Java record that maps to the columns returned by the SQL query. Each field name must match a column name in the result set.
+<2> A Java record that maps to the columns returned by the SQL query. The selected columns match the record components in order and type.
 <3> `@NativeQuery` sends raw SQL to the database. The `:title` syntax is a named parameter, it avoids SQL injection attacks.
 <4> The method signature defines the parameters.
 
@@ -196,45 +192,47 @@ public class BookQueriesTest {
 
 If you have continuous testing running in another terminal, these tests will run automatically as soon as you save the file.
 
-Even though raw SQL is a perfectly valid approach, it has a few drawbacks.
-One of them is type safety: the native SQL strings used here are not validated at compile time.
+== Updating data
 
-Let's add a test for `cheaperThan` to our `BookQueriesTest`:
-
-[source,java]
-----
-@Test
-void shouldFindCheaperBooks() {
-    List<BookQueries.BookRecord> books = bookQueries.cheaperThan(BigDecimal.valueOf(45));
-    assertEquals(4, books.size()); // Clean Code (40), Head First Design Patterns (38), The Pragmatic Programmer (42), Kotlin in Action (44)
-}
-----
-
-The continuous testing console will show an error like:
-
-[source,shell]
-----
-org.hibernate.exception.SQLGrammarException: JDBC exception executing SQL [ERROR: column "proce" does not exist
-
-Hint: Perhaps you meant to reference the column "book.price".
-
-Position: 47] [
-
-SELECT id, title, isbn, price FROM Book WHERE proce < ?
-----
-
-This test will fail at runtime with a SQL error because the column `proce` doesn't exist.
-Did you initially spot the typo in `cheaperThan`? The column is called `price`, not `proce`, but the compiler won't tell you.
-
-You can fix the test by modifying the `BookQueries.java` file:
+Native SQL can also modify rows without mapped entities.
+Add an `updatePrice` method to `BookQueries`:
 
 [source,java]
 ----
-    @NativeQuery("SELECT id, title, isbn, price FROM Book WHERE price < :maxPrice") // <1>
-    List<BookRecord> cheaperThan(BigDecimal maxPrice);
+    @NativeQuery("UPDATE Book SET price = :price WHERE isbn = :isbn")
+    int updatePrice(String isbn, BigDecimal price);
 ----
-<1> Change `proce` to `price` here
 
-and then all the tests will now pass.
+The method returns the number of updated rows.
+Both arguments are bound as query parameters, just as in the title query.
 
-If you want compile-time validated queries and entity mapping instead, see the xref:quarkus-data-hibernate-getting-started.adoc[Getting Started with Quarkus Data Hibernate] guide.
+Write operations require a transaction.
+In application code, invoke the repository from a CDI bean method annotated with `jakarta.transaction.Transactional`; see xref:transaction.adoc[Using transactions in Quarkus].
+
+For the test, use `@TestTransaction` to run the update and verification in a transaction that is rolled back after the test.
+This keeps the sample data unchanged for other tests and subsequent continuous-testing runs.
+Add this import to `BookQueriesTest`:
+
+[source,java]
+----
+import io.quarkus.test.TestTransaction;
+----
+
+Then add the following test method:
+
+[source,java]
+----
+    @Test
+    @TestTransaction
+    void shouldUpdateBookPrice() {
+        BigDecimal newPrice = new BigDecimal("39.00");
+        int updated = bookQueries.updatePrice("978-0134685991", newPrice);
+        assertEquals(1, updated);
+
+        List<BookQueries.BookRecord> books = bookQueries.findByTitle("Effective Java");
+        assertEquals(1, books.size());
+        assertEquals(newPrice, books.get(0).price());
+    }
+----
+
+The tests now cover reading rows, handling an empty result, and updating a row using native SQL.

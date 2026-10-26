@@ -249,8 +249,9 @@ final class SerializedCaptureEmitter {
             return false;
         }
         try {
-            Class<?> cls = Class.forName(
-                    classDesc.displayName(), false, Thread.currentThread().getContextClassLoader());
+            String descriptor = classDesc.descriptorString();
+            String binaryName = descriptor.substring(1, descriptor.length() - 1).replace('/', '.');
+            Class<?> cls = Class.forName(binaryName, false, Thread.currentThread().getContextClassLoader());
             if (!Modifier.isPublic(cls.getModifiers())) {
                 return true;
             }

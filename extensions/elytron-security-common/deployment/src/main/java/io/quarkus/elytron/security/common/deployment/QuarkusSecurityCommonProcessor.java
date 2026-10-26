@@ -8,8 +8,16 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.elytron.security.common.runtime.ElytronCommonRecorder;
+import io.quarkus.modular.spi.items.AddDependencyBuildItem;
+import io.smallrye.modules.desc.Dependency.Modifier;
 
 public class QuarkusSecurityCommonProcessor {
+    @BuildStep
+    AddDependencyBuildItem linkPasswordProviderToImplementations() {
+        return new AddDependencyBuildItem("org.wildfly.security.wildfly.elytron.base",
+                "org.wildfly.security.wildfly.elytron.password.impl", Modifier.Set.of(Modifier.SERVICES));
+    }
+
     @BuildStep
     RuntimeInitializedClassBuildItem runtimeInitBcryptUtil() {
         // this holds a SecureRandom static var that needs to be initialised at run time

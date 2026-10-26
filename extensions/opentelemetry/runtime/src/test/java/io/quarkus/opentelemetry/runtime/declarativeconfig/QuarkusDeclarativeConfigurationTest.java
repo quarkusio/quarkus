@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -12,6 +13,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.incubator.config.DeclarativeConfigException;
 import io.opentelemetry.api.incubator.config.DeclarativeConfigProperties;
 import io.opentelemetry.common.ComponentLoader;
@@ -24,12 +27,19 @@ import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.ParentBasedSam
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.SamplerModel;
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.SamplerPropertyModel;
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.TraceIdRatioBasedSamplerModel;
+import io.opentelemetry.sdk.autoconfigure.spi.AutoConfigurationCustomizer;
+import io.opentelemetry.sdk.autoconfigure.spi.AutoConfigurationCustomizerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.internal.ComponentProvider;
+import io.opentelemetry.sdk.autoconfigure.spi.internal.ConditionalResourceProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider;
+import io.opentelemetry.sdk.common.CompletableResultCode;
+import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SpanProcessor;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.opentelemetry.runtime.declarativeconfig.spi.QuarkusDropTargetsSamplerProvider;
@@ -47,10 +57,11 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.sdk.disabled", "true",
                 "quarkus.otel.traces.exporter", "unresolvable-exporter"));
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS).build());
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS).build())) {
 
-        assertThat(sdk).isNotNull();
+            assertThat(sdk).isNotNull();
+        }
     }
 
     @Test
@@ -97,6 +108,7 @@ class QuarkusDeclarativeConfigurationTest {
         assertThat(QuarkusDeclarativeConfiguration.createSampler(model, loader)).isSameAs(custom);
     }
 
+    @SuppressWarnings("resource")
     @Test
     void unknownSamplerNameFails() {
         SamplerModel model = new SamplerModel().withAdditionalProperty("missing", new SamplerPropertyModel());
@@ -142,12 +154,13 @@ class QuarkusDeclarativeConfigurationTest {
                 // assertion below) would be a coin flip
                 "quarkus.otel.traces.sampler", "always_on"));
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS).build());
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS).build())) {
 
-        assertThat(sdk.getSdkTracerProvider()).isNotNull();
-        assertThat(sdk.getTracer("test").spanBuilder("span").startSpan().isRecording()).isTrue();
-        assertThat(sdk.getPropagators().getTextMapPropagator().fields()).contains("traceparent", "baggage");
+            assertThat(sdk.getSdkTracerProvider()).isNotNull();
+            assertThat(sdk.getTracer("test").spanBuilder("span").startSpan().isRecording()).isTrue();
+            assertThat(sdk.getPropagators().getTextMapPropagator().fields()).contains("traceparent", "baggage");
+        }
     }
 
     /**
@@ -168,9 +181,10 @@ class QuarkusDeclarativeConfigurationTest {
                 NO_COMPONENTS);
         assertThat(sampler).isInstanceOf(DropTargetsSampler.class);
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS).build());
-        assertThat(sdk.getSdkTracerProvider()).isNotNull();
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS).build())) {
+            assertThat(sdk.getSdkTracerProvider()).isNotNull();
+        }
     }
 
     @Test
@@ -182,33 +196,38 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.traces.sampler", "always_off"),
                 Set.of("/q/health"), Set.of());
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
                 QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS)
                         .sampler(Sampler.alwaysOn())
-                        .build());
+                        .build())) {
 
-        // always_off from the configuration was replaced by the CDI-provided always-on sampler (still wrapped for
-        // drop targets, which only affects the suppressed URIs)
-        assertThat(sdk.getTracer("test").spanBuilder("span").startSpan().isRecording()).isTrue();
+            // always_off from the configuration was replaced by the CDI-provided always-on sampler (still wrapped for
+            // drop targets, which only affects the suppressed URIs)
+            assertThat(sdk.getTracer("test").spanBuilder("span").startSpan().isRecording()).isTrue();
+        }
     }
 
     @Test
-    void cdiSamplerBeanDoesNotOverrideDisabledTracesSampler() {
-        // disabled traces emit a bare always_off sampler, which the CDI bean must not replace (the legacy
-        // SamplerCustomizer returned alwaysOff() unconditionally for disabled traces)
+    void cdiSamplerBeanReplacesConfiguredAlwaysOffSampler() {
+        // With no drop targets the model carries a bare always_off node; the CDI bean replaces it like any other
+        // configured sampler. Disabled traces still end up always_off because the recorder does not supply a
+        // sampler customization when tracing is disabled.
         OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
-                "quarkus.otel.traces.enabled", "false",
+                "quarkus.otel.traces.exporter", "none",
                 "quarkus.otel.metrics.exporter", "none",
-                "quarkus.otel.logs.exporter", "none"));
+                "quarkus.otel.logs.exporter", "none",
+                "quarkus.otel.traces.sampler", "always_off"));
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
                 QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS)
                         .sampler(Sampler.alwaysOn())
-                        .build());
+                        .build())) {
 
-        assertThat(sdk.getTracer("test").spanBuilder("span").startSpan().isRecording()).isFalse();
+            assertThat(sdk.getTracer("test").spanBuilder("span").startSpan().isRecording()).isTrue();
+        }
     }
 
+    @SuppressWarnings("resource")
     @Test
     void multiKeyExtensionSamplerNodeFails() {
         SamplerModel model = new SamplerModel()
@@ -236,10 +255,10 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.metrics.exporter", "none",
                 "quarkus.otel.logs.exporter", "none"));
 
-        QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(loader).build());
-
-        assertThat(created).isTrue();
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                QuarkusDeclarativeConfiguration.Customizations.builder(loader).build())) {
+            assertThat(created).isTrue();
+        }
     }
 
     @Test
@@ -263,9 +282,46 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.metrics.exporter", "none",
                 "quarkus.otel.logs.exporter", "none"));
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(loader).build());
-        assertThat(sdk.getSdkTracerProvider()).isNotNull();
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                QuarkusDeclarativeConfiguration.Customizations.builder(loader).build())) {
+            assertThat(sdk.getSdkTracerProvider()).isNotNull();
+        }
+    }
+
+    @Test
+    void quarkusPropagatorCustomizersRunBeforeSpiPropagatorCustomizers() {
+        // Matches autoconfigure, which invoked the SPI AutoConfigurationCustomizerProviders at build time, after
+        // the Quarkus customizer beans had registered: the SPI function wraps the Quarkus-customized propagator.
+        List<String> order = new ArrayList<>();
+
+        AutoConfigurationCustomizerProvider spiProvider = new AutoConfigurationCustomizerProvider() {
+            @Override
+            public void customize(AutoConfigurationCustomizer autoConfiguration) {
+                autoConfiguration.addPropagatorCustomizer((propagator, config) -> {
+                    order.add("spi");
+                    return propagator;
+                });
+            }
+        };
+        ComponentLoader loader = new StubComponentLoader(Map.of(
+                AutoConfigurationCustomizerProvider.class, List.of(spiProvider)));
+
+        OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
+                "quarkus.otel.propagators", "tracecontext",
+                "quarkus.otel.traces.exporter", "none",
+                "quarkus.otel.metrics.exporter", "none",
+                "quarkus.otel.logs.exporter", "none"));
+
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                QuarkusDeclarativeConfiguration.Customizations.builder(loader)
+                        .propagatorCustomizer(propagator -> {
+                            order.add("quarkus");
+                            return propagator;
+                        })
+                        .autoConfigurationCustomizers(AutoConfigurationCustomizers.load(loader))
+                        .build())) {
+            assertThat(order).containsExactly("quarkus", "spi");
+        }
     }
 
     @Test
@@ -277,16 +333,16 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.metrics.exporter", "none",
                 "quarkus.otel.logs.exporter", "none"));
 
-        QuarkusDeclarativeConfiguration.create(model,
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
                 QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS)
                         .propagatorCustomizer(propagator -> {
                             seen.add(propagator.getClass().getSimpleName());
                             return propagator;
                         })
-                        .build());
-
-        // the default propagators, customized individually
-        assertThat(seen).containsExactlyInAnyOrder("W3CTraceContextPropagator", "W3CBaggagePropagator");
+                        .build())) {
+            // the default propagators, customized individually
+            assertThat(seen).containsExactlyInAnyOrder("W3CTraceContextPropagator", "W3CBaggagePropagator");
+        }
     }
 
     @Test
@@ -312,14 +368,14 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.metrics.exporter", "none",
                 "quarkus.otel.logs.exporter", "none"));
 
-        QuarkusDeclarativeConfiguration.create(model,
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
                 QuarkusDeclarativeConfiguration.Customizations.builder(loader)
-                        .legacyConfigProperties(DefaultConfigProperties.createFromMap(
+                        .otelConfigProperties(DefaultConfigProperties.createFromMap(
                                 Map.of("otel.traces.sampler.arg", "endpoint=http://localhost:5778")))
-                        .build());
-
-        // the sampler is wrapped for drop targets by default, so this also covers the nested resolution
-        assertThat(received.get().getString("otel.traces.sampler.arg")).isEqualTo("endpoint=http://localhost:5778");
+                        .build())) {
+            // the sampler is wrapped for drop targets by default, so this also covers the nested resolution
+            assertThat(received.get().getString("otel.traces.sampler.arg")).isEqualTo("endpoint=http://localhost:5778");
+        }
     }
 
     @Test
@@ -330,10 +386,11 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.metrics.exporter", "none",
                 "quarkus.otel.logs.exporter", "none"));
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS).build());
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS).build())) {
 
-        assertThat(sdk.getSdkTracerProvider().getSpanLimits().getMaxAttributeValueLength()).isEqualTo(4);
+            assertThat(sdk.getSdkTracerProvider().getSpanLimits().getMaxAttributeValueLength()).isEqualTo(4);
+        }
     }
 
     @Test
@@ -345,10 +402,11 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.metrics.exporter", "none",
                 "quarkus.otel.logs.exporter", "none"));
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS).build());
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS).build())) {
 
-        assertThat(sdk.getSdkTracerProvider().getSpanLimits().getMaxAttributeValueLength()).isEqualTo(8);
+            assertThat(sdk.getSdkTracerProvider().getSpanLimits().getMaxAttributeValueLength()).isEqualTo(8);
+        }
     }
 
     @Test
@@ -363,10 +421,11 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.metrics.exporter", "none",
                 "quarkus.otel.logs.exporter", "none"));
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(loader).build());
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                QuarkusDeclarativeConfiguration.Customizations.builder(loader).build())) {
 
-        assertThat(sdk.getSdkTracerProvider().toString()).doesNotContain("BatchSpanProcessor");
+            assertThat(sdk.getSdkTracerProvider().toString()).doesNotContain("BatchSpanProcessor");
+        }
     }
 
     @Test
@@ -380,16 +439,36 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.metrics.exporter", "none",
                 "quarkus.otel.logs.exporter", "none"));
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
                 QuarkusDeclarativeConfiguration.Customizations.builder(loader)
                         .addSpanProcessor(SpanProcessor.composite())
-                        .build());
+                        .build())) {
 
-        assertThat(sdk.getSdkTracerProvider().toString()).contains("BatchSpanProcessor");
+            assertThat(sdk.getSdkTracerProvider().toString()).contains("BatchSpanProcessor");
+        }
     }
 
     private static Sampler sampler(SamplerModel model) {
         return QuarkusDeclarativeConfiguration.createSampler(model, NO_COMPONENTS);
+    }
+
+    @SuppressWarnings("resource")
+    @Test
+    void componentsBuiltBeforeAFailureAreClosed() {
+        ShutdownTrackingSpanExporter tracked = new ShutdownTrackingSpanExporter();
+        ComponentLoader loader = new StubComponentLoader(Map.of(
+                ComponentProvider.class, List.of(componentProvider(SpanExporter.class, "tracked", tracked))));
+        OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
+                "quarkus.otel.traces.exporter", "tracked,unresolvable",
+                "quarkus.otel.metrics.exporter", "none",
+                "quarkus.otel.logs.exporter", "none"));
+
+        assertThatThrownBy(() -> QuarkusDeclarativeConfiguration.create(model,
+                QuarkusDeclarativeConfiguration.Customizations.builder(loader).build()))
+                .isInstanceOf(DeclarativeConfigException.class)
+                .hasMessageContaining("unresolvable");
+
+        assertThat(tracked.shutdownCalled).as("components built before the failure are closed").isTrue();
     }
 
     private static DeclarativeConfigProperties samplerNode(Map<String, Object> properties) {
@@ -418,6 +497,127 @@ class QuarkusDeclarativeConfigurationTest {
     private static SpanExporter exporter(AtomicBoolean created) {
         created.set(true);
         return SpanExporter.composite();
+    }
+
+    @Test
+    void spiResourceProvidersAreMergedInOrder() {
+        // FirstResourceProvider has the lower order, so SecondResourceProvider's value wins the shared key
+        ComponentLoader loader = new StubComponentLoader(Map.of(
+                ResourceProvider.class, List.of(new SecondResourceProvider(), new FirstResourceProvider())));
+
+        Resource resource = QuarkusDeclarativeConfiguration.createSpiResource(loader,
+                DefaultConfigProperties.createFromMap(Map.of()));
+
+        assertThat(resource.getAttribute(AttributeKey.stringKey("first.key"))).isEqualTo("first");
+        assertThat(resource.getAttribute(AttributeKey.stringKey("shared.key"))).isEqualTo("second");
+    }
+
+    @Test
+    void disabledSpiResourceProviderIsSkipped() {
+        ComponentLoader loader = new StubComponentLoader(Map.of(
+                ResourceProvider.class, List.of(new FirstResourceProvider(), new SecondResourceProvider())));
+
+        Resource resource = QuarkusDeclarativeConfiguration.createSpiResource(loader,
+                DefaultConfigProperties.createFromMap(Map.of(
+                        "otel.java.disabled.resource.providers", SecondResourceProvider.class.getName())));
+
+        assertThat(resource.getAttribute(AttributeKey.stringKey("first.key"))).isEqualTo("first");
+        assertThat(resource.getAttribute(AttributeKey.stringKey("shared.key"))).isEqualTo("first");
+    }
+
+    @Test
+    void enabledSpiResourceProvidersActAsAllowList() {
+        ComponentLoader loader = new StubComponentLoader(Map.of(
+                ResourceProvider.class, List.of(new FirstResourceProvider(), new SecondResourceProvider())));
+
+        Resource resource = QuarkusDeclarativeConfiguration.createSpiResource(loader,
+                DefaultConfigProperties.createFromMap(Map.of(
+                        "otel.java.enabled.resource.providers", SecondResourceProvider.class.getName())));
+
+        assertThat(resource.getAttribute(AttributeKey.stringKey("first.key"))).isNull();
+        assertThat(resource.getAttribute(AttributeKey.stringKey("shared.key"))).isEqualTo("second");
+    }
+
+    @Test
+    void conditionalSpiResourceProviderIsConsulted() {
+        ComponentLoader loader = new StubComponentLoader(Map.of(
+                ResourceProvider.class, List.of(new NeverApplyResourceProvider())));
+
+        Resource resource = QuarkusDeclarativeConfiguration.createSpiResource(loader,
+                DefaultConfigProperties.createFromMap(Map.of()));
+
+        assertThat(resource.getAttribute(AttributeKey.stringKey("never.key"))).isNull();
+    }
+
+    @Test
+    void disabledResourceKeysAreFiltered() {
+        ComponentLoader loader = new StubComponentLoader(Map.of(
+                ResourceProvider.class, List.of(new FirstResourceProvider())));
+
+        Resource resource = QuarkusDeclarativeConfiguration.createSpiResource(loader,
+                DefaultConfigProperties.createFromMap(Map.of("otel.resource.disabled.keys", "first.key")));
+
+        assertThat(resource.getAttribute(AttributeKey.stringKey("first.key"))).isNull();
+        assertThat(resource.getAttribute(AttributeKey.stringKey("shared.key"))).isEqualTo("first");
+    }
+
+    public static class FirstResourceProvider implements ResourceProvider {
+        @Override
+        public Resource createResource(ConfigProperties config) {
+            return Resource.create(Attributes.of(
+                    AttributeKey.stringKey("first.key"), "first",
+                    AttributeKey.stringKey("shared.key"), "first"));
+        }
+
+        @Override
+        public int order() {
+            return 1;
+        }
+    }
+
+    public static class SecondResourceProvider implements ResourceProvider {
+        @Override
+        public Resource createResource(ConfigProperties config) {
+            return Resource.create(Attributes.of(AttributeKey.stringKey("shared.key"), "second"));
+        }
+
+        @Override
+        public int order() {
+            return 2;
+        }
+    }
+
+    public static class NeverApplyResourceProvider implements ConditionalResourceProvider {
+        @Override
+        public Resource createResource(ConfigProperties config) {
+            return Resource.create(Attributes.of(AttributeKey.stringKey("never.key"), "never"));
+        }
+
+        @Override
+        public boolean shouldApply(ConfigProperties config, Resource existing) {
+            return false;
+        }
+    }
+
+    private static final class ShutdownTrackingSpanExporter implements SpanExporter {
+
+        volatile boolean shutdownCalled;
+
+        @Override
+        public CompletableResultCode export(Collection<SpanData> spans) {
+            return CompletableResultCode.ofSuccess();
+        }
+
+        @Override
+        public CompletableResultCode flush() {
+            return CompletableResultCode.ofSuccess();
+        }
+
+        @Override
+        public CompletableResultCode shutdown() {
+            shutdownCalled = true;
+            return CompletableResultCode.ofSuccess();
+        }
     }
 
     private record StubComponentLoader(Map<Class<?>, List<Object>> services) implements ComponentLoader {

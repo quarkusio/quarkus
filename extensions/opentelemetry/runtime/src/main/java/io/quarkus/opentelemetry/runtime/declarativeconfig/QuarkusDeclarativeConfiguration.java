@@ -1,8 +1,11 @@
 package io.quarkus.opentelemetry.runtime.declarativeconfig;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +14,9 @@ import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.UnaryOperator;
 
+import org.jboss.threads.ScheduledViewExecutor;
+import org.jboss.threads.ViewExecutor;
+
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -18,6 +24,7 @@ import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.incubator.config.ConfigProvider;
 import io.opentelemetry.api.incubator.config.DeclarativeConfigException;
 import io.opentelemetry.api.incubator.config.DeclarativeConfigProperties;
+import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.common.ComponentLoader;
 import io.opentelemetry.context.propagation.ContextPropagators;
@@ -51,7 +58,9 @@ import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.SpanProcessorM
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.TracerProviderModel;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigurablePropagatorProvider;
+import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.internal.ComponentProvider;
+import io.opentelemetry.sdk.autoconfigure.spi.internal.ConditionalResourceProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.internal.ExtendedDeclarativeConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider;
@@ -59,6 +68,7 @@ import io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporter
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider;
 import io.opentelemetry.sdk.common.Clock;
+import io.opentelemetry.sdk.common.InternalTelemetryVersion;
 import io.opentelemetry.sdk.logs.LogLimits;
 import io.opentelemetry.sdk.logs.LogRecordProcessor;
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
@@ -67,6 +77,7 @@ import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessorBuilder;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
+import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessorBuilder;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
@@ -83,6 +94,7 @@ import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessorBuilder;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.ParentBasedSamplerBuilder;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
@@ -106,7 +118,7 @@ import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
  * {@link ComponentProvider} SPI. A name no {@code ComponentProvider} claims is also looked up through the legacy
  * autoconfigure component SPIs ({@link ConfigurableSamplerProvider}, {@link ConfigurableSpanExporterProvider},
  * etc.), so third-party components written for the replaced {@code AutoConfiguredOpenTelemetrySdk} path keep
- * resolving. Such a component receives {@link Customizations#legacyConfigProperties()}: the legacy path passed
+ * resolving. Such a component receives {@link Customizations#otelConfigProperties()}: the legacy path passed
  * every {@code quarkus.otel.*} property (rewritten to {@code otel.*}) plus any raw {@code otel.*} property to these
  * SPIs, and components such as custom samplers read their arguments from it (e.g. {@code otel.traces.sampler.arg}).
  * </p>
@@ -116,10 +128,10 @@ import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
  * supplied through {@link Customizations}.
  * </p>
  * <p>
- * Nothing in Quarkus calls {@link #create(OpenTelemetryConfigurationModel, Customizations)} yet: the SDK is still
- * initialized through {@code AutoConfiguredOpenTelemetrySdk}. {@code OpenTelemetryRecorder} is expected to switch to
- * this class, at which point it has to supply every {@link Customizations} hook with the CDI-sourced values the
- * legacy {@code AutoConfiguredOpenTelemetrySdkBuilderCustomizer} chain provides today.
+ * {@code OpenTelemetryRecorder} builds the SDK through
+ * {@link #create(OpenTelemetryConfigurationModel, Customizations)}, supplying the {@link Customizations} hooks with
+ * the CDI-sourced values the legacy {@code AutoConfiguredOpenTelemetrySdkBuilderCustomizer} chain supplied to
+ * {@code AutoConfiguredOpenTelemetrySdk}.
  * </p>
  */
 public final class QuarkusDeclarativeConfiguration {
@@ -128,29 +140,110 @@ public final class QuarkusDeclarativeConfiguration {
     }
 
     /**
-     * Builds the SDK from the model. A model with {@code disabled: true} produces an empty (no-op) SDK.
+     * Builds the SDK from the model. A model with {@code disabled: true} produces an empty (no-op) SDK. When
+     * construction fails midway, every component already built is closed before the exception propagates, as
+     * autoconfigure does, so no worker threads outlive the failure.
      */
     public static OpenTelemetrySdk create(OpenTelemetryConfigurationModel model, Customizations customizations) {
         if (Boolean.TRUE.equals(model.getDisabled())) {
             return OpenTelemetrySdk.builder().build();
         }
-        Resource resource = createResource(model.getResource());
-        OpenTelemetrySdkBuilder builder = OpenTelemetrySdk.builder();
-        if (model.getPropagator() != null) {
-            builder.setPropagators(createPropagators(model.getPropagator(), customizations));
+        List<Closeable> closeables = new ArrayList<>();
+        try {
+            Resource resource = createResource(model.getResource());
+            OpenTelemetrySdkBuilder builder = OpenTelemetrySdk.builder();
+            if (model.getPropagator() != null) {
+                builder.setPropagators(createPropagators(model.getPropagator(), customizations));
+            }
+            // The meter provider is built before the tracer and logger providers so they can report the SDK's
+            // self-telemetry through it, matching autoconfigure's ordering.
+            MeterProvider meterProvider = MeterProvider.noop();
+            if (model.getMeterProvider() != null) {
+                SdkMeterProvider sdkMeterProvider = customizations.autoConfigurationCustomizers()
+                        .customizeMeterProviderBuilder(
+                                createMeterProvider(model.getMeterProvider(), resource, customizations, closeables),
+                                customizations.otelConfigProperties())
+                        .build();
+                closeables.add(sdkMeterProvider);
+                builder.setMeterProvider(sdkMeterProvider);
+                meterProvider = sdkMeterProvider;
+            }
+            SelfTelemetry selfTelemetry = SelfTelemetry.create(customizations.otelConfigProperties(), meterProvider);
+            if (model.getTracerProvider() != null) {
+                SdkTracerProvider tracerProvider = customizations.autoConfigurationCustomizers()
+                        .customizeTracerProviderBuilder(createTracerProvider(model.getTracerProvider(),
+                                model.getAttributeLimits(), resource, customizations, selfTelemetry, closeables),
+                                customizations.otelConfigProperties())
+                        .build();
+                closeables.add(tracerProvider);
+                builder.setTracerProvider(tracerProvider);
+            }
+            if (model.getLoggerProvider() != null) {
+                SdkLoggerProvider loggerProvider = customizations.autoConfigurationCustomizers()
+                        .customizeLoggerProviderBuilder(createLoggerProvider(model.getLoggerProvider(),
+                                model.getAttributeLimits(), resource, customizations, selfTelemetry, closeables),
+                                customizations.otelConfigProperties())
+                        .build();
+                closeables.add(loggerProvider);
+                builder.setLoggerProvider(loggerProvider);
+            }
+            return builder.build();
+        } catch (RuntimeException e) {
+            for (int i = closeables.size() - 1; i >= 0; i--) {
+                try {
+                    closeables.get(i).close();
+                } catch (IOException | RuntimeException closeFailure) {
+                    e.addSuppressed(closeFailure);
+                }
+            }
+            throw e;
         }
-        if (model.getTracerProvider() != null) {
-            builder.setTracerProvider(createTracerProvider(model.getTracerProvider(), model.getAttributeLimits(), resource,
-                    customizations).build());
+    }
+
+    /**
+     * Builds the {@link Resource} contributed by the autoconfigure {@link ResourceProvider} SPI, mirroring
+     * autoconfigure's {@code ResourceConfiguration.configureResource}: providers are applied in
+     * {@code Ordered.order()} order, filtered by {@code otel.java.enabled.resource.providers} and
+     * {@code otel.java.disabled.resource.providers}, a {@link ConditionalResourceProvider} is consulted with the
+     * result so far, and {@code otel.resource.disabled.keys} attributes are removed from the result. MicroProfile
+     * Telemetry requires this SPI to be honored.
+     * <p>
+     * The result starts from {@link Resource#getDefault()}, like autoconfigure's; the recorder merges the
+     * Quarkus-managed resource layers on top of it, so they win conflicting keys, matching the legacy ordering
+     * where the {@code ResourceCustomizer} merged onto autoconfigure's result.
+     * </p>
+     */
+    public static Resource createSpiResource(ComponentLoader componentLoader, ConfigProperties otelConfigProperties) {
+        Resource result = Resource.getDefault();
+
+        Set<String> enabledProviders = Set.copyOf(otelConfigProperties.getList("otel.java.enabled.resource.providers"));
+        Set<String> disabledProviders = Set.copyOf(otelConfigProperties.getList("otel.java.disabled.resource.providers"));
+
+        List<ResourceProvider> providers = new ArrayList<>();
+        componentLoader.load(ResourceProvider.class).forEach(providers::add);
+        providers.sort(Comparator.comparingInt(ResourceProvider::order));
+
+        for (ResourceProvider provider : providers) {
+            if (!enabledProviders.isEmpty() && !enabledProviders.contains(provider.getClass().getName())) {
+                continue;
+            }
+            if (disabledProviders.contains(provider.getClass().getName())) {
+                continue;
+            }
+            if (provider instanceof ConditionalResourceProvider conditional
+                    && !conditional.shouldApply(otelConfigProperties, result)) {
+                continue;
+            }
+            result = result.merge(provider.createResource(otelConfigProperties));
         }
-        if (model.getMeterProvider() != null) {
-            builder.setMeterProvider(createMeterProvider(model.getMeterProvider(), resource, customizations).build());
+
+        Set<String> disabledKeys = Set.copyOf(otelConfigProperties.getList("otel.resource.disabled.keys"));
+        if (disabledKeys.isEmpty()) {
+            return result;
         }
-        if (model.getLoggerProvider() != null) {
-            builder.setLoggerProvider(createLoggerProvider(model.getLoggerProvider(), model.getAttributeLimits(), resource,
-                    customizations).build());
-        }
-        return builder.build();
+        return result.toBuilder()
+                .removeIf(attributeKey -> disabledKeys.contains(attributeKey.getKey()))
+                .build();
     }
 
     /**
@@ -255,7 +348,7 @@ public final class QuarkusDeclarativeConfiguration {
             for (ConfigurableSamplerProvider provider : customizations.componentLoader()
                     .load(ConfigurableSamplerProvider.class)) {
                 if (name.equals(provider.getName())) {
-                    return provider.createSampler(customizations.legacyConfigProperties());
+                    return provider.createSampler(customizations.otelConfigProperties());
                 }
             }
             throw noSuchComponent(Sampler.class, name);
@@ -307,8 +400,13 @@ public final class QuarkusDeclarativeConfiguration {
             if (name.isEmpty() || "none".equals(name)) {
                 continue;
             }
-            propagators.add(customizations.propagatorCustomizer()
-                    .apply(createPropagator(name, customizations)));
+            // The Quarkus TextMapPropagatorCustomizer chain runs first and the SPI customizer last, as
+            // autoconfigure composed them: the SPI providers were invoked at build time, after the Quarkus
+            // customizer beans had registered.
+            TextMapPropagator propagator = customizations.propagatorCustomizer()
+                    .apply(createPropagator(name, customizations));
+            propagators.add(customizations.autoConfigurationCustomizers()
+                    .customizePropagator(propagator, customizations.otelConfigProperties()));
         }
         return ContextPropagators.create(TextMapPropagator.composite(propagators));
     }
@@ -328,7 +426,7 @@ public final class QuarkusDeclarativeConfiguration {
                 for (ConfigurablePropagatorProvider provider : customizations.componentLoader()
                         .load(ConfigurablePropagatorProvider.class)) {
                     if (name.equals(provider.getName())) {
-                        return provider.getPropagator(customizations.legacyConfigProperties());
+                        return provider.getPropagator(customizations.otelConfigProperties());
                     }
                 }
                 throw noSuchComponent(TextMapPropagator.class, name);
@@ -336,16 +434,25 @@ public final class QuarkusDeclarativeConfiguration {
     }
 
     private static SdkTracerProviderBuilder createTracerProvider(TracerProviderModel model,
-            AttributeLimitsModel attributeLimits, Resource resource, Customizations customizations) {
+            AttributeLimitsModel attributeLimits, Resource resource, Customizations customizations,
+            SelfTelemetry selfTelemetry, List<Closeable> closeables) {
         SdkTracerProviderBuilder builder = SdkTracerProvider.builder().setResource(resource);
+        if (selfTelemetry.enabled()) {
+            builder.setMeterProvider(selfTelemetry::meterProvider);
+        }
         if (model.getLimits() != null || attributeLimits != null) {
             builder.setSpanLimits(createSpanLimits(model.getLimits(), attributeLimits));
         }
-        builder.setSampler(createEffectiveSampler(model.getSampler(), customizations));
+        builder.setSampler(customizations.autoConfigurationCustomizers().customizeSampler(
+                createEffectiveSampler(model.getSampler(), customizations), customizations.otelConfigProperties()));
         customizations.idGenerator().ifPresent(builder::setIdGenerator);
         if (model.getProcessors() != null) {
             for (SpanProcessorModel processor : model.getProcessors()) {
-                builder.addSpanProcessor(createSpanProcessor(processor, customizations));
+                SpanProcessor spanProcessor = customizations.autoConfigurationCustomizers().customizeSpanProcessor(
+                        createSpanProcessor(processor, customizations, selfTelemetry, closeables),
+                        customizations.otelConfigProperties());
+                closeables.add(spanProcessor);
+                builder.addSpanProcessor(spanProcessor);
             }
         }
         for (SpanProcessor processor : customizations.spanProcessors()) {
@@ -384,12 +491,9 @@ public final class QuarkusDeclarativeConfiguration {
      * mirroring the legacy {@code SamplerCustomizer} behavior.
      */
     private static Sampler createEffectiveSampler(SamplerModel model, Customizations customizations) {
-        // An explicit always_off sampler is never replaced by the CDI bean: the model builder installs it when
-        // tracing is disabled (quarkus.otel.traces.enabled=false), and the legacy SamplerCustomizer returned
-        // alwaysOff() unconditionally in that case, ignoring any CDI Sampler bean.
-        if (model != null && model.getAlwaysOff() != null) {
-            return Sampler.alwaysOff();
-        }
+        // A CDI-provided sampler replaces whatever the model configures, including an explicit always_off. The
+        // legacy requirement that disabled traces ignore CDI Sampler beans is enforced by the caller: the recorder
+        // only supplies a sampler customization when tracing is enabled.
         Sampler override = customizations.sampler().orElse(null);
         if (override != null) {
             Set<String> dropTargets = dropTargets(model);
@@ -441,10 +545,13 @@ public final class QuarkusDeclarativeConfiguration {
         return builder.build();
     }
 
-    private static SpanProcessor createSpanProcessor(SpanProcessorModel model, Customizations customizations) {
+    private static SpanProcessor createSpanProcessor(SpanProcessorModel model, Customizations customizations,
+            SelfTelemetry selfTelemetry, List<Closeable> closeables) {
         if (model.getBatch() != null) {
             BatchSpanProcessorModel batch = model.getBatch();
-            SpanExporter exporter = createSpanExporter(batch.getExporter(), customizations);
+            SpanExporter exporter = customizations.autoConfigurationCustomizers().customizeSpanExporter(
+                    createSpanExporter(batch.getExporter(), customizations), customizations.otelConfigProperties());
+            closeables.add(exporter);
             // Mirrors the legacy SpanProcessorCustomizer: without CDI SpanProcessor beans, a batch processor around
             // the no-op exporter (e.g. "cdi" with no SpanExporter beans) is replaced by a no-op processor, so no
             // batch worker thread is started. The no-op exporter is a singleton (an empty composite always returns
@@ -452,7 +559,9 @@ public final class QuarkusDeclarativeConfiguration {
             if (customizations.spanProcessors().isEmpty() && exporter == SpanExporter.composite()) {
                 return SpanProcessor.composite();
             }
-            BatchSpanProcessorBuilder builder = BatchSpanProcessor.builder(exporter);
+            BatchSpanProcessorBuilder builder = BatchSpanProcessor.builder(exporter)
+                    .setMeterProvider(selfTelemetry::meterProvider)
+                    .setInternalTelemetryVersion(selfTelemetry.version());
             if (batch.getScheduleDelay() != null) {
                 builder.setScheduleDelay(Duration.ofMillis(batch.getScheduleDelay()));
             }
@@ -468,7 +577,15 @@ public final class QuarkusDeclarativeConfiguration {
             return builder.build();
         }
         if (model.getSimple() != null) {
-            return SimpleSpanProcessor.create(createSpanExporter(model.getSimple().getExporter(), customizations));
+            SpanExporter exporter = customizations.autoConfigurationCustomizers().customizeSpanExporter(
+                    createSpanExporter(model.getSimple().getExporter(), customizations),
+                    customizations.otelConfigProperties());
+            closeables.add(exporter);
+            SimpleSpanProcessorBuilder builder = SimpleSpanProcessor.builder(exporter);
+            if (selfTelemetry.enabled()) {
+                builder.setMeterProvider(selfTelemetry::meterProvider);
+            }
+            return builder.build();
         }
         throw new DeclarativeConfigException("The span processor model defines no processor");
     }
@@ -499,7 +616,7 @@ public final class QuarkusDeclarativeConfiguration {
             for (ConfigurableSpanExporterProvider provider : customizations.componentLoader()
                     .load(ConfigurableSpanExporterProvider.class)) {
                 if (name.equals(provider.getName())) {
-                    return provider.createExporter(customizations.legacyConfigProperties());
+                    return provider.createExporter(customizations.otelConfigProperties());
                 }
             }
             throw noSuchComponent(SpanExporter.class, name);
@@ -508,34 +625,53 @@ public final class QuarkusDeclarativeConfiguration {
     }
 
     private static SdkMeterProviderBuilder createMeterProvider(MeterProviderModel model, Resource resource,
-            Customizations customizations) {
+            Customizations customizations, List<Closeable> closeables) {
         SdkMeterProviderBuilder builder = SdkMeterProvider.builder().setResource(resource);
         customizations.clock().ifPresent(builder::setClock);
         if (model.getReaders() != null) {
             for (MetricReaderModel reader : model.getReaders()) {
-                builder.registerMetricReader(createMetricReader(reader, customizations));
+                MetricReader metricReader = customizations.autoConfigurationCustomizers().customizeMetricReader(
+                        createMetricReader(reader, customizations, closeables), customizations.otelConfigProperties());
+                closeables.add(metricReader);
+                builder.registerMetricReader(metricReader);
             }
+        }
+        for (MetricReader reader : customizations.metricReaders()) {
+            builder.registerMetricReader(reader);
         }
         return builder;
     }
 
-    private static MetricReader createMetricReader(MetricReaderModel model, Customizations customizations) {
+    private static MetricReader createMetricReader(MetricReaderModel model, Customizations customizations,
+            List<Closeable> closeables) {
         if (model.getPeriodic() == null) {
             throw new DeclarativeConfigException("Only periodic metric readers are supported");
         }
         PeriodicMetricReaderModel periodic = model.getPeriodic();
-        PeriodicMetricReaderBuilder builder = PeriodicMetricReader
-                .builder(createMetricExporter(periodic.getExporter(), customizations));
+        MetricExporter exporter = customizations.autoConfigurationCustomizers().customizeMetricExporter(
+                createMetricExporter(periodic.getExporter(), customizations),
+                customizations.otelConfigProperties());
+        closeables.add(exporter);
+        PeriodicMetricReaderBuilder builder = PeriodicMetricReader.builder(exporter);
         if (periodic.getInterval() != null) {
             builder.setInterval(Duration.ofMillis(periodic.getInterval()));
         }
         // When the caller supplies an executor, it replaces the reader's own unmanaged single-thread one (which has
-        // no context classloader and lives outside the container's pools). Nothing supplies one yet: unit tests
-        // leave it empty, and OpenTelemetryRecorder is expected to pass the container-managed scheduled executor
-        // once it builds the SDK through this class, wrapped so it tolerates the reader's shutdown calls (the
-        // reader assumes it owns its executor and shuts it down on close), as the legacy MetricProviderCustomizer
-        // did with NonShutdownableScheduledExecutorService.
-        customizations.metricReaderExecutor().ifPresent(builder::setExecutor);
+        // no context classloader and lives outside the container's pools). OpenTelemetryRecorder passes the
+        // container-managed scheduled executor, and each reader gets its own ScheduledViewExecutor view of it, as
+        // the legacy MetricsCustomizer built them: the reader assumes it owns its executor and shuts it down on
+        // close, and the view drains exactly this reader's tasks without touching the shared pool. Unit tests
+        // leave it empty.
+        if (customizations.metricReaderExecutor().isPresent()) {
+            ScheduledExecutorService sharedExecutor = customizations.metricReaderExecutor().get();
+            builder.setExecutor(new ScheduledViewExecutor(
+                    ViewExecutor.builder(sharedExecutor)
+                            .unlimitedParallelism()
+                            .unlimitedQueueLimit()
+                            .supportInterruptOnShutdownNow(true)
+                            .build(),
+                    sharedExecutor));
+        }
         return builder.build();
     }
 
@@ -565,7 +701,7 @@ public final class QuarkusDeclarativeConfiguration {
             for (ConfigurableMetricExporterProvider provider : customizations.componentLoader()
                     .load(ConfigurableMetricExporterProvider.class)) {
                 if (name.equals(provider.getName())) {
-                    return provider.createExporter(customizations.legacyConfigProperties());
+                    return provider.createExporter(customizations.otelConfigProperties());
                 }
             }
             throw noSuchComponent(MetricExporter.class, name);
@@ -574,15 +710,24 @@ public final class QuarkusDeclarativeConfiguration {
     }
 
     private static SdkLoggerProviderBuilder createLoggerProvider(LoggerProviderModel model,
-            AttributeLimitsModel attributeLimits, Resource resource, Customizations customizations) {
+            AttributeLimitsModel attributeLimits, Resource resource, Customizations customizations,
+            SelfTelemetry selfTelemetry, List<Closeable> closeables) {
         SdkLoggerProviderBuilder builder = SdkLoggerProvider.builder().setResource(resource);
+        if (selfTelemetry.enabled()) {
+            builder.setMeterProvider(selfTelemetry::meterProvider);
+        }
         if (model.getLimits() != null || attributeLimits != null) {
             LogLimits limits = createLogLimits(model.getLimits(), attributeLimits);
             builder.setLogLimits(() -> limits);
         }
         if (model.getProcessors() != null) {
             for (LogRecordProcessorModel processor : model.getProcessors()) {
-                builder.addLogRecordProcessor(createLogRecordProcessor(processor, customizations));
+                LogRecordProcessor logRecordProcessor = customizations.autoConfigurationCustomizers()
+                        .customizeLogRecordProcessor(
+                                createLogRecordProcessor(processor, customizations, selfTelemetry, closeables),
+                                customizations.otelConfigProperties());
+                closeables.add(logRecordProcessor);
+                builder.addLogRecordProcessor(logRecordProcessor);
             }
         }
         return builder;
@@ -611,11 +756,16 @@ public final class QuarkusDeclarativeConfiguration {
     }
 
     private static LogRecordProcessor createLogRecordProcessor(LogRecordProcessorModel model,
-            Customizations customizations) {
+            Customizations customizations, SelfTelemetry selfTelemetry, List<Closeable> closeables) {
         if (model.getBatch() != null) {
             BatchLogRecordProcessorModel batch = model.getBatch();
-            BatchLogRecordProcessorBuilder builder = BatchLogRecordProcessor
-                    .builder(createLogRecordExporter(batch.getExporter(), customizations));
+            LogRecordExporter exporter = customizations.autoConfigurationCustomizers().customizeLogRecordExporter(
+                    createLogRecordExporter(batch.getExporter(), customizations),
+                    customizations.otelConfigProperties());
+            closeables.add(exporter);
+            BatchLogRecordProcessorBuilder builder = BatchLogRecordProcessor.builder(exporter)
+                    .setMeterProvider(selfTelemetry.meterProvider())
+                    .setInternalTelemetryVersion(selfTelemetry.version());
             if (batch.getScheduleDelay() != null) {
                 builder.setScheduleDelay(Duration.ofMillis(batch.getScheduleDelay()));
             }
@@ -631,7 +781,15 @@ public final class QuarkusDeclarativeConfiguration {
             return builder.build();
         }
         if (model.getSimple() != null) {
-            return SimpleLogRecordProcessor.create(createLogRecordExporter(model.getSimple().getExporter(), customizations));
+            LogRecordExporter exporter = customizations.autoConfigurationCustomizers().customizeLogRecordExporter(
+                    createLogRecordExporter(model.getSimple().getExporter(), customizations),
+                    customizations.otelConfigProperties());
+            closeables.add(exporter);
+            SimpleLogRecordProcessorBuilder builder = SimpleLogRecordProcessor.builder(exporter);
+            if (selfTelemetry.enabled()) {
+                builder.setMeterProvider(selfTelemetry::meterProvider);
+            }
+            return builder.build();
         }
         throw new DeclarativeConfigException("The log record processor model defines no processor");
     }
@@ -663,7 +821,7 @@ public final class QuarkusDeclarativeConfiguration {
             for (ConfigurableLogRecordExporterProvider provider : customizations.componentLoader()
                     .load(ConfigurableLogRecordExporterProvider.class)) {
                 if (name.equals(provider.getName())) {
-                    return provider.createExporter(customizations.legacyConfigProperties());
+                    return provider.createExporter(customizations.otelConfigProperties());
                 }
             }
             throw noSuchComponent(LogRecordExporter.class, name);
@@ -739,10 +897,54 @@ public final class QuarkusDeclarativeConfiguration {
     }
 
     /**
+     * The SDK's internal (self-diagnostics) telemetry wiring, mirroring autoconfigure's
+     * {@code InternalTelemetryConfiguration} and the {@code setMeterProvider} calls in its
+     * {@code TracerProviderConfiguration}/{@code LoggerProviderConfiguration}: the tracer and logger providers and
+     * the simple processors receive the meter provider only when the version is not {@code legacy}, while the batch
+     * processors always receive it together with the version itself.
+     */
+    private static final class SelfTelemetry {
+
+        private final InternalTelemetryVersion version;
+        private final MeterProvider meterProvider;
+
+        private SelfTelemetry(InternalTelemetryVersion version, MeterProvider meterProvider) {
+            this.version = version;
+            this.meterProvider = meterProvider;
+        }
+
+        static SelfTelemetry create(ConfigProperties otelConfigProperties, MeterProvider meterProvider) {
+            // Same property and default as autoconfigure's InternalTelemetryConfiguration. OpenTelemetryRecorder
+            // feeds quarkus.otel.experimental.sdk.telemetry.version (default "latest") through getOtelConfigs().
+            String value = otelConfigProperties.getString("otel.experimental.sdk.telemetry.version");
+            InternalTelemetryVersion version;
+            if (value == null || "legacy".equalsIgnoreCase(value)) {
+                version = InternalTelemetryVersion.LEGACY;
+            } else if ("latest".equalsIgnoreCase(value)) {
+                version = InternalTelemetryVersion.LATEST;
+            } else {
+                throw new DeclarativeConfigException("Invalid sdk telemetry version: " + value);
+            }
+            return new SelfTelemetry(version, meterProvider);
+        }
+
+        InternalTelemetryVersion version() {
+            return version;
+        }
+
+        MeterProvider meterProvider() {
+            return meterProvider;
+        }
+
+        boolean enabled() {
+            return version != InternalTelemetryVersion.LEGACY;
+        }
+    }
+
+    /**
      * Quarkus runtime pieces that cannot be expressed in the declarative configuration model and are instead
-     * injected into SDK construction directly. Each hook documents the value the legacy
-     * {@code AutoConfiguredOpenTelemetrySdkBuilderCustomizer} chain supplies today; see the class Javadoc for who
-     * is expected to populate them.
+     * injected into SDK construction directly. {@code OpenTelemetryRecorder} populates them with the CDI-sourced
+     * values the legacy {@code AutoConfiguredOpenTelemetrySdkBuilderCustomizer} chain used to supply.
      */
     public static final class Customizations {
 
@@ -750,20 +952,24 @@ public final class QuarkusDeclarativeConfiguration {
         private final Sampler sampler;
         private final IdGenerator idGenerator;
         private final List<SpanProcessor> spanProcessors;
+        private final List<MetricReader> metricReaders;
         private final Clock clock;
         private final ScheduledExecutorService metricReaderExecutor;
         private final UnaryOperator<TextMapPropagator> propagatorCustomizer;
-        private final ConfigProperties legacyConfigProperties;
+        private final ConfigProperties otelConfigProperties;
+        private final AutoConfigurationCustomizers autoConfigurationCustomizers;
 
         private Customizations(Builder builder) {
             this.componentLoader = builder.componentLoader;
             this.sampler = builder.sampler;
             this.idGenerator = builder.idGenerator;
             this.spanProcessors = List.copyOf(builder.spanProcessors);
+            this.metricReaders = List.copyOf(builder.metricReaders);
             this.clock = builder.clock;
             this.metricReaderExecutor = builder.metricReaderExecutor;
             this.propagatorCustomizer = builder.propagatorCustomizer;
-            this.legacyConfigProperties = builder.legacyConfigProperties;
+            this.otelConfigProperties = builder.otelConfigProperties;
+            this.autoConfigurationCustomizers = builder.autoConfigurationCustomizers;
         }
 
         public static Builder builder(ComponentLoader componentLoader) {
@@ -776,8 +982,8 @@ public final class QuarkusDeclarativeConfiguration {
 
         /**
          * A CDI-provided {@link Sampler} bean which replaces the sampler described in the model, keeping the
-         * drop-targets wrapping if the model has one. A bare {@code always_off} model sampler (what the model
-         * builder emits for disabled traces) is never replaced.
+         * drop-targets wrapping if the model has one. The recorder only supplies it when tracing is enabled, so
+         * the {@code always_off} sampler the model carries for disabled traces is never replaced.
          */
         public Optional<Sampler> sampler() {
             return Optional.ofNullable(sampler);
@@ -794,10 +1000,21 @@ public final class QuarkusDeclarativeConfiguration {
             return spanProcessors;
         }
 
+        /**
+         * CDI-provided {@link MetricReader} beans, registered after the readers described in the model.
+         */
+        public List<MetricReader> metricReaders() {
+            return metricReaders;
+        }
+
         public Optional<Clock> clock() {
             return Optional.ofNullable(clock);
         }
 
+        /**
+         * The container-managed scheduled executor; every periodic metric reader is given its own
+         * {@code ScheduledViewExecutor} view of it instead of the unmanaged executor it creates itself.
+         */
         public Optional<ScheduledExecutorService> metricReaderExecutor() {
             return Optional.ofNullable(metricReaderExecutor);
         }
@@ -810,20 +1027,30 @@ public final class QuarkusDeclarativeConfiguration {
          * The flat {@code otel.*} properties passed to components resolved through the legacy autoconfigure SPIs
          * ({@link ConfigurableSamplerProvider} and friends). Empty unless set.
          */
-        public ConfigProperties legacyConfigProperties() {
-            return legacyConfigProperties;
+        public ConfigProperties otelConfigProperties() {
+            return otelConfigProperties;
+        }
+
+        /**
+         * The functions captured from the {@link io.opentelemetry.sdk.autoconfigure.spi.AutoConfigurationCustomizerProvider}
+         * ServiceLoader SPI, applied to each component after the Quarkus wiring. Identity unless set.
+         */
+        public AutoConfigurationCustomizers autoConfigurationCustomizers() {
+            return autoConfigurationCustomizers;
         }
 
         public static final class Builder {
 
             private final ComponentLoader componentLoader;
             private final List<SpanProcessor> spanProcessors = new ArrayList<>();
+            private final List<MetricReader> metricReaders = new ArrayList<>();
             private Sampler sampler;
             private IdGenerator idGenerator;
             private Clock clock;
             private ScheduledExecutorService metricReaderExecutor;
             private UnaryOperator<TextMapPropagator> propagatorCustomizer = UnaryOperator.identity();
-            private ConfigProperties legacyConfigProperties = DefaultConfigProperties.createFromMap(Map.of());
+            private ConfigProperties otelConfigProperties = DefaultConfigProperties.createFromMap(Map.of());
+            private AutoConfigurationCustomizers autoConfigurationCustomizers = AutoConfigurationCustomizers.none();
 
             private Builder(ComponentLoader componentLoader) {
                 this.componentLoader = componentLoader;
@@ -844,6 +1071,11 @@ public final class QuarkusDeclarativeConfiguration {
                 return this;
             }
 
+            public Builder addMetricReader(MetricReader metricReader) {
+                this.metricReaders.add(metricReader);
+                return this;
+            }
+
             public Builder clock(Clock clock) {
                 this.clock = clock;
                 return this;
@@ -860,12 +1092,17 @@ public final class QuarkusDeclarativeConfiguration {
             }
 
             /**
-             * Sets the properties passed to legacy autoconfigure SPI components. The caller is expected to build
-             * them the way the legacy {@code OpenTelemetryRecorder.getOtelConfigs()} did, i.e. every
-             * {@code quarkus.otel.*} property rewritten to {@code otel.*} merged with raw {@code otel.*} properties.
+             * Sets the properties passed to legacy autoconfigure SPI components. {@code OpenTelemetryRecorder}
+             * builds them with {@code getOtelConfigs()}: every {@code quarkus.otel.*} property rewritten to
+             * {@code otel.*} merged with raw {@code otel.*} properties.
              */
-            public Builder legacyConfigProperties(ConfigProperties legacyConfigProperties) {
-                this.legacyConfigProperties = legacyConfigProperties;
+            public Builder otelConfigProperties(ConfigProperties otelConfigProperties) {
+                this.otelConfigProperties = otelConfigProperties;
+                return this;
+            }
+
+            public Builder autoConfigurationCustomizers(AutoConfigurationCustomizers autoConfigurationCustomizers) {
+                this.autoConfigurationCustomizers = autoConfigurationCustomizers;
                 return this;
             }
 

@@ -4,6 +4,7 @@ import static io.quarkus.opentelemetry.runtime.config.build.ExporterType.Constan
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,10 +27,13 @@ import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.SimpleSpanProc
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.SpanExporterModel;
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.SpanProcessorModel;
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.TraceIdRatioBasedSamplerModel;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfigBuilder;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
+import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -223,6 +227,23 @@ class QuarkusOTelModelBuilderTest {
     }
 
     @Test
+    void metricExportIntervalUsesQuarkusDurationSemantics() {
+        // The interval reads the typed config, so Quarkus duration parsing applies: ISO-8601 works and a bare
+        // number means seconds.
+        OpenTelemetryConfigurationModel model = buildModel(Map.of(
+                "quarkus.otel.metrics.exporter", "cdi",
+                "quarkus.otel.metric.export.interval", "PT30S"));
+
+        assertThat(model.getMeterProvider().getReaders().getFirst().getPeriodic().getInterval()).isEqualTo(30000);
+
+        model = buildModel(Map.of(
+                "quarkus.otel.metrics.exporter", "cdi",
+                "quarkus.otel.metric.export.interval", "10"));
+
+        assertThat(model.getMeterProvider().getReaders().getFirst().getPeriodic().getInterval()).isEqualTo(10000);
+    }
+
+    @Test
     void disabledSignalsAreOmitted() {
         OpenTelemetryConfigurationModel model = buildModel(Map.of(
                 "quarkus.otel.metrics.enabled", "false",
@@ -288,8 +309,37 @@ class QuarkusOTelModelBuilderTest {
         OpenTelemetryConfigurationModel model = buildModel(Map.of("quarkus.otel.logs.exporter", "cdi,logging"));
 
         assertThat(model.getLoggerProvider().getProcessors()).hasSize(2);
-        assertThat(model.getLoggerProvider().getProcessors().get(0).getBatch()).isNotNull();
+        assertThat(model.getLoggerProvider().getProcessors().getFirst().getBatch()).isNotNull();
         assertThat(model.getLoggerProvider().getProcessors().get(1).getSimple()).isNotNull();
+    }
+
+    @Test
+    void simpleKeepsBatchSpanProcessorWhenCdiSpanProcessorsPresent() {
+        // the legacy SpanProcessorCustomizer only swapped batch for simple when no SpanProcessor beans existed
+        OpenTelemetryConfigurationModel model = buildModel(Map.of(
+                "quarkus.otel.simple", "true",
+                "quarkus.otel.traces.exporter", "otlp"), true, false);
+        assertThat(model.getTracerProvider().getProcessors().getFirst().getBatch()).isNotNull();
+
+        model = buildModel(Map.of(
+                "quarkus.otel.simple", "true",
+                "quarkus.otel.traces.exporter", "otlp"), false, false);
+        assertThat(model.getTracerProvider().getProcessors().getFirst().getSimple()).isNotNull();
+    }
+
+    @Test
+    void simpleAffectsLogsOnlyWithResolvableCdiLogRecordExporter() {
+        // the legacy SimpleLogRecordProcessorCustomizer only replaced the batch processor when a default-qualified
+        // LogRecordExporter bean was resolvable
+        OpenTelemetryConfigurationModel model = buildModel(Map.of(
+                "quarkus.otel.simple", "true",
+                "quarkus.otel.logs.exporter", "otlp"), false, false);
+        assertThat(model.getLoggerProvider().getProcessors().getFirst().getBatch()).isNotNull();
+
+        model = buildModel(Map.of(
+                "quarkus.otel.simple", "true",
+                "quarkus.otel.logs.exporter", "otlp"), false, true);
+        assertThat(model.getLoggerProvider().getProcessors().getFirst().getSimple()).isNotNull();
     }
 
     // The former DeclarativeConfiguration.create() round-trip tests live in QuarkusDeclarativeConfigurationTest
@@ -309,8 +359,20 @@ class QuarkusOTelModelBuilderTest {
         return buildModel(properties, Attributes.empty(), nonApplicationUriTargets, staticResourceTargets);
     }
 
+    private static OpenTelemetryConfigurationModel buildModel(Map<String, String> properties,
+            boolean cdiSpanProcessorsPresent, boolean cdiLogRecordExporterResolvable) {
+        return buildModel(properties, Attributes.empty(), Set.of(), Set.of(), cdiSpanProcessorsPresent,
+                cdiLogRecordExporterResolvable);
+    }
+
     private static OpenTelemetryConfigurationModel buildModel(Map<String, String> properties, Attributes resourceAttributes,
             Set<String> nonApplicationUriTargets, Set<String> staticResourceTargets) {
+        return buildModel(properties, resourceAttributes, nonApplicationUriTargets, staticResourceTargets, false, false);
+    }
+
+    private static OpenTelemetryConfigurationModel buildModel(Map<String, String> properties, Attributes resourceAttributes,
+            Set<String> nonApplicationUriTargets, Set<String> staticResourceTargets,
+            boolean cdiSpanProcessorsPresent, boolean cdiLogRecordExporterResolvable) {
         SmallRyeConfig config = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
                 .withCustomizers(builder -> new OtlpExporterConfigBuilder().configBuilder(builder))
@@ -320,12 +382,44 @@ class QuarkusOTelModelBuilderTest {
                 .withDefaultValues(properties)
                 .build();
 
-        return QuarkusOTelModelBuilder.build(
-                config.getConfigMapping(OTelBuildConfig.class),
-                config.getConfigMapping(OTelRuntimeConfig.class),
-                config.getConfigMapping(OtlpExporterRuntimeConfig.class),
-                resourceAttributes,
-                nonApplicationUriTargets,
-                staticResourceTargets);
+        return QuarkusOTelModelBuilder
+                .forConfig(
+                        config.getConfigMapping(OTelBuildConfig.class),
+                        config.getConfigMapping(OTelRuntimeConfig.class),
+                        config.getConfigMapping(OtlpExporterRuntimeConfig.class),
+                        otelConfigProperties(config))
+                .resourceAttributes(resourceAttributes)
+                .nonApplicationUriTargets(nonApplicationUriTargets)
+                .staticResourceTargets(staticResourceTargets)
+                .cdiSpanProcessorsPresent(cdiSpanProcessorsPresent)
+                .cdiLogRecordExporterResolvable(cdiLogRecordExporterResolvable)
+                .build();
+    }
+
+    /**
+     * The flat otel.* view of the configuration, mirroring OpenTelemetryRecorder.getOtelConfigs() in its default
+     * (non-MP-compatibility) precedence: every quarkus.otel.* value, mapping defaults included, under its
+     * quarkus-stripped name, overriding any bare otel.* property. The recorder additionally converts
+     * Quarkus-only duration formats; tests use autoconfigure-parsable values directly.
+     */
+    private static ConfigProperties otelConfigProperties(SmallRyeConfig config) {
+        Map<String, String> otelConfigs = new HashMap<>();
+        for (String propertyName : config.getPropertyNames()) {
+            if (propertyName.startsWith("otel.")) {
+                ConfigValue value = config.getConfigValue(propertyName);
+                if (value.getValue() != null) {
+                    otelConfigs.put(propertyName, value.getValue());
+                }
+            }
+        }
+        for (String propertyName : config.getPropertyNames()) {
+            if (propertyName.startsWith("quarkus.otel.")) {
+                ConfigValue value = config.getConfigValue(propertyName);
+                if (value.getValue() != null) {
+                    otelConfigs.put(propertyName.substring("quarkus.".length()), value.getValue());
+                }
+            }
+        }
+        return DefaultConfigProperties.createFromMap(otelConfigs);
     }
 }

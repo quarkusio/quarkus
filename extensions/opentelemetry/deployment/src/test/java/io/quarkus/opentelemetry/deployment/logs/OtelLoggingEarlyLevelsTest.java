@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -16,11 +17,10 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.logs.data.LogRecordData;
+import io.opentelemetry.sdk.resources.Resource;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporterProvider;
-import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer;
 import io.quarkus.test.QuarkusExtensionTest;
 
 /**
@@ -49,7 +49,7 @@ public class OtelLoggingEarlyLevelsTest {
 
     @Test
     public void loggerLevelsAreConfiguredBeforeSdkInitialization() {
-        assertTrue(SdkInitProbe.probed, "The probe customizer should have run during SDK initialization");
+        assertTrue(SdkInitProbe.probed, "The probe resource producer should have run during SDK initialization");
         assertFalse(SdkInitProbe.debugEnabledDuringSdkInit,
                 "Loggers should already be at their configured levels while the OpenTelemetry SDK initializes; "
                         + "an arbitrary category must not be debug-enabled");
@@ -64,20 +64,23 @@ public class OtelLoggingEarlyLevelsTest {
 
     @SuppressWarnings("removal")
     @Singleton
-    public static class SdkInitProbe implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    public static class SdkInitProbe {
 
         static final String EARLY_MESSAGE = "Log record published while the OpenTelemetry SDK initializes";
 
         static volatile boolean probed;
         static volatile boolean debugEnabledDuringSdkInit;
 
-        @Override
-        public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
+        @Produces
+        @Singleton
+        public Resource probeResource() {
             // Runs while the OpenTelemetry SDK bean is created, before the SDK is available
-            // to the log handler.
+            // to the log handler: the recorder resolves Resource beans to merge them into the
+            // SDK resource.
             debugEnabledDuringSdkInit = Logger.getLogger("org.acme.some.arbitrary.category").isLoggable(Level.FINE);
             probed = true;
             org.jboss.logging.Logger.getLogger("org.acme.early.logger").info(EARLY_MESSAGE);
+            return Resource.empty();
         }
     }
 }

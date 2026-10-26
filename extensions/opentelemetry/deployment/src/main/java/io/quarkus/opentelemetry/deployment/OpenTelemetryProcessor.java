@@ -12,13 +12,18 @@ import static io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvid
 import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
 
@@ -30,7 +35,7 @@ import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
-import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.commons.ClassRemapper;
@@ -51,7 +56,13 @@ import io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporter
 import io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider;
+import io.opentelemetry.sdk.common.Clock;
+import io.opentelemetry.sdk.logs.export.LogRecordExporter;
+import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.resources.Resource;
+import io.opentelemetry.sdk.trace.IdGenerator;
+import io.opentelemetry.sdk.trace.SpanProcessor;
+import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -71,6 +82,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.OpenTelemetrySdkBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
@@ -91,14 +103,17 @@ import io.quarkus.opentelemetry.OpenTelemetryDestroyer;
 import io.quarkus.opentelemetry.deployment.metric.MetricsEnabled;
 import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer;
 import io.quarkus.opentelemetry.runtime.DelayedAttributes;
+import io.quarkus.opentelemetry.runtime.InternalSdkBuilderCustomizer;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.config.build.ExporterType;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
+import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.AddingSpanAttributesInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.InstrumentationRecorder;
 import io.quarkus.rest.client.reactive.spi.RegisteredRestClientBuildItem;
+import io.quarkus.runtime.ApplicationConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -107,6 +122,7 @@ import io.smallrye.config.Config;
 @BuildSteps(onlyIf = OpenTelemetryEnabled.class)
 public class OpenTelemetryProcessor {
 
+    private static final Logger LOG = Logger.getLogger(OpenTelemetryProcessor.class);
     private static final DotName WITH_SPAN = DotName.createSimple(WithSpan.class.getName());
     private static final DotName ADD_SPAN_ATTRIBUTES = DotName.createSimple(AddingSpanAttributes.class.getName());
     private static final Predicate<AnnotationInstance> isAddSpanAttribute = new Predicate<>() {
@@ -216,26 +232,94 @@ public class OpenTelemetryProcessor {
             CoreVertxBuildItem vertx,
             LaunchModeBuildItem launchMode,
             OTelBuildConfig oTelBuildConfig,
+            CombinedIndexBuildItem index,
             BuildProducer<SyntheticBeanBuildItem> syntheticProducer,
-            BuildProducer<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItemBuildProducer,
-            BuildProducer<io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem> deprecatedOpenTelemetrySdkBuildItemBuildProducer,
             BuildProducer<ServiceStartBuildItem> serviceStart) {
+        // Applications with user beans of this SPI keep the legacy AutoConfiguredOpenTelemetrySdk engine; the
+        // recorder decides that from the resolvable beans. This scan only drives the warning, since it cannot see
+        // every bean (e.g. one from a producer method). Removed together with the SPI in Quarkus 4.3.
+        // Implementations of the internal marker interface are Quarkus wiring, not deprecated usage.
+        Set<DotName> internalCustomizers = new HashSet<>();
+        for (ClassInfo implementor : index.getIndex().getAllKnownImplementations(
+                DotName.createSimple(InternalSdkBuilderCustomizer.class.getName()))) {
+            internalCustomizers.add(implementor.name());
+        }
+        List<String> legacySdkBuilderCustomizers = new ArrayList<>();
+        for (ClassInfo implementor : index.getIndex().getAllKnownImplementations(
+                DotName.createSimple(AutoConfiguredOpenTelemetrySdkBuilderCustomizer.class.getName()))) {
+            if (!Modifier.isAbstract(implementor.flags()) && !internalCustomizers.contains(implementor.name())) {
+                legacySdkBuilderCustomizers.add(implementor.name().toString());
+            }
+        }
+        if (!legacySdkBuilderCustomizers.isEmpty()) {
+            LOG.warnf("The following AutoConfiguredOpenTelemetrySdkBuilderCustomizer implementations are deprecated "
+                    + "and the SPI is scheduled for removal: %s. While they are present, the OpenTelemetry SDK is "
+                    + "initialized with the legacy autoconfigure engine instead of the declarative configuration "
+                    + "model. Migrate them to CDI beans (Sampler, SpanProcessor, MetricReader, Resource, ...) or "
+                    + "the OpenTelemetry autoconfigure service provider interfaces.",
+                    String.join(", ", legacySdkBuilderCustomizers));
+        }
+
+        // Each injection point must mirror a SyntheticCreationalContext.getInjectedReference(...) lookup in
+        // OpenTelemetryRecorder.opentelemetryBean(), matching both the type and the qualifiers.
+        AnnotationInstance any = AnnotationInstance.builder(Any.class).build();
         syntheticProducer.produce(SyntheticBeanBuildItem.configure(OpenTelemetry.class)
                 .defaultBean()
                 .setRuntimeInit()
                 .unremovable()
                 .scope(Singleton.class)
+                .addInjectionPoint(ClassType.create(ApplicationConfig.class))
+                .addInjectionPoint(ParameterizedType.create(Instance.class, ClassType.create(DelayedAttributes.class)),
+                        any)
+                // Instance injection points, not @All lists: every injection point of a synthetic bean is created
+                // before the bean's function runs, so a List would instantiate the beans (starting e.g. a user
+                // SpanProcessor's worker thread) even on the disabled-SDK and legacy paths, which never consume
+                // them. An Instance creates beans only when iterated, inside the recorder's enablement gates, and
+                // iterates in the same priority order as an @All list.
+                .addInjectionPoint(ParameterizedType.create(Instance.class, ClassType.create(Resource.class)), any)
+                .addInjectionPoint(ParameterizedType.create(Instance.class, ClassType.create(Sampler.class)), any)
+                .addInjectionPoint(ParameterizedType.create(Instance.class, ClassType.create(IdGenerator.class)), any)
+                .addInjectionPoint(ParameterizedType.create(Instance.class, ClassType.create(SpanProcessor.class)), any)
                 .addInjectionPoint(
-                        ParameterizedType.create(
-                                DotName.createSimple(Instance.class),
-                                new Type[] { ClassType.create(
-                                        DotName.createSimple(
-                                                AutoConfiguredOpenTelemetrySdkBuilderCustomizer.class.getName())) },
-                                null))
+                        ParameterizedType.create(Instance.class, ClassType.create(TextMapPropagatorCustomizer.class)),
+                        any)
+                .addInjectionPoint(ParameterizedType.create(Instance.class, ClassType.create(Clock.class)))
+                .addInjectionPoint(
+                        ParameterizedType.create(Instance.class, ClassType.create(ScheduledExecutorService.class)))
+                .addInjectionPoint(ParameterizedType.create(Instance.class, ClassType.create(MetricReader.class)), any)
+                // default-qualified, matching the legacy SimpleLogRecordProcessorCustomizer's Instance resolution
+                .addInjectionPoint(ParameterizedType.create(Instance.class, ClassType.create(LogRecordExporter.class)))
+                // The deprecated-type Instance drives the engine decision: the built-in customizers are @Typed to
+                // the internal marker interface, so only user beans carry the deprecated type. Both Instances are
+                // iterated only on the legacy engine path.
+                .addInjectionPoint(ParameterizedType.create(Instance.class,
+                        ClassType.create(AutoConfiguredOpenTelemetrySdkBuilderCustomizer.class)))
+                .addInjectionPoint(ParameterizedType.create(Instance.class,
+                        ClassType.create(InternalSdkBuilderCustomizer.class)))
                 .createWith(recorder.opentelemetryBean())
                 .destroyer(OpenTelemetryDestroyer.class)
                 .done());
 
+        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT || launchMode.getLaunchMode() == LaunchMode.TEST) {
+            recorder.resetGlobalOpenTelemetryForDevMode();
+        }
+
+        recorder.eagerlyCreateContextStorage();
+        recorder.storeVertxOnContextStorage(vertx.getVertx());
+
+        serviceStart.produce(new ServiceStartBuildItem("OpenTelemetry"));
+    }
+
+    // A separate step from openTelemetryBean: that step consumes CombinedIndexBuildItem, and extensions consuming
+    // OpenTelemetrySdkBuildItem may contribute classes to the index (e.g. the MongoDB client's command listener),
+    // which would otherwise create a build-step cycle.
+    @SuppressWarnings({ "deprecation", "removal" })
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void openTelemetrySdkEnabled(OpenTelemetryRecorder recorder,
+            OTelBuildConfig oTelBuildConfig,
+            BuildProducer<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItemBuildProducer,
+            BuildProducer<io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem> deprecatedOpenTelemetrySdkBuildItemBuildProducer) {
         // same as `TracerEnabled`
         boolean tracingEnabled = oTelBuildConfig.traces().enabled()
                 .map(it -> it && oTelBuildConfig.enabled())
@@ -254,15 +338,6 @@ public class OpenTelemetryProcessor {
         deprecatedOpenTelemetrySdkBuildItemBuildProducer
                 .produce(new io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem(
                         tracingEnabled, metricsEnabled, loggingEnabled, recorder.isOtelSdkEnabled()));
-
-        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT || launchMode.getLaunchMode() == LaunchMode.TEST) {
-            recorder.resetGlobalOpenTelemetryForDevMode();
-        }
-
-        recorder.eagerlyCreateContextStorage();
-        recorder.storeVertxOnContextStorage(vertx.getVertx());
-
-        serviceStart.produce(new ServiceStartBuildItem("OpenTelemetry"));
     }
 
     @BuildStep

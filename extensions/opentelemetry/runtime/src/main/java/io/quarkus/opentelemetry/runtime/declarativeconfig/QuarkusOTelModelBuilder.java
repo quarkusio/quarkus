@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.runtime.declarativeconfig;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -45,15 +46,12 @@ import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.SpanLimitsMode
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.SpanProcessorModel;
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.TraceIdRatioBasedSamplerModel;
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.TracerProviderModel;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigurationException;
 import io.quarkus.opentelemetry.runtime.config.build.ExporterType;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.SamplerType;
-import io.quarkus.opentelemetry.runtime.config.build.TracesBuildConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.AttributeConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.BatchLogRecordProcessorConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.BatchSpanProcessorConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.SpanConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.TracesRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig;
@@ -61,8 +59,8 @@ import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRunt
 import io.quarkus.opentelemetry.runtime.exporter.otlp.sender.VertxHttpSender;
 
 /**
- * Pure-function translation of the resolved {@code quarkus.otel.*} configuration into an
- * {@link OpenTelemetryConfigurationModel}, interpreted by
+ * Builds the {@link OpenTelemetryConfigurationModel} from the resolved configuration (the typed
+ * {@code quarkus.otel.*} mappings plus the merged flat {@code otel.*} view the recorder computes), interpreted by
  * {@link QuarkusDeclarativeConfiguration#create(OpenTelemetryConfigurationModel, QuarkusDeclarativeConfiguration.Customizations)}.
  * Upstream's {@code DeclarativeConfiguration.create(OpenTelemetryConfigurationModel)} must not be used: it requires
  * Jackson 2 and SnakeYAML, which are excluded from the declarative-config dependency (see the comment on that
@@ -102,56 +100,267 @@ public final class QuarkusOTelModelBuilder {
 
     private static final Set<String> SIMPLE_PROCESSOR_EXPORTERS = Set.of("console", "logging");
 
-    private QuarkusOTelModelBuilder() {
+    private final OTelBuildConfig buildConfig;
+    private final OTelRuntimeConfig runtimeConfig;
+    private final OtlpExporterRuntimeConfig exporterRuntimeConfig;
+    private final ConfigProperties otelConfigProperties;
+
+    private Attributes resourceAttributes = Attributes.empty();
+    private Set<String> nonApplicationUriTargets = Set.of();
+    private Set<String> staticResourceTargets = Set.of();
+    private boolean cdiSpanProcessorsPresent;
+    private boolean cdiLogRecordExporterResolvable;
+
+    private QuarkusOTelModelBuilder(OTelBuildConfig buildConfig, OTelRuntimeConfig runtimeConfig,
+            OtlpExporterRuntimeConfig exporterRuntimeConfig, ConfigProperties otelConfigProperties) {
+        this.buildConfig = buildConfig;
+        this.runtimeConfig = runtimeConfig;
+        this.exporterRuntimeConfig = exporterRuntimeConfig;
+        this.otelConfigProperties = otelConfigProperties;
     }
 
     /**
-     * @param nonApplicationUriTargets the build-time-computed set of non-application URIs (e.g. {@code /q/health})
-     *        contributed by other extensions, mirroring {@code TracerRecorder.dropNonApplicationUriTargets}
-     * @param staticResourceTargets the build-time-computed set of static resource URIs, mirroring
-     *        {@code TracerRecorder.dropStaticResourceTargets}
+     * @param otelConfigProperties the flat {@code otel.*} view of the resolved configuration, computed by the
+     *        recorder: every {@code quarkus.otel.*} value (defaults included) merged with the bare {@code otel.*}
+     *        properties, the {@code otel.*} spelling winning under {@code quarkus.otel.mp.compatibility}. The
+     *        decisions autoconfigure used to make from these properties are made from this view, so the
+     *        MicroProfile Telemetry {@code otel.*} configuration contract keeps working; Quarkus-specific
+     *        decisions (enablement, {@code simple}, URI suppression, OTLP exporter settings) stay on the typed
+     *        config.
      */
-    public static OpenTelemetryConfigurationModel build(OTelBuildConfig buildConfig,
-            OTelRuntimeConfig runtimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig,
-            Attributes resourceAttributes,
-            Set<String> nonApplicationUriTargets,
-            Set<String> staticResourceTargets) {
+    public static QuarkusOTelModelBuilder forConfig(OTelBuildConfig buildConfig, OTelRuntimeConfig runtimeConfig,
+            OtlpExporterRuntimeConfig exporterRuntimeConfig, ConfigProperties otelConfigProperties) {
+        return new QuarkusOTelModelBuilder(buildConfig, runtimeConfig, exporterRuntimeConfig, otelConfigProperties);
+    }
+
+    /**
+     * The resolved resource attributes the model carries; the recorder supplies the fully merged resource.
+     */
+    public QuarkusOTelModelBuilder resourceAttributes(Attributes resourceAttributes) {
+        this.resourceAttributes = resourceAttributes;
+        return this;
+    }
+
+    /**
+     * The build-time-computed set of non-application URIs (e.g. {@code /q/health}) contributed by other extensions,
+     * mirroring {@code TracerRecorder.dropNonApplicationUriTargets}.
+     */
+    public QuarkusOTelModelBuilder nonApplicationUriTargets(Set<String> nonApplicationUriTargets) {
+        this.nonApplicationUriTargets = nonApplicationUriTargets;
+        return this;
+    }
+
+    /**
+     * The build-time-computed set of static resource URIs, mirroring
+     * {@code TracerRecorder.dropStaticResourceTargets}.
+     */
+    public QuarkusOTelModelBuilder staticResourceTargets(Set<String> staticResourceTargets) {
+        this.staticResourceTargets = staticResourceTargets;
+        return this;
+    }
+
+    /**
+     * Whether the application contributes {@code SpanProcessor} beans: {@code quarkus.otel.simple} then keeps the
+     * batch processor, as the legacy {@code SpanProcessorCustomizer} only swapped it for a simple one when no such
+     * beans existed.
+     */
+    public QuarkusOTelModelBuilder cdiSpanProcessorsPresent(boolean cdiSpanProcessorsPresent) {
+        this.cdiSpanProcessorsPresent = cdiSpanProcessorsPresent;
+        return this;
+    }
+
+    /**
+     * Whether exactly one default-qualified {@code LogRecordExporter} bean is resolvable:
+     * {@code quarkus.otel.simple} only affects the log pipeline when one is, as the legacy
+     * {@code SimpleLogRecordProcessorCustomizer} did nothing otherwise.
+     */
+    public QuarkusOTelModelBuilder cdiLogRecordExporterResolvable(boolean cdiLogRecordExporterResolvable) {
+        this.cdiLogRecordExporterResolvable = cdiLogRecordExporterResolvable;
+        return this;
+    }
+
+    public OpenTelemetryConfigurationModel build() {
         OpenTelemetryConfigurationModel model = new OpenTelemetryConfigurationModel()
                 .withFileFormat(FILE_FORMAT)
-                .withDisabled(runtimeConfig.sdkDisabled())
-                .withAttributeLimits(buildAttributeLimits(runtimeConfig.attribute()))
-                .withResource(buildResource(resourceAttributes))
-                .withPropagator(buildPropagator(buildConfig.propagators()));
+                .withDisabled(otelConfigProperties.getBoolean("otel.sdk.disabled", false))
+                .withAttributeLimits(buildAttributeLimits())
+                .withResource(buildResource())
+                .withPropagator(buildPropagator(otelConfigProperties.getList("otel.propagators")));
 
         // A null tracer_provider makes the SDK fall back to a default provider sampling parentbased(always_on), so
         // disabled traces get an explicit always_off sampler instead, matching the legacy SamplerCustomizer.
         model.withTracerProvider(buildConfig.traces().enabled().orElse(true)
-                ? buildTracerProvider(buildConfig, runtimeConfig, exporterRuntimeConfig, nonApplicationUriTargets,
-                        staticResourceTargets)
+                ? buildTracerProvider()
                 : new TracerProviderModel().withSampler(new SamplerModel().withAlwaysOff(new AlwaysOffSamplerModel())));
         if (buildConfig.metrics().enabled().orElse(true)) {
-            model.withMeterProvider(buildMeterProvider(buildConfig, runtimeConfig, exporterRuntimeConfig));
+            model.withMeterProvider(buildMeterProvider());
         }
         if (buildConfig.logs().enabled().orElse(true)) {
-            model.withLoggerProvider(buildLoggerProvider(buildConfig, runtimeConfig, exporterRuntimeConfig));
+            model.withLoggerProvider(buildLoggerProvider());
         }
 
         return model;
     }
 
-    private static AttributeLimitsModel buildAttributeLimits(AttributeConfig attributeConfig) {
+    private AttributeLimitsModel buildAttributeLimits() {
         AttributeLimitsModel limits = new AttributeLimitsModel()
-                .withAttributeCountLimit(attributeConfig.countLimit());
-        attributeConfig.valueLengthLimit()
-                .ifPresent(value -> limits.withAttributeValueLengthLimit(Integer.valueOf(value)));
+                .withAttributeCountLimit(otelConfigProperties.getInt("otel.attribute.count.limit"));
+        Integer valueLengthLimit = otelConfigProperties.getInt("otel.attribute.value.length.limit");
+        if (valueLengthLimit != null) {
+            limits.withAttributeValueLengthLimit(valueLengthLimit);
+        }
         return limits;
     }
 
-    private static ResourceModel buildResource(Attributes resourceAttributes) {
+    private ResourceModel buildResource() {
         List<AttributeNameValueModel> attributes = new ArrayList<>();
         resourceAttributes.forEach((key, value) -> attributes.add(toAttributeNameValueModel(key, value)));
         return new ResourceModel().withAttributes(attributes);
+    }
+
+    private TracerProviderModel buildTracerProvider() {
+        SpanLimitsModel limits = new SpanLimitsModel()
+                .withAttributeCountLimit(otelConfigProperties.getInt("otel.span.attribute.count.limit"))
+                .withEventCountLimit(otelConfigProperties.getInt("otel.span.event.count.limit"))
+                .withLinkCountLimit(otelConfigProperties.getInt("otel.span.link.count.limit"));
+        Integer attributeValueLengthLimit = otelConfigProperties.getInt("otel.span.attribute.value.length.limit");
+        if (attributeValueLengthLimit != null) {
+            limits.withAttributeValueLengthLimit(attributeValueLengthLimit);
+        }
+
+        return new TracerProviderModel()
+                .withLimits(limits)
+                .withSampler(buildSampler(runtimeConfig.traces()))
+                .withProcessors(buildSpanProcessors());
+    }
+
+    private SamplerModel buildSampler(TracesRuntimeConfig tracesRuntimeConfig) {
+        SamplerModel sampler = buildEffectiveSampler();
+
+        Set<String> dropTargets = new HashSet<>();
+        if (tracesRuntimeConfig.suppressNonApplicationUris()) {
+            dropTargets.addAll(nonApplicationUriTargets);
+        }
+        if (!tracesRuntimeConfig.includeStaticResources()) {
+            dropTargets.addAll(staticResourceTargets);
+        }
+        tracesRuntimeConfig.suppressApplicationUris().ifPresent(uris -> uris.stream()
+                .filter(Predicate.not(String::isEmpty))
+                .map(QuarkusOTelModelBuilder::addSlashIfNecessary)
+                .forEach(dropTargets::add));
+
+        if (dropTargets.isEmpty()) {
+            return sampler;
+        }
+        return new SamplerModel().withAdditionalProperty(QUARKUS_DROP_TARGETS, new SamplerPropertyModel()
+                .withAdditionalProperty("delegate", sampler)
+                .withAdditionalProperty("drop_targets", Set.copyOf(dropTargets)));
+    }
+
+    private SamplerModel buildEffectiveSampler() {
+        String sampler = otelConfigProperties.getString("otel.traces.sampler",
+                SamplerType.Constants.PARENT_BASED_TRACE_ID_RATIO);
+        return switch (sampler) {
+            case SamplerType.Constants.ALWAYS_ON -> new SamplerModel().withAlwaysOn(new AlwaysOnSamplerModel());
+            case SamplerType.Constants.ALWAYS_OFF -> new SamplerModel().withAlwaysOff(new AlwaysOffSamplerModel());
+            case SamplerType.Constants.TRACE_ID_RATIO -> new SamplerModel().withTraceIdRatioBased(
+                    new TraceIdRatioBasedSamplerModel().withRatio(ratio()));
+            case SamplerType.Constants.PARENT_BASED_ALWAYS_ON -> new SamplerModel().withParentBased(
+                    new ParentBasedSamplerModel().withRoot(new SamplerModel().withAlwaysOn(new AlwaysOnSamplerModel())));
+            case SamplerType.Constants.PARENT_BASED_ALWAYS_OFF -> new SamplerModel().withParentBased(
+                    new ParentBasedSamplerModel().withRoot(new SamplerModel().withAlwaysOff(new AlwaysOffSamplerModel())));
+            case SamplerType.Constants.PARENT_BASED_TRACE_ID_RATIO -> new SamplerModel().withParentBased(
+                    new ParentBasedSamplerModel().withRoot(new SamplerModel()
+                            .withTraceIdRatioBased(
+                                    new TraceIdRatioBasedSamplerModel().withRatio(ratio()))));
+            // Custom/SPI sampler name, resolved via a Sampler ComponentProvider registered under that name.
+            default -> new SamplerModel().withAdditionalProperty(sampler, new SamplerPropertyModel());
+        };
+    }
+
+    // Only parsed for the ratio-based samplers: a custom sampler may use a non-numeric sampler-arg.
+    private double ratio() {
+        return Double.parseDouble(otelConfigProperties.getString("otel.traces.sampler.arg", "0.1d"));
+    }
+
+    private List<SpanProcessorModel> buildSpanProcessors() {
+        List<SpanProcessorModel> processors = new ArrayList<>();
+        for (String name : exporterNames("quarkus.otel.traces.exporter",
+                otelConfigProperties.getList("otel.traces.exporter"))) {
+            SpanExporterModel exporter = buildSpanExporterModel(name, exporterRuntimeConfig.traces());
+            // quarkus.otel.simple has no effect when the application contributes SpanProcessor beans: the legacy
+            // SpanProcessorCustomizer only swapped batch for simple when no SpanProcessor beans existed. The
+            // console-type exporters stay simple regardless, as autoconfigure creates them.
+            boolean simple = SIMPLE_PROCESSOR_EXPORTERS.contains(name)
+                    || (buildConfig.simple() && !cdiSpanProcessorsPresent);
+            processors.add(simple
+                    ? new SpanProcessorModel().withSimple(new SimpleSpanProcessorModel().withExporter(exporter))
+                    : new SpanProcessorModel().withBatch(new BatchSpanProcessorModel()
+                            .withExporter(exporter)
+                            .withScheduleDelay(durationMillis("otel.bsp.schedule.delay"))
+                            .withMaxQueueSize(otelConfigProperties.getInt("otel.bsp.max.queue.size"))
+                            .withMaxExportBatchSize(otelConfigProperties.getInt("otel.bsp.max.export.batch.size"))
+                            .withExportTimeout(durationMillis("otel.bsp.export.timeout"))));
+        }
+        return processors;
+    }
+
+    private MeterProviderModel buildMeterProvider() {
+        // One periodic reader per exporter, as autoconfigure creates them. Unlike the bsp/blrp durations, the
+        // interval reads the typed config with Quarkus duration semantics, so a bare otel.metric.export.interval
+        // has no effect - as on the legacy path, where the typed value always replaced it.
+        int intervalMillis = Math.toIntExact(runtimeConfig.metric().exportInterval().toMillis());
+        List<MetricReaderModel> readers = new ArrayList<>();
+        for (String name : exporterNames("quarkus.otel.metrics.exporter",
+                otelConfigProperties.getList("otel.metrics.exporter"))) {
+            readers.add(new MetricReaderModel().withPeriodic(new PeriodicMetricReaderModel()
+                    .withExporter(buildMetricExporterModel(name, exporterRuntimeConfig.metrics()))
+                    .withInterval(intervalMillis)));
+        }
+        return readers.isEmpty() ? new MeterProviderModel() : new MeterProviderModel().withReaders(readers);
+    }
+
+    private LoggerProviderModel buildLoggerProvider() {
+        // Matches autoconfigure's LoggerProviderConfiguration: log record limits share the otel.attribute.* keys.
+        LogRecordLimitsModel limits = new LogRecordLimitsModel()
+                .withAttributeCountLimit(otelConfigProperties.getInt("otel.attribute.count.limit"));
+        Integer valueLengthLimit = otelConfigProperties.getInt("otel.attribute.value.length.limit");
+        if (valueLengthLimit != null) {
+            limits.withAttributeValueLengthLimit(valueLengthLimit);
+        }
+
+        LoggerProviderModel loggerProvider = new LoggerProviderModel().withLimits(limits);
+        List<LogRecordProcessorModel> processors = new ArrayList<>();
+        for (String name : exporterNames("quarkus.otel.logs.exporter",
+                otelConfigProperties.getList("otel.logs.exporter"))) {
+            LogRecordExporterModel exporter = buildLogExporterModel(name, exporterRuntimeConfig.logs());
+            // quarkus.otel.simple only affects logs when a default-qualified LogRecordExporter bean is resolvable:
+            // the legacy SimpleLogRecordProcessorCustomizer replaced the batch processor with a simple one wrapping
+            // that bean and did nothing otherwise. The console-type exporters stay simple regardless, as
+            // autoconfigure creates them.
+            boolean simple = SIMPLE_PROCESSOR_EXPORTERS.contains(name)
+                    || (buildConfig.simple() && cdiLogRecordExporterResolvable);
+            processors.add(simple
+                    ? new LogRecordProcessorModel().withSimple(new SimpleLogRecordProcessorModel().withExporter(exporter))
+                    : new LogRecordProcessorModel().withBatch(new BatchLogRecordProcessorModel()
+                            .withExporter(exporter)
+                            .withScheduleDelay(durationMillis("otel.blrp.schedule.delay"))
+                            .withMaxQueueSize(otelConfigProperties.getInt("otel.blrp.max.queue.size"))
+                            .withMaxExportBatchSize(otelConfigProperties.getInt("otel.blrp.max.export.batch.size"))
+                            .withExportTimeout(durationMillis("otel.blrp.export.timeout"))));
+        }
+        return processors.isEmpty() ? loggerProvider : loggerProvider.withProcessors(processors);
+    }
+
+    // In these properties a bare number means milliseconds, which getDuration preserves; Quarkus's own Duration
+    // converter reads a bare number as seconds, so the typed values must not be used here.
+    private int durationMillis(String name) {
+        final Duration duration = otelConfigProperties.getDuration(name);
+        if (duration != null) {
+            return Math.toIntExact(duration.toMillis());
+        }
+        // This should never happen, but we'll be safe
+        throw new ConfigurationException("%s is missing from the resolved configuration".formatted(name));
     }
 
     private static AttributeNameValueModel toAttributeNameValueModel(AttributeKey<?> key, Object value) {
@@ -178,128 +387,8 @@ public final class QuarkusOTelModelBuilder {
         return new PropagatorModel().withCompositeList(String.join(",", propagators));
     }
 
-    private static TracerProviderModel buildTracerProvider(OTelBuildConfig buildConfig, OTelRuntimeConfig runtimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig, Set<String> nonApplicationUriTargets,
-            Set<String> staticResourceTargets) {
-        SpanConfig spanConfig = runtimeConfig.span();
-        SpanLimitsModel limits = new SpanLimitsModel()
-                .withAttributeCountLimit(spanConfig.attributeCountLimit())
-                .withEventCountLimit(spanConfig.eventCountLimit())
-                .withLinkCountLimit(spanConfig.linkCountLimit());
-        spanConfig.attributeValueLengthLimit().ifPresent(limits::withAttributeValueLengthLimit);
-
-        return new TracerProviderModel()
-                .withLimits(limits)
-                .withSampler(buildSampler(buildConfig.traces(), runtimeConfig.traces(), nonApplicationUriTargets,
-                        staticResourceTargets))
-                .withProcessors(buildSpanProcessors(buildConfig, runtimeConfig, exporterRuntimeConfig));
-    }
-
-    private static SamplerModel buildSampler(TracesBuildConfig tracesBuildConfig, TracesRuntimeConfig tracesRuntimeConfig,
-            Set<String> nonApplicationUriTargets, Set<String> staticResourceTargets) {
-        SamplerModel sampler = buildEffectiveSampler(tracesBuildConfig, tracesRuntimeConfig);
-
-        Set<String> dropTargets = new HashSet<>();
-        if (tracesRuntimeConfig.suppressNonApplicationUris()) {
-            dropTargets.addAll(nonApplicationUriTargets);
-        }
-        if (!tracesRuntimeConfig.includeStaticResources()) {
-            dropTargets.addAll(staticResourceTargets);
-        }
-        tracesRuntimeConfig.suppressApplicationUris().ifPresent(uris -> uris.stream()
-                .filter(Predicate.not(String::isEmpty))
-                .map(QuarkusOTelModelBuilder::addSlashIfNecessary)
-                .forEach(dropTargets::add));
-
-        if (dropTargets.isEmpty()) {
-            return sampler;
-        }
-        return new SamplerModel().withAdditionalProperty(QUARKUS_DROP_TARGETS, new SamplerPropertyModel()
-                .withAdditionalProperty("delegate", sampler)
-                .withAdditionalProperty("drop_targets", Set.copyOf(dropTargets)));
-    }
-
     private static String addSlashIfNecessary(String uri) {
         return uri.startsWith("/") ? uri : "/" + uri;
-    }
-
-    private static SamplerModel buildEffectiveSampler(TracesBuildConfig tracesBuildConfig,
-            TracesRuntimeConfig tracesRuntimeConfig) {
-        String sampler = tracesBuildConfig.sampler();
-        return switch (sampler) {
-            case SamplerType.Constants.ALWAYS_ON -> new SamplerModel().withAlwaysOn(new AlwaysOnSamplerModel());
-            case SamplerType.Constants.ALWAYS_OFF -> new SamplerModel().withAlwaysOff(new AlwaysOffSamplerModel());
-            case SamplerType.Constants.TRACE_ID_RATIO -> new SamplerModel().withTraceIdRatioBased(
-                    new TraceIdRatioBasedSamplerModel().withRatio(ratio(tracesRuntimeConfig)));
-            case SamplerType.Constants.PARENT_BASED_ALWAYS_ON -> new SamplerModel().withParentBased(
-                    new ParentBasedSamplerModel().withRoot(new SamplerModel().withAlwaysOn(new AlwaysOnSamplerModel())));
-            case SamplerType.Constants.PARENT_BASED_ALWAYS_OFF -> new SamplerModel().withParentBased(
-                    new ParentBasedSamplerModel().withRoot(new SamplerModel().withAlwaysOff(new AlwaysOffSamplerModel())));
-            case SamplerType.Constants.PARENT_BASED_TRACE_ID_RATIO -> new SamplerModel().withParentBased(
-                    new ParentBasedSamplerModel().withRoot(new SamplerModel()
-                            .withTraceIdRatioBased(new TraceIdRatioBasedSamplerModel().withRatio(ratio(tracesRuntimeConfig)))));
-            // Custom/SPI sampler name, resolved via a Sampler ComponentProvider registered under that name.
-            default -> new SamplerModel().withAdditionalProperty(sampler, new SamplerPropertyModel());
-        };
-    }
-
-    // Only parsed for the ratio-based samplers: a custom sampler may use a non-numeric sampler-arg.
-    private static double ratio(TracesRuntimeConfig tracesRuntimeConfig) {
-        return Double.parseDouble(tracesRuntimeConfig.samplerArg().orElse("0.1d"));
-    }
-
-    private static List<SpanProcessorModel> buildSpanProcessors(OTelBuildConfig buildConfig, OTelRuntimeConfig runtimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig) {
-        BatchSpanProcessorConfig bsp = runtimeConfig.bsp();
-        List<SpanProcessorModel> processors = new ArrayList<>();
-        for (String name : exporterNames("quarkus.otel.traces.exporter", buildConfig.traces().exporter())) {
-            SpanExporterModel exporter = buildSpanExporterModel(name, exporterRuntimeConfig.traces());
-            processors.add(useSimpleProcessor(buildConfig, name)
-                    ? new SpanProcessorModel().withSimple(new SimpleSpanProcessorModel().withExporter(exporter))
-                    : new SpanProcessorModel().withBatch(new BatchSpanProcessorModel()
-                            .withExporter(exporter)
-                            .withScheduleDelay(Math.toIntExact(bsp.scheduleDelay().toMillis()))
-                            .withMaxQueueSize(bsp.maxQueueSize())
-                            .withMaxExportBatchSize(bsp.maxExportBatchSize())
-                            .withExportTimeout(Math.toIntExact(bsp.exportTimeout().toMillis()))));
-        }
-        return processors;
-    }
-
-    private static MeterProviderModel buildMeterProvider(OTelBuildConfig buildConfig, OTelRuntimeConfig runtimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig) {
-        // Matches autoconfigure's MeterProviderConfiguration: one periodic reader per exporter.
-        List<MetricReaderModel> readers = new ArrayList<>();
-        for (String name : exporterNames("quarkus.otel.metrics.exporter", buildConfig.metrics().exporter())) {
-            readers.add(new MetricReaderModel().withPeriodic(new PeriodicMetricReaderModel()
-                    .withExporter(buildMetricExporterModel(name, exporterRuntimeConfig.metrics()))
-                    .withInterval(Math.toIntExact(runtimeConfig.metric().exportInterval().toMillis()))));
-        }
-        return readers.isEmpty() ? new MeterProviderModel() : new MeterProviderModel().withReaders(readers);
-    }
-
-    private static LoggerProviderModel buildLoggerProvider(OTelBuildConfig buildConfig, OTelRuntimeConfig runtimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig) {
-        LogRecordLimitsModel limits = new LogRecordLimitsModel()
-                .withAttributeCountLimit(runtimeConfig.attribute().countLimit());
-        runtimeConfig.attribute().valueLengthLimit()
-                .ifPresent(value -> limits.withAttributeValueLengthLimit(Integer.valueOf(value)));
-
-        LoggerProviderModel loggerProvider = new LoggerProviderModel().withLimits(limits);
-        BatchLogRecordProcessorConfig blrp = runtimeConfig.blrp();
-        List<LogRecordProcessorModel> processors = new ArrayList<>();
-        for (String name : exporterNames("quarkus.otel.logs.exporter", buildConfig.logs().exporter())) {
-            LogRecordExporterModel exporter = buildLogExporterModel(name, exporterRuntimeConfig.logs());
-            processors.add(useSimpleProcessor(buildConfig, name)
-                    ? new LogRecordProcessorModel().withSimple(new SimpleLogRecordProcessorModel().withExporter(exporter))
-                    : new LogRecordProcessorModel().withBatch(new BatchLogRecordProcessorModel()
-                            .withExporter(exporter)
-                            .withScheduleDelay(Math.toIntExact(blrp.scheduleDelay().toMillis()))
-                            .withMaxQueueSize(blrp.maxQueueSize())
-                            .withMaxExportBatchSize(blrp.maxExportBatchSize())
-                            .withExportTimeout(Math.toIntExact(blrp.exportTimeout().toMillis()))));
-        }
-        return processors.isEmpty() ? loggerProvider : loggerProvider.withProcessors(processors);
     }
 
     private static SpanExporterModel buildSpanExporterModel(String name, OtlpExporterConfig signalConfig) {
@@ -367,7 +456,8 @@ public final class QuarkusOTelModelBuilder {
     }
 
     // Mirrors autoconfigure's *ExporterConfiguration: duplicate names collapse, "none" disables the signal and may not
-    // be combined with other exporters.
+    // be combined with other exporters. The values come from the merged flat otel.* view; the error message names
+    // the documented quarkus.otel.* property.
     private static Set<String> exporterNames(String propertyName, List<String> exporters) {
         Set<String> names = new LinkedHashSet<>(exporters);
         if (names.contains(ExporterType.Constants.NONE_VALUE)) {
@@ -383,10 +473,6 @@ public final class QuarkusOTelModelBuilder {
     // Mirrors autoconfigure's TracerProviderConfiguration/LoggerProviderConfiguration, which always use a simple
     // processor for the console and logging exporters. Every other exporter gets its own batch processor, where
     // autoconfigure wrapped them all in a single batch processor: the declarative model has no composite exporter.
-    private static boolean useSimpleProcessor(OTelBuildConfig buildConfig, String exporterName) {
-        return buildConfig.simple() || SIMPLE_PROCESSOR_EXPORTERS.contains(exporterName);
-    }
-
     // quarkus.otel.exporter.otlp.<signal>.* already falls back to quarkus.otel.exporter.otlp.* and then to the
     // OTel defaults via OtlpExporterConfigBuilder's FallbackConfigSourceInterceptor; no cascade logic is needed here.
     // TLS and the metrics-specific temporality/histogram-aggregation settings are not mapped here yet.

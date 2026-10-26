@@ -15,6 +15,7 @@ import java.util.function.Predicate;
 
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Typed;
 import jakarta.inject.Singleton;
 
 import org.jboss.threads.ScheduledViewExecutor;
@@ -68,7 +69,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     void customize(AutoConfiguredOpenTelemetrySdkBuilder builder);
 
     @Singleton
-    final class SimpleLogRecordProcessorCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    @Typed(InternalSdkBuilderCustomizer.class)
+    final class SimpleLogRecordProcessorCustomizer implements InternalSdkBuilderCustomizer {
         private SimpleLogRecordProcessorBiFunction biFunction;
 
         public SimpleLogRecordProcessorCustomizer(
@@ -109,7 +111,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
-    final class ResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    @Typed(InternalSdkBuilderCustomizer.class)
+    final class ResourceCustomizer implements InternalSdkBuilderCustomizer {
 
         private final ApplicationConfig appConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
@@ -162,7 +165,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
-    final class SamplerCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    @Typed(InternalSdkBuilderCustomizer.class)
+    final class SamplerCustomizer implements InternalSdkBuilderCustomizer {
         private final OTelBuildConfig oTelBuildConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final List<Sampler> sampler;
@@ -228,7 +232,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
-    final class SpanProcessorCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    @Typed(InternalSdkBuilderCustomizer.class)
+    final class SpanProcessorCustomizer implements InternalSdkBuilderCustomizer {
         private final OTelBuildConfig oTelBuildConfig;
         private final List<SpanProcessor> spanProcessors;
 
@@ -262,7 +267,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
-    final class TracerProviderCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    @Typed(InternalSdkBuilderCustomizer.class)
+    final class TracerProviderCustomizer implements InternalSdkBuilderCustomizer {
 
         private final OTelBuildConfig oTelBuildConfig;
         private final List<IdGenerator> idGenerator;
@@ -294,7 +300,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
-    final class MetricProviderCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    @Typed(InternalSdkBuilderCustomizer.class)
+    final class MetricProviderCustomizer implements InternalSdkBuilderCustomizer {
         private final OTelBuildConfig oTelBuildConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final Instance<Clock> clock;
@@ -378,7 +385,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
-    final class TextMapPropagatorCustomizers implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    @Typed(InternalSdkBuilderCustomizer.class)
+    final class TextMapPropagatorCustomizers implements InternalSdkBuilderCustomizer {
 
         private final List<TextMapPropagatorCustomizer> customizers;
 

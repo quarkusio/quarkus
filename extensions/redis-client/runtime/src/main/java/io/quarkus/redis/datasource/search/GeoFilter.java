@@ -30,11 +30,6 @@ public class GeoFilter {
         return new GeoFilter(field, longitude, latitude, radius, unit);
     }
 
-    @Override
-    public String toString() {
-        return "GEOFILTER " + field + " " + longitude + " " + latitude + " " + radius + " " + unit;
-    }
-
     List<String> toArgs() {
         return List.of("GEOFILTER", field, Double.toString(longitude), Double.toString(latitude), Double.toString(radius),
                 unit.toString());

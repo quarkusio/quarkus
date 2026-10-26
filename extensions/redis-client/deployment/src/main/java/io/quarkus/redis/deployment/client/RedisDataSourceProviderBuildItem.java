@@ -13,7 +13,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * <p>
  * The codecs service and the Vert.x Redis client services and beans ({@code io.vertx.mutiny.redis.client.Redis},
  * {@code RedisAPI}, ...) are still registered for the requested clients, so the features relying on them (health
- * check, {@code quarkus-redis-cache}) keep working with the alternative backend.
+ * check, {@code quarkus-redis-cache}) keep working with the Vert.x backend.
  */
 public final class RedisDataSourceProviderBuildItem extends SimpleBuildItem {
 

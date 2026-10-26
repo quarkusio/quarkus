@@ -1,6 +1,5 @@
 package io.quarkus.signals.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.signals.deployment.ReceiverExecutorImplementationBuildItem.ReceiverExecutorImplementation.DEFAULT_BLOCKING;
 import static io.quarkus.signals.deployment.ReceiverExecutorImplementationBuildItem.ReceiverExecutorImplementation.VERTX;
 
@@ -21,6 +20,7 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 import jakarta.enterprise.invoke.Invoker;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -51,12 +51,13 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.InvokerBuilder;
 import io.quarkus.arc.processor.RuntimeTypeCreator;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -82,8 +83,7 @@ import io.quarkus.signals.runtime.impl.InvokerReceiver.InvokerReceiverInfo;
 import io.quarkus.signals.runtime.impl.ReceiverManager;
 import io.quarkus.signals.runtime.impl.RequestContextInterceptor;
 import io.quarkus.signals.runtime.impl.SignalBeanCreator;
-import io.quarkus.signals.runtime.impl.SignalsRecorder;
-import io.quarkus.signals.runtime.impl.SignalsRecorder.SignalsContext;
+import io.quarkus.signals.runtime.impl.SignalsContext;
 import io.quarkus.signals.runtime.impl.VertxReceiverExecutor;
 
 class SignalsProcessor {
@@ -208,9 +208,8 @@ class SignalsProcessor {
         return false;
     }
 
-    @Record(RUNTIME_INIT)
     @BuildStep
-    void generateReceivers(SignalsRecorder recorder,
+    void generateReceivers(
             BeanRegistrationPhaseBuildItem beanRegistration,
             BeanArchiveIndexBuildItem beanArchiveIndex,
             List<ReceiverMethodBuildItem> receivers,
@@ -218,7 +217,8 @@ class SignalsProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            ServiceRegistrar serviceRegistrar) {
 
         String receiverIdentifier = "_Receiver_";
 
@@ -336,12 +336,16 @@ class SignalsProcessor {
                 .publicConstructors()
                 .build());
 
+        List<String> capturedReceiverClasses = List.copyOf(receiverClasses);
+        List<String> enricherIds = List.copyOf(orderedSpiComponents.getOrderedEnricherIds());
+        List<String> interceptorIds = List.copyOf(orderedSpiComponents.getOrderedInterceptorIds());
+        serviceRegistrar.forService(SignalsContext.class)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> new SignalsContext(capturedReceiverClasses, enricherIds, interceptorIds));
+
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(SignalsContext.class)
-                .scope(Dependent.class)
-                .setRuntimeInit()
-                .supplier(recorder.createContext(receiverClasses,
-                        orderedSpiComponents.getOrderedEnricherIds(),
-                        orderedSpiComponents.getOrderedInterceptorIds()))
+                .scope(Singleton.class)
+                .serviceValue(SignalsContext.class)
                 .done());
 
         for (InjectionPointInfo ip : beanRegistration.getInjectionPoints()) {

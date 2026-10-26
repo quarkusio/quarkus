@@ -21,10 +21,6 @@ public final class JLinkConfigDefaultsInterceptor implements ConfigSourceInterce
                 ConfigValue value = context.proceed(name);
                 yield value != null ? value : defaults.launcherName(context);
             }
-            case "quarkus.jlink.output-directory" -> {
-                ConfigValue value = context.proceed(name);
-                yield value != null ? value : defaults.outputDirectory(context);
-            }
 
             // override legacy packaging config to not produce a JAR when this is enabled
             case "quarkus.package.jar.enabled" -> context.proceed(name).withValue("false");

@@ -36,7 +36,7 @@ After adding the extension, build the project normally:
 
 include::{includes}/devtools/build.adoc[]
 
-The `jlink` image is written to the output directory. By default, this is the package output directory (`quarkus.package.output-directory`, `quarkus-app` for the default jar type), resolved from the working directory of the build, so `quarkus-app/image`.
+The `jlink` image is written to the output directory (by default, `target/jlink-output/image`).
 
 == Running the image
 

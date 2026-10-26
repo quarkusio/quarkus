@@ -30,20 +30,14 @@ class JLinkConfigTest {
     }
 
     @Test
-    void outputDirectoryWithoutPackageOutputDirectory() {
-        assertThat(config(Map.of()).outputDirectory()).isEqualTo(Path.of(""));
-    }
-
-    @Test
-    void outputDirectoryFollowsPackageOutputDirectory() {
-        assertThat(config(Map.of("quarkus.package.output-directory", "quarkus-app")).outputDirectory())
-                .isEqualTo(Path.of("quarkus-app"));
+    void outputDirectoryDefault() {
+        assertThat(config(Map.of()).outputDirectory()).isEqualTo(Path.of("target/jlink-output"));
     }
 
     @Test
     void explicitOutputDirectory() {
-        assertThat(config(Map.of("quarkus.package.output-directory", "quarkus-app",
-                "quarkus.jlink.output-directory", "out/jlink")).outputDirectory()).isEqualTo(Path.of("out/jlink"));
+        assertThat(config(Map.of("quarkus.jlink.output-directory", "out/jlink")).outputDirectory())
+                .isEqualTo(Path.of("out/jlink"));
     }
 
     private static JLinkConfig config(Map<String, String> properties) {

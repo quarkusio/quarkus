@@ -3,11 +3,9 @@ package io.quarkus.jlink.deployment;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
 /**
@@ -50,9 +48,8 @@ public interface JLinkConfig {
 
     /**
      * The base output directory for the {@code jlink} build.
-     * Defaults to the package output directory ({@code quarkus.package.output-directory}).
      */
-    @WithConverter(PackageConfig.OutputDirectoryConverter.class)
+    @WithDefault("target/jlink-output")
     Path outputDirectory();
 
     /**

@@ -22,6 +22,8 @@ mandatory for contributions.
 - **`QuarkusExtensionTest`** — Used in **deployment module** tests. Creates a
   synthetic application defined in the test. This is the primary way to test
   build-time behavior. Replaces the deprecated `QuarkusUnitTest`.
+   - Never add a new `QuarkusUnitTest`. When you edit a test that still
+     uses it, move it to `QuarkusExtensionTest` in the same change.
    - When writing these tests, if Quarkus configuration needs to be specified, prefer the `overrideConfigKey` and `overrideRuntimeConfigKey` methods of `QuarkusExtensionTest`   
 - **`QuarkusDevModeTest`** — Tests hot reload / dev mode behavior.
 

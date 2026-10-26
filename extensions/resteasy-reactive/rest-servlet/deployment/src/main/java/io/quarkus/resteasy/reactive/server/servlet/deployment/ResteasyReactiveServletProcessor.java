@@ -1,18 +1,15 @@
 package io.quarkus.resteasy.reactive.server.servlet.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
 import jakarta.servlet.DispatcherType;
 import jakarta.ws.rs.core.Application;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.server.deployment.RequestContextFactoryBuildItem;
 import io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveDeploymentBuildItem;
 import io.quarkus.resteasy.reactive.server.servlet.runtime.ResteasyReactiveFilter;
 import io.quarkus.resteasy.reactive.server.servlet.runtime.ResteasyReactiveServlet;
-import io.quarkus.resteasy.reactive.server.servlet.runtime.ResteasyReactiveServletRecorder;
 import io.quarkus.resteasy.reactive.server.servlet.runtime.ServletRequestContextFactory;
 import io.quarkus.undertow.deployment.FilterBuildItem;
 import io.quarkus.undertow.deployment.ServletBuildItem;
@@ -32,35 +29,29 @@ public class ResteasyReactiveServletProcessor {
     }
 
     @BuildStep
-    @Record(STATIC_INIT)
-    public void build(ResteasyReactiveServletRecorder restRecorder,
-            ResteasyReactiveDeploymentBuildItem deploymentBuildItem,
+    public void build(ResteasyReactiveDeploymentBuildItem deploymentBuildItem,
             BuildProducer<FilterBuildItem> filter,
-            BuildProducer<ServletBuildItem> servlet) throws Exception {
-
+            BuildProducer<ServletBuildItem> servlet,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
         if (deploymentBuildItem == null) {
             return;
         }
-
         String path = deploymentBuildItem.getApplicationPath();
-
         //if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the whole mapped path
         if (path.equals("/") || path.isEmpty()) {
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(ResteasyReactiveFilter.class).constructors().build());
             filter.produce(
                     FilterBuildItem.builder(JAX_RS_FILTER_NAME, ResteasyReactiveFilter.class.getName()).setLoadOnStartup(1)
                             .addFilterServletNameMapping("default", DispatcherType.REQUEST)
                             .addFilterServletNameMapping("default", DispatcherType.FORWARD)
                             .addFilterServletNameMapping("default", DispatcherType.INCLUDE)
-                            .setInstanceFactory(restRecorder.filter(deploymentBuildItem.getDeployment()))
                             .setAsyncSupported(true)
                             .build());
         } else {
             String mappingPath = deploymentBuildItem.getApplicationPath();
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(ResteasyReactiveServlet.class).constructors().build());
             servlet.produce(ServletBuildItem.builder(JAX_RS_SERVLET_NAME, ResteasyReactiveServlet.class.getName())
-                    .setInstanceFactory(restRecorder.servlet(deploymentBuildItem.getDeployment()))
                     .setLoadOnStartup(1).addMapping(mappingPath + "/*").setAsyncSupported(true).build());
         }
-
     }
-
 }

@@ -58,6 +58,7 @@ import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.PrimitiveType.Primitive;
+import org.jboss.jandex.RecordComponentInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
@@ -410,12 +411,46 @@ public class QuteProcessor {
                 Map<String, String> bindings = new HashMap<>();
                 List<Type> parameters = method.parameterTypes();
                 List<String> parameterNames = new ArrayList<>(parameters.size());
+                // Compute parameter annotations once before the loop
+                Set<AnnotationInstance> parameterAnnotations = Annotations.getParameterAnnotations(method.annotations());
+                Set<String> usedNames = new HashSet<>();
                 for (int i = 0; i < parameters.size(); i++) {
                     Type type = parameters.get(i);
-                    String name = method.parameterName(i);
-                    if (name == null) {
-                        throw new TemplateException("Parameter names not recorded for " + targetClass.name()
-                                + ": compile the class with -parameters");
+                    String name;
+
+                    // Check for @CheckedTemplateParam annotation first
+                    final int paramPosition = i;
+                    AnnotationInstance templateParam = Annotations.find(
+                            parameterAnnotations.stream()
+                                    .filter(a -> a.target().asMethodParameter().position() == paramPosition)
+                                    .collect(Collectors.toList()),
+                            Names.CHECKED_TEMPLATE_PARAM);
+                    if (templateParam != null) {
+                        name = templateParam.value().asString();
+                        if (name == null || name.isBlank()) {
+                            throw new TemplateException(
+                                    "@CheckedTemplateParam value cannot be null or blank for parameter " + i + " of "
+                                            + targetClass.name() + "#" + method.name());
+                        }
+                        if (!isValidJavaIdentifier(name)) {
+                            throw new TemplateException(
+                                    "@CheckedTemplateParam value must be a valid Java identifier, but was '" + name
+                                            + "' for parameter " + i + " of "
+                                            + targetClass.name() + "#" + method.name());
+                        }
+                    } else {
+                        // Fallback to parameter name from bytecode (requires -parameters)
+                        name = method.parameterName(i);
+                        if (name == null) {
+                            throw new TemplateException("Parameter names not recorded for " + targetClass.name()
+                                    + ": compile the class with -parameters or use @CheckedTemplateParam");
+                        }
+                    }
+                    // Check for duplicate parameter names
+                    if (!usedNames.add(name)) {
+                        throw new TemplateException(
+                                "Duplicate parameter name '" + name + "' for parameter " + i + " of "
+                                        + targetClass.name() + "#" + method.name());
                     }
                     bindings.put(name, getCheckedTemplateParameterTypeName(type));
                     parameterNames.add(name);
@@ -486,19 +521,61 @@ public class QuteProcessor {
                 }
 
                 Map<String, String> bindings = new HashMap<>();
+                List<String> parameterNames = new ArrayList<>();
                 List<Type> parameters = canonicalConstructor.parameterTypes();
+                List<RecordComponentInfo> recordComponents = recordClass.recordComponentsInDeclarationOrder();
+                // Compute parameter annotations once before the loop
+                Set<AnnotationInstance> parameterAnnotations = Annotations
+                        .getParameterAnnotations(canonicalConstructor.annotations());
+                Set<String> usedNames = new HashSet<>();
                 for (int i = 0; i < parameters.size(); i++) {
                     Type type = parameters.get(i);
-                    String name = canonicalConstructor.parameterName(i);
-                    if (name == null) {
-                        throw new TemplateException("Parameter names not recorded for " + recordClass.name()
-                                + ": compile the class with -parameters");
+                    String name;
+
+                    // Check for @CheckedTemplateParam annotation on record component or constructor parameter
+                    final int paramPosition = i;
+                    // First try to find annotation on constructor parameter
+                    AnnotationInstance templateParam = Annotations.find(
+                            parameterAnnotations.stream()
+                                    .filter(a -> a.target().asMethodParameter().position() == paramPosition)
+                                    .collect(Collectors.toList()),
+                            Names.CHECKED_TEMPLATE_PARAM);
+                    // If not found on constructor parameter, try record component
+                    if (templateParam == null && i < recordComponents.size()) {
+                        templateParam = recordComponents.get(i).annotation(Names.CHECKED_TEMPLATE_PARAM);
+                    }
+                    if (templateParam != null) {
+                        name = templateParam.value().asString();
+                        if (name == null || name.isBlank()) {
+                            throw new TemplateException(
+                                    "@CheckedTemplateParam value cannot be null or blank for parameter " + i + " of "
+                                            + recordClass.name());
+                        }
+                        if (!isValidJavaIdentifier(name)) {
+                            throw new TemplateException(
+                                    "@CheckedTemplateParam value must be a valid Java identifier, but was '" + name
+                                            + "' for parameter " + i + " of " + recordClass.name());
+                        }
+                    } else {
+                        // Fallback to parameter name from bytecode (requires -parameters)
+                        name = canonicalConstructor.parameterName(i);
+                        if (name == null) {
+                            throw new TemplateException("Parameter names not recorded for " + recordClass.name()
+                                    + ": compile the class with -parameters or use @CheckedTemplateParam");
+                        }
                     }
                     if (reservedNames.contains(name)) {
                         throw new TemplateException("Template record component [" + name
                                 + "] conflicts with an interface method of " + recordInterface);
                     }
+                    // Check for duplicate parameter names
+                    if (!usedNames.add(name)) {
+                        throw new TemplateException(
+                                "Duplicate parameter name '" + name + "' for parameter " + i + " of "
+                                        + recordClass.name());
+                    }
                     bindings.put(name, getCheckedTemplateParameterTypeName(type));
+                    parameterNames.add(name);
                 }
                 AnnotationValue requireTypeSafeExpressions = checkedTemplateAnnotation != null
                         ? checkedTemplateAnnotation.value(CHECKED_TEMPLATE_REQUIRE_TYPE_SAFE)
@@ -508,7 +585,7 @@ public class QuteProcessor {
                 transformers.produce(new BytecodeTransformerBuildItem(recordClass.name().toString(),
                         new TemplateRecordEnhancer(recordInterface, recordClass, templatePath, fragmentId,
                                 canonicalConstructor.descriptor(), canonicalConstructor.parameters(),
-                                adaptors.get(recordInterfaceName))));
+                                parameterNames, adaptors.get(recordInterfaceName))));
             }
         }
 
@@ -1020,6 +1097,28 @@ public class QuteProcessor {
         }
 
         return builder.toString();
+    }
+
+    /**
+     * Validates that a parameter name is a valid Java identifier.
+     * Template parameter names must be valid Java identifiers to be used in expressions.
+     *
+     * @param name the parameter name to validate
+     * @return true if the name is a valid Java identifier, false otherwise
+     */
+    private static boolean isValidJavaIdentifier(String name) {
+        if (name == null || name.isEmpty()) {
+            return false;
+        }
+        if (!Character.isJavaIdentifierStart(name.charAt(0))) {
+            return false;
+        }
+        for (int i = 1; i < name.length(); i++) {
+            if (!Character.isJavaIdentifierPart(name.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @BuildStep

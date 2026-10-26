@@ -2099,6 +2099,34 @@ Note that `@JvmRecord` requires Kotlin 1.5+ and JVM target 16+.
 ====
 
 
+==== Explicit Parameter Naming with `@CheckedTemplateParam`
+
+By default, parameter names for type-safe templates are obtained from the method or record component parameter metadata, which requires the Java compiler to be configured with the `-parameters` flag.
+The `@io.quarkus.qute.CheckedTemplateParam` annotation allows you to explicitly specify parameter names without requiring the `-parameters` flag, and enables using different names in templates versus Java code.
+
+[source,java]
+----
+@CheckedTemplate
+public class Templates {
+    public static native TemplateInstance hello(@CheckedTemplateParam("name") String userName); <1>
+}
+----
+<1> The template will use the parameter name `name`, while the Java method parameter is `userName`.
+
+The annotation also works with template records:
+
+[source,java]
+----
+record Greeting(@CheckedTemplateParam("name") String userName,
+                @CheckedTemplateParam("age") int userAge) implements TemplateInstance {} <1>
+----
+<1> The template will use parameter names `name` and `age`, while the record components are `userName` and `userAge`.
+
+The `@CheckedTemplateParam` annotation value must be a valid Java identifier.
+This requirement ensures that parameter names can be used in template expressions without ambiguity.
+
+For example, parameter names like `user-name`, `my.param`, or `1test` are invalid and will result in a build-time error.
+
 ==== Customized Template Path
 
 The path of a type-safe template (`@CheckedTemplate` method or record) consists of a _base path_ and a _defaulted name_.

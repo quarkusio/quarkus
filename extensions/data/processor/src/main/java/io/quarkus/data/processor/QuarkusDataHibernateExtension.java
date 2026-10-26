@@ -61,6 +61,8 @@ public class QuarkusDataHibernateExtension implements HibernateProcessorExtensio
     private static final String JD_QUERY = "jakarta.data.repository.Query";
     private static final String FIND = "org.hibernate.annotations.processing.Find";
     private static final String JD_FIND = "jakarta.data.repository.Find";
+    private static final String JAKARTA_QUERY = "jakarta.persistence.query.JakartaQuery";
+    private static final String NATIVE_QUERY = "jakarta.persistence.query.NativeQuery";
 
     // Classpath detection state
     private boolean usesQuarkusOrm;
@@ -352,7 +354,7 @@ public class QuarkusDataHibernateExtension implements HibernateProcessorExtensio
                 return isQuarkusDataBlockingRepository(element);
             } else {
                 for (var method : methodsIn(context.getAllMembers(element))) {
-                    if (containsAnnotation(method, HQL, SQL, JD_QUERY, FIND, JD_FIND)) {
+                    if (containsAnnotation(method, HQL, SQL, JD_QUERY, FIND, JD_FIND, JAKARTA_QUERY, NATIVE_QUERY)) {
                         return !isUni(method.getReturnType());
                     }
                 }

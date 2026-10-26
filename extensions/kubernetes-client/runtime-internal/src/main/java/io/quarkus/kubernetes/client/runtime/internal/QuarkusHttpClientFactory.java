@@ -3,10 +3,11 @@ package io.quarkus.kubernetes.client.runtime.internal;
 import java.io.Closeable;
 import java.util.List;
 
+import jakarta.enterprise.inject.spi.CDI;
+
 import org.jboss.logging.Logger;
 
 import io.fabric8.kubernetes.client.vertx5.Vertx5HttpClientFactory;
-import io.quarkus.arc.Arc;
 import io.quarkus.runtime.ResettableSystemProperties;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -36,16 +37,15 @@ public class QuarkusHttpClientFactory extends Vertx5HttpClientFactory implements
     }
 
     private static VertxContext resolveVertx() {
-        // At runtime CDI is available
-        // At build time it is not
-        var container = Arc.container();
-        if (container != null) {
-            var vertxHandle = container.select(Vertx.class);
-            if (vertxHandle.isResolvable()) {
-                return new VertxContext(vertxHandle.get(), false);
-            }
+        // At runtime, reuse the Quarkus-managed Vert.x so all I/O shares the same event loop.
+        // At build time (KubernetesClientBuildStep) and in mock-server test contexts, CDI is
+        // absent or the Vert.x synthetic bean is not yet initialized, so we fall back to a
+        // standalone instance that we own and must close ourselves.
+        try {
+            return new VertxContext(CDI.current().select(Vertx.class).get(), false);
+        } catch (Exception e) {
+            return new VertxContext(createVertxInstance(), true);
         }
-        return new VertxContext(createVertxInstance(), true);
     }
 
     private static Vertx createVertxInstance() {
@@ -64,7 +64,13 @@ public class QuarkusHttpClientFactory extends Vertx5HttpClientFactory implements
     @Override
     protected void additionalConfig(WebClientOptions httpOptions, WebSocketClientOptions wsOptions,
             PoolOptions poolOptions) {
-        org.eclipse.microprofile.config.Config cfg = io.smallrye.config.Config.get();
+        org.eclipse.microprofile.config.Config cfg;
+        try {
+            cfg = io.smallrye.config.Config.get();
+        } catch (IllegalArgumentException e) {
+            // No configuration available for this classloader (e.g. mock server test context)
+            return;
+        }
         io.vertx.core.net.PqcEnforcementPolicy vertxPolicy = cfg
                 .getOptionalValue("quarkus.kubernetes-client.pqc-enforcement-policy",
                         io.vertx.core.net.PqcEnforcementPolicy.class)

@@ -16,12 +16,6 @@ import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
  * of URI prefixes are never sampled, mirroring {@code io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler}
  * usage in {@code AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SamplerCustomizer} for the legacy SDK
  * initialization path.
- * <p>
- * Nothing calls {@link #create} yet: {@link QuarkusDeclarativeConfiguration} resolves this node inline, and only
- * instantiates this provider while looking up other {@code ComponentProvider}s by name. The provider exists so the
- * node also resolves under upstream's {@code DeclarativeConfiguration.create()}, once that is usable (see the pom's
- * dependency comment).
- * </p>
  */
 public class QuarkusDropTargetsSamplerProvider implements ComponentProvider {
 

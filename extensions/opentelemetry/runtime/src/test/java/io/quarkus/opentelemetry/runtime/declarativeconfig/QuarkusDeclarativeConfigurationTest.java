@@ -4,14 +4,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
 
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.common.Value;
 import io.opentelemetry.api.incubator.config.DeclarativeConfigException;
 import io.opentelemetry.api.incubator.config.DeclarativeConfigProperties;
 import io.opentelemetry.common.ComponentLoader;
@@ -19,20 +28,36 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.YamlDeclarativeConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.AlwaysOffSamplerModel;
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.AlwaysOnSamplerModel;
+import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.CardinalityLimitsModel;
+import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.MeterProviderModel;
+import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.MetricReaderModel;
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.OpenTelemetryConfigurationModel;
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.ParentBasedSamplerModel;
+import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.PullMetricExporterModel;
+import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.PullMetricReaderModel;
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.SamplerModel;
 import io.opentelemetry.sdk.autoconfigure.declarativeconfig.model.TraceIdRatioBasedSamplerModel;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.internal.ComponentProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
-import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider;
-import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider;
-import io.opentelemetry.sdk.trace.SpanProcessor;
+import io.opentelemetry.sdk.common.CompletableResultCode;
+import io.opentelemetry.sdk.common.InternalTelemetryVersion;
+import io.opentelemetry.sdk.metrics.InstrumentType;
+import io.opentelemetry.sdk.metrics.data.AggregationTemporality;
+import io.opentelemetry.sdk.metrics.data.MetricData;
+import io.opentelemetry.sdk.metrics.export.CollectionRegistration;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
+import io.opentelemetry.sdk.metrics.export.MetricReader;
+import io.opentelemetry.sdk.resources.Resource;
+import io.opentelemetry.sdk.trace.ReadableSpan;
+import io.opentelemetry.sdk.trace.SpanLimits;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
+import io.quarkus.opentelemetry.runtime.declarativeconfig.spi.QuarkusCompositeLogRecordExporterProvider;
+import io.quarkus.opentelemetry.runtime.declarativeconfig.spi.QuarkusCompositeSpanExporterProvider;
+import io.quarkus.opentelemetry.runtime.declarativeconfig.spi.QuarkusDropAllSpanProcessorProvider;
 import io.quarkus.opentelemetry.runtime.declarativeconfig.spi.QuarkusDropTargetsSamplerProvider;
-import io.quarkus.opentelemetry.runtime.tracing.DropAllSpanProcessor;
+import io.quarkus.opentelemetry.runtime.declarativeconfig.spi.QuarkusPeriodicMetricReaderProvider;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
 
 class QuarkusDeclarativeConfigurationTest {
@@ -47,10 +72,13 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.sdk.disabled", "true",
                 "quarkus.otel.traces.exporter", "unresolvable-exporter"));
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS).build());
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                NO_COMPONENTS, InternalTelemetryVersion.LATEST, Resource.getDefault())) {
 
-        assertThat(sdk).isNotNull();
+            assertThat(sdk).isNotNull();
+            // As upstream, the disabled SDK has no propagators; QuarkusDeclarativeSdk builds them itself
+            assertThat(sdk.getPropagators().getTextMapPropagator().fields()).isEmpty();
+        }
     }
 
     @Test
@@ -72,26 +100,6 @@ class QuarkusDeclarativeConfigurationTest {
         Sampler custom = Sampler.traceIdRatioBased(0.75d);
         ComponentLoader loader = new StubComponentLoader(Map.of(
                 ComponentProvider.class, List.of(componentProvider(Sampler.class, "my_sampler", custom))));
-
-        SamplerModel model = new SamplerModel().setExtensionProperty("my_sampler", Map.of());
-        assertThat(QuarkusDeclarativeConfiguration.createSampler(model, loader)).isSameAs(custom);
-    }
-
-    @Test
-    void customSamplerFallsBackToLegacySpi() {
-        Sampler custom = Sampler.traceIdRatioBased(0.75d);
-        ComponentLoader loader = new StubComponentLoader(Map.of(
-                ConfigurableSamplerProvider.class, List.of(new ConfigurableSamplerProvider() {
-                    @Override
-                    public Sampler createSampler(ConfigProperties config) {
-                        return custom;
-                    }
-
-                    @Override
-                    public String getName() {
-                        return "my_sampler";
-                    }
-                })));
 
         SamplerModel model = new SamplerModel().setExtensionProperty("my_sampler", Map.of());
         assertThat(QuarkusDeclarativeConfiguration.createSampler(model, loader)).isSameAs(custom);
@@ -128,6 +136,71 @@ class QuarkusDeclarativeConfigurationTest {
         assertThat(sampler).isInstanceOf(DropTargetsSampler.class);
     }
 
+    @Test
+    void emptySamplerNodeKeepsTheComponentLoader() {
+        List<ComponentLoader> seen = new ArrayList<>();
+        ComponentLoader loader = new StubComponentLoader(Map.of(ComponentProvider.class, List.of(new ComponentProvider() {
+            @Override
+            public Class<?> getType() {
+                return Sampler.class;
+            }
+
+            @Override
+            public String getName() {
+                return "my_sampler";
+            }
+
+            @Override
+            public Object create(DeclarativeConfigProperties config) {
+                seen.add(config.getComponentLoader());
+                return Sampler.alwaysOn();
+            }
+        })));
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("my_sampler", null);
+
+        QuarkusDeclarativeConfiguration.createSampler(YamlDeclarativeConfigProperties.create(properties, loader));
+
+        assertThat(seen).containsExactly(loader);
+    }
+
+    @Test
+    void extensionSamplerConfigIsReadWithoutTypeMismatchWarnings() {
+        ComponentLoader loader = new StubComponentLoader(Map.of(
+                ComponentProvider.class, List.of(new QuarkusDropTargetsSamplerProvider())));
+        DeclarativeConfigProperties node = YamlDeclarativeConfigProperties.create(Map.of(
+                QuarkusOTelModelBuilder.QUARKUS_DROP_TARGETS, Map.of(
+                        "delegate", Map.of("trace_id_ratio_based", Map.of("ratio", 1.0d)),
+                        "drop_targets", List.of("/q/health"))),
+                loader);
+        List<LogRecord> warnings = new ArrayList<>();
+        Handler handler = new Handler() {
+            @Override
+            public void publish(LogRecord record) {
+                if (record.getLevel().intValue() >= Level.WARNING.intValue()) {
+                    warnings.add(record);
+                }
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+        Logger logger = Logger.getLogger(YamlDeclarativeConfigProperties.class.getName());
+        logger.addHandler(handler);
+        try {
+            assertThat(QuarkusDeclarativeConfiguration.createSampler(node)).isInstanceOf(DropTargetsSampler.class);
+        } finally {
+            logger.removeHandler(handler);
+        }
+
+        assertThat(warnings).extracting(LogRecord::getMessage).isEmpty();
+    }
+
     /**
      * Port of the former {@code DeclarativeConfiguration.create()} round-trip test: a model with all exporters set
      * to {@code none} builds a real SDK with working (but non-exporting) providers.
@@ -142,21 +215,15 @@ class QuarkusDeclarativeConfigurationTest {
                 // assertion below) would be a coin flip
                 "quarkus.otel.traces.sampler", "always_on"));
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS)
-                        .addSpanProcessor(new DropAllSpanProcessor())
-                        .build());
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                NO_COMPONENTS, InternalTelemetryVersion.LATEST, Resource.getDefault())) {
 
-        assertThat(sdk.getSdkTracerProvider()).isNotNull();
-        assertThat(sdk.getTracer("test").spanBuilder("span").startSpan().isRecording()).isTrue();
-        assertThat(sdk.getPropagators().getTextMapPropagator().fields()).contains("traceparent", "baggage");
+            assertThat(sdk.getSdkTracerProvider()).isNotNull();
+            assertThat(sdk.getTracer("test").spanBuilder("span").startSpan().isRecording()).isTrue();
+            assertThat(sdk.getPropagators().getTextMapPropagator().fields()).contains("traceparent", "baggage");
+        }
     }
 
-    /**
-     * Port of the former {@code DeclarativeConfiguration.create()} round-trip test: the
-     * {@code quarkus_drop_targets} extension node resolves inline, wrapping the delegate sampler so that suppressed
-     * URIs are not sampled.
-     */
     @Test
     void dropTargetsSamplerModelBuildsARealSdk() {
         OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
@@ -166,52 +233,18 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.traces.sampler", "always_on"),
                 Set.of("/q/health"), Set.of());
 
-        Sampler sampler = QuarkusDeclarativeConfiguration.createSampler(model.getTracerProvider().getSampler(),
-                NO_COMPONENTS);
+        ComponentLoader loader = new StubComponentLoader(Map.of(
+                ComponentProvider.class, List.of(new QuarkusDropTargetsSamplerProvider())));
+        Sampler sampler = QuarkusDeclarativeConfiguration.createSampler(model.getTracerProvider().getSampler(), loader);
         assertThat(sampler).isInstanceOf(DropTargetsSampler.class);
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS).build());
-        assertThat(sdk.getSdkTracerProvider()).isNotNull();
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                loader, InternalTelemetryVersion.LATEST, Resource.getDefault())) {
+            assertThat(sdk.getSdkTracerProvider()).isNotNull();
+        }
     }
 
-    @Test
-    void cdiSamplerBeanReplacesConfiguredSamplerAndKeepsDropTargets() {
-        OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
-                "quarkus.otel.traces.exporter", "none",
-                "quarkus.otel.metrics.exporter", "none",
-                "quarkus.otel.logs.exporter", "none",
-                "quarkus.otel.traces.sampler", "always_off"),
-                Set.of("/q/health"), Set.of());
-
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS)
-                        .addSpanProcessor(new DropAllSpanProcessor())
-                        .sampler(Sampler.alwaysOn())
-                        .build());
-
-        // always_off from the configuration was replaced by the CDI-provided always-on sampler (still wrapped for
-        // drop targets, which only affects the suppressed URIs)
-        assertThat(sdk.getTracer("test").spanBuilder("span").startSpan().isRecording()).isTrue();
-    }
-
-    @Test
-    void cdiSamplerBeanDoesNotOverrideDisabledTracesSampler() {
-        // disabled traces emit a bare always_off sampler, which the CDI bean must not replace (the legacy
-        // SamplerCustomizer returned alwaysOff() unconditionally for disabled traces)
-        OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
-                "quarkus.otel.traces.enabled", "false",
-                "quarkus.otel.metrics.exporter", "none",
-                "quarkus.otel.logs.exporter", "none"));
-
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS)
-                        .sampler(Sampler.alwaysOn())
-                        .build());
-
-        assertThat(sdk.getTracer("test").spanBuilder("span").startSpan().isRecording()).isFalse();
-    }
-
+    @SuppressWarnings("resource")
     @Test
     void multiKeyExtensionSamplerNodeFails() {
         SamplerModel model = new SamplerModel()
@@ -239,90 +272,10 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.metrics.exporter", "none",
                 "quarkus.otel.logs.exporter", "none"));
 
-        QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(loader).build());
-
-        assertThat(created).isTrue();
-    }
-
-    @Test
-    void customExporterNameFallsBackToLegacySpi() {
-        AtomicBoolean created = new AtomicBoolean();
-        ComponentLoader loader = new StubComponentLoader(Map.of(
-                ConfigurableSpanExporterProvider.class, List.of(new ConfigurableSpanExporterProvider() {
-                    @Override
-                    public SpanExporter createExporter(ConfigProperties config) {
-                        return exporter(created);
-                    }
-
-                    @Override
-                    public String getName() {
-                        return "my-exporter";
-                    }
-                })));
-
-        OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
-                "quarkus.otel.traces.exporter", "my-exporter",
-                "quarkus.otel.metrics.exporter", "none",
-                "quarkus.otel.logs.exporter", "none"));
-
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(loader).build());
-        assertThat(sdk.getSdkTracerProvider()).isNotNull();
-    }
-
-    @Test
-    void propagatorCustomizerIsAppliedToEachPropagator() {
-        List<String> seen = new ArrayList<>();
-
-        OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
-                "quarkus.otel.traces.exporter", "none",
-                "quarkus.otel.metrics.exporter", "none",
-                "quarkus.otel.logs.exporter", "none"));
-
-        QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS)
-                        .propagatorCustomizer(propagator -> {
-                            seen.add(propagator.getClass().getSimpleName());
-                            return propagator;
-                        })
-                        .build());
-
-        // the default propagators, customized individually
-        assertThat(seen).containsExactlyInAnyOrder("W3CTraceContextPropagator", "W3CBaggagePropagator");
-    }
-
-    @Test
-    void legacySpiComponentsReceiveLegacyConfigProperties() {
-        AtomicReference<ConfigProperties> received = new AtomicReference<>();
-        ComponentLoader loader = new StubComponentLoader(Map.of(
-                ConfigurableSamplerProvider.class, List.of(new ConfigurableSamplerProvider() {
-                    @Override
-                    public Sampler createSampler(ConfigProperties config) {
-                        received.set(config);
-                        return Sampler.alwaysOn();
-                    }
-
-                    @Override
-                    public String getName() {
-                        return "my_sampler";
-                    }
-                })));
-
-        OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
-                "quarkus.otel.traces.sampler", "my_sampler",
-                "quarkus.otel.traces.exporter", "none",
-                "quarkus.otel.metrics.exporter", "none",
-                "quarkus.otel.logs.exporter", "none"));
-
-        QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(loader)
-                        .legacyConfigProperties(DefaultConfigProperties.createFromMap(
-                                Map.of("otel.traces.sampler.arg", "endpoint=http://localhost:5778")))
-                        .build());
-
-        // the sampler is wrapped for drop targets by default, so this also covers the nested resolution
-        assertThat(received.get().getString("otel.traces.sampler.arg")).isEqualTo("endpoint=http://localhost:5778");
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                loader, InternalTelemetryVersion.LATEST, Resource.getDefault())) {
+            assertThat(created).isTrue();
+        }
     }
 
     @Test
@@ -333,10 +286,11 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.metrics.exporter", "none",
                 "quarkus.otel.logs.exporter", "none"));
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS).build());
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                NO_COMPONENTS, InternalTelemetryVersion.LATEST, Resource.getDefault())) {
 
-        assertThat(sdk.getSdkTracerProvider().getSpanLimits().getMaxAttributeValueLength()).isEqualTo(4);
+            assertThat(sdk.getSdkTracerProvider().getSpanLimits().getMaxAttributeValueLength()).isEqualTo(4);
+        }
     }
 
     @Test
@@ -348,51 +302,139 @@ class QuarkusDeclarativeConfigurationTest {
                 "quarkus.otel.metrics.exporter", "none",
                 "quarkus.otel.logs.exporter", "none"));
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(NO_COMPONENTS).build());
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                NO_COMPONENTS, InternalTelemetryVersion.LATEST, Resource.getDefault())) {
 
-        assertThat(sdk.getSdkTracerProvider().getSpanLimits().getMaxAttributeValueLength()).isEqualTo(8);
+            assertThat(sdk.getSdkTracerProvider().getSpanLimits().getMaxAttributeValueLength()).isEqualTo(8);
+        }
     }
 
     @Test
-    void noopExporterGetsNoBatchProcessor() {
-        // SpanExporter.composite() with no delegates is the NoopSpanExporter, as "cdi" produces with no beans
-        ComponentLoader loader = new StubComponentLoader(Map.of(
-                ComponentProvider.class, List.of(componentProvider(SpanExporter.class, "my-exporter",
-                        SpanExporter.composite()))));
-
+    void mergedResourceIsUsedAsIs() {
+        // The model cannot carry VALUE attributes; the recorder hands the SDK the merged Resource itself
+        Resource merged = Resource.create(
+                Attributes.of(AttributeKey.valueKey("structured"), Value.of(new byte[] { 1 })),
+                "https://opentelemetry.io/schemas/1.40.0");
         OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
-                "quarkus.otel.traces.exporter", "my-exporter",
+                "quarkus.otel.traces.exporter", "none",
                 "quarkus.otel.metrics.exporter", "none",
-                "quarkus.otel.logs.exporter", "none"));
+                "quarkus.otel.logs.exporter", "none",
+                "quarkus.otel.traces.sampler", "always_on"));
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(loader).build());
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                NO_COMPONENTS, InternalTelemetryVersion.LATEST, merged)) {
 
-        assertThat(sdk.getSdkTracerProvider().toString()).doesNotContain("BatchSpanProcessor");
+            ReadableSpan span = (ReadableSpan) sdk.getTracer("test").spanBuilder("span").startSpan();
+            assertThat(span.toSpanData().getResource()).isEqualTo(merged);
+        }
     }
 
     @Test
-    void noopExporterKeepsBatchProcessorWhenCdiSpanProcessorsExist() {
-        ComponentLoader loader = new StubComponentLoader(Map.of(
-                ComponentProvider.class, List.of(componentProvider(SpanExporter.class, "my-exporter",
-                        SpanExporter.composite()))));
-
+    void generalAttributeCountLimitReachesEventAndLinkLimits() {
         OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
-                "quarkus.otel.traces.exporter", "my-exporter",
+                "quarkus.otel.traces.exporter", "none",
                 "quarkus.otel.metrics.exporter", "none",
-                "quarkus.otel.logs.exporter", "none"));
+                "quarkus.otel.logs.exporter", "none",
+                "quarkus.otel.attribute.count.limit", "64",
+                "quarkus.otel.span.attribute.count.limit", "32"));
 
-        OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
-                QuarkusDeclarativeConfiguration.Customizations.builder(loader)
-                        .addSpanProcessor(SpanProcessor.composite())
-                        .build());
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                NO_COMPONENTS, InternalTelemetryVersion.LATEST, Resource.getDefault())) {
 
-        assertThat(sdk.getSdkTracerProvider().toString()).contains("BatchSpanProcessor");
+            SpanLimits limits = sdk.getSdkTracerProvider().getSpanLimits();
+            assertThat(limits.getMaxNumberOfAttributes()).isEqualTo(32);
+            assertThat(limits.getMaxNumberOfAttributesPerEvent()).isEqualTo(64);
+            assertThat(limits.getMaxNumberOfAttributesPerLink()).isEqualTo(64);
+        }
+    }
+
+    @Test
+    void exemplarFilterAndCardinalityLimitBuildARealSdk() {
+        // The SDK exposes neither value; this proves the interpreter applies them without failing
+        // the quarkus_periodic reader node resolves through its Quarkus provider
+        ComponentLoader loader = new QuarkusComponentLoader(new StubComponentLoader(Map.of(ComponentProvider.class,
+                List.of(componentProvider(MetricExporter.class, "my-exporter", new CumulativeMetricExporter())))),
+                DefaultConfigProperties.createFromMap(Map.of()),
+                List.of(new QuarkusPeriodicMetricReaderProvider(null, UnaryOperator.identity())));
+        OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
+                "quarkus.otel.traces.exporter", "none",
+                "quarkus.otel.logs.exporter", "none",
+                "quarkus.otel.metrics.exporter", "my-exporter",
+                "otel.metrics.exemplar.filter", "always_off",
+                "otel.java.metrics.cardinality.limit", "10"));
+
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                loader, InternalTelemetryVersion.LATEST, Resource.getDefault())) {
+
+            assertThat(sdk.getSdkMeterProvider()).isNotNull();
+        }
+    }
+
+    @Test
+    void pullReaderResolvesAMetricReaderComponentWithItsCardinalityLimit() {
+        // As upstream's PullMetricReaderFactory: the exporter node names a MetricReader component
+        RegistrationCapturingMetricReader reader = new RegistrationCapturingMetricReader();
+        ComponentLoader loader = new StubComponentLoader(Map.of(ComponentProvider.class,
+                List.of(componentProvider(MetricReader.class, "my-reader", reader))));
+        OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
+                "quarkus.otel.traces.exporter", "none",
+                "quarkus.otel.logs.exporter", "none",
+                "quarkus.otel.metrics.exporter", "none"));
+        model.setMeterProvider(new MeterProviderModel().setReaders(List.of(new MetricReaderModel()
+                .setPull(new PullMetricReaderModel()
+                        .setExporter(new PullMetricExporterModel().setExtensionProperty("my-reader", Map.of()))
+                        .setCardinalityLimits(new CardinalityLimitsModel().setDefault(1))))));
+
+        try (OpenTelemetrySdk sdk = QuarkusDeclarativeConfiguration.create(model,
+                loader, InternalTelemetryVersion.LATEST, Resource.getDefault())) {
+            sdk.getMeter("test").counterBuilder("test.counter").build().add(1);
+            sdk.getMeter("test").counterBuilder("test.counter").build().add(1, Attributes.of(
+                    AttributeKey.stringKey("key"), "value"));
+
+            assertThat(reader.registration).isNotNull();
+            // a limit of 1 leaves room for the overflow point only
+            assertThat(reader.registration.collectAllMetrics()).singleElement()
+                    .satisfies(metric -> assertThat(metric.getLongSumData().getPoints()).hasSize(1));
+        }
+    }
+
+    @Test
+    void unknownPullReaderNameFails() {
+        OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
+                "quarkus.otel.traces.exporter", "none",
+                "quarkus.otel.logs.exporter", "none",
+                "quarkus.otel.metrics.exporter", "none"));
+        model.setMeterProvider(new MeterProviderModel().setReaders(List.of(new MetricReaderModel()
+                .setPull(new PullMetricReaderModel()
+                        .setExporter(new PullMetricExporterModel().setExtensionProperty("missing", Map.of()))))));
+
+        assertThatThrownBy(() -> QuarkusDeclarativeConfiguration.create(model,
+                NO_COMPONENTS, InternalTelemetryVersion.LATEST, Resource.getDefault()))
+                .isInstanceOf(DeclarativeConfigException.class)
+                .hasMessageContaining("No MetricReader named 'missing'");
     }
 
     private static Sampler sampler(SamplerModel model) {
         return QuarkusDeclarativeConfiguration.createSampler(model, NO_COMPONENTS);
+    }
+
+    @SuppressWarnings("resource")
+    @Test
+    void componentsBuiltBeforeAFailureAreClosed() {
+        ShutdownTrackingSpanExporter tracked = new ShutdownTrackingSpanExporter();
+        ComponentLoader loader = new StubComponentLoader(Map.of(
+                ComponentProvider.class, List.of(componentProvider(SpanExporter.class, "tracked", tracked))));
+        OpenTelemetryConfigurationModel model = QuarkusOTelModelBuilderTest.buildModel(Map.of(
+                "quarkus.otel.traces.exporter", "tracked,unresolvable",
+                "quarkus.otel.metrics.exporter", "none",
+                "quarkus.otel.logs.exporter", "none"));
+
+        assertThatThrownBy(() -> QuarkusDeclarativeConfiguration.create(model,
+                loader, InternalTelemetryVersion.LATEST, Resource.getDefault()))
+                .isInstanceOf(DeclarativeConfigException.class)
+                .hasMessageContaining("unresolvable");
+
+        assertThat(tracked.shutdownCalled).as("components built before the failure are closed").isTrue();
     }
 
     private static DeclarativeConfigProperties samplerNode(Map<String, Object> properties) {
@@ -423,12 +465,90 @@ class QuarkusDeclarativeConfigurationTest {
         return SpanExporter.composite();
     }
 
+    private static final class ShutdownTrackingSpanExporter implements SpanExporter {
+
+        volatile boolean shutdownCalled;
+
+        @Override
+        public CompletableResultCode export(Collection<SpanData> spans) {
+            return CompletableResultCode.ofSuccess();
+        }
+
+        @Override
+        public CompletableResultCode flush() {
+            return CompletableResultCode.ofSuccess();
+        }
+
+        @Override
+        public CompletableResultCode shutdown() {
+            shutdownCalled = true;
+            return CompletableResultCode.ofSuccess();
+        }
+    }
+
+    private static final class CumulativeMetricExporter implements MetricExporter {
+
+        @Override
+        public CompletableResultCode export(Collection<MetricData> metrics) {
+            return CompletableResultCode.ofSuccess();
+        }
+
+        @Override
+        public CompletableResultCode flush() {
+            return CompletableResultCode.ofSuccess();
+        }
+
+        @Override
+        public CompletableResultCode shutdown() {
+            return CompletableResultCode.ofSuccess();
+        }
+
+        @Override
+        public AggregationTemporality getAggregationTemporality(InstrumentType instrumentType) {
+            return AggregationTemporality.CUMULATIVE;
+        }
+    }
+
+    private static final class RegistrationCapturingMetricReader implements MetricReader {
+
+        CollectionRegistration registration;
+
+        @Override
+        public void register(CollectionRegistration registration) {
+            this.registration = registration;
+        }
+
+        @Override
+        public CompletableResultCode forceFlush() {
+            return CompletableResultCode.ofSuccess();
+        }
+
+        @Override
+        public CompletableResultCode shutdown() {
+            return CompletableResultCode.ofSuccess();
+        }
+
+        @Override
+        public AggregationTemporality getAggregationTemporality(InstrumentType instrumentType) {
+            return AggregationTemporality.CUMULATIVE;
+        }
+    }
+
+    // Loads the given services. The ComponentProvider services also include the providers the module's service file
+    // registers for nodes the model always carries: the drop-all processor whenever traces are on and nothing
+    // exports, and the composite exporters, which do not customize the exporters here.
     private record StubComponentLoader(Map<Class<?>, List<Object>> services) implements ComponentLoader {
 
         @SuppressWarnings("unchecked")
         @Override
         public <T> Iterable<T> load(Class<T> type) {
-            return (Iterable<T>) services.getOrDefault(type, List.of());
+            List<Object> loaded = new ArrayList<>(services.getOrDefault(type, List.of()));
+            if (type == ComponentProvider.class) {
+                loaded.add(new QuarkusDropAllSpanProcessorProvider());
+                loaded.add(new QuarkusCompositeSpanExporterProvider());
+                loaded.add(new QuarkusCompositeLogRecordExporterProvider());
+            }
+            return (Iterable<T>) loaded;
         }
     }
 }

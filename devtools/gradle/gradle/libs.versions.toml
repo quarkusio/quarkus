@@ -2,7 +2,7 @@
 plugin-publish = "2.2.1"
 
 kotlin = "2.4.20"
-smallrye-config = "4.0.0"
+smallrye-config = "4.1.0"
 json-schema-validator = "2.0.1"
 
 junit = "6.1.3"

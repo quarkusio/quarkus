@@ -4,12 +4,27 @@ import io.quarkus.core.Phase;
 import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.elytron.security.common.runtime.ElytronCommonRecorder;
+import io.quarkus.modular.spi.items.AddDependencyBuildItem;
+import io.smallrye.modules.desc.Dependency.Modifier;
 
 public class QuarkusSecurityCommonProcessor {
+    @BuildStep
+    void exportPasswordImplementations(BuildProducer<ModuleExportBuildItem> exports) {
+        exports.produce(new ModuleExportBuildItem("org.wildfly.security.wildfly.elytron.password.impl",
+                "org.wildfly.security.wildfly.elytron.credential", "org.wildfly.security.password.impl"));
+    }
+
+    @BuildStep
+    AddDependencyBuildItem linkPasswordProviderToImplementations() {
+        return new AddDependencyBuildItem("org.wildfly.security.wildfly.elytron.credential",
+                "org.wildfly.security.wildfly.elytron.password.impl", Modifier.Set.of(Modifier.READ, Modifier.LINKED));
+    }
+
     @BuildStep
     RuntimeInitializedClassBuildItem runtimeInitBcryptUtil() {
         // this holds a SecureRandom static var that needs to be initialised at run time

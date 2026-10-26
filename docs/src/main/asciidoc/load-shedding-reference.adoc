@@ -20,7 +20,7 @@ You should consider using it if your application runs in a dynamic environment w
 
 In Quarkus, the `quarkus-load-shedding` extension provides a load shedding mechanism.
 
-== Use the Load Shedding extension
+== Use the load shedding extension
 
 To use the load shedding extension, you need to add the `io.quarkus:quarkus-load-shedding` extension to your project:
 
@@ -65,11 +65,11 @@ Other configuration options are described below, although they should typically 
 The load shedding algorithm has 2 parts:
 
 * overload detection
-* priority load shedding (optional)
+* prioritization (optional)
 
 === Overload detection
 
-To detect whether the current service is overloaded, an adaptation of TCP Vegas is used.
+To detect whether the current service is overloaded, an adaptation of the Vegas algorithm (known from TCP) is used.
 
 This algorithm starts with a configurable limit of in-flight requests, by default 100.
 If the current number of concurrent in-flight requests reaches the limit, overload situation is signalled.
@@ -81,12 +81,15 @@ The limit cannot increase or decrease indefinitely; there's a configurable minim
 There's no actual queue of requests that we could monitor, though, so the algorithm estimates the current length of a request queue based on previously seen response times.
 The longer recent requests take, compared to the recent lowest response time, the longer the queue is supposed to be.
 
-=== Priority load shedding
+CAUTION: We know the Vegas algorithm is not the best choice in environments where response times vary.
+We are working on replacing it with another algorithm, or maybe supporting a small set of algorithms you can select from.
 
-If an overload situation is signalled, priority load shedding is invoked.
+=== Prioritization
 
-If priority load shedding is disabled, no prioritization is applied and all requests beyond the current limit are rejected immediately.
-However, by default, priority load shedding is enabled, which means a request is only rejected if the overload is deep enough.
+If an overload situation is signalled, prioritization is invoked.
+
+If prioritization is disabled, all requests beyond the current limit are rejected immediately.
+However, by default, prioritization is enabled, which means a request is only rejected if the overload is deep enough.
 
 The overload depth is expressed as a number between 0.0 and 1.0.
 It is 0.0 when the number of current requests is at the current limit.

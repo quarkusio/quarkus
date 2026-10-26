@@ -389,7 +389,13 @@ class NettyProcessor {
                 // Runtime initialize classes to allow netty to use the field offset for testing if unsafe is available or not
                 // See https://github.com/quarkusio/quarkus/issues/47903#issuecomment-2890924970
                 .addRuntimeInitializedClass("io.netty.util.AbstractReferenceCounted")
-                .addRuntimeInitializedClass("io.netty.buffer.AbstractReferenceCountedByteBuf");
+                .addRuntimeInitializedClass("io.netty.buffer.AbstractReferenceCountedByteBuf")
+                // Runtime initialize to respect the run-time number of processors, which it caches on first use
+                // (respecting the run-time provided value of the io.netty.availableProcessors property)
+                .addRuntimeInitializedClass("io.netty.util.NettyRuntime")
+                // Runtime initialize to respect the run-time number of processors and the run-time provided value of
+                // the io.netty.eventLoopThreads property, used by event loop groups created with nThreads == 0
+                .addRuntimeInitializedClass("io.netty.channel.MultithreadEventLoopGroup");
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.buffer.UnpooledByteBufAllocator")) {
             // Runtime initialize due to the use of the io.netty.util.internal.PlatformDependent class
@@ -416,6 +422,23 @@ class NettyProcessor {
                     // - io.netty.allocator.useCacheForAllThreads
                     // - io.netty.allocator.maxCachedByteBuffersPerChunk
                     .addRuntimeInitializedClass("io.netty.buffer.PooledByteBufAllocator")
+                    // Runtime initialize the default allocator of Netty 4.2: its static initializers size it from the
+                    // run-time max heap and number of processors and read the run-time provided value of the
+                    // following properties:
+                    // - io.netty.allocator.useCachedMagazinesForNonEventLoopThreads
+                    // - io.netty.allocator.lowMemory
+                    // - io.netty.allocator.disableThreadLocalMagazinesOnLowMemory
+                    // - io.netty.allocator.chunkReuseQueueCapacity
+                    // - io.netty.allocator.chunkPurgePollsThreadLocal
+                    // - io.netty.allocator.chunkPurgePollsShared
+                    // - io.netty.allocator.chunkPurgeThreshold
+                    // - io.netty.allocator.threadLocalChunkCacheMaxBytes
+                    // - io.netty.allocator.threadLocalChunkCacheMinBytes
+                    // - io.netty.allocator.magazineBufferQueueCapacity
+                    .addRuntimeInitializedClass("io.netty.buffer.AdaptiveByteBufAllocator")
+                    .addRuntimeInitializedClass("io.netty.buffer.AdaptivePoolingAllocator")
+                    // Runtime initialize due to its static initializer depending on AdaptivePoolingAllocator
+                    .addRuntimeInitializedClass("io.netty.buffer.AdaptivePoolingAllocator$SharedSizeClassedChunkCache")
                     // Runtime initialize due to the use of ByteBufUtil.DEFAULT_ALLOCATOR in the static initializers
                     .addRuntimeInitializedClass("io.netty.buffer.ByteBufAllocator")
                     // Runtime initialize due to the use of the io.netty.util.internal.PlatformDependent class in the

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import jakarta.inject.Named;
 
@@ -20,16 +19,16 @@ import com.google.cloud.functions.RawBackgroundFunction;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.builder.BuildException;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.gcp.functions.GoogleCloudFunctionInfo;
 import io.quarkus.gcp.functions.GoogleCloudFunctionRecorder;
+import io.quarkus.gcp.functions.GoogleCloudFunctionsConfig;
 
 public class GoogleCloudFunctionsProcessor {
     private static final String FEATURE_NAME = "google-cloud-functions";
@@ -95,14 +94,14 @@ public class GoogleCloudFunctionsProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void selectDelegate(List<CloudFunctionBuildItem> cloudFunctions, GoogleCloudFunctionRecorder recorder,
-            ShutdownContextBuildItem shutdown) {
-
+    public void selectDelegate(List<CloudFunctionBuildItem> cloudFunctions, ServiceRegistrar serviceRegistrar) {
         List<GoogleCloudFunctionInfo> functionInfos = cloudFunctions.stream()
                 .map(CloudFunctionBuildItem::build)
-                .collect(Collectors.toList());
-
-        recorder.selectDelegate(functionInfos, shutdown);
+                .toList();
+        serviceRegistrar
+                .forService("io.quarkus.google-cloud-functions.delegates")
+                .atPhase(Phase.APPLICATION)
+                .require(GoogleCloudFunctionsConfig.class)
+                .onStart((ctx, config) -> GoogleCloudFunctionRecorder.selectDelegate(ctx, config, functionInfos));
     }
 }

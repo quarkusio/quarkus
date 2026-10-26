@@ -54,7 +54,7 @@ public class ResteasyReactiveCommonRecorder {
         }
     }
 
-    public void setupBlockingOperationSupport() {
+    public static void setupBlockingOperationSupport() {
         BlockingOperationSupport.setIoThreadDetector(new BlockingOperationSupport.IOThreadDetector() {
             @Override
             public boolean isBlockingAllowed() {

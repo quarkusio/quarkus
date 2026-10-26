@@ -405,8 +405,7 @@ public abstract class AbstractGetMethodTest {
     @CsvSource({
             "page,0",
             "size,1",
-            "name,first",
-            "collection.id,full"
+            "name,first"
     })
     void shouldShowSpecificParameterInLinkHeaders(String queryParamName, String queryParamValue) {
         Response response = given().accept("application/json")
@@ -451,7 +450,6 @@ public abstract class AbstractGetMethodTest {
                 .queryParam("page", "0")
                 .queryParam("size", "1")
                 .queryParam("name", "first")
-                .queryParam("collection.id", "full")
                 .get("/items")
                 .thenReturn();
 
@@ -462,7 +460,7 @@ public abstract class AbstractGetMethodTest {
                 .toList();
         assertThat(links).allMatch(link -> {
             var query = link.getUri().getQuery();
-            return query.contains("page=0&size=1") && query.contains("name=first") && query.contains("collection.id=full");
+            return query.contains("page=0&size=1") && query.contains("name=first");
         });
     }
 }

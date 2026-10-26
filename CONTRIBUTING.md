@@ -4,6 +4,12 @@
 We try to make it easy, and all contributions, even the smaller ones, are more than welcome. This includes bug reports,
 fixes, documentation, examples... But first, read this page (including the small print at the end).
 
+> We appreciate every pull request that helps make Quarkus better!
+> As the project grows, so does the number of pull requests we receive, and each one takes significant effort to review and iterate on.
+> We therefore prioritize pull requests that align with the Quarkus roadmap, the active [working groups](https://quarkus.io/working-groups/), and the areas the core team is actively working on.
+> Other pull requests are still welcome, but reviews may take longer.
+> If you are looking for something to work on, check the issues linked to a working group, or those labeled [`good first issue`](https://github.com/quarkusio/quarkus/labels/good%20first%20issue) or [`help wanted`](https://github.com/quarkusio/quarkus/labels/help%20wanted).
+
 <!-- toc -->
 
 - [Legal](#legal)

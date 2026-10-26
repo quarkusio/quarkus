@@ -4,8 +4,6 @@ import static io.opentelemetry.sdk.common.internal.ScopeConfiguratorBuilder.name
 import static java.lang.Boolean.TRUE;
 import static java.util.Collections.emptyList;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,6 +16,9 @@ import java.util.function.Predicate;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
+
+import org.jboss.threads.ScheduledViewExecutor;
+import org.jboss.threads.ViewExecutor;
 
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
@@ -49,6 +50,7 @@ import io.quarkus.opentelemetry.runtime.tracing.SimpleSpanProcessorWithBatchShut
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.TracerUtil;
 import io.quarkus.runtime.ApplicationConfig;
+import io.smallrye.common.net.HostName;
 
 public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
@@ -133,7 +135,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             })
                             .orElse(null);
 
-                    String hostname = getHostname();
+                    String hostname = HostName.getHostName();
 
                     // Merge resource instances with env attributes
                     Resource resource = resources.stream()
@@ -342,12 +344,20 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             // Replace the provided metric reader because it uses an unmanaged executor
                             // with a null classloader
                             if (metricReader instanceof PeriodicMetricReader && managedExecutor.isResolvable()) {
+                                // wrap the shared managed executor: the reader assumes it owns its
+                                // executor and shuts it down (with a 5s awaitTermination) on shutdown,
+                                // which must not touch or block on the container-managed pool;
+                                // we'll give it one that it *can* own
+                                ScheduledExecutorService delegateExecutor = managedExecutor.get();
+                                ViewExecutor viewExecutor = ViewExecutor.builder(delegateExecutor)
+                                        .unlimitedParallelism()
+                                        .unlimitedQueueLimit()
+                                        .supportInterruptOnShutdownNow(true)
+                                        .build();
+                                ScheduledViewExecutor sve = new ScheduledViewExecutor(viewExecutor, delegateExecutor);
                                 return PeriodicMetricReader.builder(metricExporterRef.get())
                                         .setInterval(oTelRuntimeConfig.metric().exportInterval())
-                                        // wrap the shared managed executor: the reader assumes it owns its
-                                        // executor and shuts it down (with a 5s awaitTermination) on shutdown,
-                                        // which must not touch or block on the container-managed pool
-                                        .setExecutor(new NonShutdownableScheduledExecutorService(managedExecutor.get()))
+                                        .setExecutor(sve)
                                         .build();
                             }
                             return metricReader;
@@ -389,16 +399,4 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             }
         }
     }
-
-    private static String getHostname() {
-        // must be resolved at startup, once.
-        String hostname = null;
-        try {
-            hostname = InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException e) {
-            hostname = "unknown";
-        }
-        return hostname;
-    }
-
 }

@@ -14,7 +14,7 @@ The `ServiceRegistrar` service system replaces `@Recorder` with a typed service 
 Services get **no** implicit ordering from the build step graph. All ordering comes from `require()`, `after()`, `before()`, or `afterBuildItem()`.
 
 === Services are Independent from Recorders in the Same Step
-Even if a build step method contains both a `@Record` call and an `ServiceRegistrar` call, the service and recorder are separate nodes in the build execution plan with no implicit ordering between them.
+Even if a build step method contains both a `@Record` call and a `ServiceRegistrar` call, the service and recorder are separate nodes in the build execution plan with no implicit ordering between them.
 
 === Values Flow Through the Dependency Graph
 Service values are passed from producer to consumer via indexed dependency access on `ServiceNode`, not through the `StartupContext` maps (except when using recorder proxy bridges).
@@ -67,8 +67,6 @@ For each `@Recorder` method, determine:
 * If all methods are converted, delete the recorder class. Otherwise, keep `@Recorder` only for remaining legacy methods.
 
 === 3. Convert the Build Step
-
-Let's look at a classic conversion.
 
 ==== Before:
 [source,java]
@@ -123,7 +121,8 @@ reg.forService("io.quarkus.arc.lifecycle")
 ----
 
 This resolves the producing step's nodes and creates ordering edges.
-NOTE: `afterBuildItem()` is deprecated — it exists only for recorder coexistence. Once the producing recorder is converted to a service, replace with `require()` or `after()`, or drop it as appropriate.
+
+NOTE: `afterBuildItem()` is deprecated — it exists only for recorder coexistence. Before adding one, check whether the target has already been converted to a service; if so, use `require()` or `after()` directly instead.
 
 ==== Cross-Phase Dependencies
 Runtime services can `require()` static-init services. The framework automatically creates a `CROSS_PHASE_PROXY` node that reads the value from the `serviceValues` map.
@@ -148,7 +147,7 @@ reg.forService("io.quarkus.my-ext.setup")
 
 During the transitional period, the `ServiceRegistrar` provides bridge APIs to allow incremental migration of extensions.
 
-=== 1. Recorder $\rightarrow$ Service Bridge
+=== Recorder-to-Service Bridge
 If you have a value produced by a legacy recorder that a new service needs to depend on, register it using `aliasRecorderValue`:
 
 [source,java]
@@ -157,7 +156,7 @@ If you have a value produced by a legacy recorder that a new service needs to de
 @Record(ExecutionTime.RUNTIME_INIT)
 void setupLegacyAndService(MyRecorder recorder, ServiceRegistrar reg) {
     RuntimeValue<MyLegacyValue> val = recorder.createLegacyValue();
-    
+
     // Publish legacy value to the ServiceRegistrar graph
     reg.aliasRecorderValue(MyLegacyValue.class, val);
 }
@@ -165,7 +164,7 @@ void setupLegacyAndService(MyRecorder recorder, ServiceRegistrar reg) {
 
 Downstream services can now simply use `.require(MyLegacyValue.class)`.
 
-=== 2. Service $\rightarrow$ Recorder Bridge
+=== Service-to-Recorder Bridge
 If an unconverted legacy recorder or an existing build item consumes a value that is now produced by a service, use the service-to-recorder bridge methods:
 
 * **`serviceAsRuntimeValue`**: Produces a `RuntimeValue<T>` proxy for a runtime service.
@@ -184,20 +183,27 @@ void bridgeServiceToLegacy(ServiceRegistrar reg, BuildProducer<LegacyBuildItem> 
 }
 ----
 
+=== Updating Downstream Consumers
+After converting a recorder to a service, search for other extensions that use `afterBuildItem()` referencing build items your old recorder produced. Those consumers can now migrate from `afterBuildItem()` to `require()` or `after()` on your new service directly, removing one more link in the legacy bridge chain.
+
 ---
 
 == Common Conversion Pitfalls
 
+=== Global Mutable State
+Recorders ran sequentially, so global mutable state (static maps, shared lists, singletons populated during startup) was incidentally safe. Services run concurrently — any global state that survives conversion must be made thread-safe. Prefer eliminating it entirely: the dependency graph carries values directly, so each entry becomes a named service and each lookup becomes `require()` or `request()`.
+
 === ClassLoader & Thread Context ClassLoader (TCCL)
-Recorder bytecode always ran with the **runtime classloader as the TCCL**. Any recorder code that captured `Thread.currentThread().getContextClassLoader()` for later use relied on that.
-* After converting, ensure that the service still runs with the runtime CL as TCCL, and that captured/inherited CLs are the runtime CL (not the system `AppClassLoader`).
-* Clean up threads or `ThreadLocal`s your service owns in `onStop()`; never leak the `QuarkusClassLoader`.
+A wrong TCCL surfaces as `ServiceLoader` "not a subtype" errors or dev-mode failures. Threads created during startup inherit the creating thread's TCCL — a long-lived thread that captures the per-app runtime CL leaks the `QuarkusClassLoader` across restarts. Clean up threads or `ThreadLocal`s your service owns in `onStop()`; never rely on a global "reset all TCCLs" sweep.
 
 === Concrete Class Proxying
 `staticInitServiceAsRecorderValue(ConcreteClass.class)` fails if the class has a non-trivial constructor. Use `staticInitServiceAsRuntimeValue()` instead — `RuntimeValue` is always proxyable.
 
 === Package-Private Visibility
-Lambda bytecode runs at runtime but references runtime classes directly. Package-private classes become inaccessible from the generated consolidated class. Ensure any classes referenced within the lambda are `public`.
+Lambda bytecode runs at runtime but references runtime classes directly. Package-private classes become inaccessible from the generated consolidated class. Ensure any classes referenced within the lambda are `public`, or move them to a `.impl` subpackage and make them public.
 
 === Never Reference Deployment Classes inside Service Lambdas
-Always place helper methods, custom interfaces, or static factory methods inside your **runtime** module classes (which are present at runtime). Doing so inside your processor class compiles successfully but throws `NoClassDefFoundError` at runtime.
+Service lambda bodies execute at **runtime** — deployment classes are absent from the runtime classpath. Anonymous inner classes inside instance-method lambdas silently capture `this` (the processor), causing `TransliterationException`. Moving the instantiation to a `private static` helper in the processor avoids the capture but still references a deployment class, causing `NoClassDefFoundError`. Place all helper methods and factories in **runtime** module classes.
+
+=== Teardown-Ordering Parity
+Start ordering is explicit — but so is **stop ordering**, and that is the easy thing to lose. The recorder model gave cleanup incidental ordering from build-step order; a converted service's `onStop` runs only in reverse dependency order. If a cleanup implicitly depended on running before/after another, declare it with `before()` or `after()`. Lost teardown ordering surfaces as unrelated downstream symptoms — verify shutdown explicitly.

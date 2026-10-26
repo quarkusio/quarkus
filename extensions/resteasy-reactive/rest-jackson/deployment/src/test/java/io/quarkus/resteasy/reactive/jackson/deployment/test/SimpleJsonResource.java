@@ -41,6 +41,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import tools.jackson.core.json.JsonReadFeature;
 import tools.jackson.core.json.JsonWriteFeature;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.ObjectReader;
 import tools.jackson.databind.ObjectWriter;
@@ -615,6 +616,32 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return record;
     }
 
+    @CustomDeserialization(FailOnNullForPrimitivesDeserialization.class)
+    @POST
+    @Path("/primitive-field-pojo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public PrimitiveFieldPojo echoPrimitiveFieldPojo(PrimitiveFieldPojo obj) {
+        return obj;
+    }
+
+    @POST
+    @Path("/primitive-field-pojo-lenient")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public PrimitiveFieldPojo echoPrimitiveFieldPojoLenient(PrimitiveFieldPojo obj) {
+        return obj;
+    }
+
+    @CustomDeserialization(FailOnNullForPrimitivesDeserialization.class)
+    @POST
+    @Path("/primitive-creator-pojo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public PrimitiveCreatorPojo echoPrimitiveCreatorPojo(PrimitiveCreatorPojo obj) {
+        return obj;
+    }
+
     @POST
     @Path("/default-value-holder")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -656,6 +683,15 @@ public class SimpleJsonResource extends SuperClass<Person> {
                         "Type'" + type.getTypeName() + "' cannot be handled. Only 'Person' type is valid");
             }
             return objectMapper.writer().without(JsonWriteFeature.QUOTE_PROPERTY_NAMES);
+        }
+    }
+
+    // the tests using this resource disable quarkus.jackson.fail-on-null-for-primitives, so re-enable it per endpoint
+    public static class FailOnNullForPrimitivesDeserialization implements BiFunction<ObjectMapper, Type, ObjectReader> {
+
+        @Override
+        public ObjectReader apply(ObjectMapper objectMapper, Type type) {
+            return objectMapper.reader().with(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
         }
     }
 

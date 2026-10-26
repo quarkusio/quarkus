@@ -60,7 +60,7 @@ class ServiceDependencyValidatorTest {
                 rt(String.class, List.of(), List.of(), "StepB#b"))))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Duplicate")
-                .hasMessageContaining("java.lang.String:")
+                .hasMessageContaining("java.lang.String")
                 .hasMessageContaining("StepA#a")
                 .hasMessageContaining("StepB#b");
     }
@@ -72,7 +72,7 @@ class ServiceDependencyValidatorTest {
                 rt(String.class, List.of("foo"), List.of(), "StepB#b"))))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Duplicate")
-                .hasMessageContaining("java.lang.String:foo");
+                .hasMessageContaining("java.lang.String[foo]");
     }
 
     @Test
@@ -90,7 +90,7 @@ class ServiceDependencyValidatorTest {
                         "StepA#a"))))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Unsatisfied dependency")
-                .hasMessageContaining("java.lang.String:")
+                .hasMessageContaining("java.lang.String")
                 .hasMessageContaining("StepA#a");
     }
 
@@ -104,7 +104,7 @@ class ServiceDependencyValidatorTest {
                         "StepB#b"))))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Unsatisfied dependency")
-                .hasMessageContaining("java.lang.String:foo");
+                .hasMessageContaining("java.lang.String[foo]");
     }
 
     @Test
@@ -170,17 +170,17 @@ class ServiceDependencyValidatorTest {
     @Test
     void serviceKeyFormat() {
         assertThat(rt(String.class, List.of(), List.of(), "s").serviceKey())
-                .isEqualTo("java.lang.String:");
+                .isEqualTo("java.lang.String");
         assertThat(rt(String.class, List.of("foo"), List.of(), "s").serviceKey())
-                .isEqualTo("java.lang.String:foo");
+                .isEqualTo("java.lang.String\0foo");
     }
 
     @Test
     void dependencyKeyFormat() {
         assertThat(new Dependency(Integer.class, List.of(), 0).key())
-                .isEqualTo("java.lang.Integer:");
+                .isEqualTo("java.lang.Integer");
         assertThat(new Dependency(Integer.class, List.of("bar"), 0).key())
-                .isEqualTo("java.lang.Integer:bar");
+                .isEqualTo("java.lang.Integer\0bar");
     }
 
     // ── Static-init and cross-phase tests ──
@@ -219,7 +219,7 @@ class ServiceDependencyValidatorTest {
                         rt(String.class, List.of(), List.of(), "RuntimeB#b"))))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Cross-phase duplicate")
-                .hasMessageContaining("java.lang.String:");
+                .hasMessageContaining("java.lang.String");
     }
 
     @Test
@@ -264,7 +264,7 @@ class ServiceDependencyValidatorTest {
                 List.of()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Duplicate static-init")
-                .hasMessageContaining("java.lang.String:");
+                .hasMessageContaining("java.lang.String");
     }
 
     @Test

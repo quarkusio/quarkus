@@ -335,6 +335,15 @@ podman run --rm -v $(pwd):/tmp:z anchore/syft scan myapp -o cyclonedx-json
 
 NOTE: The SBOM is always GZIP-compressed before being embedded as a global symbol, as required by the GraalVM SBOM specification and regardless of the `quarkus.cyclonedx.embedded.compress` setting. Since the classpath resource is always stored uncompressed, Quarkus compresses it at native image build time.
 
+==== Extracting the embedded SBOM using Mandrel
+
+In addition to `syft`, the embedded SBOM can also be extracted using the `native-image-configure` tool included in Mandrel version `25.0.4` or later. See also the https://github.com/graalvm/mandrel/releases/tag/mandrel-25.0.4.0-Final[Mandrel 25.0.4.0-Final release notes]:
+
+[source,bash]
+----
+$GRAALVM_HOME/bin/native-image-configure extract-sbom --image-path=/path/to/quarkus-app --output-file=quarkus-app.sbom.json
+----
+
 === Mutable JAR
 
 Mutable JAR distribution is similar to the Fast JAR one except it also includes build time dependencies to support re-augmentation (re-building) of an application.

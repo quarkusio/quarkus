@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 
 import org.jboss.resteasy.plugins.server.servlet.Filter30Dispatcher;
+import org.jboss.resteasy.spi.Registry;
 
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 
@@ -20,6 +22,12 @@ import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
  * default servlet, and if it fails then a REST response will be attempted
  */
 public class ResteasyFilter extends Filter30Dispatcher {
+
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+        super.init(filterConfig);
+        filterConfig.getServletContext().setAttribute(Registry.class.getName(), getDispatcher().getRegistry());
+    }
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)

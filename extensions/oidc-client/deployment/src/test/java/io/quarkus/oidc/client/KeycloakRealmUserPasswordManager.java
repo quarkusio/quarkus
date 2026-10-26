@@ -30,6 +30,7 @@ public class KeycloakRealmUserPasswordManager implements QuarkusTestResourceLife
             RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
 
             realm.getClients().add(createClient("quarkus-app"));
+            realm.getClients().add(createClient("quarkus-app-long-lived-tokens", 60));
             realm.getClients().add(createPublicClient("quarkus-public-app"));
             realm.getUsers().add(createUser("alice", "user"));
             realm.getUsers().add(createUser("bob", "user"));
@@ -94,6 +95,12 @@ public class KeycloakRealmUserPasswordManager implements QuarkusTestResourceLife
         client.setDirectAccessGrantsEnabled(true);
         client.setEnabled(true);
 
+        return client;
+    }
+
+    private static ClientRepresentation createClient(String clientId, int accessTokenLifespanSeconds) {
+        ClientRepresentation client = createClient(clientId);
+        client.setAttributes(Map.of("access.token.lifespan", String.valueOf(accessTokenLifespanSeconds)));
         return client;
     }
 

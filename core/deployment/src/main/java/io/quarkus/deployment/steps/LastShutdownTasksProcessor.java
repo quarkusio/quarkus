@@ -4,7 +4,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import io.quarkus.core.Phase;
 import io.quarkus.core.deployment.service.ServiceRegistrar;
-import io.quarkus.core.impl.LastShutdownTasks;
+import io.quarkus.core.service.impl.LastShutdownTasks;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.runtime.ShutdownContext;
 

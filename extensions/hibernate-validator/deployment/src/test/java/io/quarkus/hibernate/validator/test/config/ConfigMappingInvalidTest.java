@@ -53,6 +53,9 @@ public class ConfigMappingInvalidTest {
                     assertTrue(message.contains("validator.server.host must be less than or equal to 3"));
                     assertTrue(message.contains("validator.hierarchy.number must be greater than or equal to 10"));
                     assertTrue(message.contains("validator.repeatable.name size must be between 2"));
+                    assertTrue(message.contains("validator.onlynested.level1.level2.name size must be between 5 and 10"));
+                    assertTrue(message.contains("validator.shareda.shared.value size must be between 5 and 10"));
+                    assertTrue(message.contains("validator.sharedb.shared.value size must be between 5 and 10"));
 
                     assertTrue(message.contains("cloud.port must be greater than or equal to 8000"));
                     assertTrue(message.contains("cloud.log.days must be less than or equal to 15"));
@@ -95,6 +98,53 @@ public class ConfigMappingInvalidTest {
         @Size(max = 10)
         @Size(min = 2)
         String name();
+    }
+
+    @SuppressWarnings("unused")
+    // No Bean Validation constraints anywhere in this mapping's tree. It must still be constructed
+    // successfully alongside the constrained mappings above, without the validator touching it.
+    @ConfigMapping(prefix = "unconstrained")
+    public interface Unconstrained {
+        String name();
+    }
+
+    // Neither the root nor the first level of nesting carries a constraint; the only constraint is two
+    // levels deep. The validator must still find and report it, i.e. the root must not be mistaken for
+    // an unconstrained mapping just because it has no constraint of its own.
+    @ConfigMapping(prefix = "validator.onlynested")
+    public interface OnlyNestedConstrained {
+        String name();
+
+        Level1 level1();
+
+        interface Level1 {
+            String name();
+
+            Level2 level2();
+
+            interface Level2 {
+                @Size(min = 5, max = 10)
+                String name();
+            }
+        }
+    }
+
+    // A plain, top-level interface that is not itself a @ConfigMapping root, but is reused as a nested
+    // group by two independent root mappings. Both owning roots must end up registered for validation,
+    // not just whichever one happens to be discovered first.
+    public interface SharedGroup {
+        @Size(min = 5, max = 10)
+        String value();
+    }
+
+    @ConfigMapping(prefix = "validator.shareda")
+    public interface SharedGroupRootA {
+        SharedGroup shared();
+    }
+
+    @ConfigMapping(prefix = "validator.sharedb")
+    public interface SharedGroupRootB {
+        SharedGroup shared();
     }
 
     @ConfigMapping(prefix = "cloud")

@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.impl.CookieImpl;
@@ -99,6 +101,64 @@ public class OidcUtilsTest {
         for (int i = 0; i < names.size(); i++) {
             assertEquals("q_session_test_chunk_" + (i + 1), names.get(i));
         }
+    }
+
+    @Test
+    public void testGetEmptySessionCookie() {
+
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().tenantId("test").build();
+        Map<String, Object> context = new HashMap<>();
+        // An empty session cookie is a removed cookie which the user agent has not dropped yet
+        String sessionCookieValue = OidcUtils.getSessionCookie(context,
+                Map.of("q_session_test", new CookieImpl("q_session_test", "")), oidcConfig);
+        assertNull(sessionCookieValue);
+        // and it is not registered for the removal, the user agent drops it once it has expired
+        assertNull(context.get(OidcUtils.SESSION_COOKIE_NAME));
+    }
+
+    @Test
+    public void testGetEmptySessionCookieChunks() {
+
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().tenantId("test").build();
+        Map<String, Object> context = new HashMap<>();
+        String sessionCookieValue = OidcUtils.getSessionCookie(context,
+                Map.of("q_session_test_chunk_1", new CookieImpl("q_session_test_chunk_1", ""),
+                        "q_session_test_chunk_2", new CookieImpl("q_session_test_chunk_2", "")),
+                oidcConfig);
+        assertNull(sessionCookieValue);
+        assertNull(context.get(OidcUtils.SESSION_COOKIE_NAME));
+    }
+
+    @Test
+    public void testGetEmptySessionCookieWithSessionCookieChunks() {
+
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().tenantId("test").build();
+        Map<String, Object> context = new HashMap<>();
+        // An empty session cookie means no session, the session cookie chunks are not checked
+        String sessionCookieValue = OidcUtils.getSessionCookie(context,
+                Map.of("q_session_test", new CookieImpl("q_session_test", ""),
+                        "q_session_test_chunk_1", new CookieImpl("q_session_test_chunk_1", "tok"),
+                        "q_session_test_chunk_2", new CookieImpl("q_session_test_chunk_2", "ens")),
+                oidcConfig);
+        assertNull(sessionCookieValue);
+        // and nothing is registered for the removal
+        assertNull(context.get(OidcUtils.SESSION_COOKIE_NAME));
+    }
+
+    @Test
+    public void testGetSessionCookieWithEmptySessionCookieChunk() {
+
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().tenantId("test").build();
+        Map<String, Object> context = new HashMap<>();
+        // The session cookie wins over the chunks
+        String sessionCookieValue = OidcUtils.getSessionCookie(context,
+                Map.of("q_session_test", new CookieImpl("q_session_test", "tokens"),
+                        "q_session_test_chunk_1", new CookieImpl("q_session_test_chunk_1", "")),
+                oidcConfig);
+        assertEquals("tokens", sessionCookieValue);
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        List<String> names = (List) context.get(OidcUtils.SESSION_COOKIE_NAME);
+        assertEquals(List.of("q_session_test"), names);
     }
 
     @Test
@@ -394,5 +454,19 @@ public class OidcUtilsTest {
         assertFalse(OidcUtils.isApplicationJwtContentType(" application/jwt-custom"));
         assertFalse(OidcUtils.isApplicationJwtContentType(" application/json"));
         assertFalse(OidcUtils.isApplicationJwtContentType(null));
+    }
+
+    @Test
+    public void testAttestationRejectsRS256() {
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> OidcUtils.resolveAttestationEcCurve(SignatureAlgorithm.RS256));
+        assertTrue(ex.getMessage().contains("Only EC algorithms (ES256, ES384, ES512) are supported"));
+    }
+
+    @Test
+    public void testAttestationAcceptsEcCurves() {
+        assertEquals("secp256r1", OidcUtils.resolveAttestationEcCurve(SignatureAlgorithm.ES256));
+        assertEquals("secp384r1", OidcUtils.resolveAttestationEcCurve(SignatureAlgorithm.ES384));
+        assertEquals("secp521r1", OidcUtils.resolveAttestationEcCurve(SignatureAlgorithm.ES512));
     }
 }

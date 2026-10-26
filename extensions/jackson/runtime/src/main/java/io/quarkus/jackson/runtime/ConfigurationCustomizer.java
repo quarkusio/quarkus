@@ -4,7 +4,6 @@ import java.time.ZoneId;
 import java.util.TimeZone;
 import java.util.function.UnaryOperator;
 
-import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -18,11 +17,14 @@ import tools.jackson.databind.json.JsonMapper;
 
 @Singleton
 public class ConfigurationCustomizer implements JsonMapperBuilderCustomizer {
-    @Inject
-    JacksonBuildTimeConfig jacksonBuildTimeConfig;
 
-    @Inject
-    JacksonSupport jacksonSupport;
+    private final JacksonBuildTimeConfig jacksonBuildTimeConfig;
+    private final JacksonSupport jacksonSupport;
+
+    public ConfigurationCustomizer(JacksonBuildTimeConfig jacksonBuildTimeConfig, JacksonSupport jacksonSupport) {
+        this.jacksonBuildTimeConfig = jacksonBuildTimeConfig;
+        this.jacksonSupport = jacksonSupport;
+    }
 
     @Override
     public void customize(JsonMapper.Builder builder) {

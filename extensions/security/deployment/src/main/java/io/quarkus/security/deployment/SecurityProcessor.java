@@ -94,10 +94,10 @@ import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -267,6 +267,8 @@ public class SecurityProcessor {
                     "org.bouncycastle.jcajce.provider.asymmetric.EC$Mappings",
                     "org.bouncycastle.jcajce.provider.asymmetric.RSA",
                     "org.bouncycastle.jcajce.provider.asymmetric.RSA$Mappings",
+                    "org.bouncycastle.jcajce.provider.asymmetric.MLKEM",
+                    "org.bouncycastle.jcajce.provider.asymmetric.MLKEM$Mappings",
                     "org.bouncycastle.jcajce.provider.drbg.DRBG",
                     "org.bouncycastle.jcajce.provider.drbg.DRBG$Mappings").methods().fields()
                     .build());
@@ -370,6 +372,23 @@ public class SecurityProcessor {
                     "org.bouncycastle.jcajce.provider.asymmetric.rsa.KeyPairGeneratorSpi",
                     "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi",
                     "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi$SHA256withRSA").methods().fields()
+                    .build());
+            // ML-KEM is used by the hybrid TLS 1.3 key exchange groups (e.g. X25519MLKEM768),
+            // which are offered by default by recent JDK clients
+            reflection.produce(ReflectiveClassBuildItem.builder(
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM512",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM768",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM1024",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM512",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM768",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM1024",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM512",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM768",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM1024").methods().fields()
                     .build());
         }
 
@@ -603,7 +622,7 @@ public class SecurityProcessor {
 
     // Work around https://github.com/quarkusio/quarkus/issues/21374
     @BuildStep
-    void addBouncyCastleExportsToNativeImage(BuildProducer<JPMSExportBuildItem> jpmsExports,
+    void addBouncyCastleExportsToNativeImage(BuildProducer<ModuleExportBuildItem> moduleExports,
             List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
             List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
         boolean isInFipsMode;
@@ -617,8 +636,10 @@ public class SecurityProcessor {
         }
 
         if (isInFipsMode) {
-            jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.internal.spec"));
-            jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.provider"));
+            moduleExports.produce(
+                    new ModuleExportBuildItem("java.base", "org.bouncycastle.fips.core", "sun.security.internal.spec"));
+            moduleExports
+                    .produce(new ModuleExportBuildItem("java.base", "org.bouncycastle.fips.core", "sun.security.provider"));
         }
     }
 

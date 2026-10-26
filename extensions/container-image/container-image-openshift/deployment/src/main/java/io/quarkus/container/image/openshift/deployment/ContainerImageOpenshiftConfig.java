@@ -117,6 +117,16 @@ public interface ContainerImageOpenshiftConfig {
     Duration buildTimeout();
 
     /**
+     * Whether to fail when the build archive cannot be uploaded to the OpenShift build.
+     * <p>
+     * OpenShift may start a build from a partially uploaded archive. Such a build can succeed while producing an
+     * image with missing files, because neither the client nor the builder can detect that the archive was
+     * truncated. Set this property to {@code false} to use the started build instead of failing.
+     */
+    @WithDefault("true")
+    boolean failOnBuildArchiveUploadFailure();
+
+    /**
      * The log level of OpenShift build log.
      */
     @WithDefault(DEFAULT_BUILD_LOG_LEVEL)

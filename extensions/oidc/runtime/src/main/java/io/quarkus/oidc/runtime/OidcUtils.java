@@ -9,8 +9,12 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -76,6 +80,8 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
@@ -186,9 +192,17 @@ public final class OidcUtils {
             return null;
         }
 
-        if (cookies.containsKey(sessionCookieName)) {
+        Cookie sessionCookie = cookies.get(sessionCookieName);
+        if (sessionCookie != null) {
+            if (sessionCookie.getValue().isEmpty()) {
+                // An empty session cookie is most likely a removed cookie which the user agent has not dropped yet.
+                // It means no session is available. The cookie is not registered for the removal because removing it
+                // again would only extend its life in the user agents which keep removed cookies until they expire.
+                LOG.debugf("%s cookie is empty, no session is available", sessionCookieName);
+                return null;
+            }
             context.put(defaultSessionCookieName, List.of(sessionCookieName));
-            return cookies.get(sessionCookieName).getValue();
+            return sessionCookie.getValue();
         } else {
             final String sessionChunkPrefix = sessionCookieName + SESSION_COOKIE_CHUNK;
 
@@ -211,13 +225,16 @@ public final class OidcUtils {
                 }
             }
             if (!sessionCookies.isEmpty()) {
-                context.put(defaultSessionCookieName, new ArrayList<String>(sessionCookies.keySet()));
-
                 StringBuilder sessionCookieValue = new StringBuilder();
                 for (String value : sessionCookies.values()) {
                     sessionCookieValue.append(value);
                 }
-                return sessionCookieValue.toString();
+                if (!sessionCookieValue.isEmpty()) {
+                    context.put(defaultSessionCookieName, new ArrayList<String>(sessionCookies.keySet()));
+                    return sessionCookieValue.toString();
+                }
+                // Empty session cookie chunks are most likely removed cookies which the user agent has not dropped yet
+                LOG.debugf("%s cookie chunks are empty, no session is available", sessionCookieName);
             }
         }
         return null;
@@ -1167,5 +1184,73 @@ public final class OidcUtils {
 
     public static String getUriAuthority(URI uri) {
         return uri.getScheme() + "://" + uri.getAuthority();
+    }
+
+    public static AttestationKeyRegistry.AttestationJwtContext initAttestationJwtContext(OidcTenantConfig oidcConfig,
+            AttestationKeyRegistry registry, boolean selfAttesting) {
+        if (oidcConfig.credentials().attestation().enabled()) {
+            try {
+                SignatureAlgorithm sigAlg = SignatureAlgorithm
+                        .fromAlgorithm(oidcConfig.credentials().attestation().signatureAlgorithm().name());
+                String ecCurve = resolveAttestationEcCurve(sigAlg);
+                KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
+                keyPairGenerator.initialize(new ECGenParameterSpec(ecCurve));
+                // The attestation key pair is only used to self-attest the client: sign the Client Attestation JWT
+                // and publish its public key at the attestation JWKS endpoint. Attesters that delegate to a remote
+                // attestation service sign the Client Attestation JWT with their own key, so no attestation key pair
+                // is generated for them.
+                KeyPair attestationKeyPair = selfAttesting ? keyPairGenerator.generateKeyPair() : null;
+                // The instance key pair is always required: Quarkus is the Client Instance which signs the
+                // proof-of-possession JWT with the instance private key, and its public key is passed to the attester
+                // to be embedded in the Client Attestation JWT 'cnf' claim.
+                KeyPair instanceKeyPair = keyPairGenerator.generateKeyPair();
+                return registry.register(oidcConfig.tenantId().get(), attestationKeyPair, instanceKeyPair,
+                        sigAlg, oidcConfig.credentials().jwt().lifespan());
+            } catch (Exception ex) {
+                throw new RuntimeException("Failed to generate attestation key pairs", ex);
+            }
+        }
+        return null;
+    }
+
+    static String resolveAttestationEcCurve(SignatureAlgorithm sigAlg) {
+        return switch (sigAlg) {
+            case ES256 -> "secp256r1";
+            case ES384 -> "secp384r1";
+            case ES512 -> "secp521r1";
+            default -> throw new RuntimeException(
+                    "Unsupported attestation signature algorithm: " + sigAlg
+                            + ". Only EC algorithms (ES256, ES384, ES512) are supported");
+        };
+    }
+
+    static String buildClientAttestationJwt(String clientId,
+            AttestationKeyRegistry.AttestationJwtContext ctx) {
+        JsonObject cnf = new JsonObject().put("jwk",
+                AttestationKeyRegistry.convertPublicKeyToJwk(ctx.instanceKeyPair().getPublic(),
+                        ctx.signatureAlgorithm()));
+        return Jwt.issuer(clientId)
+                .subject(clientId)
+                .claim(OidcConstants.CONFIRMATION_CLAIM, cnf.getMap())
+                .expiresIn(ctx.lifespan())
+                .jws()
+                .type(OidcConstants.CLIENT_ATTESTATION_JWT_TYPE)
+                .algorithm(ctx.signatureAlgorithm())
+                .keyId(ctx.kid())
+                .sign((PrivateKey) ctx.attestationKeyPair().getPrivate());
+    }
+
+    static String buildClientAttestationPopJwt(String clientId, String audience,
+            AttestationKeyRegistry.AttestationJwtContext ctx) {
+        return Jwt.issuer(clientId)
+                .audience(audience)
+                // A new PoP JWT is created for every request, so keep it short-lived
+                // irrespective of the attestation JWT lifespan.
+                // For self-attestation, attestation and PoP JWTs lifespans are equal.
+                .expiresIn(ctx.lifespan())
+                .jws()
+                .type(OidcConstants.CLIENT_ATTESTATION_POP_JWT_TYPE)
+                .algorithm(ctx.signatureAlgorithm())
+                .sign((PrivateKey) ctx.instanceKeyPair().getPrivate());
     }
 }

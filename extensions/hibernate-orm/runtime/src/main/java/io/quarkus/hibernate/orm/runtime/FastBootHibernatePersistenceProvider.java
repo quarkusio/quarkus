@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.runtime;
 
 import static io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfigPersistenceUnit.HibernateGenerationStrategy.getString;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -47,6 +48,7 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRunti
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
+import io.quarkus.hibernate.orm.runtime.schema.InitScriptSupport;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationRuntimeInitListener;
 
@@ -240,14 +242,15 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     runtimeSettingsResult.settings(),
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
                     true,
-                    runtimeSettingsResult.importScripts());
+                    runtimeSettingsResult.importScripts(), runtimeSettingsResult.populateAfterBoot());
         }
 
         log.debug("Found no matching persistence units");
         return null;
     }
 
-    private record RuntimeSettingsResult(RuntimeSettings settings, SchemaToolingUtil.PreparedImportScripts importScripts) {
+    private record RuntimeSettingsResult(RuntimeSettings settings,
+            List<SchemaToolingUtil.PreparedImportScripts> importScripts, boolean populateAfterBoot) {
     }
 
     private RuntimeSettingsResult buildRuntimeSettings(String persistenceUnitName, RecordedState recordedState,
@@ -255,7 +258,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
         final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
         Builder runtimeSettingsBuilder = new Builder(buildTimeSettings, integrationSettings);
-        SchemaToolingUtil.PreparedImportScripts importScripts = unzipZipFilesAndReplaceZipsInImportFiles(
+        List<SchemaToolingUtil.PreparedImportScripts> importScripts = unzipZipFilesAndReplaceZipsInImportFiles(
                 runtimeSettingsBuilder);
 
         Optional<String> dataSourceName = recordedState.getBuildTimeSettings().getSource().getDataSource();
@@ -266,8 +269,10 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         }
 
         // Inject runtime configuration if the persistence unit was defined by Quarkus configuration
+        boolean populateAfterBoot = false;
         if (!recordedState.isFromPersistenceXml()) {
-            injectRuntimeConfiguration(persistenceUnitConfig, runtimeSettingsBuilder);
+            populateAfterBoot = injectRuntimeConfiguration(persistenceUnitName, persistenceUnitConfig,
+                    runtimeSettingsBuilder);
         }
 
         for (HibernateOrmIntegrationRuntimeDescriptor descriptor : integrationRuntimeDescriptors
@@ -364,7 +369,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             }
         }
 
-        return new RuntimeSettingsResult(runtimeSettingsBuilder.build(), importScripts);
+        return new RuntimeSettingsResult(runtimeSettingsBuilder.build(), importScripts, populateAfterBoot);
     }
 
     public static boolean isPostgresOrDB2(BuildTimeSettings buildTimeSettings) {
@@ -373,12 +378,22 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                 || DatabaseKind.isDB2(dbKind.toString());
     }
 
-    private SchemaToolingUtil.PreparedImportScripts unzipZipFilesAndReplaceZipsInImportFiles(
+    private List<SchemaToolingUtil.PreparedImportScripts> unzipZipFilesAndReplaceZipsInImportFiles(
             Builder runtimeSettingsBuilder) {
-        SchemaToolingUtil.PreparedImportScripts importScripts = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
-                (String) runtimeSettingsBuilder.get(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE));
-        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE,
-                importScripts.getRewrittenValue());
+        List<SchemaToolingUtil.PreparedImportScripts> importScripts = new ArrayList<>();
+        try {
+            // Data init scripts and schema init scripts alike
+            for (String setting : List.of(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE,
+                    AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCRIPT_SOURCE)) {
+                SchemaToolingUtil.PreparedImportScripts scripts = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
+                        (String) runtimeSettingsBuilder.get(setting));
+                importScripts.add(scripts);
+                runtimeSettingsBuilder.put(setting, scripts.getRewrittenValue());
+            }
+        } catch (RuntimeException e) {
+            importScripts.forEach(SchemaToolingUtil.PreparedImportScripts::close);
+            throw e;
+        }
         return importScripts;
     }
 
@@ -506,7 +521,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         runtimeSettingsBuilder.put(AvailableSettings.DATASOURCE, dataSource);
     }
 
-    private static void injectRuntimeConfiguration(HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
+    /**
+     * @return whether the data init script must be executed once the session factory is built,
+     *         see {@link InitScriptSupport#configureDataManagement}
+     */
+    private static boolean injectRuntimeConfiguration(String persistenceUnitName,
+            HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
             Builder runtimeSettingsBuilder) {
 
         HibernateOrmRuntimeConfigPersistenceUnit.HibernateGenerationStrategy generationStrategy = persistenceUnitConfig
@@ -581,6 +601,10 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
         runtimeSettingsBuilder.put(HibernateHints.HINT_FLUSH_MODE,
                 persistenceUnitConfig.flush().mode().getHibernateFlushMode());
+
+        // Data management; must come after the schema management strategy has been applied
+        return InitScriptSupport.configureDataManagement(persistenceUnitName, persistenceUnitConfig, generationStrategy,
+                runtimeSettingsBuilder);
     }
 
 }

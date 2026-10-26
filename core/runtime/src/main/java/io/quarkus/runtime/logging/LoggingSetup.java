@@ -169,6 +169,7 @@ public final class LoggingSetup {
             final Supplier<String> bannerSupplier,
             boolean includeFilters) {
         boolean color = false;
+        Supplier<String> deferredBannerSupplier = null;
         if (formatter == null) {
             if (isColorEnabled(consoleRuntimeConfig, config)) {
                 formatter = new ColorPatternFormatter(config.darken(), config.format());
@@ -176,12 +177,17 @@ public final class LoggingSetup {
             } else {
                 formatter = new PatternFormatter(config.format());
             }
-            if (bannerSupplier != null) {
-                formatter = new TextBannerFormatter(bannerSupplier, ExtFormatter.wrap(formatter, false));
-            }
+            deferredBannerSupplier = bannerSupplier;
         }
         final ConsoleHandler consoleHandler = new ConsoleHandler(
                 config.stderr() ? ConsoleHandler.Target.SYSTEM_ERR : ConsoleHandler.Target.SYSTEM_OUT, formatter);
+        if (deferredBannerSupplier != null) {
+            consoleHandler.setFormatter(
+                    new TextBannerFormatter(deferredBannerSupplier, ExtFormatter.wrap(formatter, false)));
+        }
+        // Use current System.out/err, not the static reference captured at class-load time;
+        // this also triggers writeHead, which prints the banner exactly once to the correct stream
+        consoleHandler.setOutputStream(config.stderr() ? System.err : System.out);
         consoleHandler.setLevel(config.level());
         consoleHandler.setErrorManager(errorManager);
         applyFilter(includeFilters, errorManager, cleanupFilter, config.filter(), namedFilters, consoleHandler);
@@ -1157,8 +1163,15 @@ public final class LoggingSetup {
         }
 
         // apply the cleanup filter to the handlers already installed on the root logger
-        for (Handler handler : LogManager.getLogManager().getLogger("").getHandlers()) {
-            handler.setFilter(cleanupFilter);
+        final java.util.logging.Logger julRootLogger = LogManager.getLogManager().getLogger("");
+        for (Handler handler : julRootLogger.getHandlers()) {
+            if (handler instanceof ExtHandler) {
+                handler.setFilter(cleanupFilter);
+            } else {
+                // Drop any non-JBoss-LogManager handler from the JUL root logger.
+                log.debugf("Removing foreign handler %s from the root logger", handler.getClass().getName());
+                julRootLogger.removeHandler(handler);
+            }
         }
 
         ArrayList<Handler> handlers = new ArrayList<>(

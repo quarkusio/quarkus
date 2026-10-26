@@ -502,6 +502,15 @@ The option is available for all handler types:
 ** socket: `quarkus.log.socket.json.mdc.flat-fields`
 ** Named handlers, such as `quarkus.log.handler.console.<name>.json.mdc.flat-fields`
 +
+Use `quarkus.log.console.json.mdc.key-overrides.<mdc-key>=<field-name>` to write MDC entries under a different name, for example when a log aggregator expects the OpenTelemetry `traceId` entry under another name.
+`key-overrides` renames the `mdc` field itself, while `mdc.key-overrides` renames the entries in it, nested or flat.
++
+.Example: renamed MDC entries (`mdc.key-overrides.traceId=TraceId`)
+[source,json]
+----
+{"timestamp":"...","message":"Handling request","mdc":{"TraceId":"0af7651916cd43dd8448eb211c80319c","userId":"42"}}
+----
++
 Set `quarkus.log.console.json.access-log.structured=true` to enrich HTTP access log records with a nested `accessLog` JSON object.
 Access log records are those produced by the `io.quarkus.http.access-log` logger, which is active when `quarkus.http.access-log.enabled=true`.
 When the option is disabled (the default), access log entries appear as plain `message` strings with no structured fields.

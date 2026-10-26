@@ -38,7 +38,7 @@ public class QuartzSupport {
             }
             // Determine the driver dialect
             Optional<JDBCDataSource> selectedDataSource = dataSources.stream()
-                    .filter(i -> runtimeConfig.deferredDatasourceName().get().equals(i.getName()))
+                    .filter(i -> runtimeConfig.deferredDatasourceName().get().equals(i.name()))
                     .findFirst();
 
             if (!selectedDataSource.isPresent()) {
@@ -49,7 +49,7 @@ public class QuartzSupport {
                 throw new ConfigurationException(message);
             }
 
-            String dataSourceKind = selectedDataSource.get().getDbKind();
+            String dataSourceKind = selectedDataSource.get().dbKind();
             if (DatabaseKind.isPostgreSQL(dataSourceKind)) {
                 this.driverDialect = Optional.of(QuarkusPostgreSQLDelegate.class.getName());
             } else if (DatabaseKind.isH2(dataSourceKind)) {

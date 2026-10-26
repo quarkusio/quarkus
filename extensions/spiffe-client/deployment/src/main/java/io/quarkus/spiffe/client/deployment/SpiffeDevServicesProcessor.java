@@ -277,6 +277,7 @@ public final class SpiffeDevServicesProcessor {
 
             try {
                 String token = Jwt.subject(DEFAULT_SPIFFE_ID)
+                        .issuer(TEST_TRUST_DOMAIN)
                         .audience(audiences)
                         .expiresIn(DEFAULT_TTL_SECONDS)
                         .jws()

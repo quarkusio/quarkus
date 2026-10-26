@@ -824,10 +824,10 @@ class JarTreeShaker {
      * incurs for the {@code [,:]} character class.
      */
     static void matchClassNames(String str, Set<String> knownClasses, Set<String> refs) {
-        if (str.indexOf(',') >= 0 || str.indexOf(':') >= 0) {
+        if (str.indexOf(',') >= 0 || str.indexOf(':') >= 0 || str.indexOf('\0') >= 0) {
             int start = 0;
             for (int i = 0; i <= str.length(); i++) {
-                if (i == str.length() || str.charAt(i) == ',' || str.charAt(i) == ':') {
+                if (i == str.length() || str.charAt(i) == ',' || str.charAt(i) == ':' || str.charAt(i) == '\0') {
                     if (i > start) {
                         String part = str.substring(start, i);
                         if (knownClasses.contains(part)) {

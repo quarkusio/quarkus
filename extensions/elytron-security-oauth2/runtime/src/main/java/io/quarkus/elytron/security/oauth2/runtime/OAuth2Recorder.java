@@ -23,22 +23,12 @@ import org.wildfly.security.auth.server.SecurityRealm;
 import org.wildfly.security.authz.Attributes;
 
 import io.quarkus.elytron.security.oauth2.runtime.auth.ElytronOAuth2CallerPrincipal;
-import io.quarkus.elytron.security.oauth2.runtime.auth.OAuth2Augmentor;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
-@Recorder
 public class OAuth2Recorder {
-    private final RuntimeValue<OAuth2RuntimeConfig> runtimeConfig;
 
-    public OAuth2Recorder(final RuntimeValue<OAuth2RuntimeConfig> runtimeConfig) {
-        this.runtimeConfig = runtimeConfig;
-    }
-
-    public RuntimeValue<SecurityRealm> createRealm()
+    public static SecurityRealm createRealm(OAuth2RuntimeConfig runtimeConfig)
             throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, KeyManagementException {
-        OAuth2RuntimeConfig runtimeConfig = this.runtimeConfig.getValue();
 
         if (!runtimeConfig.clientId().isPresent() || !runtimeConfig.clientSecret().isPresent()
                 || !runtimeConfig.introspectionUrl().isPresent()) {
@@ -72,10 +62,10 @@ public class OAuth2Recorder {
                 .claimToPrincipal(claims -> new ElytronOAuth2CallerPrincipal(attributesToMap(claims)))
                 .build();
 
-        return new RuntimeValue<>(tokenRealm);
+        return tokenRealm;
     }
 
-    private Map<String, Object> attributesToMap(Attributes claims) {
+    private static Map<String, Object> attributesToMap(Attributes claims) {
         Map<String, Object> attributeMap = new HashMap<>();
         for (Attributes.Entry entry : claims.entries()) {
             if (entry.size() > 1) {
@@ -87,7 +77,7 @@ public class OAuth2Recorder {
         return attributeMap;
     }
 
-    private SSLContext createSSLContext(OAuth2RuntimeConfig runtimeConfig)
+    private static SSLContext createSSLContext(OAuth2RuntimeConfig runtimeConfig)
             throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         try (InputStream is = new FileInputStream(runtimeConfig.caCertFile().get())) {
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
@@ -106,10 +96,6 @@ public class OAuth2Recorder {
 
             return sslContext;
         }
-    }
-
-    public RuntimeValue<OAuth2Augmentor> augmentor(OAuth2BuildTimeConfig buildTimeConfig) {
-        return new RuntimeValue<>(new OAuth2Augmentor(buildTimeConfig.roleClaim()));
     }
 
 }

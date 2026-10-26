@@ -1492,11 +1492,16 @@ class MyDevModeProcessor {
 <2> The main build step will only be executed in dev mode.
 <3> The other build step will only be executed in dev mode.
 
-[id='bytecode-recording']
+[id='application-startup-services']
 === Application Startup and Services
 
-Quarkus uses a compile-time built, runtime-executed dependency graph of lightweight startup services instead of executing build steps directly at runtime. This allows for explicit dependency declarations, deterministic initialization ordering, and skipping boot-time reflection and proxy-creation overhead.
+Quarkus extensions need to perform initialization work at application startup: creating CDI beans, opening connections, binding sockets, starting subsystems. Extensions declare this work as lightweight services that form an explicit dependency graph. Each service specifies exactly what it needs to run (other services, configuration, build-time state) and what it produces (typed values, initialization side effects). At runtime, Quarkus executes this graph directly: services start as soon as their dependencies are satisfied, allowing independent work to proceed in parallel while respecting ordering constraints.
 
+Services are build-time declarations that generate runtime bytecode. You provide a lambda expression that runs at startup. The lambda is transliterated into bytecode at build time, with captured values embedded as constants. This preserves Quarkus's build-time/runtime split while giving you direct control over initialization.
+
+The core guarantee is **deterministic partial ordering**: if service A depends on service B, then B always completes before A starts. Services with no dependency relationship may start in any order or concurrently, but any given dependency chain always executes in the same order. Shutdown reverses the graph: services stop in the exact reverse of their start dependencies, so cleanup always happens in a safe sequence.
+
+[id='service-registrar-api']
 ==== Services and the ServiceRegistrar API
 
 The main entry point for defining startup services is `io.quarkus.core.deployment.service.ServiceRegistrar`. An instance of `ServiceRegistrar` can be injected directly into any `@BuildStep` method:
@@ -1504,27 +1509,21 @@ The main entry point for defining startup services is `io.quarkus.core.deploymen
 [source%nowrap,java]
 ----
 @BuildStep
-ServiceStartBuildItem setup(ServiceRegistrar reg) {
+void setup(ServiceRegistrar reg) {
     reg.forService("io.quarkus.hello")
        .onStart(ctx -> System.out.println("Hello World"));
-    return new ServiceStartBuildItem("hello");
 }
 ----
 
 ===== Service Types
 
-Services can be typed (producing a value at startup) or void (producing no value, identified by a unique name):
-
-* *Typed Services*: Defined via `reg.forService(Class<T>)` or `reg.forService(Class<T>, String name)`.
-* *Void Services*: Defined via `reg.forService(String name)` or `reg.forService(List<String> nameParts)`. By convention, void service names use hierarchical dot-separated names, e.g., `"io.quarkus.<extension>.<purpose>"`.
+Services can be typed or void. Typed services produce a value at startup and are defined via `reg.forService(Class<T>)` or `reg.forService(Class<T>, String name)`. The value they produce becomes available to other services that depend on them. Void services produce no value and are identified solely by name, defined via `reg.forService(String name)` or `reg.forService(List<String> nameParts)`. By convention, void service names use hierarchical dot-separated names like `"io.quarkus.<extension>.<purpose>"`.
 
 ===== Synchronous and Asynchronous Start Actions
 
-Services can be started either synchronously or asynchronously, depending on which method is called on the service builder:
+Services can be started either synchronously or asynchronously. When using synchronous start (`onStart`), the service is considered started when the action returns. The action receives a `StartContext` as its first parameter, followed by any declared dependencies. Typed services return the service value; void services return nothing.
 
-* *Synchronous Start* (`onStart`): The service is considered started when the action returns. The action receives a `StartContext` (for void services) or returns the service value directly (for typed services).
-
-* *Asynchronous Start* (`onStartAsync`): The action is initially invoked in the calling thread, but the service is not considered started until a completion method is called. The action receives an `AsyncVoidStartContext` (for void services) or `AsyncStartContext<T>` (for typed services). The completion method can be called from the same thread or from a different thread, allowing the action to schedule asynchronous work.
+When using asynchronous start (`onStartAsync`), the action is initially invoked in the calling thread, but the service is not considered started until a completion method is called. The action receives an `AsyncVoidStartContext` (for void services) or `AsyncStartContext<T>` (for typed services). The completion method can be called from the same thread or from a different thread, allowing the action to schedule asynchronous work.
 
 .Example of synchronous start
 [source%nowrap,java]
@@ -1537,7 +1536,7 @@ reg.forService(MyService.class)
 [source%nowrap,java]
 ----
 reg.forService(MyService.class)
-   .require(ExecutorService.class)
+   .require(ScheduledExecutorService.class)
    .onStartAsync((ctx, executor) -> {
        // Action runs in the calling thread initially
        executor.execute(() -> {
@@ -1565,11 +1564,19 @@ reg.forService("io.quarkus.my-async-service")
    });
 ----
 
-The async start context provides three completion methods:
+The asynchronous start context provides three completion methods:
 
-* `startComplete()` or `startComplete(T value)`: Indicates successful completion
-* `startFailed(Throwable)`: Indicates the service failed to start
-* `startCanceled()`: Indicates the service start was canceled
+* `startComplete()` or `startComplete(T value)` indicates that the service start operation completed successfully.
+* `startFailed(Throwable)` indicates that the service failed to start.
+* `startCanceled()` indicates that the service start was canceled.
+
+===== When to Use Asynchronous Start or Stop
+
+In most cases, synchronous start and stop are adequate. Use `onStart()` and `ctx.onStop()` when the initialization or cleanup work completes before the method returns.
+
+Use asynchronous start and stop when the underlying resource being initialized uses a callback-based completion mechanism. If starting a server, opening a connection, or initializing a subsystem signals completion via a callback, `CompletableFuture`, or listener rather than blocking until complete, wire that callback to the asynchronous context's completion method.
+
+In other words, use `onStartAsync()` when initialization continues after the action returns and you need to signal completion from a different thread or callback. The same principle applies to stop handlers: use `onStopAsync()` when shutdown is callback-driven, `onStop()` when it completes synchronously.
 
 ==== Service Startup Phases
 
@@ -1584,7 +1591,7 @@ reg.forService("io.quarkus.my-service")
 
 The available startup phases (defined in `io.quarkus.core.Phase`) in execution order are:
 
-1. `STATIC_INIT`: Runs during static initialization of the generated application class. Results are baked into the native image heap.
+1. `STATIC_INIT`: Runs during static initialization of the generated application class. Results are baked into the native image heap when building a native image.
 2. `CONFIG`: Registers configuration property classes, validates configuration, and reports deprecations.
 3. `LOGGING`: Reconfigures the log manager with real runtime configuration (log levels, handlers, formatters).
 4. `INFRASTRUCTURE`: Creates foundational infrastructure (event loops, executors, TLS registries, transaction managers).
@@ -1599,6 +1606,18 @@ The available startup phases (defined in `io.quarkus.core.Phase`) in execution o
 ====
 The runtime does not wait for all services in phase _N_ to complete before starting services in phase _N+1_. Services start as soon as their individual dependencies are satisfied.
 ====
+
+==== Execution Model
+
+At build time, Quarkus constructs a directed acyclic graph (DAG) of service nodes based on the dependency declarations you provide. Each service is a node; each `require()`, `after()`, or `before()` call creates an edge. At runtime, the generated startup code executes this graph directly.
+
+Services form a partial order: if service A depends on service B, then B always completes before A starts. Services with no dependency relationship may execute in any order or concurrently. The runtime may exploit this parallelism: for example, independent services may start simultaneously, constrained only by their declared dependencies.
+
+The execution guarantee is deterministic: given the same dependency graph, the same dependency chains always execute in the same order across runs. What varies is the interleaving of independent work. If services A and B have no dependency relationship, they may start in either order or overlap in time, but if A depends on C and B depends on C, then C always completes before both A and B start.
+
+When a service fails to start (by throwing an exception from `onStart()` or calling `startFailed()` from an asynchronous context), the failure propagates to all services that transitively depend on it. Those dependent services never start. Services that have no dependency path to the failed service still execute and complete their initialization. The application startup fails overall, but the partial graph that did execute represents a consistent state: every service that started had all its dependencies satisfied. All successfully started services are then stopped cleanly before the process exits.
+
+Shutdown (whether triggered by failure or normal application termination) reverses the dependency graph. Services stop in the exact reverse order of their start dependencies: if A started after B, then A stops before B. This ensures that cleanup always happens in a safe sequence — a service's dependencies remain available throughout its stop handler.
 
 ==== Declaring Dependencies and Ordering
 
@@ -1635,6 +1654,67 @@ reg.forService("io.quarkus.vertx.netty-cleanup")
    });
 ----
 
+===== Optional Service Dependencies
+
+When a service might or might not be present, use `request()` instead of `require()`. The dependency is injected as `Optional<T>`:
+
+[source%nowrap,java]
+----
+reg.forService("io.quarkus.my-feature")
+   .request(MetricsFactory.class)
+   .onStart((ctx, metricsFactory) -> {
+       if (metricsFactory.isPresent()) {
+           // Configure metrics
+       }
+   });
+----
+
+Use `request()` when depending on services from optional extensions or when the service might be conditionally produced.
+
+===== Consuming Multiple Services
+
+To consume all services of a given type, use `consumeAll(Class<T>)`. The services are injected as a `Map<String, T>` where keys are the service names:
+
+[source%nowrap,java]
+----
+reg.forService("io.quarkus.http.auth")
+   .consumeAll(HttpAuthMechanism.class)
+   .onStart((ctx, mechanisms) -> {
+       for (Map.Entry<String, HttpAuthMechanism> entry : mechanisms.entrySet()) {
+           String name = entry.getKey();
+           HttpAuthMechanism mechanism = entry.getValue();
+           // Register each mechanism
+       }
+   });
+----
+
+Services consumed by `consumeAll()` must be named (created via `forService(Class<T>, String name)`). Only one level of the naming hierarchy is consumed: `consumeAll(Foo.class)` will consume services registered as `forService(Foo.class, "bar")` but will not consume services registered as `forService(Foo.class, List.of("bar", "baz"))`.
+
+===== Optional Service Production
+
+A service can declare that it may produce no value at runtime by calling `.optional()` on the builder. This changes the action's return type to `Optional<T>`:
+
+[source%nowrap,java]
+----
+reg.forService(CacheProvider.class)
+   .optional()
+   .onStart(ctx -> {
+       if (cacheConfig.enabled()) {
+           return Optional.of(new CacheProvider());
+       } else {
+           return Optional.empty();
+       }
+   });
+----
+
+Returning `Optional.empty()` marks the service as present-but-valueless. This is different from a service failing to start:
+
+* Services that `require()` an optional service will fail at runtime if the service returned empty.
+* Services that `request()` an optional service will receive an empty `Optional` if the service returned empty.
+* Services using `consumeAll()` skip optional services that returned empty — they do not appear in the map.
+
+Use `.optional()` for services that may legitimately have nothing to produce based on configuration or runtime conditions.
+
 ==== Lambda Capture Rules
 
 Because the action lambda bytecode (defined inside `.onStart()`) is executed at runtime, values from the build step can be captured inside the lambda under strict rules.
@@ -1642,13 +1722,14 @@ Because the action lambda bytecode (defined inside `.onStart()`) is executed at 
 ===== Supported Captures
 * Primitives, `String`, `Class`, and enum values.
 * Immutable collections (e.g., via `List.of()`, `Set.copyOf()`, `Map.copyOf()`).
-* Configuration mappings from `BUILD_AND_RUN_TIME_FIXED` and `RUN_TIME` phases.
+* Configuration mappings from `BUILD_AND_RUN_TIME_FIXED` phase.
 * `Constable` values (any type implementing `java.lang.constant.Constable` with `describeConstable()`).
 * Record values, provided all their components are recursively capturable.
 
 ===== Unsupported Captures (Build Errors)
 * Mutable collections (always copy them via `List.copyOf()` or `Set.copyOf()` before the lambda).
 * `BUILD_TIME` configuration objects (extract the specific values into local variables first).
+* `RUN_TIME` configuration objects (use `.require(ConfigType.class)` instead).
 * Arbitrary runtime objects (obtain them via `.require()` instead).
 
 ==== Critical Pitfalls & Best Practices
@@ -1661,7 +1742,9 @@ Because service lambda bodies run at runtime, they must never reference, instant
 * *Solution*: Always place helper methods, custom interfaces, or static factory methods inside your **runtime** module classes (which are present on both classpaths).
 
 ===== 2. Package-Private Visibility
-Lambda bytecode runs at runtime but references runtime classes directly. Package-private classes can become inaccessible from the generated consolidated class. Make classes public or move them to public subpackages.
+Service lambdas are transliterated into generated bytecode that executes in a runtime context where package-private access can fail. The failure mode is subtle — it typically occurs when the lambda contains nested lambdas, anonymous classes, or method references that indirectly reference package-private runtime types. If you encounter an `IllegalAccessError` at runtime involving a package-private class that appears to be reachable from your service lambda, this is the cause.
+
+The solution is to make referenced runtime classes `public`. If you are promoting a class from package-private to public solely for service access (and it was not previously part of your public API), move it to a `.impl` subpackage to signal that it remains internal.
 
 ===== 3. Use `require()` instead of direct class queries
 Always access CDI beans through `.require(BeanContainer.class)` instead of direct `Arc.container()` calls to ensure proper dependency graph tracking and teardown ordering.
@@ -1686,11 +1769,9 @@ Services can register cleanup actions inside the `onStart` or `onStartAsync` act
 
 ===== Synchronous and Asynchronous Stop Handlers
 
-Similar to start actions, stop handlers can be either synchronous or asynchronous:
+Similar to start actions, stop handlers can be either synchronous or asynchronous. When using synchronous stop (`ctx.onStop(Runnable)`), the service is considered stopped when the runnable returns.
 
-* *Synchronous Stop* (`ctx.onStop(Runnable)`): The service is considered stopped when the runnable returns.
-
-* *Asynchronous Stop* (`ctx.onStopAsync(Consumer<AsyncStopContext>)`): The stop handler is initially invoked in the calling thread, but the service is not considered stopped until `AsyncStopContext.stopComplete()` is called. The completion method can be called from the same thread or from a different thread, allowing the handler to schedule asynchronous cleanup work.
+When using asynchronous stop (`ctx.onStopAsync(Consumer<AsyncStopContext>)`), the stop handler is initially invoked in the calling thread, but the service is not considered stopped until `AsyncStopContext.stopComplete()` is called. The completion method can be called from the same thread or from a different thread, allowing the handler to schedule asynchronous cleanup work.
 
 .Example of synchronous stop
 [source%nowrap,java]
@@ -1724,6 +1805,7 @@ reg.forService(MyService.class)
 
 NOTE: The `AsyncStopContext.stopComplete()` method is idempotent. Calling it multiple times has no additional effect beyond the first call.
 
+[id='bytecode-recording']
 [id='legacy-bytecode-recording']
 === Legacy Bytecode Recorders (Deprecated)
 
@@ -2872,19 +2954,39 @@ cd rest-json
 ===== Capabilities
 
 A _capability_ represents a technical capability that can be queried by other extensions.
-An extension may provide multiple capabilities and multiple extensions can provide the same capability.
+An extension may provide multiple capabilities, but only a single provider of a given capability is allowed in an application: if more than one is detected, the build fails.
 By default, capabilities are not displayed to users.
 Capabilities should be used when checking for the presence of an extension rather than class path based checks.
 
-Capabilities can be registered in a <<build-step-processors>> method that produces a `CapabilityBuildItem`:
+The preferred way to declare the capabilities an extension provides (or requires) is by configuring the `quarkus-extension-maven-plugin` in the runtime module's `pom.xml`:
+
+[source,xml]
+----
+<plugin>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-extension-maven-plugin</artifactId>
+    <configuration>
+        <capabilities>
+            <provides>org.acme.test-transactions</provides>
+            <provides>org.acme.test-metrics</provides>
+        </capabilities>
+    </configuration>
+</plugin>
+----
+
+See xref:capabilities.adoc[Extension capabilities] for the full details, including required capabilities and the Gradle equivalent.
+
+Capabilities can also be registered in a <<build-step-processors>> method that produces a `CapabilityBuildItem`.
+However, capabilities declared this way are not part of the extension descriptor, so they are not visible to the Quarkus dev tools
+and cannot be taken into account when checking extension compatibility while creating a project or adding extensions:
 
 .TestProcessor#capability()
 [source,java]
 ----
     @BuildStep
     void capabilities(BuildProducer<CapabilityBuildItem> capabilityProducer) {
-        capabilityProducer.produce(new CapabilityBuildItem("org.acme.test-transactions"));
-        capabilityProducer.produce(new CapabilityBuildItem("org.acme.test-metrics"));
+        capabilityProducer.produce(new CapabilityBuildItem("org.acme.test-transactions", "org.acme:test-extension"));
+        capabilityProducer.produce(new CapabilityBuildItem("org.acme.test-metrics", "org.acme:test-extension"));
     }
 ----
 
@@ -2902,7 +3004,7 @@ Extensions can consume registered capabilities using the `Capabilities` build it
 ----
 
 Capabilities should follow the naming conventions of Java packages; e.g. `io.quarkus.security.jpa`.
-Capabilities provided by core extensions should be listed in the `io.quarkus.deployment.Capability` enum and their name should always start with the `io.quarkus` prefix.
+Capabilities provided by core extensions should be listed in the `io.quarkus.deployment.Capability` interface and their name should always start with the `io.quarkus` prefix.
 
 ==== Bean Defining Annotations
 The CDI layer processes CDI beans that are either explicitly registered or that it discovers based on bean defining annotations as defined in https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#bean_defining_annotations[2.5.1. Bean defining annotations]. You can expand this set of annotations to include annotations your extension processes using a `BeanDefiningAnnotationBuildItem` as shown in this `TestProcessor#registerBeanDefinningAnnotations` example:

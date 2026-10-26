@@ -1,7 +1,5 @@
 package io.quarkus.amazon.lambda.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
@@ -14,6 +12,8 @@ import io.quarkus.amazon.lambda.runtime.AmazonLambdaApi;
 import io.quarkus.amazon.lambda.runtime.LambdaHotReplacementRecorder;
 import io.quarkus.amazon.lambda.runtime.MockEventServer;
 import io.quarkus.amazon.lambda.runtime.MockEventServerConfig;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -22,7 +22,6 @@ import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -33,13 +32,14 @@ public class DevServicesLambdaProcessor {
     private static final Logger log = Logger.getLogger(DevServicesLambdaProcessor.class);
 
     @BuildStep(onlyIf = IsLiveReloadSupportedByLaunchMode.class)
-    @Record(STATIC_INIT)
     public void enableHotReplacementChecker(LaunchModeBuildItem launchMode,
-            LambdaHotReplacementRecorder recorder,
-            LambdaObjectMapperInitializedBuildItem dependency) {
+            ServiceRegistrar serviceRegistrar) {
         if (launchMode.getLaunchMode().isDevOrTest()) {
             if (!legacyTestingEnabled()) {
-                recorder.enable();
+                serviceRegistrar
+                        .forService("io.quarkus.amazon-lambda.hot-replacement")
+                        .atPhase(Phase.STATIC_INIT)
+                        .onStart(ctx -> LambdaHotReplacementRecorder.enable());
             }
         }
     }

@@ -55,6 +55,7 @@ public class GeneratedAnnotationWithReflectionFreeSerializersTest extends Abstra
                                     FormatBean.class,
                                     FormatArrayShapeBean.class,
                                     FormatArrayShapeNoOrderBean.class,
+                                    FormatArrayShapeNoCreatorBean.class,
                                     FormatStringShapeBean.class,
                                     FormatNumberBooleanBean.class,
                                     FormatDateTimestampBean.class,

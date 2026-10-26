@@ -403,6 +403,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
     private ResultHandle createDeserializedObject(DeserializationData deserData) {
         ResultHandle[] params = new ResultHandle[deserData.constructor.parameters().size()];
+        // the bean doesn't exist yet, so like Jackson use its class as the referrer of any error path
+        ResultHandle referrer = deserData.methodCreator.loadClass(deserData.classInfo.name().toString());
         int i = 0;
         for (MethodParameterInfo paramInfo : deserData.constructor.parameters()) {
             FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(deserData.classInfo, paramInfo, deserData.namingStrategy);
@@ -428,8 +430,15 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 missingBranch.throwException(exception);
             }
 
+            if (fieldSpecs.fieldType.kind() == Type.Kind.PRIMITIVE) {
+                // like Jackson, a missing primitive creator property is treated as null
+                checkNullForPrimitive(deserData.methodCreator.ifNull(fieldValue).trueBranch(), fieldSpecs,
+                        deserData.methodCreator.getMethodParam(1), referrer);
+            }
+
             ResultHandle paramValue = readValueFromJson(deserData.classCreator, deserData.methodCreator,
-                    deserData.methodCreator.getMethodParam(1), fieldSpecs, deserData.typeParametersIndex, fieldValue);
+                    deserData.methodCreator.getMethodParam(1), fieldSpecs, deserData.typeParametersIndex, fieldValue,
+                    referrer);
             if (paramValue == null) {
                 // the value of this parameter cannot be deserialized in a reflection-free way (e.g. its
                 // type is polymorphic), so give up generating the deserializer for the whole class
@@ -937,7 +946,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         }
 
         ResultHandle valueHandle = readValueFromJson(deserData.classCreator, effectiveBytecode, deserializationContext,
-                fieldSpecs, deserData.typeParametersIndex, fieldValue);
+                fieldSpecs, deserData.typeParametersIndex, fieldValue, objHandle);
         if (valueHandle == null) {
             return false;
         }
@@ -1006,11 +1015,11 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
     private ResultHandle readValueFromJson(ClassCreator classCreator, BytecodeCreator bytecode,
             ResultHandle deserializationContext, FieldSpecs fieldSpecs, Map<String, Integer> typeParametersIndex,
-            ResultHandle valueNode) {
+            ResultHandle valueNode, ResultHandle referrer) {
         Type fieldType = fieldSpecs.fieldType;
         String fieldTypeName = fieldType.name().toString();
         if (JacksonSerializationUtils.isBasicJsonType(fieldType)) {
-            return readValueForPrimitiveFields(bytecode, fieldType, valueNode);
+            return readValueForPrimitiveFields(bytecode, fieldSpecs, valueNode, deserializationContext, referrer);
         }
 
         if (hasJsonTypeInfoInTypeChain(fieldType)) {
@@ -1121,18 +1130,22 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return setter;
     }
 
-    private static ResultHandle readValueForPrimitiveFields(BytecodeCreator bytecode, Type fieldType,
-            ResultHandle valueNode) {
+    private static ResultHandle readValueForPrimitiveFields(BytecodeCreator bytecode, FieldSpecs fieldSpecs,
+            ResultHandle valueNode, ResultHandle deserializationContext, ResultHandle referrer) {
+        Type fieldType = fieldSpecs.fieldType;
         AssignableResultHandle result = bytecode.createVariable(DescriptorUtils.typeToString(fieldType));
 
         BranchResult isValueNull = bytecode.ifNull(valueNode);
 
+        // a missing value (e.g. an element beyond the end of a too short ARRAY-shaped bean) keeps the default
+        // value, as in Jackson; a missing primitive creator property is checked by createDeserializedObject
         BytecodeCreator isValueNullTrue = isValueNull.trueBranch();
         isValueNullTrue.assign(result, JacksonSerializationUtils.getDefaultValue(isValueNullTrue, fieldType));
 
         BranchResult isNullNode = isValueNull.falseBranch()
                 .ifTrue(isValueNull.falseBranch().invokeVirtualMethod(ofMethod(JsonNode.class, "isNull", boolean.class),
                         valueNode));
+        checkNullForPrimitive(isNullNode.trueBranch(), fieldSpecs, deserializationContext, referrer);
         isNullNode.trueBranch().assign(result, JacksonSerializationUtils.getDefaultValue(isNullNode.trueBranch(), fieldType));
 
         BytecodeCreator isValueNullFalse = isNullNode.falseBranch();
@@ -1172,6 +1185,23 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         isValueNullFalse.assign(result, convertedValue);
 
         return result;
+    }
+
+    /**
+     * For a primitive field, emits a call to {@link JacksonMapperUtil#checkNullForPrimitive} that fails when its value
+     * is null and {@code FAIL_ON_NULL_FOR_PRIMITIVES} is enabled. The feature is checked at runtime, so that it also
+     * honors the customizations of the {@code ObjectMapper} and of the {@code ObjectReader} in use.
+     */
+    private static void checkNullForPrimitive(BytecodeCreator bytecode, FieldSpecs fieldSpecs,
+            ResultHandle deserializationContext, ResultHandle referrer) {
+        if (fieldSpecs.fieldType.kind() != Type.Kind.PRIMITIVE) {
+            return;
+        }
+        bytecode.invokeStaticMethod(
+                ofMethod(JacksonMapperUtil.class, "checkNullForPrimitive", void.class,
+                        DeserializationContext.class, Object.class, String.class, Class.class),
+                deserializationContext, referrer, bytecode.load(fieldSpecs.jsonName),
+                bytecode.loadClass(fieldSpecs.fieldType.name().toString()));
     }
 
     @Override
@@ -1427,7 +1457,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         }
 
         ResultHandle valueHandle = readValueFromJsonStreaming(classCreator, effectiveBytecode, parser, ctxt,
-                fieldSpecs, typeParametersIndex);
+                fieldSpecs, typeParametersIndex, objHandle);
         if (valueHandle == null) {
             return false;
         }
@@ -1449,12 +1479,12 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
     private ResultHandle readValueFromJsonStreaming(ClassCreator classCreator, BytecodeCreator bytecode,
             ResultHandle parser, ResultHandle deserializationContext,
-            FieldSpecs fieldSpecs, Map<String, Integer> typeParametersIndex) {
+            FieldSpecs fieldSpecs, Map<String, Integer> typeParametersIndex, ResultHandle objHandle) {
         Type fieldType = fieldSpecs.fieldType;
         String fieldTypeName = fieldType.name().toString();
 
         if (JacksonSerializationUtils.isBasicJsonType(fieldType)) {
-            return readPrimitiveFromParser(bytecode, fieldType, parser);
+            return readPrimitiveFromParser(bytecode, fieldSpecs, parser, deserializationContext, objHandle);
         }
 
         if (hasJsonTypeInfoInTypeChain(fieldType)) {
@@ -1482,8 +1512,9 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return bytecode.invokeVirtualMethod(readValue, deserializationContext, parser, typeHandle);
     }
 
-    private static ResultHandle readPrimitiveFromParser(BytecodeCreator bytecode, Type fieldType,
-            ResultHandle parser) {
+    private static ResultHandle readPrimitiveFromParser(BytecodeCreator bytecode, FieldSpecs fieldSpecs,
+            ResultHandle parser, ResultHandle deserializationContext, ResultHandle objHandle) {
+        Type fieldType = fieldSpecs.fieldType;
         AssignableResultHandle result = bytecode.createVariable(DescriptorUtils.typeToString(fieldType));
 
         ResultHandle currentToken = bytecode.invokeVirtualMethod(
@@ -1492,6 +1523,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 FieldDescriptor.of(JsonToken.class, "VALUE_NULL", JsonToken.class));
         BranchResult isNull = bytecode.ifReferencesEqual(currentToken, nullToken);
 
+        checkNullForPrimitive(isNull.trueBranch(), fieldSpecs, deserializationContext, objHandle);
         isNull.trueBranch().assign(result, JacksonSerializationUtils.getDefaultValue(isNull.trueBranch(), fieldType));
 
         BytecodeCreator notNull = isNull.falseBranch();

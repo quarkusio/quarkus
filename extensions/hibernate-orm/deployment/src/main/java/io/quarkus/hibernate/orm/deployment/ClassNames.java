@@ -615,5 +615,7 @@ public final class ClassNames {
             // Accessed in org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryImpl.buildServiceRegistry
             createConstant("org.hibernate.service.spi.SessionFactoryServiceContributor"),
             // Accessed in org.hibernate.engine.extension.internal.ExtensionIntegrationServiceImpl.create
-            createConstant("org.hibernate.engine.extension.spi.ExtensionIntegration"));
+            createConstant("org.hibernate.engine.extension.spi.ExtensionIntegration"),
+            // Accessed in io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder.getSessionFactoryBuilder
+            createConstant("org.hibernate.boot.spi.SessionFactoryBuilderFactory"));
 }

@@ -29,6 +29,12 @@ public class QuarkusRestClientProperties {
     public static final String READ_TIMEOUT = "io.quarkus.rest.client.read-timeout";
 
     /**
+     * Request property holding the {@link ClientRequestOptions} of a single request. The REST Client sets it from a method
+     * parameter of that type; a {@code ClientRequestFilter} can set it as well.
+     */
+    public static final String REQUEST_OPTIONS = "io.quarkus.rest.client.request-options";
+
+    /**
      * See {@link PausableHttpPostRequestEncoder.EncoderMode}, RFC1738 by default
      */
     public static final String MULTIPART_ENCODER_MODE = "io.quarkus.rest.client.multipart-post-encoder-mode";

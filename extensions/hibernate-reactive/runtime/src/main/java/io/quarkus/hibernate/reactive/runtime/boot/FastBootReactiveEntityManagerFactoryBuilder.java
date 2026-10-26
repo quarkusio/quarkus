@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.reactive.runtime.boot;
 
+import java.util.List;
+
 import jakarta.persistence.EntityManagerFactory;
 
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
@@ -22,9 +24,9 @@ public final class FastBootReactiveEntityManagerFactoryBuilder extends FastBootE
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
             Object cdiBeanManager, MultiTenancyStrategy strategy,
             boolean shouldApplySchemaMigration,
-            SchemaToolingUtil.PreparedImportScripts importScripts) {
+            List<SchemaToolingUtil.PreparedImportScripts> importScripts, boolean populateAfterBoot) {
         super(puDescriptor, metadata, standardServiceRegistry, runtimeSettings, validatorFactory,
-                cdiBeanManager, strategy, shouldApplySchemaMigration, importScripts);
+                cdiBeanManager, strategy, shouldApplySchemaMigration, importScripts, populateAfterBoot);
     }
 
     @Override
@@ -36,9 +38,8 @@ public final class FastBootReactiveEntityManagerFactoryBuilder extends FastBootE
             SessionFactoryOptions options = optionsBuilder.buildOptions();
             return new ReactiveSessionFactoryImpl(metadata, options, metadata.getBootstrapContext());
         } catch (Exception e) {
-            throw persistenceException("Unable to build Hibernate Reactive SessionFactory", e);
-        } finally {
             closeImportScripts();
+            throw persistenceException("Unable to build Hibernate Reactive SessionFactory", e);
         }
     }
 }

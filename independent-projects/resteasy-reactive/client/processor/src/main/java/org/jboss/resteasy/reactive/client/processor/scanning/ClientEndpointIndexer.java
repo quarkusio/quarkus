@@ -23,6 +23,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.client.api.ClientRequestOptions;
 import org.jboss.resteasy.reactive.client.processor.beanparam.BeanParamParser;
 import org.jboss.resteasy.reactive.client.processor.beanparam.ClientBeanParamInfo;
 import org.jboss.resteasy.reactive.client.processor.beanparam.Item;
@@ -46,6 +47,7 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonValueH
 public class ClientEndpointIndexer
         extends EndpointIndexer<ClientEndpointIndexer, ClientEndpointIndexer.ClientIndexedParam, ResourceMethod> {
     static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
+    static final DotName CLIENT_REQUEST_OPTIONS = DotName.createSimple(ClientRequestOptions.class.getName());
     static final DotName CLIENT_EXCEPTION_MAPPER = DotName
             .createSimple("io.quarkus.rest.client.reactive.ClientExceptionMapper");
 
@@ -181,7 +183,7 @@ public class ClientEndpointIndexer
     @Override
     protected boolean handleCustomParameter(Map<DotName, AnnotationInstance> anns, ClientIndexedParam builder, Type paramType,
             boolean field, Map<String, Object> methodContext) {
-        if (paramType.name().equals(CONTINUATION)) {
+        if (paramType.name().equals(CONTINUATION) || paramType.name().equals(CLIENT_REQUEST_OPTIONS)) {
             builder.setType(ParameterType.CUSTOM);
             return true;
         }

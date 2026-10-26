@@ -51,7 +51,7 @@ public class DefaultCliCommandRegistryFactory implements CliCommandRegistryFacto
         // Subcommands are registered by aesh when processing their parent group.
         Set<String> subCommandClasses = new HashSet<>();
         for (AeshCommandMetadata meta : aeshContext.getCommands()) {
-            subCommandClasses.addAll(meta.getSubCommandClassNames());
+            subCommandClasses.addAll(meta.subCommandClassNames());
         }
 
         for (Command command : commands) {

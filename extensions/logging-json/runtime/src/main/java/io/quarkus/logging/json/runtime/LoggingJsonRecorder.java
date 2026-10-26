@@ -52,29 +52,22 @@ public class LoggingJsonRecorder {
         this.applicationConfig = applicationConfig;
     }
 
-    public RuntimeValue<Optional<Formatter>> initializeConsoleJsonLogging() {
-        return getFormatter(runtimeConfig.getValue().consoleJson(), jsonProviders);
-    }
-
-    public RuntimeValue<Optional<Formatter>> initializeFileJsonLogging() {
-        return getFormatter(runtimeConfig.getValue().fileJson(), jsonProviders);
-    }
-
-    public RuntimeValue<Optional<Formatter>> initializeSyslogJsonLogging() {
-        return getFormatter(runtimeConfig.getValue().syslogJson(), jsonProviders);
-    }
-
-    public RuntimeValue<Optional<Formatter>> initializeSocketJsonLogging() {
-        return getFormatter(runtimeConfig.getValue().socketJson(), jsonProviders);
+    public static Optional<Formatter> createFormatter(JsonConfig config, List<String> providerClassNames,
+            ApplicationConfig applicationConfig) {
+        return getFormatter(config, instantiateProviders(providerClassNames), applicationConfig);
     }
 
     public RuntimeValue<Map<NamedHandlerType, Map<String, Optional<Formatter>>>> initializeNamedJsonLogging() {
         JsonLogConfig config = runtimeConfig.getValue();
         Map<NamedHandlerType, Map<String, Optional<Formatter>>> result = new EnumMap<>(NamedHandlerType.class);
-        result.put(NamedHandlerType.CONSOLE, collectFormatters(config.jsonConsoleHandlers(), jsonProviders));
-        result.put(NamedHandlerType.FILE, collectFormatters(config.jsonFileHandlers(), jsonProviders));
-        result.put(NamedHandlerType.SYSLOG, collectFormatters(config.jsonSyslogHandlers(), jsonProviders));
-        result.put(NamedHandlerType.SOCKET, collectFormatters(config.jsonSocketHandlers(), jsonProviders));
+        result.put(NamedHandlerType.CONSOLE,
+                collectFormatters(config.jsonConsoleHandlers(), jsonProviders, applicationConfig.getValue()));
+        result.put(NamedHandlerType.FILE,
+                collectFormatters(config.jsonFileHandlers(), jsonProviders, applicationConfig.getValue()));
+        result.put(NamedHandlerType.SYSLOG,
+                collectFormatters(config.jsonSyslogHandlers(), jsonProviders, applicationConfig.getValue()));
+        result.put(NamedHandlerType.SOCKET,
+                collectFormatters(config.jsonSocketHandlers(), jsonProviders, applicationConfig.getValue()));
         return new RuntimeValue<>(result);
     }
 
@@ -82,7 +75,7 @@ public class LoggingJsonRecorder {
         jsonProviders = instantiateProviders(classNames);
     }
 
-    private List<JsonProvider> instantiateProviders(List<String> classNames) {
+    private static List<JsonProvider> instantiateProviders(List<String> classNames) {
         List<JsonProvider> providers = new ArrayList<>(classNames.size());
         for (String className : classNames) {
             try {
@@ -95,18 +88,20 @@ public class LoggingJsonRecorder {
         return providers;
     }
 
-    private Map<String, Optional<Formatter>> collectFormatters(
-            Map<String, ? extends JsonLogConfig.JsonHandlerConfig> handlers, List<JsonProvider> providers) {
+    private static Map<String, Optional<Formatter>> collectFormatters(
+            Map<String, ? extends JsonLogConfig.JsonHandlerConfig> handlers, List<JsonProvider> providers,
+            ApplicationConfig applicationConfig) {
         Map<String, Optional<Formatter>> formatters = new HashMap<>();
         handlers.forEach((name, config) -> {
             if (config.json().enabled().isPresent()) {
-                formatters.put(name, getFormatter(config.json(), providers).getValue());
+                formatters.put(name, getFormatter(config.json(), providers, applicationConfig));
             }
         });
         return formatters;
     }
 
-    private RuntimeValue<Optional<Formatter>> getFormatter(JsonConfig config, List<JsonProvider> providers) {
+    private static Optional<Formatter> getFormatter(JsonConfig config, List<JsonProvider> providers,
+            ApplicationConfig applicationConfig) {
         String keyOverrides = config.keyOverrides().orElse(null);
         Set<String> excludedKeys = config.excludedKeys().orElse(Set.of());
         Map<String, AdditionalField> additionalFields = config.additionalField().entrySet().stream()
@@ -121,13 +116,13 @@ public class LoggingJsonRecorder {
             overridableJsonConfig = addGCPFieldOverrides(overridableJsonConfig);
         }
 
-        return getDefaultFormatter(config, overridableJsonConfig, providers);
+        return getDefaultFormatter(config, overridableJsonConfig, providers, applicationConfig);
     }
 
-    private RuntimeValue<Optional<Formatter>> getDefaultFormatter(JsonConfig config,
-            OverridableJsonConfig overridableJsonConfig, List<JsonProvider> providers) {
+    private static Optional<Formatter> getDefaultFormatter(JsonConfig config,
+            OverridableJsonConfig overridableJsonConfig, List<JsonProvider> providers, ApplicationConfig applicationConfig) {
         if (!config.enabled().orElse(true)) {
-            return new RuntimeValue<>(Optional.empty());
+            return Optional.empty();
         }
 
         final JsonFormatter formatter;
@@ -138,9 +133,10 @@ public class LoggingJsonRecorder {
         }
         formatter.setLogFormat(config.logFormat());
         if (JsonConfig.LogFormat.GCP == config.logFormat()) {
-            formatter.setTracePrefix("projects/" + applicationConfig.getValue().name().orElse("") + "/traces/");
+            formatter.setTracePrefix("projects/" + applicationConfig.name().orElse("") + "/traces/");
         }
         formatter.setFlatMdc(config.mdcFlatFields());
+        formatter.setMdcKeyOverrides(config.mdcKeyOverrides());
         formatter.setStructuredAccessLog(config.structuredAccessLog());
         formatter.setExcludedKeys(overridableJsonConfig.excludedKeys());
         formatter.setAdditionalFields(overridableJsonConfig.additionalFields());
@@ -170,10 +166,10 @@ public class LoggingJsonRecorder {
         if (!zoneId.equals("default")) {
             formatter.setZoneId(zoneId);
         }
-        return new RuntimeValue<>(Optional.of(formatter));
+        return Optional.of(formatter);
     }
 
-    private OverridableJsonConfig addEcsFieldOverrides(OverridableJsonConfig overridableJsonConfig) {
+    private static OverridableJsonConfig addEcsFieldOverrides(OverridableJsonConfig overridableJsonConfig) {
         EnumMap<Key, String> keyOverrides = PropertyValues.stringToEnumMap(Key.class, overridableJsonConfig.keyOverrides());
         keyOverrides.putIfAbsent(Key.TIMESTAMP, "@timestamp");
         keyOverrides.putIfAbsent(Key.LOGGER_NAME, "log.logger");
@@ -211,7 +207,7 @@ public class LoggingJsonRecorder {
         return new OverridableJsonConfig(PropertyValues.mapToString(keyOverrides), excludedKeys, additionalFields);
     }
 
-    private OverridableJsonConfig addGCPFieldOverrides(OverridableJsonConfig overridableJsonConfig) {
+    private static OverridableJsonConfig addGCPFieldOverrides(OverridableJsonConfig overridableJsonConfig) {
         EnumMap<Key, String> keyOverrides = PropertyValues.stringToEnumMap(Key.class, overridableJsonConfig.keyOverrides());
         keyOverrides.putIfAbsent(Key.LEVEL, "severity");
         keyOverrides.putIfAbsent(Key.STACK_TRACE, "stack_trace");

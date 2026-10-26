@@ -604,6 +604,13 @@ public class KeycloakDevServicesProcessor {
                 });
             }
 
+            if (config.hostAccessiblePorts().isPresent()) {
+                // Exposed ports are accessible from the container via http://host.testcontainers.internal:<port>
+                for (int port : config.hostAccessiblePorts().get()) {
+                    Testcontainers.exposeHostPorts(port);
+                }
+            }
+
             super.withCreateContainerCmdModifier((container) -> Optional.ofNullable(container.getHostConfig())
                     .ifPresent(hostConfig -> {
                         final var limit = containerMemoryLimit.asLongValue();

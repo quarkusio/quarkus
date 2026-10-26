@@ -9,9 +9,10 @@ description: >
 
 ## Architecture
 
-The `ServiceRegistrar` service system replaces `@Recorder` with typed service. Services declare dependencies explicitly and execute in dependency
-order, not build step order. The system is designed for incremental
-migration — converted and unconverted extensions may coexist.
+The `ServiceRegistrar` service system replaces `@Recorder` with typed
+services. Services declare dependencies explicitly and execute in
+dependency order, not build step order. Converted and unconverted
+extensions may coexist.
 
 ### Key principles
 
@@ -19,12 +20,13 @@ migration — converted and unconverted extensions may coexist.
    the build step graph. All ordering comes from `require()`, `after()`,
    `before()`, or `afterBuildItem()`.
 2. **Services are independent from recorders in the same step.** Even if
-   a build step method contains both a `@Record` call and an `ServiceRegistrar`
-   call, the service and recorder are separate nodes with no implicit
-   ordering between them.
-3. **Values flow through the dependency graph.** Service values are passed
-   from producer to consumer via indexed dependency access on `ServiceNode`,
-   not through the `StartupContext` maps (except for recorder proxy bridges).
+   a build step method contains both a `@Record` call and a
+   `ServiceRegistrar` call, the service and recorder are separate nodes
+   with no implicit ordering between them.
+3. **Values flow through the dependency graph.** Service values are
+   passed from producer to consumer via indexed dependency access on
+   `ServiceNode`, not through the `StartupContext` maps (except for
+   recorder proxy bridges).
 
 ### Node types in the service graph
 
@@ -137,15 +139,16 @@ This resolves the producing step's nodes (with passthrough resolution
 for steps that have no service graph nodes) and creates ordering edges.
 
 **`afterBuildItem()` is deprecated** — it exists only for recorder
-coexistence. Once the producing recorder is converted to a service,
-replace with `require()` or `after()`, or drop it, as appropriate.
+coexistence. Before adding one, check whether the target has already
+been converted to a service; if so, use `require()` or `after()`
+directly instead.
 
 #### Cross-phase dependencies
 
 Runtime services can `require()` static-init services. The framework
-automatically creates a `CROSS_PHASE_PROXY` node that reads the value
-from the `serviceValues` map (populated during static-init and retained
-via `retainServiceValues()`).
+creates a `CROSS_PHASE_PROXY` node that reads the value from the
+`serviceValues` map (populated during static-init and retained via
+`retainServiceValues()`).
 
 ```java
 // static-init service
@@ -163,9 +166,10 @@ serviceRegistrar.forService("io.quarkus.my-ext.setup")
 #### Config mappings
 
 - `BUILD_TIME` — extract values into locals before the lambda.
-- `BUILD_AND_RUN_TIME_FIXED` — use `.require(ConfigType.class)` (resolved
-  directly from SmallRye Config, no graph edge).
-- `RUN_TIME` — use `.require(ConfigType.class)` (same mechanism).
+- `BUILD_AND_RUN_TIME_FIXED` — capture directly (available at both build
+  and runtime, captured via `ConfigCaptureInterceptor`).
+- `RUN_TIME` — use `.require(ConfigType.class)` (injected as a service
+  dependency).
 
 ### 5. Stop ordering with `before()`
 
@@ -199,6 +203,12 @@ Recorder proxies resolve via `startupContext.getServiceValue()` (for
 standard recorder proxies). The service deploy body stores values in
 the `serviceValues` map for this resolution.
 
+**After converting**, search for other extensions that use
+`afterBuildItem()` referencing build items your old recorder produced.
+Those consumers can now migrate from `afterBuildItem()` to
+`require()`/`after()` on your new service directly, removing one more
+link in the legacy bridge chain.
+
 ### 7. Synthetic beans
 
 **Before:**
@@ -217,6 +227,54 @@ SyntheticBeanBuildItem.configure(MyBean.class)
     .done();
 ```
 
+**Key rules for `serviceValue()`:**
+
+- **Type must match exactly.** The `serviceValue(type, name)` type must
+  equal the `forService(type, name)` type. If the service produces an
+  impl class but the bean type is the interface, register the service
+  under the interface type.
+- **Works with `optional()` services.** When the optional service
+  produces a value, it is stored for the bean. When it produces
+  `Optional.empty()`, no value is stored; pair with `checkActive()` on
+  the bean to prevent injection of absent services.
+- **`checkActive()` still requires `@Record`.** There is no
+  service-native way to produce a `Supplier<ActiveResult>` for
+  `SyntheticBeanBuildItem.checkActive()`. If your converted extension
+  needs activation checks, keep a minimal `@Recorder` with a
+  `checkActive()` method.
+
+#### Activation via optional services
+
+The `optional()` mechanism replaces `checkActive` for runtime-gated
+services. Return `Optional.empty()` when inactive; downstream services
+using `request()` receive the empty optional and can propagate it:
+
+```java
+reg.forService(RedisClientConnection.class, name)
+    .optional()
+    .require(RedisConfig.class)
+    .onStart((ctx, config) -> config.clients().get(name).active()
+        ? Optional.of(createConnection(config))
+        : Optional.empty());
+
+reg.forService(RedisDataSource.class, name)
+    .optional()
+    .request(RedisClientConnection.class, name)
+    .onStart((ctx, connOpt) -> connOpt.map(conn -> ...));
+```
+
+#### Services vs. CDI beans
+
+Use whichever is the cleanest fit:
+
+- **Inter-extension wiring** (one extension producing a value another
+  extension consumes): prefer services — `require()`/`request()` gives
+  explicit ordering and type safety with no CDI proxying overhead.
+- **Application-facing injection** (`@Inject` in user code): keep CDI
+  synthetic beans for the user-facing surface.
+- **Both**: register a service *and* a `serviceValue()` synthetic bean.
+  Drop the synthetic bean only if no application code injects it.
+
 ### 8. Shutdown handlers
 
 Register cleanup via `ctx.onStop(Runnable)` or
@@ -230,13 +288,10 @@ stops after the services it cleans up for.
 ### 9. Runtime-optional services
 
 A value-producing service must return a non-`null` value — the
-generated code throws `"...returned null; use a void service if no value is
-produced"` otherwise. For a service whose *identity* is known at build time
-but which may be **absent at runtime** (e.g. a handler gated by
-`quarkus.log.file.enabled`), declare `optional()` before `onStart()`. This
-flips the service's return type from `T` to `Optional<T>`; returning
-`Optional.empty()` marks the service absent (nothing constructed, no side
-effects) instead of failing.
+generated code throws otherwise. For a service whose identity is known
+at build time but which may be **absent at runtime**, declare
+`optional()` before `onStart()`. This flips the return type from `T` to
+`Optional<T>`; returning `Optional.empty()` marks the service absent.
 
 ```java
 serviceRegistrar.forService(Handler.class, "file")
@@ -251,14 +306,11 @@ serviceRegistrar.forService(Handler.class, "file")
 Consuming an optional service:
 - `consumeAll(T.class)` skips absent producers (the map omits them).
 - `request(T.class)` yields `Optional.empty()` when absent.
-- `require(T.class)` on an optional service is a **build error** — a
-  mandatory dependency cannot depend on a maybe-absent value. Use
+- `require(T.class)` on an optional service is a **build error** — use
   `request()` or `consumeAll()` instead.
 
-Do not return `null` from a normal (non-`optional`) service, and do not use a
-sentinel value — `optional()` is the supported mechanism. (The `null`
-tolerance in `consumeAll` applies only to aliased recorder values that
-resolve to `null`, not to direct services.)
+Do not return `null` from a non-`optional` service. The `null`
+tolerance in `consumeAll` applies only to aliased recorder values.
 
 ### 10. Lambda capture rules
 
@@ -270,25 +322,42 @@ Supported captures:
   `Map.copyOf()`
 - `BUILD_AND_RUN_TIME_FIXED` config mappings (via `ConfigCaptureInterceptor`)
 - `Constable` values — any type implementing `java.lang.constant.Constable`
-  is captured via its `describeConstable()`. To make a custom value type
-  capturable, implement `Constable` with a `describeConstable()` that
-  reconstructs it (e.g. a `DynamicConstantDesc` invoking a static factory),
-  rather than registering a recorder `ObjectSubstitution`. Immutable
-  collections of `Constable` values (via `Map.copyOf`/`List.copyOf`) are
-  themselves capturable.
+  is captured via its `describeConstable()`. Immutable collections of
+  `Constable` values (via `Map.copyOf`/`List.copyOf`) are also capturable.
 - `record` values — captured by reconstructing via the canonical
   constructor, as long as every component is itself capturable (recursively).
-  Note this is the **capture** path; it is unrelated to the *proxy* path — a
-  `record` still cannot be used as an aliased recorder return type (see
-  "Aliased recorder return types must be proxyable" below).
+  This is the **capture** path; a `record` still cannot be used as an
+  aliased recorder return type (see "Aliased recorder return types must
+  be proxyable" below).
 
 **Not capturable:**
 - Mutable collections — use `Set.copyOf()` / `List.copyOf()` first
+  (`Stream#toList()` is already unmodifiable — don't wrap it again)
 - `BUILD_TIME` config objects — extract values into locals
 - `RUN_TIME` config objects — use `require()` instead
 - Arbitrary runtime objects — use `require()` instead
 
 ## Common pitfalls
+
+### Global mutable state must be eliminated or made thread-safe
+
+Recorders ran sequentially, so global mutable state (static maps,
+shared lists, singletons populated during startup) was incidentally
+safe. Services run concurrently — any global state that survives
+conversion must be thread-safe.
+
+Prefer eliminating the global state entirely: the dependency graph
+carries values directly, so each entry becomes a named service and
+each lookup becomes `require()` or `request()`. Reserve global state
+for cases where it is genuinely shared across unrelated consumers
+with no dependency relationship.
+
+### Choose the right phase for data-access services
+
+Services that create connections to external data systems (database
+pools, Redis clients, directory services) belong at `Phase.DATA`,
+ensuring `serviceValue()` beans can read values before any bean is
+accessed.
 
 ### No implicit ordering from build steps
 
@@ -308,33 +377,29 @@ proxyable.
 
 ### Aliased recorder return types must be proxyable
 
-A value published via `aliasRecorderValue(T.class, recorderValue)` — or any
-`@Recorder` method whose return value is used as a recorder proxy — must have
-a **proxyable** type: an interface or a non-`final` class. A `record` is
-`final`, so it fails with *"the return type cannot be proxied; use
-RuntimeValue to wrap the return value instead"*. When bridging a bundle of
-recorder values into a single service value, make the holder an **interface**
-(with a nested `record` impl for the runtime value), or wrap it in
-`RuntimeValue`. Abstract JDK types such as `java.util.logging.Formatter` and
-`java.util.logging.Handler` are already proxyable.
+A value published via `aliasRecorderValue(T.class, recorderValue)` must
+have a **proxyable** type: an interface or a non-`final` class. Records
+are `final` and will fail. When bridging recorder values, make the
+holder an **interface** (with a nested `record` impl), or wrap it in
+`RuntimeValue`.
 
 ### Package-private visibility
 
 Lambda bytecode runs at runtime but references runtime classes directly.
 Package-private classes become inaccessible from the generated
-consolidated class.
-
-Solutions:
+consolidated class. Solutions:
 1. Add a public static factory method on a public runtime class.
 2. Move the class to a `.impl` subpackage and make it public.
 
-### Never reference deployment classes from within service lambdas
+### Never reference deployment classes from service lambdas
 
-Action lambda bytecode (defined inside `.onStart(ctx -> { ... })`) is executed at **runtime**. Therefore, the lambda body must **never** reference, instantiate, or invoke methods on any deployment classes (such as your `@BuildStep` processor classes). Doing so will compile successfully but will throw a `ClassNotFoundException` / `NoClassDefFoundError` at runtime because deployment modules are absent from the runtime classpath.
-
-*   **The Anonymous Inner Class Trap**: Writing an anonymous inner class (e.g. `new MyInterface() {}`) inside an instance-method lambda forces `javac` to generate a constructor that captures `EnclosingProcessor.this` (via a synthetic `this$0` parameter) to bind the inner class to its enclosing processor scope. This turns your lambda into an instance-capturing lambda (throwing a `TransliterationException` at build time).
-*   **The Static Helper Method Trap**: Moving the anonymous class instantiation to a `private static` helper method inside your processor class solves the `EnclosingProcessor.this` capture, but because the compiled lambda still references the static helper method on your deployment processor, it causes a `NoClassDefFoundError` at runtime.
-*   **Solution**: Always place helper methods, custom interfaces, or static factory methods inside your **runtime** module classes (which are safely present at both build time and runtime).
+Service lambda bodies execute at **runtime** — deployment classes are
+absent from the runtime classpath. Anonymous inner classes inside
+instance-method lambdas silently capture `this` (the processor),
+causing `TransliterationException`. Moving the instantiation to a
+`private static` helper in the processor avoids the capture but still
+references a deployment class, causing `NoClassDefFoundError`. Place
+all helper methods and factories in **runtime** module classes.
 
 ### Use `require()` instead of `Arc.container()`
 
@@ -350,48 +415,36 @@ Set<String> captured = Set.copyOf(endpoints);  // before the lambda
 
 ## Behavioral parity with recorders
 
-Conversion must preserve behavior the recorder model provided *implicitly*.
-These are recurring, high-cost regressions — check each when converting a
-step that touches classloaders, threads, cleanup, or failure handling.
+Conversion must preserve behavior the recorder model provided
+*implicitly*. Check each of these when converting a step that touches
+classloaders, threads, cleanup, or failure handling.
 
-### TCCL parity (thread context classloader)
+### TCCL parity
 
-Recorder bytecode always ran with the **runtime classloader as the TCCL**
-(the generated `doStart` sets it). Any recorder code that captured
-`Thread.currentThread().getContextClassLoader()` for later use — request
-handlers, thread factories, config/`ServiceLoader` lookups — relied on that.
+A wrong TCCL surfaces as `ServiceLoader` "not a subtype" errors or
+dev-mode failures.
 
-- After converting, ensure the service still runs with the runtime CL as
-  TCCL, and that captured/inherited CLs are the runtime CL (not the system
-  `AppClassLoader`). A wrong TCCL surfaces as `ServiceLoader` "not a subtype"
-  errors or dev-mode failures, not as an obvious classloader bug.
-- **Threads created during startup inherit the creating thread's TCCL.**
-  A long-lived or library thread that captures the per-app runtime CL and
-  outlives the app **leaks the `QuarkusClassLoader`** (metaspace growth
-  across test/dev restarts). Internal/scheduler threads that run no user
-  code should not hold an app CL. Clean up threads/`ThreadLocal`s your
-  service owns in `onStop`; never rely on a global "reset all TCCLs" sweep.
+**Threads created during startup inherit the creating thread's TCCL.**
+A long-lived thread that captures the per-app runtime CL leaks the
+`QuarkusClassLoader` across restarts. Clean up threads/`ThreadLocal`s
+in `onStop`; never rely on a global "reset all TCCLs" sweep.
 
 ### Teardown-ordering parity
 
-Start ordering is explicit (`require`/`after`/`before`) — but so is **stop
-ordering**, and that is the easy thing to lose. The recorder model gave
-cleanup incidental ordering from build-step order; a converted service's
-`onStop` runs only in reverse *dependency* order. If a cleanup implicitly
-depended on running before/after another (e.g. bean destruction before a
-"last" task, or a listener firing before container teardown), declare it
-with `before()`/`after()`. Lost teardown ordering surfaces as unrelated
-downstream symptoms, so verify shutdown explicitly.
+Start ordering is explicit — but so is **stop ordering**, and that is
+the easy thing to lose. The recorder model gave cleanup incidental
+ordering from build-step order; a converted service's `onStop` runs
+only in reverse *dependency* order. If a cleanup implicitly depended on
+running before/after another, declare it with `before()`/`after()`.
+Lost teardown ordering surfaces as unrelated downstream symptoms — verify
+shutdown explicitly.
 
 ### Failure-path parity
 
-Recorders logged **nothing in-band** on failure — `doStart` caught, wrapped
-in `RuntimeException("Failed to start quarkus", cause)`, and rethrew. The
-service graph rethrows the first failure (concurrent ones attach as
-suppressed), so nothing is lost by staying quiet. **Do not add ERROR/WARN
-logging in service bodies for expected failures** — let them propagate. Some
-tests assert clean propagation (no WARNING+ log records, no suppressed
-exceptions) for a static-init failure, e.g. `StaticInitFailureTest`.
+Recorders logged nothing on failure — `doStart` caught, wrapped in
+`RuntimeException`, and rethrew. The service graph rethrows the first
+failure (concurrent ones attach as suppressed). **Do not add ERROR/WARN
+logging in service bodies for expected failures** — let them propagate.
 
 ### `consumeAll` uses indexed access
 
@@ -411,5 +464,7 @@ index alignment.
 - [ ] Do NOT rely on build step ordering for service execution order
 - [ ] Bridge values to legacy build items where needed
 - [ ] Convert synthetic beans from `supplier()`/`runtimeValue()` to `serviceValue()`
+- [ ] Verify `serviceValue(type, name)` types match `forService(type, name)` exactly
+- [ ] Choose the right phase (`Phase.DATA` for data connections, `Phase.INIT` for migrations, etc.)
 - [ ] Check for package-private visibility issues
 - [ ] `./mvnw install` the modified modules before running integration tests

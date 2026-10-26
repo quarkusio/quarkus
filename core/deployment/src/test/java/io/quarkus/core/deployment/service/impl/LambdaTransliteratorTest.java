@@ -9,6 +9,20 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.MonthDay;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,10 +38,11 @@ import io.quarkus.core.StartContext;
 import io.quarkus.core.deployment.service.Action1;
 import io.quarkus.core.deployment.service.Action2;
 import io.quarkus.core.deployment.service.impl.LambdaTransliterator.TransliterationException;
-import io.quarkus.core.impl.ServiceGraph;
-import io.quarkus.core.impl.ServiceNode;
+import io.quarkus.core.service.impl.ServiceGraph;
+import io.quarkus.core.service.impl.ServiceNode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
+import io.smallrye.classfile.ClassHierarchyResolver;
 
 /**
  * Tests for {@link LambdaTransliterator}.
@@ -47,7 +62,7 @@ class LambdaTransliteratorTest {
         TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
                 action, String.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
 
-        assertThat(extracted.serviceKey()).isEqualTo("java.lang.String:");
+        assertThat(extracted.serviceKey()).isEqualTo("java.lang.String");
 
         ServiceNode node = deployAndReturn(extracted);
         assertThat(node.value()).isEqualTo("hello");
@@ -61,7 +76,7 @@ class LambdaTransliteratorTest {
         TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
                 action, Integer.class, List.of("answer"), List.of(), List.of(), List.of(), false, false, false, "test");
 
-        assertThat(extracted.serviceKey()).isEqualTo("java.lang.Integer:answer");
+        assertThat(extracted.serviceKey()).isEqualTo("java.lang.Integer\0answer");
 
         ServiceNode node = deployAndReturn(extracted);
         assertThat(node.value()).isEqualTo(42);
@@ -291,7 +306,7 @@ class LambdaTransliteratorTest {
                 action2, Integer.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
 
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
-                CONSOLIDATED_CLASS_NAME, List.of(extracted1, extracted2));
+                CONSOLIDATED_CLASS_NAME, List.of(extracted1, extracted2), ClassHierarchyResolver.defaultResolver());
         String className = CONSOLIDATED_CLASS_NAME.replace('/', '.');
 
         ClassLoader cl = makeClassLoader(classes);
@@ -326,7 +341,7 @@ class LambdaTransliteratorTest {
                 action2, String.class, List.of("svc2"), List.of(), List.of(), List.of(), false, false, false, "test");
 
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
-                CONSOLIDATED_CLASS_NAME, List.of(extracted1, extracted2));
+                CONSOLIDATED_CLASS_NAME, List.of(extracted1, extracted2), ClassHierarchyResolver.defaultResolver());
         String className = CONSOLIDATED_CLASS_NAME.replace('/', '.');
 
         ClassLoader cl = makeClassLoader(classes);
@@ -352,10 +367,10 @@ class LambdaTransliteratorTest {
         // simulate a recorder having stored a value under a proxy key
         String recorderProxyKey = "recorder-proxy-key";
         TransliteratedAction.AliasService alias = new TransliteratedAction.AliasService(
-                "java.lang.String:alias", false, recorderProxyKey, "test");
+                "java.lang.String\0alias", false, recorderProxyKey, "test");
 
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
-                CONSOLIDATED_CLASS_NAME, List.of(extracted, alias));
+                CONSOLIDATED_CLASS_NAME, List.of(extracted, alias), ClassHierarchyResolver.defaultResolver());
         String className = CONSOLIDATED_CLASS_NAME.replace('/', '.');
 
         ClassLoader cl = makeClassLoader(classes);
@@ -383,10 +398,10 @@ class LambdaTransliteratorTest {
 
         // wrapper reads from the service key and stores a RuntimeValue at the rv key
         TransliteratedAction.RuntimeValueWrapper wrapper = new TransliteratedAction.RuntimeValueWrapper(
-                "java.lang.String:", false, "runtimevalue:java.lang.String:", "test");
+                "java.lang.String", false, "runtimevalue:java.lang.String", "test");
 
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
-                CONSOLIDATED_CLASS_NAME, List.of(extracted, wrapper));
+                CONSOLIDATED_CLASS_NAME, List.of(extracted, wrapper), ClassHierarchyResolver.defaultResolver());
         String className = CONSOLIDATED_CLASS_NAME.replace('/', '.');
 
         ClassLoader cl = makeClassLoader(classes);
@@ -449,7 +464,7 @@ class LambdaTransliteratorTest {
                 "test");
 
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
-                CONSOLIDATED_CLASS_NAME, List.of(extracted));
+                CONSOLIDATED_CLASS_NAME, List.of(extracted), ClassHierarchyResolver.defaultResolver());
 
         // at least the consolidated class + one anonymous class copy
         assertThat(classes.size()).isGreaterThanOrEqualTo(2);
@@ -474,7 +489,7 @@ class LambdaTransliteratorTest {
                 false, "test");
 
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
-                CONSOLIDATED_CLASS_NAME, List.of(extracted));
+                CONSOLIDATED_CLASS_NAME, List.of(extracted), ClassHierarchyResolver.defaultResolver());
 
         assertThat(classes.size()).isGreaterThanOrEqualTo(2);
 
@@ -753,6 +768,243 @@ class LambdaTransliteratorTest {
 
     }
 
+    // ── java.time capture tests ──
+
+    @Test
+    void capturedDurationTransliterates() throws Exception {
+        Duration captured = Duration.ofSeconds(3661, 123456789);
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedZeroDurationTransliterates() throws Exception {
+        Duration captured = Duration.ZERO;
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedInstantTransliterates() throws Exception {
+        Instant captured = Instant.ofEpochSecond(1700000000L, 500000000);
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedLocalDateTransliterates() throws Exception {
+        LocalDate captured = LocalDate.of(2026, 10, 15);
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedLocalTimeTransliterates() throws Exception {
+        LocalTime captured = LocalTime.of(14, 30, 45, 123456789);
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedMidnightLocalTimeTransliterates() throws Exception {
+        LocalTime captured = LocalTime.MIDNIGHT;
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedLocalDateTimeTransliterates() throws Exception {
+        LocalDateTime captured = LocalDateTime.of(2026, 10, 15, 14, 30, 45, 123456789);
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedZoneOffsetTransliterates() throws Exception {
+        ZoneOffset captured = ZoneOffset.ofHoursMinutes(5, 30);
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedUtcZoneOffsetTransliterates() throws Exception {
+        ZoneOffset captured = ZoneOffset.UTC;
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedZoneIdTransliterates() throws Exception {
+        ZoneId captured = ZoneId.of("Europe/Paris");
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedZonedDateTimeWithRegionTransliterates() throws Exception {
+        ZonedDateTime captured = ZonedDateTime.of(
+                LocalDateTime.of(2026, 10, 15, 14, 30, 45, 123456789),
+                ZoneId.of("America/Chicago"));
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedZonedDateTimeWithOffsetZoneTransliterates() throws Exception {
+        ZonedDateTime captured = ZonedDateTime.of(
+                LocalDateTime.of(2026, 6, 15, 12, 0),
+                ZoneOffset.ofHours(5));
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedOffsetTimeTransliterates() throws Exception {
+        OffsetTime captured = OffsetTime.of(
+                LocalTime.of(10, 15, 30), ZoneOffset.ofHours(-5));
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedOffsetDateTimeTransliterates() throws Exception {
+        OffsetDateTime captured = OffsetDateTime.of(
+                LocalDateTime.of(2026, 10, 15, 14, 30, 45, 123456789),
+                ZoneOffset.ofHoursMinutes(5, 45));
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedYearTransliterates() throws Exception {
+        Year captured = Year.of(2026);
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedYearMonthTransliterates() throws Exception {
+        YearMonth captured = YearMonth.of(2026, 10);
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedMonthDayTransliterates() throws Exception {
+        MonthDay captured = MonthDay.of(12, 25);
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedPeriodTransliterates() throws Exception {
+        Period captured = Period.of(1, 6, 15);
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
+    @Test
+    void capturedNegativePeriodTransliterates() throws Exception {
+        Period captured = Period.of(-1, -3, -10);
+        Action1<Object, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Object.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+
+        ServiceNode node = deployAndReturn(extracted);
+        assertThat(node.value()).isEqualTo(captured);
+    }
+
     // ── Helpers ──
 
     /** Action that completes a node with a bound value. */
@@ -811,7 +1063,7 @@ class LambdaTransliteratorTest {
     private static ServiceNode deployAndReturn(ServiceGraph graph,
             TransliteratedAction.ActionService extracted, ServiceNode... deps) throws Exception {
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
-                CONSOLIDATED_CLASS_NAME, List.of(extracted));
+                CONSOLIDATED_CLASS_NAME, List.of(extracted), ClassHierarchyResolver.defaultResolver());
         ClassLoader cl = makeClassLoader(classes);
         String className = CONSOLIDATED_CLASS_NAME.replace('/', '.');
         Class<?> clazz = cl.loadClass(className);

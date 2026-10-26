@@ -108,7 +108,7 @@ final class LinksContainerFactory {
         for (String name : names) {
             trimmedNames.add(name.trim());
         }
-        return trimmedNames;
+        return Set.copyOf(trimmedNames);
     }
 
     private String getAnnotationValue(AnnotationInstance annotationInstance, String name, String defaultValue) {

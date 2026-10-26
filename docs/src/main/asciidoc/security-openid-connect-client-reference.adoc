@@ -276,6 +276,9 @@ public class OidcClientResource {
 
 You can also inject a `TokenProvider` that is bound to a named OIDC client, see <<named-oidc-clients>>.
 
+`TokenProvider` can also acquire the access token with additional grant parameters, for example, `tokenProvider.getAccessToken(Map.of("scope", "openid"))`.
+The tokens acquired with different additional grant parameters are cached separately, see <<additional-grant-parameters-token-cache>>.
+
 When a Quarkus extension must acquire OIDC tokens by using one of the token grants supported by the OIDC client, it can also use `TokenProvider` while depending only on the OIDC Client SPI:
 
 . Add the following dependency:
@@ -1001,6 +1004,25 @@ Some OpenID Connect providers do not return a refresh token in a `client_credent
 For example, starting with Keycloak 12, a refresh token is not returned by default for `client_credentials`.
 Providers might also restrict how many times a refresh token can be used.
 
+[[additional-grant-parameters-token-cache]]
+=== Caching tokens acquired with additional grant parameters
+
+`OidcClientRequestReactiveFilter`, `OidcClientRequestFilter`, `TokenProvider`, and `Tokens` producers always cache the tokens they acquire with the configured grant.
+Tokens acquired with additional grant parameters, for example, with `tokenProvider.getAccessToken(Map.of("scope", "openid"))` or by a custom filter, are cached per set of such parameters, because the parameters, for example, a requested `scope` or a subject token which has to be exchanged, can affect which tokens are issued.
+The token propagation filters, `AccessTokenRequestReactiveFilter` and `AccessTokenRequestFilter`, cache the tokens they exchange the same way, with the incoming access token being the additional grant parameter, see <<token-propagation-rest>> and <<token-propagation-resteasy>>.
+By default, each filter and each token producer caches the tokens of up to 15 sets of additional grant parameters.
+This limit is approximate, the cache can briefly exceed it when tokens are requested concurrently.
+When the limit is reached, the tokens which are least likely to be needed again, for example, expired or least recently used tokens, are evicted.
+The tokens acquired with the configured grant only, without additional grant parameters, are not counted toward this limit and are never evicted.
+Use the `quarkus.oidc-client.token-cache-max-size` property to change the limit per producer, for example, when many different subject tokens are exchanged:
+
+[source,properties]
+----
+quarkus.oidc-client.token-cache-max-size=30
+----
+
+Set this property to `0` to not cache the tokens acquired with additional grant parameters at all.
+
 [[revoke-access-tokens]]
 === Revoking access tokens
 
@@ -1230,6 +1252,9 @@ public class OidcClientRequestCustomFilter extends AbstractOidcClientRequestFilt
     }
 }
 ----
+
+TIP: To make the most of the <<additional-grant-parameters-token-cache,token cache>>, let Quarkus load the client assertion with the `quarkus.oidc-client.credentials.jwt.token-path` property instead of using a custom filter.
+Quarkus then renews the client assertion without affecting the cached tokens.
 
 ==== SPIFFE JWT-SVID
 
@@ -1738,6 +1763,18 @@ quarkus.resteasy-client-oidc-token-propagation.exchange-token=true
 `AccessTokenRequestReactiveFilter` uses a default `OidcClient` by default.
 A named `OidcClient` can be selected with a `quarkus.rest-client-oidc-token-propagation.client-name` configuration property or with the `io.quarkus.oidc.token.propagation.common.AccessToken#exchangeTokenClient` annotation attribute.
 
+`AccessTokenRequestReactiveFilter` caches the exchanged tokens, see <<additional-grant-parameters-token-cache>>, also when the token exchange is activated with the `io.quarkus.oidc.token.propagation.common.AccessToken#exchangeTokenClient` annotation attribute.
+An incoming access token is exchanged once and the exchanged token is propagated until it expires, even if the incoming access token is revoked in the meantime.
+By default, the exchanged tokens of up to 15 incoming access tokens are cached.
+Use the `quarkus.oidc-client.token-cache-max-size` property of the `OidcClient` which exchanges the tokens to change this limit, for example, when the tokens of many users are exchanged at the same time:
+
+[source,properties]
+----
+quarkus.oidc-client.token-cache-max-size=50
+----
+
+Set this property to `0` to exchange the incoming access token on every request, so that the OpenID Connect provider verifies the incoming access token every time and rejects it as soon as it is revoked.
+
 
 [[token-propagation-resteasy]]
 == Token Propagation for RESTEasy Classic
@@ -1866,6 +1903,18 @@ NOTE: `AccessTokenRequestFilter` will use `OidcClient` to exchange the current t
 
 `AccessTokenRequestFilter` uses a default `OidcClient` by default.
 A named `OidcClient` can be selected with the `quarkus.resteasy-client-oidc-token-propagation.client-name` configuration property.
+
+`AccessTokenRequestFilter` caches the exchanged tokens, see <<additional-grant-parameters-token-cache>>, also when the token exchange is activated with the `io.quarkus.oidc.token.propagation.common.AccessToken#exchangeTokenClient` annotation attribute.
+An incoming access token is exchanged once and the exchanged token is propagated until it expires, even if the incoming access token is revoked in the meantime.
+By default, the exchanged tokens of up to 15 incoming access tokens are cached.
+Use the `quarkus.oidc-client.token-cache-max-size` property of the `OidcClient` which exchanges the tokens to change this limit, for example, when the tokens of many users are exchanged at the same time:
+
+[source,properties]
+----
+quarkus.oidc-client.token-cache-max-size=50
+----
+
+Set this property to `0` to exchange the incoming access token on every request, so that the OpenID Connect provider verifies the incoming access token every time and rejects it as soon as it is revoked.
 
 === RestClient JsonWebTokenRequestFilter
 

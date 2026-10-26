@@ -5,6 +5,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,13 +80,13 @@ public class ExtensionMetadataSchemaDocGenerator {
             return rowsByGroup;
         }
 
-        collectPropertyRows(node.get("properties"), pathPrefix, rowsByGroup, inheritedGroup);
+        collectPropertyRows(node.get("properties"), requiredProperties(node), pathPrefix, rowsByGroup, inheritedGroup);
         collectPatternPropertyRows(node.get("patternProperties"), pathPrefix, rowsByGroup, inheritedGroup);
         return rowsByGroup;
     }
 
-    private void collectPropertyRows(JsonNode properties, String pathPrefix, Map<String, List<FieldRow>> rowsByGroup,
-            String inheritedGroup) {
+    private void collectPropertyRows(JsonNode properties, Set<String> required, String pathPrefix,
+            Map<String, List<FieldRow>> rowsByGroup, String inheritedGroup) {
         if (properties == null || !properties.isObject()) {
             return;
         }
@@ -97,10 +98,17 @@ public class ExtensionMetadataSchemaDocGenerator {
             final JsonNode property = entry.getValue();
             final String path = pathPrefix.isEmpty() ? name : pathPrefix + "." + name;
             final String group = docGroup(property, inheritedGroup);
-            addRow(rowsByGroup, group, new FieldRow(path, describeType(property), description(property)));
+            final String description = required.contains(name) ? "Required. " + description(property)
+                    : description(property);
+            addRow(rowsByGroup, group, new FieldRow(path, describeType(property), description));
 
             if ("object".equals(type(property))) {
                 mergeRows(rowsByGroup, collectRows(property, path, group));
+            } else if ("array".equals(type(property))) {
+                final JsonNode items = property.get("items");
+                if (items != null && "object".equals(type(items))) {
+                    mergeRows(rowsByGroup, collectRows(items, path + "[]", group));
+                }
             }
         }
     }
@@ -118,6 +126,16 @@ public class ExtensionMetadataSchemaDocGenerator {
             final String group = docGroup(property, inheritedGroup);
             addRow(rowsByGroup, group, new FieldRow(path, describeType(property), description(property)));
         }
+    }
+
+    private static Set<String> requiredProperties(JsonNode node) {
+        final JsonNode required = node.get("required");
+        if (required == null || !required.isArray()) {
+            return Set.of();
+        }
+        final Set<String> names = new HashSet<>();
+        required.forEach(name -> names.add(name.asString()));
+        return names;
     }
 
     private static String docGroup(JsonNode property, String inheritedGroup) {

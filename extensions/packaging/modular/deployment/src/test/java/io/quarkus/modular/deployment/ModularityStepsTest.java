@@ -11,7 +11,6 @@ public class ModularityStepsTest {
         assertThat(ModularitySteps.isJdkModule("java.base")).isTrue();
         assertThat(ModularitySteps.isJdkModule("java.sql")).isTrue();
         assertThat(ModularitySteps.isJdkModule("jdk.jfr")).isTrue();
-        assertThat(ModularitySteps.isJdkModule("ibm.jvm")).isTrue();
     }
 
     @Test

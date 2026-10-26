@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.lang.constant.ClassDesc;
+import java.lang.module.ModuleFinder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -547,39 +548,18 @@ public final class ModularitySteps {
         return new ApplicationModuleInfoBuildItem(amb.build());
     }
 
-    // The Java SE platform modules; other `java.*` names (`java.money`, `java.xml.bind`, ...) are libraries.
-    private static final Set<String> javaSeModuleNames = Set.of(
-            "java.base",
-            "java.compiler",
-            "java.datatransfer",
-            "java.desktop",
-            "java.instrument",
-            "java.logging",
-            "java.management",
-            "java.management.rmi",
-            "java.naming",
-            "java.net.http",
-            "java.prefs",
-            "java.rmi",
-            "java.scripting",
-            "java.se",
-            "java.security.jgss",
-            "java.security.sasl",
-            "java.smartcardio",
-            "java.sql",
-            "java.sql.rowset",
-            "java.transaction.xa",
-            "java.xml",
-            "java.xml.crypto");
-
     /**
      * Determine whether a module name refers to a module that the JDK provides.
+     * <p>
+     * {@code jlink} runs in the build JVM, so the modules it can link are the system modules of that JVM.
+     * A library whose automatic module name starts with {@code java.}, such as {@code java.money}, is not one of
+     * them.
      *
      * @param moduleName the module name
-     * @return {@code true} for a Java SE platform module or a {@code jdk.} / {@code ibm.} module
+     * @return {@code true} if the build JDK provides a module with that name
      */
     static boolean isJdkModule(String moduleName) {
-        return javaSeModuleNames.contains(moduleName) || moduleName.startsWith("jdk.") || moduleName.startsWith("ibm.");
+        return ModuleFinder.ofSystem().find(moduleName).isPresent();
     }
 
     private static final Set<String> bootLayerNames = ModuleLayer.boot().modules().stream().map(Module::getName)

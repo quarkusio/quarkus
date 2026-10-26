@@ -57,6 +57,15 @@ public class OverloadDetector {
         update(timeInMicros, current);
     }
 
+    /**
+     * Records the end of a request for which no latency measurement exists, such as one that was aborted
+     * before it was processed. The request no longer counts towards the limit; the limit itself is left
+     * as it is, since there is nothing to update it with.
+     */
+    public void requestEnd() {
+        currentRequests.decrementAndGet();
+    }
+
     private synchronized void update(long requestTime, int currentRequests) {
         probeCount++;
         if (probeFactor * probeJitter * currentLimit <= probeCount) {

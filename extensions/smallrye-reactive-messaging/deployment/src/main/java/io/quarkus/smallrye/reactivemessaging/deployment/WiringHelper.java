@@ -11,7 +11,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -27,6 +26,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorBuildItem;
+import io.smallrye.config.Config;
 import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
 
 public class WiringHelper {
@@ -80,7 +80,7 @@ public class WiringHelper {
      * @return an optional with the connector name if the channel is managed, empty otherwise
      */
     static Optional<String> getManagingConnector(ChannelDirection direction, String channel) {
-        return ConfigProvider.getConfig().getOptionalValue(
+        return Config.get().getOptionalValue(
                 "quarkus.messaging." + direction.name().toLowerCase() + "." + normalizeChannelName(channel) + ".connector",
                 String.class);
     }
@@ -93,7 +93,7 @@ public class WiringHelper {
      * @return {@code true} if the channel is enabled, {@code false} otherwise
      */
     static boolean isChannelEnabled(ChannelDirection direction, String channel) {
-        return ConfigProvider.getConfig()
+        return Config.get()
                 .getOptionalValue(
                         "quarkus.messaging." + direction.name().toLowerCase() + "." + normalizeChannelName(channel)
                                 + ".enabled",

@@ -2,7 +2,6 @@ package io.quarkus.it.vertx;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -11,6 +10,7 @@ import org.junit.jupiter.api.condition.OS;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.config.Config;
 
 @QuarkusTest
 @WithTestResource(UnixDomainSocketTestResource.class)
@@ -37,7 +37,7 @@ public class UnixDomainSocketRestClientTest {
 
     @Test
     public void testProgrammaticRestClientOverDomainSocketWithoutUrl() {
-        String address = ConfigProvider.getConfig().getValue("quarkus.http.domain-socket", String.class);
+        String address = Config.get().getValue("quarkus.http.domain-socket", String.class);
         UdsClient programmaticClient = QuarkusRestClientBuilder.newBuilder()
                 .domainSocket(address)
                 .build(UdsClient.class);

@@ -3,10 +3,8 @@ package io.quarkus.vertx.http.deployment.spi;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.builder.item.MultiBuildItem;
+import io.smallrye.config.Config;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
@@ -267,7 +265,7 @@ public final class RouteBuildItem extends MultiBuildItem {
     }
 
     private static boolean isManagement(String managementConfigKey) {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         return config.getValue(managementConfigKey, boolean.class);
     }
 

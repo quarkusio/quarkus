@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -32,6 +31,7 @@ import io.quarkus.spiffe.client.SpiffeConnectionException;
 import io.quarkus.spiffe.svid.x509.WorkloadCertificateDocument;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.smallrye.config.Config;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
@@ -292,7 +292,7 @@ class SpiffeX509SvidTest {
     }
 
     private String adminRequest(HttpMethod method, String path, Buffer body) {
-        URI uri = URI.create(ConfigProvider.getConfig().getValue("spiffe.x509.test.admin-url", String.class));
+        URI uri = URI.create(Config.get().getValue("spiffe.x509.test.admin-url", String.class));
         var client = newInstance(vertx).createHttpClient();
         try {
             return client.request(method, uri.getPort(), uri.getHost(), path)

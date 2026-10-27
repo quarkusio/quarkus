@@ -14,7 +14,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.MediaType;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.resteasy.reactive.RestForm;
 
 import io.quarkus.csrf.reactive.runtime.CsrfTokenParameterProvider;
@@ -22,6 +21,7 @@ import io.quarkus.csrf.reactive.runtime.CsrfTokenUtils;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.security.Authenticated;
+import io.smallrye.config.Config;
 import io.vertx.ext.web.RoutingContext;
 
 @Path("/service")
@@ -141,7 +141,7 @@ public class TestResource {
                 + isResteasyReactiveUpload(multiPart.file) + ":"
                 + csrfTokenCookie.getValue().equals(
                         CsrfTokenUtils.signCsrfToken(csrfTokenParam,
-                                ConfigProvider.getConfig().getValue("quarkus.rest-csrf.token-signature-key",
+                                Config.get().getValue("quarkus.rest-csrf.token-signature-key",
                                         String.class)))
                 + ":tokenHeaderIsSet=" + (csrfHeader != null);
     }

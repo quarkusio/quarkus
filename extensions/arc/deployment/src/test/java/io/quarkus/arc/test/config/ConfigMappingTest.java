@@ -16,13 +16,13 @@ import java.util.stream.Stream;
 import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;

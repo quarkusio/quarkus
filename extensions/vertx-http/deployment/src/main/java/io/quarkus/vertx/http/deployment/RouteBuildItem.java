@@ -5,14 +5,12 @@ import static io.quarkus.vertx.http.deployment.RouteBuildItem.RouteType.APPLICAT
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.ConfiguredPathInfo;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HandlerType;
+import io.smallrye.config.Config;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
@@ -246,7 +244,7 @@ public final class RouteBuildItem extends MultiBuildItem {
         }
 
         private boolean shouldInclude(String managementConfigKey) {
-            Config config = ConfigProvider.getConfig();
+            Config config = Config.get();
             return config.getValue(managementConfigKey, boolean.class);
         }
 

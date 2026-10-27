@@ -6,12 +6,11 @@ import java.util.Map;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
-import org.eclipse.microprofile.config.Config;
-
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.kafka.client.tls.QuarkusKafkaSslEngineFactory;
 import io.quarkus.runtime.ApplicationConfig;
 import io.smallrye.common.annotation.Identifier;
+import io.smallrye.config.Config;
 
 @Singleton
 public class KafkaRuntimeConfigProducer {

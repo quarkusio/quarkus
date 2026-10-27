@@ -15,7 +15,6 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import org.awaitility.Awaitility;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -30,6 +29,7 @@ import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.smallrye.config.Config;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
 
@@ -70,7 +70,7 @@ class OidcProxyTest {
             });
             httpServer.listen(8765, "localhost").onSuccess(ignored -> latch.countDown());
             assertTrue(latch.await(15, TimeUnit.SECONDS), "Proxy server is not listening");
-            String authServerUrl = ConfigProvider.getConfig().getValue("quarkus.oidc.auth-server-url", String.class);
+            String authServerUrl = Config.get().getValue("quarkus.oidc.auth-server-url", String.class);
             callSecuredEndpoint(authServerUrl);
             Awaitility.await().atMost(10, TimeUnit.SECONDS)
                     .until(() -> headers.containsKey("host") && headers.containsKey("proxy-authorization"));

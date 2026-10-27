@@ -9,14 +9,13 @@ import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.ExecutionMode;
 import io.quarkus.runtime.annotations.StaticInitSafe;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 import io.smallrye.config.inject.ConfigProducer;
 
 /**
@@ -66,7 +65,7 @@ public class ConfigStaticInitCheckInterceptor {
             return;
         }
         String propertyName = configProperty.name();
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         String value = config.getConfigValue(propertyName).getValue();
         if (value == null) {
             value = getDefaultValue(injectionPoint, configProperty);

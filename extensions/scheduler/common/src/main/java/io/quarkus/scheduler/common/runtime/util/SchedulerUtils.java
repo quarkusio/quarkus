@@ -13,14 +13,12 @@ import java.util.function.BiConsumer;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.expression.Expression;
 import io.smallrye.common.expression.ResolveContext;
+import io.smallrye.config.Config;
 
 /**
  * Utilities class for scheduler extensions.
@@ -147,7 +145,7 @@ public final class SchedulerUtils {
      * Adapted from {@link io.smallrye.config.ExpressionConfigSourceInterceptor}
      */
     private static String resolvePropertyExpression(String expr) {
-        final Config config = ConfigProvider.getConfig();
+        final Config config = Config.get();
         final Expression expression = Expression.compile(expr, LENIENT_SYNTAX, NO_TRIM);
         final String expanded = expression.evaluate(new BiConsumer<ResolveContext<RuntimeException>, StringBuilder>() {
             @Override

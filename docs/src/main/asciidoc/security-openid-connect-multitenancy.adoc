@@ -163,8 +163,7 @@ package org.acme.quickstart.oidc;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
+import io.smallrye.config.Config;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
@@ -181,7 +180,7 @@ public class CustomTenantResolver implements TenantConfigResolver {
         String path = context.request().path();
 
         if (path.startsWith("/tenant-a")) {
-           String keycloakUrl = ConfigProvider.getConfig().getValue("keycloak.url", String.class);
+           String keycloakUrl = Config.get().getValue("keycloak.url", String.class);
 
             OidcTenantConfig config = OidcTenantConfig
                     .authServerUrl(keycloakUrl + "/realms/tenant-a")

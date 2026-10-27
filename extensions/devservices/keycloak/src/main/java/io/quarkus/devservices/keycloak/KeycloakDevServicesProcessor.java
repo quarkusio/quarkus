@@ -40,7 +40,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
@@ -77,6 +76,7 @@ import io.quarkus.devui.spi.page.Page;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -224,7 +224,7 @@ public class KeycloakDevServicesProcessor {
     }
 
     private static boolean oidcDevServicesEnabled() {
-        return ConfigProvider.getConfig().getOptionalValue("quarkus.oidc.devservices.enabled", boolean.class).orElse(false);
+        return Config.get().getOptionalValue("quarkus.oidc.devservices.enabled", boolean.class).orElse(false);
     }
 
     private static boolean linuxContainersNotAvailable(DockerStatusBuildItem dockerStatusBuildItem,
@@ -957,13 +957,13 @@ public class KeycloakDevServicesProcessor {
 
     private static String getOidcClientId(KeycloakDevServicesConfig config) {
         // if the application type is web-app or hybrid, OidcRecorder will enforce that the client id and secret are configured
-        return ConfigProvider.getConfig().getOptionalValue(CLIENT_ID_CONFIG_KEY, String.class)
+        return Config.get().getOptionalValue(CLIENT_ID_CONFIG_KEY, String.class)
                 .orElse(config.createClient() ? "quarkus-app" : "");
     }
 
     private static String getOidcClientSecret(KeycloakDevServicesConfig config) {
         // if the application type is web-app or hybrid, OidcRecorder will enforce that the client id and secret are configured
-        return ConfigProvider.getConfig().getOptionalValue(CLIENT_SECRET_CONFIG_KEY, String.class)
+        return Config.get().getOptionalValue(CLIENT_SECRET_CONFIG_KEY, String.class)
                 .orElse(config.createClient() ? "secret" : "");
     }
 

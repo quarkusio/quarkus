@@ -35,7 +35,6 @@ import java.util.function.BooleanSupplier;
 
 import jakarta.annotation.Priority;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
@@ -69,6 +68,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
 import io.quarkus.deployment.builditem.ConfigMappingsRegistrarBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedConfigClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedConfigClassBuildItem.ConfigClassImplementation;
@@ -115,6 +115,7 @@ import io.quarkus.runtime.configuration.ConfigRecorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.DisableableConfigSource;
 import io.quarkus.runtime.configuration.FixedAtBuildTimeConfigBuilder;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
 import io.quarkus.runtime.configuration.StaticInitConfigBuilder;
@@ -764,11 +765,23 @@ public class ConfigGenerationBuildStep {
         suppressNonRuntimeConfigChanged.produce(new SuppressNonRuntimeConfigChangedWarningBuildItem("quarkus.test.arg-line"));
     }
 
+    /**
+     * Releases the runtime configuration when the application shuts down, and clears the build time configuration
+     * when the {@link io.quarkus.bootstrap.app.CuratedApplication} is closed.
+     * <p>
+     * These are two distinct {@link QuarkusConfigFactory} instances. The recorded task runs with the runtime
+     * classloader, while the close task runs with the augmentation classloader, which is the one holding the
+     * configuration installed by {@link io.quarkus.deployment.ExtensionLoader#loadStepsFrom}.
+     */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void releaseConfigOnShutdown(ShutdownContextBuildItem shutdownContext,
+            CuratedApplicationShutdownBuildItem shutdownBuildItem,
             ConfigRecorder recorder) {
         recorder.releaseConfig(shutdownContext);
+        // Releases the build time configuration from both the deployment and the augmentation classloaders,
+        // because setConfig releases the previous configuration by instance
+        shutdownBuildItem.addCloseTask(() -> QuarkusConfigFactory.setConfig(null), true);
     }
 
     /**
@@ -812,7 +825,7 @@ public class ConfigGenerationBuildStep {
     public void watchConfigFiles(BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
         List<String> configWatchedFiles = new ArrayList<>();
 
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         String userDir = System.getProperty("user.dir");
 
         // Main files
@@ -914,8 +927,7 @@ public class ConfigGenerationBuildStep {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void warnDifferentProfileUsedBetweenBuildAndRunTime(ConfigRecorder configRecorder) {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        configRecorder.handleNativeProfileChange(config.getProfiles());
+        configRecorder.handleNativeProfileChange(Config.get().getProfiles());
     }
 
     @BuildStep(onlyIf = IsProduction.class)
@@ -927,6 +939,9 @@ public class ConfigGenerationBuildStep {
             ConfigTrackingConfig configTrackingConfig) {
         var readOptionsProvider = configBuildItem.getReadResult().getReadOptionsProvider();
         if (readOptionsProvider != null) {
+            // The profiles have to be resolved now. The closeable runs at the end of the augmentation, with the
+            // augmentation classloader, but this should take the profiles of the deployment classloader.
+            List<String> profiles = ConfigUtils.getProfiles();
             closeables.add(new Closeable() {
                 @Override
                 public void close() throws IOException {
@@ -934,7 +949,7 @@ public class ConfigGenerationBuildStep {
                             readOptionsProvider.getReadOptions(),
                             configTrackingConfig,
                             configBuildItem.getReadResult(),
-                            ConfigUtils.getProfiles(),
+                            profiles,
                             buildSystemTargetBuildItem.getOutputDirectory());
                 }
             });

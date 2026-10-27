@@ -2,7 +2,6 @@ package io.quarkus.test.config;
 
 import java.lang.reflect.Field;
 
-import org.eclipse.microprofile.config.Config;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
@@ -10,6 +9,8 @@ import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
+
+import io.smallrye.config.Config;
 
 /**
  * An injector to resolve fields and parameters of {@link io.smallrye.config.Config} objects in Quarkus Test Extensions.
@@ -21,7 +22,7 @@ public class ConfigInjector {
         Class<?> c = testInstance.getClass();
         while (c != Object.class) {
             for (Field f : c.getDeclaredFields()) {
-                if (org.eclipse.microprofile.config.Config.class.isAssignableFrom(f.getType())) {
+                if (Config.class.isAssignableFrom(f.getType())) {
                     try {
                         f.setAccessible(true);
                         f.set(testInstance, config);
@@ -34,17 +35,17 @@ public class ConfigInjector {
         }
     }
 
-    public static io.smallrye.config.Config get(ExtensionContext extensionContext) {
+    public static Config get(ExtensionContext extensionContext) {
         Store store = extensionContext.getStore(Namespace.GLOBAL);
-        return store.get(io.smallrye.config.Config.class.getName(), io.smallrye.config.Config.class);
+        return store.get(Config.class.getName(), Config.class);
     }
 
-    public static void set(ExtensionContext context, io.smallrye.config.Config config) {
-        context.getStore(Namespace.GLOBAL).put(io.smallrye.config.Config.class.getName(), config);
+    public static void set(ExtensionContext context, Config config) {
+        context.getStore(Namespace.GLOBAL).put(Config.class.getName(), config);
     }
 
     public static void clear(ExtensionContext context) {
-        context.getStore(Namespace.GLOBAL).remove(io.smallrye.config.Config.class.getName());
+        context.getStore(Namespace.GLOBAL).remove(Config.class.getName());
     }
 
     private static class ConfigParameterResolver implements ParameterResolver {

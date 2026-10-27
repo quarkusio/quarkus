@@ -9,7 +9,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.util.JsonSerialization;
@@ -18,6 +17,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.common.DevServicesContext;
 import io.restassured.RestAssured;
 import io.restassured.specification.RequestSpecification;
+import io.smallrye.config.Config;
 
 public class KeycloakTestClient implements DevServicesContext.ContextAware {
 
@@ -415,7 +415,8 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
     }
 
     private String getPropertyValue(String prop, String defaultValue) {
-        return ConfigProvider.getConfig().getOptionalValue(prop, String.class)
+        // Test resources start in their own threads, which may not have a configuration registered
+        return Config.getOrCreate().getOptionalValue(prop, String.class)
                 .orElseGet(() -> getDevProperty(prop, defaultValue));
     }
 

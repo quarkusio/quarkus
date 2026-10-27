@@ -26,7 +26,6 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.function.Supplier;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -73,6 +72,7 @@ import io.quarkus.devservices.common.StartableContainer;
 import io.quarkus.devservices.crossclassloader.runtime.RunningService;
 import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.config.Config;
 
 public class DevServicesProcessor {
 
@@ -89,7 +89,7 @@ public class DevServicesProcessor {
             DevServicesConfig devServicesConfig,
             List<DevServicesSharedNetworkBuildItem> sharedNetworkBuildItems,
             Optional<DevServicesComposeProjectBuildItem> composeProjectBuildItem) {
-        Optional<String> configuredNetwork = ConfigProvider.getConfig().getOptionalValue(
+        Optional<String> configuredNetwork = Config.get().getOptionalValue(
                 "quarkus.test.container.network", String.class);
         String networkId = configuredNetwork.flatMap(this::getOrCreateNetworkId)
                 .or(() -> composeProjectBuildItem.map(DevServicesComposeProjectBuildItem::getDefaultNetworkId))
@@ -193,8 +193,10 @@ public class DevServicesProcessor {
             ApplicationInstanceIdBuildItem applicationId,
             DevServicesConfig devServicesConfig,
             CuratedApplicationShutdownBuildItem shutdownBuildItem) {
+        // Capture the build time configuration of this augmentation. The services only start later, when it is no
+        // longer registered for the deployment classloader, and QuarkusConfigFactory may hold another application's
         DevServicesRegistryBuildItem registryBuildItem = new DevServicesRegistryBuildItem(applicationId.getUUID(),
-                devServicesConfig, launchMode.getLaunchMode());
+                devServicesConfig, launchMode.getLaunchMode(), Config.get());
         shutdownBuildItem.addCloseTask(registryBuildItem::closeOwnRunningServices, true);
         return registryBuildItem;
     }

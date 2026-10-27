@@ -19,7 +19,6 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.util.TypeLiteral;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
@@ -51,6 +50,7 @@ import io.quarkus.websockets.next.runtime.spi.security.WebSocketIdentityUpdateRe
 import io.quarkus.websockets.next.runtime.telemetry.SendingInterceptor;
 import io.quarkus.websockets.next.runtime.telemetry.WebSocketTelemetryProvider;
 import io.smallrye.common.vertx.VertxContext;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -222,7 +222,7 @@ public class WebSocketServerRecorder {
         return new Function<SyntheticCreationalContext<SecurityHttpUpgradeCheck>, SecurityHttpUpgradeCheck>() {
             @Override
             public SecurityHttpUpgradeCheck apply(SyntheticCreationalContext<SecurityHttpUpgradeCheck> ctx) {
-                boolean securityEventsEnabled = ConfigProvider.getConfig().getValue("quarkus.security.events.enabled",
+                boolean securityEventsEnabled = Config.get().getValue("quarkus.security.events.enabled",
                         Boolean.class);
                 var securityEventHelper = new SecurityEventHelper<>(ctx.getInjectedReference(new TypeLiteral<>() {
                 }), ctx.getInjectedReference(new TypeLiteral<>() {

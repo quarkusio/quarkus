@@ -3,11 +3,10 @@ package io.quarkus.arc.runtime;
 import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.impl.InjectionPointProvider;
+import io.smallrye.config.Config;
 import io.smallrye.config.inject.ConfigProducerUtil;
 
 public class ConfigPropertyCreator implements BeanCreator<Object> {
@@ -33,7 +32,7 @@ public class ConfigPropertyCreator implements BeanCreator<Object> {
         ConfigStaticInitCheckInterceptor.recordConfigValue(injectionPoint, null);
 
         try {
-            return ConfigProducerUtil.getValue(injectionPoint, ConfigProvider.getConfig());
+            return ConfigProducerUtil.getValue(injectionPoint, Config.get());
         } catch (Exception e) {
             throw new DeploymentException(e);
         }

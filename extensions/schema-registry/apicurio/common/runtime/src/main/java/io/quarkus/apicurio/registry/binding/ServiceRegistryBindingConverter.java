@@ -8,12 +8,11 @@ import java.util.Optional;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.kubernetes.service.binding.runtime.ServiceBinding;
 import io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConfigSource;
 import io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter;
+import io.smallrye.config.Config;
 
 public class ServiceRegistryBindingConverter implements ServiceBindingConverter {
 
@@ -25,7 +24,7 @@ public class ServiceRegistryBindingConverter implements ServiceBindingConverter 
     @Override
     public Optional<ServiceBindingConfigSource> convert(List<ServiceBinding> serviceBindings) {
         var matchingByType = ServiceBinding.singleMatchingByType("serviceregistry", serviceBindings);
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         if (matchingByType.isEmpty()) {
             return Optional.empty();
         }

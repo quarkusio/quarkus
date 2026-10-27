@@ -7,12 +7,10 @@ import java.util.Map;
 
 import jakarta.enterprise.context.spi.CreationalContext;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.quarkus.arc.BeanDestroyer;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public class OpenTelemetryDestroyer implements BeanDestroyer<OpenTelemetry> {
     @Override
@@ -29,8 +27,7 @@ public class OpenTelemetryDestroyer implements BeanDestroyer<OpenTelemetry> {
     }
 
     public static Duration getShutdownWaitTime() {
-        var config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        return config.getOptionalValue("quarkus.otel.experimental.shutdown-wait-time", Duration.class)
+        return Config.get().getOptionalValue("quarkus.otel.experimental.shutdown-wait-time", Duration.class)
                 .orElse(Duration.ofSeconds(2));
     }
 }

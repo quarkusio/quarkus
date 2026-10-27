@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.Feature;
@@ -20,6 +19,7 @@ import io.quarkus.devservices.keycloak.KeycloakDevServicesConfigurator.LazyConfi
 import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source;
 import io.quarkus.oidc.deployment.OidcBuildStep;
+import io.smallrye.config.Config;
 
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, OidcBuildStep.IsEnabled.class,
         DevServicesConfig.Enabled.class })
@@ -43,7 +43,7 @@ public class KeycloakDevServiceRequiredBuildStep {
                 new LazyConfigProperty(OIDC_AUTH_SERVER_URL_CONFIG_KEY, ConfigPropertiesContext::authServerInternalUrl)));
         if (config.createClient()) {
             lazyConfigProperties.add(new LazyConfigProperty(CLIENT_ID_CONFIG_KEY, ConfigPropertiesContext::oidcClientId));
-            Source jwtSource = ConfigProvider.getConfig().getOptionalValue(JWT_SOURCE_CONFIG_KEY, Source.class)
+            Source jwtSource = Config.get().getOptionalValue(JWT_SOURCE_CONFIG_KEY, Source.class)
                     .orElse(Source.CLIENT);
             if (jwtSource == Source.CLIENT) {
                 lazyConfigProperties
@@ -54,6 +54,6 @@ public class KeycloakDevServiceRequiredBuildStep {
     }
 
     private static boolean isOidcTenantEnabled() {
-        return ConfigProvider.getConfig().getOptionalValue(TENANT_ENABLED_CONFIG_KEY, Boolean.class).orElse(true);
+        return Config.get().getOptionalValue(TENANT_ENABLED_CONFIG_KEY, Boolean.class).orElse(true);
     }
 }

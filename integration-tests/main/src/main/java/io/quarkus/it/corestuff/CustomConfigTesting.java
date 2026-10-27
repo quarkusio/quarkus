@@ -8,14 +8,14 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.eclipse.microprofile.config.ConfigProvider;
+import io.smallrye.config.Config;
 
 @WebServlet(name = "CustomConfigTestingEndpoint", urlPatterns = "/core/config-test")
 public class CustomConfigTesting extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        final Optional<String> strVal = ConfigProvider.getConfig().getOptionalValue("test.custom.config", String.class);
+        final Optional<String> strVal = Config.get().getOptionalValue("test.custom.config", String.class);
         resp.getWriter().write(strVal.isPresent() && strVal.get().equals("custom") ? "OK" : "KO");
     }
 }

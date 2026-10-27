@@ -12,13 +12,13 @@ import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import io.smallrye.config.Config;
 
 public class UnknownConfigTest {
     @RegisterExtension

@@ -4,8 +4,6 @@ import java.util.Optional;
 
 import jakarta.enterprise.inject.spi.CDI;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.hamcrest.Matchers;
@@ -15,13 +13,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
+import io.smallrye.config.Config;
 
 public class OpenApiMPFilterTest {
     private static final String OPEN_API_PATH = "/q/openapi";
 
     public static class MyOASFilter implements OASFilter {
 
-        final Config config = ConfigProvider.getConfig();
+        final Config config = Config.get();
 
         @Override
         public void filterOpenAPI(OpenAPI openAPI) {

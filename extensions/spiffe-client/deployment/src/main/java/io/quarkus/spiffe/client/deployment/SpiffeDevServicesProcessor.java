@@ -12,7 +12,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.jose4j.jwk.EcJwkGenerator;
 import org.jose4j.jwk.EllipticCurveJsonWebKey;
@@ -35,6 +34,7 @@ import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVID;
 import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVIDRequest;
 import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVIDResponse;
 import io.smallrye.common.os.OS;
+import io.smallrye.config.Config;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.Vertx;
@@ -67,7 +67,7 @@ public final class SpiffeDevServicesProcessor {
     void startDevService(SpiffeClientBuildTimeConfig config,
             BuildProducer<DevServicesResultBuildItem> devServicesResultProducer,
             LaunchModeBuildItem launchModeBuildItem) {
-        if (ConfigProvider.getConfig().getOptionalValue(ENDPOINT_SOCKET_CONFIG_KEY, String.class).isPresent()) {
+        if (Config.get().getOptionalValue(ENDPOINT_SOCKET_CONFIG_KEY, String.class).isPresent()) {
             LOG.debug("SPIFFE endpoint socket already configured, skipping SPIFFE Dev Services");
             return;
         }

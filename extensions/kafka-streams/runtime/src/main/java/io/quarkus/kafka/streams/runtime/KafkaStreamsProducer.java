@@ -34,13 +34,13 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.apache.kafka.streams.processor.StateRestoreListener;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.common.annotation.Identifier;
+import io.smallrye.config.Config;
 
 /**
  * Manages the lifecycle of a Kafka Streams pipeline. If there's a producer
@@ -83,7 +83,7 @@ public class KafkaStreamsProducer {
         String bootstrapServersConfig = asString(runtimeConfig.bootstrapServers());
         if (DEFAULT_KAFKA_BROKER.equalsIgnoreCase(bootstrapServersConfig)) {
             // Try to see if kafka.bootstrap.servers is set, if so, use that value, if not, keep localhost:9092
-            bootstrapServersConfig = ConfigProvider.getConfig().getOptionalValue("kafka.bootstrap.servers", String.class)
+            bootstrapServersConfig = Config.get().getOptionalValue("kafka.bootstrap.servers", String.class)
                     .orElse(bootstrapServersConfig);
         }
         Map<String, Object> cfg = Collections.emptyMap();

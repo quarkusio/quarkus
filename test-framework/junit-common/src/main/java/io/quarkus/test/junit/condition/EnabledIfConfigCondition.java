@@ -2,9 +2,10 @@ package io.quarkus.test.junit.condition;
 
 import java.util.NoSuchElementException;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.platform.commons.util.Preconditions;
+
+import io.smallrye.config.Config;
 
 class EnabledIfConfigCondition extends RepeatableAnnotationCondition<EnabledIfConfig> {
     private static final ConditionEvaluationResult ENABLED = ConditionEvaluationResult
@@ -22,7 +23,7 @@ class EnabledIfConfigCondition extends RepeatableAnnotationCondition<EnabledIfCo
         Preconditions.notBlank(regex, () -> "The 'matches' attribute must not be blank in " + annotation);
 
         try {
-            var actual = ConfigProvider.getConfig().getValue(name, String.class);
+            var actual = Config.getOrCreate().getValue(name, String.class);
 
             return actual.matches(regex)
                     ? ConditionEvaluationResult.enabled(

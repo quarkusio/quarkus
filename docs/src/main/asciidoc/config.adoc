@@ -203,13 +203,13 @@ include::{includes}/devtools/build-native.adoc[]
 
 == Programmatically access the configuration
 
-The `org.eclipse.microprofile.config.ConfigProvider.getConfig()` API allows access to the Config API programmatically.
+The `io.smallrye.config.Config.get()` API allows access to the Config API programmatically.
 This API is mostly useful in situations where CDI injection is not available.
 
 [source,java]
 ----
-String databaseName = ConfigProvider.getConfig().getValue("database.name", String.class);
-Optional<String> maybeDatabaseName = ConfigProvider.getConfig().getOptionalValue("database.name", String.class);
+String databaseName = Config.get().getValue("database.name", String.class);
+Optional<String> maybeDatabaseName = Config.get().getOptionalValue("database.name", String.class);
 ----
 
 == Configuring Quarkus

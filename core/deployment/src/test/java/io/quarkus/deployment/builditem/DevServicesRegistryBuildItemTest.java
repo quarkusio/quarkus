@@ -11,11 +11,19 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 class DevServicesRegistryBuildItemTest {
 
+    // Stands in for the build time configuration captured during the augmentation. It is registered for the
+    // deployment classloader while the services start, and released again afterwards
     private final DevServicesRegistryBuildItem registry = new DevServicesRegistryBuildItem(UUID.randomUUID(), null,
-            LaunchMode.TEST);
+            LaunchMode.TEST, new SmallRyeConfigBuilder().build());
+
+    // Starting the services registers the configuration for this classloader, so use a throwaway one instead of
+    // polluting the configuration of the classloader running the tests
+    private final ClassLoader deploymentClassLoader = new ClassLoader(getClass().getClassLoader()) {
+    };
 
     @AfterEach
     void cleanup() {
@@ -48,7 +56,7 @@ class DevServicesRegistryBuildItemTest {
 
         // Services are passed in an order which does not match the dependency chain, on purpose
         DevServicesRegistryBuildItem.DevServicesStartResult result = registry.startAll(
-                List.of(serviceC, serviceA, serviceB), List.of(), List.of(), null);
+                List.of(serviceC, serviceA, serviceB), List.of(), List.of(), deploymentClassLoader);
 
         assertEquals("valueA", result.configs().get("test.a.value"));
         assertEquals("valueB-valueA", result.configs().get("test.b.value"));
@@ -72,7 +80,7 @@ class DevServicesRegistryBuildItemTest {
                 .build();
 
         DevServicesRegistryBuildItem.DevServicesStartResult result = registry.startAll(
-                List.of(serviceB, serviceC), List.of(), List.of(), null);
+                List.of(serviceB, serviceC), List.of(), List.of(), deploymentClassLoader);
 
         assertNull(result.configs().get("test.b.value"));
         assertNull(result.configs().get("test.c.value"));
@@ -95,7 +103,7 @@ class DevServicesRegistryBuildItemTest {
                 .build();
 
         DevServicesRegistryBuildItem.DevServicesStartResult result = registry.startAll(
-                List.of(serviceX, serviceY), List.of(), List.of(), null);
+                List.of(serviceX, serviceY), List.of(), List.of(), deploymentClassLoader);
 
         assertNull(result.configs().get("test.x.value"));
         assertNull(result.configs().get("test.y.value"));
@@ -119,10 +127,26 @@ class DevServicesRegistryBuildItemTest {
                 .build();
 
         DevServicesRegistryBuildItem.DevServicesStartResult result = registry.startAll(
-                List.of(serviceB, serviceC), List.of(), List.of(), null);
+                List.of(serviceB, serviceC), List.of(), List.of(), deploymentClassLoader);
 
         assertEquals("valueB", result.configs().get("test.b.value"));
         assertEquals("valueC-valueB", result.configs().get("test.c.value"));
+    }
+
+    @Test
+    void shouldStartServicesWithoutADeploymentClassLoader() {
+        // Integration tests call startAll reflectively with a null classloader, see
+        // io.quarkus.test.junit.NativeDevServicesHandler
+        DevServicesResultBuildItem service = DevServicesResultBuildItem.owned()
+                .feature("noDeploymentClassLoader")
+                .startable(() -> new RecordingStartable("value", 0))
+                .configProvider(Map.of("test.no.cl.value", RecordingStartable::getConnectionInfo))
+                .build();
+
+        DevServicesRegistryBuildItem.DevServicesStartResult result = registry.startAll(
+                List.of(service), List.of(), List.of(), null);
+
+        assertEquals("value", result.configs().get("test.no.cl.value"));
     }
 
     public static class RecordingStartable implements Startable {

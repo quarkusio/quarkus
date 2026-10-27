@@ -14,7 +14,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.lra.annotation.LRAStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
+import io.smallrye.config.Config;
 
 @QuarkusTest
 @TestHTTPEndpoint(TransactionalResource.class)
@@ -31,7 +31,7 @@ public class LRAParticipantTest {
 
     @BeforeEach
     public void setup() {
-        this.coordinatorEndpoint = ConfigProvider.getConfig()
+        this.coordinatorEndpoint = Config.get()
                 .getValue("quarkus.lra.coordinator-url", String.class);
     }
 

@@ -12,7 +12,6 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -22,6 +21,7 @@ import io.quarkus.security.test.utils.AuthData;
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.config.Config;
 
 public class RolesAllowedExpressionTest {
 
@@ -168,7 +168,7 @@ public class RolesAllowedExpressionTest {
 
         @RolesAllowed("${sudo}")
         public static String staticSecuredMethod() {
-            return ConfigProvider.getConfig().getValue("sudo", String.class);
+            return Config.get().getValue("sudo", String.class);
         }
 
     }

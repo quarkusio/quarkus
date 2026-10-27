@@ -14,8 +14,6 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Typed;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.websockets.next.WebSocketClientConnection;
@@ -26,6 +24,7 @@ import io.quarkus.websockets.next.runtime.WebSocketClientRecorder.ClientEndpoint
 import io.quarkus.websockets.next.runtime.config.WebSocketsClientRuntimeConfig;
 import io.quarkus.websockets.next.runtime.telemetry.SendingInterceptor;
 import io.quarkus.websockets.next.runtime.telemetry.WebSocketTelemetryProvider;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -69,7 +68,7 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
         } else {
             // Obtain the base URI from the config
             String key = clientEndpoint.clientId + ".base-uri";
-            Optional<String> maybeBaseUri = ConfigProvider.getConfig().getOptionalValue(key, String.class);
+            Optional<String> maybeBaseUri = Config.get().getOptionalValue(key, String.class);
             if (maybeBaseUri.isEmpty()) {
                 throw new WebSocketClientException("Unable to obtain the config value for: " + key);
             }

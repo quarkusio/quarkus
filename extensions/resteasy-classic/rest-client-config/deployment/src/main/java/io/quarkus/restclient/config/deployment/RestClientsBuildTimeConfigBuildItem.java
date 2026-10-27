@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -21,6 +20,7 @@ import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientKeysProvider;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -46,7 +46,7 @@ public final class RestClientsBuildTimeConfigBuildItem extends SimpleBuildItem {
         this.restClients = Collections.unmodifiableList(restClients);
         this.config = new SmallRyeConfigBuilder()
                 .withSources(new ConfigSource() {
-                    final SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+                    final Config config = Config.get();
 
                     @Override
                     public Set<String> getPropertyNames() {

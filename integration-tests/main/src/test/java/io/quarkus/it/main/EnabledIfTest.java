@@ -9,7 +9,6 @@ import java.lang.annotation.*;
 import java.lang.reflect.InvocationTargetException;
 import java.util.function.BooleanSupplier;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
@@ -17,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import io.quarkus.test.junit.QuarkusTestExtension;
+import io.smallrye.config.Config;
 
 @ExtendWith(value = { QuarkusTestExtension.class, EnabledIfTest.EnabledIfCondition.class })
 public class EnabledIfTest {
@@ -30,7 +30,7 @@ public class EnabledIfTest {
     public static final class R5Enabled implements BooleanSupplier {
         @Override
         public boolean getAsBoolean() {
-            return ConfigProvider.getConfig().getOptionalValue("quarkus.camel.fhir.enable-r5", Boolean.class)
+            return Config.get().getOptionalValue("quarkus.camel.fhir.enable-r5", Boolean.class)
                     .orElse(Boolean.TRUE);
         }
     }

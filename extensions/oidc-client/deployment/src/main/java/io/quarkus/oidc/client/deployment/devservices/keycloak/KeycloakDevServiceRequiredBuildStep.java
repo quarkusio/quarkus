@@ -4,8 +4,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
@@ -20,6 +18,7 @@ import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.client.deployment.OidcClientBuildStep;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source;
+import io.smallrye.config.Config;
 
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, OidcClientBuildStep.IsEnabled.class,
         DevServicesConfig.Enabled.class })
@@ -41,7 +40,7 @@ public class KeycloakDevServiceRequiredBuildStep {
                         new LazyConfigProperty(OIDC_CLIENT_TOKEN_PATH_CONFIG_KEY, "/protocol/openid-connect/tokens")));
         if (config.createClient()) {
             lazyConfigProperties.add(new LazyConfigProperty(OIDC_CLIENT_ID_CONFIG_KEY, ConfigPropertiesContext::oidcClientId));
-            Source jwtSource = ConfigProvider.getConfig().getOptionalValue(OIDC_CLIENT_JWT_SOURCE, Source.class)
+            Source jwtSource = Config.get().getOptionalValue(OIDC_CLIENT_JWT_SOURCE, Source.class)
                     .orElse(Source.CLIENT);
             if (jwtSource == Source.CLIENT) {
                 lazyConfigProperties

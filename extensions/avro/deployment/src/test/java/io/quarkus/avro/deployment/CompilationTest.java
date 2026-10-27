@@ -4,10 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.nio.file.Path;
 
-import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
 public class CompilationTest {

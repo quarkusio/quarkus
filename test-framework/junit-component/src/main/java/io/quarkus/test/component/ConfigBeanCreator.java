@@ -2,11 +2,9 @@ package io.quarkus.test.component;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.smallrye.config.Config;
 
 public class ConfigBeanCreator implements BeanCreator<Config> {
 
@@ -19,7 +17,7 @@ public class ConfigBeanCreator implements BeanCreator<Config> {
     }
 
     static Config getConfig() {
-        return ConfigProvider.getConfig(configClassLoader.get());
+        return Config.get(configClassLoader.get());
     }
 
     static void setClassLoader(ClassLoader classLoader) {

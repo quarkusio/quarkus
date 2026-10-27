@@ -7,18 +7,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.smallrye.common.os.OS;
 import io.smallrye.common.process.ProcessBuilder;
 import io.smallrye.common.process.ProcessUtil;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public final class ContainerRuntimeUtil {
 
     private static final Logger log = Logger.getLogger(ContainerRuntimeUtil.class);
-    private static final String CONTAINER_EXECUTABLE = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
+    private static final String CONTAINER_EXECUTABLE = Config.getOrCreate()
             .getOptionalValue("quarkus.native.container-runtime", String.class).orElse(null);
     private static final Pattern PODMAN_PATTERN = Pattern.compile("^podman(?i:\\.exe)? version.*", Pattern.DOTALL);
 

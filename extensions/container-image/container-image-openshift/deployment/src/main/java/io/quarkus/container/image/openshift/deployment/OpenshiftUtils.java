@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
@@ -16,6 +14,7 @@ import io.fabric8.openshift.api.model.ImageStreamTag;
 import io.fabric8.openshift.api.model.SourceBuildStrategyFluent;
 import io.fabric8.openshift.client.OpenShiftClient;
 import io.quarkus.kubernetes.spi.DeployStrategy;
+import io.smallrye.config.Config;
 
 /**
  * This class is copied from Dekorate, with the difference that the {@code waitForImageStreamTags} method
@@ -86,16 +85,18 @@ public class OpenshiftUtils {
      * @return the openshift namespace set in the OpenShift extension.
      */
     public static Optional<String> getNamespace() {
-        return ConfigProvider.getConfig().getOptionalValue(OPENSHIFT_NAMESPACE, String.class)
-                .or(() -> ConfigProvider.getConfig().getOptionalValue(KUBERNETES_NAMESPACE, String.class));
+        Config config = Config.get();
+        return config.getOptionalValue(OPENSHIFT_NAMESPACE, String.class)
+                .or(() -> config.getOptionalValue(KUBERNETES_NAMESPACE, String.class));
     }
 
     /**
      * @return the openshift deploy strategy set in the OpenShift/Kubernetes extensions.
      */
     public static DeployStrategy getDeployStrategy() {
-        return ConfigProvider.getConfig().getOptionalValue(OPENSHIFT_DEPLOY_STRATEGY, DeployStrategy.class)
-                .or(() -> ConfigProvider.getConfig().getOptionalValue(KUBERNETES_DEPLOY_STRATEGY, DeployStrategy.class))
+        Config config = Config.get();
+        return config.getOptionalValue(OPENSHIFT_DEPLOY_STRATEGY, DeployStrategy.class)
+                .or(() -> config.getOptionalValue(KUBERNETES_DEPLOY_STRATEGY, DeployStrategy.class))
                 .orElse(DeployStrategy.CreateOrUpdate);
     }
 }

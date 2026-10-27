@@ -15,12 +15,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.avro.generic.GenericData;
-import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.CodeGenContext;
 import io.quarkus.deployment.CodeGenProvider;
+import io.smallrye.config.Config;
 
 public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
 

@@ -4,13 +4,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.config.MeterRegistryConfig;
 import io.micrometer.core.instrument.config.validate.InvalidReason;
 import io.micrometer.core.instrument.config.validate.Validated;
 import io.quarkus.micrometer.runtime.config.runtime.PrometheusRuntimeConfig;
+import io.smallrye.config.Config;
 
 public class ConfigAdapter {
     private static final Logger log = Logger.getLogger(ConfigAdapter.class);

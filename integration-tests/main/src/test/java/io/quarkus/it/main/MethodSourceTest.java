@@ -8,7 +8,6 @@ import java.util.List;
 
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -17,6 +16,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import io.quarkus.it.arc.UnusedBean;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.config.Config;
 
 @QuarkusTest
 public class MethodSourceTest {
@@ -31,7 +31,7 @@ public class MethodSourceTest {
         assertThat(dummyResult.getResult(), matcher);
 
         // Can we get config?
-        ConfigProvider.getConfig();
+        Config.get();
     }
 
     private static Collection<Arguments> provideDummyInput() {

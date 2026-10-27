@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.StringJoiner;
 import java.util.regex.Pattern;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigValue;
 
 import io.quarkus.bootstrap.util.PropertyUtils;
+import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfig;
 
 /**

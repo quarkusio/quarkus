@@ -1,7 +1,5 @@
 package io.quarkus.devui.deployment.menu;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsLocalDevelopment;
@@ -12,6 +10,7 @@ import io.quarkus.devui.spi.Constants;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundData;
+import io.smallrye.config.Config;
 
 /**
  * This creates Endpoints Page
@@ -27,7 +26,7 @@ public class EndpointsProcessor {
         final String swaggerUiPath;
         if (swaggerIsAvailable) {
             swaggerUiPath = nonApplicationRootPathBuildItem
-                    .resolvePath(ConfigProvider.getConfig().getValue("quarkus.swagger-ui.path", String.class));
+                    .resolvePath(Config.get().getValue("quarkus.swagger-ui.path", String.class));
         } else {
             swaggerUiPath = "";
         }

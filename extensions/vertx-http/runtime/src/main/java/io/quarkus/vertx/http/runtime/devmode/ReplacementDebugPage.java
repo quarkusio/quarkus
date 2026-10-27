@@ -9,13 +9,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.dev.ErrorPageGenerators;
 import io.quarkus.dev.config.ConfigurationProblem;
 import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.runtime.util.ExceptionUtil;
+import io.smallrye.config.Config;
 
 /**
  * Generates an error page with a stack trace.
@@ -59,7 +58,7 @@ public class ReplacementDebugPage {
             }
         }
         for (String i : configErrors) {
-            toEdit.add(new CurrentConfig(i, "", "", ConfigProvider.getConfig().getOptionalValue(i, String.class).orElse(null),
+            toEdit.add(new CurrentConfig(i, "", "", Config.get().getOptionalValue(i, String.class).orElse(null),
                     null));
         }
 

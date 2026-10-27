@@ -5,11 +5,9 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.vertx.http.runtime.AccessLogConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;
@@ -139,8 +137,7 @@ public class AllRequestHeadersAttribute implements ExchangeAttribute {
         }
 
         private static AccessLogConfig getConfigMapping() {
-            SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-            return config.getConfigMapping(VertxHttpConfig.class).accessLog();
+            return Config.get().getConfigMapping(VertxHttpConfig.class).accessLog();
         }
 
     }

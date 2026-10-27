@@ -30,6 +30,10 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.OpenPathTree;
+import io.smallrye.classfile.Attributes;
+import io.smallrye.classfile.ClassFile;
+import io.smallrye.classfile.attribute.ModuleProvideInfo;
+import io.smallrye.classfile.constantpool.ClassEntry;
 
 /**
  * Assembles all data needed by {@link JarTreeShaker} for reachability analysis.
@@ -50,8 +54,9 @@ class JarTreeShakeInput implements AutoCloseable {
     private static final Logger log = Logger.getLogger(JarTreeShakeInput.class.getName());
 
     private static final String SISU_NAMED_RESOURCE = "META-INF/sisu/javax.inject.Named";
-    private static final String META_INF_VERSIONS = "META-INF/versions";
+    private static final String META_INF_VERSIONS_PREFIX = "META-INF/versions/";
     private static final String META_INF_SERVICES = "META-INF/services/";
+    private static final String MODULE_INFO_CLASS = "module-info.class";
 
     /** Configured tree-shake mode controlling analysis aggressiveness. */
     final TreeShakeConfig.TreeShakeMode treeShakeMode;
@@ -251,7 +256,7 @@ class JarTreeShakeInput implements AutoCloseable {
         final Set<String> transformedClassNames = new HashSet<>();
         collectTransformedClasses(transformedClasses, depBytecode, transformedClassNames);
 
-        collectApplicationClasses(appModel, appBytecode, serviceProviders, openTrees);
+        collectApplicationClasses(appModel, appJavaVersion, appBytecode, serviceProviders, openTrees);
 
         final List<Path> appPaths = new ArrayList<>();
         for (Path p : appModel.getAppArtifact().getResolvedPaths()) {
@@ -314,8 +319,13 @@ class JarTreeShakeInput implements AutoCloseable {
             for (Path p : dep.getResolvedPaths()) {
                 depJarPaths.add(p);
             }
+            final ModuleDescriptorSelector moduleDescriptors = new ModuleDescriptorSelector(appJavaVersion, serviceProviders);
             openPathTree(dep, openTrees).walkRaw(visit -> {
                 String entry = visit.getResourceName();
+                if (isModuleInfoEntry(entry)) {
+                    moduleDescriptors.add(entry, visit.getPath());
+                    return;
+                }
                 if (isClassEntry(entry)) {
                     processRuntimeClassEntry(entry, visit.getPath(), dep, appJavaVersion, addClassesAsRoots,
                             roots, depBytecode, classToDep, depBytecodeVersion,
@@ -330,6 +340,7 @@ class JarTreeShakeInput implements AutoCloseable {
                     parseSisuNamedFile(visit.getPath(), sisuNamedClasses);
                 }
             });
+            moduleDescriptors.complete();
         }
     }
 
@@ -350,30 +361,23 @@ class JarTreeShakeInput implements AutoCloseable {
             Map<String, Integer> depBytecodeVersion,
             Map<String, List<Supplier<byte[]>>> higherVersionBytecode) {
 
-        String className;
-        int classJavaVersion = 0;
+        final int classJavaVersion = multiReleaseVersion(entry);
+        if (classJavaVersion < 0) {
+            // not a valid multi-release version directory, the JVM never loads it
+            return;
+        }
+        final String className = classJavaVersion == 0 ? classNameOf(entry)
+                : classNameOf(entry, entry.indexOf('/', META_INF_VERSIONS_PREFIX.length()) + 1);
 
-        if (entry.startsWith(META_INF_VERSIONS)) {
-            int resolved = resolveMultiReleaseVersion(entry, appJavaVersion);
-            if (resolved < 0) {
-                // Multi-release entry for a Java version newer than appJavaVersion.
-                // Collect its bytecode so references can be traced after the main analysis
-                // for classes that are reachable. Also register in classToDep so the class
-                // is part of allKnownClasses (needed for reference matching).
-                int javaVersionSeparator = entry.indexOf('/', META_INF_VERSIONS.length() + 1);
-                if (javaVersionSeparator > 0) {
-                    String cn = classNameOf(entry, javaVersionSeparator + 1);
-                    higherVersionBytecode.computeIfAbsent(cn, k -> new ArrayList<>())
-                            .add(new BytecodeSupplier(path));
-                    classToDep.putIfAbsent(cn, dep.getKey());
-                }
-                return;
-            }
-            classJavaVersion = resolved;
-            int javaVersionSeparator = entry.indexOf('/', META_INF_VERSIONS.length() + 1);
-            className = classNameOf(entry, javaVersionSeparator + 1);
-        } else {
-            className = classNameOf(entry);
+        if (classJavaVersion > appJavaVersion) {
+            // Multi-release entry for a Java version newer than appJavaVersion.
+            // Collect its bytecode so references can be traced after the main analysis
+            // for classes that are reachable. Also register in classToDep so the class
+            // is part of allKnownClasses (needed for reference matching).
+            higherVersionBytecode.computeIfAbsent(className, k -> new ArrayList<>())
+                    .add(new BytecodeSupplier(path));
+            classToDep.putIfAbsent(className, dep.getKey());
+            return;
         }
 
         int currentVersion = depBytecodeVersion.getOrDefault(className, -1);
@@ -391,24 +395,22 @@ class JarTreeShakeInput implements AutoCloseable {
     }
 
     /**
-     * Resolves a multi-release version entry, returning the Java version number
-     * if it should be included, or -1 if it should be skipped.
+     * Returns the Java version a JAR entry targets: {@code 0} for an entry outside of
+     * {@code META-INF/versions/}, {@code N} for an entry under {@code META-INF/versions/N/}
+     * or {@code -1} for an entry under a version directory the JVM ignores, i.e. one that isn't
+     * a number or is below 9, the first release supporting multi-release JARs.
      */
-    private static int resolveMultiReleaseVersion(String entry, int appJavaVersion) {
-        if (entry.length() == META_INF_VERSIONS.length() || entry.charAt(META_INF_VERSIONS.length()) != '/') {
-            return -1;
+    static int multiReleaseVersion(String entry) {
+        if (!entry.startsWith(META_INF_VERSIONS_PREFIX)) {
+            return 0;
         }
-        final int javaVersionSeparator = entry.indexOf('/', META_INF_VERSIONS.length() + 1);
+        final int javaVersionSeparator = entry.indexOf('/', META_INF_VERSIONS_PREFIX.length());
         if (javaVersionSeparator == -1) {
             return -1;
         }
         try {
-            int classJavaVersion = Integer.parseInt(
-                    entry.substring(META_INF_VERSIONS.length() + 1, javaVersionSeparator));
-            if (classJavaVersion > appJavaVersion) {
-                return -1;
-            }
-            return classJavaVersion;
+            int version = Integer.parseInt(entry.substring(META_INF_VERSIONS_PREFIX.length(), javaVersionSeparator));
+            return version < 9 ? -1 : version;
         } catch (NumberFormatException e) {
             return -1;
         }
@@ -445,11 +447,17 @@ class JarTreeShakeInput implements AutoCloseable {
      */
     private static void collectApplicationClasses(
             ApplicationModel appModel,
+            int appJavaVersion,
             Map<String, Supplier<byte[]>> appBytecode,
             Map<String, Set<String>> serviceProviders,
             Map<ArtifactKey, OpenPathTree> openTrees) {
+        final ModuleDescriptorSelector moduleDescriptors = new ModuleDescriptorSelector(appJavaVersion, serviceProviders);
         openPathTree(appModel.getAppArtifact(), openTrees).walk(visit -> {
             String entry = visit.getResourceName();
+            if (isModuleInfoEntry(entry)) {
+                moduleDescriptors.add(entry, visit.getPath());
+                return;
+            }
             if (isClassEntry(entry)) {
                 appBytecode.put(classNameOf(entry), new BytecodeSupplier(visit.getPath()));
                 return;
@@ -458,6 +466,7 @@ class JarTreeShakeInput implements AutoCloseable {
                 parseServiceFile(visit.getPath(), entry, serviceProviders);
             }
         });
+        moduleDescriptors.complete();
     }
 
     /**
@@ -605,6 +614,41 @@ class JarTreeShakeInput implements AutoCloseable {
     }
 
     /**
+     * Checks whether the entry is a module descriptor, either at the root
+     * or in a multi-release {@code META-INF/versions/N/} directory.
+     */
+    static boolean isModuleInfoEntry(String resourceName) {
+        final int descriptorStart = resourceName.length() - MODULE_INFO_CLASS.length();
+        if (descriptorStart < 0 || !resourceName.startsWith(MODULE_INFO_CLASS, descriptorStart)) {
+            return false;
+        }
+        if (descriptorStart == 0) {
+            return true;
+        }
+        // the version directory must be the only one between the prefix and the descriptor
+        return resourceName.startsWith(META_INF_VERSIONS_PREFIX)
+                && resourceName.indexOf('/', META_INF_VERSIONS_PREFIX.length()) == descriptorStart - 1;
+    }
+
+    /**
+     * Parses the {@code provides} directives of a {@code module-info.class}, grouping provider
+     * class names by service interface. Modules may register service providers only in their
+     * descriptor (without a {@code META-INF/services/} file), in which case they are found
+     * by {@code ServiceLoader} when the application runs on the module path.
+     */
+    static void parseModuleInfoProviders(byte[] bytecode, Map<String, Set<String>> serviceProviders) {
+        ClassFile.of().parse(bytecode).findAttribute(Attributes.module()).ifPresent(module -> {
+            for (ModuleProvideInfo provide : module.provides()) {
+                Set<String> names = serviceProviders.computeIfAbsent(
+                        provide.provides().asInternalName().replace('/', '.'), k -> new HashSet<>());
+                for (ClassEntry provider : provide.providesWith()) {
+                    names.add(provider.asInternalName().replace('/', '.'));
+                }
+            }
+        });
+    }
+
+    /**
      * Parses a {@code META-INF/services/} file, extracting provider class names
      * (stripping comments and whitespace) and grouping them by service interface.
      */
@@ -676,6 +720,70 @@ class JarTreeShakeInput implements AutoCloseable {
         roots.clear();
         conditionalRoots.clear();
         excludedArtifacts.clear();
+    }
+
+    /**
+     * Selects the module descriptors of an artifact that the JVM may read, following the same
+     * multi-release rules as for classes: the highest version not newer than {@code appJavaVersion}
+     * (a lower one is always overridden by it) and every newer version, since the application
+     * may run on a newer JVM.
+     * <p>
+     * Newer versions are always selected, so their providers are collected as soon as they are
+     * visited. The highest version not newer than {@code appJavaVersion} is only known once all the
+     * entries have been visited, which is why its providers are collected by {@link #complete()}.
+     */
+    static class ModuleDescriptorSelector {
+
+        private final int appJavaVersion;
+        private final Map<String, Set<String>> serviceProviders;
+        private int selectedVersion = -1;
+        private byte[] selected;
+
+        ModuleDescriptorSelector(int appJavaVersion, Map<String, Set<String>> serviceProviders) {
+            this.appJavaVersion = appJavaVersion;
+            this.serviceProviders = serviceProviders;
+        }
+
+        /**
+         * Registers a module descriptor entry accepted by {@link #isModuleInfoEntry(String)}.
+         * The descriptor is read right away, since the path is only guaranteed to be readable
+         * while it's being visited.
+         */
+        void add(String entry, Path path) {
+            final int version = multiReleaseVersion(entry);
+            if (version > appJavaVersion) {
+                final byte[] bytecode = readModuleDescriptor(path);
+                if (bytecode != null) {
+                    parseModuleInfoProviders(bytecode, serviceProviders);
+                }
+            } else if (version > selectedVersion) {
+                final byte[] bytecode = readModuleDescriptor(path);
+                if (bytecode != null) {
+                    selectedVersion = version;
+                    selected = bytecode;
+                }
+            }
+        }
+
+        /**
+         * Collects the providers of the highest descriptor version not newer than {@code appJavaVersion}.
+         * Must be called after all the entries of the artifact have been visited.
+         */
+        void complete() {
+            if (selected != null) {
+                parseModuleInfoProviders(selected, serviceProviders);
+                selected = null;
+            }
+        }
+
+        private static byte[] readModuleDescriptor(Path path) {
+            try {
+                return Files.readAllBytes(path);
+            } catch (IOException e) {
+                log.debugf(e, "Failed to read module descriptor: %s", path);
+                return null;
+            }
+        }
     }
 
     /**

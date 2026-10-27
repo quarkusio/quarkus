@@ -449,7 +449,7 @@ public final class ModularitySteps {
                         // tabulate any used JDK modules.
                         mi.dependencies().stream()
                                 .map(DependencyInfo::moduleName)
-                                .filter(n -> n.startsWith("java.") || n.startsWith("jdk.") || n.startsWith("ibm."))
+                                .filter(ModularitySteps::isJdkModule)
                                 .forEach(usedJdkModuleNames::add);
                         return mi;
                     });
@@ -571,7 +571,7 @@ public final class ModularitySteps {
                     // tabulate any used JDK modules.
                     mi.dependencies().stream()
                             .map(DependencyInfo::moduleName)
-                            .filter(n -> n.startsWith("java.") || n.startsWith("jdk.") || n.startsWith("ibm."))
+                            .filter(ModularitySteps::isJdkModule)
                             .forEach(usedJdkModuleNames::add);
                     return mi;
                 });
@@ -599,6 +599,26 @@ public final class ModularitySteps {
         bootModuleSet.forEach(m -> amb.bootModule(m.name()));
         modulesByName.values().forEach(amb::moduleInfo);
         return new ApplicationModuleInfoBuildItem(amb.build());
+    }
+
+    /**
+     * Library modules whose names start with a JDK module prefix.
+     */
+    private static final Set<String> nonJdkModuleNames = Set.of(
+            // JSR 354 money API, an optional dependency of Hibernate Validator
+            "java.money");
+
+    /**
+     * Determine whether a module name refers to a module that the JDK provides.
+     * A name with a JDK module prefix is assumed to be a JDK module, even if the build JDK does not have it,
+     * unless it is a known library module.
+     *
+     * @param moduleName the module name
+     * @return {@code true} if the module is assumed to be provided by the JDK
+     */
+    static boolean isJdkModule(String moduleName) {
+        return (moduleName.startsWith("java.") || moduleName.startsWith("jdk.") || moduleName.startsWith("ibm."))
+                && !nonJdkModuleNames.contains(moduleName);
     }
 
     private static final Set<String> bootLayerNames = ModuleLayer.boot().modules().stream().map(Module::getName)

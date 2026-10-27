@@ -63,7 +63,6 @@ import io.quarkus.runtime.graal.JVMChecksFeature;
 import io.quarkus.runtime.graal.SkipConsoleServiceProvidersFeature;
 import io.quarkus.sbom.CoreSbomContributionConfig;
 import io.quarkus.sbom.Purl;
-import io.smallrye.common.cpu.CPU;
 import io.smallrye.common.os.OS;
 import io.smallrye.common.process.AbnormalExitException;
 import io.smallrye.common.process.ProcessBuilder;
@@ -1004,23 +1003,9 @@ public class NativeImageBuildStep {
                 // Generate a file with the list of built artifacts
                 addExperimentalVMOption(nativeImageArgs, "-H:+GenerateBuildArtifactsFile");
 
-                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_0_0) < 0) {
-                    // Enabled by default in GraalVM 24.0.0.
-                    nativeImageArgs.add("--strict-image-heap");
-                }
-
-                /*
-                 * Always install exit handlers, it will become the default and the flag will be deprecated
-                 * in GraalVM for JDK 25 see https://github.com/quarkusio/quarkus/issues/47799
-                 */
-                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0) < 0) {
-                    nativeImageArgs.add("--install-exit-handlers");
-                }
-
                 // Enable the new single callsite inliner on Mandrel 25.0.4+ by default.
                 // The feature is not yet available upstream, so do not enable for versions >= 25.1
-                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_4) >= 0
-                        && graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_1_0) < 0
+                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_1_0) < 0
                         && graalVMVersion.getDistribution() == Distribution.MANDREL) {
                     final List<String> additionalBuildArgs = NativeConfigUtils.getNativeAdditionalBuildArgs(nativeConfig);
                     if (additionalBuildArgs.stream().noneMatch(arg -> arg.contains("AOTSingleCallsiteInline"))) {
@@ -1050,25 +1035,8 @@ public class NativeImageBuildStep {
 
                 addExperimentalVMOption(nativeImageArgs, "-H:+AllowFoldMethods");
 
-                /*
-                 * @formatter:off
-                 * Foreign Function and Memory API in Native Image, JDK's JEP 454
-                 * This is needed for JDK 24+ internal native calls due to AWT,
-                 * e.g. JDK-8337237 et al.
-                 * Note GraalVM FFI/FFM support per platform prior to JDK 25 and JDK 25+
-                 * https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/foreign-interface/#foreign-functions
-                 * @formatter:on
-                 */
-                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_2_0) >= 0
-                        && graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0) < 0
-                        && (CPU.host() == CPU.x64)) {
-                    addExperimentalVMOption(nativeImageArgs, "-H:+ForeignAPISupport");
-                }
-
                 // Netty 4.2's CleanerJava25 uses Arena.ofShared() for direct buffer cleanup
-                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0) >= 0) {
-                    addExperimentalVMOption(nativeImageArgs, "-H:+SharedArenaSupport");
-                }
+                addExperimentalVMOption(nativeImageArgs, "-H:+SharedArenaSupport");
 
                 if (nativeConfig.headless()) {
                     nativeImageArgs.add("-J-Djava.awt.headless=true");
@@ -1193,14 +1161,12 @@ public class NativeImageBuildStep {
                         monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
                     }
 
-                    if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_2_0) >= 0) {
-                        /*
-                         * After GraalVM/Mandrel 24.2, JCMD becomes available. The Quarkus thread dumper handles
-                         * SIGQUIT which interferes with JCMD. To avoid this problem, Quarkus must use the GraalVM
-                         * built-in thread dumper instead for versions beyond 24.2.
-                         */
-                        monitoringOptions.add(NativeConfig.MonitoringOption.THREADDUMP);
-                    }
+                    /*
+                     * After GraalVM/Mandrel 24.2, JCMD becomes available. The Quarkus thread dumper handles
+                     * SIGQUIT which interferes with JCMD. To avoid this problem, Quarkus must use the GraalVM
+                     * built-in thread dumper instead for versions beyond 24.2.
+                     */
+                    monitoringOptions.add(NativeConfig.MonitoringOption.THREADDUMP);
                 }
 
                 if (!monitoringOptions.isEmpty()) {

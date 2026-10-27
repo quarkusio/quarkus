@@ -179,59 +179,54 @@ public class NativeImageFeatureStep {
                     if (!constantBootstrapBuildItems.isEmpty()) {
                         LocalVar graalVMVersion = b0.localVar("graalVMVersion",
                                 b0.invokeStatic(GRAALVM_VERSION_GET_CURRENT));
-                        /* GraalVM >= 25.0.4; see https://github.com/oracle/graal/issues/12453 */
-                        b0.if_(b0.ge(
-                                b0.invokeVirtual(GRAALVM_VERSION_COMPARE_TO,
-                                        graalVMVersion,
-                                        b0.newArray(CD_int, Const.of(25), Const.of(0), Const.of(4))),
-                                0), b1 -> {
-                                    // in order to register constant bootstraps, we must call a method on DuringSetupAccessImpl for each one
-                                    LocalVar accessImpl = b1.localVar("accessImpl",
-                                            b1.cast(access, CD_FeatureImpl_DuringSetupAccessImpl));
-                                    for (ConstantBootstrapBuildItem cb : constantBootstrapBuildItems) {
-                                        MethodTypeDesc mtd = cb.methodTypeDesc();
-                                        ClassDesc typeParamType = mtd.parameterType(2);
-                                        boolean indy = false;
-                                        boolean condy = false;
-                                        if (typeParamType.descriptorString().equals(CD_Class.descriptorString())) {
-                                            condy = true;
-                                        } else if (typeParamType.descriptorString().equals(CD_MethodType.descriptorString())) {
-                                            indy = true;
-                                        } else if (typeParamType.descriptorString()
-                                                .equals(CD_TypeDescriptor.descriptorString())) {
-                                            // it can be used as either type
-                                            indy = condy = true;
-                                        } else {
-                                            log.warnf("Encountered an invalid constant bootstrap build item descriptor: %s",
-                                                    cb.methodTypeDesc().descriptorString());
-                                        }
-                                        LocalVar declaredMethod = b1.localVar("declaredMethod", b1.invokeVirtual(
-                                                MD_Class_getDeclaredMethod, Const.of(cb.classDesc()), Const.of(cb.methodName()),
-                                                b1.newArray(Class.class,
-                                                        mtd.parameterList().stream().map(Const::of).toList())));
-                                        if (condy) {
-                                            // GraalVM 25.4 moved bootstrap registration to the public Feature API.
-                                            b1.ifElse(b1.ge(b1.invokeVirtual(GRAALVM_VERSION_COMPARE_TO, graalVMVersion,
-                                                    b1.newArray(CD_int, Const.of(25), Const.of(4))), 0),
-                                                    b2 -> b2.invokeInterface(
-                                                            MD_DuringSetupAccess_registerBuildTimeBootstrapCondy,
-                                                            access, declaredMethod),
-                                                    b2 -> b2.invokeVirtual(
-                                                            MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeCondyIncludeList,
-                                                            accessImpl, declaredMethod));
-                                        }
-                                        if (indy) {
-                                            b1.ifElse(b1.ge(b1.invokeVirtual(GRAALVM_VERSION_COMPARE_TO, graalVMVersion,
-                                                    b1.newArray(CD_int, Const.of(25), Const.of(4))), 0),
-                                                    b2 -> b2.invokeInterface(
-                                                            MD_DuringSetupAccess_registerBuildTimeBootstrapIndy,
-                                                            access, declaredMethod),
-                                                    b2 -> b2.invokeVirtual(
-                                                            MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeIndyIncludeList,
-                                                            accessImpl, declaredMethod));
-                                        }
-                                    }
-                                });
+                        b0.block(b1 -> {
+                            // in order to register constant bootstraps, we must call a method on DuringSetupAccessImpl for each one
+                            LocalVar accessImpl = b1.localVar("accessImpl",
+                                    b1.cast(access, CD_FeatureImpl_DuringSetupAccessImpl));
+                            for (ConstantBootstrapBuildItem cb : constantBootstrapBuildItems) {
+                                MethodTypeDesc mtd = cb.methodTypeDesc();
+                                ClassDesc typeParamType = mtd.parameterType(2);
+                                boolean indy = false;
+                                boolean condy = false;
+                                if (typeParamType.descriptorString().equals(CD_Class.descriptorString())) {
+                                    condy = true;
+                                } else if (typeParamType.descriptorString().equals(CD_MethodType.descriptorString())) {
+                                    indy = true;
+                                } else if (typeParamType.descriptorString()
+                                        .equals(CD_TypeDescriptor.descriptorString())) {
+                                    // it can be used as either type
+                                    indy = condy = true;
+                                } else {
+                                    log.warnf("Encountered an invalid constant bootstrap build item descriptor: %s",
+                                            cb.methodTypeDesc().descriptorString());
+                                }
+                                LocalVar declaredMethod = b1.localVar("declaredMethod", b1.invokeVirtual(
+                                        MD_Class_getDeclaredMethod, Const.of(cb.classDesc()), Const.of(cb.methodName()),
+                                        b1.newArray(Class.class,
+                                                mtd.parameterList().stream().map(Const::of).toList())));
+                                if (condy) {
+                                    // GraalVM 25.4 moved bootstrap registration to the public Feature API.
+                                    b1.ifElse(b1.ge(b1.invokeVirtual(GRAALVM_VERSION_COMPARE_TO, graalVMVersion,
+                                            b1.newArray(CD_int, Const.of(25), Const.of(4))), 0),
+                                            b2 -> b2.invokeInterface(
+                                                    MD_DuringSetupAccess_registerBuildTimeBootstrapCondy,
+                                                    access, declaredMethod),
+                                            b2 -> b2.invokeVirtual(
+                                                    MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeCondyIncludeList,
+                                                    accessImpl, declaredMethod));
+                                }
+                                if (indy) {
+                                    b1.ifElse(b1.ge(b1.invokeVirtual(GRAALVM_VERSION_COMPARE_TO, graalVMVersion,
+                                            b1.newArray(CD_int, Const.of(25), Const.of(4))), 0),
+                                            b2 -> b2.invokeInterface(
+                                                    MD_DuringSetupAccess_registerBuildTimeBootstrapIndy,
+                                                    access, declaredMethod),
+                                            b2 -> b2.invokeVirtual(
+                                                    MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeIndyIncludeList,
+                                                    accessImpl, declaredMethod));
+                                }
+                            }
+                        });
                     }
                     b0.return_();
                 });
@@ -252,19 +247,10 @@ public class NativeImageFeatureStep {
                                 b2.invokeStatic(REGISTER_RUNTIME_SYSTEM_PROPERTIES, Const.of("user.country"),
                                         Const.of(defaultLocale.getCountry()));
                             } else {
-                                LocalVar graalVMVersion = b2.localVar("graalVMVersion",
-                                        b2.invokeStatic(GRAALVM_VERSION_GET_CURRENT));
-                                /* GraalVM >= 24.2 */
-                                b2.if_(b2.gt(
-                                        b2.invokeVirtual(GRAALVM_VERSION_COMPARE_TO,
-                                                graalVMVersion,
-                                                b2.newArray(int.class, Const.of(24), Const.of(2))),
-                                        0), t3 -> {
-                                            t3.invokeStatic(REGISTER_RUNTIME_SYSTEM_PROPERTIES, Const.of("user.language"),
-                                                    Const.of("en"));
-                                            t3.invokeStatic(REGISTER_RUNTIME_SYSTEM_PROPERTIES, Const.of("user.country"),
-                                                    Const.of("US"));
-                                        });
+                                b2.invokeStatic(REGISTER_RUNTIME_SYSTEM_PROPERTIES, Const.of("user.language"),
+                                        Const.of("en"));
+                                b2.invokeStatic(REGISTER_RUNTIME_SYSTEM_PROPERTIES, Const.of("user.country"),
+                                        Const.of("US"));
                             }
                             if (!runtimeInitializedClassBuildItems.isEmpty()
                                     || !runtimeReinitializedClassBuildItems.isEmpty()) {

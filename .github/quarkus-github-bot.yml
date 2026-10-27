@@ -311,7 +311,7 @@ triage:
         - extensions/qute/
         - extensions/resteasy-classic/resteasy-qute/
     - id: reactive-messaging
-      labels: [area/reactive-messaging, area/smallrye]
+      labels: [area/messaging, area/smallrye]
       expression: |
         matches("reactive.messaging", title)
         || matches("mqtt", title)

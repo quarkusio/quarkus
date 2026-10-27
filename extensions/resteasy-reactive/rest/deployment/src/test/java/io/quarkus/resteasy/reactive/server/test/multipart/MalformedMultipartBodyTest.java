@@ -134,6 +134,17 @@ public class MalformedMultipartBodyTest {
                 .statusCode(400);
     }
 
+    @Test
+    public void testEmptyBoundary() {
+        given()
+                .contentType("multipart/form-data; boundary=")
+                .body("--\r\n\r\n".getBytes(StandardCharsets.US_ASCII))
+                .when()
+                .post("/upload")
+                .then()
+                .statusCode(400);
+    }
+
     @Path("/upload")
     public static class MalformedMultipartResource {
 

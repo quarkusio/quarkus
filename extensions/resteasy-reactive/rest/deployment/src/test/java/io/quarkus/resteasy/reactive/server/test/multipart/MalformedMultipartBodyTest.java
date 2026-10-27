@@ -82,6 +82,58 @@ public class MalformedMultipartBodyTest {
                 .statusCode(400);
     }
 
+    @Test
+    public void testMalformedFilenameEncoding() {
+        String boundary = "----WebKitFormBoundary0x1234";
+        byte[] body = ("--" + boundary + "\r\n" +
+                "Content-Disposition: form-data; name=\"dummy\"; filename*=UTF-8''%zz\r\n\r\n" +
+                "hello\r\n" +
+                "--" + boundary + "--\r\n").getBytes(StandardCharsets.US_ASCII);
+
+        given()
+                .contentType("multipart/form-data; boundary=" + boundary)
+                .body(body)
+                .when()
+                .post("/upload")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    public void testUnsupportedFilenameCharset() {
+        String boundary = "----WebKitFormBoundary0x1234";
+        byte[] body = ("--" + boundary + "\r\n" +
+                "Content-Disposition: form-data; name=\"dummy\"; filename*=NOPE''a.txt\r\n\r\n" +
+                "hello\r\n" +
+                "--" + boundary + "--\r\n").getBytes(StandardCharsets.US_ASCII);
+
+        given()
+                .contentType("multipart/form-data; boundary=" + boundary)
+                .body(body)
+                .when()
+                .post("/upload")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    public void testUnsupportedPartCharset() {
+        String boundary = "----WebKitFormBoundary0x1234";
+        byte[] body = ("--" + boundary + "\r\n" +
+                "Content-Disposition: form-data; name=\"dummy\"\r\n" +
+                "Content-Type: text/plain; charset=nope\r\n\r\n" +
+                "hello\r\n" +
+                "--" + boundary + "--\r\n").getBytes(StandardCharsets.US_ASCII);
+
+        given()
+                .contentType("multipart/form-data; boundary=" + boundary)
+                .body(body)
+                .when()
+                .post("/upload")
+                .then()
+                .statusCode(400);
+    }
+
     @Path("/upload")
     public static class MalformedMultipartResource {
 

@@ -56,6 +56,17 @@ class JarTreeShakerTest {
         assertThat(refs).contains("com.example.Bootstrap").doesNotContain("iteral", "Literal");
     }
 
+    @Test
+    void descriptorArgumentsOfOtherBootstrapsAreNotFollowed() {
+        DirectMethodHandleDesc bootstrap = ConstantDescs.ofConstantBootstrap(CD_Bootstrap, "name",
+                ConstantDescs.CD_String, ConstantDescs.CD_String);
+        DynamicConstantDesc<?> condy = DynamicConstantDesc.ofNamed(bootstrap, "name", ConstantDescs.CD_String,
+                "Lcom/example/NotLoaded;");
+        Set<String> refs = JarTreeShaker.extractReferencesFromBytecode(classWithLdc(condy), null);
+
+        assertThat(refs).contains("com.example.Bootstrap").doesNotContain("com.example.NotLoaded");
+    }
+
     private static byte[] classWithLdc(ConstantDesc constant) {
         return ClassFile.of().build(ClassDesc.of("com.example.Generated"), classBuilder -> {
             classBuilder.withFlags(ClassFile.ACC_PUBLIC);

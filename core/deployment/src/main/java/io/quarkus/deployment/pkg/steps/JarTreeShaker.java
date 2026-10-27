@@ -34,6 +34,8 @@ import io.quarkus.paths.OpenPathTree;
 
 class JarTreeShaker {
 
+    private static final String BOOTSTRAPS_INTERNAL_NAME = "io/quarkus/core/Bootstraps";
+
     private static final Logger log = Logger.getLogger(JarTreeShaker.class.getName());
 
     private static final String SERVICE_LOADER_INTERNAL = "java/util/ServiceLoader";
@@ -1228,15 +1230,22 @@ class JarTreeShaker {
     }
 
     /**
-     * Adds the references of a dynamic constant: its type, its bootstrap method
-     * and the bootstrap arguments (e.g. the class descriptor that
-     * {@code io.quarkus.core.Bootstraps.loadClass} loads).
+     * Adds the references of a dynamic constant: its type, its bootstrap method and the bootstrap arguments.
+     * The argument of {@code io.quarkus.core.Bootstraps.loadClass} is the descriptor of the class it loads.
      */
     private static void addConstantDynamic(ConstantDynamic condy, Set<String> refs, Set<String> jdkPkgs) {
         addDescriptorType(condy.getDescriptor(), refs, jdkPkgs);
-        addHandleType(condy.getBootstrapMethod(), refs, jdkPkgs);
+        Handle bootstrapMethod = condy.getBootstrapMethod();
+        addHandleType(bootstrapMethod, refs, jdkPkgs);
+        boolean loadClass = BOOTSTRAPS_INTERNAL_NAME.equals(bootstrapMethod.getOwner())
+                && "loadClass".equals(bootstrapMethod.getName());
         for (int i = 0; i < condy.getBootstrapMethodArgumentCount(); i++) {
-            addBootstrapArgument(condy.getBootstrapMethodArgument(i), refs, jdkPkgs);
+            Object arg = condy.getBootstrapMethodArgument(i);
+            if (loadClass && arg instanceof String descriptor) {
+                addAsmType(org.objectweb.asm.Type.getType(descriptor), refs, jdkPkgs);
+            } else {
+                addBootstrapArgument(arg, refs, jdkPkgs);
+            }
         }
     }
 
@@ -1247,18 +1256,7 @@ class JarTreeShaker {
             addHandleType(handle, refs, jdkPkgs);
         } else if (arg instanceof ConstantDynamic condy) {
             addConstantDynamic(condy, refs, jdkPkgs);
-        } else if (arg instanceof String str && isFieldDescriptor(str)) {
-            addDescriptorType(str, refs, jdkPkgs);
         }
-    }
-
-    private static boolean isFieldDescriptor(String str) {
-        int i = 0;
-        while (i < str.length() && str.charAt(i) == '[') {
-            i++;
-        }
-        return i < str.length() - 2 && str.charAt(i) == 'L' && str.endsWith(";") && str.indexOf('/') > i
-                && str.indexOf('.') < 0;
     }
 
     /**

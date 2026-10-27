@@ -1,13 +1,13 @@
 package io.quarkus.agroal.runtime;
 
 import java.lang.constant.ClassDesc;
+import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.ConstantDescs;
-import java.lang.constant.Constable;
+import java.lang.constant.DirectMethodHandleDesc;
 import java.lang.constant.DynamicConstantDesc;
 import java.lang.constant.MethodHandleDesc;
 import java.lang.constant.MethodTypeDesc;
-import java.lang.constant.DirectMethodHandleDesc;
 import java.util.Map;
 import java.util.Optional;
 
@@ -22,7 +22,6 @@ public class AgroalDataSourceSupport {
         this.mpMetricsPresent = mpMetricsPresent;
         this.entries = entries;
     }
-
 
     public static class Entry implements Constable {
 

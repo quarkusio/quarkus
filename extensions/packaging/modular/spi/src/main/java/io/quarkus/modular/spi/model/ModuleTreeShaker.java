@@ -314,6 +314,8 @@ public final class ModuleTreeShaker {
         newJdkModules.forEach(amb::jdkModuleUsed);
         Set<String> bootModules = survivingBootModules(deadModules);
         amb.bootModules(bootModules);
+        // packages of the surviving modules were pruned against the reachable classes
+        amb.reachableClassNames(reachableClassNames);
 
         int survivingModules = model.modulesByName().size() - deadModules.size();
         logSummary(deadModules, survivingModules - bootModules.size(), bootModules.size(), newJdkModules);

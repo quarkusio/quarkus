@@ -290,4 +290,27 @@ class AppModuleModelBuilderTest {
         assertThatThrownBy(() -> model.bootModules().add("boot.b"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
+
+    @Test
+    void classesNotShakenByDefault() {
+        AppModuleModel model = AppModuleModel.builder()
+                .appModuleInfo(moduleInfo("org.app", "app", "app.module"))
+                .build();
+
+        assertThat(model.isClassesShaken()).isFalse();
+        assertThat(model.reachableClassNames()).isEmpty();
+    }
+
+    @Test
+    void reachableClassNamesMarkClassesShaken() {
+        AppModuleModel model = AppModuleModel.builder()
+                .appModuleInfo(moduleInfo("org.app", "app", "app.module"))
+                .reachableClassNames(Set.of("org.app.Main"))
+                .build();
+
+        assertThat(model.isClassesShaken()).isTrue();
+        assertThat(model.reachableClassNames()).containsExactly("org.app.Main");
+        assertThatThrownBy(() -> model.reachableClassNames().add("org.app.Other"))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
 }

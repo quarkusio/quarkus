@@ -18,6 +18,7 @@ public final class AppModuleModel {
     private final Map<ArtifactKey, ModuleInfo> modulesByKey;
     private final List<String> jdkModulesUsed;
     private final Set<String> bootModules;
+    private final Set<String> reachableClassNames;
 
     private AppModuleModel(final Builder builder) {
         appModuleInfo = Assert.checkNotNullParam("builder.appModuleInfo", builder.appModuleInfo);
@@ -25,6 +26,9 @@ public final class AppModuleModel {
         modulesByKey = Map.copyOf(builder.modulesByKey);
         jdkModulesUsed = List.copyOf(builder.jdkModulesUsed);
         bootModules = Set.copyOf(builder.bootModules);
+        // not copied, since it may be very large
+        reachableClassNames = builder.reachableClassNames == null ? null
+                : Collections.unmodifiableSet(builder.reachableClassNames);
     }
 
     public ModuleInfo appModuleInfo() {
@@ -45,6 +49,29 @@ public final class AppModuleModel {
 
     public Set<String> bootModules() {
         return bootModules;
+    }
+
+    /**
+     * Check whether unreachable classes were tree-shaken from the application modules.
+     * In this case, the module descriptors of this model only declare packages that remain
+     * once unreachable classes are left out, so classes not in {@link #reachableClassNames()}
+     * must not be packaged.
+     *
+     * @return {@code true} if unreachable classes were tree-shaken, {@code false} otherwise
+     */
+    public boolean isClassesShaken() {
+        return reachableClassNames != null;
+    }
+
+    /**
+     * Get the names of the classes that are reachable from the application.
+     *
+     * @return the dot-separated names of the reachable classes, or an empty set if classes were not tree-shaken
+     *         (never {@code null})
+     * @see #isClassesShaken()
+     */
+    public Set<String> reachableClassNames() {
+        return reachableClassNames == null ? Set.of() : reachableClassNames;
     }
 
     public static Builder builder() {
@@ -77,6 +104,7 @@ public final class AppModuleModel {
         private Map<ArtifactKey, ModuleInfo> modulesByKey = Map.of();
         private List<String> jdkModulesUsed = List.of();
         private Set<String> bootModules = Set.of();
+        private Set<String> reachableClassNames;
 
         private Builder() {
         }
@@ -134,6 +162,18 @@ public final class AppModuleModel {
                 bootModules = new HashSet<>();
             }
             bootModules.add(moduleName);
+            return this;
+        }
+
+        /**
+         * Set the names of the reachable classes, indicating that unreachable classes
+         * were tree-shaken from the application modules.
+         *
+         * @param reachableClassNames dot-separated names of the reachable classes (must not be {@code null})
+         * @return this builder
+         */
+        public Builder reachableClassNames(Set<String> reachableClassNames) {
+            this.reachableClassNames = Assert.checkNotNullParam("reachableClassNames", reachableClassNames);
             return this;
         }
 

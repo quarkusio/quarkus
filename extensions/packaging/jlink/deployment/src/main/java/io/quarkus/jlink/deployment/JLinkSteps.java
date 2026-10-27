@@ -26,7 +26,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.gizmo2.ParamVar;
@@ -106,13 +105,11 @@ public final class JLinkSteps {
      */
     @BuildStep
     public JLinkStagedOutputItem stageOutput(
-            ApplicationModuleInfoBuildItem moduleInfoItem,
-            JarTreeShakeBuildItem treeShakeResult) throws IOException {
+            ApplicationModuleInfoBuildItem moduleInfoItem) throws IOException {
 
         // gather information we'll need
         AppModuleModel model = moduleInfoItem.model();
         Map<String, ModuleInfo> modulesByName = model.modulesByName();
-        Set<String> reachable = treeShakeResult.isClassesShaken() ? treeShakeResult.getReachableClassNames() : null;
 
         // create the staging directory
         final Path staging = config.outputDirectory().resolve(config.stagingDirectory());
@@ -154,7 +151,7 @@ public final class JLinkSteps {
                 }
                 return null;
             });
-            bmp.put(moduleName, ModuleWriter.writeModule(moduleInfo, staging, manifest, true, reachable));
+            bmp.put(moduleName, ModuleWriter.writeModule(model, moduleInfo, staging, manifest, true));
         }
         return new JLinkStagedOutputItem(staging, bmp);
     }
@@ -176,8 +173,7 @@ public final class JLinkSteps {
     @BuildStep
     public JLinkImageBuildItem jlink(
             JLinkStagedOutputItem stagedOutput,
-            ApplicationModuleInfoBuildItem moduleInfoItem,
-            JarTreeShakeBuildItem treeShakeResult) throws BuildException, IOException {
+            ApplicationModuleInfoBuildItem moduleInfoItem) throws BuildException, IOException {
         Path imagePath = config.outputDirectory().resolve(config.imagePath());
 
         // the image must be deleted or jlink will complain
@@ -274,7 +270,6 @@ public final class JLinkSteps {
         Files.createDirectories(lib);
         final AppModuleModel model = moduleInfoItem.model();
         Map<String, ModuleInfo> modulesByName = model.modulesByName();
-        Set<String> reachable = treeShakeResult.isClassesShaken() ? treeShakeResult.getReachableClassNames() : null;
         for (ModuleInfo moduleInfo : modulesByName.values()) {
             String moduleName = moduleInfo.name();
             if (model.bootModules().contains(moduleName)) {
@@ -282,7 +277,7 @@ public final class JLinkSteps {
                 continue;
             }
             // TODO: create an actual manifest (if needed)
-            ModuleWriter.writeModule(moduleInfo, lib.resolve(moduleInfo.name()), new Manifest(), false, reachable);
+            ModuleWriter.writeModule(model, moduleInfo, lib.resolve(moduleInfo.name()), new Manifest(), false);
         }
 
         log.infof("JLink image produced in %s at %s; to run the image, execute %s in that directory",

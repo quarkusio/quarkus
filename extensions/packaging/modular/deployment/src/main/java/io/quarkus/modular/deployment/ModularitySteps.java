@@ -653,6 +653,9 @@ public final class ModularitySteps {
             usedJdkModuleNames.forEach(amb::jdkModuleUsed);
         }
         bootModuleSet.forEach(m -> amb.bootModule(m.name()));
+        if (treeShakeActive) {
+            amb.reachableClassNames(reachableClassNames);
+        }
         modulesByName.values().forEach(amb::moduleInfo);
         AppModuleModel appModuleModel = amb.build();
 

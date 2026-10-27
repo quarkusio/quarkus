@@ -125,6 +125,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.HttpException;
 
 class ReactiveRoutesProcessor {
 
@@ -1741,10 +1742,12 @@ class ReactiveRoutesProcessor {
                     }
                 });
                 tc.catch_(Throwable.class, "e", (b2, e) -> {
-                    b2.throw_(b2.new_(ConstructorDesc.of(IllegalArgumentException.class, String.class, Throwable.class),
-                            Const.of("Error converting parameter #" + methodParam.position() + " of method "
-                                    + methodParam.method().declaringClass() + "." + methodParam.method().name() + "()"),
-                            e));
+                    b2.throw_(b2.new_(ConstructorDesc.of(HttpException.class, int.class, Throwable.class), Const.of(400),
+                            b2.new_(ConstructorDesc.of(IllegalArgumentException.class, String.class, Throwable.class),
+                                    Const.of("Error converting parameter #" + methodParam.position() + " of method "
+                                            + methodParam.method().declaringClass() + "." + methodParam.method().name()
+                                            + "()"),
+                                    e)));
                 });
             });
         });

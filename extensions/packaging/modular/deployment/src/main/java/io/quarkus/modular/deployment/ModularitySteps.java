@@ -7,7 +7,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.lang.constant.ClassDesc;
-import java.lang.module.ModuleFinder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -549,17 +548,23 @@ public final class ModularitySteps {
     }
 
     /**
+     * Library modules whose names start with a JDK module prefix.
+     */
+    private static final Set<String> nonJdkModuleNames = Set.of(
+            // JSR 354 money API, an optional dependency of Hibernate Validator
+            "java.money");
+
+    /**
      * Determine whether a module name refers to a module that the JDK provides.
-     * <p>
-     * {@code jlink} runs in the build JVM, so the modules it can link are the system modules of that JVM.
-     * A library whose automatic module name starts with {@code java.}, such as {@code java.money}, is not one of
-     * them.
+     * A name with a JDK module prefix is assumed to be a JDK module, even if the build JDK does not have it,
+     * unless it is a known library module.
      *
      * @param moduleName the module name
-     * @return {@code true} if the build JDK provides a module with that name
+     * @return {@code true} if the module is assumed to be provided by the JDK
      */
     static boolean isJdkModule(String moduleName) {
-        return ModuleFinder.ofSystem().find(moduleName).isPresent();
+        return (moduleName.startsWith("java.") || moduleName.startsWith("jdk.") || moduleName.startsWith("ibm."))
+                && !nonJdkModuleNames.contains(moduleName);
     }
 
     private static final Set<String> bootLayerNames = ModuleLayer.boot().modules().stream().map(Module::getName)

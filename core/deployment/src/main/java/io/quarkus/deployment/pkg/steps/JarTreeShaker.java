@@ -39,6 +39,16 @@ class JarTreeShaker {
     private static final String SISU_NAMED_RESOURCE = "META-INF/sisu/javax.inject.Named";
 
     /**
+     * Prefixes (other than {@code java/}) of packages exported by JDK modules.
+     * Some of them are also used by non-JDK libraries (e.g. {@code javax/inject/}, {@code com/sun/mail/}),
+     * which is fine since packages that don't belong to a JDK module are ignored by module tree shaking.
+     */
+    private static final String[] JDK_PACKAGE_PREFIXES = {
+            "javax/", "jdk/", "com/sun/", "sun/misc/", "sun/reflect/",
+            "org/w3c/dom/", "org/xml/sax/", "org/ietf/jgss/", "netscape/javascript/"
+    };
+
+    /**
      * Suffixes for JBoss Logging companion classes that are loaded reflectively
      * via name concatenation in {@code Logger.getMessageLogger()}.
      */
@@ -65,6 +75,8 @@ class JarTreeShaker {
      * in an isolated classloader to capture which classes are actually loaded at runtime.
      */
     private final Map<MethodKey, Set<MethodKey>> callerIndex = new HashMap<>();
+
+    private final Set<String> referencedJdkPackages = new HashSet<>();
 
     JarTreeShaker(JarTreeShakeInput input) {
         this.input = input;
@@ -101,6 +113,12 @@ class JarTreeShaker {
             callerIndex.clear();
         }
 
+        // Classes reached so far have had their JDK references collected by the BFS.
+        // Remember them, so the JDK references of classes added below can be collected too.
+        final Set<String> bfsScanned = input.excludedArtifacts.isEmpty() && input.higherVersionBytecode.isEmpty()
+                ? null
+                : new HashSet<>(reachable);
+
         // Mark all classes from excluded artifacts as reachable (after analysis,
         // so they don't act as roots for transitive tracing). This preserves
         // JARs that perform self-integrity checks (e.g. BouncyCastle FIPS).
@@ -117,6 +135,10 @@ class JarTreeShaker {
         // (e.g. BouncyCastle's version-25 SSLSessionUtil references ImportSSLSession_25).
         if (!input.higherVersionBytecode.isEmpty()) {
             traceHigherVersionReferences(reachable);
+        }
+
+        if (bfsScanned != null) {
+            collectJdkPackagesOfUnscanned(reachable, bfsScanned);
         }
 
         // Compute removal stats before releasing analysis data
@@ -172,7 +194,7 @@ class JarTreeShaker {
         }
 
         return new JarTreeShakeBuildItem(input.treeShakeMode == TreeShakeConfig.TreeShakeMode.CLASSES, reachable,
-                removedClassesPerDep);
+                removedClassesPerDep, referencedJdkPackages);
     }
 
     /**
@@ -300,6 +322,9 @@ class JarTreeShaker {
             scan.clear();
             scanBytecode(name, bytecode, sisuActivated, scan);
 
+            // Aggregate JDK package references for module tree shaking
+            referencedJdkPackages.addAll(scan.jdkPackages);
+
             // Enqueue discovered class references — only those we have bytecode for.
             // Skips JDK/platform classes that we'll never find, avoiding thousands of
             // no-op queue iterations and wasted lookups.
@@ -398,6 +423,22 @@ class JarTreeShaker {
     }
 
     /**
+     * Collects JDK package references from the bytecode of reachable classes that were not
+     * scanned by the BFS (classes of excluded artifacts and classes discovered only from
+     * multi-release bytecode), so module tree shaking keeps the JDK modules they need.
+     */
+    private void collectJdkPackagesOfUnscanned(Set<String> reachable, Set<String> bfsScanned) {
+        for (String name : reachable) {
+            if (!bfsScanned.contains(name)) {
+                byte[] bytecode = input.readBytecode(name);
+                if (bytecode != null) {
+                    extractReferencesFromBytecode(bytecode);
+                }
+            }
+        }
+    }
+
+    /**
      * For each reachable class that has multi-release bytecode targeting newer Java versions,
      * extracts class references from that bytecode and marks them reachable. This ensures
      * classes referenced only by higher-version variants are preserved (e.g. BouncyCastle's
@@ -473,6 +514,8 @@ class JarTreeShaker {
     private static class BfsScanResult {
         /** All class references discovered from bytecode (superclass, interfaces, fields, methods, annotations, etc.) */
         final Set<String> refs = new HashSet<>();
+        /** Names of packages possibly provided by the JDK referenced from scanned bytecode */
+        final Set<String> jdkPackages = new HashSet<>();
         /** Service interfaces loaded via {@code ServiceLoader.load(SomeClass.class)} patterns */
         final Set<String> serviceLoaderServices = new HashSet<>();
         /** Whether both sisu named resource string and getResources() call were detected */
@@ -483,6 +526,7 @@ class JarTreeShaker {
         /** Resets all fields for reuse with the next class, avoiding per-class allocation. */
         void clear() {
             refs.clear();
+            jdkPackages.clear();
             serviceLoaderServices.clear();
             sisuDetected = false;
             deserializationFlags = 0;
@@ -498,7 +542,7 @@ class JarTreeShaker {
             boolean sisuAlreadyActivated, BfsScanResult result) {
         String internalOwner = className.replace('.', '/');
         ClassReader reader = new ClassReader(bytecode);
-        reader.accept(new RefCollectingClassVisitor(result.refs) {
+        reader.accept(new RefCollectingClassVisitor(result.refs, result.jdkPackages) {
 
             // Sisu detection state (class-level, across methods)
             boolean hasSisuString;
@@ -512,7 +556,7 @@ class JarTreeShaker {
                 // shadowed by the inner visitor's visitMethodInsn parameters
                 final String mName = name;
                 final String mDesc = descriptor;
-                return new RefCollectingMethodVisitor(refs) {
+                return new RefCollectingMethodVisitor(refs, jdkPkgs) {
                     // Lazily constructed MethodKey for this method, built only
                     // when a caller index entry is actually recorded
                     private MethodKey callerKeyObj;
@@ -786,7 +830,8 @@ class JarTreeShaker {
     private Set<String> extractReferencesFromBytecode(byte[] bytecode) {
         final Set<String> refs = new HashSet<>();
         ClassReader reader = new ClassReader(bytecode);
-        reader.accept(new RefCollectingClassVisitor(refs), ClassReader.SKIP_FRAMES | ClassReader.SKIP_DEBUG);
+        reader.accept(new RefCollectingClassVisitor(refs, referencedJdkPackages),
+                ClassReader.SKIP_FRAMES | ClassReader.SKIP_DEBUG);
         return refs;
     }
 
@@ -849,23 +894,24 @@ class JarTreeShaker {
      * Handles class literals (e.g. {@code @Command(subcommands = {Foo.class})}),
      * enum constants, nested annotations, and arrays of these.
      */
-    private static org.objectweb.asm.AnnotationVisitor createAnnotationRefVisitor(Set<String> refs) {
+    private static org.objectweb.asm.AnnotationVisitor createAnnotationRefVisitor(Set<String> refs,
+            Set<String> jdkPkgs) {
         return new org.objectweb.asm.AnnotationVisitor(Opcodes.ASM9) {
             @Override
             public void visit(String name, Object value) {
                 if (value instanceof org.objectweb.asm.Type) {
-                    addAsmType((org.objectweb.asm.Type) value, refs);
+                    addAsmType((org.objectweb.asm.Type) value, refs, jdkPkgs);
                 }
             }
 
             @Override
             public void visitEnum(String name, String descriptor, String value) {
-                addDescriptorType(descriptor, refs);
+                addDescriptorType(descriptor, refs, jdkPkgs);
             }
 
             @Override
             public org.objectweb.asm.AnnotationVisitor visitAnnotation(String name, String descriptor) {
-                addDescriptorType(descriptor, refs);
+                addDescriptorType(descriptor, refs, jdkPkgs);
                 return this;
             }
 
@@ -886,46 +932,48 @@ class JarTreeShaker {
      */
     private static class RefCollectingClassVisitor extends ClassVisitor {
         final Set<String> refs;
+        final Set<String> jdkPkgs;
 
-        RefCollectingClassVisitor(Set<String> refs) {
+        RefCollectingClassVisitor(Set<String> refs, Set<String> jdkPkgs) {
             super(Opcodes.ASM9);
             this.refs = refs;
+            this.jdkPkgs = jdkPkgs;
         }
 
         @Override
         public void visit(int version, int access, String name, String signature,
                 String superName, String[] interfaces) {
             if (superName != null) {
-                addClassRef(superName, refs);
+                addClassRef(superName, refs, jdkPkgs);
             }
             if (interfaces != null) {
                 for (String iface : interfaces) {
-                    addClassRef(iface, refs);
+                    addClassRef(iface, refs, jdkPkgs);
                 }
             }
-            addSignatureTypes(signature, refs);
+            addSignatureTypes(signature, refs, jdkPkgs);
             int dollar = name.lastIndexOf('$');
             if (dollar > 0) {
-                addClassRef(name.substring(0, dollar), refs);
+                addClassRef(name.substring(0, dollar), refs, jdkPkgs);
             }
         }
 
         @Override
         public org.objectweb.asm.AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-            addDescriptorType(descriptor, refs);
-            return createAnnotationRefVisitor(refs);
+            addDescriptorType(descriptor, refs, jdkPkgs);
+            return createAnnotationRefVisitor(refs, jdkPkgs);
         }
 
         @Override
         public org.objectweb.asm.FieldVisitor visitField(int access, String name,
                 String descriptor, String signature, Object value) {
-            addDescriptorType(descriptor, refs);
-            addSignatureTypes(signature, refs);
+            addDescriptorType(descriptor, refs, jdkPkgs);
+            addSignatureTypes(signature, refs, jdkPkgs);
             return new org.objectweb.asm.FieldVisitor(Opcodes.ASM9) {
                 @Override
                 public org.objectweb.asm.AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-                    addDescriptorType(descriptor, refs);
-                    return createAnnotationRefVisitor(refs);
+                    addDescriptorType(descriptor, refs, jdkPkgs);
+                    return createAnnotationRefVisitor(refs, jdkPkgs);
                 }
             };
         }
@@ -934,16 +982,16 @@ class JarTreeShaker {
         public MethodVisitor visitMethod(int access, String name, String descriptor,
                 String signature, String[] exceptions) {
             visitMethodSignature(descriptor, signature, exceptions);
-            return new RefCollectingMethodVisitor(refs);
+            return new RefCollectingMethodVisitor(refs, jdkPkgs);
         }
 
         /** Adds method descriptor types, generic signature types, and exception types to refs. */
         final void visitMethodSignature(String descriptor, String signature, String[] exceptions) {
-            addMethodDescriptorTypes(descriptor, refs);
-            addSignatureTypes(signature, refs);
+            addMethodDescriptorTypes(descriptor, refs, jdkPkgs);
+            addSignatureTypes(signature, refs, jdkPkgs);
             if (exceptions != null) {
                 for (String ex : exceptions) {
-                    addClassRef(ex, refs);
+                    addClassRef(ex, refs, jdkPkgs);
                 }
             }
         }
@@ -957,37 +1005,39 @@ class JarTreeShaker {
      */
     private static class RefCollectingMethodVisitor extends MethodVisitor {
         final Set<String> refs;
+        final Set<String> jdkPkgs;
         String lastStringConstant;
 
-        RefCollectingMethodVisitor(Set<String> refs) {
+        RefCollectingMethodVisitor(Set<String> refs, Set<String> jdkPkgs) {
             super(Opcodes.ASM9);
             this.refs = refs;
+            this.jdkPkgs = jdkPkgs;
         }
 
         @Override
         public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
             lastStringConstant = null;
             if (type != null) {
-                addClassRef(type, refs);
+                addClassRef(type, refs, jdkPkgs);
             }
         }
 
         @Override
         public org.objectweb.asm.AnnotationVisitor visitAnnotationDefault() {
-            return createAnnotationRefVisitor(refs);
+            return createAnnotationRefVisitor(refs, jdkPkgs);
         }
 
         @Override
         public void visitTypeInsn(int opcode, String type) {
             lastStringConstant = null;
-            addClassRef(type, refs);
+            addClassRef(type, refs, jdkPkgs);
         }
 
         @Override
         public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
             lastStringConstant = null;
-            addClassRef(owner, refs);
-            addDescriptorType(descriptor, refs);
+            addClassRef(owner, refs, jdkPkgs);
+            addDescriptorType(descriptor, refs, jdkPkgs);
         }
 
         @Override
@@ -1000,8 +1050,8 @@ class JarTreeShaker {
                 }
             }
             lastStringConstant = null;
-            addClassRef(owner, refs);
-            addMethodDescriptorTypes(descriptor, refs);
+            addClassRef(owner, refs, jdkPkgs);
+            addMethodDescriptorTypes(descriptor, refs, jdkPkgs);
         }
 
         @Override
@@ -1013,11 +1063,11 @@ class JarTreeShaker {
             }
             if (value instanceof org.objectweb.asm.Type type) {
                 if (type.getSort() == org.objectweb.asm.Type.OBJECT) {
-                    addClassRef(type.getInternalName(), refs);
+                    addClassRef(type.getInternalName(), refs, jdkPkgs);
                 } else if (type.getSort() == org.objectweb.asm.Type.ARRAY) {
                     org.objectweb.asm.Type elem = type.getElementType();
                     if (elem.getSort() == org.objectweb.asm.Type.OBJECT) {
-                        addClassRef(elem.getInternalName(), refs);
+                        addClassRef(elem.getInternalName(), refs, jdkPkgs);
                     }
                 }
             }
@@ -1051,13 +1101,13 @@ class JarTreeShaker {
         public void visitInvokeDynamicInsn(String iname, String idescriptor,
                 Handle bootstrapMethodHandle, Object... bootstrapMethodArguments) {
             lastStringConstant = null;
-            addHandleType(bootstrapMethodHandle, refs);
+            addHandleType(bootstrapMethodHandle, refs, jdkPkgs);
             if (bootstrapMethodArguments != null) {
                 for (Object arg : bootstrapMethodArguments) {
                     if (arg instanceof org.objectweb.asm.Type type) {
-                        addAsmType(type, refs);
+                        addAsmType(type, refs, jdkPkgs);
                     } else if (arg instanceof Handle) {
-                        addHandleType((Handle) arg, refs);
+                        addHandleType((Handle) arg, refs, jdkPkgs);
                     }
                 }
             }
@@ -1066,22 +1116,22 @@ class JarTreeShaker {
         @Override
         public void visitMultiANewArrayInsn(String descriptor, int numDimensions) {
             lastStringConstant = null;
-            addDescriptorType(descriptor, refs);
+            addDescriptorType(descriptor, refs, jdkPkgs);
         }
 
         @Override
         public org.objectweb.asm.AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
             lastStringConstant = null;
-            addDescriptorType(descriptor, refs);
-            return createAnnotationRefVisitor(refs);
+            addDescriptorType(descriptor, refs, jdkPkgs);
+            return createAnnotationRefVisitor(refs, jdkPkgs);
         }
 
         @Override
         public org.objectweb.asm.AnnotationVisitor visitParameterAnnotation(int parameter,
                 String descriptor, boolean visible) {
             lastStringConstant = null;
-            addDescriptorType(descriptor, refs);
-            return createAnnotationRefVisitor(refs);
+            addDescriptorType(descriptor, refs, jdkPkgs);
+            return createAnnotationRefVisitor(refs, jdkPkgs);
         }
     }
 
@@ -1102,11 +1152,31 @@ class JarTreeShaker {
      * or generated bytecode maps, so they are always filtered out downstream by
      * {@link JarTreeShakeInput#hasBytecode} — skipping them here avoids the
      * {@link String#replace} allocation and the {@link Set#add} lookup.
+     * <p>
+     * When {@code jdkPkgs} is non-null, names of packages that may be provided by the JDK
+     * (see {@link #JDK_PACKAGE_PREFIXES}) are captured for later use by module tree shaking
+     * to replace {@code requires java.se} with specific JDK module requirements.
      */
-    private static void addClassRef(String internalName, Set<String> refs) {
-        if (!internalName.startsWith("java/")) {
+    private static void addClassRef(String internalName, Set<String> refs, Set<String> jdkPkgs) {
+        boolean javaPkg = internalName.startsWith("java/");
+        if (jdkPkgs != null && (javaPkg || isPossibleJdkClass(internalName))) {
+            int lastSlash = internalName.lastIndexOf('/');
+            if (lastSlash > 0) {
+                jdkPkgs.add(internalName.substring(0, lastSlash).replace('/', '.'));
+            }
+        }
+        if (!javaPkg) {
             refs.add(internalName.replace('/', '.'));
         }
+    }
+
+    private static boolean isPossibleJdkClass(String internalName) {
+        for (String prefix : JDK_PACKAGE_PREFIXES) {
+            if (internalName.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -1126,12 +1196,12 @@ class JarTreeShaker {
      * and adds any object type reference to {@code refs}. Skips parsing when the
      * descriptor contains only primitive types, void, or arrays of primitives.
      */
-    private static void addDescriptorType(String descriptor, Set<String> refs) {
+    private static void addDescriptorType(String descriptor, Set<String> refs, Set<String> jdkPkgs) {
         if (!hasObjectType(descriptor)) {
             return;
         }
         org.objectweb.asm.Type type = org.objectweb.asm.Type.getType(descriptor);
-        addAsmType(type, refs);
+        addAsmType(type, refs, jdkPkgs);
     }
 
     /**
@@ -1139,28 +1209,28 @@ class JarTreeShaker {
      * all argument and return type object references to {@code refs}. Skips
      * parsing when the descriptor contains only primitive types and void.
      */
-    private static void addMethodDescriptorTypes(String descriptor, Set<String> refs) {
+    private static void addMethodDescriptorTypes(String descriptor, Set<String> refs, Set<String> jdkPkgs) {
         if (!hasObjectType(descriptor)) {
             return;
         }
         for (org.objectweb.asm.Type argType : org.objectweb.asm.Type.getArgumentTypes(descriptor)) {
-            addAsmType(argType, refs);
+            addAsmType(argType, refs, jdkPkgs);
         }
-        addAsmType(org.objectweb.asm.Type.getReturnType(descriptor), refs);
+        addAsmType(org.objectweb.asm.Type.getReturnType(descriptor), refs, jdkPkgs);
     }
 
     /**
      * Adds the owner class reference and descriptor type references from an
      * {@code invokedynamic} bootstrap method handle to {@code refs}.
      */
-    private static void addHandleType(Handle handle, Set<String> refs) {
-        addClassRef(handle.getOwner(), refs);
+    private static void addHandleType(Handle handle, Set<String> refs, Set<String> jdkPkgs) {
+        addClassRef(handle.getOwner(), refs, jdkPkgs);
         int tag = handle.getTag();
         if (tag == Opcodes.H_GETFIELD || tag == Opcodes.H_GETSTATIC
                 || tag == Opcodes.H_PUTFIELD || tag == Opcodes.H_PUTSTATIC) {
-            addDescriptorType(handle.getDesc(), refs);
+            addDescriptorType(handle.getDesc(), refs, jdkPkgs);
         } else {
-            addMethodDescriptorTypes(handle.getDesc(), refs);
+            addMethodDescriptorTypes(handle.getDesc(), refs, jdkPkgs);
         }
     }
 
@@ -1170,14 +1240,14 @@ class JarTreeShaker {
      * that are not present in raw descriptors but can be resolved at runtime
      * via reflection on generic type metadata.
      */
-    private static void addSignatureTypes(String signature, Set<String> refs) {
+    private static void addSignatureTypes(String signature, Set<String> refs, Set<String> jdkPkgs) {
         if (signature == null) {
             return;
         }
         new SignatureReader(signature).accept(new SignatureVisitor(Opcodes.ASM9) {
             @Override
             public void visitClassType(String name) {
-                addClassRef(name, refs);
+                addClassRef(name, refs, jdkPkgs);
             }
         });
     }
@@ -1187,11 +1257,11 @@ class JarTreeShaker {
      * recursing into the element type for array types. Delegates to {@link #addClassRef}
      * to skip {@code java/} package classes.
      */
-    private static void addAsmType(org.objectweb.asm.Type type, Set<String> refs) {
+    private static void addAsmType(org.objectweb.asm.Type type, Set<String> refs, Set<String> jdkPkgs) {
         if (type.getSort() == org.objectweb.asm.Type.OBJECT) {
-            addClassRef(type.getInternalName(), refs);
+            addClassRef(type.getInternalName(), refs, jdkPkgs);
         } else if (type.getSort() == org.objectweb.asm.Type.ARRAY) {
-            addAsmType(type.getElementType(), refs);
+            addAsmType(type.getElementType(), refs, jdkPkgs);
         }
     }
 

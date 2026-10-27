@@ -10,6 +10,7 @@ import java.util.Set;
 
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.smallrye.common.constraint.Assert;
+import io.smallrye.modules.desc.PackageAccess;
 
 public final class AppModuleModel {
     private final ModuleInfo appModuleInfo;
@@ -17,6 +18,7 @@ public final class AppModuleModel {
     private final Map<ArtifactKey, ModuleInfo> modulesByKey;
     private final List<String> jdkModulesUsed;
     private final Set<String> bootModules;
+    private final Set<String> reachableClassNames;
 
     private AppModuleModel(final Builder builder) {
         appModuleInfo = Assert.checkNotNullParam("builder.appModuleInfo", builder.appModuleInfo);
@@ -24,6 +26,9 @@ public final class AppModuleModel {
         modulesByKey = Map.copyOf(builder.modulesByKey);
         jdkModulesUsed = List.copyOf(builder.jdkModulesUsed);
         bootModules = Set.copyOf(builder.bootModules);
+        // not copied, since it may be very large
+        reachableClassNames = builder.reachableClassNames == null ? null
+                : Collections.unmodifiableSet(builder.reachableClassNames);
     }
 
     public ModuleInfo appModuleInfo() {
@@ -46,8 +51,51 @@ public final class AppModuleModel {
         return bootModules;
     }
 
+    /**
+     * Check whether unreachable classes were tree-shaken from the application modules.
+     * In this case, the module descriptors of this model only declare packages that remain
+     * once unreachable classes are left out, so classes not in {@link #reachableClassNames()}
+     * must not be packaged.
+     *
+     * @return {@code true} if unreachable classes were tree-shaken, {@code false} otherwise
+     */
+    public boolean isClassesShaken() {
+        return reachableClassNames != null;
+    }
+
+    /**
+     * Get the names of the classes that are reachable from the application.
+     *
+     * @return the dot-separated names of the reachable classes, or an empty set if classes were not tree-shaken
+     *         (never {@code null})
+     * @see #isClassesShaken()
+     */
+    public Set<String> reachableClassNames() {
+        return reachableClassNames == null ? Set.of() : reachableClassNames;
+    }
+
     public static Builder builder() {
         return new Builder();
+    }
+
+    /**
+     * Library modules whose names start with a JDK module prefix.
+     */
+    private static final Set<String> nonJdkModuleNames = Set.of(
+            // JSR 354 money API, an optional dependency of Hibernate Validator
+            "java.money");
+
+    /**
+     * Determine whether a module name refers to a module that the JDK provides.
+     * A name with a JDK module prefix is assumed to be a JDK module, even if the build JDK does not have it,
+     * unless it is a known library module.
+     *
+     * @param moduleName the module name
+     * @return {@code true} if the module is assumed to be provided by the JDK
+     */
+    public static boolean isJdkModule(String moduleName) {
+        return (moduleName.startsWith("java.") || moduleName.startsWith("jdk.") || moduleName.startsWith("ibm."))
+                && !nonJdkModuleNames.contains(moduleName);
     }
 
     public static final class Builder {
@@ -56,6 +104,7 @@ public final class AppModuleModel {
         private Map<ArtifactKey, ModuleInfo> modulesByKey = Map.of();
         private List<String> jdkModulesUsed = List.of();
         private Set<String> bootModules = Set.of();
+        private Set<String> reachableClassNames;
 
         private Builder() {
         }
@@ -84,7 +133,7 @@ public final class AppModuleModel {
 
         public Builder jdkModuleUsed(String moduleName) {
             Assert.checkNotNullParam("moduleName", moduleName);
-            if (moduleName.startsWith("java.") || moduleName.startsWith("jdk.") || moduleName.startsWith("ibm.")) {
+            if (isJdkModule(moduleName)) {
                 if (jdkModulesUsed.isEmpty()) {
                     jdkModulesUsed = new ArrayList<>();
                 }
@@ -116,8 +165,81 @@ public final class AppModuleModel {
             return this;
         }
 
+        /**
+         * Set the names of the reachable classes, indicating that unreachable classes
+         * were tree-shaken from the application modules.
+         *
+         * @param reachableClassNames dot-separated names of the reachable classes (must not be {@code null})
+         * @return this builder
+         */
+        public Builder reachableClassNames(Set<String> reachableClassNames) {
+            this.reachableClassNames = Assert.checkNotNullParam("reachableClassNames", reachableClassNames);
+            return this;
+        }
+
         public AppModuleModel build() {
+            cleanDependencyPackageAccesses();
             return new AppModuleModel(this);
+        }
+
+        /**
+         * Remove package access entries (add-exports/add-opens) from dependencies
+         * that reference packages not present in the target module. This prevents
+         * warnings from the module runtime about missing packages.
+         */
+        private void cleanDependencyPackageAccesses() {
+            Map<String, ModuleInfo> updated = null;
+            for (ModuleInfo moduleInfo : modulesByName.values()) {
+                ModuleInfo cleaned = cleanDependencyPackageAccesses(moduleInfo);
+                if (cleaned != moduleInfo) {
+                    if (updated == null) {
+                        updated = new HashMap<>(modulesByName);
+                    }
+                    updated.put(cleaned.name(), cleaned);
+                    if (appModuleInfo != null && moduleInfo.name().equals(appModuleInfo.name())) {
+                        appModuleInfo = cleaned;
+                    }
+                }
+            }
+            if (updated != null) {
+                modulesByName = updated;
+            }
+        }
+
+        private ModuleInfo cleanDependencyPackageAccesses(ModuleInfo moduleInfo) {
+            List<DependencyInfo> deps = moduleInfo.dependencies();
+            if (deps.isEmpty()) {
+                return moduleInfo;
+            }
+            List<DependencyInfo> filtered = new ArrayList<>(deps.size());
+            boolean changed = false;
+            for (DependencyInfo dep : deps) {
+                if (dep.packageAccesses().isEmpty()) {
+                    filtered.add(dep);
+                    continue;
+                }
+                ModuleInfo targetModule = modulesByName.get(dep.moduleName());
+                if (targetModule == null) {
+                    filtered.add(dep);
+                    continue;
+                }
+                Map<String, PackageAccess> cleanedAccesses = null;
+                for (String pkg : dep.packageAccesses().keySet()) {
+                    if (!targetModule.packages().containsKey(pkg)) {
+                        if (cleanedAccesses == null) {
+                            cleanedAccesses = new HashMap<>(dep.packageAccesses());
+                        }
+                        cleanedAccesses.remove(pkg);
+                    }
+                }
+                if (cleanedAccesses != null) {
+                    changed = true;
+                    filtered.add(new DependencyInfo(dep.moduleName(), dep.modifiers(), cleanedAccesses));
+                } else {
+                    filtered.add(dep);
+                }
+            }
+            return changed ? moduleInfo.withDependencies(filtered) : moduleInfo;
         }
     }
 }

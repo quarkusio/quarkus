@@ -29,6 +29,7 @@ import javax.xml.stream.XMLStreamWriter;
 import org.jboss.logging.Logger;
 
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.modular.spi.model.AppModuleModel;
 import io.quarkus.modular.spi.model.AutoDependencyGroup;
 import io.quarkus.modular.spi.model.DependencyInfo;
 import io.quarkus.modular.spi.model.ModuleInfo;
@@ -66,7 +67,11 @@ public final class ModuleWriter {
 
     /**
      * Write a patched module to the given output directory.
+     * If unreachable classes were tree-shaken from the application model,
+     * they are left out of the written module, consistently with the packages declared by its descriptor.
+     * Only class entries are filtered; generated entries and non-class resources are always written.
      *
+     * @param model the application module model the module belongs to (must not be {@code null})
      * @param moduleInfo the module information (must not be {@code null})
      * @param outputDirectory the output directory (must not be {@code null})
      * @param manifest the JAR manifest (must not be {@code null})
@@ -74,12 +79,15 @@ public final class ModuleWriter {
      * @return the path of the written module
      * @throws IOException if writing fails for some reason
      */
-    public static Path writeModule(ModuleInfo moduleInfo, Path outputDirectory, Manifest manifest, final boolean bootModule)
+    public static Path writeModule(AppModuleModel model, ModuleInfo moduleInfo, Path outputDirectory, Manifest manifest,
+            final boolean bootModule)
             throws IOException {
+        Assert.checkNotNullParam("model", model);
         Assert.checkNotNullParam("moduleInfo", moduleInfo);
         Assert.checkNotNullParam("outputDirectory", outputDirectory);
         Assert.checkNotNullParam("manifest", manifest);
         log.debugf("Writing module %s", moduleInfo.name());
+        final Set<String> reachableClassNames = model.isClassesShaken() ? model.reachableClassNames() : null;
         ResolvedDependency artifact = moduleInfo.resolvedArtifact();
         // get an index of all generated/transformed resources
         Map<String, Resource> generated = moduleInfo.generated().stream().collect(
@@ -170,9 +178,11 @@ public final class ModuleWriter {
                         }
                     }
                 } else {
-                    if (rp.equals("META-INF/MANIFEST.MF") || rp.equals("module-info.class")
-                            || rp.endsWith("/module-info.class")) {
+                    if (rp.equals("META-INF/MANIFEST.MF") || ClassPathUtils.isModuleInfoEntry(rp)) {
                         // skip
+                        return;
+                    }
+                    if (reachableClassNames != null && ClassPathUtils.isUnreachableClassEntry(rp, reachableClassNames)) {
                         return;
                     }
                     int idx = rp.lastIndexOf('/');

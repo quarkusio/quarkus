@@ -3,15 +3,14 @@ package io.quarkus.reactive.db2.client.runtime;
 import static io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil.qualifier;
 
 import java.util.List;
-import java.util.function.Function;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
-import jakarta.enterprise.util.TypeLiteral;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.arc.Arc;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.PoolCreator;
@@ -19,9 +18,6 @@ import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.ReactivePoolUtil;
 import io.quarkus.reactive.db2.client.DB2PoolCreator;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -32,64 +28,44 @@ import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnectOptions;
 
-@Recorder
-public class DB2PoolRecorder {
+public final class DB2PoolRecorder {
 
     private static final Logger log = Logger.getLogger(DB2PoolRecorder.class);
-    private static final TypeLiteral<Instance<PoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
-    };
-
-    private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
-    private final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig;
-    private final RuntimeValue<DataSourcesReactiveDB2Config> reactiveDB2RuntimeConfig;
-
-    public DB2PoolRecorder(
-            RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
-            RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig,
-            RuntimeValue<DataSourcesReactiveDB2Config> reactiveDB2RuntimeConfig) {
-        this.runtimeConfig = runtimeConfig;
-        this.reactiveRuntimeConfig = reactiveRuntimeConfig;
-        this.reactiveDB2RuntimeConfig = reactiveDB2RuntimeConfig;
+    private DB2PoolRecorder() {
     }
 
-    public Function<SyntheticCreationalContext<Pool>, Pool> configureDB2Pool(RuntimeValue<Vertx> vertx,
-            Supplier<Integer> eventLoopCount, String dataSourceName, ShutdownContext shutdown,
-            Supplier<TlsConfigurationRegistry> tlsRegistrySupplier) {
-        return new Function<>() {
-            @Override
-            public Pool apply(SyntheticCreationalContext<Pool> context) {
-                Pool pool = initialize((VertxInternal) vertx.getValue(),
-                        eventLoopCount.get(),
-                        dataSourceName,
-                        runtimeConfig.getValue().dataSources().get(dataSourceName),
-                        reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive(),
-                        reactiveDB2RuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().db2(),
-                        tlsRegistrySupplier != null ? tlsRegistrySupplier.get() : null,
-                        context);
-
-                shutdown.addShutdownTask(pool::close);
-                return pool;
-            }
-        };
+    public static Optional<Pool> createPool(String dataSourceName, DataSourcesRuntimeConfig runtimeConfig,
+            DataSourcesReactiveRuntimeConfig reactiveRuntimeConfig,
+            DataSourcesReactiveDB2Config reactiveDB2RuntimeConfig, Vertx vertx, int eventLoopCount,
+            TlsConfigurationRegistry tlsRegistry) {
+        if (!ReactivePoolUtil.checkActive(dataSourceName, runtimeConfig, reactiveRuntimeConfig).value()) {
+            return Optional.empty();
+        }
+        return Optional.of(initialize((VertxInternal) vertx,
+                eventLoopCount,
+                dataSourceName,
+                runtimeConfig.dataSources().get(dataSourceName),
+                reactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
+                reactiveDB2RuntimeConfig.dataSources().get(dataSourceName).reactive().db2(),
+                tlsRegistry));
     }
 
-    private Pool initialize(VertxInternal vertx,
+    private static Pool initialize(VertxInternal vertx,
             Integer eventLoopCount,
             String dataSourceName,
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveDB2Config dataSourceReactiveDB2Config,
-            TlsConfigurationRegistry tlsRegistry,
-            SyntheticCreationalContext<Pool> context) {
+            TlsConfigurationRegistry tlsRegistry) {
         PoolOptions poolOptions = ReactivePoolUtil.toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         DB2ConnectOptions db2ConnectOptions = toConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveDB2Config, tlsRegistry);
         Supplier<Future<SqlConnectOptions>> databasesSupplier = ReactivePoolUtil.toDatabasesSupplier(
                 List.of(db2ConnectOptions), dataSourceRuntimeConfig, DB2ConnectOptions::new);
-        return createPool(vertx, poolOptions, db2ConnectOptions, dataSourceName, databasesSupplier, context);
+        return createPool(vertx, poolOptions, db2ConnectOptions, dataSourceName, databasesSupplier);
     }
 
-    private DB2ConnectOptions toConnectOptions(String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private static DB2ConnectOptions toConnectOptions(String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveDB2Config dataSourceReactiveDB2Config,
             TlsConfigurationRegistry tlsRegistry) {
@@ -133,10 +109,9 @@ public class DB2PoolRecorder {
         return connectOptions;
     }
 
-    private Pool createPool(Vertx vertx, PoolOptions poolOptions, DB2ConnectOptions db2ConnectOptions,
-            String dataSourceName, Supplier<Future<SqlConnectOptions>> databases,
-            SyntheticCreationalContext<Pool> context) {
-        Instance<PoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL, qualifier(dataSourceName));
+    private static Pool createPool(Vertx vertx, PoolOptions poolOptions, DB2ConnectOptions db2ConnectOptions,
+            String dataSourceName, Supplier<Future<SqlConnectOptions>> databases) {
+        Instance<PoolCreator> instance = Arc.container().select(PoolCreator.class, qualifier(dataSourceName));
         if (instance.isResolvable()) {
             DB2PoolCreator.Input input = new DefaultInput(vertx, poolOptions, db2ConnectOptions);
             return instance.get().create(input);

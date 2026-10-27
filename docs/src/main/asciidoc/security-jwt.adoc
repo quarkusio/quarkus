@@ -701,7 +701,7 @@ public class TokenSecuredResource {
 
 Note you can also use the injected `JsonWebToken` to access the individual claims, but setting `@RequestScoped` is unnecessary in this case.
 
-Please see link:https://download.eclipse.org/microprofile/microprofile-jwt-auth-1.2/microprofile-jwt-auth-spec-1.2.html#_cdi_injection_requirements[MP JWT CDI Injection Requirements] for more details.
+Please see link:https://download.eclipse.org/microprofile/microprofile-jwt-auth-2.1/microprofile-jwt-auth-spec-2.1.html#_cdi_injection_requirements[MP JWT CDI Injection Requirements] for more details.
 
 [[supported-public-key-formats]]
 === Supported public key formats
@@ -1203,8 +1203,8 @@ SmallRye JWT provides more properties that can be used to customize the token pr
 
 == References
 
-* link:https://download.eclipse.org/microprofile/microprofile-jwt-auth-1.2/microprofile-jwt-auth-spec-1.2.html[MP JWT 1.2 HTML]
-* link:https://download.eclipse.org/microprofile/microprofile-jwt-auth-1.2/microprofile-jwt-auth-spec-1.2.pdf[MP JWT 1.2 PDF]
+* link:https://download.eclipse.org/microprofile/microprofile-jwt-auth-2.1/microprofile-jwt-auth-spec-2.1.html[MP JWT 2.1 HTML]
+* link:https://download.eclipse.org/microprofile/microprofile-jwt-auth-2.1/microprofile-jwt-auth-spec-2.1.pdf[MP JWT 2.1 PDF]
 * link:https://github.com/smallrye/smallrye-jwt[SmallRye JWT]
 * link:https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * link:https://tools.ietf.org/html/rfc7515[JSON Web Signature]

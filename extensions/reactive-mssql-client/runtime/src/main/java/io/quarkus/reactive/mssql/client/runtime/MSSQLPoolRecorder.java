@@ -66,7 +66,8 @@ public final class MSSQLPoolRecorder {
         return createPool(vertx, poolOptions, mssqlConnectOptions, dataSourceName, databasesSupplier);
     }
 
-    private static MSSQLConnectOptions toMSSQLConnectOptions(String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private static MSSQLConnectOptions toMSSQLConnectOptions(String dataSourceName,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMSSQLConfig dataSourceReactiveMSSQLConfig,
             TlsConfigurationRegistry tlsRegistry) {

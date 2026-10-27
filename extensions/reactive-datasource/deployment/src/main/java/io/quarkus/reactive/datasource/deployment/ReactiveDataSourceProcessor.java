@@ -16,6 +16,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassType;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.ActiveResult;
@@ -44,6 +47,8 @@ import io.vertx.sqlclient.Pool;
 
 class ReactiveDataSourceProcessor {
     private static final Logger log = Logger.getLogger(ReactiveDataSourceProcessor.class);
+
+    private static final Type POOL_CREATOR_TYPE = ClassType.create(DotName.createSimple(PoolCreator.class));
 
     @BuildStep
     void addQualifierAsBean(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {

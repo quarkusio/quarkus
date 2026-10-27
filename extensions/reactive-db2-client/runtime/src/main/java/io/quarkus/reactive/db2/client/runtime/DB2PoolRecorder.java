@@ -31,6 +31,7 @@ import io.vertx.sqlclient.SqlConnectOptions;
 public final class DB2PoolRecorder {
 
     private static final Logger log = Logger.getLogger(DB2PoolRecorder.class);
+
     private DB2PoolRecorder() {
     }
 

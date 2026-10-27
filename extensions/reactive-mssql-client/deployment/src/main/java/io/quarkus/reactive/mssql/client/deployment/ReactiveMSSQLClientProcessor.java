@@ -1,22 +1,18 @@
 package io.quarkus.reactive.mssql.client.deployment;
 
-import io.vertx.core.Vertx;
-import io.quarkus.tls.TlsConfigurationRegistry;
-import io.quarkus.reactive.mssql.client.runtime.DataSourcesReactiveMSSQLConfig;
-import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
-import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
-import io.quarkus.core.deployment.service.ServiceRegistrar;
-import io.quarkus.core.Phase;
-import io.quarkus.arc.runtime.BeanContainer;
-import java.util.function.IntSupplier;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.IntSupplier;
 
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DataSourceDefinedBuildItem;
 import io.quarkus.datasource.deployment.spi.DatabaseVersionLoader;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
+import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -28,10 +24,14 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.devservices.datasource.common.DevServicesDatasourceConfigurationHandlerBuildItem;
+import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.spi.ReactivePoolBuildItem;
+import io.quarkus.reactive.mssql.client.runtime.DataSourcesReactiveMSSQLConfig;
 import io.quarkus.reactive.mssql.client.runtime.MSSQLPoolRecorder;
 import io.quarkus.reactive.mssql.client.runtime.MsSQLServiceBindingConverter;
 import io.quarkus.runtime.util.ProgrammingParadigm;
+import io.quarkus.tls.TlsConfigurationRegistry;
+import io.vertx.core.Vertx;
 import io.vertx.mssqlclient.spi.MSSQLDriver;
 import io.vertx.sqlclient.Pool;
 

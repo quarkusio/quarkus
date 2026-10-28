@@ -109,3 +109,24 @@ run the TCKs:
 - Container engine (Docker/Podman) is needed for dev-services tests
 - Parallel test execution is not supported
 - When writing a test that verifies a bug has been fixed, ensure that the test has run against the code that does not contain the fix and verify this test fails. This provides some confidence that the test does actually verify the fix; in other words, this addresses the `never trust a test you haven't seen fail` adage
+- A fix must not change the behavior of paths it does not target. Test
+  those paths too, and assert the behavior of `main`. Run the test class
+  on `main` and with the fix: only the tests of the fixed path may differ.
+
+## HTTP Clients Other Than RestAssured
+
+RestAssured uses Apache HttpClient 4, which has no HTTP/2 support.
+rest-assured/rest-assured#1696 tracks the move to HttpClient 5. Until
+RestAssured supports HTTP/2, use the Mutiny Vert.x web client for HTTP/2,
+h2c or other protocol-level tests:
+
+- Add `io.smallrye.reactive:smallrye-mutiny-vertx-web-client` with
+  `test` scope. The Quarkus BOM manages its version.
+- Inject the managed `io.vertx.mutiny.core.Vertx`. Do not create a Vert.x
+  instance in the test.
+- Wait with `await().atMost(timeout)` on every request. Do not use
+  `CompletableFuture` or `UniHelper`.
+- Share the clients between the tests and close them in `@AfterAll`.
+  Create one client for each protocol the tests use. The protocol is an
+  option of the `WebClient`, not of a request.
+- In Vert.x 5, the Mutiny web client uses `io.vertx.core.buffer.Buffer`.

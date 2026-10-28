@@ -49,6 +49,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
+import io.quarkus.load.shedding.deployment.spi.LoadSheddingExemptPathBuildItem;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -352,6 +353,26 @@ class SmallRyeHealthProcessor {
                 new KubernetesHealthStartupPathBuildItem(
                         nonApplicationRootPathBuildItem.resolveManagementNestedPath(healthConfig.rootPath(),
                                 healthConfig.startupPath())));
+    }
+
+    // The health probes must always respond. An orchestrator that cannot reach them either
+    // restarts an application that is merely overloaded, or stops routing traffic to it and
+    // pushes the load onto the remaining replicas; both make the overload worse.
+    // The paths are resolved exactly as in `kubernetes()` above.
+    @BuildStep
+    void exemptHealthProbesFromLoadShedding(
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            SmallRyeHealthBuildTimeConfig healthConfig,
+            BuildProducer<LoadSheddingExemptPathBuildItem> exemptPaths) {
+        String reason = "the health probes must keep responding, or the orchestrator restarts"
+                + " an overloaded application or cuts it off and overloads the other replicas";
+
+        for (String probePath : List.of(healthConfig.livenessPath(), healthConfig.readinessPath(),
+                healthConfig.startupPath())) {
+            exemptPaths.produce(new LoadSheddingExemptPathBuildItem(
+                    nonApplicationRootPathBuildItem.resolveManagementNestedPath(healthConfig.rootPath(), probePath),
+                    reason));
+        }
     }
 
     @BuildStep

@@ -21,7 +21,8 @@ public class HttpLoadShedding {
     public static final int PRIORITY = -1_000_000_000;
 
     public void init(@Observes @Priority(PRIORITY) Router router, OverloadDetector detector,
-            PriorityLoadShedding priority, Instance<LoadSheddingMetrics> metricsInstance, LoadSheddingRuntimeConfig config) {
+            PriorityLoadShedding priority, ExemptPaths exemptPaths, Instance<LoadSheddingMetrics> metricsInstance,
+            LoadSheddingRuntimeConfig config) {
 
         if (!config.enabled()) {
             return;
@@ -30,7 +31,7 @@ public class HttpLoadShedding {
         LoadSheddingMetrics metrics = metricsInstance.isResolvable() ? metricsInstance.get() : null;
 
         router.route().order(PRIORITY).handler(ctx -> {
-            if (detector.isOverloaded() && priority.shedLoad(ctx, detector.overloadDepth())) {
+            if (detector.isOverloaded() && !exemptPaths.contains(ctx) && priority.shedLoad(ctx, detector.overloadDepth())) {
                 if (metrics != null) {
                     metrics.requestShed();
                 }

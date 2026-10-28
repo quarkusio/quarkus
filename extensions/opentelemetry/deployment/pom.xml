@@ -120,6 +120,14 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <!-- Used by GrpcSenderRetryTest to build a fake OTLP/gRPC collector with full control
+                 over its responses. Not the same artifact as vertx-grpcio-*, which quarkus-grpc-deployment
+                 already pulls in for the grpc-java interop bridge. -->
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-grpc-server</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-mutiny-vertx-junit5</artifactId>
             <scope>test</scope>

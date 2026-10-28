@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -66,6 +67,7 @@ public final class VertxGrpcSender implements GrpcSender {
     private final Map<String, String> headers;
     private final String grpcEndpointPath;
     private final Duration exportTimeout;
+    private final Vertx vertx;
 
     private final GrpcClient client;
 
@@ -82,6 +84,7 @@ public final class VertxGrpcSender implements GrpcSender {
         this.compressionEnabled = compressionEnabled;
         this.headers = headersMap;
         this.exportTimeout = timeout;
+        this.vertx = vertx;
         var httpClientOptions = new HttpClientOptions()
                 .setHttp2ClearTextUpgrade(false) // needed otherwise connections get closed immediately
                 .setReadIdleTimeout((int) timeout.getSeconds())
@@ -108,7 +111,7 @@ public final class VertxGrpcSender implements GrpcSender {
         var onSuccessHandler = new ClientRequestOnSuccessHandler(client, server, headers, compressionEnabled,
                 messageWriter,
                 loggedUnimplemented, logger, marshalerType, onResponse, onError, 1, grpcEndpointPath,
-                isShutdown::get, exportTimeout);
+                isShutdown::get, exportTimeout, vertx);
 
         initiateSend(client, server, MAX_ATTEMPTS, onSuccessHandler, exportTimeout, new Consumer<>() {
             @Override
@@ -228,6 +231,14 @@ public final class VertxGrpcSender implements GrpcSender {
         private final int attemptNumber;
         private final Supplier<Boolean> isShutdown;
         private final Duration exportTimeout;
+        private final Vertx vertx;
+
+        // Guards the single attempt this handler instance is responsible for: whichever of the deadline timer
+        // or a "real" completion (success, error, or a failure worth retrying) fires first wins, and the other
+        // becomes a no-op. A plain boolean is not good enough here: the completion paths run through a Mutiny
+        // Uni subscription plus several independent Vert.x handler registrations, so nothing guarantees they
+        // all execute on a single thread.
+        private final AtomicBoolean attemptCompleted = new AtomicBoolean();
 
         public ClientRequestOnSuccessHandler(GrpcClient client,
                 SocketAddress server,
@@ -242,7 +253,8 @@ public final class VertxGrpcSender implements GrpcSender {
                 int attemptNumber,
                 String grpcEndpointPath,
                 Supplier<Boolean> isShutdown,
-                Duration exportTimeout) {
+                Duration exportTimeout,
+                Vertx vertx) {
             this.client = client;
             this.server = server;
             this.grpcEndpointPath = grpcEndpointPath;
@@ -257,10 +269,28 @@ public final class VertxGrpcSender implements GrpcSender {
             this.attemptNumber = attemptNumber;
             this.isShutdown = isShutdown;
             this.exportTimeout = exportTimeout;
+            this.vertx = vertx;
         }
 
         @Override
         public void handle(GrpcClientRequest<Buffer, Buffer> request) {
+            // HttpClientOptions#setReadIdleTimeout only protects against a connection that is completely
+            // silent. A connection that keeps producing unrelated traffic (e.g. HTTP/2 PINGs from a load
+            // balancer or proxy) never trips it, even though this specific Export stream never gets a
+            // response. This deadline bounds the whole attempt - connect, send, and wait for the response -
+            // independently of connection-level read activity. See https://github.com/quarkusio/quarkus/issues/57904
+            final long deadlineTimerId = vertx.setTimer(exportTimeout.toMillis(), new Handler<>() {
+                @Override
+                public void handle(Long timerId) {
+                    if (attemptCompleted.compareAndSet(false, true)) {
+                        request.cancel();
+                        retryOrFail(new TimeoutException(
+                                "The request did not complete within the configured timeout of "
+                                        + exportTimeout.toMillis() + "ms"));
+                    }
+                }
+            });
+
             if (compressionEnabled) {
                 request.encoding("gzip");
             }
@@ -287,20 +317,9 @@ public final class VertxGrpcSender implements GrpcSender {
                         response.exceptionHandler(new Handler<>() {
                             @Override
                             public void handle(Throwable t) {
-                                if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                                    // retry
-                                    initiateSend(client, server,
-                                            MAX_ATTEMPTS - attemptNumber,
-                                            newAttempt(), exportTimeout,
-                                            new Consumer<>() {
-                                                @Override
-                                                public void accept(Throwable throwable) {
-                                                    failOnClientRequest(throwable, onError, attemptNumber);
-                                                }
-                                            });
-
-                                } else {
-                                    failOnClientRequest(t, onError, attemptNumber);
+                                if (attemptCompleted.compareAndSet(false, true)) {
+                                    vertx.cancelTimer(deadlineTimerId);
+                                    retryOrFail(t);
                                 }
                             }
                         }).errorHandler(new Handler<>() {
@@ -313,6 +332,10 @@ public final class VertxGrpcSender implements GrpcSender {
                             public void handle(Void ignored) {
                                 GrpcStatus status = getStatus(response);
                                 if (status == GrpcStatus.OK) {
+                                    if (!attemptCompleted.compareAndSet(false, true)) {
+                                        return;
+                                    }
+                                    vertx.cancelTimer(deadlineTimerId);
                                     // onResponse.accept(GrpcResponse.create(status.code, status.toString()));
                                     onResponse.accept(new GrpcResponse() {
                                         @Override
@@ -359,6 +382,10 @@ public final class VertxGrpcSender implements GrpcSender {
                     }
 
                     private void handleError(GrpcStatus status, GrpcClientResponse<Buffer, Buffer> response) {
+                        if (!attemptCompleted.compareAndSet(false, true)) {
+                            return;
+                        }
+                        vertx.cancelTimer(deadlineTimerId);
                         String statusMessage = getStatusMessage(response);
                         logAppropriateWarning(status, statusMessage);
                         onError.accept(new IllegalStateException(statusMessage));
@@ -469,29 +496,22 @@ public final class VertxGrpcSender implements GrpcSender {
                 }).onFailure(new Handler<>() {
                     @Override
                     public void handle(Throwable t) {
-                        if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                            // retry
-                            initiateSend(client, server,
-                                    MAX_ATTEMPTS - attemptNumber,
-                                    newAttempt(), exportTimeout,
-                                    new Consumer<>() {
-                                        @Override
-                                        public void accept(Throwable throwable) {
-                                            failOnClientRequest(throwable, onError, attemptNumber);
-                                        }
-                                    });
-                        } else {
-                            failOnClientRequest(t, onError, attemptNumber);
+                        if (attemptCompleted.compareAndSet(false, true)) {
+                            vertx.cancelTimer(deadlineTimerId);
+                            retryOrFail(t);
                         }
                     }
                 });
             } catch (IOException e) {
-                final String message = "Failed to export "
-                        + type
-                        + "s. Unable to serialize payload. Full error message: "
-                        + (e.getMessage() == null ? e.getClass().getName() : e.getMessage());
-                logger.log(Level.WARNING, message);
-                onError.accept(e);
+                if (attemptCompleted.compareAndSet(false, true)) {
+                    vertx.cancelTimer(deadlineTimerId);
+                    final String message = "Failed to export "
+                            + type
+                            + "s. Unable to serialize payload. Full error message: "
+                            + (e.getMessage() == null ? e.getClass().getName() : e.getMessage());
+                    logger.log(Level.WARNING, message);
+                    onError.accept(e);
+                }
             }
         }
 
@@ -505,10 +525,26 @@ public final class VertxGrpcSender implements GrpcSender {
             onError.accept(t);
         }
 
+        private void retryOrFail(Throwable t) {
+            if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
+                initiateSend(client, server,
+                        MAX_ATTEMPTS - attemptNumber,
+                        newAttempt(), exportTimeout,
+                        new Consumer<>() {
+                            @Override
+                            public void accept(Throwable throwable) {
+                                failOnClientRequest(throwable, onError, attemptNumber);
+                            }
+                        });
+            } else {
+                failOnClientRequest(t, onError, attemptNumber);
+            }
+        }
+
         public ClientRequestOnSuccessHandler newAttempt() {
             return new ClientRequestOnSuccessHandler(client, server, headers, compressionEnabled, messageWriter,
                     loggedUnimplemented, logger, type, onResponse, onError, attemptNumber + 1,
-                    grpcEndpointPath, isShutdown, exportTimeout);
+                    grpcEndpointPath, isShutdown, exportTimeout, vertx);
         }
     }
 }

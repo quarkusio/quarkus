@@ -23,6 +23,7 @@ import io.opentelemetry.sdk.common.export.HttpResponse;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.sender.VertxHttpSender;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
 
 /**
@@ -109,9 +110,41 @@ public class SenderRetryTest {
         assertThat(requests).hasValue(1);
     }
 
+    /**
+     * A connection that keeps producing traffic unrelated to the export (here, a chunked keep-alive trickle,
+     * the HTTP/1.1 analogue of a load balancer/proxy sending HTTP/2 PINGs) never trips
+     * {@code HttpClientOptions#setReadIdleTimeout}, so the stalled request needs its own deadline independent
+     * of connection-level read activity, or the export hangs forever. See
+     * <a href="https://github.com/quarkusio/quarkus/issues/57904">#57904</a>.
+     */
+    @Test
+    public void retriesWhenConnectionStaysBusyWithoutARealResponse() throws Exception {
+        AtomicInteger requests = new AtomicInteger();
+        collector = vertx.createHttpServer().requestHandler(request -> {
+            if (requests.incrementAndGet() == 1) {
+                request.response().setChunked(true);
+                long keepAliveTimer = vertx.setPeriodic(50, id -> request.response().write(Buffer.buffer(" ")));
+                request.connection().closeHandler(v -> vertx.cancelTimer(keepAliveTimer));
+            } else {
+                request.response().setStatusCode(200).end();
+            }
+        });
+        int port = collector.listen(0, "localhost").toCompletionStage().toCompletableFuture()
+                .get(10, TimeUnit.SECONDS).actualPort();
+
+        HttpResponse response = export(port, Duration.ofMillis(500));
+
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(requests).hasValue(2);
+    }
+
     private HttpResponse export(int port) throws Exception {
+        return export(port, Duration.ofSeconds(5));
+    }
+
+    private HttpResponse export(int port, Duration timeout) throws Exception {
         sender = new VertxHttpSender(URI.create("http://localhost:" + port), "/v1/traces", false,
-                Duration.ofSeconds(5), Map.of(), "application/x-protobuf", options -> {
+                timeout, Map.of(), "application/x-protobuf", options -> {
                 }, vertx);
         CompletableFuture<HttpResponse> result = new CompletableFuture<>();
         sender.send(new EmptyMessageWriter(), result::complete, result::completeExceptionally);

@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -57,6 +58,8 @@ public final class VertxHttpSender implements HttpSender {
     private final String contentType;
     private final HttpClient client;
     private final String signalPath;
+    private final Duration exportTimeout;
+    private final Vertx vertx;
 
     public VertxHttpSender(
             URI baseUri,
@@ -72,6 +75,8 @@ public final class VertxHttpSender implements HttpSender {
         this.compressionEnabled = compressionEnabled;
         this.headers = headersMap;
         this.contentType = contentType;
+        this.exportTimeout = timeout;
+        this.vertx = vertx;
         var httpClientOptions = new HttpClientOptions()
                 .setReadIdleTimeout((int) timeout.getSeconds())
                 .setDefaultHost(baseUri.getHost())
@@ -123,7 +128,7 @@ public final class VertxHttpSender implements HttpSender {
         var clientRequestSuccessHandler = new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
                 contentType,
                 onHttpResponseRead,
-                onError, requestBodyWriter, 1, isShutdown::get);
+                onError, requestBodyWriter, 1, isShutdown::get, exportTimeout, vertx);
         initiateSend(client, requestURI, MAX_ATTEMPTS, clientRequestSuccessHandler, new Consumer<>() {
             @Override
             public void accept(Throwable throwable) {
@@ -234,6 +239,15 @@ public final class VertxHttpSender implements HttpSender {
 
         private final int attemptNumber;
         private final Supplier<Boolean> isShutdown;
+        private final Duration exportTimeout;
+        private final Vertx vertx;
+
+        // Guards the single attempt this handler instance is responsible for: whichever of the deadline timer
+        // or a "real" completion (success, error, or a failure worth retrying) fires first wins, and the other
+        // becomes a no-op. A plain boolean is not good enough here: the completion paths run through a Mutiny
+        // Uni subscription plus several independent Vert.x handler registrations, so nothing guarantees they
+        // all execute on a single thread.
+        private final AtomicBoolean attemptCompleted = new AtomicBoolean();
 
         public ClientRequestSuccessHandler(HttpClient client,
                 String requestURI, Map<String, String> headers,
@@ -243,7 +257,9 @@ public final class VertxHttpSender implements HttpSender {
                 Consumer<Throwable> onError,
                 MessageWriter requestBodyWriter,
                 int attemptNumber,
-                Supplier<Boolean> isShutdown) {
+                Supplier<Boolean> isShutdown,
+                Duration exportTimeout,
+                Vertx vertx) {
             this.client = client;
             this.requestURI = requestURI;
             this.headers = headers;
@@ -254,10 +270,28 @@ public final class VertxHttpSender implements HttpSender {
             this.requestBodyWriter = requestBodyWriter;
             this.attemptNumber = attemptNumber;
             this.isShutdown = isShutdown;
+            this.exportTimeout = exportTimeout;
+            this.vertx = vertx;
         }
 
         @Override
         public void handle(HttpClientRequest request) {
+            // HttpClientOptions#setReadIdleTimeout only protects against a connection that is completely
+            // silent. A connection that keeps producing unrelated traffic (e.g. a chunked keep-alive trickle
+            // from a load balancer or proxy) never trips it, even though this specific request never gets a
+            // response. This deadline bounds the whole attempt - connect, send, and wait for the response -
+            // independently of connection-level read activity. See https://github.com/quarkusio/quarkus/issues/57904
+            final long deadlineTimerId = vertx.setTimer(exportTimeout.toMillis(), new Handler<>() {
+                @Override
+                public void handle(Long timerId) {
+                    if (attemptCompleted.compareAndSet(false, true)) {
+                        request.reset();
+                        retryOrFail(new TimeoutException(
+                                "The request did not complete within the configured timeout of "
+                                        + exportTimeout.toMillis() + "ms"));
+                    }
+                }
+            });
 
             request.response().onComplete(new Handler<>() {
                 @Override
@@ -269,7 +303,11 @@ public final class VertxHttpSender implements HttpSender {
                             public void handle(AsyncResult<Buffer> bodyResult) {
                                 if (bodyResult.succeeded()) {
                                     if (clientResponse.statusCode() >= 500) {
-                                        if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
+                                        if (shouldRetry()) {
+                                            if (!attemptCompleted.compareAndSet(false, true)) {
+                                                return;
+                                            }
+                                            vertx.cancelTimer(deadlineTimerId);
                                             // we should retry for 5xx error as they might be recoverable
                                             initiateSend(client, requestURI,
                                                     MAX_ATTEMPTS - attemptNumber,
@@ -278,6 +316,10 @@ public final class VertxHttpSender implements HttpSender {
                                             return;
                                         }
                                     }
+                                    if (!attemptCompleted.compareAndSet(false, true)) {
+                                        return;
+                                    }
+                                    vertx.cancelTimer(deadlineTimerId);
                                     onHttpResponseRead.accept(new HttpResponse() {
                                         @Override
                                         public int getStatusCode() {
@@ -295,27 +337,17 @@ public final class VertxHttpSender implements HttpSender {
                                         }
                                     });
                                 } else {
-                                    if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                                        // retry
-                                        initiateSend(client, requestURI,
-                                                MAX_ATTEMPTS - attemptNumber,
-                                                newAttempt(),
-                                                onError);
-                                    } else {
-                                        onError.accept(bodyResult.cause());
+                                    if (attemptCompleted.compareAndSet(false, true)) {
+                                        vertx.cancelTimer(deadlineTimerId);
+                                        retryOrFail(bodyResult.cause());
                                     }
                                 }
                             }
                         });
                     } else {
-                        if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                            // retry
-                            initiateSend(client, requestURI,
-                                    MAX_ATTEMPTS - attemptNumber,
-                                    newAttempt(),
-                                    onError);
-                        } else {
-                            onError.accept(callResult.cause());
+                        if (attemptCompleted.compareAndSet(false, true)) {
+                            vertx.cancelTimer(deadlineTimerId);
+                            retryOrFail(callResult.cause());
                         }
                     }
                 }
@@ -348,10 +380,25 @@ public final class VertxHttpSender implements HttpSender {
             request.send(buffer);
         }
 
+        private boolean shouldRetry() {
+            return attemptNumber <= MAX_ATTEMPTS && !isShutdown.get();
+        }
+
+        private void retryOrFail(Throwable cause) {
+            if (shouldRetry()) {
+                initiateSend(client, requestURI,
+                        MAX_ATTEMPTS - attemptNumber,
+                        newAttempt(),
+                        onError);
+            } else {
+                onError.accept(cause);
+            }
+        }
+
         public ClientRequestSuccessHandler newAttempt() {
             return new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
                     contentType, onHttpResponseRead,
-                    onError, requestBodyWriter, attemptNumber + 1, isShutdown);
+                    onError, requestBodyWriter, attemptNumber + 1, isShutdown, exportTimeout, vertx);
         }
     }
 }

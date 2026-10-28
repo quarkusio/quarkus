@@ -58,7 +58,9 @@ public class ReplacementDebugPage {
             }
         }
         for (String i : configErrors) {
-            toEdit.add(new CurrentConfig(i, "", "", Config.get().getOptionalValue(i, String.class).orElse(null),
+            // The application may have failed to start, in which case no config is registered for the current
+            // class loader, so fall back to creating one instead of failing to render the error page
+            toEdit.add(new CurrentConfig(i, "", "", Config.getOrCreate().getOptionalValue(i, String.class).orElse(null),
                     null));
         }
 

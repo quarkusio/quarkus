@@ -118,6 +118,16 @@ public class SimpleJsonTest {
     }
 
     @Test
+    public void testInvalidJson() {
+        RestAssured.with()
+                .body("{\"first\": ")
+                .contentType("application/json")
+                .post("/simple/person")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
     public void testLargeJsonPost() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 10000; ++i) {

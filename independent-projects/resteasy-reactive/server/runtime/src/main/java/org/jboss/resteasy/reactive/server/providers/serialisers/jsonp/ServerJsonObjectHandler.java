@@ -5,8 +5,10 @@ import java.lang.reflect.Type;
 
 import jakarta.json.JsonObject;
 import jakarta.json.JsonWriter;
+import jakarta.json.stream.JsonParsingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonObjectHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonpUtil;
@@ -41,6 +43,10 @@ public class ServerJsonObjectHandler extends JsonObjectHandler
     @Override
     public JsonObject readFrom(Class<JsonObject> type, Type genericType, MediaType mediaType,
             ServerRequestContext context) throws WebApplicationException {
-        return JsonpUtil.reader(context.getInputStream(), mediaType).readObject();
+        try {
+            return JsonpUtil.reader(context.getInputStream(), mediaType).readObject();
+        } catch (JsonParsingException e) {
+            throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
+        }
     }
 }

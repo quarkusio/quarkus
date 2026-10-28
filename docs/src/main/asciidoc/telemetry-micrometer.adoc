@@ -704,6 +704,7 @@ java -Dio.netty.leakDetection.level=advanced ...
 * https://quarkus.io/guides/hibernate-orm[`quarkus-hibernate-orm`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-jaxrs-client-reactive[`quarkus-jaxrs-client-reactive`]
 * https://quarkus.io/guides/deploying-to-kubernetes[`quarkus-kubernetes`]
+* https://quarkus.io/guides/load-shedding-reference[`quarkus-load-shedding`]
 * https://quarkus.io/guides/logging[`jboss-logging`] (logging API in Quarkus)
 * https://quarkus.io/guides/mongodb[`quarkus-mongodb-client`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-netty[`quarkus-netty`]

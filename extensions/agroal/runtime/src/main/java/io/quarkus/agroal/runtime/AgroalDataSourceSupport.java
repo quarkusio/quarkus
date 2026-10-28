@@ -53,9 +53,10 @@ public class AgroalDataSourceSupport {
 
         @Override
         public Optional<? extends ConstantDesc> describeConstable() {
-            return Optional.of(DynamicConstantDesc.ofNamed(ConstantDescs.BSM_INVOKE, "entry", CD_ENTRY, MH_OF,
-                    dataSourceName, resolvedDbKind, dbVersion.isPresent() ? dbVersion.get() : ConstantDescs.NULL,
-                    resolvedDriverClass, isDefault ? ConstantDescs.TRUE : ConstantDescs.FALSE));
+            return Optional
+                    .of(DynamicConstantDesc.ofNamed(ConstantDescs.BSM_INVOKE, ConstantDescs.DEFAULT_NAME, CD_ENTRY, MH_OF,
+                            dataSourceName, resolvedDbKind, dbVersion.isPresent() ? dbVersion.get() : ConstantDescs.NULL,
+                            resolvedDriverClass, isDefault ? ConstantDescs.TRUE : ConstantDescs.FALSE));
         }
     }
 }

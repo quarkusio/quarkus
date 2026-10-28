@@ -52,6 +52,20 @@ description: >
   This helps during bisects and makes it easier to revert changes when needed
 - Don't use deprecated methods or classes in new code
 
+## Bytecode
+
+- **Generate bytecode with Gizmo 2** (`io.quarkus.gizmo2`), writing the classes
+  through `GeneratedClassGizmo2Adaptor`. Gizmo 1 (`io.quarkus.gizmo`) is legacy;
+  do not add new Gizmo 1 code.
+- **Read and inspect bytecode with the ClassFile API** backport
+  (`io.smallrye.classfile`, artifact `io.smallrye.classfile:jdk-classfile-backport`,
+  the same API as `java.lang.classfile`): `ClassFile.of().parse(bytes)`, then
+  `methods()`, `code()`, `elementList()`. This applies to tests that check
+  generated classes too.
+- **Never add ASM** (`org.objectweb.asm`) to new code or tests. The only
+  remaining ASM entry point is `BytecodeTransformerBuildItem`, whose
+  transformers still take an ASM `ClassVisitor`; keep those minimal.
+
 ## Logging
 
 - Use JBoss Logging (`org.jboss.logging.Logger`) as the logging API

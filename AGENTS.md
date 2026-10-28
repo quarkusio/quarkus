@@ -98,6 +98,9 @@ need for a separate step. Let the build fix formatting for you.
 - Naming: `<Feature>Processor.java`, `<Feature>Recorder.java`,
   `<Description>BuildItem.java`, `<Feature>Config.java`
 - Package root: `io.quarkus.<extension-name>` (hyphens become underscores)
+- Generate bytecode with Gizmo 2, read it with the ClassFile API backport
+  (`io.smallrye.classfile`); never use ASM in new code. See the `coding-style`
+  skill.
 - Use `@ConfigMapping` interfaces — legacy `@ConfigRoot` classes with
   `@ConfigItem` are removed. New `quarkus.*` properties must always be
   registered in a `@ConfigMapping`, even if read programmatically. See the

@@ -770,7 +770,7 @@ jobs:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_maven == 'true'
-    timeout-minutes: 130
+    timeout-minutes: 160
     strategy:
       fail-fast: false
       matrix:

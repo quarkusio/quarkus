@@ -30,8 +30,19 @@ public interface PemCertsConfig {
      */
     Optional<List<Path>> certDirs();
 
+    /**
+     * List of the trusted certificates passed inline, each value being the content of a PEM file encoded in base64.
+     * Use it to pass the certificates (for example, from an environment variable) instead of reading them from files.
+     * The certificates are added to the ones configured with {@code certs} and {@code cert-dirs}.
+     */
+    Optional<List<String>> certValues();
+
     default boolean hasNoTrustedCertificates() {
         if (certs().isPresent() && !certs().get().isEmpty()) {
+            return false;
+        }
+
+        if (certValues().isPresent() && !certValues().get().isEmpty()) {
             return false;
         }
 
@@ -78,6 +89,17 @@ public interface PemCertsConfig {
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to close directory stream opened for certificate directory " + certDir,
                             e);
+                }
+            }
+        }
+
+        var certValues = certValues().orElse(null);
+        if (certValues != null) {
+            for (String value : certValues) {
+                try {
+                    options.addCertValue(Buffer.buffer(TlsConfigUtils.decodeBase64(value)));
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException("A value of the `cert-values` property is not a valid base64 string", e);
                 }
             }
         }

@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.envers.deployment;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -26,6 +25,16 @@ import io.quarkus.runtime.util.ProgrammingParadigm;
 @BuildSteps(onlyIf = HibernateEnversEnabled.class)
 public final class HibernateEnversProcessor {
 
+    public static final String[] ENVERS_JPA_MODEL_CLASSES = new String[] {
+            "org.hibernate.envers.DefaultRevisionEntity",
+            "org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity",
+            "org.hibernate.envers.RevisionMapping",
+            "org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping",
+            "org.hibernate.envers.enhanced.SequenceIdRevisionEntity",
+            "org.hibernate.envers.enhanced.SequenceIdTrackingModifiedEntitiesRevisionEntity",
+            "org.hibernate.envers.enhanced.SequenceIdRevisionMapping",
+            "org.hibernate.envers.enhanced.SequenceIdTrackingModifiedEntitiesRevisionMapping"
+    };
     static final String HIBERNATE_ENVERS = "Hibernate Envers";
 
     @BuildStep
@@ -38,20 +47,16 @@ public final class HibernateEnversProcessor {
     }
 
     @BuildStep
-    List<AdditionalJpaModelBuildItem> addJpaModelClasses() {
-        return Arrays.asList(
-                // These are added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor,
-                // so we pass empty sets of PUs.
-                // The build items tell the Hibernate extension to process the classes at build time:
-                // add to Jandex index, bytecode enhancement, proxy generation, ...
-                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultRevisionEntity",
-                        Set.of()),
-                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity",
-                        Set.of()),
-                new AdditionalJpaModelBuildItem("org.hibernate.envers.RevisionMapping",
-                        Set.of()),
-                new AdditionalJpaModelBuildItem("org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping",
-                        Set.of()));
+    void addJpaModelClasses(BuildProducer<AdditionalJpaModelBuildItem> producer) {
+        // These are added to specific PUs at static init using org.hibernate.boot.spi.AdditionalMappingContributor,
+        // so we pass empty sets of PUs.
+        // The build items tell the Hibernate extension to process the classes at build time:
+        // add to Jandex index, bytecode enhancement, proxy generation, ...
+        // Include both native-id and sequence-id revision entities and the mapped superclasses declaring their fields,
+        // so ORM can register accessors before Envers contributes its mappings at static init.
+        for (String klass : ENVERS_JPA_MODEL_CLASSES) {
+            producer.produce(new AdditionalJpaModelBuildItem(klass, Set.of()));
+        }
     }
 
     @BuildStep
@@ -59,11 +64,7 @@ public final class HibernateEnversProcessor {
             HibernateEnversBuildTimeConfig buildTimeConfig) {
         // This is necessary because these classes are added to the model conditionally at static init,
         // so they don't get processed by HibernateOrmProcessor and in particular don't get reflection enabled.
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                "org.hibernate.envers.DefaultRevisionEntity",
-                "org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity",
-                "org.hibernate.envers.RevisionMapping",
-                "org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping")
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ENVERS_JPA_MODEL_CLASSES)
                 .reason(getClass().getName())
                 .methods().build());
 

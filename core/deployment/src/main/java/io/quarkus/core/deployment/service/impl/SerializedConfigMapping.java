@@ -9,18 +9,21 @@ import io.smallrye.serial.Serialized;
  * config instance captured by a service action lambda.
  * <p>
  * Produced by {@link ConfigMappingSerializer}. The emitter loads the config mapping
- * directly from SmallRye Config at runtime via {@code ConfigLookup.getConfigMapping(type)}.
+ * directly from SmallRye Config at runtime via {@code ConfigLookup.getConfigMapping(type, prefix)}.
  */
 public final class SerializedConfigMapping extends Serialized {
     private final ClassDesc configInterface;
+    private final String prefix;
 
     /**
      * Construct a new instance.
      *
      * @param configInterface the class descriptor of the {@code @ConfigMapping} interface
+     * @param prefix the prefix the mapping is registered with
      */
-    public SerializedConfigMapping(ClassDesc configInterface) {
+    public SerializedConfigMapping(ClassDesc configInterface, String prefix) {
         this.configInterface = configInterface;
+        this.prefix = prefix;
     }
 
     /**
@@ -28,5 +31,12 @@ public final class SerializedConfigMapping extends Serialized {
      */
     public ClassDesc configInterface() {
         return configInterface;
+    }
+
+    /**
+     * {@return the prefix the config mapping is registered with}
+     */
+    public String prefix() {
+        return prefix;
     }
 }

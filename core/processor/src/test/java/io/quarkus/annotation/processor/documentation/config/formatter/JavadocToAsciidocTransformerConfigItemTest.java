@@ -436,6 +436,60 @@ public class JavadocToAsciidocTransformerConfigItemTest {
     }
 
     @Test
+    public void escapeDoubleAngleBracketsInCodeTag() {
+        final String javaDoc = "Use {@code <<empty>>} here.";
+        final String expectedAsciidoc = "Use `++<<++empty>>` here.";
+
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+        assertEquals(expectedAsciidoc, asciiDoc);
+
+        final String actual = Factory.create().convert(asciiDoc, Options.builder().build());
+        final String expected = "<div class=\"paragraph\">\n<p>Use <code>&lt;&lt;empty&gt;&gt;</code> here.</p>\n</div>";
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void escapeDoubleAngleBracketsInHtmlCodeTag() {
+        final String javaDoc = "Use <code>&lt;&lt;empty&gt;&gt;</code> here.";
+        final String expectedAsciidoc = "Use `++<<++empty>>` here.";
+
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+        assertEquals(expectedAsciidoc, asciiDoc);
+
+        final String actual = Factory.create().convert(asciiDoc, Options.builder().build());
+        final String expected = "<div class=\"paragraph\">\n<p>Use <code>&lt;&lt;empty&gt;&gt;</code> here.</p>\n</div>";
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void escapeDoubleAngleBracketsInTableCell() {
+        final String javaDoc = "<table><tr><th>Name</th></tr><tr><td>{@code <<empty>>}</td></tr></table>";
+
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+
+        final String actual = Factory.create().convert(asciiDoc, Options.builder().build());
+        assertEquals(false, actual.contains("xref"));
+        assertEquals(true, actual.contains("&lt;&lt;empty&gt;&gt;"));
+    }
+
+    @Test
+    public void doNotEscapeSingleAngleBracket() {
+        final String javaDoc = "A <code>List&lt;String&gt;</code> and a {@code List<String>}.";
+        final String expectedAsciidoc = "A `List<String>` and a `List<String>`.";
+
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
+        final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
+        assertEquals(expectedAsciidoc, asciiDoc);
+
+        final String actual = Factory.create().convert(asciiDoc, Options.builder().build());
+        final String expected = "<div class=\"paragraph\">\n<p>A <code>List&lt;String&gt;</code> and a <code>List&lt;String&gt;</code>.</p>\n</div>";
+        assertEquals(expected, actual);
+    }
+
+    @Test
     void trim() {
         assertEquals("+ \nfoo", JavadocToAsciidocTransformer.trim(new StringBuilder("+ \nfoo")));
         assertEquals("+", JavadocToAsciidocTransformer.trim(new StringBuilder(" +")));

@@ -17,6 +17,7 @@ import org.acme.fieldtypes.FieldHolder;
 import org.acme.generics.GenericArg;
 import org.acme.generics.GenericContainer;
 import org.acme.inner.Outer;
+import org.acme.invokedyn.Identity;
 import org.acme.invokedyn.LambdaConstant;
 import org.acme.invokedyn.LambdaTarget;
 import org.acme.libb.ServiceB;
@@ -144,6 +145,12 @@ public class TreeShakeResource {
     @Path("/invokedynamic-call-site-type")
     public String invokedynamicCallSiteType() {
         return LambdaConstant.INSTANCE.value();
+    }
+
+    @GET
+    @Path("/invokedynamic-instantiated-method-type")
+    public String invokedynamicInstantiatedMethodType() {
+        return Identity.check();
     }
 
     @GET

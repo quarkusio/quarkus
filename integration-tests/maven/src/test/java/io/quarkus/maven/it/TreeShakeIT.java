@@ -236,6 +236,7 @@ public class TreeShakeIT extends MojoTestBase {
         // InvokeDynamic
         assertJarContains(libDir, "lib-invokedynamic", "org/acme/invokedyn/LambdaTarget.class");
         assertJarContains(libDir, "lib-invokedynamic", "org/acme/invokedyn/TaggedLambda.class");
+        assertJarContains(libDir, "lib-invokedynamic", "org/acme/invokedyn/InstantiatedType.class");
         assertJarNotContains(libDir, "lib-invokedynamic", "org/acme/invokedyn/UnusedInvokeDynamic.class");
 
         // Sisu named components

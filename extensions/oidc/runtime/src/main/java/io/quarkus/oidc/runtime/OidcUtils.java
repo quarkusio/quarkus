@@ -69,7 +69,6 @@ import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Logout.ClearSiteData;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Roles;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Token;
-import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -574,111 +573,6 @@ public final class OidcUtils {
         } else {
             cookie.setPath(auth.cookiePath());
         }
-    }
-
-    /**
-     * Merge the current tenant and well-known OpenId Connect provider configurations.
-     * Initialized properties take priority over uninitialized properties.
-     *
-     * Initialized properties in the current tenant configuration take priority
-     * over the same initialized properties in the well-known OpenId Connect provider configuration.
-     *
-     * Tenant id property of the current tenant must be set before the merge operation.
-     *
-     * @param tenant current tenant configuration
-     * @param provider well-known OpenId Connect provider configuration
-     * @return merged configuration
-     */
-    static OidcTenantConfig mergeTenantConfig(OidcTenantConfig tenant, OidcTenantConfig provider) {
-        if (tenant.tenantId().isEmpty()) {
-            // OidcRecorder sets it before the merge operation
-            throw new IllegalStateException();
-        }
-        // root properties
-        if (tenant.authServerUrl().isEmpty()) {
-            tenant.authServerUrl = provider.authServerUrl();
-        }
-        if (tenant.applicationType().isEmpty()) {
-            tenant.applicationType = provider.applicationType;
-        }
-        if (tenant.discoveryEnabled().isEmpty()) {
-            tenant.discoveryEnabled = provider.discoveryEnabled();
-        }
-        if (tenant.authorizationPath().isEmpty()) {
-            tenant.authorizationPath = provider.authorizationPath();
-        }
-        if (tenant.jwksPath().isEmpty()) {
-            tenant.jwksPath = provider.jwksPath();
-        }
-        if (tenant.tokenPath().isEmpty()) {
-            tenant.tokenPath = provider.tokenPath();
-        }
-        if (tenant.userInfoPath().isEmpty()) {
-            tenant.userInfoPath = provider.userInfoPath();
-        }
-
-        // authentication
-        if (tenant.authentication().idTokenRequired().isEmpty()) {
-            tenant.authentication.idTokenRequired = provider.authentication().idTokenRequired();
-        }
-        if (tenant.authentication().userInfoRequired().isEmpty()) {
-            tenant.authentication.userInfoRequired = provider.authentication().userInfoRequired();
-        }
-        if (tenant.authentication().pkceRequired().isEmpty()) {
-            tenant.authentication.pkceRequired = provider.authentication().pkceRequired();
-        }
-        if (tenant.authentication().scopes().isEmpty()) {
-            tenant.authentication.scopes = provider.authentication().scopes();
-        }
-        if (tenant.authentication().scopeSeparator().isEmpty()) {
-            tenant.authentication.scopeSeparator = provider.authentication().scopeSeparator();
-        }
-        if (tenant.authentication().addOpenidScope().isEmpty()) {
-            tenant.authentication.addOpenidScope = provider.authentication().addOpenidScope();
-        }
-        if (tenant.authentication().forceRedirectHttpsScheme().isEmpty()) {
-            tenant.authentication.forceRedirectHttpsScheme = provider.authentication().forceRedirectHttpsScheme();
-        }
-        if (tenant.authentication().responseMode().isEmpty()) {
-            tenant.authentication.responseMode = provider.authentication.responseMode;
-        }
-        if (tenant.authentication().redirectPath().isEmpty()) {
-            tenant.authentication.redirectPath = provider.authentication().redirectPath();
-        }
-
-        // credentials
-        if (tenant.credentials().clientSecret().method().isEmpty()) {
-            tenant.credentials.clientSecret.method = provider.credentials.clientSecret.method;
-        }
-        if (tenant.credentials().jwt().audience().isEmpty()) {
-            tenant.credentials.jwt.audience = provider.credentials().jwt().audience();
-        }
-        if (tenant.credentials().jwt().signatureAlgorithm().isEmpty()) {
-            tenant.credentials.jwt.signatureAlgorithm = provider.credentials().jwt().signatureAlgorithm();
-        }
-
-        // token
-        if (tenant.token().issuer().isEmpty()) {
-            tenant.token.issuer = provider.token().issuer();
-        }
-        if (tenant.token().principalClaim().isEmpty()) {
-            tenant.token.principalClaim = provider.token().principalClaim();
-        }
-        if (tenant.token().verifyAccessTokenWithUserInfo().isEmpty()) {
-            tenant.token.verifyAccessTokenWithUserInfo = provider.token().verifyAccessTokenWithUserInfo();
-        }
-
-        return tenant;
-    }
-
-    static OidcTenantConfig resolveProviderConfig(OidcTenantConfig oidcTenantConfig) {
-        if (oidcTenantConfig != null && oidcTenantConfig.provider().isPresent()) {
-            return OidcUtils.mergeTenantConfig(oidcTenantConfig,
-                    KnownOidcProviders.provider(oidcTenantConfig.provider().get()));
-        } else {
-            return oidcTenantConfig;
-        }
-
     }
 
     public static byte[] getSha256Digest(String value) throws NoSuchAlgorithmException {

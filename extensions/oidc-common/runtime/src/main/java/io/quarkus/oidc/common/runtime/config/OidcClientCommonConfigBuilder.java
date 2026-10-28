@@ -77,6 +77,20 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
     }
 
     /**
+     * @return current {@link OidcClientCommonConfig#tokenPath()}
+     */
+    protected Optional<String> getTokenPath() {
+        return tokenPath;
+    }
+
+    /**
+     * @return current {@link OidcClientCommonConfig#credentials()}
+     */
+    protected Credentials getCredentials() {
+        return credentials;
+    }
+
+    /**
      * @param tokenPath {@link OidcClientCommonConfig#tokenPath()}
      * @return T builder
      */

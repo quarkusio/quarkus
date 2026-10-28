@@ -132,7 +132,9 @@ public final class LogoutConfigBuilder {
      */
     public LogoutConfigBuilder clearSiteData(List<ClearSiteData> directives) {
         Objects.requireNonNull(directives);
-        this.clearSiteData.get().addAll(directives);
+        Set<ClearSiteData> clearSiteData = new HashSet<>(this.clearSiteData.orElse(Set.of()));
+        clearSiteData.addAll(directives);
+        this.clearSiteData = Optional.of(Set.copyOf(clearSiteData));
         return this;
     }
 

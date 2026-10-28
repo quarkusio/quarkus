@@ -36,9 +36,12 @@ public class VertxRequestClientHeadersFactory implements ClientHeadersFactory {
     }
 
     private static Optional<Config> config() {
+        // Config.get() throws IllegalArgumentException when no config is registered for the current class
+        // loader, unlike the MP ConfigProvider.getConfig() which threw IllegalStateException
         try {
             return Optional.ofNullable(Config.get());
-        } catch (NoClassDefFoundError | IllegalStateException | ExceptionInInitializerError var1) {
+        } catch (NoClassDefFoundError | IllegalStateException | IllegalArgumentException
+                | ExceptionInInitializerError var1) {
             return Optional.empty();
         }
     }

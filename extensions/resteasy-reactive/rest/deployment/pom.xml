@@ -91,6 +91,11 @@
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- Minimal test dependency to the Undertow deployment module, so that it is built before this one and
              the tests forcing the Undertow dependency can resolve it -->
         <dependency>

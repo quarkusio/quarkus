@@ -16,7 +16,6 @@ import jakarta.ws.rs.core.MediaType;
 
 import org.assertj.core.api.Assertions;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
-import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -76,7 +75,7 @@ public class MultiByteWithRemoteErrorTest {
     public interface Client {
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        String post(@MultipartForm Form clientForm);
+        String post(Form clientForm);
     }
 
     public static class Form {

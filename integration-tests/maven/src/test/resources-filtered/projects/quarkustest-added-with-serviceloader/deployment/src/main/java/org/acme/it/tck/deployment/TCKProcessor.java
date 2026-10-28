@@ -1,14 +1,10 @@
 package org.acme.it.tck.deployment;
 
-import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
-
 import jakarta.enterprise.context.ApplicationScoped;
-
-import org.jboss.jandex.AnnotationTarget;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.arc.processor.AnnotationsTransformer;
+import org.jboss.jandex.AnnotationTransformation;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -33,21 +29,9 @@ public class TCKProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
 
-        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-            @Override
-            public boolean appliesTo(final AnnotationTarget.Kind kind) {
-                return CLASS.equals(kind);
-            }
-
-            @Override
-            public void transform(final TransformationContext context) {
-                String className = context.getTarget().asClass().name().toString();
-                if ("org.acme.tck.HelloResourceTest".equals(className)) {
-                    context.transform()
-                            .add(ApplicationScoped.class)
-                            .done();
-                }
-            }
-        }));
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(
+                AnnotationTransformation.forClasses()
+                        .whenClass(c -> "org.acme.tck.HelloResourceTest".equals(c.name().toString()))
+                        .transform(ctx -> ctx.add(ApplicationScoped.class))));
     }
 }

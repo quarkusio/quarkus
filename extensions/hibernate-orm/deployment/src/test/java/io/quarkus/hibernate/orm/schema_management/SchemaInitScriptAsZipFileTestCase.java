@@ -14,7 +14,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 /**
  * Like data init scripts, schema init scripts can be packaged as zip files.
  */
-public class ZipSchemaInitScriptTestCase {
+public class SchemaInitScriptAsZipFileTestCase {
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar

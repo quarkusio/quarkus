@@ -74,13 +74,13 @@ import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ScopeInfo;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -90,7 +90,6 @@ import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -233,10 +232,11 @@ class RestClientReactiveProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void setupAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            RestClientRecorder restClientRecorder) {
-        restClientRecorder.setRestClientBuilderResolver();
+            ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar.forService("io.quarkus.rest-client.builder-resolver")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> RestClientRecorder.setRestClientBuilderResolver());
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
         additionalBeans.produce(new AdditionalBeanBuildItem(CertificateUpdateEventListener.class));
     }
@@ -651,7 +651,6 @@ class RestClientReactiveProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void addRestClientBeans(
             Capabilities capabilities,
             CombinedIndexBuildItem combinedIndexBuildItem,
@@ -661,8 +660,7 @@ class RestClientReactiveProcessor {
             List<RestClientAnnotationsTransformerBuildItem> restClientAnnotationsTransformerBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             LaunchModeBuildItem launchMode,
-            RestClientRecorder recorder,
-            ShutdownContextBuildItem shutdown) {
+            ServiceRegistrar serviceRegistrar) {
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
@@ -868,8 +866,6 @@ class RestClientReactiveProcessor {
             }
         }
 
-        recorder.setBlockingClassNames(blockingClassNames);
-
         Set<String> interfacesWithUrlParam = new HashSet<>();
         for (AnnotationInstance urlAnnotation : index.getAnnotations(URL)) {
             if (urlAnnotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
@@ -877,13 +873,21 @@ class RestClientReactiveProcessor {
                         urlAnnotation.target().asMethodParameter().method().declaringClass().name().toString());
             }
         }
-        recorder.setInterfacesWithUrlParam(interfacesWithUrlParam);
 
-        if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
-            recorder.setConfigKeys(configKeys);
-        }
-
-        recorder.cleanUp(shutdown);
+        Set<String> blockingClasses = Set.copyOf(blockingClassNames);
+        Set<String> urlParamInterfaces = Set.copyOf(interfacesWithUrlParam);
+        boolean devMode = launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT;
+        Map<String, String> clientConfigKeys = devMode ? Map.copyOf(configKeys) : Map.of();
+        serviceRegistrar.forService("io.quarkus.rest-client.setup")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> {
+                    RestClientRecorder.setBlockingClassNames(blockingClasses);
+                    RestClientRecorder.setInterfacesWithUrlParam(urlParamInterfaces);
+                    if (devMode) {
+                        RestClientRecorder.setConfigKeys(clientConfigKeys);
+                    }
+                    ctx.onStop(() -> RestClientRecorder.cleanUp());
+                });
     }
 
     /**

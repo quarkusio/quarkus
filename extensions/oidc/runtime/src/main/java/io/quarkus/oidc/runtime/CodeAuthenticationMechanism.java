@@ -1256,7 +1256,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                         String sessionName = OidcUtils.getSessionCookieName(configContext.oidcConfig());
                                         LOG.debugf("Session cookie length for the tenant %s is %d bytes.",
                                                 configContext.oidcConfig().tenantId().get(), cookieValue.length());
-                                        if (cookieValue.length() > OidcUtils.MAX_COOKIE_VALUE_LENGTH) {
+                                        if (cookieValue.length() > OidcUtils.getMaxCookieValueLength(sessionName)) {
                                             LOG.debugf(
                                                     "Session cookie length for the tenant %s is greater than %d bytes."
                                                             + " The cookie will be split to chunks to avoid browsers ignoring it."
@@ -1272,7 +1272,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                             + " or register a custom 'quarkus.oidc.TokenStateManager'"
                                                             + " CDI bean with the alternative priority set to 1 and save the tokens on the server.",
                                                     configContext.oidcConfig().tenantId().get(),
-                                                    OidcUtils.MAX_COOKIE_VALUE_LENGTH);
+                                                    OidcUtils.getMaxCookieValueLength(sessionName));
                                             OidcUtils.createChunkedCookie(context, configContext.oidcConfig(), sessionName,
                                                     cookieValue, sessionMaxAge);
                                         } else {

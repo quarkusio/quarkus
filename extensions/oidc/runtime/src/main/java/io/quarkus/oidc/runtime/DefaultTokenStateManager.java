@@ -212,7 +212,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
 
     private static String getAccessTokenCookie(RoutingContext routingContext, OidcTenantConfig oidcConfig) {
         final Map<String, Cookie> cookies = OidcUtils.cookieSetToMap(routingContext.request().cookies());
-        return OidcUtils.getSessionCookie(routingContext.data(), cookies, oidcConfig, OidcUtils.SESSION_AT_COOKIE_NAME,
+        return OidcUtils.getSessionCookie(routingContext.data(), cookies, OidcUtils.SESSION_AT_COOKIE_NAME,
                 getAccessTokenCookieName(oidcConfig));
     }
 
@@ -263,7 +263,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
 
         LOG.debugf("Session access token cookie length for the tenant %s is %d bytes.",
                 oidcConfig.tenantId().get(), cookieValue.length());
-        if (cookieValue.length() > OidcUtils.MAX_COOKIE_VALUE_LENGTH) {
+        if (cookieValue.length() > OidcUtils.getMaxCookieValueLength(cookieName)) {
             LOG.debugf(
                     "Session access token cookie length for the tenant %s is greater than %d bytes."
                             + " The cookie will be split to chunks to avoid browsers ignoring it."
@@ -276,7 +276,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
                             + " 4. Use the 'quarkus-oidc-db-token-state-manager' extension or the 'quarkus-oidc-redis-token-state-manager' extension"
                             + " or register a custom 'quarkus.oidc.TokenStateManager'"
                             + " CDI bean with the alternative priority set to 1 and save the tokens on the server.",
-                    oidcConfig.tenantId().get(), OidcUtils.MAX_COOKIE_VALUE_LENGTH);
+                    oidcConfig.tenantId().get(), OidcUtils.getMaxCookieValueLength(cookieName));
             OidcUtils.createChunkedCookie(routingContext, oidcConfig, cookieName, cookieValue,
                     routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM));
         } else {

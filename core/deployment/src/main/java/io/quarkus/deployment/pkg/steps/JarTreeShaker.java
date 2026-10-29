@@ -827,7 +827,7 @@ class JarTreeShaker {
     /**
      * Extracts all class references from bytecode using ASM: superclass, interfaces,
      * field/method descriptors, generic signatures, annotations, method body instructions
-     * (type insns, field/method owners, LDC class constants, invokedynamic call site types and handles),
+     * (type insns, field/method owners, LDC constants, invokedynamic call site types, handles and bootstrap arguments),
      * and {@code Class.forName()}/{@code ClassLoader.loadClass()} calls with string constants.
      */
     private Set<String> extractReferencesFromBytecode(byte[] bytecode) {
@@ -1011,7 +1011,7 @@ class JarTreeShaker {
 
     /**
      * MethodVisitor that extracts class references from instructions: type insns, field/method
-     * owners, descriptors, LDC class constants, invokedynamic handles, try-catch types, and
+     * owners, descriptors, LDC constants, invokedynamic handles and bootstrap arguments, try-catch types, and
      * annotations. Tracks {@code lastStringConstant} to detect {@code Class.forName()} and
      * {@code ClassLoader.loadClass()} calls with string arguments.
      */
@@ -1073,18 +1073,7 @@ class JarTreeShaker {
             } else {
                 lastStringConstant = null;
             }
-            if (value instanceof org.objectweb.asm.Type type) {
-                if (type.getSort() == org.objectweb.asm.Type.OBJECT) {
-                    addClassRef(type.getInternalName(), refs, jdkPkgs);
-                } else if (type.getSort() == org.objectweb.asm.Type.ARRAY) {
-                    org.objectweb.asm.Type elem = type.getElementType();
-                    if (elem.getSort() == org.objectweb.asm.Type.OBJECT) {
-                        addClassRef(elem.getInternalName(), refs, jdkPkgs);
-                    }
-                }
-            } else if (value instanceof ConstantDynamic condy) {
-                addConstantDynamic(condy, refs, jdkPkgs);
-            }
+            addLoadableConstant(value, refs, jdkPkgs);
         }
 
         @Override
@@ -1121,7 +1110,7 @@ class JarTreeShaker {
             addHandleType(bootstrapMethodHandle, refs, jdkPkgs);
             if (bootstrapMethodArguments != null) {
                 for (Object arg : bootstrapMethodArguments) {
-                    addBootstrapArgument(arg, refs, jdkPkgs);
+                    addLoadableConstant(arg, refs, jdkPkgs);
                 }
             }
         }
@@ -1247,12 +1236,17 @@ class JarTreeShaker {
             if (loadClass && arg instanceof String descriptor) {
                 addAsmType(org.objectweb.asm.Type.getType(descriptor), refs, jdkPkgs);
             } else {
-                addBootstrapArgument(arg, refs, jdkPkgs);
+                addLoadableConstant(arg, refs, jdkPkgs);
             }
         }
     }
 
-    private static void addBootstrapArgument(Object arg, Set<String> refs, Set<String> jdkPkgs) {
+    /**
+     * Adds the class references of a loadable constant, i.e. an {@code ldc} operand or a bootstrap method argument.
+     * The JVM loads the classes named by class, method type, method handle and dynamic constants when it resolves
+     * them, so all of them must be kept. Other constants (strings and primitives) do not reference classes.
+     */
+    private static void addLoadableConstant(Object arg, Set<String> refs, Set<String> jdkPkgs) {
         if (arg instanceof org.objectweb.asm.Type type) {
             addAsmType(type, refs, jdkPkgs);
         } else if (arg instanceof Handle handle) {
@@ -1297,14 +1291,17 @@ class JarTreeShaker {
 
     /**
      * Adds the class reference from an ASM {@link org.objectweb.asm.Type} to {@code refs},
-     * recursing into the element type for array types. Delegates to {@link #addClassRef}
-     * to skip {@code java/} package classes.
+     * recursing into the element type for array types and into the argument and return types
+     * for method types (e.g. the {@code instantiatedMethodType} bootstrap argument of a lambda).
+     * Delegates to {@link #addClassRef} to skip {@code java/} package classes.
      */
     private static void addAsmType(org.objectweb.asm.Type type, Set<String> refs, Set<String> jdkPkgs) {
         if (type.getSort() == org.objectweb.asm.Type.OBJECT) {
             addClassRef(type.getInternalName(), refs, jdkPkgs);
         } else if (type.getSort() == org.objectweb.asm.Type.ARRAY) {
             addAsmType(type.getElementType(), refs, jdkPkgs);
+        } else if (type.getSort() == org.objectweb.asm.Type.METHOD) {
+            addMethodDescriptorTypes(type.getDescriptor(), refs, jdkPkgs);
         }
     }
 

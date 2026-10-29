@@ -171,6 +171,16 @@ public class TreeShakeCheck {
     }
 
     /**
+     * Verifies that a class referenced only from the instantiated method type bootstrap argument
+     * of a lambda (a generic method reference) is preserved.
+     */
+    @Test
+    void testInvokeDynamicInstantiatedMethodType() {
+        given().when().get("/tree-shake/invokedynamic-instantiated-method-type")
+                .then().statusCode(200).body(is("instantiated"));
+    }
+
+    /**
      * Verifies that sisu named components ({@code META-INF/sisu/javax.inject.Named})
      * are preserved when a reachable class loads the sisu resource via
      * {@code ClassLoader.getResources()}.

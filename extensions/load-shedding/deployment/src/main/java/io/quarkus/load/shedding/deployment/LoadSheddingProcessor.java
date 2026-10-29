@@ -20,6 +20,7 @@ import io.quarkus.load.shedding.deployment.spi.LoadSheddingExemptPathBuildItem;
 import io.quarkus.load.shedding.runtime.ExemptPaths;
 import io.quarkus.load.shedding.runtime.HttpLoadShedding;
 import io.quarkus.load.shedding.runtime.HttpRequestClassifier;
+import io.quarkus.load.shedding.runtime.LoadSheddingCounter;
 import io.quarkus.load.shedding.runtime.ManagementRequestPrioritizer;
 import io.quarkus.load.shedding.runtime.OverloadDetector;
 import io.quarkus.load.shedding.runtime.PriorityLoadShedding;
@@ -48,6 +49,7 @@ public class LoadSheddingProcessor {
         beans.add(PriorityLoadShedding.class.getName());
         beans.add(ManagementRequestPrioritizer.class.getName());
         beans.add(HttpRequestClassifier.class.getName());
+        beans.add(LoadSheddingCounter.class.getName());
 
         return AdditionalBeanBuildItem.builder().addBeanClasses(beans).build();
     }

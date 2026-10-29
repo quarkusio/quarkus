@@ -266,6 +266,8 @@ public class SecurityProcessor {
                     "org.bouncycastle.jcajce.provider.asymmetric.EC$Mappings",
                     "org.bouncycastle.jcajce.provider.asymmetric.RSA",
                     "org.bouncycastle.jcajce.provider.asymmetric.RSA$Mappings",
+                    "org.bouncycastle.jcajce.provider.asymmetric.MLKEM",
+                    "org.bouncycastle.jcajce.provider.asymmetric.MLKEM$Mappings",
                     "org.bouncycastle.jcajce.provider.drbg.DRBG",
                     "org.bouncycastle.jcajce.provider.drbg.DRBG$Mappings").methods().fields()
                     .build());
@@ -369,6 +371,23 @@ public class SecurityProcessor {
                     "org.bouncycastle.jcajce.provider.asymmetric.rsa.KeyPairGeneratorSpi",
                     "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi",
                     "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi$SHA256withRSA").methods().fields()
+                    .build());
+            // ML-KEM is used by the hybrid TLS 1.3 key exchange groups (e.g. X25519MLKEM768),
+            // which are offered by default by recent JDK clients
+            reflection.produce(ReflectiveClassBuildItem.builder(
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM512",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM768",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM1024",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM512",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM768",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM1024",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM512",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM768",
+                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM1024").methods().fields()
                     .build());
         }
 

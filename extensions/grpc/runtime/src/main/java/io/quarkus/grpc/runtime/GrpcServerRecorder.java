@@ -46,7 +46,6 @@ import io.vertx.grpc.common.GrpcMessageEncoder;
 import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.server.GrpcServerOptions;
 import io.vertx.grpc.server.GrpcServerRequest;
-import io.vertx.grpc.server.ServiceMethodInvoker;
 import io.vertx.grpc.transcoding.TranscodingServiceMethod;
 import io.vertx.grpcio.server.GrpcIoServer;
 import io.vertx.grpcio.server.GrpcIoServiceBridge;
@@ -188,7 +187,7 @@ public class GrpcServerRecorder {
                     for (TranscodingServiceMethod method : transcodingMethods) {
                         server.callHandler(method,
                                 new MethodCallHandler(method, method.decoder(), method.encoder(),
-                                        bridge.invoker(method)));
+                                        bridge.handler(method)));
                     }
                 }
                 bridge.bind(server);
@@ -423,28 +422,20 @@ public class GrpcServerRecorder {
         final ServiceMethod<Req, Resp> method;
         final GrpcMessageDecoder<Req> messageDecoder;
         final GrpcMessageEncoder<Resp> messageEncoder;
-        final ServiceMethodInvoker<Req, Resp> invoker;
+        final Handler<GrpcServerRequest<Req, Resp>> invoker;
 
         MethodCallHandler(ServiceMethod<Req, Resp> method, GrpcMessageDecoder<Req> messageDecoder,
                 GrpcMessageEncoder<Resp> messageEncoder, Handler<GrpcServerRequest<Req, Resp>> handler) {
             this.method = method;
             this.messageDecoder = messageDecoder;
             this.messageEncoder = messageEncoder;
-            this.invoker = handler::handle;
-        }
-
-        MethodCallHandler(ServiceMethod<Req, Resp> method, GrpcMessageDecoder<Req> messageDecoder,
-                GrpcMessageEncoder<Resp> messageEncoder, ServiceMethodInvoker<Req, Resp> invoker) {
-            this.method = method;
-            this.messageDecoder = messageDecoder;
-            this.messageEncoder = messageEncoder;
-            this.invoker = invoker;
+            this.invoker = handler;
         }
 
         @Override
         public void handle(GrpcServerRequest<Req, Resp> grpcRequest) {
             try {
-                invoker.invoke(grpcRequest);
+                invoker.handle(grpcRequest);
             } catch (Exception e) {
                 grpcRequest.response().fail(e);
             }

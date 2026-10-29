@@ -14,6 +14,7 @@ import com.google.protobuf.util.JsonFormat;
 
 import io.quarkus.grpc.MutinyGrpc;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.JsonObject;
 import io.vertx.grpc.transcoding.TranscodingServiceMethod;
 import io.vertx.grpc.transcoding.impl.MessageWeaver;
 import io.vertx.grpc.transcoding.impl.config.HttpVariableBinding;
@@ -97,8 +98,8 @@ public class TranscodingMethodCollectionTest {
         Buffer rawBody = Buffer.buffer("{\"name\":\"Widget\",\"description\":\"A nice widget\"}");
         HttpVariableBinding itemIdBinding = new HttpVariableBinding(List.of("item_id"), "item-123");
 
-        Buffer woven = MessageWeaver.weaveRequestMessage(rawBody, List.of(itemIdBinding), "item", descriptor);
-        String json = woven.toString();
+        JsonObject woven = MessageWeaver.weaveRequestMessage(rawBody, List.of(itemIdBinding), "item", descriptor);
+        String json = woven.encode();
 
         // The body should be wrapped under "item", not at the top level
         assertThat(json).contains("\"item\"");
@@ -232,12 +233,12 @@ public class TranscodingMethodCollectionTest {
 
         // Simulate MessageWeaver output: body wrapped under "item" + path binding applied
         HttpVariableBinding itemIdBinding = new HttpVariableBinding(List.of("item_id"), "item-123");
-        Buffer woven = MessageWeaver.weaveRequestMessage(
+        JsonObject woven = MessageWeaver.weaveRequestMessage(
                 Buffer.buffer("{\"name\":\"Widget\",\"description\":\"A nice widget\"}"),
                 List.of(itemIdBinding), "item", descriptor);
 
         io.vertx.grpc.common.GrpcMessage wovenMsg = io.vertx.grpc.common.GrpcMessage.message(
-                "identity", io.vertx.grpc.common.WireFormat.JSON, woven);
+                "identity", io.vertx.grpc.common.WireFormat.JSON, woven.toBuffer());
 
         com.google.protobuf.DynamicMessage result = decoder.decode(wovenMsg);
 
@@ -278,7 +279,7 @@ public class TranscodingMethodCollectionTest {
         HttpVariableBinding itemIdBinding = new HttpVariableBinding(List.of("item_id"), "item-123");
 
         // body: "*" means merge body fields directly into the message
-        Buffer woven = MessageWeaver.weaveRequestMessage(rawBody, List.of(itemIdBinding), "*", descriptor);
-        assertThat(woven.toString()).contains("item-123");
+        JsonObject woven = MessageWeaver.weaveRequestMessage(rawBody, List.of(itemIdBinding), "*", descriptor);
+        assertThat(woven.encode()).contains("item-123");
     }
 }

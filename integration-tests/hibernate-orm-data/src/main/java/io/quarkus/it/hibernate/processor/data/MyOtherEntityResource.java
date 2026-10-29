@@ -6,6 +6,7 @@ import jakarta.data.Order;
 import jakarta.data.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -17,6 +18,7 @@ import jakarta.ws.rs.Produces;
 
 import org.jboss.resteasy.reactive.RestPath;
 
+import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.it.hibernate.processor.data.puother.MyOtherEntity;
 import io.quarkus.it.hibernate.processor.data.puother.MyOtherEntity_;
 import io.quarkus.it.hibernate.processor.data.puother.MyOtherRepository;
@@ -30,10 +32,24 @@ public class MyOtherEntityResource {
     @Inject
     MyOtherRepository repository;
 
+    @Inject
+    @PersistenceUnit("other")
+    EntityManager entityManager;
+
     @POST
     @Transactional
     public void create(MyOtherEntity entity) {
         repository.insert(entity);
+    }
+
+    @GET
+    @Path("/unannotated/by/name/{name}")
+    public List<MyOtherEntity> getByNameFromUnannotatedRepository(@RestPath String name) {
+        // The named query is only registered in the "other" persistence unit if the unannotated repository was
+        // assigned to it through the package-based rules.
+        return entityManager.createNamedQuery(
+                "io.quarkus.it.hibernate.processor.data.puother.UnannotatedMyOtherRepository#findByName(java.lang.String)",
+                MyOtherEntity.class).setParameter("name", name).getResultList();
     }
 
     @GET

@@ -290,6 +290,9 @@ because on startup Quarkus tries to load `data.sql` into that database.
 In the terminal where Quarkus is running, you'll see an error message like this:
 
 ----
+ERROR [io.quarkus.runtime.Application] (Quarkus Main Thread) Failed to start application [Error Occurred After Shutdown]: java.lang.RuntimeException: Failed to start quarkus
+...
+Caused by: jakarta.persistence.PersistenceException: [PersistenceUnit: <default>] Unable to build Hibernate SessionFactory
 ...
 Caused by: org.hibernate.exception.JDBCConnectionException: Unable to open JDBC Connection for DDL execution [Connection to localhost:5432 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.] [n/a]
 ...

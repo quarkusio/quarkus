@@ -1,5 +1,7 @@
 package io.quarkus.jaxrs.client.reactive.runtime;
 
+import static io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorder.loadClass;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -16,12 +18,10 @@ import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
-import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorder;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.resteasy.reactive.common.runtime.SerializerDefinition;
 
-@Recorder
-public class JaxrsClientReactiveRecorder extends ResteasyReactiveCommonRecorder {
+public class JaxrsClientReactiveRecorder {
 
     private static volatile Serialisers serialisers;
     private static volatile GenericTypeMapping genericTypeMapping;
@@ -45,35 +45,44 @@ public class JaxrsClientReactiveRecorder extends ResteasyReactiveCommonRecorder 
         return multipartResponsesData;
     }
 
-    public void setMultipartResponsesData(Map<String, RuntimeValue<MultipartResponseData>> multipartResponsesData) {
-        Map<Class<?>, MultipartResponseData> runtimeMap = new HashMap<>();
-        for (Map.Entry<String, RuntimeValue<MultipartResponseData>> multipartData : multipartResponsesData.entrySet()) {
-            runtimeMap.put(loadClass(multipartData.getKey()), multipartData.getValue().getValue());
+    /**
+     * Sets up the client context: the client serialisers, the generated client implementations and the generated
+     * multipart response data.
+     *
+     * @param beanContainer the bean container used to look up the reader and writer beans
+     * @param readers the readers to register
+     * @param writers the writers to register
+     * @param clientImplementations the names of the generated client implementation creators, by client interface name
+     * @param failures the reasons a client implementation could not be generated, by client interface name
+     * @param multipartResponsesData the names of the generated multipart response data classes, by response type name
+     */
+    public static void setup(BeanContainer beanContainer, List<SerializerDefinition> readers,
+            List<SerializerDefinition> writers, Map<String, String> clientImplementations, Map<String, String> failures,
+            Map<String, String> multipartResponsesData) {
+        ClientSerialisers clientSerialisers = new ClientSerialisers();
+        clientSerialisers.registerBuiltins(RuntimeType.CLIENT);
+        for (SerializerDefinition reader : readers) {
+            clientSerialisers.addReader(loadClass(reader.handledClassName()), reader.reader(beanContainer));
         }
+        for (SerializerDefinition writer : writers) {
+            clientSerialisers.addWriter(loadClass(writer.handledClassName()), writer.writer(beanContainer));
+        }
+        serialisers = clientSerialisers;
 
+        clientProxies = createClientImpls(clientImplementations, failures);
+
+        Map<Class<?>, MultipartResponseData> runtimeMap = new HashMap<>();
+        for (Map.Entry<String, String> multipartData : multipartResponsesData.entrySet()) {
+            runtimeMap.put(loadClass(multipartData.getKey()), newInstance(multipartData.getValue()));
+        }
         JaxrsClientReactiveRecorder.multipartResponsesData = runtimeMap;
     }
 
-    public void setupClientProxies(
-            Map<String, RuntimeValue<BiFunction<WebTarget, List<ParamConverterProvider>, ?>>> clientImplementations,
-            Map<String, String> failures) {
-        clientProxies = createClientImpls(clientImplementations, failures);
-    }
-
-    public Serialisers createSerializers() {
-        ClientSerialisers s = new ClientSerialisers();
-        s.registerBuiltins(RuntimeType.CLIENT);
-        serialisers = s;
-        return s;
-    }
-
-    private ClientProxies createClientImpls(
-            Map<String, RuntimeValue<BiFunction<WebTarget, List<ParamConverterProvider>, ?>>> clientImplementations,
+    private static ClientProxies createClientImpls(Map<String, String> clientImplementations,
             Map<String, String> failureMessages) {
         Map<Class<?>, BiFunction<WebTarget, List<ParamConverterProvider>, ?>> map = new HashMap<>();
-        for (Map.Entry<String, RuntimeValue<BiFunction<WebTarget, List<ParamConverterProvider>, ?>>> entry : clientImplementations
-                .entrySet()) {
-            map.put(loadClass(entry.getKey()), entry.getValue().getValue());
+        for (Map.Entry<String, String> entry : clientImplementations.entrySet()) {
+            map.put(loadClass(entry.getKey()), newInstance(entry.getValue()));
         }
         Map<Class<?>, String> failures = new HashMap<>();
         for (Map.Entry<String, String> entry : failureMessages.entrySet()) {
@@ -83,12 +92,25 @@ public class JaxrsClientReactiveRecorder extends ResteasyReactiveCommonRecorder 
         return new ClientProxies(map, failures);
     }
 
-    public void setGenericTypeMapping(GenericTypeMapping typeMapping) {
+    /**
+     * @param invocationCallbackTypes the type each {@code InvocationCallback} implementation is parameterized with, by
+     *        implementation class name
+     */
+    public static void setGenericTypeMapping(Map<String, String> invocationCallbackTypes) {
+        GenericTypeMapping typeMapping = new GenericTypeMapping();
+        for (Map.Entry<String, String> invocationCallback : invocationCallbackTypes.entrySet()) {
+            typeMapping.addInvocationCallback(loadClass(invocationCallback.getKey()),
+                    loadClass(invocationCallback.getValue()));
+        }
         genericTypeMapping = typeMapping;
     }
 
-    public void registerInvocationHandlerGenericType(GenericTypeMapping genericTypeMapping, String invocationHandlerClass,
-            String resolvedType) {
-        genericTypeMapping.addInvocationCallback(loadClass(invocationHandlerClass), loadClass(resolvedType));
+    @SuppressWarnings("unchecked")
+    private static <T> T newInstance(String className) {
+        try {
+            return (T) loadClass(className).getDeclaredConstructor().newInstance();
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to instantiate " + className, e);
+        }
     }
 }

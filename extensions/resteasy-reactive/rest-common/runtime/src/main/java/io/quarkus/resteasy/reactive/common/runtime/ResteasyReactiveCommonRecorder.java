@@ -43,7 +43,7 @@ public class ResteasyReactiveCommonRecorder {
         serialisers.addReader(loadClass(entityClassName), reader);
     }
 
-    protected static <T> Class<T> loadClass(String name) {
+    public static <T> Class<T> loadClass(String name) {
         if (primitiveTypes.containsKey(name)) {
             return (Class<T>) primitiveTypes.get(name);
         }

@@ -57,6 +57,7 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.client.AsyncInvoker;
@@ -119,16 +120,12 @@ import org.jboss.resteasy.reactive.client.processor.scanning.ClientEndpointIndex
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.FieldFiller;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
-import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.ResponseBuilderFactory;
-import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 import org.jboss.resteasy.reactive.common.model.MaybeRestClientInterface;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
-import org.jboss.resteasy.reactive.common.model.ResourceReader;
-import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.model.RestClientInterface;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaderWriter;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
@@ -142,17 +139,17 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Types;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
@@ -165,7 +162,6 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
@@ -187,17 +183,16 @@ import io.quarkus.jaxrs.client.reactive.runtime.impl.MultipartResponseDataBase;
 import io.quarkus.modular.spi.items.AddDependencyBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ParameterContainersBuildItem;
-import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
+import io.quarkus.resteasy.reactive.common.runtime.SerializerDefinition;
 import io.quarkus.resteasy.reactive.spi.EndpointValidationPredicatesBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.smallrye.modules.desc.Dependency;
 import io.smallrye.mutiny.Multi;
@@ -304,9 +299,7 @@ public class JaxrsClientReactiveProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void setupClientProxies(JaxrsClientReactiveRecorder recorder,
-            BeanContainerBuildItem beanContainerBuildItem,
+    void setupClientProxies(ServiceRegistrar serviceRegistrar,
             ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyBuildItemBuildProducer,
@@ -320,7 +313,6 @@ public class JaxrsClientReactiveProcessor {
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             Capabilities capabilities, Optional<MetricsCapabilityBuildItem> metricsCapability,
             ResteasyReactiveConfig config,
-            RecorderContext recorderContext,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer,
             BuildProducer<JaxrsClientReactiveInfoBuildItem> jaxrsClientReactiveInfoBuildItemProducer,
@@ -337,12 +329,13 @@ public class JaxrsClientReactiveProcessor {
         String defaultConsumesType = defaultMediaType(defaultConsumes, MediaType.APPLICATION_OCTET_STREAM);
         String defaultProducesType = defaultMediaType(defaultProduces, MediaType.TEXT_PLAIN);
 
-        Serialisers serialisers = recorder.createSerializers();
-
-        SerializersUtil.setupSerializers(recorder, reflectiveClassBuildItemBuildProducer, messageBodyReaderBuildItems,
-                messageBodyWriterBuildItems, messageBodyReaderOverrideBuildItems, messageBodyWriterOverrideBuildItems,
-                beanContainerBuildItem, applicationResultBuildItem, serialisers,
-                RuntimeType.CLIENT);
+        Set<String> singletonClasses = applicationResultBuildItem.getResult().getSingletonClasses();
+        List<SerializerDefinition> readers = new ArrayList<>(SerializersUtil.readerDefinitions(
+                reflectiveClassBuildItemBuildProducer, messageBodyReaderBuildItems, messageBodyReaderOverrideBuildItems,
+                singletonClasses, RuntimeType.CLIENT));
+        List<SerializerDefinition> writers = new ArrayList<>(SerializersUtil.writerDefinitions(
+                reflectiveClassBuildItemBuildProducer, messageBodyWriterBuildItems, messageBodyWriterOverrideBuildItems,
+                singletonClasses, RuntimeType.CLIENT));
         Set<DotName> scannedParameterContainers = new HashSet<>();
 
         for (ParameterContainersBuildItem parameterContainersBuildItem : parameterContainersBuildItems) {
@@ -355,7 +348,7 @@ public class JaxrsClientReactiveProcessor {
 
         if (resourceScanningResultBuildItem.isEmpty()
                 || resourceScanningResultBuildItem.get().getResult().getClientInterfaces().isEmpty()) {
-            recorder.setupClientProxies(new HashMap<>(), Collections.emptyMap());
+            registerClientContext(serviceRegistrar, readers, writers, Map.of(), Map.of(), Map.of());
             jaxrsClientReactiveInfoBuildItemProducer.produce(new JaxrsClientReactiveInfoBuildItem(new HashSet<>()));
             return;
         }
@@ -375,7 +368,6 @@ public class JaxrsClientReactiveProcessor {
                 .setAdditionalReaders(additionalReaders)
                 .setHttpAnnotationToMethod(result.getHttpAnnotationToMethod())
                 .setInjectableBeans(new HashMap<>())
-                .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                 .setAdditionalWriters(additionalWriters)
                 .setDefaultBlocking(applicationResultBuildItem.getResult().getBlockingDefault())
                 .setHasRuntimeConverters(false)
@@ -447,7 +439,7 @@ public class JaxrsClientReactiveProcessor {
                 (metricsCapability.isPresent()
                         && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)));
 
-        Map<String, RuntimeValue<BiFunction<WebTarget, List<ParamConverterProvider>, ?>>> clientImplementations = new HashMap<>();
+        Map<String, String> clientImplementations = new HashMap<>();
         Map<String, String> failures = new HashMap<>();
 
         Set<ClassInfo> multipartResponseTypes = new HashSet<>();
@@ -470,8 +462,7 @@ public class JaxrsClientReactiveProcessor {
             if (maybeClientProxy.exists()) {
                 RestClientInterface clientProxy = maybeClientProxy.getRestClientInterface();
                 try {
-                    RuntimeValue<BiFunction<WebTarget, List<ParamConverterProvider>, ?>> proxyProvider = generateClientInvoker(
-                            recorderContext, clientProxy,
+                    String proxyProvider = generateClientInvoker(clientProxy,
                             enricherBuildItems, generatedClassBuildItemBuildProducer, clazz, index, defaultConsumesType,
                             result.getHttpAnnotationToMethod(), observabilityIntegrationNeeded, multipartResponseTypes,
                             generatedSubResources);
@@ -480,24 +471,21 @@ public class JaxrsClientReactiveProcessor {
                     }
                 } catch (Exception any) {
                     log.debugv(any, "Failed to create client proxy for {0} this can usually be safely ignored", clazz.name());
-                    failures.put(clazz.name().toString(), any.getMessage());
+                    failures.put(clazz.name().toString(), any.getMessage() != null ? any.getMessage() : any.toString());
                 }
 
             } else {
-                failures.put(clazz.name().toString(), maybeClientProxy.getFailure());
+                String failure = maybeClientProxy.getFailure();
+                failures.put(clazz.name().toString(), failure != null ? failure : "");
             }
         }
 
-        recorder.setupClientProxies(clientImplementations, failures);
         jaxrsClientReactiveInfoBuildItemProducer.produce(new JaxrsClientReactiveInfoBuildItem(clientImplementations.keySet()));
 
         for (AdditionalReaderWriter.Entry additionalReader : additionalReaders.get()) {
             String readerClass = additionalReader.getHandlerClass();
-            ResourceReader reader = new ResourceReader();
-            reader.setBuiltin(true);
-            reader.setFactory(recorder.factory(readerClass, beanContainerBuildItem.getValue()));
-            reader.setMediaTypeStrings(Collections.singletonList(additionalReader.getMediaType()));
-            recorder.registerReader(serialisers, additionalReader.getEntityClass(), reader);
+            readers.add(new SerializerDefinition(readerClass, additionalReader.getEntityClass(),
+                    List.of(additionalReader.getMediaType()), null, true, Priorities.USER, false));
             reflectiveClassBuildItemBuildProducer
                     .produce(ReflectiveClassBuildItem.builder(readerClass)
                             .reason(getClass().getName())
@@ -506,23 +494,35 @@ public class JaxrsClientReactiveProcessor {
 
         for (AdditionalReaderWriter.Entry entry : additionalWriters.get()) {
             String writerClass = entry.getHandlerClass();
-            ResourceWriter writer = new ResourceWriter();
-            writer.setBuiltin(true);
-            writer.setFactory(recorder.factory(writerClass, beanContainerBuildItem.getValue()));
-            writer.setMediaTypeStrings(Collections.singletonList(entry.getMediaType()));
-            recorder.registerWriter(serialisers, entry.getEntityClass(), writer);
+            writers.add(new SerializerDefinition(writerClass, entry.getEntityClass(),
+                    List.of(entry.getMediaType()), null, true, Priorities.USER, false));
             reflectiveClassBuildItemBuildProducer
                     .produce(ReflectiveClassBuildItem.builder(writerClass)
                             .reason(getClass().getName())
                             .build());
         }
 
-        Map<String, RuntimeValue<MultipartResponseData>> responsesData = new HashMap<>();
+        Map<String, String> responsesData = new HashMap<>();
         for (ClassInfo multipartResponseType : multipartResponseTypes) {
             responsesData.put(multipartResponseType.toString(), createMultipartResponseData(multipartResponseType,
-                    generatedClassBuildItemBuildProducer, recorderContext));
+                    generatedClassBuildItemBuildProducer));
         }
-        recorder.setMultipartResponsesData(responsesData);
+        registerClientContext(serviceRegistrar, readers, writers, clientImplementations, failures, responsesData);
+    }
+
+    private static void registerClientContext(ServiceRegistrar serviceRegistrar, List<SerializerDefinition> readers,
+            List<SerializerDefinition> writers, Map<String, String> clientImplementations, Map<String, String> failures,
+            Map<String, String> multipartResponsesData) {
+        List<SerializerDefinition> capturedReaders = List.copyOf(readers);
+        List<SerializerDefinition> capturedWriters = List.copyOf(writers);
+        Map<String, String> capturedClientImplementations = Map.copyOf(clientImplementations);
+        Map<String, String> capturedFailures = Map.copyOf(failures);
+        Map<String, String> capturedMultipartResponsesData = Map.copyOf(multipartResponsesData);
+        serviceRegistrar.forService("io.quarkus.rest-client-jaxrs.client-context")
+                .atPhase(Phase.STATIC_INIT)
+                .require(BeanContainer.class)
+                .onStart((ctx, beanContainer) -> JaxrsClientReactiveRecorder.setup(beanContainer, capturedReaders,
+                        capturedWriters, capturedClientImplementations, capturedFailures, capturedMultipartResponsesData));
     }
 
     /**
@@ -533,11 +533,10 @@ public class JaxrsClientReactiveProcessor {
      *
      * @param multipartResponseTypeInfo a class to scan
      * @param generatedClasses build producer for generating classes
-     * @param context recorder context to instantiate the newly created class
-     * @return a runtime value with an instance of the MultipartResponseData corresponding to the given class
+     * @return the name of the generated MultipartResponseData class corresponding to the given class
      */
-    private RuntimeValue<MultipartResponseData> createMultipartResponseData(ClassInfo multipartResponseTypeInfo,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses, RecorderContext context) {
+    private String createMultipartResponseData(ClassInfo multipartResponseTypeInfo,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses) {
         String multipartResponseType = multipartResponseTypeInfo.toString();
         String dataClassName = multipartResponseType + "$$MultipartData";
         try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClasses, true),
@@ -592,7 +591,7 @@ public class JaxrsClientReactiveProcessor {
             }
             constructor.returnValue(null);
         }
-        return context.newInstance(dataClassName);
+        return dataClassName;
     }
 
     private String extractPartName(AnnotationTarget target, String fieldName) {
@@ -774,24 +773,25 @@ public class JaxrsClientReactiveProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    public void registerInvocationCallbacks(CombinedIndexBuildItem index, JaxrsClientReactiveRecorder recorder) {
+    public void registerInvocationCallbacks(CombinedIndexBuildItem index, ServiceRegistrar serviceRegistrar) {
 
         Collection<ClassInfo> invocationCallbacks = index.getComputingIndex()
                 .getAllKnownImplementors(ResteasyReactiveDotNames.INVOCATION_CALLBACK);
 
-        GenericTypeMapping genericTypeMapping = new GenericTypeMapping();
+        Map<String, String> invocationCallbackTypes = new HashMap<>();
         for (ClassInfo invocationCallback : invocationCallbacks) {
             try {
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(invocationCallback.name(),
                         ResteasyReactiveDotNames.INVOCATION_CALLBACK, index.getComputingIndex());
-                recorder.registerInvocationHandlerGenericType(genericTypeMapping, invocationCallback.name().toString(),
-                        typeParameters.get(0).name().toString());
+                invocationCallbackTypes.put(invocationCallback.name().toString(), typeParameters.get(0).name().toString());
             } catch (Exception ignored) {
 
             }
         }
-        recorder.setGenericTypeMapping(genericTypeMapping);
+        Map<String, String> capturedInvocationCallbackTypes = Map.copyOf(invocationCallbackTypes);
+        serviceRegistrar.forService("io.quarkus.rest-client-jaxrs.generic-type-mapping")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> JaxrsClientReactiveRecorder.setGenericTypeMapping(capturedInvocationCallbackTypes));
     }
 
     /*
@@ -895,8 +895,7 @@ public class JaxrsClientReactiveProcessor {
        A more full example of generated client (with sub-resource) can is at the bottom of
        extensions/resteasy-reactive/rest-client/deployment/src/test/java/io/quarkus/rest/client/reactive/subresource/SubResourceTest.java
      */
-    private RuntimeValue<BiFunction<WebTarget, List<ParamConverterProvider>, ?>> generateClientInvoker(
-            RecorderContext recorderContext,
+    private String generateClientInvoker(
             RestClientInterface restClientInterface, List<JaxrsClientReactiveEnricherBuildItem> enrichers,
             BuildProducer<GeneratedClassBuildItem> generatedClasses, ClassInfo interfaceClass,
             IndexView index, String defaultMediaType, Map<DotName, String> httpAnnotationToMethod,
@@ -1360,7 +1359,7 @@ public class JaxrsClientReactiveProcessor {
                     apply.newInstance(constructorDesc, apply.getMethodParam(0), apply.getMethodParam(1)));
         }
 
-        return recorderContext.newInstance(creatorName);
+        return creatorName;
 
     }
 

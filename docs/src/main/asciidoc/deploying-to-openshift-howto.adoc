@@ -24,7 +24,7 @@ The generated resources use a Kubernetes `Deployment`, but still make use of Ope
 
 == Prerequisites
 
-* You have OpenJDK {jdk-version-other} or later installed.
+* You have OpenJDK {jdk-version-earliest} or later installed.
 * You have set the `JAVA_HOME` environment variable to the location of the Java SDK.
 * You have access to an {openshift} cluster and the latest compatible version of the `oc` CLI tool installed.
 * You are working in the correct OpenShift project namespace.

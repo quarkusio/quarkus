@@ -560,6 +560,25 @@ public final class JavadocToAsciidocTransformer {
                     }
                     sb.append(ch);
                     break;
+                case '<':
+                    // only "<<" is escaped: it is interpreted as the start of a cross reference
+                    // (e.g. <<some-anchor>>), while a lone "<" is harmless and escaping it would
+                    // needlessly alter the output of generics (e.g. List<String>) and XML snippets
+                    if (i + 1 < text.length() && text.charAt(i + 1) == '<') {
+                        if (!escaping) {
+                            sb.append("++");
+                            escaping = true;
+                        }
+                        sb.append("<<");
+                        i++;
+                    } else {
+                        if (escaping) {
+                            sb.append("++");
+                            escaping = false;
+                        }
+                        sb.append(ch);
+                    }
+                    break;
                 default:
                     if (escaping) {
                         sb.append("++");

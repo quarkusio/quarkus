@@ -236,7 +236,8 @@ public interface JsonLogConfig extends LogRuntimeConfig {
         enum LogFormat {
             DEFAULT,
             ECS,
-            GCP
+            GCP,
+            LOGSTASH
         }
     }
 

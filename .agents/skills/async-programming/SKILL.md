@@ -299,6 +299,26 @@ null check on the returned Uni and `Infrastructure.decorate` on the function.
 `flatMap` is a synonym for `chain`, so the same rule applies to
 `flatMap(v -> sideEffect(v).replaceWith(v))`.
 
+### Don't wrap a Uni in a no-op identity emitter
+
+```java
+// WRONG: allocates an operator and emitter to re-emit the same result
+return uni.onItemOrFailure().transformToUni((item, failure) -> Uni.createFrom().emitter(emitter -> {
+    if (failure != null) {
+        emitter.fail(failure);
+    } else {
+        emitter.complete(item);
+    }
+}));
+
+// RIGHT
+return uni;
+```
+
+This pattern sometimes appears when a conditional branch needs `emitOn` or
+context dispatch and the other branch copies the structure without the dispatch.
+The identity wrapper adds allocation overhead and obscures intent.
+
 ### Iterating asynchronously: use `repeating()`, not recursion
 
 ```java

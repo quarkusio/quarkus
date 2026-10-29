@@ -178,25 +178,13 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
         Uni<T> result = uniOnMessageContext(uni, msgContext, vtExecutor);
         if (msgContext != null) {
             return emitOnMessageContext(result, msgContext);
+        } else {
+            return result;
         }
-        // Some method do not have a context (generator methods)
-        return result.onItemOrFailure().transformToUni((item, failure) -> Uni.createFrom().emitter(emitter -> {
-            if (failure != null) {
-                emitter.fail(failure);
-            } else {
-                emitter.complete(item);
-            }
-        }));
     }
 
     private static <T> Uni<T> emitOnMessageContext(Uni<T> uni, Context msgContext) {
-        return uni.onItemOrFailure().transformToUni((item, failure) -> Uni.createFrom().emitter(emitter -> {
-            if (failure != null) {
-                msgContext.runOnContext(() -> emitter.fail(failure));
-            } else {
-                msgContext.runOnContext(() -> emitter.complete(item));
-            }
-        }));
+        return uni.emitOn(msgContext::runOnContext);
     }
 
     private static <T> Uni<T> uniOnMessageContext(Uni<T> uni, Context msgContext, ExecutorService vtExecutor) {

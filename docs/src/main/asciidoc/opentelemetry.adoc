@@ -335,6 +335,36 @@ The `quarkus.otel.exporter.otlp.memory-mode` property configures the memory allo
 The default value `immutable-data` creates new serialization objects for each export.
 Setting it to `reusable-data` enables object pooling to reduce garbage collection pressure, which can be beneficial in memory-constrained environments.
 
+[[exporter-timeout]]
+=== Export timeout and retries
+
+The `quarkus.otel.exporter.otlp.timeout` property sets the maximum time to wait for the collector to process an exported batch.
+It defaults to `10s` and applies to all signals.
+Use `quarkus.otel.exporter.otlp.traces.timeout`, `quarkus.otel.exporter.otlp.metrics.timeout` or `quarkus.otel.exporter.otlp.logs.timeout` to set a different value for one signal.
+
+[source, properties]
+----
+quarkus.otel.exporter.otlp.timeout=10s <1>
+quarkus.otel.exporter.otlp.metrics.timeout=30s <2>
+----
+<1> Applies to traces, metrics and logs.
+<2> Overrides the timeout for metrics only.
+
+The timeout applies to each attempt of an export, from the moment the request is sent until the whole response has been received.
+It does not depend on the activity on the connection: a response that keeps arriving slowly but never completes still times out.
+An attempt that times out is cancelled and retried, like a failed connection or, with `http/protobuf`, a `5xx` response.
+An export is sent to the collector at most 4 times before it fails.
+A retry after a timeout or a failed response starts as soon as the previous attempt ends, without a back-off.
+Only a connection that cannot be opened is retried with a short back-off, starting at 100ms, within each attempt, so an unreachable collector can see more connection attempts than that.
+
+When an attempt times out, the exporter cannot know whether the collector has already stored the batch, so the retry can deliver it twice.
+The OTLP specification makes this trade-off deliberately: a client re-sends data it has no acknowledgement for, to guarantee delivery, even if this can create duplicates on the server side.
+See https://opentelemetry.io/docs/specs/otlp/#duplicate-data[Duplicate Data] in the OTLP specification.
+To avoid unnecessary retries, set the timeout above the longest time your collector, or any proxy in front of it, takes to answer an export.
+
+NOTE: An export that waits for its timeout also delays the next one.
+For example, the periodic metric reader skips a collection, logging `Exporter busy. Dropping metrics.`, while the previous export is still in progress.
+
 === Using CDI to produce a test exporter
 
 Leaving the default as CDI is particularly useful for tests. In the following example a Span exporter class is wired with CDI and then the telemetry can be used in test code.

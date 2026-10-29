@@ -49,7 +49,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-grpc</artifactId>
-            <version>${project.version}</version> <!--kept here to not pollute the BOM-->
+            <version>${quarkus.version}</version> <!--kept here to not pollute the BOM-->
             <scope>test</scope>
         </dependency>
 
@@ -57,7 +57,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -70,7 +70,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -83,7 +83,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-mutiny-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>

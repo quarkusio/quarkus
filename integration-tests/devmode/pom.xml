@@ -131,7 +131,7 @@
                             <id>quarkus-grpc-protoc-plugin</id>
                             <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-grpc-protoc-plugin</artifactId>
-                            <version>${project.version}</version>
+                            <version>${quarkus.version}</version>
                             <mainClass>io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator</mainClass>
                         </protocPlugin>
                     </protocPlugins>
@@ -156,7 +156,7 @@
                                 <path>
                                     <groupId>io.quarkus</groupId>
                                     <artifactId>quarkus-extension-processor</artifactId>
-                                    <version>${project.version}</version>
+                                    <version>${quarkus.version}</version>
                                 </path>
                             </annotationProcessorPaths>
                         </configuration>

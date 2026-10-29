@@ -73,7 +73,7 @@
                 <plugin>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${project.version}</version>
+                    <version>${quarkus.version}</version>
                     <executions>
                         <execution>
                             <!-- for now this execution will only dump Quarkus application
@@ -112,7 +112,20 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bom-test</artifactId>
-                <version>${project.version}</version>
+                <version>${quarkus.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Imported after quarkus-bom-test so that today's precedence between the two is
+                 preserved. In the default configuration this resolves to the very same
+                 io.quarkus:quarkus-bom that quarkus-build-parent imports, so the effective
+                 dependency management is unchanged. Override the quarkus.platform.* properties
+                 to build the integration tests against an assembled platform BOM instead. -->
+            <dependency>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>${quarkus.platform.artifact-id}</artifactId>
+                <version>${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -130,7 +143,15 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-project-core-extension-codestarts</artifactId>
-                <version>${project.version}</version>
+                <version>${quarkus.version}</version>
+            </dependency>
+            <!-- Also managed by quarkus-bom, but repeated here so that the integration test
+                 reactor still loads when it is built against a released Quarkus whose BOM
+                 predates this artifact. -->
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-opentelemetry</artifactId>
+                <version>${quarkus.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -139,7 +160,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bom-test</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>

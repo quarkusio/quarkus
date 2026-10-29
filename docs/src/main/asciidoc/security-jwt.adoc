@@ -446,9 +446,17 @@ quarkus jwt generate-key --algo RSA --size 4096
 ----
 
 The keys are written to `src/main/resources/privateKey.pem` and `src/main/resources/publicKey.pem` in PKCS#8 format, and the required JWT configuration properties are automatically added to `application.properties`.
+To write the keys to other file names, relative to `src/main/resources`, add the `--private-key-file` and `--public-key-file` options.
 
 By default, the command configures the keys to sign and verify tokens.
 To configure the keys to encrypt and decrypt token claims or already signed tokens, add the `--encryption` option or its short form, `--enc`.
+To use separate key pairs for signing and encryption, run the command a second time with `--encryption` and other file names:
+
+[source,shell]
+----
+quarkus jwt generate-key
+quarkus jwt generate-key --encryption --private-key-file encPrivateKey.pem --public-key-file encPublicKey.pem
+----
 ====
 
 [NOTE]

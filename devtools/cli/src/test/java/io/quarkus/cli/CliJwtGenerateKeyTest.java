@@ -23,6 +23,9 @@ public class CliJwtGenerateKeyTest {
     static Path privateKey = workspaceRoot.resolve("src/main/resources/privateKey.pem");
     static Path publicKey = workspaceRoot.resolve("src/main/resources/publicKey.pem");
     static Path appProps = workspaceRoot.resolve("src/main/resources/application.properties");
+    static Path encPrivateKey = workspaceRoot.resolve("src/main/resources/encPrivateKey.pem");
+    static Path encPublicKey = workspaceRoot.resolve("src/main/resources/encPublicKey.pem");
+    static Path keysDir = workspaceRoot.resolve("src/main/resources/keys");
 
     @BeforeEach
     public void clean() throws IOException {
@@ -35,6 +38,11 @@ public class CliJwtGenerateKeyTest {
         if (Files.exists(appProps)) {
             Files.delete(appProps);
         }
+        Files.deleteIfExists(encPrivateKey);
+        Files.deleteIfExists(encPublicKey);
+        Files.deleteIfExists(keysDir.resolve("privateKey.pem"));
+        Files.deleteIfExists(keysDir.resolve("publicKey.pem"));
+        Files.deleteIfExists(keysDir);
     }
 
     @Test
@@ -154,6 +162,77 @@ public class CliJwtGenerateKeyTest {
         Assertions.assertTrue(result.stdout.contains("Public and private keys already exist in"));
         Assertions.assertEquals(privateKeyContents, Files.readAllLines(privateKey));
         Assertions.assertEquals(config, Files.readString(appProps));
+    }
+
+    @Test
+    public void testCommandSeparateKeyPairs() throws Exception {
+        CliDriver.execute(workspaceRoot, "jwt", "generate-key");
+        List<String> privateKeyContents = Files.readAllLines(privateKey);
+
+        // a second run with other file names adds an encryption key pair, without --force
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "jwt", "generate-key", "--encryption",
+                "--private-key-file", "encPrivateKey.pem", "--public-key-file", "encPublicKey.pem");
+        Assertions.assertTrue(result.stdout.contains("Public and private keys created in"),
+                "Should generate the encryption keys, got: " + result.stdout);
+        Assertions.assertTrue(Files.exists(encPrivateKey));
+        Assertions.assertTrue(Files.exists(encPublicKey));
+        Assertions.assertEquals(privateKeyContents, Files.readAllLines(privateKey), "Should leave the signing keys alone");
+        Assertions.assertNotEquals(privateKeyContents, Files.readAllLines(encPrivateKey));
+        String config = Files.readString(appProps);
+        Assertions.assertTrue(config.contains("mp.jwt.verify.publickey.location=publicKey.pem"));
+        Assertions.assertTrue(config.contains("smallrye.jwt.sign.key.location=privateKey.pem"));
+        Assertions.assertTrue(config.contains("mp.jwt.decrypt.key.location=encPrivateKey.pem"));
+        Assertions.assertTrue(config.contains("smallrye.jwt.encrypt.key.location=encPublicKey.pem"));
+        Assertions.assertTrue(config.contains(
+                "quarkus.native.resources.includes=publicKey.pem,privateKey.pem,encPublicKey.pem,encPrivateKey.pem"),
+                "Should list all four key files, got: " + config);
+
+        // the conflict check compares against the chosen file names
+        result = CliDriver.execute(workspaceRoot, "jwt", "generate-key", "--encryption");
+        Assertions.assertTrue(result.stdout.contains("already points to"),
+                "Should warn about conflicting config, got: " + result.stdout);
+        Assertions.assertEquals(config, Files.readString(appProps));
+    }
+
+    @Test
+    public void testCommandKeyFilesInSubdirectory() throws Exception {
+        // the private key name is not normalized on purpose: the configuration must still get keys/privateKey.pem
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "jwt", "generate-key",
+                "--private-key-file", "./keys/../keys/privateKey.pem", "--public-key-file", "keys/publicKey.pem");
+        Assertions.assertTrue(result.stdout.contains("Public and private keys created in"),
+                "Should create the subdirectory and the keys, got: " + result.stdout);
+        Assertions.assertTrue(Files.exists(keysDir.resolve("privateKey.pem")));
+        Assertions.assertTrue(Files.exists(keysDir.resolve("publicKey.pem")));
+        Assertions.assertFalse(Files.exists(privateKey));
+        String config = Files.readString(appProps);
+        Assertions.assertTrue(config.contains("mp.jwt.verify.publickey.location=keys/publicKey.pem"));
+        Assertions.assertTrue(config.contains("smallrye.jwt.sign.key.location=keys/privateKey.pem"));
+        Assertions.assertTrue(config.contains("quarkus.native.resources.includes=keys/publicKey.pem,keys/privateKey.pem"));
+    }
+
+    @Test
+    public void testCommandRejectsInvalidKeyFileNames() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "jwt", "generate-key",
+                "--private-key-file", "key.pem", "--public-key-file", "key.pem");
+        Assertions.assertTrue(result.stdout.contains("must name different files"),
+                "Should reject identical key file names, got: " + result.stdout);
+        Assertions.assertFalse(Files.exists(workspaceRoot.resolve("src/main/resources/key.pem")));
+        Assertions.assertFalse(Files.exists(appProps));
+
+        result = CliDriver.execute(workspaceRoot, "jwt", "generate-key", "--private-key-file", "../escaped.pem");
+        Assertions.assertTrue(result.stdout.contains("inside src/main/resources"),
+                "Should reject a file name outside src/main/resources, got: " + result.stdout);
+        Assertions.assertFalse(Files.exists(workspaceRoot.resolve("src/main/escaped.pem")));
+        Assertions.assertFalse(Files.exists(appProps));
+
+        // only one of the two default files exists: refuse instead of claiming both already exist
+        Files.createDirectories(publicKey.getParent());
+        Files.writeString(publicKey, "stale\n");
+        result = CliDriver.execute(workspaceRoot, "jwt", "generate-key");
+        Assertions.assertTrue(result.stdout.contains("already exists but its counterpart does not"),
+                "Should report the lone existing key file, got: " + result.stdout);
+        Assertions.assertFalse(Files.exists(privateKey));
+        Assertions.assertFalse(Files.exists(appProps));
     }
 
     private void verifyKeyParameters(List<String> privateKeyContents, String algo, int keySize) {

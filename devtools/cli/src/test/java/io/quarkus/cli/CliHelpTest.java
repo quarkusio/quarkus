@@ -194,6 +194,8 @@ public class CliHelpTest {
         assertThat(result.stdout).contains("--size");
         assertThat(result.stdout).contains("--algo");
         assertThat(result.stdout).contains("--encryption");
+        assertThat(result.stdout).contains("--private-key-file");
+        assertThat(result.stdout).contains("--public-key-file");
     }
 
     @Order(60)

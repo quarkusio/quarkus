@@ -97,7 +97,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
                 });
             }
         };
-        request.pause();
+        if (!request.isEnded()) {
+            request.pause();
+        }
     }
 
     @Override
@@ -305,7 +307,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse pauseRequestInput() {
-        request.pause();
+        if (!request.isEnded()) {
+            request.pause();
+        }
         return this;
     }
 
@@ -315,8 +319,27 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
             continueState = ContinueState.SENT;
             response.writeContinue();
         }
-        request.resume();
+        if (isOnIoThread()) {
+            resumeIfNotEnded();
+        } else {
+            contextExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    resumeIfNotEnded();
+                }
+            });
+        }
         return this;
+    }
+
+    /**
+     * Resumes the request unless it has ended. This runs on the event loop of the request, so the request cannot
+     * end between the check and the resume.
+     */
+    private void resumeIfNotEnded() {
+        if (!request.isEnded()) {
+            request.resume();
+        }
     }
 
     @Override

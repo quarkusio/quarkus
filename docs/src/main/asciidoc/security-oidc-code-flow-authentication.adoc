@@ -888,9 +888,9 @@ public class SessionExpiredOidcRedirectFilter implements OidcRedirectFilter {
         AuthorizationCodeTokens tokens = context.routingContext().get(AuthorizationCodeTokens.class.getName()); <2>
         String userName = OidcUtils.decodeJwtContent(tokens.getIdToken()).getString(Claims.preferred_username.name()); <3>
         String jwe = Jwt.preferredUserName(userName).jwe()
-                .encryptWithSecret(context.oidcTenantConfig().credentials.secret.get()); <4>
+                .encryptWithSecret(context.oidcTenantConfig().credentials().secret().get()); <4>
         OidcUtils.createCookie(context.routingContext(), context.oidcTenantConfig(), "session_expired",
-                jwe + "|" + context.oidcTenantConfig().tenantId.get(), 10); <5>
+                jwe + "|" + context.oidcTenantConfig().tenantId().get(), 10); <5>
      }
     }
 }
@@ -936,10 +936,10 @@ public class SessionExpiredResource {
 
         String[] pair = sessionExpired.split("\\|"); <2>
         OidcTenantConfig oidcConfig = tenantConfig.getStaticTenantsConfig().get(pair[1]).getOidcTenantConfig(); <3>
-        JsonWebToken jwt = new DefaultJWTParser().decrypt(pair[0], oidcConfig.credentials.secret.get()); <4>
+        JsonWebToken jwt = new DefaultJWTParser().decrypt(pair[0], oidcConfig.credentials().secret().get()); <4>
         OidcUtils.removeCookie(context, oidcConfig, "session_expired"); <5>
         return jwt.getClaim(Claims.preferred_username) + ", your session has expired. "
-                + "Please login again at http://localhost:8081/" + oidcConfig.tenantId.get(); <6>
+                + "Please login again at http://localhost:8081/" + oidcConfig.tenantId().get(); <6>
     }
 }
 ----

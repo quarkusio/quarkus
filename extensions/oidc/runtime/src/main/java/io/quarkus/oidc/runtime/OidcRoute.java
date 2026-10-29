@@ -1,6 +1,5 @@
 package io.quarkus.oidc.runtime;
 
-import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 
 /**

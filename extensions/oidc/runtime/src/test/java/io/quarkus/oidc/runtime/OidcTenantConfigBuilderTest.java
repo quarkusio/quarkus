@@ -669,6 +669,39 @@ public class OidcTenantConfigBuilderTest {
     }
 
     @Test
+    public void testWellKnownProviderConfigMerged() {
+        OidcTenantConfig config = OidcTenantConfig.builder().provider(Provider.GITHUB).build();
+        assertEquals(Provider.GITHUB, config.provider().orElse(null));
+        assertEquals("https://github.com/login/oauth", config.authServerUrl().orElse(null));
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().orElse(null));
+        assertFalse(config.discoveryEnabled().orElseThrow());
+        assertEquals("authorize", config.authorizationPath().orElse(null));
+        assertFalse(config.authentication().idTokenRequired().orElseThrow());
+        assertTrue(config.authentication().userInfoRequired().orElseThrow());
+
+        // properties set directly take priority over the provider configuration
+        OidcTenantConfig customized = OidcTenantConfig.builder()
+                .provider(Provider.GITHUB)
+                .authServerUrl("https://github.example.com")
+                .applicationType(ApplicationType.HYBRID)
+                .authentication().idTokenRequired(true).userInfoRequired(false).end()
+                .build();
+        assertEquals(Provider.GITHUB, customized.provider().orElse(null));
+        assertEquals("https://github.example.com", customized.authServerUrl().orElse(null));
+        assertEquals(ApplicationType.HYBRID, customized.applicationType().orElse(null));
+        assertEquals("authorize", customized.authorizationPath().orElse(null));
+        assertTrue(customized.authentication().idTokenRequired().orElseThrow());
+        assertFalse(customized.authentication().userInfoRequired().orElseThrow());
+
+        // the merged configuration is retained when the built configuration is used to create another builder
+        OidcTenantConfig copy = OidcTenantConfig.builder(config).clientId("client").build();
+        assertEquals(Provider.GITHUB, copy.provider().orElse(null));
+        assertEquals("client", copy.clientId().orElse(null));
+        assertEquals("https://github.com/login/oauth", copy.authServerUrl().orElse(null));
+        assertEquals(ApplicationType.WEB_APP, copy.applicationType().orElse(null));
+    }
+
+    @Test
     public void testCopyProxyProperties() {
         var previousConfig = OidcTenantConfig.builder()
                 .tenantId("copy-proxy-properties-test")

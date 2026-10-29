@@ -32,7 +32,7 @@ import io.vertx.grpc.server.GrpcServer;
  * retry succeeds must be reported through the response callback - the gRPC counterpart of
  * {@link SenderRetryTest}.
  */
-public class GrpcSenderRetryTest {
+public class GrpcHttpRetryTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()

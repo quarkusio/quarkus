@@ -95,6 +95,22 @@ public class JacksonDeserializerFactoryDiscoveryTest {
     }
 
     @Test
+    void creatorParameterWithoutSetterNotDiscovered() {
+        Index index = index(WithCreatorWithoutSetter.class);
+        Set<String> types = discover(index, WithCreatorWithoutSetter.class);
+
+        assertThat(types).isEmpty();
+    }
+
+    @Test
+    void getterOnlyFieldNotDiscovered() {
+        Index index = index(WithGetterOnlyField.class);
+        Set<String> types = discover(index, WithGetterOnlyField.class);
+
+        assertThat(types).isEmpty();
+    }
+
+    @Test
     void genericDtoTypeArgumentDiscovered() {
         Index index = index(PageDTO.class, OtherDTO.class);
         Map<String, Type> bindings = Map.of("T",
@@ -238,5 +254,52 @@ public class JacksonDeserializerFactoryDiscoveryTest {
     public static class WithSealedField {
         public String name;
         public Shape shape;
+    }
+
+    // the value of a creator parameter without a matching public field or setter cannot be written when updating
+    // an existing instance
+    public static class WithCreatorWithoutSetter {
+        private String name;
+
+        public WithCreatorWithoutSetter() {
+        }
+
+        @JsonCreator
+        public WithCreatorWithoutSetter(@JsonProperty("fullName") String fullName) {
+            this.name = fullName;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+    }
+
+    // a non-public field with a getter but no setter can only be written by reflection or through a constructor
+    public static class WithGetterOnlyField {
+        private String name;
+        private String description;
+
+        public WithGetterOnlyField() {
+        }
+
+        public WithGetterOnlyField(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
     }
 }

@@ -17,6 +17,7 @@ endif::[]
 :mandrel-flavor: ${mandrel.image-tag-for-documentation}
 :surefire-version: ${version.surefire.plugin}
 :gradle-version: ${gradle-wrapper.version}
+:smallrye-openssl-version: ${smallrye-openssl.version}
 :db2-default-version: ${db2.default.version}
 :db2-image: ${db2.image}
 :mariadb-default-version: ${mariadb.default.version}

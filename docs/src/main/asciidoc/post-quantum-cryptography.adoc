@@ -1,10 +1,14 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
 [id="post-quantum-cryptography"]
 = Post-Quantum Key Exchange in Quarkus
 include::_attributes.adoc[]
 :categories: security
-:diataxis-type: howto
-:summary: How to enable post-quantum key exchange in Quarkus using X25519MLKEM768, covering TLS background, Diffie-Hellman, ML-KEM, and a step-by-step guide regardless of JDK version.
-:numbered:
+:diataxis-type: concept
+:summary: What is post-quantum key exchange and how to enable it in Quarkus using X25519MLKEM768, covering TLS background, Diffie-Hellman, ML-KEM, and a step-by-step guide regardless of JDK version.
 :sectnums:
 :sectnumlevels: 4
 :topics: security, TLS, cryptography, pqc, post-quantum
@@ -19,62 +23,76 @@ Not all cryptographic operations are equally exposed.
 *Key exchange* (the step where two parties agree on a shared secret over a public channel) is a pressing matter, because recorded traffic is already being harvested today.
 
 Similarly, collected *encrypted messages* could in theory be broken in the future. In practice, the AES-128 cipher used in TLS 1.3 default cipher suites such as `TLS_AES_128_GCM_SHA256` is generally considered adequate for post-quantum security. No action is required on this front.
-Since key exchange is already vulnerable to harvest-now-decrypt-later attacks, it is the cryptographic aspect on which this article, as well as our contributions, focus.
 
-This article explains the relevant background on TLS and key exchange, describes the post-quantum algorithm now standardized as the replacement (X25519MLKEM768), and walks through how to enable it in a Quarkus application today, regardless of JDK version.
+Since key exchange is already vulnerable to harvest-now-decrypt-later attacks, it is the cryptographic aspect on which this guide, as well as our contributions, focus.
+
+Post-quantum cryptography is a broad field. It covers key exchange (agreeing on a shared secret), digital signatures (proving identity), each addressed by different algorithms with different urgency profiles. This guide focuses specifically on post-quantum *key exchange in TLS*: the step in the TLS handshake where the client and server agree on a session secret. Post-quantum digital signatures (used for certificate authentication and for signing tokens such as JWTs) are separate efforts not covered here.
+
+This guide explains the relevant background on TLS and key exchange, describes the post-quantum algorithm now standardized as the replacement (X25519MLKEM768), and explains how it is supported in Quarkus, regardless of JDK version.
 
 == Background on TLS and cryptography
 
 A TLS session combines three cryptographic mechanisms: key exchange to establish a shared secret, authentication to verify the identity of the server (and optionally the client, in mTLS), and symmetric encryption to encode application data once the handshake is complete.
 
-In link:https://en.wikipedia.org/wiki/Transport_Layer_Security#TLS_1.3[TLS 1.3], these three mechanisms are orchestrated in a single round trip. The client sends a `ClientHello` containing its supported key exchange groups along with an initial key share for its preferred group. The server replies with a `ServerHello` that selects a group and contributes its own key share; both sides can then independently derive the same shared secret. The server immediately uses that secret to encrypt the rest of its handshake messages, and sends its certificate together with a signature over the transcript, proving ownership of the private key associated with the certificate. The client verifies the certificate against its trust store and checks the signature, completing authentication. From that point on, all application data is encrypted with AES using a symmetric key derived from the shared secret (link:https://www.rfc-editor.org/info/rfc8446/#section-4[RFC 8446, section 4]).
+In link:https://en.wikipedia.org/wiki/Transport_Layer_Security#TLS_1.3[TLS 1.3], these three mechanisms are orchestrated in a single round trip. The client sends a `ClientHello` containing its supported key exchange groups along with an initial key share for its preferred group. The server replies with a `ServerHello` that selects a group and contributes its own key share; both sides can then independently derive the same shared secret.
+
+The server immediately uses that secret to encrypt the rest of its handshake messages, and sends its certificate together with a signature over the transcript, proving ownership of the private key associated with the certificate. The client verifies the certificate against its trust store and checks the signature, completing authentication.
+
+From that point on, all application data is encrypted with AES using a symmetric key derived from the shared secret (link:https://www.rfc-editor.org/info/rfc8446/#section-4[RFC 8446, section 4]).
 
 image::tls_13_handshake.svg[TLS 1.3 handshake overview, align="center"]
 
 This section covers each mechanism in turn.
 
-=== Symmetric cryptography: how to encrypt messages?
+=== Symmetric cryptography: how to encrypt messages
 
-Internet is a massively distributed network whose very nature makes it difficult to control who will read the packets we send. Thus, the challenge of cryptography is to encode a message so that only the intended receiver can decode it. This is achieved using a _symmetric_ key: a set of bits used to encode and decode messages using a specific algorithm.
-A client and a server can communicate securely over an untrusted network as long as they share a common secret symmetric key `key_sym`. They use two methods, `encodeMessage(String message, String key)` and `decodeMessage(String encodedMessage, String key)`, to encode and decode a message using their common symmetric key. Those methods are built to ensure that it is computationally infeasible to reconstruct `message` from `encodedMessage` without knowing the key. The current implementation of this encoding is known as the link:https://www.nist.gov/publications/advanced-encryption-standard-aes[Advanced Encryption Standard (AES)].
+The internet is a massively distributed network whose very nature makes it difficult to control who will read the packets we send. Thus, the challenge of cryptography is to encode a message so that only the intended receiver can decode it. This is achieved using a _symmetric_ key: a set of bits used to encode and decode messages using a specific algorithm.
+
+A client and a server can communicate securely over an untrusted network as long as they share a common secret `symmetricKey`. They use two methods, `encodeMessage(String message, String key)` and `decodeMessage(String encodedMessage, String key)`, to encode and decode a message using their common symmetric key. Those methods are built to ensure that it is computationally infeasible to reconstruct `message` from `encodedMessage` without knowing the key. The current implementation of this encoding is known as the link:https://www.nist.gov/publications/advanced-encryption-standard-aes[Advanced Encryption Standard (AES)].
 
 This is the basis of modern cryptography but it relies on a non-trivial situation: the client and the server _must each possess the same secret symmetric key_. In some specific situations we could imagine that such a key is hard-coded in both peers, making it possible to communicate with each other. However, the internet is made of billions of devices and the list is ever-evolving. Cryptography must hence tackle another challenge: processes should be able to agree on a _common secret symmetric key_ while exchanging only public information that every other device would be able to see, without being able to construct the same key. This is the role of _asymmetric cryptography_.
 
-=== Asymmetric cryptography: how to agree on a secret?
+=== Asymmetric cryptography: how to agree on a secret
 
 This step is known as _key exchange_ and the protocols as _key exchange groups_, _named groups_, or _supported groups_ in modern TLS.
-Several protocols exist for two peers to agree on a common symmetric key, with Elliptic-Curve Diffie-Hellman (ECDH) the dominant one. We will present classical Diffie-Hellman (DH) as the baseline because of its lower complexity.
+
+Several protocols exist for two peers to agree on a common symmetric key, with Elliptic-Curve Diffie-Hellman (ECDH) the dominant one. This section presents classical Diffie-Hellman (DH) as the baseline because of its lower complexity.
+
 The structural principle is the following: each party holds a private value, publishes a derived public value, and independently combines their own private with the other's public to reconstruct a shared secret. This principle also underlies its successors, such as ECDH, which operates over elliptic curve groups rather than integers modulo a prime.
 
 ==== Private and public information
 
-The below table summarizes what information is publicly sent on the network and what information is kept private within a peer.
+The following table summarizes what information is publicly sent on the network and what information is kept private within a peer.
 
 [cols="1,1", options="header"]
 |===
-| public information | private information
+| Public information | Private information
 
 | `p`, `g`, `pubKeyC`, `pubKeyS`
 | `privKeyC`, `privKeyS`
 |===
 
-* `p` and `g` are numbers chosen with specific properties to ensure that deducing a private key from a public key is computationally infeasible.
+* `p` and `g` are numbers chosen with specific properties to make it as hard as possible to retrieve the private key from the public key. They are often predefined in the protocol.
+
 * `privKeyC` is the private key generated by the client.
 * `privKeyS` is the private key generated by the server.
 * `pubKeyC` is the public key derived from `privKeyC`, `p` and `g` by the client.
 * `pubKeyS` is the public key derived from `privKeyS`, `p` and `g` by the server.
 
-The client picks `p` and `g` and sends them to the server on an untrusted network. If the server agrees, the client generates `privKeyC` and `pubKeyC`, and sends only `pubKeyC` to the server. The server then generates `privKeyS` and `pubKeyS`, and sends only `pubKeyS` to the client.
+If the server agrees, the client generates `privKeyC` and `pubKeyC`, and sends only `pubKeyC` to the server. The server then generates `privKeyS` and `pubKeyS`, and sends only `pubKeyS` to the client.
 
-`p` and `g` are chosen so that there exists a function `f` such that `f(p, g, privKeyC, pubKeyS) = f(p, g, privKeyS, pubKeyC) = secret`. In other words, both the client and the server can agree on a private common secret by executing a function `f` requiring their own private key and the public key of their peer.
+public and private keys are combined so that there exist a function `f` such that `f(p, g, privKeyC, pubKeyS) = f(p, g, privKeyS, pubKeyC) = secret`. In other words, both the client and the server can agree on a private common secret by executing a function `f` requiring their own private key and the public key of their peer.
 
 Once both peers have built `secret` privately, they can use it as a symmetric encryption key.
 
-Building the shared secret requires not only knowing the public information sent over an untrusted network but also the private key that is *never sent on the network*. Thus, a third party cannot know what `secret` the client and server agreed upon without knowing at least the private key of one of them. The current dominant key exchange protocol is *X25519*, an implementation of Elliptic-Curve Diffie-Hellman, a successor of Classical Diffie-Hellman presented in the next section.
+Building the shared secret requires not only knowing the public information sent over an untrusted network but also the private key that is *never sent on the network*. Thus, a third party cannot know what `secret` the client and server agreed upon without knowing at least the private key of one of them.
+
+The current dominant key exchange protocol is *X25519*, an implementation of Elliptic-Curve Diffie-Hellman, a successor of Classical Diffie-Hellman presented in the next section.
 
 ==== Classical Diffie-Hellman example
 
-The client generates a random number, its _private key_ `privKeyC`, and derives a _public key_ `pubKeyC` from it. `p` is a prime number and `g` is a primitive root modulo `p`. We don't need to detail the underlying mathematics of Diffie-Hellman for our presentation; we just want to highlight how the client and the server are able to construct a private common secret by mixing public and private information.
+The client generates a random number, its _private key_ `privKeyC`, and derives a _public key_ `pubKeyC` from it. `p` is a prime number and `g` is a primitive root modulo `p`. The underlying mathematics are not detailed here; the goal is to highlight how the client and the server are able to construct a private common secret by mixing public and private information.
+
 Mathematically, `pubKeyC = g^privKeyC mod p`.
 
 The server does the same operation, generating `privKeyS` and deriving `pubKeyS = g^privKeyS mod p`.
@@ -98,37 +116,43 @@ secretS
 = secretC
 ----
 
-...and they get the same result.
+...and both computations yield the same result.
 
 image::dh.svg[Diffie-Hellman key exchange overview, align="center"]
 
 The mathematical hardness making it intractable for modern supercomputers to find `privKey` from `pubKey` is the _discrete logarithm problem_: given `pubKey`, `g`, and `p`, finding `x` such that `g^x mod p = pubKey` is hard to solve. Certain attacks against it exist: the *Index Calculus* algorithm and the *General Number Field Sieve* enable finding `x` in sub-exponential time. Keys must be quite large (2048 bits or 4096 bits) to remain secure.
 
-For that reason, Classical Diffie-Hellman is now deprecated in favor of Elliptic-Curve Diffie-Hellman (ECDH), which applies the same structural principle over elliptic curve groups: the elliptic curve plays the role of `p` (defining the mathematical space in which operations occur), and a publicly known generator point `G` plays the role of `g`. Private keys are scalars and public keys are points on the curve derived via scalar multiplication by `G`. The discrete logarithm problem becomes finding the scalar `privKey` given the public point and `G`, which is computationally infeasible for classical computers. In modern TLS, ECDH is used with an elliptic curve named Curve25519, and the protocol is known as *X25519*.
+For that reason, Classical Diffie-Hellman is now deprecated in favor of Elliptic-Curve Diffie-Hellman (ECDH), which applies the same structural principle over elliptic curve groups: the elliptic curve plays the role of `p` (defining the mathematical space in which operations occur), and a publicly known generator point `G` plays the role of `g`.
+
+Private keys are scalars and public keys are points on the curve derived via scalar multiplication by `G`. The discrete logarithm problem becomes finding the scalar `privKey` given the public point and `G`, which is computationally infeasible for classical computers. In modern TLS, ECDH is used with an elliptic curve named Curve25519, and the protocol is known as *X25519*.
 
 Cracking the private key becomes finding `x` such that `pubKey = x * G`. `x * G` on Curve25519 really means repeated point addition: adding `G` to itself uses the tangent to the curve at `G`, and each subsequent addition of two distinct points uses the secant line through them. In both cases the result is found by reflecting the line's third intersection with the curve across the x-axis, yielding a new point on the curve. This operation is repeated `x` times, and the resulting point is `pubKey`.
+
 No algorithm able to crack ECDH with Curve25519 in sub-exponential time is known, and keys can thus be significantly smaller than those required by classical Diffie-Hellman: a 256-bit ECDH key is more secure than a 2048-bit classical DH key.
 
 === Authentication
 
-A process should be able to ensure that it is talking to the right peer. To this end, processes can authenticate themselves using _certificates_. A certificate contains the server's public key and is signed by a trusted Certificate Authority (CA) using the CA's private key. When a client connects, it verifies that signature using the CA's public key, which comes pre-installed on the client (in the OS or browser trust store).
+A process should be able to ensure that it is talking to the intended peer. To this end, processes can authenticate themselves using _certificates_. A certificate contains the server's public key and is signed by a trusted Certificate Authority (CA) using the CA's private key. When a client connects, it verifies that signature using the CA's public key, which comes pre-installed on the client (in the OS or browser trust store).
 
 The signature scheme (typically RSA or ECDSA) relies on similar mathematical hardness assumptions as key exchange: deducing a private key from a public key is computationally infeasible for classical computers. This means certificate authentication is also asymmetric cryptography, and is also prone to quantum computer attacks. However, harvest now, decrypt later is not applicable to digital certificates, making quantum-resistant certificates a distant need.
 
 == Quantum computers and cryptography
 
-Quantum computers pose a threat to both symmetric and asymmetric cryptography. We detail both attacks in the next sections.
+Quantum computers pose a threat to both symmetric and asymmetric cryptography. Both attacks are described in the next sections.
 
 === Attacking symmetric cryptography: Grover's algorithm
 
 link:https://en.wikipedia.org/wiki/Grover%27s_algorithm[Grover's algorithm] is a quantum search algorithm that finds a target element in an unsorted list in O(N^1/2^) steps instead of O(N).
+
 In other words, a spy could record encrypted conversations and break the symmetric key used to encode them faster. An n-bit key could be brute-forced in 2^n/2^ operations, compared to the 2^n^ operations required by traditional brute-force attacks. AES keys are effectively "halved" by this attack, and a switch to AES-256 from AES-128 still provides 128-bit post-quantum security, which is considered sufficient.
 
 === Attacking asymmetric cryptography: Shor's algorithm
 
-In X25519, the public key is derived from the private key, `curve25519`, and `G`, a point on `curve25519`. It is virtually impossible for today's supercomputers to reverse this operation and deduce the private key from a public key, but quantum computers are able to do so.
-link:https://en.wikipedia.org/wiki/Shor%27s_algorithm[Shor's algorithm] can solve the elliptic curve discrete logarithm problem (finding `privKeyC` given `pubKeyC`, `curve25519`, and `G`) in polynomial time on a quantum computer, compared to the exponential time required by classical computers.
-One could thus record the traffic today, and store `curve25519`, `G`, `pubKeyC`, and `pubKeyS`. When a sufficiently powerful quantum computer becomes available, one could use it to find `privKeyC` from `pubKeyC`, `curve25519`, and `G`. Knowing `privKeyC`, it would be able to compute `secret = f(curve25519, G, privKeyC, pubKeyS)`, and thus decode the entire conversation between the client and the server.
+In X25519, the public key is derived from the private key, Curve25519, and `G`, a point on Curve25519. It is virtually impossible for today's supercomputers to reverse this operation and deduce the private key from a public key, but quantum computers are able to do so.
+
+link:https://en.wikipedia.org/wiki/Shor%27s_algorithm[Shor's algorithm] can solve the elliptic curve discrete logarithm problem (finding `privKeyC` given `pubKeyC`, Curve25519, and `G`) in polynomial time on a quantum computer, compared to the exponential time required by classical computers.
+
+One could thus record the traffic today, and store `pubKeyC`, and `pubKeyS`. When a sufficiently powerful quantum computer becomes available, one could use it to find `privKeyC` from `pubKeyC`, Curve25519, and `G`. Knowing `privKeyC`, it would be able to compute `secret = f(Curve25519, G, privKeyC, pubKeyS)`, and thus decode the entire conversation between the client and the server.
 
 [cols="1,1,1,1", options="header"]
 |===
@@ -153,11 +177,12 @@ One could thus record the traffic today, and store `curve25519`, `G`, `pubKeyC`,
 == Quantum-resistant asymmetric cryptography
 
 Considering that current key exchange protocols (Elliptic-Curve Diffie-Hellman) will be broken by capable-enough quantum computers, new protocols based on different mathematical problems have been proposed and adopted as standards.
+
 _ML-KEM-768_ is the standardized scheme providing quantum-resistant key encapsulation.
 
 === Key exchange or key encapsulation?
 
-Contrary to X25519 which is a key exchange mechanism, ML-KEM-768 is a _Key Encapsulation Mechanism_ (KEM): the common private key is not constructed by both the server and the client based on the parameters they exchanged and their private keys. Instead:
+Contrary to X25519, which is a key exchange mechanism, ML-KEM-768 is a _Key Encapsulation Mechanism_ (KEM): the common private key is not constructed by both the server and the client based on the parameters they exchanged and their private keys. Instead:
 
 . the client generates a private decapsulation key `dk` and a public encapsulation key `ek`, then sends `ek` to the server;
 . the server generates a secret `s`, encrypts it using `ek`, and sends the resulting ciphertext `ct` to the client;
@@ -172,45 +197,49 @@ The next section provides mathematical details about ML-KEM-768 to describe how 
 As seen previously, the mathematical hardness of X25519 relies on the elliptic curve discrete logarithm problem: it is infeasible for classical computers to find `privKey` from `pubKey` when `pubKey = privKey * G`, with `privKey * G` representing the `privKey`-times repetition of adding the point `G` to itself on Curve25519.
 
 ML-KEM-768 relies on an entirely different mathematical problem: the *learning with errors* problem.
+
 The client generates a matrix `A`, and two vectors `s` and `e`. It then computes `t = A*s+e`.
+
 The public encapsulation key `ek` is the tuple `(A,t)` and the private decapsulation key `dk` is `s`.
 
-`A`, `s`, and `e` are not plain integers but polynomials with integer coefficients, and all arithmetic is done modulo a prime `q`. The 768 in ML-KEM-768 refers to the dimension of these polynomial vectors: a larger dimension increases both key size and the hardness of the problem, similar to choosing a larger prime `p` in classical Diffie-Hellman. ML-KEM-512, ML-KEM-768, and ML-KEM-1024 are the three standardized variants, offering increasing security levels at the cost of larger keys and ciphertexts.
+`A`, `s`, and `e` are not plain integers but polynomials with integer coefficients, and all arithmetic is done modulo a prime `q`.
 
-Cracking `dk` amounts to finding `s` such that `t = A*s+e`. It is worth noting that `e`, the "error" parameter designed to make the private key harder to crack, is not shared. An attacker must hence solve `t-e = A*s` with two unknown values, `s` and `e`. This error element makes the system resistant: without it, solving `t=A*s` is a linear system solvable by Gaussian elimination.
+The 768 in ML-KEM-768 is associated with the dimension of these polynomial vectors: a larger dimension increases both key size and the hardness of the problem, similar to choosing a larger prime `p` in classical Diffie-Hellman. ML-KEM-512, ML-KEM-768, and ML-KEM-1024 are the three standardized variants, offering increasing security levels at the cost of larger keys and ciphertexts.
+
+Cracking `dk` amounts to finding `s` such that `t = A*s+e`. `e`, the "error" parameter designed to make the private key harder to crack, is not shared, and thus unknown to an attacker. This error element makes the system resistant: without it, solving `t = A*s` is a linear system solvable by Gaussian elimination; the noise introduced by `e` prevents this.
 
 === X25519MLKEM768
 
-X25519 has been around for decades and guarantees security against classical computers. ML-KEM-768 is new, and mathematical weaknesses may be discovered in the future. The standard opted for a combined use of both protocols. The client and the server build two secrets: one using X25519 and the other using ML-KEM-768. These secrets are concatenated and a symmetric key is derived from the result to encode every communication. The derivation ensures that if at least one of the input secrets is secure, the output is. The resulting protocol is naturally named *X25519MLKEM768*.
+X25519 has been around for decades and guarantees security against classical computers. ML-KEM-768 is new, and mathematical weaknesses may be discovered in the future. The National Institute of Standards and Technology (NIST) opted for a combined use of both protocols. The client and the server build two secrets: one using X25519 and the other using ML-KEM-768. These secrets are concatenated and a symmetric key is derived from the result to encode every communication. The derivation ensures that if at least one of the input secrets is secure, the output is secure as well. The resulting protocol is naturally named *X25519MLKEM768*.
 
 image::x25519mlkem768.svg[X25519MLKEM768 hybrid key exchange overview, align="center"]
 
 == Supporting PQC in Quarkus
 
-On JDK 27+, X25519MLKEM768 is negotiated by default: no configuration is required. The `pqc-enforcement-policy` property is not needed to enable PQC; it is there to guarantee it (rejecting peers that do not support it) and to fail fast at startup if the runtime ends up without a PQC-capable engine.
+On JDK 25 (October 2026 Critical Patch Update or later) and JDK 27+, X25519MLKEM768 is negotiated by default: no configuration is required. The `pqc-enforcement-policy` property is not needed to enable PQC; it is there to guarantee the use of post-quantum key exchange groups (rejecting peers that do not support it) and to fail fast at startup if the runtime ends up without a PQC-capable engine.
 
-For JDK versions before 27, PQC requires OpenSSL 3.5+ via `smallrye-openssl`. X25519MLKEM768 will be backported to earlier versions according to the link:https://www.java.com/en/jre-jdk-cryptoroadmap.html[Oracle JRE and JDK Cryptographic Roadmap], but Java 21 would not be able to leverage it before January 2027 at the soonest.
+For JDK 17 and 21, PQC requires OpenSSL 3.5+ via `smallrye-openssl`. X25519MLKEM768 will be backported to those versions according to the link:https://www.java.com/en/jre-jdk-cryptoroadmap.html[Oracle JRE and JDK Cryptographic Roadmap]; dates may change.
 
-Thus, it was decided to add support for PQC in two ways:
+Quarkus therefore supports PQC via two mechanisms:
 
-* using the JDK default SSL engine for JDK 27 and later
-* using the OpenSSL engine for previous versions
+* using the JDK default SSL engine for JDK 25 (October 2026 Critical Patch Update or later) and JDK 27+
+* using the OpenSSL engine for JDK 17 and 21
 
 This was also an opportunity to have proper SSL engine selection in Quarkus, as using OpenSSL over JdkSSL can result in better performance. Vert.x HTTP servers being the underlying stack of Quarkus, the integration began in Vert.x.
 
 === Vert.x integration
 
-Vert.x already had a way to leverage OpenSSL using *netty-tcnative*.
+Vert.x already had a way to leverage OpenSSL using link:https://github.com/netty/netty-tcnative[*netty-tcnative*] (`io.netty:netty-tcnative`), a JNI bridge that allows Netty to delegate TLS operations to a native SSL library, bypassing the JDK's built-in SSL implementation.
 
 ==== Netty-tcnative
+Netty-tcnative ships in several variants: statically linked (the native library is bundled inside the JAR) and dynamically linked (it links against a native library installed on the host at runtime), each available for OpenSSL, LibreSSL, and BoringSSL.
 
-`netty-tcnative` exists in several variants (OpenSSL, LibreSSL, and BoringSSL), each shipped in both a static form (the crypto library compiled directly into a `.so` bundled inside the JAR) and a dynamic form (the `.so` links against a crypto library present on the host machine at runtime).
+The static OpenSSL version is too old (1.1.1) and does not support PQC. A dynamic OpenSSL variant also exists, acting as a thin JNI mapping between the `netty-tcnative-classes` Java API and the host OpenSSL library. However, this variant was compiled against OpenSSL 1.x headers. OpenSSL 3.x is not a drop-in replacement: loading the 1.x-compiled `.so` against a 3.x host library causes a runtime crash. Relinking is not sufficient, the C sources must be recompiled against the 3.x headers.
 
-The static OpenSSL version is too old (1.1.1) and doesn't support PQC. A dynamic OpenSSL variant also exists, acting as a thin JNI mapping between the `netty-tcnative-classes` Java API and the host OpenSSL library. However, this variant was compiled against OpenSSL 1.x headers. OpenSSL 3.x is not a drop-in replacement: loading the 1.x-compiled `.so` against a 3.x host library causes a runtime crash. Relinking is not sufficient, the C sources must be recompiled against the 3.x headers.
+`netty-tcnative-openssl-dynamic` was therefore rebuilt against OpenSSL 3.x, and published as link:https://github.com/smallrye/smallrye-openssl[smallrye-openssl] on Maven Central. This gives Vert.x users access to OpenSSL 3.5+ features, including post-quantum algorithms, without any changes to the Java API surface.
 
-We therefore rebuilt `netty-tcnative-openssl-dynamic` against OpenSSL 3.x and published it as link:https://github.com/smallrye/smallrye-openssl[smallrye-openssl] on Maven Central. This gives Vert.x users access to OpenSSL 3.5+ features, including post-quantum algorithms, without any changes to the Java API surface.
-
-*Requirements*
+[discrete]
+===== Requirements
 
 To use OpenSSL, the user needs:
 
@@ -220,7 +249,7 @@ To use OpenSSL, the user needs:
 * a dependency on `netty-tcnative-classes` in their project
 * a dependency on `smallrye-openssl` in their project
 
-The table below indicates how PQC is available depending on the JDK version:
+The following table indicates how PQC is available depending on the JDK version:
 
 [cols="1,2", options="header"]
 |===
@@ -229,8 +258,8 @@ The table below indicates how PQC is available depending on the JDK version:
 | JDK 27+
 | JdkSSL (built-in) or OpenSSL (`smallrye-openssl`)
 
-| JDK 25
-| JdkSSL after the October 2026 Critical Patch Update (check your vendor), or OpenSSL (`smallrye-openssl`)
+| JDK 25 (October 2026 Critical Patch Update or later)
+| JdkSSL (built-in) or OpenSSL (`smallrye-openssl`)
 
 | JDK 17 / 21
 | OpenSSL (`smallrye-openssl`) only; JdkSSL backport expected in the first half of 2027
@@ -242,21 +271,24 @@ Rows listing OpenSSL require OpenSSL 3.5+ and `libapr-1` on the host, and the `n
 
 Three options are relevant when setting PQC in Vert.x:
 
-* *added for PQC* - `SSLOptions setKeyExchangeGroups(List<String> keyExchangeGroups)`
-* *added for PQC* - `SSLOptions setPqcEnforcementPolicy(PqcEnforcementPolicy policy)`
-* *already in Vert.x* - `TCPSSLOptions setSslEngineOptions(SslEngineOptions engine)`
+`SSLOptions setKeyExchangeGroups(List<String> keyExchangeGroups)`::
+Added for PQC.
+`SSLOptions setPqcEnforcementPolicy(PqcEnforcementPolicy policy)`::
+Added for PQC.
+`TCPSSLOptions setSslEngineOptions(SslEngineOptions engine)`::
+Already available in Vert.x.
 
-The first option is self-explanatory: the user specifies a list of key exchange groups they want to use for TLS sessions. If the list is not applicable, typically because the SSL engine doesn't support at least one group of the list, the application crashes and logs an error.
+The first option is self-explanatory: the user specifies a list of key exchange groups they want to use for TLS sessions. If the list is not applicable, typically because the SSL engine does not support at least one group of the list, the application crashes and logs an error at startup.
 
 The second option defines how Vert.x will enforce the use of quantum-resistant key exchange groups; it can take three values:
 
-. `RELAXED`: the runtime won't enforce PQ groups.
+. `RELAXED`: the runtime will not enforce PQ groups.
 . `CLIENT_NEGOTIATED`: the server has to support PQ groups but will accept clients who do not support them and use classical key exchange with them.
 . `STRICT`: the server has to support PQ groups and will reject clients not supporting PQ groups.
 
-Finally, the third option allows users to specify which SSL engine should be used in the application. It can be left blank, in which case the application defaults to the `JdkSslEngine`. This behavior has been changed as the automatic engine selection has been modified for PQC, as detailed below.
+Finally, the third option allows users to specify which SSL engine should be used in the application. If omitted, the application defaults to `JdkSSLEngineOptions`. This behavior has been changed as the automatic engine selection has been modified for PQC, as detailed below.
 
-Key exchange groups and PQC enforcement policy work together and are resolved once at startup in `SslEngineUtils.resolveKeyExchangeGroups(List<String> groups, PqcEnforcementPolicy pqcPolicy)` as described by the below table.
+Key exchange groups and PQC enforcement policy work together and are resolved once at startup in `SslEngineUtils.resolveKeyExchangeGroups(List<String> groups, PqcEnforcementPolicy pqcPolicy)` as described by the following table.
 
 [cols="2,2,2,2", options="header"]
 |===
@@ -283,7 +315,7 @@ Key exchange groups and PQC enforcement policy work together and are resolved on
 | *Passed through* → `groups` as-is
 |===
 
-Once groups are resolved according to the policy, SSL engine resolution is performed using `SslContextManager.resolveEngineOptions(SSLEngineOptions engineOptions, boolean useAlpn, PqcEnforcementPolicy pqcPolicy)`. The below table shows how resolution is conducted.
+Once groups are resolved according to the policy, SSL engine resolution is performed using `SslContextManager.resolveEngineOptions(SSLEngineOptions engineOptions, boolean useAlpn, PqcEnforcementPolicy pqcPolicy)`. The following table shows how resolution is conducted.
 
 [cols="2,1,3,2", options="header"]
 |===
@@ -322,12 +354,13 @@ Once groups are resolved according to the policy, SSL engine resolution is perfo
 | `RELAXED` / `null`
 | `null`
 | -
-| *Accepted* - `JdkSslEngine` used by default
+| *Accepted* - `JdkSSLEngineOptions` used by default
 |===
 
+[#quarkus-integration]
 === Quarkus integration
 
-Quarkus uses a centralized method for specifying TLS-related properties: the `TlsConfigurationRegistry` class. Properties are declared in the `application.properties` file and are propagated to the underlying Vert.x server or client. The table below shows the equivalence between Vert.x and Quarkus properties.
+Quarkus uses a centralized mechanism for specifying TLS-related properties: the `TlsConfigurationRegistry` class. Properties are declared in the `application.properties` file and are propagated to the underlying Vert.x server or client. The following table shows the equivalence between Vert.x and Quarkus properties.
 
 [cols="2,1", options="header"]
 |===
@@ -340,7 +373,7 @@ Quarkus uses a centralized method for specifying TLS-related properties: the `Tl
 | `pqc-enforcement-policy`
 
 | `TCPSSLOptions setSslEngineOptions(SslEngineOptions engine)`
-| `quarkus.tls.ssl-engine`
+| `ssl-engine`
 |===
 
 The values expected by these Quarkus properties reflect the parameters expected by the Vert.x methods:
@@ -349,15 +382,15 @@ The values expected by these Quarkus properties reflect the parameters expected 
 * `pqc-enforcement-policy` takes one of three values: `relaxed`, `client-negotiated`, `strict`.
 * `ssl-engine` takes one of two values: `jdkssl` or `openssl`.
 
-Key exchange group resolution as well as engine resolution is performed by Vert.x as indicated in the section above. The same prerequisites as Vert.x apply for using OpenSSL.
+Key exchange group resolution as well as engine resolution are performed by Vert.x as indicated in the section above. The same prerequisites as Vert.x apply for using OpenSSL.
 
 ==== JVM mode vs. native mode
 
-The configuration described above applies to *JVM mode*. In JVM mode, both SSL engine paths are available: OpenSSL via `smallrye-openssl` on any supported JDK, and JdkSSL on JDK 27 or later.
+The configuration described above applies to *JVM mode*. In JVM mode, both SSL engine paths are available: OpenSSL via `smallrye-openssl` on any supported JDK, and JdkSSL on JDK 25 (October 2026 Critical Patch Update or later) and JDK 27+.
 
 In *native mode*, the OpenSSL path is not available. The `smallrye-openssl` JNI bridge loads a native `.so` at runtime, which is incompatible with GraalVM native image's closed-world assumption. JdkSSL is the only engine available in a native executable, and its PQC support depends on the JDK version integrated in Mandrel, the GraalVM distribution used to build Quarkus native images. PQC will be available in native mode once a future Mandrel release ships based on a JDK version that includes X25519MLKEM768.
 
-The table below summarizes the current state:
+The following table summarizes the current state:
 
 [cols="1,1,1", options="header"]
 |===
@@ -365,6 +398,10 @@ The table below summarizes the current state:
 
 | JVM
 | JdkSSL (JDK 27+)
+| Yes
+
+| JVM
+| JdkSSL (JDK 25, October 2026 Critical Patch Update or later)
 | Yes
 
 | JVM
@@ -382,8 +419,9 @@ The table below summarizes the current state:
 
 == Enabling PQC in a Quarkus application
 
-The following walkthrough demonstrates PQC negotiation step by step using the enforcement policy. On JDK 27+, PQC is already active by default; the policy is introduced to show how to guarantee it and reject peers that do not support it.
-The walkthrough is based on the Quarkus link:https://quarkus.io/guides/getting-started/[Getting Started guide].
+The following walkthrough demonstrates PQC negotiation step by step using the enforcement policy. On JDK 25 (October 2026 Critical Patch Update or later) and JDK 27+, PQC is already active by default; the policy is introduced to show how to guarantee it and reject peers that do not support it.
+
+The walkthrough is based on the Quarkus xref:getting-started.adoc[Getting Started guide].
 
 === Prerequisites
 
@@ -394,7 +432,8 @@ Depending on your Java version, one of the two setups below is required.
 The OpenSSL path is JVM-only. Native mode is not supported when relying on `smallrye-openssl` for PQC; use JDK 27+ for native image builds.
 ====
 
-*Java < 27 (e.g., Java 21)*
+[discrete]
+===== Java 17 / 21
 
 * OpenSSL 3.5+ installed on the host machine
 * `libapr-1` installed on the host machine (on UBI-based container images: `microdnf install -y apr`)
@@ -409,18 +448,18 @@ The OpenSSL path is JVM-only. Native mode is not supported when relying on `smal
 <dependency>
     <groupId>io.smallrye</groupId>
     <artifactId>smallrye-openssl</artifactId>
-    <version>0.2.3</version>
+    <version>{smallrye-openssl-version}</version>
 </dependency>
 <!-- native library, pick the classifier matching your platform -->
 <dependency>
     <groupId>io.smallrye</groupId>
     <artifactId>smallrye-openssl</artifactId>
-    <version>0.2.3</version>
     <classifier>linux-x86_64</classifier>  <!-- or linux-aarch_64 -->
 </dependency>
 ----
 
-*Java 27+*
+[discrete]
+===== Java 25 (October 2026 Critical Patch Update or later) and Java 27+
 
 No additional dependencies required.
 
@@ -439,7 +478,7 @@ cd pqc-server
 [source,bash,role="secondary asciidoc-tabs-target-sync-maven"]
 .Maven
 ----
-mvn io.quarkus.platform:quarkus-maven-plugin:3.40.1:create \
+mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=pqc-server \
     -Dextensions='rest'
@@ -495,14 +534,14 @@ cd pqc-client
 [source,bash,role="secondary asciidoc-tabs-target-sync-maven-client"]
 .Maven
 ----
-mvn io.quarkus.platform:quarkus-maven-plugin:3.40.1:create \
+mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=pqc-client \
     -Dextensions='rest-client,rest'
 cd pqc-client
 ----
 
-If the client runs on JDK < 27, it needs the same OpenSSL 3.5+, `libapr-1`, and Maven dependencies as the server. PQC key exchange must be supported by the SSL engine on both ends of the handshake:
+If the client runs on JDK 17 or 21, it needs the same OpenSSL 3.5+, `libapr-1`, and Maven dependencies as the server. PQC key exchange must be supported by the SSL engine on both ends of the handshake:
 
 [source,xml]
 ----
@@ -513,12 +552,11 @@ If the client runs on JDK < 27, it needs the same OpenSSL 3.5+, `libapr-1`, and 
 <dependency>
     <groupId>io.smallrye</groupId>
     <artifactId>smallrye-openssl</artifactId>
-    <version>0.2.3</version>
+    <version>{smallrye-openssl-version}</version>
 </dependency>
 <dependency>
     <groupId>io.smallrye</groupId>
     <artifactId>smallrye-openssl</artifactId>
-    <version>0.2.3</version>
     <classifier>linux-x86_64</classifier>  <!-- or linux-aarch_64 -->
 </dependency>
 ----
@@ -597,7 +635,7 @@ quarkus.tls.client.trust-store.p12.password=password
 quarkus.rest-client."org.acme.GreetingClient".tls-configuration-name=client
 ----
 
-`quarkus.tls.client.*` creates a *named* TLS configuration called `client` in the TLS registry. The `default` name is only registered when the application itself serves HTTPS. Since the client app has no TLS server, `default` doesn't exist. The REST client then references the named config via `tls-configuration-name`; without that line it sets up its own SSL context independently and ignores the registry entirely.
+`quarkus.tls.client.*` creates a *named* TLS configuration called `client` in the TLS registry. The `default` name is only registered when the application itself serves HTTPS. Since the client app has no TLS server, `default` does not exist. The REST client then references the named config via `tls-configuration-name`; without that line it sets up its own SSL context independently and ignores the registry entirely.
 
 === Step 3: Relaxed policy - baseline behavior
 
@@ -624,11 +662,11 @@ curl http://localhost:8081/client
 # → Hello from Quarkus REST
 ----
 
-The connection succeeds as expected. Under `RELAXED`, the server imposes no constraint on the key exchange group negotiated with the client. Classical groups such as X25519 are accepted.
+The connection succeeds as expected. Under `relaxed`, the server imposes no constraint on the key exchange group negotiated with the client. Classical groups such as X25519 are accepted.
 
 [NOTE]
 ====
-On JDK 27+, X25519MLKEM768 is negotiated even without an enforcement policy. A server with no policy will still fall back to classical groups with a client that does not support PQC; `strict` turns that fallback into a hard failure at handshake time. Both `strict` and `client-negotiated` also fail at startup if no PQC-capable engine is available, surfacing misconfiguration early.
+On JDK 25 (October 2026 Critical Patch Update or later) and JDK 27+, X25519MLKEM768 is negotiated even without an enforcement policy. A server with no policy will still fall back to classical groups with a client that does not support PQC; `strict` turns that fallback into a hard failure at handshake time. Both `strict` and `client-negotiated` also fail at startup if no PQC-capable engine is available, surfacing misconfiguration early.
 ====
 
 === Step 4: Client-negotiated policy
@@ -643,7 +681,7 @@ Switch the server policy to `client-negotiated`:
 quarkus.tls.pqc-enforcement-policy=client-negotiated
 ----
 
-Dev mode picks up the change automatically via live reload. Trigger the client again:
+Restart the server, then trigger the client again:
 
 [source,bash]
 ----
@@ -696,7 +734,7 @@ curl http://localhost:8081/client
 
 The connection is restored. Both sides now advertise and negotiate X25519MLKEM768, and the TLS handshake completes using a quantum-resistant key exchange.
 
-Using Wireshark, the ClientHello key share shows the client offered X25519MLKEM768 (1184 bytes for the ML-KEM-768 encapsulation key plus 32 bytes for X25519, totalling 1216 bytes):
+A Wireshark capture show that the client offered X25519MLKEM768 (1184 bytes for the ML-KEM-768 encapsulation key plus 32 bytes for X25519, totaling 1216 bytes):
 
 ----
 Extension: key_share (len=1222) X25519MLKEM768
@@ -723,31 +761,35 @@ Extension: key_share (len=1124) X25519MLKEM768
             Key Exchange [...]: .......
 ----
 
-The enforcement policy selects key exchange groups and the SSL engine automatically. Two additional properties give fine-grained control when needed:
+[NOTE]
+====
+To inspect the TLS handshake in detail directly from a Quarkus application, the link:https://github.com/quarkiverse/quarkus-network-capture[Quarkus Network Capture] extension (requires Quarkus 4) captures network traffic without requiring an external tool.
+====
 
-* `key-exchange-groups` pins the exact list of groups to advertise, for example `X25519MLKEM768,SecP256r1MLKEM768`. The three supported hybrid groups are `X25519MLKEM768`, `SecP256r1MLKEM768`, and `SecP384r1MLKEM1024`. The P-curve variants use NIST curves and matter for FIPS-constrained environments; `SecP384r1MLKEM1024` also aligns with CNSA 2.0, which mandates ML-KEM-1024.
-* `ssl-engine` forces a specific engine (`jdkssl` or `openssl`) instead of letting the runtime select one.
+For fine-grained control over which groups are advertised or which engine is used, see the `key-exchange-groups` and `ssl-engine` properties described in the <<quarkus-integration,Quarkus integration>> section above.
 
 == Enabling PQC in mTLS
 
 In mutual TLS, both the client and the server authenticate each other using certificates, in addition to the standard server-only authentication. From a post-quantum perspective, mTLS introduces no additional complexity: the key exchange step is identical to regular TLS and X25519MLKEM768 is negotiated the same way regardless of whether mutual authentication is required.
+
 The `pqc-enforcement-policy`, `key-exchange-groups`, and `ssl-engine` properties apply without modification.
 
 The certificate-based mutual authentication step uses classical signature schemes (RSA or ECDSA) on both sides. As discussed in the introduction, forging a certificate signature requires a quantum computer operating in real time, which is a future concern rather than an immediate one.
-Post-quantum signature schemes (such as ML-DSA) exist and are standardized, but migrating certificate authentication is a separate effort outside the scope of this article.
+
+Post-quantum signature schemes (such as ML-DSA) exist and are standardized, but migrating certificate authentication is a separate effort outside the scope of this guide.
 
 In practice, enabling PQC in a Quarkus mTLS setup requires only the same configuration changes described above, applied to both client and server.
 
-== Scope
+== Scope of the TLS registry configuration
 
-The `pqc-enforcement-policy`, `key-exchange-groups`, and `ssl-engine` properties, surfaced through `PqcEnforcementPolicy`, apply to connections managed through the Quarkus TLS registry. In a standard Quarkus application this covers:
+The `pqc-enforcement-policy`, `key-exchange-groups`, and `ssl-engine` properties, apply to connections managed through the Quarkus TLS registry. In a standard Quarkus application this covers:
 
 * the HTTP server
 * the HTTP client
 * the REST client
 * the Quarkus Mailer
 
-Connections managed outside the TLS registry are not controlled by these properties. On JDK 27+, those connections still advertise X25519MLKEM768 automatically because the JDK SSL engine does so by default. On older JDKs, they negotiate classical groups regardless of any Quarkus configuration.
+Connections managed outside the TLS registry are not controlled by these properties. On JDK 25 (October 2026 Critical Patch Update or later) and JDK 27+, those connections still advertise X25519MLKEM768 automatically because the JDK SSL engine does so by default. On older JDKs, they negotiate classical groups regardless of any Quarkus configuration.
 
 [NOTE]
 ====
@@ -758,9 +800,9 @@ If TLS terminates at an ingress controller or load balancer before reaching the 
 
 The rise of quantum computers threatens the security of TLS not only in a few years but also today: existing key exchange protocols such as X25519 are prone to harvest-now-decrypt-later attacks. Consequently, new Post-Quantum Cryptography (PQC) standards such as X25519MLKEM768 have been adopted to ensure that communications cannot be collected today and decrypted when a sufficiently capable quantum computer becomes available.
 
-OpenSSL integrates these new schemes in its version 3.5, and in Java starting with version 27. The Java team is working to backport the integration to earlier versions: Java 25 by the 10th of October 2026, and Java 17/21 somewhere in the first half of 2027.
+OpenSSL integrates these new schemes in its version 3.5, and in Java starting with JDK 25 (October 2026 Critical Patch Update) and JDK 27+. The Java team is working to backport the integration to JDK 17 and 21, expected in the first half of 2027 according to the link:https://www.java.com/en/jre-jdk-cryptoroadmap.html[Oracle JRE and JDK Cryptographic Roadmap]; dates may change.
 
-Due to the pressing nature of harvest-now-decrypt-later attacks, it was decided that Quarkus must integrate PQC in Java 21 before January 2027. To that end, `netty-tcnative` was used for Vert.x, the underlying engine of Quarkus, to leverage OpenSSL 3.5+ and benefit from PQC.
+Due to the pressing nature of harvest-now-decrypt-later attacks, Quarkus had to integrate PQC in Java 21 before January 2027. To that end, `netty-tcnative` was used for Vert.x, the underlying engine of Quarkus, to leverage OpenSSL 3.5+ and benefit from PQC.
 
 The API for setting PQC in both Vert.x and Quarkus is centered around three properties:
 
@@ -776,8 +818,3 @@ The API for setting PQC in both Vert.x and Quarkus is centered around three prop
 
 The initial contributions are available in Vert.x 4.5.28+ and Vert.x 5.1.0+, and were integrated in Quarkus 3.39.
 
-Several areas remain open:
-
-* *Clients outside the TLS registry*, such as Kafka consumers and producers and JDBC drivers, are not yet covered by the enforcement policy. On JDK 27+ those connections advertise X25519MLKEM768 by default; on older JDKs they negotiate classical groups regardless of any Quarkus configuration.
-* *Native mode* support is pending a Mandrel release based on a PQC-capable JDK. Non-Linux platforms (macOS, Windows, IBM Power, IBM Z) also lack support today because `smallrye-openssl` does not ship native binaries for them.
-* *Post-quantum signatures* (ML-DSA) for certificate authentication remain a separate effort, and one we intend to address as the ecosystem matures.

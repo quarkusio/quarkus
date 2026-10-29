@@ -107,9 +107,10 @@ endif::[]
 :jdk-version-all: {jdk-version-earliest} or {jdk-version-latest}
 :openshift-long: OpenShift
 :openshift: OpenShift
-:name-image-ubi10-open-jdk-21: registry.access.redhat.com/ubi10/openjdk-21
 :name-image-ubi10-open-jdk-21-short: ubi10/openjdk-21
-:name-image-ubi10-open-jdk-25: registry.access.redhat.com/ubi10/openjdk-25
-:name-image-ubi10-open-jdk-25-short: ubi10/openjdk-25
+:name-image-open-jdk-earliest: registry.access.redhat.com/ubi10/openjdk-{jdk-version-earliest}
+:name-image-open-jdk-earliest-short: ubi10/openjdk-{jdk-version-earliest}
+:name-image-open-jdk-latest: registry.access.redhat.com/ubi10/openjdk-{jdk-version-latest}
+:name-image-open-jdk-latest-short: ubi10/openjdk-{jdk-version-latest}
 // .
 include::_attributes-local.adoc[]

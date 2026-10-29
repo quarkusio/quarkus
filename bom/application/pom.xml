@@ -7167,11 +7167,9 @@
                                         <dependency>
                                             <artifact>org.hibernate.models:hibernate-models</artifact>
                                         </dependency>
-                                        <!-- Temporary disabled in Hibernate 8 upgrade, needs to be reenabled upon upgrade to 8.0.0.Beta4/CR1.
                                         <dependency>
                                             <artifact>org.hibernate.accessor:hibernate-accessor</artifact>
                                         </dependency>
-                                        -->
                                     </dependencies>
                                 </dependencyAlignmentRule>
                                 <dependencyAlignmentRule>

@@ -342,8 +342,9 @@ class NettyProcessor {
                     // Runtime initialize due to machine dependent native methods being called in static initializers
                     .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventArray")
                     .addRuntimeInitializedClass("io.netty.channel.kqueue.Native")
-                    // Runtime initialize due to dependency on Epoll and the use of AtomicIntegerFieldUpdater?
-                    .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventLoop");
+                    // Runtime initialize due to the use of AtomicIntegerFieldUpdater in the static initializer.
+                    // Replaces io.netty.channel.kqueue.KQueueEventLoop, which was removed in Netty 4.2
+                    .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueIoHandler");
         } else {
             log.debug("Not registering Netty native kqueue classes as they were not found");
         }

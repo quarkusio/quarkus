@@ -533,26 +533,6 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Hibernate Search -->
-            <dependency>
-                <groupId>org.hibernate.search</groupId>
-                <artifactId>hibernate-search-bom</artifactId>
-                <version>${hibernate-search.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.search</groupId>
-                <artifactId>hibernate-search-backend-elasticsearch</artifactId>
-                <version>${hibernate-search.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
             <!-- Mutiny and Vert.x Mutiny Binding BOMs -->
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
@@ -4160,6 +4140,12 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+            <!-- Needed for the second level cache integration in quarkus-hibernate-orm -->
+            <dependency>
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>jcache</artifactId>
+                <version>${caffeine.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.github.docker-java</groupId>
                 <artifactId>docker-java-bom</artifactId>
@@ -5855,6 +5841,15 @@
                 <artifactId>hibernate-validator</artifactId>
                 <version>${hibernate-validator.version}</version>
             </dependency>
+
+            <!-- Hibernate ORM/Reactive and owned dependencies -->
+            <dependency>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-bom</artifactId>
+                <version>${hibernate-orm.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
@@ -5870,36 +5865,6 @@
                         <artifactId>hibernate-accessor-bytebuddy</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.orm</groupId>
-                <artifactId>hibernate-graalvm</artifactId>
-                <version>${hibernate-orm.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.orm</groupId>
-                <artifactId>hibernate-envers</artifactId>
-                <version>${hibernate-orm.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.orm</groupId>
-                <artifactId>hibernate-spatial</artifactId>
-                <version>${hibernate-orm.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.orm</groupId>
-                <artifactId>hibernate-processor</artifactId>
-                <version>${hibernate-orm.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.orm</groupId>
-                <artifactId>hibernate-jpamodelgen</artifactId>
-                <version>${hibernate-orm.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.orm</groupId>
-                <artifactId>hibernate-assistant</artifactId>
-                <version>${hibernate-orm.version}</version>
             </dependency>
             <!-- Workaround for Maven relocations not being supported for
                  annotation processor paths in Maven Compiler Plugin
@@ -5925,40 +5890,35 @@
                 <version>${hibernate-accessor.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.hibernate.orm</groupId>
-                <artifactId>hibernate-community-dialects</artifactId>
-                <version>${hibernate-orm.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.orm</groupId>
-                <artifactId>hibernate-vector</artifactId>
-                <version>${hibernate-orm.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.hibernate.reactive</groupId>
                 <artifactId>hibernate-reactive-core</artifactId>
                 <version>${hibernate-reactive.version}</version>
             </dependency>
+
+            <!-- Hibernate Search -->
             <dependency>
-                <groupId>org.hibernate.orm</groupId>
-                <artifactId>hibernate-jcache</artifactId>
-                <version>${hibernate-orm.version}</version>
+                <groupId>org.hibernate.search</groupId>
+                <artifactId>hibernate-search-bom</artifactId>
+                <version>${hibernate-search.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>com.github.ben-manes.caffeine</groupId>
-                <artifactId>jcache</artifactId>
-                <version>${caffeine.version}</version>
+                <groupId>org.hibernate.search</groupId>
+                <artifactId>hibernate-search-backend-elasticsearch</artifactId>
+                <version>${hibernate-search.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.search</groupId>
                 <artifactId>hibernate-search-mapper-orm</artifactId>
                 <version>${hibernate-search.version}</version>
                 <exclusions>
-                    <!-- the right version will come with Hibernate ORM -->
-                    <exclusion>
-                        <groupId>org.hibernate.common</groupId>
-                        <artifactId>hibernate-commons-annotations</artifactId>
-                    </exclusion>
                     <!-- We don't want Jandex at runtime -->
                     <exclusion>
                         <groupId>io.smallrye</groupId>
@@ -6010,6 +5970,7 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>

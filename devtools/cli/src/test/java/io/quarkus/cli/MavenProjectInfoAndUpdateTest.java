@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -119,6 +120,35 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
         assertQuarkusPlatformBomUpdates(updateResult.stdout,
                 ArtifactCoords.pom("org.acme.quarkus.platform", "quarkus-bom", "[1.0.0 -> 2.0.0]"),
                 ArtifactCoords.pom("org.acme.quarkus.platform", "acme-bom", "[1.0.0 -> 2.0.0]"));
+    }
+
+    @Test
+    void testUpdateRecipeIncludesAllImportedPlatformBoms() throws Exception {
+
+        final CliDriver.Result createResult = run(workDir(), "create", "app", "acme-multi-platform-update",
+                "-x supersonic,acme-quarkiverse-extension");
+        assertThat(createResult.exitCode).isEqualTo(CommandLine.ExitCode.OK)
+                .as(() -> "Expected OK return code." + createResult);
+        assertThat(createResult.stdout).contains("SUCCESS")
+                .as(() -> "Expected confirmation that the project has been created." + createResult);
+
+        final Path projectDir = workDir().resolve("acme-multi-platform-update");
+        final CliDriver.Result updateResult = run(projectDir, "update", "--platform-version=1.0.0", "--no-rewrite");
+        assertThat(updateResult.getExitCode()).isEqualTo(0);
+        assertQuarkusPlatformBomUpdates(updateResult.stdout,
+                ArtifactCoords.pom("org.acme.quarkus.platform", "quarkus-bom", "[2.0.0 -> 1.0.0]"),
+                ArtifactCoords.pom("org.acme.quarkus.platform", "acme-bom", "[2.0.0 -> 1.0.0]"));
+
+        final Path recipe = projectDir.resolve("target").resolve("rewrite").resolve("rewrite.yaml");
+        assertThat(recipe)
+                .as(() -> "Expected the update command to generate an OpenRewrite recipe. " + updateResult)
+                .exists();
+        final String yaml = Files.readString(recipe);
+        assertThat(yaml)
+                .contains("groupId: org.acme.quarkus.platform")
+                .contains("artifactId: quarkus-bom")
+                .contains("artifactId: acme-bom")
+                .contains("newVersion: 1.0.0");
     }
 
     private static void assertPlatformBomExtensions(String output, ArtifactCoords bom, String... extensions) {

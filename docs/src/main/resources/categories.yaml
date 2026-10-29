@@ -260,7 +260,7 @@ categories:
           - credentials-provider.adoc
           - native-and-ssl.adoc
           - security-vulnerability-detection.adoc
-          - post-quantum-cryptography.adoc
+          - post-quantum-key-exchange.adoc
       - id: security-authentication
         title: Authentication
         guides:

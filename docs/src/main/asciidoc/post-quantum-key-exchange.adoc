@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-[id="post-quantum-cryptography"]
+[id="post-quantum-key-exchange"]
 = Post-Quantum Key Exchange in Quarkus
 include::_attributes.adoc[]
 :categories: security

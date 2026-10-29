@@ -1,7 +1,6 @@
 package io.quarkus.load.shedding.runtime;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.LongAdder;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -34,22 +33,14 @@ public class LoadSheddingMetrics implements MeterBinder {
     public static final String OVERLOAD_DURATION = "load.shedding.overload.duration";
 
     private final OverloadDetector detector;
+    private final LoadSheddingCounter counter;
     private final boolean enabled;
 
-    // how many requests were rejected since the application started
-    private final LongAdder shedRequests = new LongAdder();
-
     @Inject
-    public LoadSheddingMetrics(OverloadDetector detector, LoadSheddingRuntimeConfig config) {
+    public LoadSheddingMetrics(OverloadDetector detector, LoadSheddingCounter counter, LoadSheddingRuntimeConfig config) {
         this.detector = detector;
+        this.counter = counter;
         this.enabled = config.enabled();
-    }
-
-    /**
-     * Records that a request was rejected.
-     */
-    public void requestShed() {
-        shedRequests.increment();
     }
 
     @Override
@@ -60,7 +51,7 @@ public class LoadSheddingMetrics implements MeterBinder {
             return;
         }
 
-        FunctionCounter.builder(SHED_REQUESTS, shedRequests, LongAdder::sum)
+        FunctionCounter.builder(SHED_REQUESTS, counter, LoadSheddingCounter::coundShedRequests)
                 .description("Number of requests rejected by load shedding")
                 .baseUnit("requests")
                 .register(registry);

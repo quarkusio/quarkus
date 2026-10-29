@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -21,19 +20,15 @@ public class HttpLoadShedding {
     public static final int PRIORITY = -1_000_000_000;
 
     public void init(@Observes @Priority(PRIORITY) Router router, OverloadDetector detector,
-            PriorityLoadShedding priority, Instance<LoadSheddingMetrics> metricsInstance, LoadSheddingRuntimeConfig config) {
+            PriorityLoadShedding priority, LoadSheddingCounter counter, LoadSheddingRuntimeConfig config) {
 
         if (!config.enabled()) {
             return;
         }
 
-        LoadSheddingMetrics metrics = metricsInstance.isResolvable() ? metricsInstance.get() : null;
-
         router.route().order(PRIORITY).handler(ctx -> {
             if (detector.isOverloaded() && priority.shedLoad(ctx, detector.overloadDepth())) {
-                if (metrics != null) {
-                    metrics.requestShed();
-                }
+                counter.requestShed();
 
                 // The connection is deliberately left open. Closing it would force the client
                 // through a new TCP handshake (and most likely also TLS handshake) before it

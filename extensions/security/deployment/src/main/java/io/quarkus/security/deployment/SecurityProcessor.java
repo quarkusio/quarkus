@@ -105,7 +105,10 @@ import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBui
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeExcludedArtifactBuildItem;
+import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
+import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
+import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
@@ -347,6 +350,59 @@ public class SecurityProcessor {
         }
     }
 
+    @BuildStep
+    void registerBouncyCastleMlKemReflection(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            NativeConfig nativeConfig, Optional<NativeImageRunnerBuildItem> nativeImageRunner,
+            List<BouncyCastleProviderBuildItem> providers, List<BouncyCastleJsseProviderBuildItem> jsseProviders,
+            BuildProducer<ReflectiveClassBuildItem> reflection) {
+        if (providers.isEmpty() && jsseProviders.isEmpty()) {
+            return;
+        }
+        Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(jsseProviders);
+        boolean isInFipsMode;
+
+        if (bouncyCastleJsseProvider.isPresent()) {
+            isInFipsMode = bouncyCastleJsseProvider.get().isInFipsMode();
+        } else {
+            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(providers);
+            isInFipsMode = bouncyCastleProvider.isPresent() && bouncyCastleProvider.get().isInFipsMode();
+        }
+        if (isInFipsMode || curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().noneMatch(
+                d -> d.getGroupId().equals("org.bouncycastle") && d.getArtifactId().startsWith("bcprov-"))) {
+            return;
+        }
+        // Native sources may be compiled later with a different builder. Keep the fallback metadata.
+        // Reusing an executable must not require an available builder. If the executable is missing, retain
+        // the fallback metadata for the normal native build instead of querying the builder here.
+        if (!nativeConfig.sourcesOnly() && !nativeConfig.reuseExisting()
+                && nativeImageRunner.isPresent()
+                && !(nativeImageRunner.get().getBuildRunner() instanceof NoopNativeImageBuildRunner)
+                && !needsBouncyCastleMlKemReflection(nativeImageRunner.get().getBuildRunner().getGraalVMVersion())) {
+            return;
+        }
+        reflection.produce(ReflectiveClassBuildItem.builder(
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM512",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM768",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM1024",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM512",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM768",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM1024",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM512",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM768",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM1024").methods().fields().build());
+    }
+
+    static boolean needsBouncyCastleMlKemReflection(GraalVM.Version version) {
+        // Mandrel 25.0.5 adds KEM to SecurityServicesFeature. BC is installed in afterRegistration,
+        // so its KEM services are discovered automatically when KEM.getInstance becomes reachable.
+        // All 25.0.5 builds contain the fix, including development and pre-release builds.
+        return version.compareTo(new int[] { 25, 0, 5 }) < 0;
+    }
+
     private static void prepareBouncyCastleProvider(CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflection,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeReInitialized, boolean isFipsMode) {
@@ -372,23 +428,6 @@ public class SecurityProcessor {
                     "org.bouncycastle.jcajce.provider.asymmetric.rsa.KeyPairGeneratorSpi",
                     "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi",
                     "org.bouncycastle.jcajce.provider.asymmetric.rsa.PSSSignatureSpi$SHA256withRSA").methods().fields()
-                    .build());
-            // ML-KEM is used by the hybrid TLS 1.3 key exchange groups (e.g. X25519MLKEM768),
-            // which are offered by default by recent JDK clients
-            reflection.produce(ReflectiveClassBuildItem.builder(
-                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi",
-                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM512",
-                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM768",
-                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM1024",
-                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi",
-                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM512",
-                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM768",
-                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM1024",
-                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi",
-                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM",
-                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM512",
-                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM768",
-                    "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM1024").methods().fields()
                     .build());
         }
 

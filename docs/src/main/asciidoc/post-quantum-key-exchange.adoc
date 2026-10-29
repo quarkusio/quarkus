@@ -247,7 +247,7 @@ To use OpenSSL, the user needs:
 * OpenSSL 3.5+ on the host machine
 * `libapr-1` on the host machine, a library required by netty-tcnative
 * a dependency on `netty-tcnative-classes` in their project
-* a dependency on `smallrye-openssl` in their project
+* a dependency on the platform-specific `smallrye-openssl` classifier artifact in their project
 
 The following table indicates how PQC is available depending on the JDK version:
 
@@ -439,21 +439,17 @@ The OpenSSL path is JVM-only. Native mode is not supported when relying on `smal
 * `libapr-1` installed on the host machine (on UBI-based container images: `microdnf install -y apr`)
 * `netty-tcnative-classes` and `smallrye-openssl` dependencies in `pom.xml`:
 
-[source,xml]
+[source,xml,subs=attributes+]
 ----
 <dependency>
     <groupId>io.netty</groupId>
     <artifactId>netty-tcnative-classes</artifactId>
 </dependency>
-<dependency>
-    <groupId>io.smallrye</groupId>
-    <artifactId>smallrye-openssl</artifactId>
-    <version>{smallrye-openssl-version}</version>
-</dependency>
 <!-- native library, pick the classifier matching your platform -->
 <dependency>
     <groupId>io.smallrye</groupId>
     <artifactId>smallrye-openssl</artifactId>
+    <version>{smallrye-openssl-version}</version>
     <classifier>linux-x86_64</classifier>  <!-- or linux-aarch_64 -->
 </dependency>
 ----
@@ -475,7 +471,7 @@ quarkus create app org.acme:pqc-server \
 cd pqc-server
 ----
 
-[source,bash,role="secondary asciidoc-tabs-target-sync-maven"]
+[source,bash,role="secondary asciidoc-tabs-target-sync-maven",subs=attributes+]
 .Maven
 ----
 mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create \
@@ -531,7 +527,7 @@ quarkus create app org.acme:pqc-client \
 cd pqc-client
 ----
 
-[source,bash,role="secondary asciidoc-tabs-target-sync-maven-client"]
+[source,bash,role="secondary asciidoc-tabs-target-sync-maven-client",subs=attributes+]
 .Maven
 ----
 mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create \
@@ -543,20 +539,17 @@ cd pqc-client
 
 If the client runs on JDK 17 or 21, it needs the same OpenSSL 3.5+, `libapr-1`, and Maven dependencies as the server. PQC key exchange must be supported by the SSL engine on both ends of the handshake:
 
-[source,xml]
+[source,xml,subs=attributes+]
 ----
 <dependency>
     <groupId>io.netty</groupId>
     <artifactId>netty-tcnative-classes</artifactId>
 </dependency>
+<!-- native library, pick the classifier matching your platform -->
 <dependency>
     <groupId>io.smallrye</groupId>
     <artifactId>smallrye-openssl</artifactId>
     <version>{smallrye-openssl-version}</version>
-</dependency>
-<dependency>
-    <groupId>io.smallrye</groupId>
-    <artifactId>smallrye-openssl</artifactId>
     <classifier>linux-x86_64</classifier>  <!-- or linux-aarch_64 -->
 </dependency>
 ----

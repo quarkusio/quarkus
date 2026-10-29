@@ -754,7 +754,28 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         if (provider.isPresent()) {
             mergeProviderConfig(KnownOidcProviders.provider(provider.get()));
         }
+        enableImpliedProperties();
         return new io.quarkus.oidc.OidcTenantConfig(new OidcTenantConfigImpl(this));
+    }
+
+    private void enableImpliedProperties() {
+        if (!tenantEnabled || getAuthServerUrl().isEmpty()) {
+            // the implied properties are only effective for the tenants connecting to the OpenID Provider
+            return;
+        }
+        ApplicationType type = applicationType.orElse(ApplicationType.SERVICE);
+        // the expired tokens must be refreshed when the refresh token time skew is configured
+        if (type != ApplicationType.SERVICE && !token.refreshExpired() && token.refreshTokenTimeSkew().isPresent()) {
+            token().refreshExpired().end();
+        }
+        // UserInfo is required, unless it has been disabled, when it is the source of roles,
+        // when it verifies access tokens of the 'service' and 'hybrid' applications or when the ID token is not required
+        if (authentication.userInfoRequired().isEmpty()
+                && (roles.source().orElse(null) == Source.userinfo
+                        || (token.verifyAccessTokenWithUserInfo().orElse(false) && type != ApplicationType.WEB_APP)
+                        || !authentication.idTokenRequired().orElse(true))) {
+            authentication().userInfoRequired().end();
+        }
     }
 
     /**

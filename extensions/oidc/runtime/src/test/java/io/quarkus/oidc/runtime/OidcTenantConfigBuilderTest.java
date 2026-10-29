@@ -9,6 +9,7 @@ import static io.quarkus.oidc.runtime.OidcTenantConfig.SignatureAlgorithm.PS384;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
@@ -43,6 +44,7 @@ import io.quarkus.oidc.runtime.builders.AuthenticationConfigBuilder;
 import io.quarkus.oidc.runtime.builders.LogoutConfigBuilder;
 import io.quarkus.oidc.runtime.builders.LogoutConfigBuilder.BackchannelBuilder;
 import io.quarkus.oidc.runtime.builders.TokenConfigBuilder;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 public class OidcTenantConfigBuilderTest {
 
@@ -699,6 +701,90 @@ public class OidcTenantConfigBuilderTest {
         assertEquals("client", copy.clientId().orElse(null));
         assertEquals("https://github.com/login/oauth", copy.authServerUrl().orElse(null));
         assertEquals(ApplicationType.WEB_APP, copy.applicationType().orElse(null));
+    }
+
+    @Test
+    public void testRefreshExpiredEnabledByRefreshTokenTimeSkew() {
+        OidcTenantConfig webApp = OidcTenantConfig.authServerUrl("https://server").applicationType(ApplicationType.WEB_APP)
+                .token().refreshTokenTimeSkew(Duration.ofSeconds(5)).end().build();
+        assertTrue(webApp.token().refreshExpired());
+
+        OidcTenantConfig hybrid = OidcTenantConfig.authServerUrl("https://server").applicationType(ApplicationType.HYBRID)
+                .token().refreshTokenTimeSkew(Duration.ofSeconds(5)).end().build();
+        assertTrue(hybrid.token().refreshExpired());
+
+        // the refresh token time skew is only valid for the web applications
+        OidcTenantConfig service = OidcTenantConfig.authServerUrl("https://server")
+                .token().refreshTokenTimeSkew(Duration.ofSeconds(5)).end().build();
+        assertFalse(service.token().refreshExpired());
+
+        // the implied properties are only enabled for the tenants connecting to the OpenID Provider
+        OidcTenantConfig withoutAuthServer = OidcTenantConfig.builder().applicationType(ApplicationType.WEB_APP)
+                .token().refreshTokenTimeSkew(Duration.ofSeconds(5)).end().build();
+        assertFalse(withoutAuthServer.token().refreshExpired());
+        OidcTenantConfig disabled = OidcTenantConfig.authServerUrl("https://server").disableTenant()
+                .applicationType(ApplicationType.WEB_APP).token().refreshTokenTimeSkew(Duration.ofSeconds(5)).end().build();
+        assertFalse(disabled.token().refreshExpired());
+    }
+
+    @Test
+    public void testUserInfoRequiredEnabledByOtherProperties() {
+        OidcTenantConfig rolesSource = OidcTenantConfig.authServerUrl("https://server").roles().source(userinfo).end().build();
+        assertTrue(rolesSource.authentication().userInfoRequired().orElseThrow());
+
+        OidcTenantConfig serviceVerification = OidcTenantConfig.authServerUrl("https://server")
+                .token().verifyAccessTokenWithUserInfo().end().build();
+        assertTrue(serviceVerification.authentication().userInfoRequired().orElseThrow());
+
+        OidcTenantConfig hybridVerification = OidcTenantConfig.authServerUrl("https://server")
+                .applicationType(ApplicationType.HYBRID).token().verifyAccessTokenWithUserInfo().end().build();
+        assertTrue(hybridVerification.authentication().userInfoRequired().orElseThrow());
+
+        // the web application access tokens are verified with UserInfo only when the ID token is not required
+        OidcTenantConfig webAppVerification = OidcTenantConfig.authServerUrl("https://server")
+                .applicationType(ApplicationType.WEB_APP).token().verifyAccessTokenWithUserInfo().end().build();
+        assertTrue(webAppVerification.authentication().userInfoRequired().isEmpty());
+
+        OidcTenantConfig idTokenNotRequired = OidcTenantConfig.authServerUrl("https://server")
+                .applicationType(ApplicationType.WEB_APP).authentication().idTokenRequired(false).end().build();
+        assertTrue(idTokenNotRequired.authentication().userInfoRequired().orElseThrow());
+
+        // UserInfo is not required when it has been disabled
+        OidcTenantConfig userInfoDisabled = OidcTenantConfig.authServerUrl("https://server").roles().source(userinfo).end()
+                .authentication().userInfoRequired(false).end().build();
+        assertFalse(userInfoDisabled.authentication().userInfoRequired().orElseThrow());
+
+        // the implied properties are only enabled for the tenants connecting to the OpenID Provider
+        OidcTenantConfig withoutAuthServer = OidcTenantConfig.builder().roles().source(userinfo).end().build();
+        assertTrue(withoutAuthServer.authentication().userInfoRequired().isEmpty());
+        OidcTenantConfig publicKey = OidcTenantConfig.builder().publicKey("key").roles().source(userinfo).end().build();
+        assertTrue(publicKey.authentication().userInfoRequired().isEmpty());
+    }
+
+    @Test
+    public void testImpliedPropertiesEnabledForConfigMapping() {
+        // static tenants are created from the config mapping
+        OidcConfig oidcConfig = new SmallRyeConfigBuilder()
+                .addDiscoveredConverters()
+                .withMapping(OidcConfig.class)
+                .withDefaultValue("quarkus.oidc.auth-server-url", "https://server")
+                .withDefaultValue("quarkus.oidc.application-type", "web-app")
+                .withDefaultValue("quarkus.oidc.token.refresh-token-time-skew", "5S")
+                .withDefaultValue("quarkus.oidc.roles.source", "userinfo")
+                .build()
+                .getConfigMapping(OidcConfig.class);
+        io.quarkus.oidc.runtime.OidcTenantConfig mapping = OidcConfig.getDefaultTenant(oidcConfig);
+        assertFalse(mapping.token().refreshExpired());
+        assertTrue(mapping.authentication().userInfoRequired().isEmpty());
+
+        OidcTenantConfig config = OidcTenantConfig.of(mapping);
+        assertEquals("https://server", config.authServerUrl().orElse(null));
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().orElse(null));
+        assertTrue(config.token().refreshExpired());
+        assertTrue(config.authentication().userInfoRequired().orElseThrow());
+
+        // the config built by the builder is already complete
+        assertSame(config, OidcTenantConfig.of(config));
     }
 
     @Test

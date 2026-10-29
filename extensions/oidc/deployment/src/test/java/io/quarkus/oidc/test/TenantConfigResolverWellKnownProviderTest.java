@@ -87,10 +87,15 @@ class TenantConfigResolverWellKnownProviderTest {
         @GET
         public String get() {
             var tenantContext = tenantConfigBean.getDynamicTenant(TENANT_ID);
-            OidcTenantConfig tenantConfig = tenantContext.getOidcTenantConfig();
-            if (tenantConfig != tenantConfigResolver.getTenantConfig()) {
-                throw new IllegalStateException("Tenant config returned by the TenantConfigResolver must be used as is");
+            OidcTenantConfig resolverConfig = tenantConfigResolver.getTenantConfig();
+            if (!tenantContext.isCreatedFrom(resolverConfig)) {
+                throw new IllegalStateException(
+                        "Tenant context must be created from the tenant config returned by the TenantConfigResolver");
             }
+            if (resolverConfig.authentication().userInfoRequired().isPresent()) {
+                throw new IllegalStateException("Tenant config returned by the TenantConfigResolver must not be modified");
+            }
+            OidcTenantConfig tenantConfig = tenantContext.getOidcTenantConfig();
             if (!"any".equals(tenantConfig.token().issuer().orElse(null))) {
                 throw new IllegalStateException("Microsoft provider config must be merged into the tenant config");
             }
@@ -124,8 +129,9 @@ class TenantConfigResolverWellKnownProviderTest {
             } else if ("copy".equals(newTenantConfig)) {
                 tenantConfig = OidcTenantConfig.builder(tenantConfig).build();
             } else if ("without-userinfo".equals(newTenantConfig)) {
-                // the current tenant config requires UserInfo because the provider supports it, start from scratch
-                tenantConfig = tenantConfig("http://localhost:8081/mock-oidc-without-userinfo");
+                // the current tenant config does not require UserInfo, only the tenant context created from it does
+                tenantConfig = OidcTenantConfig.builder(tenantConfig)
+                        .authServerUrl("http://localhost:8081/mock-oidc-without-userinfo").build();
             }
             if (Boolean.parseBoolean(routingContext.request().getParam("replace-tenant-context"))) {
                 routingContext.put("replace-tenant-configuration-context", "true");

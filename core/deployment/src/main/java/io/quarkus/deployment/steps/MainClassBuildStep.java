@@ -417,8 +417,7 @@ public class MainClassBuildStep {
                         // build and start the static-init service graph
                         LocalVar staticGraph = emitServiceGraph(b2, staticPlan, sc, file, consolidatedRefs,
                                 generatedClass, substitutions, recordableConstructorBuildItems, loaders, constants, "static",
-                                capabilities);
-                        b2.set(staticGraphField, staticGraph);
+                                capabilities, staticGraphField);
 
                         // discard static-init-only service values; retain keys needed at runtime-init
                         Set<String> crossPhaseKeys = computeCrossPhaseKeys(mainMethod, retentionItems,
@@ -512,8 +511,7 @@ public class MainClassBuildStep {
                             // build and start the runtime service graph (shares the same StartupContext)
                             LocalVar runtimeGraph = emitServiceGraph(b2, runtimePlan, sc, file, consolidatedRefs,
                                     generatedClass, substitutions, recordableConstructorBuildItems, loaders, constants,
-                                    "runtime", capabilities);
-                            b2.set(runtimeGraphField, runtimeGraph);
+                                    "runtime", capabilities, runtimeGraphField);
 
                             // discard runtime-init service values; retain only CDI service-value bean keys
                             // (those are self-draining: each bean's creation function calls removeServiceValue)
@@ -947,7 +945,8 @@ public class MainClassBuildStep {
             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
             List<BytecodeRecorderConstantDefinitionBuildItem> constants,
             String phaseName,
-            Capabilities capabilities) {
+            Capabilities capabilities,
+            StaticFieldVar fieldToSet) {
 
         LocalVar monitor = code.localVar("monitor", capabilities.isPresent(Capability.JFR)
                 ? Expr.staticField(
@@ -1004,6 +1003,8 @@ public class MainClassBuildStep {
                 code.invokeVirtual(MD_ServiceGraph_setBottom, graph, serviceNode);
             }
         }
+
+        code.set(fieldToSet, graph);
 
         code.invokeVirtual(MD_ServiceGraph_start, graph);
 

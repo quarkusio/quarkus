@@ -19,6 +19,7 @@ public class OidcClientPasswordGrantSecretIsMissingTestCase {
                     .addAsResource(new StringAsset(
                             "# Disable Dev Services, Keycloak is started by a Maven plugin\n"
                                     + "quarkus.keycloak.devservices.enabled=false\n"
+                                    + "quarkus.oidc.tenant-enabled=false\n"
                                     + "quarkus.oidc-client.token-path=http://localhost:8180/oidc/tokens\n"
                                     + "quarkus.oidc-client.client-id=quarkus\n"
                                     + "quarkus.oidc-client.credentials.secret=secret\n"

@@ -710,6 +710,12 @@ class RestClientReactiveProcessor {
             ClassDesc interfaceClassDesc = classDescOf(jaxrsInterface);
             ClassDesc wrapperBaseClassDesc = ClassDesc.of(RestClientReactiveCDIWrapperBase.class.getName());
 
+            // If the interface declares type parameters, the wrapper must use erased signatures
+            // to avoid generating methods with type variable references (e.g., <T>) that the
+            // wrapper class itself does not declare, which would cause ClassMate/Hibernate
+            // Validator to fail when resolving generic parameter types.
+            boolean interfaceHasTypeParameters = !jaxrsInterface.typeParameters().isEmpty();
+
             Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeans));
             gizmo.class_(wrapperClassName, cc -> {
                 cc.extends_(RestClientReactiveCDIWrapperBase.class);
@@ -768,7 +774,12 @@ class RestClientReactiveProcessor {
                     // }
                     cc.method(method.name(), mc -> {
                         mc.public_();
-                        mc.returning(genericTypeOf(method.returnType()));
+                        // Use erased signatures if the interface has type parameters
+                        if (interfaceHasTypeParameters) {
+                            mc.returning(classDescOf(method.returnType()));
+                        } else {
+                            mc.returning(genericTypeOf(method.returnType()));
+                        }
 
                         // Collect parameter annotations grouped by position
                         Map<Short, List<AnnotationInstance>> paramAnnotations = new HashMap<>();
@@ -786,7 +797,12 @@ class RestClientReactiveProcessor {
                             List<AnnotationInstance> annotations = paramAnnotations.get(i);
                             final IndexView indexView = index;
                             params.add(mc.parameter(param.nameOrDefault(), pc -> {
-                                pc.setType(genericTypeOf(param.type(), indexView));
+                                // Use erased signatures if the interface has type parameters
+                                if (interfaceHasTypeParameters) {
+                                    pc.setType(classDescOf(param.type()));
+                                } else {
+                                    pc.setType(genericTypeOf(param.type(), indexView));
+                                }
                                 if (annotations != null) {
                                     for (AnnotationInstance annotation : annotations) {
                                         addAnnotation(pc, annotation, indexView);

@@ -1,0 +1,238 @@
+////
+This guide is maintained in the main Quarkus repository.
+////
+[id="quarkus-data-hibernate-sql-tutorial"]
+= Native SQL queries with Quarkus
+include::_attributes.adoc[]
+:diataxis-type: tutorial
+:categories: data
+:summary: A step-by-step guide to native SQL database access in Quarkus
+:topics: data,hibernate-orm,sql,getting-started
+:extensions: io.quarkus:quarkus-data-hibernate
+:extension-status: experimental
+
+include::{includes}/extension-status.adoc[]
+
+Sometimes you need full control over the SQL sent to the database, or need to use database-specific SQL syntax that is not portable across databases.
+This guide shows you how to write native SQL queries in Quarkus using `@NativeQuery` annotations and Java records, with compile-time generated implementations.
+The examples work directly with query results and do not require entity classes.
+
+You can also use native SQL with mapped entities.
+See the xref:quarkus-data-hibernate.adoc#repositories[Quarkus Data Hibernate reference guide] for repository queries with entities, or the xref:quarkus-data-hibernate-getting-started.adoc[Getting Started with Quarkus Data Hibernate] guide to learn about entity mapping.
+
+NOTE: Native SQL syntax and database column names are checked by the database when a statement executes, rather than by the annotation processor at build time.
+
+== Prerequisites
+
+:prerequisites-docker:
+:prerequisites-no-graalvm:
+include::{includes}/prerequisites.adoc[]
+
+:!prerequisites-docker:
+:!prerequisites-no-graalvm:
+
+== Introduction
+
+You're working on a physical bookstore website, in which you want users to be able to browse books with titles.
+In this tutorial, we won't deal with the frontend and the user interface, we just want to connect to the database.
+
+We'll start this tutorial by creating a new empty Quarkus application:
+
+:create-app-artifact-id: quarkus-data-sql-tutorial
+include::{includes}/devtools/create-app.adoc[]
+
+Then let's import the extensions:
+
+:add-extension-extensions: quarkus-data-hibernate,quarkus-jdbc-postgresql
+include::{includes}/devtools/extension-add.adoc[]
+
+The first dependency, `quarkus-data-hibernate`, provides Quarkus Data Hibernate's database access APIs and integration with Quarkus.
+The second dependency, `quarkus-jdbc-postgresql`, is the JDBC driver that tells Quarkus how to talk to a PostgreSQL database.
+This tutorial uses blocking database access, which requires a JDBC driver.
+For other databases, choose the corresponding `quarkus-jdbc-*` driver (see xref:datasource.adoc#configure-a-jdbc-datasource[Configure a JDBC datasource]) and adapt the SQL initialization script below to that database's syntax.
+
+== Configuration
+
+Quarkus Data Hibernate uses the Quarkus Data annotation processor, which reads your repository interfaces at compile time and generates implementation classes.
+These generated classes are compiled together with your code and wired up automatically by Quarkus. They are also simple to read, in case you want to understand how it works internally.
+
+To enable it, add the annotation processor configuration to your build file.
+For Maven, merge the configuration into the existing `maven-compiler-plugin` entry:
+
+include::{includes}/quarkus-data-processor-config.adoc[]
+
+Now run xref:continuous-testing.adoc[Quarkus continuous testing] from the project directory in a separate tab of your terminal:
+
+[source,bash]
+----
+quarkus test
+----
+
+If you are not using the Quarkus CLI, run `./mvnw quarkus:test` with Maven or `./gradlew quarkusTest` with Gradle.
+
+You don't need to restart Quarkus testing, it will re-run tests continuously after every change.
+
+TIP: A _datasource_ provides connections to your database. In dev and test modes, if you don't configure a database connection, Quarkus can automatically start a PostgreSQL container for you via xref:dev-services.adoc[Dev Services]. See the xref:datasource.adoc[Datasource guide] for more details.
+
+Since we're writing raw SQL without entity mapping, we'll create the schema and sample data ourselves.
+Create an `import.sql` file in `src/main/resources/`.
+Hibernate ORM automatically runs this script during schema initialization in dev and test modes.
+
+[source,sql]
+----
+CREATE SEQUENCE IF NOT EXISTS Publisher_SEQ;
+
+CREATE TABLE IF NOT EXISTS Publisher (
+    id BIGINT PRIMARY KEY DEFAULT nextval('Publisher_SEQ'),
+    name VARCHAR(255),
+    country VARCHAR(10),
+    allowsDiscounts BOOLEAN
+);
+
+CREATE SEQUENCE IF NOT EXISTS Book_SEQ;
+
+CREATE TABLE IF NOT EXISTS Book (
+    id BIGINT PRIMARY KEY DEFAULT nextval('Book_SEQ'),
+    title VARCHAR(255),
+    isbn VARCHAR(20),
+    price NUMERIC(10,2),
+    publisher_id BIGINT REFERENCES Publisher(id)
+);
+
+DELETE FROM Book;
+DELETE FROM Publisher;
+
+INSERT INTO Publisher (id, name, country, allowsDiscounts) VALUES (1, 'Addison-Wesley', 'US', true);
+INSERT INTO Publisher (id, name, country, allowsDiscounts) VALUES (2, 'Prentice Hall', 'US', false);
+INSERT INTO Publisher (id, name, country, allowsDiscounts) VALUES (3, 'O''Reilly', 'UK', true);
+INSERT INTO Publisher (id, name, country, allowsDiscounts) VALUES (4, 'Manning', 'UK', false);
+
+INSERT INTO Book (id, title, isbn, price, publisher_id) VALUES (1, 'Effective Java', '978-0134685991', 45.00, 1);
+INSERT INTO Book (id, title, isbn, price, publisher_id) VALUES (2, 'Clean Code', '978-0132350884', 40.00, 1);
+INSERT INTO Book (id, title, isbn, price, publisher_id) VALUES (3, 'Domain-Driven Design', '978-0321125217', 55.00, 2);
+INSERT INTO Book (id, title, isbn, price, publisher_id) VALUES (4, 'Refactoring', '978-0134757599', 50.00, 2);
+INSERT INTO Book (id, title, isbn, price, publisher_id) VALUES (5, 'The Pragmatic Programmer', '978-0135957059', 42.00, 3);
+INSERT INTO Book (id, title, isbn, price, publisher_id) VALUES (6, 'Head First Design Patterns', '978-0596007126', 38.00, 3);
+INSERT INTO Book (id, title, isbn, price, publisher_id) VALUES (7, 'Java Concurrency in Practice', '978-0321349606', 48.00, 4);
+INSERT INTO Book (id, title, isbn, price, publisher_id) VALUES (8, 'Kotlin in Action', '978-1617293290', 44.00, 4);
+
+-- Set each sequence to the largest imported ID so the next generated ID does not collide.
+SELECT setval('Publisher_SEQ', (SELECT MAX(id) FROM Publisher));
+SELECT setval('Book_SEQ', (SELECT MAX(id) FROM Book));
+----
+
+This SQL script creates sequences for ID generation, the `Publisher` and `Book` tables, and inserts sample data.
+Each book is linked to a publisher.
+The final statements set each sequence to the largest imported ID, so the next generated ID follows the sample data even if you add more rows to the script.
+
+== Querying data
+
+Create a file called `BookQueries.java` in the package `org.acme` to query books by title:
+
+[source,java]
+----
+package org.acme;
+
+import jakarta.persistence.query.NativeQuery;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+public interface BookQueries { // <1>
+
+    record BookRecord(Long id, String title, String isbn, BigDecimal price) {} // <2>
+
+    @NativeQuery("SELECT id, title, isbn, price FROM Book WHERE title = :title") // <3>
+    List<BookRecord> findByTitle(String title); // <4>
+}
+----
+<1> A repository interface that groups all your query methods for books. The annotation processor generates the implementation for you.
+<2> A Java record that maps to the columns returned by the SQL query. The selected columns match the record components in order and type.
+<3> `@NativeQuery` sends raw SQL to the database. The `:title` syntax is a named parameter, it avoids SQL injection attacks.
+<4> The method signature defines the parameters.
+
+We can now create a test in `src/test/java/org/acme/BookQueriesTest.java` that will check everything is working correctly:
+
+[source,java]
+----
+package org.acme;
+
+import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@QuarkusTest // <1>
+public class BookQueriesTest {
+
+    @Inject
+    BookQueries bookQueries; // <2>
+
+    @Test
+    void shouldFindBookByTitle() {
+        List<BookQueries.BookRecord> books = bookQueries.findByTitle("Effective Java"); // <3>
+        assertEquals(1, books.size());
+        assertEquals("Effective Java", books.get(0).title());
+    }
+
+    @Test
+    void shouldReturnEmptyListForUnknownTitle() {
+        List<BookQueries.BookRecord> books = bookQueries.findByTitle("Unknown Book");
+        assertTrue(books.isEmpty());
+    }
+}
+----
+<1> `@QuarkusTest` starts the full Quarkus application for the test, including the database and Dev Services. The data from `import.sql` is loaded automatically.
+<2> We inject our `BookQueries` just like we would in application code.
+<3> We query for a book we know exists in `import.sql` and verify it's returned.
+
+If you have continuous testing running in another terminal, these tests will run automatically as soon as you save the file.
+
+== Updating data
+
+Native SQL can also modify rows without mapped entities.
+Add an `updatePrice` method to `BookQueries`:
+
+[source,java]
+----
+    @NativeQuery("UPDATE Book SET price = :price WHERE isbn = :isbn")
+    int updatePrice(String isbn, BigDecimal price);
+----
+
+The method returns the number of updated rows.
+Both arguments are bound as query parameters, just as in the title query.
+
+Write operations require a transaction.
+In application code, invoke the repository from a CDI bean method annotated with `jakarta.transaction.Transactional`; see xref:transaction.adoc[Using transactions in Quarkus].
+
+For the test, use `@TestTransaction` to run the update and verification in a transaction that is rolled back after the test.
+This keeps the sample data unchanged for other tests and subsequent continuous-testing runs.
+Add this import to `BookQueriesTest`:
+
+[source,java]
+----
+import io.quarkus.test.TestTransaction;
+----
+
+Then add the following test method:
+
+[source,java]
+----
+    @Test
+    @TestTransaction
+    void shouldUpdateBookPrice() {
+        BigDecimal newPrice = new BigDecimal("39.00");
+        int updated = bookQueries.updatePrice("978-0134685991", newPrice);
+        assertEquals(1, updated);
+
+        List<BookQueries.BookRecord> books = bookQueries.findByTitle("Effective Java");
+        assertEquals(1, books.size());
+        assertEquals(newPrice, books.get(0).price());
+    }
+----
+
+The tests now cover reading rows, handling an empty result, and updating a row using native SQL.

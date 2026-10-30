@@ -584,6 +584,16 @@ NOTE: Output will vary depending on the build tool your project is using (Maven,
 
 NOTE: Run `quarkus dev --clean` to perform clean as part of the build.
 
+To connect to an application running in remote development mode, add `--remote`:
+
+[source,shell]
+----
+quarkus dev --remote -Dquarkus.live-reload.url=http://my-remote-host:8080
+----
+
+The remote application must be packaged as a mutable jar and share the `quarkus.live-reload.password`, as described in xref:maven-tooling.adoc#remote-development-mode[Remote Development Mode].
+Remote development mode is not available for JBang projects.
+
 == Shell autocomplete and aliases
 
 Automatic command completion is available for Bash and Zsh:

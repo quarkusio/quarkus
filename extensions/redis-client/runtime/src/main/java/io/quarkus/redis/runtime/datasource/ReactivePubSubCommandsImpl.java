@@ -358,19 +358,21 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
             doesNotContainNull(channels, "channels");
             List<String> list = List.of(channels);
             return api.unsubscribe(list)
-                    .chain(() -> {
+                    .eventually(() -> {
                         this.channels.removeAll(list);
                         return closeAndUnregister(this.channels);
-                    });
+                    })
+                    .replaceWithVoid();
         }
 
         @Override
         public Uni<Void> unsubscribe() {
             return api.unsubscribe(channels)
-                    .chain(() -> {
+                    .eventually(() -> {
                         this.channels.clear();
                         return closeAndUnregister(channels);
-                    });
+                    })
+                    .replaceWithVoid();
         }
     }
 
@@ -396,19 +398,21 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
             doesNotContainNull(patterns, "patterns");
             List<String> list = List.of(patterns);
             return api.punsubscribe(list)
-                    .chain(() -> {
+                    .eventually(() -> {
                         this.patterns.removeAll(list);
                         return closeAndUnregister(this.patterns);
-                    });
+                    })
+                    .replaceWithVoid();
         }
 
         @Override
         public Uni<Void> unsubscribe() {
             return api.punsubscribe(patterns)
-                    .chain(() -> {
+                    .eventually(() -> {
                         this.patterns.clear();
                         return closeAndUnregister(patterns);
-                    });
+                    })
+                    .replaceWithVoid();
         }
     }
 

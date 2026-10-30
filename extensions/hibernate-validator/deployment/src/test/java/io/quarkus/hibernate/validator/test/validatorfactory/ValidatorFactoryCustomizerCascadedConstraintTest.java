@@ -26,7 +26,9 @@ public class ValidatorFactoryCustomizerCascadedConstraintTest {
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
-            .addClasses(CascadeConstraintValidatorFactoryCustomizer.class, FooService.class));
+            .addClasses(CascadeConstraintValidatorFactoryCustomizer.class, FooService.class))
+            // Because programmatic mapping is not detected during the build time.
+            .overrideConfigKey("quarkus.hibernate-accessor.strategy", "generated-with-fallback");
 
     @Test
     public void testCascadedConstraintValidatorFactoryCustomizer() {

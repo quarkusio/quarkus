@@ -56,6 +56,11 @@ public class HibernateValidatorFunctionalityTest {
     }
 
     @Test
+    public void testAccessorFieldPolicy() {
+        RestAssured.get("/accessor-policy").then().statusCode(200).body(is("changed:original:record"));
+    }
+
+    @Test
     public void testBasicFeatures() throws Exception {
         StringBuilder expected = new StringBuilder();
         expected.append("failed: additionalEmails[0].<list element> (must be a well-formed email address)").append(", ")

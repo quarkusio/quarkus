@@ -146,6 +146,7 @@ categories:
           - quarkus-data-hibernate-getting-started.adoc
           - quarkus-data-hibernate-sql.adoc
           - hibernate-orm-panache.adoc
+          - panache-quarkusdata-migration.adoc
           - hibernate-orm-panache-kotlin.adoc
           - hibernate-reactive.adoc
           - hibernate-reactive-panache.adoc

@@ -12,7 +12,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfigBuilder;
-import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.oidc.runtime.OidcTenantConfig;
 import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
@@ -37,7 +36,7 @@ import io.quarkus.oidc.runtime.builders.AuthenticationConfigBuilder;
 import io.quarkus.oidc.runtime.builders.LogoutConfigBuilder;
 import io.quarkus.oidc.runtime.builders.TokenConfigBuilder;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
-import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.ConfigInstanceBuilder;
 
 /**
  * Builder for the {@link io.quarkus.oidc.OidcTenantConfig}. This builder is not thread-safe.
@@ -548,9 +547,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      */
     public OidcTenantConfigBuilder dpop(Duration proofAge) {
         Objects.requireNonNull(proofAge);
-        record DpopImpl(Duration proofAge) implements Dpop {
-        }
-        this.dpop = new DpopImpl(proofAge);
+        this.dpop = ConfigInstanceBuilder.forInterface(Dpop.class)
+                .with(Dpop::proofAge, proofAge)
+                .build();
         return this;
     }
 
@@ -875,10 +874,6 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      */
     public static final class IntrospectionCredentialsBuilder {
 
-        private record IntrospectionCredentialsImpl(Optional<String> name, Optional<String> secret,
-                boolean includeClientId) implements IntrospectionCredentials {
-        }
-
         private final OidcTenantConfigBuilder builder;
         private Optional<String> name;
         private Optional<String> secret;
@@ -933,7 +928,11 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
          * @return built IntrospectionCredentials
          */
         public IntrospectionCredentials build() {
-            return new IntrospectionCredentialsImpl(name, secret, includeClientId);
+            return ConfigInstanceBuilder.forInterface(IntrospectionCredentials.class)
+                    .with(IntrospectionCredentials::name, name)
+                    .with(IntrospectionCredentials::secret, secret)
+                    .with(IntrospectionCredentials::includeClientId, includeClientId)
+                    .build();
         }
     }
 
@@ -941,11 +940,6 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      * Builder for the {@link CertificateChain}.
      */
     public static final class CertificateChainBuilder {
-
-        private record CertificateChainImpl(Optional<String> leafCertificateName, Optional<Path> trustStoreFile,
-                Optional<String> trustStorePassword, Optional<String> trustStoreCertAlias,
-                Optional<String> trustStoreFileType) implements CertificateChain {
-        }
 
         private final OidcTenantConfigBuilder builder;
         private Optional<String> leafCertificateName;
@@ -1024,8 +1018,13 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
          * @return builds new {@link CertificateChain}
          */
         public CertificateChain build() {
-            return new CertificateChainImpl(leafCertificateName, trustStoreFile, trustStorePassword, trustStoreCertAlias,
-                    trustStoreFileType);
+            return ConfigInstanceBuilder.forInterface(CertificateChain.class)
+                    .with(CertificateChain::leafCertificateName, leafCertificateName)
+                    .with(CertificateChain::trustStoreFile, trustStoreFile)
+                    .with(CertificateChain::trustStorePassword, trustStorePassword)
+                    .with(CertificateChain::trustStoreCertAlias, trustStoreCertAlias)
+                    .with(CertificateChain::trustStoreFileType, trustStoreFileType)
+                    .build();
         }
     }
 
@@ -1033,10 +1032,6 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      * Builder for the {@link ResourceMetadata}.
      */
     public static final class ResourceMetadataBuilder {
-
-        private record ResourceMetadataImpl(boolean enabled, Optional<String> resource, Optional<Set<String>> scopes,
-                Optional<String> authorizationServer, boolean forceHttpsScheme) implements ResourceMetadata {
-        }
 
         private final OidcTenantConfigBuilder builder;
         private boolean enabled;
@@ -1141,7 +1136,13 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
          * @return built ResourceMetadata
          */
         public ResourceMetadata build() {
-            return new ResourceMetadataImpl(enabled, resource, scopes, authorizationServer, forceHttpsScheme);
+            return ConfigInstanceBuilder.forInterface(ResourceMetadata.class)
+                    .with(ResourceMetadata::enabled, enabled)
+                    .with(ResourceMetadata::resource, resource)
+                    .with(ResourceMetadata::scopes, scopes)
+                    .with(ResourceMetadata::authorizationServer, authorizationServer)
+                    .with(ResourceMetadata::forceHttpsScheme, forceHttpsScheme)
+                    .build();
         }
     }
 
@@ -1149,9 +1150,6 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      * Builder for the {@link ClientIdMetadata}.
      */
     public static final class ClientIdMetadataBuilder {
-
-        private record ClientIdMetadataImpl(boolean forceHttpsScheme) implements ClientIdMetadata {
-        }
 
         private final OidcTenantConfigBuilder builder;
         private boolean forceHttpsScheme;
@@ -1185,7 +1183,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
          * @return built ClientIdMetadata
          */
         public ClientIdMetadata build() {
-            return new ClientIdMetadataImpl(forceHttpsScheme);
+            return ConfigInstanceBuilder.forInterface(ClientIdMetadata.class)
+                    .with(ClientIdMetadata::forceHttpsScheme, forceHttpsScheme)
+                    .build();
         }
     }
 
@@ -1193,10 +1193,6 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      * Builder for the {@link Roles}.
      */
     public static final class RolesBuilder {
-
-        private record RolesImpl(Optional<List<String>> roleClaimPath, Optional<String> roleClaimSeparator,
-                Optional<Source> source) implements Roles {
-        }
 
         private final OidcTenantConfigBuilder builder;
         private final List<String> roleClaimPath = new ArrayList<>();
@@ -1269,7 +1265,11 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         public Roles build() {
             var roleClaimPathOptional = roleClaimPath.isEmpty() ? Optional.<List<String>> empty()
                     : Optional.of(List.copyOf(roleClaimPath));
-            return new RolesImpl(roleClaimPathOptional, roleClaimSeparator, source);
+            return ConfigInstanceBuilder.forInterface(Roles.class)
+                    .with(Roles::roleClaimPath, roleClaimPathOptional)
+                    .with(Roles::roleClaimSeparator, roleClaimSeparator)
+                    .with(Roles::source, source)
+                    .build();
         }
     }
 
@@ -1277,10 +1277,6 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      * Builder for the {@link Jwks}.
      */
     public static final class JwksBuilder {
-        private record JwksImpl(boolean resolveEarly, int cacheSize, Duration cacheTimeToLive,
-                Optional<Duration> cleanUpTimerInterval, boolean tryAll) implements Jwks {
-        }
-
         private final OidcTenantConfigBuilder builder;
         private boolean resolveEarly;
         private int cacheSize;
@@ -1376,7 +1372,13 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
          * @return builds {@link Jwks}
          */
         public Jwks build() {
-            return new JwksImpl(resolveEarly, cacheSize, cacheTimeToLive, cleanUpTimerInterval, tryAll);
+            return ConfigInstanceBuilder.forInterface(Jwks.class)
+                    .with(Jwks::resolveEarly, resolveEarly)
+                    .with(Jwks::cacheSize, cacheSize)
+                    .with(Jwks::cacheTimeToLive, cacheTimeToLive)
+                    .with(Jwks::cleanUpTimerInterval, cleanUpTimerInterval)
+                    .with(Jwks::tryAll, tryAll)
+                    .build();
         }
     }
 
@@ -1384,11 +1386,6 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      * Builder for the {@link TokenStateManager}.
      */
     public static final class TokenStateManagerBuilder {
-
-        private record TokenStateManagerImpl(Strategy strategy, boolean splitTokens, boolean encryptionRequired,
-                Optional<String> encryptionSecret, EncryptionAlgorithm encryptionAlgorithm) implements TokenStateManager {
-
-        }
 
         private final OidcTenantConfigBuilder builder;
         private Strategy strategy;
@@ -1479,7 +1476,13 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         public TokenStateManager build() {
-            return new TokenStateManagerImpl(strategy, splitTokens, encryptionRequired, encryptionSecret, encryptionAlgorithm);
+            return ConfigInstanceBuilder.forInterface(TokenStateManager.class)
+                    .with(TokenStateManager::strategy, strategy)
+                    .with(TokenStateManager::splitTokens, splitTokens)
+                    .with(TokenStateManager::encryptionRequired, encryptionRequired)
+                    .with(TokenStateManager::encryptionSecret, encryptionSecret)
+                    .with(TokenStateManager::encryptionAlgorithm, encryptionAlgorithm)
+                    .build();
         }
     }
 
@@ -1487,9 +1490,6 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      * Builder for the {@link CodeGrant}.
      */
     public static final class CodeGrantBuilder {
-
-        private record CodeGrantImpl(Map<String, String> extraParams, Map<String, String> headers) implements CodeGrant {
-        }
 
         private final OidcTenantConfigBuilder builder;
         private final Map<String, String> extraParams = new HashMap<>();
@@ -1563,18 +1563,16 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
          * @return builds {@link CodeGrant}
          */
         public CodeGrant build() {
-            return new CodeGrantImpl(Map.copyOf(extraParams), Map.copyOf(headers));
+            return ConfigInstanceBuilder.forInterface(CodeGrant.class)
+                    .with(CodeGrant::extraParams, Map.copyOf(extraParams))
+                    .with(CodeGrant::headers, Map.copyOf(headers))
+                    .build();
         }
     }
 
     private static io.quarkus.oidc.runtime.OidcTenantConfig getConfigWithDefaults() {
         if (configWithDefaults == null) {
-            final OidcConfig oidcConfig = new SmallRyeConfigBuilder()
-                    .addDiscoveredConverters()
-                    .withMapping(OidcConfig.class)
-                    .build()
-                    .getConfigMapping(OidcConfig.class);
-            configWithDefaults = OidcConfig.getDefaultTenant(oidcConfig);
+            configWithDefaults = ConfigInstanceBuilder.forInterface(OidcTenantConfig.class).build();
         }
         return configWithDefaults;
     }

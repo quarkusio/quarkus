@@ -3,7 +3,6 @@ package io.quarkus.vertx.http.deployment.devmode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Optional;
-import java.util.OptionalInt;
 
 import org.junit.jupiter.api.Test;
 
@@ -11,9 +10,8 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.runtime.management.ManagementAuthConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
-import io.vertx.core.http.ClientAuth;
+import io.smallrye.config.ConfigInstanceBuilder;
 
 class ConfiguredPathInfoTest {
 
@@ -54,7 +52,7 @@ class ConfiguredPathInfoTest {
     void getEndpointPath_nonApp_absolutePath_returnsAsIs() {
         ConfiguredPathInfo info = new ConfiguredPathInfo("test", "/absolute/path", true, false);
         NonApplicationRootPathBuildItem nonAppRoot = new NonApplicationRootPathBuildItem("/", "q", null);
-        ManagementInterfaceBuildTimeConfig mgmtConfig = new TestManagementConfig(false, "management");
+        ManagementInterfaceBuildTimeConfig mgmtConfig = managementConfig(false, "management");
         LaunchModeBuildItem launchMode = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 
@@ -65,7 +63,7 @@ class ConfiguredPathInfoTest {
     void getEndpointPath_nonApp_relativePath_managementDisabled() {
         ConfiguredPathInfo info = new ConfiguredPathInfo("test", "/endpoint", false, false);
         NonApplicationRootPathBuildItem nonAppRoot = new NonApplicationRootPathBuildItem("/", "q", null);
-        ManagementInterfaceBuildTimeConfig mgmtConfig = new TestManagementConfig(false, "management");
+        ManagementInterfaceBuildTimeConfig mgmtConfig = managementConfig(false, "management");
         LaunchModeBuildItem launchMode = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 
@@ -78,7 +76,7 @@ class ConfiguredPathInfoTest {
     void getEndpointPath_nonApp_managementEnabled_managementFlag() {
         ConfiguredPathInfo info = new ConfiguredPathInfo("test", "/health", false, true);
         NonApplicationRootPathBuildItem nonAppRoot = new NonApplicationRootPathBuildItem("/", "q", "management");
-        ManagementInterfaceBuildTimeConfig mgmtConfig = new TestManagementConfig(true, "management");
+        ManagementInterfaceBuildTimeConfig mgmtConfig = managementConfig(true, "management");
         LaunchModeBuildItem launchMode = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 
@@ -92,7 +90,7 @@ class ConfiguredPathInfoTest {
         // management is enabled but this route is NOT a management route
         ConfiguredPathInfo info = new ConfiguredPathInfo("test", "/endpoint", false, false);
         NonApplicationRootPathBuildItem nonAppRoot = new NonApplicationRootPathBuildItem("/", "q", "management");
-        ManagementInterfaceBuildTimeConfig mgmtConfig = new TestManagementConfig(true, "management");
+        ManagementInterfaceBuildTimeConfig mgmtConfig = managementConfig(true, "management");
         LaunchModeBuildItem launchMode = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 
@@ -105,7 +103,7 @@ class ConfiguredPathInfoTest {
     void getEndpointPath_nonApp_managementEnabled_testMode() {
         ConfiguredPathInfo info = new ConfiguredPathInfo("test", "/health", false, true);
         NonApplicationRootPathBuildItem nonAppRoot = new NonApplicationRootPathBuildItem("/", "q", "management");
-        ManagementInterfaceBuildTimeConfig mgmtConfig = new TestManagementConfig(true, "management");
+        ManagementInterfaceBuildTimeConfig mgmtConfig = managementConfig(true, "management");
         LaunchModeBuildItem launchMode = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), true);
 
@@ -114,48 +112,10 @@ class ConfiguredPathInfoTest {
         assertEquals("http://localhost:9001/health", result);
     }
 
-    private static final class TestManagementConfig implements ManagementInterfaceBuildTimeConfig {
-        private final boolean enabled;
-        private final String rootPath;
-
-        TestManagementConfig(boolean enabled, String rootPath) {
-            this.enabled = enabled;
-            this.rootPath = rootPath;
-        }
-
-        @Override
-        public boolean enabled() {
-            return enabled;
-        }
-
-        @Override
-        public ManagementAuthConfig auth() {
-            return null;
-        }
-
-        @Override
-        public ClientAuth tlsClientAuth() {
-            return null;
-        }
-
-        @Override
-        public String rootPath() {
-            return rootPath;
-        }
-
-        @Override
-        public boolean enableCompression() {
-            return false;
-        }
-
-        @Override
-        public boolean enableDecompression() {
-            return false;
-        }
-
-        @Override
-        public OptionalInt compressionLevel() {
-            return OptionalInt.empty();
-        }
+    private static ManagementInterfaceBuildTimeConfig managementConfig(boolean enabled, String rootPath) {
+        return ConfigInstanceBuilder.forInterface(ManagementInterfaceBuildTimeConfig.class)
+                .with(ManagementInterfaceBuildTimeConfig::enabled, enabled)
+                .with(ManagementInterfaceBuildTimeConfig::rootPath, rootPath)
+                .build();
     }
 }

@@ -6,6 +6,8 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import io.smallrye.config.ConfigInstanceBuilder;
+
 public class OidcImplTest {
 
     @Test
@@ -29,26 +31,12 @@ public class OidcImplTest {
     }
 
     private static OidcConfig getEmptyConfig() {
-        return new OidcConfig() {
-            @Override
-            public Map<String, OidcTenantConfig> namedTenants() {
-                return Map.of(OidcConfig.DEFAULT_TENANT_KEY, io.quarkus.oidc.OidcTenantConfig.builder().build());
-            }
-
-            @Override
-            public TokenCache tokenCache() {
-                return null;
-            }
-
-            @Override
-            public boolean resolveTenantsWithIssuer() {
-                return false;
-            }
-
-            @Override
-            public int priority() {
-                return 0;
-            }
-        };
+        return ConfigInstanceBuilder.forInterface(OidcConfig.class)
+                .with(OidcConfig::namedTenants,
+                        Map.<String, OidcTenantConfig> of(OidcConfig.DEFAULT_TENANT_KEY,
+                                io.quarkus.oidc.OidcTenantConfig.builder().build()))
+                .with(OidcConfig::resolveTenantsWithIssuer, false)
+                .with(OidcConfig::priority, 0)
+                .build();
     }
 }

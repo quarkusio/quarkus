@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.TestNativeConfig;
 
 class NativeImageFutureDefaultTest {
@@ -19,15 +20,15 @@ class NativeImageFutureDefaultTest {
     @ValueSource(strings = { "all", "run-time-initialize-jdk" })
     void runtimeInitJdkDefaultsWithFutureDefaultsAll(String param) {
         List<String> futureDefaultsValue = List.of("--future-defaults=" + param);
-        TestNativeConfig testNativeConfig = new TestNativeConfig(futureDefaultsValue, null);
+        NativeConfig testNativeConfig = TestNativeConfig.withAdditionalBuildArgs(futureDefaultsValue, null);
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
         assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isTrue();
-        testNativeConfig = new TestNativeConfig(null, futureDefaultsValue);
+        testNativeConfig = TestNativeConfig.withAdditionalBuildArgs(null, futureDefaultsValue);
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
         assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isTrue();
-        testNativeConfig = new TestNativeConfig(futureDefaultsValue, futureDefaultsValue);
+        testNativeConfig = TestNativeConfig.withAdditionalBuildArgs(futureDefaultsValue, futureDefaultsValue);
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
         assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isTrue();
@@ -35,7 +36,7 @@ class NativeImageFutureDefaultTest {
 
     @Test
     void runtimeInitFSandSecurityProvidersWithExplicitFutureDefaults() {
-        TestNativeConfig testNativeConfig = new TestNativeConfig(
+        NativeConfig testNativeConfig = TestNativeConfig.withAdditionalBuildArgs(
                 List.of("--future-defaults=run-time-initialize-security-providers,run-time-initialize-file-system-providers"),
                 null);
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
@@ -47,7 +48,7 @@ class NativeImageFutureDefaultTest {
     @ValueSource(strings = { "run-time-initialize-file-system-providers", "run-time-initialize-file-system-providers,other",
             "other,run-time-initialize-file-system-providers" })
     void runtimeInitFileSystemProviders(String param) {
-        TestNativeConfig testNativeConfig = new TestNativeConfig(
+        NativeConfig testNativeConfig = TestNativeConfig.withAdditionalBuildArgs(
                 List.of("--future-defaults=" + param), null);
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
@@ -56,7 +57,7 @@ class NativeImageFutureDefaultTest {
 
     @Test
     void runtimeInitSecurityProviders() {
-        TestNativeConfig testNativeConfig = new TestNativeConfig(
+        NativeConfig testNativeConfig = TestNativeConfig.withAdditionalBuildArgs(
                 List.of("--future-defaults=run-time-initialize-security-providers"), null);
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isTrue();
@@ -67,7 +68,7 @@ class NativeImageFutureDefaultTest {
     @ValueSource(strings = { "run-time-initialize-resource-bundles", "run-time-initialize-resource-bundles,other",
             "other,run-time-initialize-resource-bundles" })
     void runtimeInitResourceBundles(String param) {
-        TestNativeConfig testNativeConfig = new TestNativeConfig(
+        NativeConfig testNativeConfig = TestNativeConfig.withAdditionalBuildArgs(
                 List.of("--future-defaults=" + param), null);
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
@@ -78,15 +79,15 @@ class NativeImageFutureDefaultTest {
     @ValueSource(strings = { "complete-reflection-types", "none", "arbitrary-text" })
     void runtimeInitOfFSandSecurityProvidersWithOtherFutureDefaults(String param) {
         List<String> futureDefaultsValue = List.of("--future-defaults=" + param);
-        TestNativeConfig testNativeConfig = new TestNativeConfig(futureDefaultsValue, null);
+        NativeConfig testNativeConfig = TestNativeConfig.withAdditionalBuildArgs(futureDefaultsValue, null);
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
         assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isFalse();
-        testNativeConfig = new TestNativeConfig(null, futureDefaultsValue);
+        testNativeConfig = TestNativeConfig.withAdditionalBuildArgs(null, futureDefaultsValue);
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
         assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isFalse();
-        testNativeConfig = new TestNativeConfig(futureDefaultsValue, futureDefaultsValue);
+        testNativeConfig = TestNativeConfig.withAdditionalBuildArgs(futureDefaultsValue, futureDefaultsValue);
         assertThat(RUN_TIME_INITIALIZE_SECURITY_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
         assertThat(RUN_TIME_INITIALIZE_FILE_SYSTEM_PROVIDERS.isEnabled(testNativeConfig)).isFalse();
         assertThat(RUN_TIME_INITIALIZE_RESOURCE_BUNDLES.isEnabled(testNativeConfig)).isFalse();

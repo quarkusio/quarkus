@@ -7,6 +7,7 @@ import java.util.Set;
 
 import io.quarkus.vertx.http.security.CSRF;
 import io.smallrye.config.Config;
+import io.smallrye.config.ConfigInstanceBuilder;
 
 public final class RestCsrfBuilder implements CSRF.Builder {
 
@@ -132,15 +133,21 @@ public final class RestCsrfBuilder implements CSRF.Builder {
 
     @Override
     public CSRF build() {
-        record CSRFImpl(String formFieldName, String tokenHeaderName, String cookieName, Duration cookieMaxAge,
-                String cookiePath, Optional<String> cookieDomain, boolean cookieForceSecure,
-                boolean cookieHttpOnly, Optional<Set<String>> createTokenPath, int tokenSize,
-                Optional<String> tokenSignatureKey, boolean verifyToken,
-                boolean requireFormUrlEncoded) implements RestCsrfConfig, CSRF {
-        }
-        return new CSRFImpl(formFieldName, tokenHeaderName, cookieName, cookieMaxAge, cookiePath, cookieDomain,
-                cookieForceSecure, cookieHttpOnly, createTokenPath, tokenSize, tokenSignatureKey, verifyToken,
-                requireFormUrlEncoded);
+        return ConfigInstanceBuilder.forInterface(RestCsrfConfig.class)
+                .with(RestCsrfConfig::formFieldName, formFieldName)
+                .with(RestCsrfConfig::tokenHeaderName, tokenHeaderName)
+                .with(RestCsrfConfig::cookieName, cookieName)
+                .with(RestCsrfConfig::cookieMaxAge, cookieMaxAge)
+                .with(RestCsrfConfig::cookiePath, cookiePath)
+                .with(RestCsrfConfig::cookieDomain, cookieDomain)
+                .with(RestCsrfConfig::cookieForceSecure, cookieForceSecure)
+                .with(RestCsrfConfig::cookieHttpOnly, cookieHttpOnly)
+                .with(RestCsrfConfig::createTokenPath, createTokenPath)
+                .with(RestCsrfConfig::tokenSize, tokenSize)
+                .with(RestCsrfConfig::tokenSignatureKey, tokenSignatureKey)
+                .with(RestCsrfConfig::verifyToken, verifyToken)
+                .with(RestCsrfConfig::requireFormUrlEncoded, requireFormUrlEncoded)
+                .build();
     }
 
     private static <T> T requireNonNull(T value, String what) {

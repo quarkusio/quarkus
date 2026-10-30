@@ -16,6 +16,7 @@ import io.quarkus.runtime.BannerRuntimeConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.smallrye.config.Config;
+import io.smallrye.config.ConfigInstanceBuilder;
 
 public class TestHandler implements BiConsumer<Object, BuildResult> {
 
@@ -37,12 +38,13 @@ public class TestHandler implements BiConsumer<Object, BuildResult> {
         BannerConfig banner = config.getConfigMapping(BannerConfig.class);
         LoggingSetupRecorder.handleFailedStart(
                 new BannerProcessor()
-                        .recordBanner(new BannerRecorder(new RuntimeValue<>(new BannerRuntimeConfig() {
-                            @Override
-                            public boolean enabled() {
-                                return config.getOptionalValue("quarkus.banner.enabled", Boolean.class).orElse(true);
-                            }
-                        })), banner).getBannerSupplier());
+                        .recordBanner(new BannerRecorder(
+                                new RuntimeValue<>(ConfigInstanceBuilder.forInterface(BannerRuntimeConfig.class)
+                                        .with(BannerRuntimeConfig::enabled,
+                                                config.getOptionalValue("quarkus.banner.enabled", Boolean.class).orElse(true))
+                                        .build())),
+                                banner)
+                        .getBannerSupplier());
         if (!config.getOptionalValue("quarkus.test.continuous-testing", Mode.class).orElse(Mode.PAUSED)
                 .equals(Mode.DISABLED)) {
             Logger.getLogger("io.quarkus.test").info("Quarkus continuous testing mode started");

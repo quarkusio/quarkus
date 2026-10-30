@@ -4,21 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.tls.runtime.config.KeyStoreConfig;
 import io.quarkus.tls.runtime.config.PqcEnforcementPolicy;
 import io.quarkus.tls.runtime.config.SslEngineType;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfig;
-import io.quarkus.tls.runtime.config.TrustStoreConfig;
+import io.smallrye.config.ConfigInstanceBuilder;
 
 /**
  * The OpenSSL engine (netty-tcnative) is disabled by the Quarkus GraalVM substitutions, so a TLS bucket that requests
@@ -72,71 +68,11 @@ class CertificateRegistryImplNativeImageTest {
     }
 
     private static TlsBucketConfig bucket(Optional<SslEngineType> engine, PqcEnforcementPolicy policy) {
-        return new TlsBucketConfig() {
-            @Override
-            public Optional<KeyStoreConfig> keyStore() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<TrustStoreConfig> trustStore() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<List<String>> cipherSuites() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Set<String> protocols() {
-                return Set.of();
-            }
-
-            @Override
-            public Duration handshakeTimeout() {
-                return Duration.ofSeconds(10);
-            }
-
-            @Override
-            public boolean alpn() {
-                return false;
-            }
-
-            @Override
-            public PqcEnforcementPolicy pqcEnforcementPolicy() {
-                return policy;
-            }
-
-            @Override
-            public Optional<List<String>> keyExchangeGroups() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<SslEngineType> sslEngine() {
-                return engine;
-            }
-
-            @Override
-            public Optional<List<Path>> certificateRevocationList() {
-                return Optional.empty();
-            }
-
-            @Override
-            public boolean trustAll() {
-                return false;
-            }
-
-            @Override
-            public Optional<String> hostnameVerificationAlgorithm() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Duration> reloadPeriod() {
-                return Optional.empty();
-            }
-        };
+        return ConfigInstanceBuilder.forInterface(TlsBucketConfig.class)
+                .with(TlsBucketConfig::protocols, Set.<String> of())
+                .with(TlsBucketConfig::alpn, false)
+                .with(TlsBucketConfig::pqcEnforcementPolicy, policy)
+                .with(TlsBucketConfig::sslEngine, engine)
+                .build();
     }
 }

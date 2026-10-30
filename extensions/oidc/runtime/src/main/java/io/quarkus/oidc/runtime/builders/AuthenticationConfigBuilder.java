@@ -18,27 +18,12 @@ import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CookieSameSite;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.ResponseMode;
 import io.quarkus.oidc.runtime.OidcTenantConfig.PushedAuthorizationRequest;
 import io.quarkus.oidc.runtime.OidcTenantConfig.RichAuthorizationRequests;
+import io.smallrye.config.ConfigInstanceBuilder;
 
 /**
  * Builder for the {@link Authentication} config.
  */
 public final class AuthenticationConfigBuilder {
-
-    private record AuthenticationImpl(Optional<ResponseMode> responseMode, Optional<String> redirectPath,
-            boolean restorePathAfterRedirect, boolean removeRedirectParameters, Optional<String> errorPath,
-            Optional<String> sessionExpiredPath, boolean verifyAccessToken, Optional<Boolean> forceRedirectHttpsScheme,
-            Optional<List<String>> scopes, Optional<String> scopeSeparator, boolean nonceRequired,
-            Optional<Boolean> addOpenidScope, Map<String, String> extraParams, Optional<List<String>> forwardParams,
-            boolean cookieForceSecure, Optional<String> cookieSuffix, String cookiePath, Optional<String> cookiePathHeader,
-            Optional<String> cookieDomain, CookieSameSite cookieSameSite, CookieSameSite stateCookieSameSite,
-            Optional<Set<CacheControl>> cacheControl,
-            boolean allowMultipleCodeFlows, boolean failOnMissingStateParam, boolean failOnUnresolvedKid,
-            Optional<Boolean> userInfoRequired, Optional<Duration> sessionAgeExtension,
-            Duration stateCookieAge, boolean javaScriptAutoRedirect, Optional<Boolean> idTokenRequired,
-            Optional<Duration> internalIdTokenLifespan, Optional<Boolean> pkceRequired,
-            Optional<String> stateSecret, PushedAuthorizationRequest par,
-            Optional<RichAuthorizationRequests> rar) implements Authentication {
-    }
 
     private final OidcTenantConfigBuilder builder;
     private final Map<String, String> extraParams = new HashMap<>();
@@ -606,10 +591,10 @@ public final class AuthenticationConfigBuilder {
      * @return this builder
      */
     public AuthenticationConfigBuilder par(String endpointPath) {
-        record PushedAuthorizationRequestImpl(Optional<Boolean> enabled,
-                Optional<String> path) implements PushedAuthorizationRequest {
-        }
-        this.par = new PushedAuthorizationRequestImpl(Optional.of(true), Optional.ofNullable(endpointPath));
+        this.par = ConfigInstanceBuilder.forInterface(PushedAuthorizationRequest.class)
+                .with(PushedAuthorizationRequest::enabled, Optional.of(true))
+                .with(PushedAuthorizationRequest::path, Optional.ofNullable(endpointPath))
+                .build();
         return this;
     }
 
@@ -639,12 +624,11 @@ public final class AuthenticationConfigBuilder {
         Objects.requireNonNull(type);
         Objects.requireNonNull(simpleAuthorizationDetails);
         Objects.requireNonNull(arrayAuthorizationDetails);
-        record RichAuthorizationRequestsImpl(Map<String, String> simple, Map<String, List<String>> array, String type)
-                implements
-                    RichAuthorizationRequests {
-        }
-        this.rar = Optional.of(new RichAuthorizationRequestsImpl(Map.copyOf(simpleAuthorizationDetails),
-                Map.copyOf(arrayAuthorizationDetails), type));
+        this.rar = Optional.of(ConfigInstanceBuilder.forInterface(RichAuthorizationRequests.class)
+                .with(RichAuthorizationRequests::simple, Map.copyOf(simpleAuthorizationDetails))
+                .with(RichAuthorizationRequests::array, Map.copyOf(arrayAuthorizationDetails))
+                .with(RichAuthorizationRequests::type, type)
+                .build());
         return this;
     }
 
@@ -664,14 +648,42 @@ public final class AuthenticationConfigBuilder {
                 : Optional.of(List.copyOf(forwardParams));
         Optional<Set<CacheControl>> optionalCacheControl = cacheControl.isEmpty() ? Optional.empty()
                 : Optional.of(Set.copyOf(cacheControl));
-        return new AuthenticationImpl(responseMode, redirectPath, restorePathAfterRedirect, removeRedirectParameters, errorPath,
-                sessionExpiredPath, verifyAccessToken, forceRedirectHttpsScheme, optionalScopes, scopeSeparator, nonceRequired,
-                addOpenidScope, Map.copyOf(extraParams), optionalForwardParams, cookieForceSecure, cookieSuffix, cookiePath,
-                cookiePathHeader, cookieDomain, cookieSameSite, stateCookieSameSite, optionalCacheControl,
-                allowMultipleCodeFlows,
-                failOnMissingStateParam,
-                failOnUnresolvedKid,
-                userInfoRequired, sessionAgeExtension, stateCookieAge, javaScriptAutoRedirect, idTokenRequired,
-                internalIdTokenLifespan, pkceRequired, stateSecret, par, rar);
+        return ConfigInstanceBuilder.forInterface(Authentication.class)
+                .with(Authentication::responseMode, responseMode)
+                .with(Authentication::redirectPath, redirectPath)
+                .with(Authentication::restorePathAfterRedirect, restorePathAfterRedirect)
+                .with(Authentication::removeRedirectParameters, removeRedirectParameters)
+                .with(Authentication::errorPath, errorPath)
+                .with(Authentication::sessionExpiredPath, sessionExpiredPath)
+                .with(Authentication::verifyAccessToken, verifyAccessToken)
+                .with(Authentication::forceRedirectHttpsScheme, forceRedirectHttpsScheme)
+                .with(Authentication::scopes, optionalScopes)
+                .with(Authentication::scopeSeparator, scopeSeparator)
+                .with(Authentication::nonceRequired, nonceRequired)
+                .with(Authentication::addOpenidScope, addOpenidScope)
+                .with(Authentication::extraParams, Map.copyOf(extraParams))
+                .with(Authentication::forwardParams, optionalForwardParams)
+                .with(Authentication::cookieForceSecure, cookieForceSecure)
+                .with(Authentication::cookieSuffix, cookieSuffix)
+                .with(Authentication::cookiePath, cookiePath)
+                .with(Authentication::cookiePathHeader, cookiePathHeader)
+                .with(Authentication::cookieDomain, cookieDomain)
+                .with(Authentication::cookieSameSite, cookieSameSite)
+                .with(Authentication::stateCookieSameSite, stateCookieSameSite)
+                .with(Authentication::cacheControl, optionalCacheControl)
+                .with(Authentication::allowMultipleCodeFlows, allowMultipleCodeFlows)
+                .with(Authentication::failOnMissingStateParam, failOnMissingStateParam)
+                .with(Authentication::failOnUnresolvedKid, failOnUnresolvedKid)
+                .with(Authentication::userInfoRequired, userInfoRequired)
+                .with(Authentication::sessionAgeExtension, sessionAgeExtension)
+                .with(Authentication::stateCookieAge, stateCookieAge)
+                .with(Authentication::javaScriptAutoRedirect, javaScriptAutoRedirect)
+                .with(Authentication::idTokenRequired, idTokenRequired)
+                .with(Authentication::internalIdTokenLifespan, internalIdTokenLifespan)
+                .with(Authentication::pkceRequired, pkceRequired)
+                .with(Authentication::stateSecret, stateSecret)
+                .with(Authentication::par, par)
+                .with(Authentication::rar, rar)
+                .build();
     }
 }

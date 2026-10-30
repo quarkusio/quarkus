@@ -10,7 +10,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
@@ -18,10 +17,11 @@ import java.util.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.smallrye.config.ConfigInstanceBuilder;
 import io.vertx.core.http.HttpClientOptions;
 
 class HttpClientOptionsConsumerTest {
@@ -95,92 +95,17 @@ class HttpClientOptionsConsumerTest {
     }
 
     private OtlpExporterTracesConfig createExporterConfig(final boolean isEnabled) {
-        return new OtlpExporterTracesConfig() {
-            @Override
-            public Optional<String> endpoint() {
-                return Optional.of("http://localhost:4317");
-            }
-
-            @Override
-            public Optional<List<String>> headers() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<CompressionType> compression() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Duration timeout() {
-                return Duration.ofMillis(100);
-            }
-
-            @Override
-            public Optional<String> protocol() {
-                return Optional.empty();
-            }
-
-            @Override
-            public KeyCert keyCert() {
-                return new KeyCert() {
-                    @Override
-                    public Optional<List<String>> keys() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<List<String>> certs() {
-                        return Optional.empty();
-                    }
-                };
-            }
-
-            @Override
-            public TrustCert trustCert() {
-                return new TrustCert() {
-                    @Override
-                    public Optional<List<String>> certs() {
-                        return Optional.empty();
-                    }
-                };
-            }
-
-            @Override
-            public Optional<String> tlsConfigurationName() {
-                return Optional.empty();
-            }
-
-            @Override
-            public ProxyConfig proxyOptions() {
-                return new ProxyConfig() {
-                    @Override
-                    public boolean enabled() {
-                        return isEnabled;
-                    }
-
-                    @Override
-                    public Optional<String> username() {
-                        return Optional.of("proxy-username");
-                    }
-
-                    @Override
-                    public Optional<String> password() {
-                        return Optional.of("proxy-password");
-                    }
-
-                    @Override
-                    public OptionalInt port() {
-                        return OptionalInt.of(9999);
-                    }
-
-                    @Override
-                    public Optional<String> host() {
-                        return Optional.of("proxy-address");
-                    }
-                };
-            }
-        };
+        return ConfigInstanceBuilder.forInterface(OtlpExporterTracesConfig.class)
+                .withOptional(OtlpExporterConfig::endpoint, "http://localhost:4317")
+                .with(OtlpExporterConfig::timeout, Duration.ofMillis(100))
+                .with(OtlpExporterConfig::proxyOptions, ConfigInstanceBuilder.forInterface(OtlpExporterConfig.ProxyConfig.class)
+                        .with(OtlpExporterConfig.ProxyConfig::enabled, isEnabled)
+                        .withOptional(OtlpExporterConfig.ProxyConfig::username, "proxy-username")
+                        .withOptional(OtlpExporterConfig.ProxyConfig::password, "proxy-password")
+                        .withOptional(OtlpExporterConfig.ProxyConfig::port, 9999)
+                        .withOptional(OtlpExporterConfig.ProxyConfig::host, "proxy-address")
+                        .build())
+                .build();
     }
 
     private static class NoopTlsConfigurationRegistry implements TlsConfigurationRegistry {

@@ -73,6 +73,28 @@ public @interface SearchExtension {
         public String index() {
             return index;
         }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            } else if (other instanceof SearchExtension that) {
+                return this.persistenceUnit.equals(that.persistenceUnit())
+                        && this.backend.equals(that.backend())
+                        && this.index.equals(that.index());
+            } else {
+                return false;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            int result = 0;
+            result += 127 * "persistenceUnit".hashCode() ^ this.persistenceUnit.hashCode();
+            result += 127 * "backend".hashCode() ^ this.backend.hashCode();
+            result += 127 * "index".hashCode() ^ this.index.hashCode();
+            return result;
+        }
     }
 
     @Target({ TYPE, FIELD, METHOD, PARAMETER })

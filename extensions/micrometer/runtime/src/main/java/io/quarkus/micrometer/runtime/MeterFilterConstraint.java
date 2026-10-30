@@ -28,5 +28,21 @@ public @interface MeterFilterConstraint {
         public Class<?> applyTo() {
             return clazz;
         }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            } else if (other instanceof MeterFilterConstraint that) {
+                return this.clazz.equals(that.applyTo());
+            } else {
+                return false;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return 127 * "applyTo".hashCode() ^ this.clazz.hashCode();
+        }
     }
 }

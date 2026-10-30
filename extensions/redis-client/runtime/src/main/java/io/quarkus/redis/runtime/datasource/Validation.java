@@ -106,7 +106,7 @@ public class Validation {
 
     static void validateLatitude(double latitude) {
         if (latitude < -85.05112878 || latitude > 85.05112878) {
-            throw new IllegalArgumentException("The latitude must be in [85.05112878, 85.05112878]");
+            throw new IllegalArgumentException("The latitude must be in [-85.05112878, 85.05112878]");
         }
     }
 

@@ -246,18 +246,19 @@ will be dropped (deleted) and then re-created.
 
 This is convenient, but what if you'd prefer the database to always have content?
 That would make testing easier.
-If you provide an `import.sql` file, Quarkus will use that to initialise
+If you provide a `data.sql` file, Quarkus will use that to initialise
 the database on each start.
 
-1. Make a `src/main/resources/import.sql` file in your project
+1. Make a `src/main/resources/data.sql` file in your project
 2. Add the following SQL statements:
 
 [source, sql]
 ----
-INSERT INTO Greeting(id, name)
-VALUES (nextval('Greeting_SEQ'), 'Alice');
-INSERT INTO Greeting(id, name)
-VALUES (nextval('Greeting_SEQ'), 'Bob');
+INSERT INTO Greeting(id, name) VALUES (1, 'Alice');
+INSERT INTO Greeting(id, name) VALUES (2, 'Bob');
+
+-- Set the sequence to the largest imported ID so the next generated ID does not collide.
+SELECT setval('Greeting_SEQ', (SELECT MAX(id) FROM Greeting));
 ----
 
 Now, hit `s` in your dev mode session, to force a full restart. Then visit http://localhost:8080/hello/names.
@@ -285,13 +286,16 @@ because you have your own database. You don't need to worry about starting
 the database, because you're just seeing how to change the configuration.
 
 Visit http://localhost:8080/hello/names. Instead of a list of names,
-you'll get a red error screen. In the terminal where Quarkus is running.
-you'll see the following stack error message:
+you'll get a red error screen: the application fails to start,
+because on startup Quarkus tries to load `data.sql` into that database.
+In the terminal where Quarkus is running, you'll see an error message like this:
 
 ----
-2023-06-28 19:18:22,880 ERROR [io.qua.ver.htt.run.QuarkusErrorHandler] (executor-thread-1) HTTP Request to /hello?name=fred failed, error id: 4f9b5ce6-3b08-41c5-af36-24eee4d1dd2b-2: org.hibernate.exception.JDBCConnectionException: Unable to acquire JDBC Connection [Connection to localhost:5432 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.] [n/a]
-        at org.hibernate.exception.internal.SQLStateConversionDelegate.convert(SQLStateConversionDelegate.java:98)
-        at org.hibernate.exception.internal.StandardSQLExceptionConverter.convert(StandardSQLExceptionConverter.java:56)
+ERROR [io.quarkus.runtime.Application] (Quarkus Main Thread) Failed to start application [Error Occurred After Shutdown]: java.lang.RuntimeException: Failed to start quarkus
+...
+Caused by: jakarta.persistence.PersistenceException: [PersistenceUnit: <default>] Unable to build Hibernate SessionFactory
+...
+Caused by: org.hibernate.exception.JDBCConnectionException: Unable to open JDBC Connection for DDL execution [Connection to localhost:5432 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.] [n/a]
 ...
 ----
 

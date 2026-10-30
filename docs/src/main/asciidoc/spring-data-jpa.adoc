@@ -138,7 +138,7 @@ quarkus.datasource.db-kind=postgresql <1>
 == Prepare the data
 
 To make it easier to showcase some capabilities of Spring Data JPA on Quarkus, some test data should be inserted into the database
-by adding the following content to a new file named `src/main/resources/import.sql`:
+by adding the following content to a new file named `src/main/resources/data.sql`:
 
 [source,sql]
 ----
@@ -147,11 +147,12 @@ INSERT INTO fruit(id, name, color) VALUES (2, 'Apple', 'Red');
 INSERT INTO fruit(id, name, color) VALUES (3, 'Banana', 'Yellow');
 INSERT INTO fruit(id, name, color) VALUES (4, 'Avocado', 'Green');
 INSERT INTO fruit(id, name, color) VALUES (5, 'Strawberry', 'Red');
+ALTER SEQUENCE fruit_seq RESTART WITH 6;
 ----
 
 Hibernate ORM will execute these queries on application startup.
 
-TIP: Users can also use a file named `data.sql` in addition to `import.sql`
+TIP: See xref:hibernate-orm.adoc#sql-init-scripts[SQL init scripts] for more options, for example to use files with other names.
 
 == Define the repository
 

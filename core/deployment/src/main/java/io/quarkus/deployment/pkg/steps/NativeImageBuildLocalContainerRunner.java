@@ -79,7 +79,9 @@ public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContai
                         // Rootful Podman: remap the container user's UID/GID to the host user's UID/GID.
                         ContainerUserResolver.ContainerUser containerUser = ContainerUserResolver.resolve(containerRuntime,
                                 image);
-                        if (containerUser == null) {
+                        // Host root needs no remapping; Podman rejects mapping host id 0 twice
+                        boolean hostIsRoot = "0".equals(uid) || "0".equals(gid);
+                        if (containerUser == null || hostIsRoot) {
                             Collections.addAll(result, "--user", uid + ":" + gid);
                         } else {
                             // Map system IDs (including root) so bind-mounted files remain accessible

@@ -114,6 +114,11 @@ final class SerializedCaptureEmitter {
                 yield res;
             }
             case SerializedJavaTime sjt -> emitJavaTime(sjt);
+            case SerializedJavaType sjt -> {
+                CaptureEmitter res = emitJavaType(sjt);
+                doDedup = true;
+                yield res;
+            }
             default -> throw new LambdaTransliterator.TransliterationException(
                     "Unsupported serialized type: " + serialized.getClass().getName());
         };
@@ -433,6 +438,87 @@ final class SerializedCaptureEmitter {
                 code.invokestatic(CD_Period, "of",
                         MethodTypeDesc.of(CD_Period, CD_int, CD_int, CD_int));
             };
+        };
+    }
+
+    // ── java.lang.reflect.Type subtypes ──
+
+    private static final ClassDesc CD_Type = ClassDesc.of("java.lang.reflect.Type");
+    private static final ClassDesc CD_WildcardType = ClassDesc.of("java.lang.reflect.WildcardType");
+    private static final ClassDesc CD_ParameterizedTypeImpl = ClassDesc.of("io.quarkus.runtime.types.ParameterizedTypeImpl");
+    private static final ClassDesc CD_WildcardTypeImpl = ClassDesc.of("io.quarkus.runtime.types.WildcardTypeImpl");
+    private static final ClassDesc CD_GenericArrayTypeImpl = ClassDesc.of("io.quarkus.runtime.types.GenericArrayTypeImpl");
+
+    private CaptureEmitter emitJavaType(SerializedJavaType sjt) {
+        return switch (sjt) {
+            case SerializedJavaType.OfParameterizedType pt -> {
+                CaptureEmitter genericClass = emitFor(pt.genericClass(), CD_Object);
+                CaptureEmitter[] typeArguments = Arrays.stream(pt.typeArguments())
+                        .map(serialized -> emitFor(serialized, CD_Object))
+                        .toArray(CaptureEmitter[]::new);
+                CaptureEmitter ownerClass = emitFor(pt.ownerClass(), CD_Object);
+
+                yield code -> {
+                    code.new_(CD_ParameterizedTypeImpl);
+                    code.dup();
+                    genericClass.emit(code);
+                    code.loadConstant(typeArguments.length);
+                    code.anewarray(CD_Type);
+                    for (int i = 0; i < typeArguments.length; i++) {
+                        code.dup();
+                        code.loadConstant(i);
+                        typeArguments[i].emit(code);
+                        code.arrayStore(TypeKind.REFERENCE);
+                    }
+                    ownerClass.emit(code);
+                    code.invokespecial(
+                            CD_ParameterizedTypeImpl,
+                            ExtraConstantDescs.INIT_NAME,
+                            MethodTypeDesc.of(CD_void, CD_Type, CD_Type.arrayType(), CD_Type),
+                            false);
+                };
+            }
+            case SerializedJavaType.OfWildcardType wt -> {
+                CaptureEmitter bound = emitFor(wt.bound(), CD_Object);
+                yield code -> {
+                    switch (wt.kind()) {
+                        case SerializedJavaType.OfWildcardType.UNBOUNDED -> {
+                            code.invokestatic(
+                                    CD_WildcardTypeImpl,
+                                    "defaultInstance",
+                                    MethodTypeDesc.of(CD_WildcardType));
+                        }
+                        case SerializedJavaType.OfWildcardType.UPPER_BOUND -> {
+                            bound.emit(code);
+                            code.invokestatic(
+                                    CD_WildcardTypeImpl,
+                                    "withUpperBound",
+                                    MethodTypeDesc.of(CD_WildcardType, CD_Type));
+                        }
+                        case SerializedJavaType.OfWildcardType.LOWER_BOUND -> {
+                            bound.emit(code);
+                            code.invokestatic(
+                                    CD_WildcardTypeImpl,
+                                    "withLowerBound",
+                                    MethodTypeDesc.of(CD_WildcardType, CD_Type));
+                        }
+                        default -> throw new IllegalArgumentException("Unknown wildcard type: " + wt.kind());
+                    }
+                };
+            }
+            case SerializedJavaType.OfGenericArrayType gat -> {
+                CaptureEmitter component = emitFor(gat.component(), CD_Object);
+                yield code -> {
+                    code.new_(CD_GenericArrayTypeImpl);
+                    code.dup();
+                    component.emit(code);
+                    code.invokespecial(
+                            CD_GenericArrayTypeImpl,
+                            ExtraConstantDescs.INIT_NAME,
+                            MethodTypeDesc.of(CD_void, CD_Type),
+                            false);
+                };
+            }
         };
     }
 

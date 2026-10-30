@@ -1,31 +1,32 @@
 package io.quarkus.cache.infinispan.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-
 import org.infinispan.client.hotrod.RemoteCacheManager;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.cache.CacheManagerInfo;
 import io.quarkus.cache.CompositeCacheKey;
-import io.quarkus.cache.deployment.CacheManagerInfoBuildItem;
 import io.quarkus.cache.infinispan.runtime.CompositeKeyMarshallerBean;
 import io.quarkus.cache.infinispan.runtime.InfinispanCacheBuildRecorder;
 import io.quarkus.cache.infinispan.runtime.InfinispanCachesBuildTimeConfig;
+import io.quarkus.cache.infinispan.runtime.InfinispanCachesConfig;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.infinispan.client.deployment.InfinispanClientNameBuildItem;
 import io.quarkus.infinispan.client.runtime.InfinispanClientUtil;
 
 public class InfinispanCacheProcessor {
 
+    private static final String INFINISPAN_CACHE_TYPE = "infinispan";
+
     @BuildStep
-    @Record(RUNTIME_INIT)
-    CacheManagerInfoBuildItem cacheManagerInfo(BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
-            InfinispanCacheBuildRecorder recorder) {
-        return new CacheManagerInfoBuildItem(recorder.getCacheManagerSupplier());
+    void cacheManagerInfo(ServiceRegistrar serviceRegistrar, InfinispanCachesBuildTimeConfig buildConfig) {
+        serviceRegistrar.forService(CacheManagerInfo.class, INFINISPAN_CACHE_TYPE)
+                .require(InfinispanCachesConfig.class)
+                .onStart((ctx, runtimeConfig) -> InfinispanCacheBuildRecorder.getCacheManagerSupplier(buildConfig,
+                        runtimeConfig));
     }
 
     @BuildStep

@@ -45,7 +45,14 @@ metadata:
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config: <10>
   - "quarkus.rest."
-sponsor: A Sponsoring Organisation <11>
+  integrates: <11>
+    - name: "Jakarta REST"
+      artifact: "jakarta.ws.rs:jakarta.ws.rs-api"
+      version: "3.1.0"
+    - name: "Camel"
+      artifact: "org.apache.camel:camel-base"
+      version: "4.14.0"
+sponsor: A Sponsoring Organisation <12>
 ----
 <1> Extension name displayed to users
 <2> Extension runtime artifact expression that will be replaced with the actual coordinates during the build, this field could be omitted
@@ -57,7 +64,8 @@ sponsor: A Sponsoring Organisation <11>
 <8> Link to an externally hosted image. This is used in the Quarkus dev tools as the extension icon. It should be square, and any resolution greater than 220 pixels. Supported formats are png, jpeg, tiff, webp, and svg. Alternatively, if you https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/customizing-your-repositorys-social-media-preview[set the social media preview] on the extension's source code repository, the tools will pick up that image.
 <9> https://quarkus.io/guides/extension-codestart[Codestart] information
 <10> Configuration prefix
-<11> The sponsor(s) of this extension. Optional, and will sometimes be determined automatically from commit history.
+<11> Libraries this extension integrates with. Each entry requires three fields: `name` (display name), `artifact` (groupId:artifactId), and `version` (full version string). For platform extensions where the artifact is managed in the BOM, it will be overridden with the BOM version in the generated descriptor if they differ during descriptor generation.
+<12> The sponsor(s) of this extension. Optional, and will sometimes be determined automatically from commit history.
 
 Field descriptions are defined in the canonical JSON Schema and reproduced below at documentation build time.
 

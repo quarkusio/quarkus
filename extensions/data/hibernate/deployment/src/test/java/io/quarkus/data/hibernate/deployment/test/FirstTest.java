@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.data.hibernate.managed.blocking.BlockingManagedRepositoryBase;
+import io.quarkus.data.hibernate.record.blocking.BlockingRecordRepositoryBase;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class FirstTest {
@@ -22,18 +24,18 @@ public class FirstTest {
 
     @Transactional
     void createOne() {
-        Assertions.assertEquals(0, MyEntity_.managedBlocking().count());
+        Assertions.assertEquals(0, MyEntity_.managed().count());
 
         MyEntity entity = new MyEntity();
         entity.foo = "bar";
         entity.persist();
 
-        Assertions.assertEquals(1, MyEntity_.managedBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.managed().count());
     }
 
     @Transactional
     void flushManagedBlockingRepository() {
-        Assertions.assertEquals(0, MyEntity_.managedBlocking().count());
+        Assertions.assertEquals(0, MyEntity_.managed().count());
 
         MyEntity.ManagedBlockingQueries repository = MyEntity_.managedBlockingQueries();
         MyEntity entity = new MyEntity();
@@ -46,106 +48,106 @@ public class FirstTest {
 
     @Transactional
     void modifyOne() {
-        Assertions.assertEquals(1, MyEntity_.managedBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.managed().count());
 
-        MyEntity entity = MyEntity_.managedBlocking().listAll().get(0);
+        MyEntity entity = MyEntity_.managed().listAll().get(0);
         Assertions.assertEquals("bar", entity.foo);
         entity.foo = "gee";
 
-        Assertions.assertEquals(1, MyEntity_.managedBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.managed().count());
     }
 
     @Transactional
     void modifyOneCheck() {
-        Assertions.assertEquals(1, MyEntity_.managedBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.managed().count());
 
-        MyEntity entity = MyEntity_.managedBlocking().listAll().get(0);
+        MyEntity entity = MyEntity_.managed().listAll().get(0);
         Assertions.assertEquals("gee", entity.foo);
 
-        Assertions.assertEquals(1, MyEntity_.managedBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.managed().count());
     }
 
     @Transactional
     void modifyOneStatelessNoUpdate() {
-        Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.record().count());
 
-        MyEntity entity = MyEntity_.statelessBlocking().listAll().get(0);
+        MyEntity entity = MyEntity_.record().listAll().get(0);
         Assertions.assertEquals("gee", entity.foo);
         // should be ignored: not managed and no update called
         entity.foo = "fu";
 
-        Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.record().count());
     }
 
     @Transactional
     void modifyOneStateless() {
-        MyEntity_.statelessBlocking().listAll();
+        MyEntity_.record().listAll();
 
-        Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.record().count());
 
-        MyEntity entity = MyEntity_.statelessBlocking().listAll().get(0);
+        MyEntity entity = MyEntity_.record().listAll().get(0);
         // still the old value
         Assertions.assertEquals("gee", entity.foo);
         entity.foo = "fu";
         // make sure we call update
-        entity.statelessBlocking().update();
+        entity.record().update();
 
-        Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.record().count());
     }
 
     @Transactional
     void modifyOneStatelessCheck() {
-        Assertions.assertEquals(1, MyEntity_.managedBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.managed().count());
 
-        MyEntity entity = MyEntity_.managedBlocking().listAll().get(0);
+        MyEntity entity = MyEntity_.managed().listAll().get(0);
         Assertions.assertEquals("fu", entity.foo);
 
-        Assertions.assertEquals(1, MyEntity_.managedBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.managed().count());
     }
 
     @Transactional
     void upsertNew() {
-        Assertions.assertEquals(0, MyEntity_.statelessBlocking().count());
+        Assertions.assertEquals(0, MyEntity_.record().count());
 
         MyEntity entity = new MyEntity();
         entity.foo = "bar";
         entity.id = 1L;
-        entity.statelessBlocking().upsert();
+        entity.record().upsert();
 
-        Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.record().count());
     }
 
     @Transactional
     void upsertExisting() {
-        Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.record().count());
 
-        MyEntity entity = MyEntity_.statelessBlocking().listAll().get(0);
+        MyEntity entity = MyEntity_.record().listAll().get(0);
         Assertions.assertEquals("bar", entity.foo);
         Assertions.assertEquals(1L, entity.id);
         entity.foo = "fu";
-        entity.statelessBlocking().upsert();
+        entity.record().upsert();
 
-        Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.record().count());
     }
 
     @Transactional
     void upsertCheck() {
-        Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.record().count());
 
-        MyEntity entity = MyEntity_.statelessBlocking().listAll().get(0);
+        MyEntity entity = MyEntity_.record().listAll().get(0);
         Assertions.assertEquals("fu", entity.foo);
 
-        Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
+        Assertions.assertEquals(1, MyEntity_.record().count());
     }
 
     @Transactional
     void clear() {
-        MyEntity_.managedBlocking().deleteAll();
+        MyEntity_.managed().deleteAll();
     }
 
     @Transactional
     void runQueries() {
-        MyEntity_.managedBlocking().find("foo = 2");
+        MyEntity_.managed().find("foo = 2");
         Assertions.assertEquals(1, MyEntity_.managedBlockingQueries().findFoos("fu").size());
         Assertions.assertEquals(1, MyEntity_.managedBlockingQueries().findFoosHQL("fu").size());
         Assertions.assertEquals(1, MyEntity_.managedBlockingQueries().findFoosFind("fu").size());
@@ -161,6 +163,26 @@ public class FirstTest {
     void testFindOnlyRepoScopeIsApplicationScoped() {
         Assertions.assertEquals(ApplicationScoped.class,
                 Arc.container().select(MyEntity.FindOnlyRepo.class).getHandle().getBean().getScope());
+    }
+
+    @Transactional
+    void repositorySwitching() {
+        MyEntity entity = new MyEntity();
+        entity.foo = "switch-test";
+        entity.id = 42L;
+        entity.record().insert();
+
+        var managedRepo = MyEntity_.managed();
+        Assertions.assertInstanceOf(BlockingManagedRepositoryBase.class, managedRepo);
+        Assertions.assertEquals(1, managedRepo.count());
+
+        var statelessRepo = managedRepo.record();
+        Assertions.assertInstanceOf(BlockingRecordRepositoryBase.class, statelessRepo);
+        Assertions.assertEquals(1, statelessRepo.count());
+
+        var managedAgain = statelessRepo.managed();
+        Assertions.assertInstanceOf(BlockingManagedRepositoryBase.class, managedAgain);
+        Assertions.assertEquals(1, managedAgain.count());
     }
 
     @Test
@@ -179,6 +201,8 @@ public class FirstTest {
         upsertExisting();
         upsertCheck();
         runQueries();
+        clear();
+        repositorySwitching();
     }
 
 }

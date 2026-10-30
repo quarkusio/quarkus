@@ -18,7 +18,7 @@ import jakarta.persistence.Entity;
  *         entity1.field = "field-1";
  *         entity1.persist();
  *
- *         List<MyEntity> entities = MyEntity_.managedBlocking().listAll();
+ *         List<MyEntity> entities = MyEntity_.managed().listAll();
  *     }
  * }
  */

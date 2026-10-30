@@ -1,12 +1,11 @@
-/*
- * SPDX-License-Identifier: Apache-2.0
- * Copyright Red Hat Inc. and Hibernate Authors
- */
 package io.quarkus.data.hibernate.deployment.test.processor.orm;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityAgent;
 
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.data.hibernate.WithId;
+import io.quarkus.hibernate.orm.PersistenceUnit;
 
 public class QuarkusDataOrmTest {
     @Test
@@ -47,12 +47,12 @@ public class QuarkusDataOrmTest {
         Assertions.assertEquals(QuarkusDataBook.MyRepo.class, method.getReturnType());
 
         // Predefined repo accessors
-        method = entityClass.getDeclaredMethod("managedBlocking");
+        method = entityClass.getDeclaredMethod("managed");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
         Assertions.assertEquals(QuarkusDataBook.class.getName() + "$MyRepo", method.getReturnType().getName());
 
-        method = entityClass.getDeclaredMethod("statelessBlocking");
+        method = entityClass.getDeclaredMethod("record");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
         Assertions.assertEquals(QuarkusDataBook.class.getName() + "$StatelessRepo",
@@ -78,12 +78,12 @@ public class QuarkusDataOrmTest {
         Assertions.assertEquals(QuarkusDataBookCustomId.StatelessQueries.class, method.getReturnType());
 
         // Predefined repo accessors
-        method = entityClass.getDeclaredMethod("managedBlocking");
+        method = entityClass.getDeclaredMethod("managed");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
         Assertions.assertEquals(QuarkusDataBookCustomId.ManagedQueries.class, method.getReturnType());
 
-        method = entityClass.getDeclaredMethod("statelessBlocking");
+        method = entityClass.getDeclaredMethod("record");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
         Assertions.assertEquals(QuarkusDataBookCustomId.StatelessQueries.class, method.getReturnType());
@@ -109,5 +109,74 @@ public class QuarkusDataOrmTest {
 
         constructor = statelessQueriesClass.getConstructor(StatelessSession.class);
         Assertions.assertNotNull(constructor);
+    }
+
+    @Test
+    public void testPlainInterfaceRepository() throws Exception {
+        Class<?> repositoryClass = _PlainBookRepository.class;
+        Assertions.assertFalse(Modifier.isAbstract(repositoryClass.getModifiers()));
+
+        Class<?>[] interfaces = repositoryClass.getInterfaces();
+        Assertions.assertEquals(1, interfaces.length);
+        Assertions.assertEquals(PlainBookRepository.class.getName(), interfaces[0].getName());
+
+        // Annotated methods generate instance methods
+        Method method = repositoryClass.getDeclaredMethod("hqlBook", String.class);
+        Assertions.assertFalse(Modifier.isStatic(method.getModifiers()));
+        method = repositoryClass.getDeclaredMethod("findBook", String.class);
+        Assertions.assertFalse(Modifier.isStatic(method.getModifiers()));
+
+        // The default blocking session is injected
+        Constructor<?> constructor = repositoryClass.getDeclaredConstructor(Session.class);
+        Assertions.assertTrue(constructor.isAnnotationPresent(Inject.class));
+    }
+
+    @Test
+    public void testJakartaDataRepository() throws Exception {
+        Class<?> repositoryClass = _BookJakartaDataRepository.class;
+        Assertions.assertFalse(Modifier.isAbstract(repositoryClass.getModifiers()));
+
+        Class<?>[] interfaces = repositoryClass.getInterfaces();
+        Assertions.assertEquals(1, interfaces.length);
+        Assertions.assertEquals(BookJakartaDataRepository.class.getName(), interfaces[0].getName());
+
+        // Annotated methods generate instance methods
+        Method method = repositoryClass.getDeclaredMethod("hqlBook", String.class);
+        Assertions.assertFalse(Modifier.isStatic(method.getModifiers()));
+        method = repositoryClass.getDeclaredMethod("findBook", String.class);
+        Assertions.assertFalse(Modifier.isStatic(method.getModifiers()));
+
+        // Jakarta Data repositories get an EntityAgent injected
+        Constructor<?> constructor = repositoryClass.getDeclaredConstructor(EntityAgent.class);
+        Assertions.assertTrue(constructor.isAnnotationPresent(Inject.class));
+    }
+
+    @Test
+    public void testInheritedEntityDoesNotRedeclareRepositoryAccessors() throws Exception {
+        // The parent declares the default repository accessors...
+        Class<?> parentClass = InheritedParentEntity_.class;
+        Assertions.assertNotNull(parentClass.getDeclaredMethod("managed"));
+        Assertions.assertNotNull(parentClass.getDeclaredMethod("record"));
+
+        // ...and the child metamodel extends the parent one, so it must not redeclare them with
+        // an entity-specific return type, which would be an invalid static method hiding
+        Class<?> childClass = InheritedChildEntity_.class;
+        Assertions.assertEquals(parentClass, childClass.getSuperclass());
+        Assertions.assertThrows(NoSuchMethodException.class, () -> childClass.getDeclaredMethod("managed"));
+        Assertions.assertThrows(NoSuchMethodException.class, () -> childClass.getDeclaredMethod("record"));
+    }
+
+    @Test
+    public void testDataStoreBecomesPersistenceUnitQualifier() throws Exception {
+        // the repository does not use the default data store, so its session is qualified with the persistence unit...
+        Constructor<?> constructor = _BookOtherStoreRepository.class.getDeclaredConstructor(EntityAgent.class);
+        Assertions.assertTrue(constructor.isAnnotationPresent(Inject.class));
+        PersistenceUnit unit = constructor.getParameters()[0].getAnnotation(PersistenceUnit.class);
+        Assertions.assertNotNull(unit);
+        Assertions.assertEquals("other", unit.value());
+
+        // ...unlike the repository using the default data store
+        constructor = _BookJakartaDataRepository.class.getDeclaredConstructor(EntityAgent.class);
+        Assertions.assertNull(constructor.getParameters()[0].getAnnotation(PersistenceUnit.class));
     }
 }

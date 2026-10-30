@@ -5,5 +5,3 @@
 - API
 -- Test out PanacheEntity and PanacheRepository and nests
 -- Perhaps PanacheEntitySwitcher and PanacheEntityMarker should be a single interface?
--- Perhaps split PanacheEntitySwitcher.managedBlocking() into .managed() and .blocking()?
---- That or make blocking the default

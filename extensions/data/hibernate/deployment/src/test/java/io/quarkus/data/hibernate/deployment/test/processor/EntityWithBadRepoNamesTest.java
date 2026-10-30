@@ -1,7 +1,3 @@
-/*
- * SPDX-License-Identifier: Apache-2.0
- * Copyright Red Hat Inc. and Hibernate Authors
- */
 package io.quarkus.data.hibernate.deployment.test.processor;
 
 import java.lang.reflect.Method;
@@ -18,16 +14,16 @@ public class EntityWithBadRepoNamesTest {
         Assertions.assertNotNull(entityClass);
 
         // Make sure the accessor types are correct
-        Method accessor = entityClass.getDeclaredMethod("managedBlocking");
-        Assertions.assertEquals(EntityWithBadRepoNames.ManagedBlocking.class, accessor.getReturnType());
+        Method accessor = entityClass.getDeclaredMethod("managed");
+        Assertions.assertEquals(EntityWithBadRepoNames.Managed.class, accessor.getReturnType());
 
-        accessor = entityClass.getDeclaredMethod("statelessBlocking");
-        Assertions.assertEquals(EntityWithBadRepoNames.StatelessBlocking.class, accessor.getReturnType());
+        accessor = entityClass.getDeclaredMethod("record");
+        Assertions.assertEquals(EntityWithBadRepoNames.Record.class, accessor.getReturnType());
 
         accessor = entityClass.getDeclaredMethod("managedReactive");
         Assertions.assertEquals(EntityWithBadRepoNames.ManagedReactive.class, accessor.getReturnType());
 
-        accessor = entityClass.getDeclaredMethod("statelessReactive");
-        Assertions.assertEquals(EntityWithBadRepoNames.StatelessReactive.class, accessor.getReturnType());
+        accessor = entityClass.getDeclaredMethod("recordReactive");
+        Assertions.assertEquals(EntityWithBadRepoNames.RecordReactive.class, accessor.getReturnType());
     }
 }

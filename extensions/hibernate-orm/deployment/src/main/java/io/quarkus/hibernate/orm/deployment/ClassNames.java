@@ -55,6 +55,8 @@ public final class ClassNames {
     public static final DotName ENTITY_AGENT = createConstant("jakarta.persistence.EntityAgent");
     public static final DotName JAKARTA_DATA_REPOSITORY = createConstant("jakarta.data.repository.Repository");
     public static final Set<DotName> REPOSITORY_METHOD_ANNOTATIONS = Set.of(
+            createConstant("jakarta.persistence.query.JakartaQuery"),
+            createConstant("jakarta.persistence.query.NativeQuery"),
             createConstant("jakarta.data.repository.Query"),
             createConstant("jakarta.data.repository.Find"),
             createConstant("jakarta.data.repository.Delete"),
@@ -410,6 +412,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.FractionalSeconds"),
             createConstant("org.hibernate.annotations.Generated"),
             createConstant("org.hibernate.annotations.GeneratedColumn"),
+            createConstant("org.hibernate.annotations.GeneratorOptimizer"),
             createConstant("org.hibernate.annotations.GenericGenerator"),
             createConstant("org.hibernate.annotations.HQLSelect"),
             createConstant("org.hibernate.annotations.IdGeneratorType"),

@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.reactive.runtime;
 
-import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.PERSISTENCE_UNIT_NAME_KEY;
-import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
+import static io.quarkus.hibernate.reactive.runtime.session.ReactiveTransactionScopedSession.OPENED_SESSIONS_STATE;
+import static io.quarkus.hibernate.reactive.runtime.session.ReactiveTransactionScopedStatelessSession.OPENED_SESSIONS_STATE_STATELESS;
 
 import java.util.List;
 import java.util.Locale;
@@ -13,8 +13,6 @@ import java.util.function.Supplier;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.mutiny.delegation.MutinySessionDelegator;
-import org.hibernate.reactive.mutiny.delegation.MutinyStatelessSessionDelegator;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.ActiveResult;
@@ -23,13 +21,12 @@ import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
+import io.quarkus.hibernate.reactive.runtime.session.ReactiveTransactionScopedSession;
+import io.quarkus.hibernate.reactive.runtime.session.ReactiveTransactionScopedStatelessSession;
 import io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.smallrye.common.vertx.ContextLocals;
-import io.vertx.core.Context;
-import io.vertx.core.Vertx;
 
 @Recorder
 public class HibernateReactiveRecorder {
@@ -41,22 +38,12 @@ public class HibernateReactiveRecorder {
         this.runtimeConfig = runtimeConfig;
     }
 
-    public static final OpenedSessionsState<Mutiny.Session> OPENED_SESSIONS_STATE = new OpenedSessionsStateStatefulImpl();
-    public static final OpenedSessionsState<Mutiny.StatelessSession> OPENED_SESSIONS_STATE_STATELESS = new OpenedSessionsStateStatelessImpl();
-
     public void clearOpenedSessionsStateOnShutdown(ShutdownContext shutdownContext) {
-        // Recorder state is static and can outlive an application restart, so release proxies bound to the old Arc container.
+        // Static state can outlive an application restart, so release proxies bound to the old Arc container.
         shutdownContext.addLastShutdownTask(() -> {
             OPENED_SESSIONS_STATE.clearCaches();
             OPENED_SESSIONS_STATE_STATELESS.clearCaches();
         });
-    }
-
-    private static String noSessionFoundErrorMessage() {
-        return "No current Mutiny.Session found"
-                + "\n\t- you need to annotate your method with @Transactional to open a reactive session"
-                + "\n\t- alternatively, you can use @WithSessionOnDemand, @WithSession, or @WithTransaction"
-                + "\n\t- for JAX-RS resources, annotate the method directly with an HTTP method (@GET, @POST, etc.) to automatically open a session";
     }
 
     /**
@@ -125,36 +112,9 @@ public class HibernateReactiveRecorder {
 
             @Override
             public Mutiny.Session apply(SyntheticCreationalContext<Mutiny.Session> context) {
-                return new MutinySessionDelegator() {
-                    @Override
-                    public Mutiny.Session delegate() {
-                        return getSession(persistenceUnitName);
-                    }
-                };
+                return new ReactiveTransactionScopedSession(persistenceUnitName);
             }
         };
-    }
-
-    public static Mutiny.Session getSession(String persistenceUnitName) {
-        return getSession(persistenceUnitName, TRANSACTIONAL_METHOD_KEY);
-    }
-
-    public static Mutiny.Session getSession(String persistenceUnitName, String contextKey) {
-        Context context = Vertx.currentContext();
-
-        Optional<OpenedSessionsState.SessionWithKey<Mutiny.Session>> openedSession = OPENED_SESSIONS_STATE.getOpenedSession(
-                context,
-                persistenceUnitName);
-        if (openedSession.isPresent()) {
-            return openedSession.get().session();
-        } else if (ContextLocals.get(contextKey).isEmpty()) {
-            throw new IllegalStateException(noSessionFoundErrorMessage());
-        } else {
-            // Store the persistence unit name so that we can close only this session at the end of the interceptor
-            ContextLocals.put(PERSISTENCE_UNIT_NAME_KEY, persistenceUnitName);
-            LOG.debugf("Opening lazy session for Persistence Unit '%s'", persistenceUnitName);
-            return OPENED_SESSIONS_STATE.createNewSession(persistenceUnitName, context);
-        }
     }
 
     public Function<SyntheticCreationalContext<Mutiny.StatelessSession>, Mutiny.StatelessSession> statelessSessionSupplier(
@@ -163,35 +123,9 @@ public class HibernateReactiveRecorder {
 
             @Override
             public Mutiny.StatelessSession apply(SyntheticCreationalContext<Mutiny.StatelessSession> context) {
-                return new MutinyStatelessSessionDelegator() {
-                    @Override
-                    public Mutiny.StatelessSession delegate() {
-                        return getStatelessSession(persistenceUnitName);
-                    }
-                };
+                return new ReactiveTransactionScopedStatelessSession(persistenceUnitName);
             }
         };
-    }
-
-    public static Mutiny.StatelessSession getStatelessSession(String persistenceUnitName) {
-        return getStatelessSession(persistenceUnitName, TRANSACTIONAL_METHOD_KEY);
-    }
-
-    public static Mutiny.StatelessSession getStatelessSession(String persistenceUnitName, String contextKey) {
-        Context context = Vertx.currentContext();
-
-        Optional<OpenedSessionsState.SessionWithKey<Mutiny.StatelessSession>> openedSession = OPENED_SESSIONS_STATE_STATELESS
-                .getOpenedSession(context, persistenceUnitName);
-        if (openedSession.isPresent()) {
-            return openedSession.get().session();
-        } else if (ContextLocals.get(contextKey).isEmpty()) {
-            throw new IllegalStateException(noSessionFoundErrorMessage());
-        } else {
-            // Store the persistence unit name so that we can close only this session at the end of the interceptor
-            ContextLocals.put(PERSISTENCE_UNIT_NAME_KEY, persistenceUnitName);
-            LOG.debugf("Opening lazy stateless session for Persistence Unit '%s'", persistenceUnitName);
-            return OPENED_SESSIONS_STATE_STATELESS.createNewSession(persistenceUnitName, context);
-        }
     }
 
 }

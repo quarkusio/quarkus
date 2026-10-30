@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.reactive.transaction;
 
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
-import static io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder.OPENED_SESSIONS_STATE;
+import static io.quarkus.hibernate.reactive.runtime.session.ReactiveTransactionScopedSession.OPENED_SESSIONS_STATE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Optional;
@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.reactive.runtime.OpenedSessionsState;
+import io.quarkus.hibernate.reactive.runtime.session.OpenedSessionsState;
 import io.quarkus.reactive.transaction.runtime.TransactionalInterceptorRequired;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;

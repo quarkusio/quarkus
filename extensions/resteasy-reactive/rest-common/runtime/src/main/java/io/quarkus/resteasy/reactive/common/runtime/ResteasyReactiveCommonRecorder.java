@@ -31,6 +31,15 @@ public class ResteasyReactiveCommonRecorder {
                 beanContainer);
     }
 
+    /**
+     * Creates a factory for a class that is known at build time not to be a CDI bean (nor a removed one), so that no
+     * type-safe resolution is attempted at runtime.
+     */
+    @StaticInit
+    public <T> BeanFactory<T> reflectiveFactory(String targetClass) {
+        return new ReflectiveBeanFactory<>(loadClass(targetClass));
+    }
+
     @StaticInit
     public void registerWriter(Serialisers serialisers, String entityClassName,
             ResourceWriter writer) {

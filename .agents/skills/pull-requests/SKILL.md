@@ -34,6 +34,8 @@ Simplify bean resolution logic in ArC
 - Do **not** include a "Test plan" or "Summary" section
 - Do **not** include "Generated with Claude Code" or similar footers
 - Do **not** include `Co-Authored-By` trailers referencing an AI tool
+- Write it with the `writing-style` skill: short active sentences, one idea
+  each, the reason before the details
 
 ### Noteworthy features
 
@@ -80,6 +82,7 @@ Write a reference as a bare `#1234` so GitHub shows its title.
   commits are acceptable during review, but must be squashed at the end
 - Write commit messages as clear, natural-language sentences starting with an
   uppercase letter — same style as the PR title
+- Write the commit body with the `writing-style` skill, like the description
 - Do **not** add `Co-Authored-By` trailers referencing AI tools (e.g.
   `Co-Authored-By: Claude`, `Co-Authored-By: Copilot`)
 

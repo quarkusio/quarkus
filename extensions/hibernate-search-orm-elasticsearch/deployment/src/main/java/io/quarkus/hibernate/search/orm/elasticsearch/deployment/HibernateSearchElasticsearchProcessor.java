@@ -23,6 +23,7 @@ import org.hibernate.search.engine.reporting.FailureHandler;
 import org.hibernate.search.mapper.pojo.work.IndexingPlanSynchronizationStrategy;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
@@ -42,6 +43,9 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
 import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig.Distribution;
+import io.quarkus.hibernate.accessor.deployment.HibernateAccessorFactoryBuildItem;
+import io.quarkus.hibernate.accessor.deployment.HibernateAccessorRegistrationBuildItem;
+import io.quarkus.hibernate.accessor.runtime.FieldAccess;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.HibernateOrmIntegrationStaticConfiguredBuildItem;
@@ -177,6 +181,17 @@ class HibernateSearchElasticsearchProcessor {
     }
 
     @BuildStep
+    public void discoverRootAnnotationMappedClassNames(CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<HibernateSearchOrmRootMappedClassesBuildItem> mappedClassesBuildItem,
+            BuildProducer<HibernateAccessorRegistrationBuildItem> accessorBuildItemProducer) {
+        IndexView index = combinedIndexBuildItem.getIndex();
+
+        Set<String> rootAnnotationMappedClassNames = collectRootAnnotationMappedClasses(index, accessorBuildItemProducer);
+
+        mappedClassesBuildItem.produce(new HibernateSearchOrmRootMappedClassesBuildItem(rootAnnotationMappedClassNames));
+    }
+
+    @BuildStep
     void registerBeans(List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> searchEnabledPUs,
             BuildProducer<UnremovableBeanBuildItem> unremovableBean) {
         if (searchEnabledPUs.isEmpty()) {
@@ -191,16 +206,14 @@ class HibernateSearchElasticsearchProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void setStaticConfig(RecorderContext recorderContext, HibernateSearchElasticsearchRecorder recorder,
-            CombinedIndexBuildItem combinedIndexBuildItem,
             List<HibernateSearchIntegrationStaticConfiguredBuildItem> integrationStaticConfigBuildItems,
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
+            HibernateSearchOrmRootMappedClassesBuildItem mappedClassesBuildItem,
+            HibernateAccessorFactoryBuildItem hibernateAccessorFactory,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticConfigured) {
         // Make it possible to record the settings as bytecode:
         recorderContext.registerSubstitution(ElasticsearchVersion.class,
                 String.class, ElasticsearchVersionSubstitution.class);
-
-        IndexView index = combinedIndexBuildItem.getIndex();
-        Set<String> rootAnnotationMappedClassNames = collectRootAnnotationMappedClassNames(index);
 
         for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
             String puName = configuredPersistenceUnit.getPersistenceUnitName();
@@ -223,14 +236,16 @@ class HibernateSearchElasticsearchProcessor {
                                     // we cannot pass a config group to a recorder so passing the whole config
                                     recorder.createStaticInitListener(
                                             configuredPersistenceUnit.mapperContext,
-                                            rootAnnotationMappedClassNames,
-                                            integrationStaticInitListeners))
+                                            mappedClassesBuildItem.getRootAnnotationMappedClassNames(),
+                                            integrationStaticInitListeners,
+                                            hibernateAccessorFactory.accessorFactory()))
                             .xmlMappingRequired(xmlMappingRequired)
                             .build());
         }
     }
 
-    private static Set<String> collectRootAnnotationMappedClassNames(IndexView index) {
+    private static Set<String> collectRootAnnotationMappedClasses(IndexView index,
+            BuildProducer<HibernateAccessorRegistrationBuildItem> accessorBuildItemProducer) {
         // Look for classes annotated with annotations meta-annotated with @RootMapping:
         // those classes will have their annotations processed on every persistence unit.
         // At the moment only @ProjectionConstructor is meta-annotated with @RootMapping.
@@ -249,7 +264,20 @@ class HibernateSearchElasticsearchProcessor {
         Set<String> rootAnnotationMappedClassNames = new LinkedHashSet<>();
         for (DotName rootMappingAnnotationName : rootMappingAnnotationNames) {
             for (AnnotationInstance annotation : index.getAnnotations(rootMappingAnnotationName)) {
-                rootAnnotationMappedClassNames.add(JandexUtil.getEnclosingClass(annotation).name().toString());
+                ClassInfo enclosingClass = JandexUtil.getEnclosingClass(annotation);
+                rootAnnotationMappedClassNames.add(enclosingClass.name().toString());
+
+                // TODO: Discover all Hibernate Search model types that require accessors, including types reached
+                //  through @IndexedEmbedded, nested projections and programmatic mappings. Root mapping annotations
+                //  and their class hierarchies are only entry points into the model.
+                ClassInfo current = enclosingClass;
+                while (current != null && !DotName.OBJECT_NAME.equals(current.name())) {
+                    accessorBuildItemProducer
+                            .produce(new HibernateAccessorRegistrationBuildItem.Builder(current)
+                                    .source(HibernateSearchElasticsearchProcessor.class.getName())
+                                    .all(current, FieldAccess.READ).build());
+                    current = index.getClassByName(current.superName());
+                }
             }
         }
         return rootAnnotationMappedClassNames;

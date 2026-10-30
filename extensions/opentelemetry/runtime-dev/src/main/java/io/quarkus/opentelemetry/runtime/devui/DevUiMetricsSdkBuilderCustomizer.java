@@ -3,6 +3,7 @@ package io.quarkus.opentelemetry.runtime.devui;
 import java.time.Duration;
 import java.util.function.BiFunction;
 
+import jakarta.enterprise.inject.Typed;
 import jakarta.inject.Inject;
 
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
@@ -10,7 +11,7 @@ import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.quarkus.devui.observability.store.metrics.MetricsTimeSeriesStore;
-import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer;
+import io.quarkus.opentelemetry.runtime.InternalSdkBuilderCustomizer;
 
 /**
  * Dev-mode-only: registers an additional in-memory PeriodicMetricReader on the SDK meter
@@ -20,7 +21,8 @@ import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCus
  * NOTE: NO class-level scope annotation — registered as a bean only by the dev-only build
  * step (which supplies {@code @Singleton}).
  */
-public class DevUiMetricsSdkBuilderCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+@Typed(InternalSdkBuilderCustomizer.class)
+public class DevUiMetricsSdkBuilderCustomizer implements InternalSdkBuilderCustomizer {
 
     // Produced by MetricsStoreProducer in the quarkus-devui runtime; the sampling interval is
     // carried on the store, so this customizer needs no config dependency.

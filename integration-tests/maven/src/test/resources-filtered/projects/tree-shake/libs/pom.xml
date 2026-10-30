@@ -39,6 +39,7 @@
         <module>lib-transform-extension</module>
         <module>lib-reflection</module>
         <module>lib-jni</module>
+        <module>lib-native-config</module>
         <module>lib-serialization</module>
         <module>lib-e</module>
         <module>lib-b</module>

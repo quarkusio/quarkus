@@ -253,6 +253,13 @@ public class TreeShakeIT extends MojoTestBase {
         assertJarContains(libDir, "lib-jni", "org/acme/libjni/JniDep.class");
         assertJarNotContains(libDir, "lib-jni", "org/acme/libjni/UnusedJni.class");
 
+        // META-INF/native-image config: reflection config applies in all modes,
+        // Features and initialization settings only when building a native executable
+        assertJarContains(libDir, "lib-native-config", "org/acme/nativeconfig/NativeConfigReflected.class");
+        assertJarNotContains(libDir, "lib-native-config", "org/acme/nativeconfig/NativeConfigFeature.class");
+        assertJarNotContains(libDir, "lib-native-config", "org/acme/nativeconfig/NativeConfigRunInit.class");
+        assertJarNotContains(libDir, "lib-native-config", "org/acme/nativeconfig/UnusedNativeConfig.class");
+
         // Serialized resource classes (ObjectInputStream + getResource pattern)
         assertJarContains(libDir, "lib-serialization", "org/acme/serialization/SerializedTarget.class");
         assertJarContains(libDir, "lib-serialization", "org/acme/serialization/ResourceDeserializer.class");
@@ -294,6 +301,32 @@ public class TreeShakeIT extends MojoTestBase {
         assertThat(fastJarLibDir).isDirectory();
 
         verifyAllEdgeCases(fastJarLibDir);
+    }
+
+    /**
+     * Native-only roots (GraalVM Features, class initialization settings) must be kept when
+     * building a native executable. Generating the native sources is enough to verify that,
+     * since the tree-shaken dependency JARs are produced before {@code native-image} runs.
+     */
+    @Test
+    void testNativeSources() throws Exception {
+        RunningInvoker nativeInvoker = new RunningInvoker(appDir, false);
+        Properties nativeProps = new Properties();
+        nativeProps.setProperty("quarkus.native.enabled", "true");
+        nativeProps.setProperty("quarkus.native.sources-only", "true");
+        MavenProcessInvocationResult result = nativeInvoker.execute(
+                List.of("clean package -DskipTests"),
+                Map.of(), nativeProps);
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+        assertThat(nativeInvoker.log()).containsIgnoringCase("BUILD SUCCESS");
+
+        File nativeLibDir = new File(appDir, "target/native-sources/lib");
+        assertThat(nativeLibDir).isDirectory();
+
+        assertJarContains(nativeLibDir, "lib-native-config", "org/acme/nativeconfig/NativeConfigReflected.class");
+        assertJarContains(nativeLibDir, "lib-native-config", "org/acme/nativeconfig/NativeConfigFeature.class");
+        assertJarContains(nativeLibDir, "lib-native-config", "org/acme/nativeconfig/NativeConfigRunInit.class");
+        assertJarNotContains(nativeLibDir, "lib-native-config", "org/acme/nativeconfig/UnusedNativeConfig.class");
     }
 
     @Test

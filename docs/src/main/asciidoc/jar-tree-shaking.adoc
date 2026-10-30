@@ -125,7 +125,12 @@ The algorithm runs in several stages:
 === Root collection
 
 The analysis starts by collecting root classes — classes that must be preserved regardless of bytecode references.
-Roots include: the application main class, all generated classes, classes registered for reflection or JNI access, service provider implementations, runtime-initialized classes, classes referenced in `META-INF/native-image` configuration files, and classes containing GraalVM substitution annotations (`@TargetClass`, `@Substitute`).
+Roots include:
+
+* In all build modes: the application main class, all generated classes, classes registered for reflection or JNI access (by extensions or in `reflect-config.json` and `jni-config.json` files under `META-INF/native-image`), and service provider implementations.
+* Additionally, when building a native executable: GraalVM Features (`--features` arguments and Features registered by extensions), classes named in class initialization settings (`--initialize-at-run-time` and `--initialize-at-build-time` arguments, and runtime-initialized classes registered by extensions), and classes containing GraalVM substitution annotations (`@TargetClass`, `@Substitute`).
+
+The native-only roots are not considered for JVM builds, so a JVM build may remove classes that a native build of the same application keeps.
 
 === BFS reachability
 

@@ -4,19 +4,19 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import com.rabbitmq.client.impl.CredentialsProvider;
 
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
+import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.CredentialsProviderLink;
-import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.RabbitMQRecorder;
 import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.RabbitmqClientConfigCustomizer;
 import io.smallrye.common.annotation.Identifier;
 
@@ -36,18 +36,20 @@ public class SmallRyeReactiveMessagingRabbitMQProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void dynamicCredentials(RabbitMQRecorder recorder,
-            RabbitMQBuildTimeConfig rabbitMQBuildTimeConfig,
+    public void dynamicCredentials(RabbitMQBuildTimeConfig rabbitMQBuildTimeConfig,
+            ServiceRegistrar serviceRegistrar,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> configDefaults) {
 
         if (rabbitMQBuildTimeConfig.credentialsProvider().isPresent()) {
             String credentialsProvider = rabbitMQBuildTimeConfig.credentialsProvider().get();
+            String credentialsProviderBeanName = rabbitMQBuildTimeConfig.credentialsProviderName().orElse(null);
 
-            RuntimeValue<CredentialsProviderLink> credentialsProviderLink = recorder.configureOptions(
-                    credentialsProvider,
-                    rabbitMQBuildTimeConfig.credentialsProviderName());
+            serviceRegistrar.forService(CredentialsProviderLink.class)
+                    .atPhase(Phase.DATA)
+                    .require(ArcContainer.class)
+                    .onStart((ctx, container) -> new CredentialsProviderLink(
+                            CredentialsProviderFinder.find(container, credentialsProviderBeanName), credentialsProvider));
 
             String identifier = "credentials-provider-link-" + credentialsProvider;
 
@@ -57,7 +59,7 @@ public class SmallRyeReactiveMessagingRabbitMQProcessor {
                     .addType(CredentialsProvider.class)
                     .addQualifier().annotation(Identifier.class).addValue("value", identifier).done()
                     .scope(ApplicationScoped.class)
-                    .runtimeValue(credentialsProviderLink)
+                    .serviceValue(CredentialsProviderLink.class)
                     .unremovable()
                     .setRuntimeInit();
 

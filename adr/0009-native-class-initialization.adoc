@@ -1,0 +1,348 @@
+ifdef::env-github[]
+:MERMAID: source, mermaid
+endif::[]
+ifndef::env-github[]
+:MERMAID: mermaid
+endif::[]
+
+= When to initialize classes in native mode
+
+* Status: _proposed_
+* Date: 2025-06-17
+* Authors: @zakkak, @gsmet, @cescoffier, @aloubyansky
+
+== Context and Problem Statement
+
+Build time initialization of classes in native mode aligns with Quarkus' philosophy of doing as much as possible at build time to optimize run time performance and reduce startup time.
+However, build time initialization of a class forces the classes it transitively depends on to get build time initialized as well.
+This often leads to classes that should be run time initialized to get build time initialized resulting in issues that require additional configuration or even code substitutions to be worked around.
+This complicates the development process and discourages Quarkus users from using Quarkus' native mode due to increased complexity if they rely on libraries not handled by Quarkus or some of its extensions.
+
+Quarkus applications may depend at run time on:
+
+* Quarkus core and core extensions, which are distributed under the `io.quarkus` group ID.
+* Quarkiverse extensions, which may be distributed under the `io.quarkiverse` or another group ID.
+* User provided extensions not listed above
+* Third-party libraries
+
+The goal of this ADR is to define:
+1. which of the above should be initialized at build time and which should be initialized at run time by default in native mode.
+2. how developers can opt in or out of build time initialization.
+
+== Decision Drivers
+
+* Reduce entry barrier for Quarkus users that want to use Quarkus native mode
+* Benefit from build time initialization when possible
+* Allow developers to opt-in to build time initialization of parts that are run time initialized by default
+
+== Considered options for default class initialization policy
+
+[{MERMAID}]
+....
+---
+title: Legend
+config:
+  look: handDrawn
+  theme: default
+---
+graph TD
+  BT[Build-time initialized]
+  RT[Run-time initialized]
+
+classDef buildtime fill:#bbf;
+class B,C,BT buildtime
+....
+
+=== Initialize all classes at build time
+
+In this scenario, all classes in the Quarkus application are build time initialized, unless explicitly configured otherwise.
+This option has been the default behavior in Quarkus for a long time.
+
+[{MERMAID}]
+....
+---
+config:
+  look: handDrawn
+  theme: default
+---
+graph LR
+  A[Quarkus Application] --> QA[io.quarkus:quarkus-arc]
+  QA --> arc[io.quarkus.arc:arc] --> R1[...]
+  arc --> jboss[org.jboss.logging:jboss-logging]
+  QA --> core[io.quarkus:quarkus-core] --> R2[...]
+  A --> UserExtension[com.example:my-extension] --> R3[...]
+  UserExtension --> core
+  UserExtension --> jboss
+  A --> UserExtensionBT[com.example:build-time-initialized-extension] --> UserExtension
+  A --> Camel[org.apache.camel.quarkus:camel-quarkus-core]  --> R4[...]
+  A --> RestAssured[io.rest-assured:rest-assured:jar] --> R5[...]
+
+classDef white fill:#fff;
+class A white
+classDef buildtime fill:#bbf;
+class QA,arc,core,Camel,R1,R2,R3,R4,R5,UserExtension,UserExtensionBT,RestAssured,jboss buildtime
+....
+
+
+*Pros*:
+
+- It allows Quarkus to take advantage of build time initialization as much as possible.
+
+*Cons*:
+
+- It requires Quarkus users to deal with issues that arise from build time initialization that are often non-trivial.
+- There is no easy way to exclude specific dependencies and possibly their transitive dependencies as well from build time initialization.
+
+=== Initialize all classes at runtime
+
+In this scenario, all classes in the Quarkus application are run time initialized (except for JDK classes footnote:[That's expected to change at some point after GraalVM for JDK 25]), unless explicitly configured otherwise.
+This option has been the default behavior in GraalVM for a long time.
+
+[{MERMAID}]
+....
+---
+config:
+  look: handDrawn
+  theme: default
+---
+graph LR
+  A[Quarkus Application] --> QA[io.quarkus:quarkus-arc]
+  QA --> arc[io.quarkus.arc:arc] --> R1[...]
+  arc --> jboss[org.jboss.logging:jboss-logging]
+  QA --> core[io.quarkus:quarkus-core] --> R2[...]
+  A --> UserExtension[com.example:my-extension] --> R3[...]
+  UserExtension --> core
+  UserExtension --> jboss
+  A --> UserExtensionBT[com.example:build-time-initialized-extension] --> UserExtension
+  A --> Camel[org.apache.camel.quarkus:camel-quarkus-core]  --> R4[...]
+  A --> RestAssured[io.rest-assured:rest-assured:jar] --> R5[...]
+
+classDef white fill:#fff;
+class A white
+classDef buildtime fill:#bbf;
+class UserExtensionBT buildtime
+....
+
+*Pros*:
+
+- It makes running code in native mode easier and more predictable as it behaves closer to how it would behave in JVM mode.
+
+*Cons*:
+
+- It does not allow Quarkus to take advantage of build time initialization, which can lead to slower startup times and higher memory usage.
+- It forces Quarkus users to take extra steps to support code that can't run at run time out of the box due to native image limitations (such as reflection, bytecode manipulation/generation, etc.), while build time initialization could enable them to run that code at build time without any limitations or special configuration.
+- It requires developers to explicitly configure classes to be initialized at build time, which can be cumbersome.
+- Is expected to result in bigger native executables.
+
+=== Initialize some classes at build time and the rest at runtime
+
+Since Quarkus already defaults to initializing classes at build time, it is possible to configure it to keep initializing some classes at build time while initializing the rest at runtime.
+In this approach there are multiple scenarios between the two extremes of initializing all classes at build time or at runtime.
+The more classes we initialize at build time, the more we can take advantage of build time initialization, but the more we risk running into issues that require additional configuration or code substitutions and vice versa.
+
+[NOTE]
+====
+When defining a set of classes that Quarkus should initialize at build time, native-image will also build-time initialize all classes that are transitively reachable through the static initializers of these artifacts/classes.
+
+Additionally, the static initializers of some classes may result in the execution of code from classes not marked for build time initialization at build time.
+This might be counterintuitive, as Quarkus users will probably expect their code to run at run-time if not explicitly configured to be build time initialized.
+====
+
+==== Proposal 1: Initialize Quarkus core and all extensions along with their transitive dependencies at build time
+
+In this scenario Quarkus core and all Quarkus extensions, including Quarkiverse extensions as well as user provided extensions along with their transitive closure of dependencies, are initialized at build time.
+This scenario reduces the entry barrier for most Quarkus users, as creating custom Quarkus extensions is considered an advanced use case.
+Advanced users creating custom extensions are expected to be able to configure their extensions to initialize classes at build time or run time as needed.
+
+[{MERMAID}]
+....
+---
+config:
+  look: handDrawn
+  theme: default
+---
+graph LR
+  A[Quarkus Application] --> QA[io.quarkus:quarkus-arc]
+  QA --> arc[io.quarkus.arc:arc] --> R1[...]
+  arc --> jboss[org.jboss.logging:jboss-logging]
+  QA --> core[io.quarkus:quarkus-core] --> R2[...]
+  A --> UserExtension[com.example:my-extension] --> R3[...]
+  UserExtension --> core
+  UserExtension --> jboss
+  A --> UserExtensionBT[com.example:build-time-initialized-extension] --> UserExtension
+  A --> Camel[org.apache.camel.quarkus:camel-quarkus-core]  --> R4[...]
+  A --> RestAssured[io.rest-assured:rest-assured:jar] --> R5[...]
+
+classDef white fill:#fff;
+class A white
+classDef buildtime fill:#bbf;
+class QA,arc,core,BT,Camel,R1,R2,R3,R4,UserExtension,UserExtensionBT,jboss buildtime
+....
+
+*Pros*:
+
+- Changes the current behavior as little as possible.
+- Reduces the entry barrier for most Quarkus users.
+
+*Cons*:
+
+- Keeps the entry barrier for Quarkus extension writers high.
+
+==== Proposal 2: Initialize Quarkus core and a vetted list of Quarkus extensions along with their transitive dependencies at build time
+
+In this scenario, Quarkus core and core extensions, as well as a vetted list of extensions along with the transitive closure of their dependencies, are initialized at build time, while user provided extensions and third-party libraries are initialized at runtime.
+
+[{MERMAID}]
+....
+---
+config:
+  look: handDrawn
+  theme: default
+---
+graph LR
+  A[Quarkus Application] --> QA[io.quarkus:quarkus-arc]
+  QA --> arc[io.quarkus.arc:arc] --> R1[...]
+  arc --> jboss[org.jboss.logging:jboss-logging]
+  QA --> core[io.quarkus:quarkus-core] --> R2[...]
+  A --> UserExtension[com.example:my-extension] --> R3[...]
+  UserExtension --> core
+  UserExtension --> jboss
+  A --> UserExtensionBT[com.example:build-time-initialized-extension] --> UserExtension
+  A --> Camel[org.apache.camel.quarkus:camel-quarkus-core]  --> R4[...]
+  A --> RestAssured[io.rest-assured:rest-assured:jar] --> R5[...]
+
+classDef white fill:#fff;
+class A white
+classDef buildtime fill:#bbf;
+class QA,arc,core,BT,Camel,R1,R2,R4,UserExtensionBT,jboss buildtime
+....
+
+*Pros*:
+
+- Changes the current behavior as little as possible.
+- Reduces the entry barrier for most Quarkus users as well as Quarkus extension writers.
+
+*Cons*:
+
+- Maintaining a vetted list of extensions will be cumbersome in the long run.
+
+==== Proposal 3: Initialize a vetted list of packages at build time
+
+In this scenario, a vetted list of packages, are initialized at build time, while anything else is initialized at runtime unless explicitly configured otherwise.
+
+[{MERMAID}]
+....
+---
+config:
+  look: handDrawn
+  theme: default
+---
+graph LR
+  A[Quarkus Application] --> QA[io.quarkus:quarkus-arc]
+  QA --> arc[io.quarkus.arc:arc] --> R1[...]
+  arc --> jboss[org.jboss.logging:jboss-logging]
+  QA --> core[io.quarkus:quarkus-core] --> R2[...]
+  A --> UserExtension[com.example:my-extension] --> R3[...]
+  UserExtension --> core
+  UserExtension --> jboss
+  A --> UserExtensionBT[com.example:build-time-initialized-extension] --> UserExtension
+  A --> Camel[org.apache.camel.quarkus:camel-quarkus-core]  --> R4[...]
+  A --> RestAssured[io.rest-assured:rest-assured:jar] --> R5[...]
+
+classDef white fill:#fff;
+class A white
+classDef buildtime fill:#bbf;
+class QA,arc,core,BT,Camel,UserExtensionBT,R1 buildtime
+....
+
+*Pros*:
+
+- Offers great flexibility to what is initialized at build time. Meaning that the Quarkus team as well as the users can evaluate on a per package basis what should be initialized at build time.
+
+*Cons*:
+
+- Maintaining the vetted list of packages is expected to be pretty hard in the long run, especially as new dependencies are brought in through updates. Which comes with the risk of gradually shifting towards run-time initialization.
+
+==== Proposal 4: Initialize Quarkus core and its transitive dependencies at build time and everything else at runtime
+
+In this scenario, only Quarkus core and its transitive dependencies get initialized at build time.
+
+[{MERMAID}]
+....
+---
+config:
+  look: handDrawn
+  theme: default
+---
+graph LR
+  A[Quarkus Application] --> QA[io.quarkus:quarkus-arc]
+  arc --> jboss[org.jboss.logging:jboss-logging]
+  QA --> arc[io.quarkus.arc:arc] --> R1[...]
+  QA --> core[io.quarkus:quarkus-core] --> R2[...]
+  A --> UserExtension[com.example:my-extension] --> R3[...]
+  UserExtension --> core
+  UserExtension --> jboss
+  A --> UserExtensionBT[com.example:build-time-initialized-extension] --> UserExtension
+  A --> Camel[org.apache.camel.quarkus:camel-quarkus-core]  --> R4[...]
+  A --> RestAssured[io.rest-assured:rest-assured:jar] --> R5[...]
+
+classDef white fill:#fff;
+class A white
+classDef buildtime fill:#bbf;
+class QA,arc,core,R1,R2,jboss buildtime
+....
+
+*Pros*:
+
+- Reduces the entry barrier for most Quarkus users as well as Quarkus extension writers.
+- Reduce maintenance burden as only a small set of dependencies is initialized at build time.
+
+*Cons*:
+
+- Expected to result in slower startup times and higher memory usage.
+- Expected to result in lower run time performance, due to reduced dead code elimination and thus optimizations.
+- Expected to result in bigger native executables.
+- Expected to result in some behavior differences.
+
+== Considered options for opting in or out of build time initialization
+
+In the above class initialization policies considered, there is the need to define how developers can opt in or out of build time initialization.
+This will enable them to:
+
+* take advantage of build time initialization when it is not the default behavior, or
+* avoid potential issues when build time initialization is the default behavior.
+
+NOTE: The below options are not mutually exclusive, meaning that we can implement multiple options at the same time.
+
+From coarser grained to finer grained, the options are:
+
+1. Opt in or out at Quarkus extension level
++
+Quarkus extensions define https://quarkus.io/guides/extension-metadata[metadata] that could be extended to include whether they should be initialized at build time or run time.
+In the absence of such metadata, the default behavior would be to initialize the extension according to the class initialization policy.
++
+A question that arises is whether this option should be propagated to the transitive closure of dependencies of that extension.
+Especially if the extension depends on other extensions.
+The extension metadata could be extended to include a configuration option for that as well.
+
+2. Opt in or out at maven artifact level
++
+As above, the question whether this option should be propagated to the transitive closure of dependencies of that artifact arises.
+
+3. Opt in or out at package level
+
+4. Opt in or out at class level
+
+NOTE: Options 3 and 4 are already supported by GraalVM. Quarkus is already using them for allowing packages and classes to be initialized at run time. 
+
+== Decision
+
+TBD
+
+== Consequences
+
+The consequences of this decision are:
+
+* Classes or packages that are handled by Quarkus will need to be explicitly configured to be initialized at build time.
+  This requires the implementation of a mechanism that will detect which packages are handled by Quarkus.
+* Users may get reduced performance if they don't opt in to initialize their classes at build time.

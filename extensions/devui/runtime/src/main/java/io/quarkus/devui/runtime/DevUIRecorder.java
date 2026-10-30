@@ -1,8 +1,5 @@
 package io.quarkus.devui.runtime;
 
-import static io.quarkus.vertx.runtime.jackson.JsonUtil.BASE64_DECODER;
-import static io.quarkus.vertx.runtime.jackson.JsonUtil.BASE64_ENCODER;
-
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.FileVisitResult;
@@ -19,11 +16,6 @@ import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.dev.console.DevConsoleManager;
-import io.quarkus.devjsonrpc.runtime.DevJsonRpcRecorder;
-import io.quarkus.devjsonrpc.runtime.comms.JsonRpcRouter;
-import io.quarkus.devjsonrpc.runtime.jsonrpc.json.JsonMapper;
-import io.quarkus.devjsonrpc.runtime.jsonrpc.json.JsonTypeAdapter;
 import io.quarkus.devmcp.runtime.McpBuildTimeData;
 import io.quarkus.devui.runtime.js.DevUIWebSocketHandler;
 import io.quarkus.runtime.ShutdownContext;
@@ -31,33 +23,11 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
 import io.quarkus.vertx.http.runtime.webjar.WebJarStaticHandler;
 import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class DevUIRecorder {
     private static final Logger LOG = Logger.getLogger(DevUIRecorder.class);
-
-    public void initializeJsonRpcCodec(BeanContainer beanContainer) {
-        JsonRpcRouter jsonRpcRouter = beanContainer.beanInstance(JsonRpcRouter.class);
-        jsonRpcRouter.initializeCodec(createVertxJsonMapper());
-    }
-
-    public static JsonMapper createVertxJsonMapper() {
-        JsonMapper.Factory factory = JsonMapper.Factory.deploymentLinker().createLink(
-                DevConsoleManager.getGlobal(DevJsonRpcRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY));
-        return factory.create(new JsonTypeAdapter<>(JsonObject.class, JsonObject::getMap, JsonObject::new),
-                new JsonTypeAdapter<>(JsonArray.class, JsonArray::getList, JsonArray::new),
-                new JsonTypeAdapter<>(Buffer.class, buffer -> BASE64_ENCODER.encodeToString(buffer.getBytes()), text -> {
-                    try {
-                        return Buffer.buffer(BASE64_DECODER.decode(text));
-                    } catch (IllegalArgumentException e) {
-                        throw new IllegalArgumentException("Expected a base64 encoded byte array, got: " + text, e);
-                    }
-                }));
-    }
 
     public void shutdownTask(ShutdownContext shutdownContext, String devUIBasePath) {
         shutdownContext.addShutdownTask(new DeleteDirectoryRunnable(devUIBasePath));

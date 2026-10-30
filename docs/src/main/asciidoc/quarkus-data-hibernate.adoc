@@ -1092,11 +1092,11 @@ represents the majority of your use cases and use the following accessors for al
 |Session type|Entity accessor|Equivalent entity type
 
 |`Session`
-|`.managedBlocking()`
+|`.managed()`
 |`ManagedEntity`
 
 |`StatelessSession`
-|`.statelessBlocking()`
+|`.record()`
 |`RecordEntity`
 
 |`Mutiny.Session`
@@ -1104,7 +1104,7 @@ represents the majority of your use cases and use the following accessors for al
 |`ManagedEntity.Reactive`
 
 |`Mutiny.StatelessSession`
-|`.statelessReactive()`
+|`.recordReactive()`
 |`RecordEntity.Reactive`
 
 |===
@@ -1117,11 +1117,11 @@ For repository operations, obtain alternative repositories from the generated me
 |Session type|Metamodel accessor|Repository type
 
 |`Session`
-|`Cat_.managedBlocking()`
+|`Cat_.managed()`
 |`ManagedRepository<Cat>`
 
 |`StatelessSession`
-|`Cat_.statelessBlocking()`
+|`Cat_.record()`
 |`RecordRepository<Cat>`
 
 |`Mutiny.Session`
@@ -1129,7 +1129,7 @@ For repository operations, obtain alternative repositories from the generated me
 |`ManagedRepository.Reactive<Cat>`
 
 |`Mutiny.StatelessSession`
-|`Cat_.statelessReactive()`
+|`Cat_.recordReactive()`
 |`RecordRepository.Reactive<Cat>`
 
 |===

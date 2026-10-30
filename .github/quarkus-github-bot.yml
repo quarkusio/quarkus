@@ -425,7 +425,9 @@ triage:
       notify: [machi1990, Ladicek, cescoffier]
       directories:
         - extensions/redis-client/
+        - extensions/redis-client-lettuce/
         - integration-tests/redis-client/
+        - integration-tests/redis-client-lettuce/
     - id: arc
       labels: [area/arc]
       title: "\\b(arc|cdi|injection)\\b"

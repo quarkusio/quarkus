@@ -35,6 +35,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationStartBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
@@ -59,6 +60,7 @@ import io.quarkus.runtime.ErrorPageAction;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -656,6 +658,19 @@ class VertxHttpProcessor {
         }
 
         return false;
+    }
+
+    @BuildStep
+    @Produce(ServiceStartBuildItem.class)
+    void validateBrotliSupport(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        if (isBrotliEnabled(httpBuildTimeConfig)
+                && !QuarkusClassLoader.isClassPresentAtRuntime("com.aayushatharva.brotli4j.Brotli4jLoader")) {
+            throw new ConfigurationException(
+                    "Brotli compression is enabled via quarkus.http.compressors but the Brotli4J library is"
+                            + " not on the classpath. Add the com.aayushatharva.brotli4j:brotli4j dependency"
+                            + " to your application - its version is managed by the Quarkus BOM.",
+                    Set.of("quarkus.http.compressors"));
+        }
     }
 
     @BuildStep

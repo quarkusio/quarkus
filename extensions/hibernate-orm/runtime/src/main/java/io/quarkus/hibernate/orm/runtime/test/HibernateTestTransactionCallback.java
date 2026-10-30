@@ -1,9 +1,10 @@
 package io.quarkus.hibernate.orm.runtime.test;
 
-import jakarta.enterprise.inject.Any;
-import jakarta.persistence.EntityManager;
+import org.hibernate.Session;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.runtime.TransactionSessions;
+import io.quarkus.hibernate.orm.runtime.session.TransactionScopedSession;
 import io.quarkus.narayana.jta.runtime.test.TestTransactionCallback;
 
 public class HibernateTestTransactionCallback implements TestTransactionCallback {
@@ -14,9 +15,11 @@ public class HibernateTestTransactionCallback implements TestTransactionCallback
 
     @Override
     public void preRollback() {
-        for (var handle : Arc.container().select(EntityManager.class, Any.Literal.INSTANCE).handles()) {
-            if (handle.getBean().isActive()) {
-                handle.get().flush();
+        for (TransactionScopedSession transactionScopedSession : Arc.container().instance(TransactionSessions.class).get()
+                .getSessions()) {
+            Session session = transactionScopedSession.getSessionIfExists();
+            if (session != null) {
+                session.flush();
             }
         }
 

@@ -150,7 +150,7 @@ public class SecuredPanacheRepositoryResourceTest {
                 .contentType("application/json")
                 .body("@$%*()^")
                 .when().post("/collections")
-                .then().statusCode(500);
+                .then().statusCode(400);
         var collection = new Collection();
         collection.name = "mine";
         collection.id = "whatever";

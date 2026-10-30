@@ -4,9 +4,11 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.hibernate.StatelessSession;
+import org.hibernate.query.SelectionQuery;
 
 import io.quarkus.data.hibernate.blocking.BlockingDataQuery;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractStatelessJpaOperations;
+import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
 import io.quarkus.panache.common.Sort;
 
 public class StatelessBlockingJpaOperations extends AbstractStatelessJpaOperations<BlockingDataQuery<?>> {
@@ -16,6 +18,12 @@ public class StatelessBlockingJpaOperations extends AbstractStatelessJpaOperatio
             String originalQuery,
             Sort sort, Object paramsArrayOrMap) {
         return new PanacheBlockingQueryImpl<>(session, entityClass, query, originalQuery, sort, paramsArrayOrMap);
+    }
+
+    @Override
+    protected BlockingDataQuery<?> createPanacheQuery(StatelessSession session, Class<?> entityClass,
+            SelectionQuery<?> prebuiltQuery) {
+        return new PanacheBlockingQueryImpl<>(new CommonPanacheQueryImpl<>(session, entityClass, prebuiltQuery));
     }
 
     @Override

@@ -8,6 +8,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+
 import org.hibernate.LockMode;
 import org.hibernate.reactive.mutiny.Mutiny;
 
@@ -104,5 +108,21 @@ public abstract class AbstractStatelessJpaOperations<PanacheQueryType>
     @Override
     protected Mutiny.MutationQuery createMutationQuery(Mutiny.StatelessSession session, String var1) {
         return session.createMutationQuery(var1);
+    }
+
+    @Override
+    protected CriteriaBuilder getCriteriaBuilder(Mutiny.StatelessSession session) {
+        return session.getFactory().getCriteriaBuilder();
+    }
+
+    @Override
+    protected <R> Mutiny.SelectionQuery<R> createCriteriaQuery(Mutiny.StatelessSession session, CriteriaQuery<R> criteria) {
+        return session.createQuery(criteria);
+    }
+
+    @Override
+    protected <R> Mutiny.MutationQuery createCriteriaMutationQuery(Mutiny.StatelessSession session,
+            CriteriaDelete<R> criteria) {
+        return session.createMutationQuery(criteria);
     }
 }

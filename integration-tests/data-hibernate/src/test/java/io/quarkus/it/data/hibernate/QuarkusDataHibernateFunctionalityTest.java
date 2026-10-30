@@ -36,4 +36,40 @@ public class QuarkusDataHibernateFunctionalityTest {
                 .statusCode(200)
                 .body(is("OK"));
     }
+
+    @Test
+    public void testCatRestrictionsEndpoint() {
+        given()
+                .when().get("/cats/test-restrictions")
+                .then()
+                .statusCode(200)
+                .body(is("OK"));
+    }
+
+    @Test
+    public void testActualRestrictionsEndpoint() {
+        given()
+                .when().get("/restrictions-test/actual-restrictions")
+                .then()
+                .statusCode(200)
+                .body(is("OK"));
+    }
+
+    @Test
+    public void testComprehensiveRestrictionsEndpoint() {
+        given()
+                .when().get("/comprehensive-restrictions/test-all")
+                .then()
+                .statusCode(200)
+                .body(is("OK"));
+    }
+
+    @Test
+    public void testEdgeCaseRestrictionsEndpoint() {
+        given()
+                .when().get("/edge-case-restrictions/test-edge-cases")
+                .then()
+                .statusCode(200)
+                .body(is("OK"));
+    }
 }

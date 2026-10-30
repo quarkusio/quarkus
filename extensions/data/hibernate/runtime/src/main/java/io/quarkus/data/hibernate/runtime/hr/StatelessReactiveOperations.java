@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import jakarta.data.restrict.Restriction;
 import jakarta.persistence.LockModeType;
 
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -190,5 +191,25 @@ public class StatelessReactiveOperations implements PanacheReactiveOperations {
     @Override
     public Uni<Long> update(Class<?> entityClass, String query, Map<String, Object> params) {
         return DELEGATE.update(entityClass, query, params).map(i -> i.longValue());
+    }
+
+    @Override
+    public <T> ReactiveDataQuery<?> find(Class<?> entityClass, Restriction<T> restriction) {
+        return DELEGATE.find(entityClass, restriction);
+    }
+
+    @Override
+    public <T> Uni<List<?>> list(Class<?> entityClass, Restriction<T> restriction) {
+        return DELEGATE.list(entityClass, restriction);
+    }
+
+    @Override
+    public <T> Uni<Long> count(Class<?> entityClass, Restriction<T> restriction) {
+        return DELEGATE.count(entityClass, restriction);
+    }
+
+    @Override
+    public <T> Uni<Long> delete(Class<?> entityClass, Restriction<T> restriction) {
+        return DELEGATE.delete(entityClass, restriction);
     }
 }

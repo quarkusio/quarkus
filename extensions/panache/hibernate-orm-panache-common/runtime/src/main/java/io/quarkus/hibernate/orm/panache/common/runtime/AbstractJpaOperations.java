@@ -9,6 +9,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
+import jakarta.data.restrict.Restriction;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import jakarta.transaction.SystemException;
 import jakarta.transaction.TransactionManager;
 
@@ -17,6 +23,7 @@ import org.hibernate.SharedSessionContract;
 import org.hibernate.query.CommonQueryContract;
 import org.hibernate.query.MutationQuery;
 import org.hibernate.query.SelectionQuery;
+import org.hibernate.query.restriction.JakartaDataRestriction;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -91,6 +98,12 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType extend
             String originalQuery,
             Sort sort,
             Object paramsArrayOrMap);
+
+    /**
+     * Create a PanacheQuery from a pre-built SelectionQuery (e.g., from Criteria API)
+     */
+    protected abstract PanacheQueryType createPanacheQuery(SessionType session, Class<?> entityClass,
+            SelectionQuery<?> prebuiltQuery);
 
     public abstract List<?> list(PanacheQueryType query);
 
@@ -477,6 +490,45 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType extend
 
     public int update(Class<?> entityClass, String query, Object... params) {
         return executeUpdate(entityClass, query, params);
+    }
+
+    public <T> PanacheQueryType find(Class<?> entityClass, Restriction<T> restriction) {
+        SessionType session = getSession(entityClass);
+        CriteriaBuilder builder = session.getCriteriaBuilder();
+        CriteriaQuery<T> criteria = (CriteriaQuery<T>) builder.createQuery(entityClass);
+        Root<T> root = (Root<T>) criteria.from(entityClass);
+        JakartaDataRestriction.applyRestriction(restriction, criteria, root, builder);
+        SelectionQuery<T> query = session.createQuery(criteria);
+        return createPanacheQuery(session, entityClass, query);
+    }
+
+    public <T> List<?> list(Class<?> entityClass, Restriction<T> restriction) {
+        return list(find(entityClass, restriction));
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> long count(Class<?> entityClass, Restriction<T> restriction) {
+        SessionType session = getSession(entityClass);
+        CriteriaBuilder builder = session.getCriteriaBuilder();
+        CriteriaQuery<Long> criteria = builder.createQuery(Long.class);
+        Root<T> root = (Root<T>) criteria.from(entityClass);
+        criteria.select(builder.count(root));
+        JakartaDataRestriction.applyRestriction(restriction, criteria, root, builder);
+        return session.createQuery(criteria).getSingleResult();
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> long delete(Class<?> entityClass, Restriction<T> restriction) {
+        SessionType session = getSession(entityClass);
+        CriteriaBuilder builder = session.getCriteriaBuilder();
+        CriteriaDelete<T> criteria = (CriteriaDelete<T>) builder.createCriteriaDelete(entityClass);
+        Root<T> root = criteria.from((Class<T>) entityClass);
+        // Convert Jakarta Data Restriction to Hibernate Restriction, then to Predicate
+        org.hibernate.query.restriction.Restriction<T> hibernateRestriction = JakartaDataRestriction
+                .adaptRestriction(restriction);
+        Predicate predicate = hibernateRestriction.toPredicate(root, builder);
+        criteria.where(predicate);
+        return session.createMutationQuery(criteria).executeUpdate();
     }
 
     public static void setRollbackOnly() {

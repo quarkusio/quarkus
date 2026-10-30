@@ -224,13 +224,13 @@ public interface NativeConfig {
     interface BuilderImageConfig {
         /**
          * The docker image to use to do the image build. It can be one of `graalvm`, `mandrel`, or the full image path, e.g.
-         * {@code quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:jdk-21}.
+         * {@code quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:jdk-25}.
          * <p>
          * <strong>Note:</strong> Builder images are available using UBI 8, UBI 9, and UBI 10 base images, for example:
          * <ul>
-         * <li>UBI 10: {@code quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:jdk-21} (default)</li>
-         * <li>UBI 9: {@code quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-21}</li>
-         * <li>UBI 8: {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21}</li>
+         * <li>UBI 10: {@code quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:jdk-25} (default)</li>
+         * <li>UBI 9: {@code quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-25}</li>
+         * <li>UBI 8: {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-25}</li>
          * </ul>
          * <p>
          * You need to be aware that if you use a builder image using UBI 10 and you plan to build a container, you must

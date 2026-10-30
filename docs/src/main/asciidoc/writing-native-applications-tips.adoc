@@ -101,7 +101,7 @@ Avoid using highly generic patterns like `**/*.xml` without a preceding literal 
 
 [NOTE]
 ====
-For more information about this topic, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Resources/[GraalVM Accessing Resources in Native Image] guide.
+For more information about this topic, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/#resources[GraalVM Accessing Resources in Native Image] guide.
 ====
 
 === Registering for reflection
@@ -631,7 +631,7 @@ public class SaxParserProcessor {
 
 [NOTE]
 ====
-For more information about reflection in GraalVM, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Reflection/[GraalVM Reflection in Native Image] guide.
+For more information about reflection in GraalVM, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/#reflection[GraalVM Reflection in Native Image] guide.
 ====
 
 === Including resources
@@ -652,7 +652,7 @@ public class ResourcesProcessor {
 
 [NOTE]
 ====
-For more information about GraalVM resource handling in native executables, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Resources/[GraalVM Accessing Resources in Native Image] guide.
+For more information about GraalVM resource handling in native executables, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/#resources[GraalVM Accessing Resources in Native Image] guide.
 ====
 
 
@@ -705,7 +705,7 @@ Alternatively, you may create a `reachability-metadata.json` file as described i
 ====
 In both cases the configuration will be automatically parsed by the native build, without additional configuration.
 
-For more information about using Proxy Classes in native executables, see https://www.graalvm.org/jdk21/reference-manual/native-image/dynamic-features/DynamicProxy/[Dynamic Proxy in Native Image] and https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/guides/configure-dynamic-proxies/[GraalVM Configure Dynamic Proxies Manually].
+For more information about using Proxy Classes in native executables, see https://www.graalvm.org/jdk21/reference-manual/native-image/dynamic-features/DynamicProxy/[Dynamic Proxy in Native Image] and the https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/#reflection[GraalVM reflection metadata].
 ====
 
 === Logging with Native Image

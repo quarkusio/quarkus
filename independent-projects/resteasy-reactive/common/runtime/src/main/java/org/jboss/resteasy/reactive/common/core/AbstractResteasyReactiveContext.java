@@ -144,6 +144,9 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                 int pos = position;
                 position++; //increment before, as reset may reset it to zero
                 try {
+                    if (isHandlerCanceled(pos)) {
+                        continue;
+                    }
                     invokeHandler(pos);
                     if (suspended) {
                         synchronized (this) {
@@ -190,7 +193,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         } finally {
             // we need to make sure we don't close the underlying stream in the event loop if the task
             // has been offloaded to the executor
-            if ((position == handlers.length && !processingSuspended) || aborted) {
+            if ((position >= handlers.length && !processingSuspended) || aborted) {
                 if (requestScopeActivated) {
                     requestScopeDeactivated();
                     currentRequestScope.deactivate();
@@ -225,6 +228,10 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
 
             }
         }
+    }
+
+    protected boolean isHandlerCanceled(int pos) {
+        return false;
     }
 
     protected void invokeHandler(int pos) throws Exception {

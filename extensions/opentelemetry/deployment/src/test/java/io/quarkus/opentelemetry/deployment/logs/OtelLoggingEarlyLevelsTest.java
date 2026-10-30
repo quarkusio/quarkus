@@ -62,6 +62,7 @@ public class OtelLoggingEarlyLevelsTest {
                 "A record published while the SDK was initializing should be buffered and delivered");
     }
 
+    @SuppressWarnings("removal")
     @Singleton
     public static class SdkInitProbe implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 

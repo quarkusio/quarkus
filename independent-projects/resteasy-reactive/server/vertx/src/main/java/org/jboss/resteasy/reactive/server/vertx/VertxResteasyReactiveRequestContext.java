@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -529,15 +528,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public CompletionStage<Void> write(byte[] data) {
-        CompletableFuture<Void> ret = new CompletableFuture<>();
-        response.write(Buffer.buffer(data)).onComplete(event -> {
-            if (event.failed()) {
-                ret.completeExceptionally(event.cause());
-            } else {
-                ret.complete(null);
-            }
-        });
-        return ret;
+        return response.write(Buffer.buffer(data)).toCompletionStage();
     }
 
     @Override

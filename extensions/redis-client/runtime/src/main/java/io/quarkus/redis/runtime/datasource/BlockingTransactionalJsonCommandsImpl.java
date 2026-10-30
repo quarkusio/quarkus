@@ -119,7 +119,7 @@ public class BlockingTransactionalJsonCommandsImpl<K> extends AbstractTransactio
 
     @Override
     public void jsonArrTrim(K key, String path, int start, int stop) {
-        this.reactive.jsonArrTrim(key, path, stop, stop)
+        this.reactive.jsonArrTrim(key, path, start, stop)
                 .await().atMost(this.timeout);
     }
 

@@ -8,12 +8,18 @@ import org.objectweb.asm.Opcodes;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 
 public class TransformProcessor {
 
     @BuildStep
     JniRuntimeAccessBuildItem registerJniAccess() {
         return new JniRuntimeAccessBuildItem(true, false, false, "org.acme.libjni.JniTarget");
+    }
+
+    @BuildStep
+    NativeImageSecurityProviderBuildItem registerSecurityProvider() {
+        return new NativeImageSecurityProviderBuildItem("org.acme.nativeconfig.NativeConfigSecurityProvider");
     }
 
     @BuildStep

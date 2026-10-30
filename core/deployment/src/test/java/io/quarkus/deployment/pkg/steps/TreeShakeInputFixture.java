@@ -29,6 +29,7 @@ final class TreeShakeInputFixture {
     private final Map<String, ArtifactKey> classToDep = new HashMap<>();
     private final Set<String> roots = new HashSet<>();
     private final Map<String, Set<String>> conditionalRoots = new HashMap<>();
+    private final Map<String, List<Supplier<byte[]>>> higherVersionBytecode = new HashMap<>();
 
     private TreeShakeInputFixture() {
     }
@@ -62,6 +63,21 @@ final class TreeShakeInputFixture {
         return this;
     }
 
+    /**
+     * Adds the bytecode of a class that isn't on the classpath and becomes a root, like a predefined class.
+     */
+    TreeShakeInputFixture rootBytecode(byte[] bytecode) {
+        return application(bytecode);
+    }
+
+    /**
+     * Adds multi-release bytecode of a dependency class for a Java version newer than the analyzed one.
+     */
+    TreeShakeInputFixture higherVersion(byte[] bytecode) {
+        higherVersionBytecode.computeIfAbsent(className(bytecode), k -> new ArrayList<>()).add(() -> bytecode);
+        return this;
+    }
+
     TreeShakeInputFixture root(String className) {
         roots.add(className);
         return this;
@@ -90,7 +106,7 @@ final class TreeShakeInputFixture {
                 new ArrayList<>(),
                 new ArrayList<>(),
                 new HashSet<>(),
-                new HashMap<>(),
+                new HashMap<>(higherVersionBytecode),
                 new HashSet<>());
     }
 

@@ -6,7 +6,6 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.function.Consumer;
 
 import jakarta.json.Json;
 import jakarta.json.JsonException;
@@ -14,8 +13,12 @@ import jakarta.json.stream.JsonParser;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeRootBytecodeBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeRootClassBuildItem;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathTree;
+import io.smallrye.classfile.ClassFile;
 
 /**
  * Collects tree-shake roots from {@code META-INF/native-image/} configuration files.
@@ -24,13 +27,19 @@ import io.quarkus.paths.PathTree;
  * since they describe dynamic access performed by the library at runtime.
  * Classes referenced in {@code native-image.properties} ({@code --initialize-at-run-time},
  * {@code --initialize-at-build-time} and {@code --features}) are only meaningful to {@code native-image},
- * so these files are read only when building a native executable.
+ * so these files are read only when building a native executable. The same applies to
+ * {@code predefined-classes-config.json}, which lists classes defined at runtime from bytecode stored next to it:
+ * their bytecode is reported as root bytecode, so the classes they reference are kept.
  */
 final class NativeImageConfigRootCollector {
 
     private static final Logger log = Logger.getLogger(NativeImageConfigRootCollector.class);
 
     private static final String META_INF_NATIVE_IMAGE = "META-INF/native-image/";
+
+    private static final String PREDEFINED_CLASSES_CONFIG = "predefined-classes-config.json";
+    private static final String PREDEFINED_CLASSES_DIR = "agent-extracted-predefined-classes";
+    private static final String PREDEFINED_CLASS_SUFFIX = ".classdata";
 
     private static final String[] CLASS_LIST_ARGS = {
             "--initialize-at-run-time=",
@@ -46,9 +55,11 @@ final class NativeImageConfigRootCollector {
      *
      * @param tree content tree to scan
      * @param nativeTarget whether a native executable is being built
-     * @param roots receives the dot-separated names of root classes, possibly more than once
+     * @param roots receives the root classes, possibly more than once
+     * @param rootBytecode receives the bytecode of predefined classes
      */
-    static void collect(PathTree tree, boolean nativeTarget, Consumer<String> roots) {
+    static void collect(PathTree tree, boolean nativeTarget, BuildProducer<JarTreeShakeRootClassBuildItem> roots,
+            BuildProducer<JarTreeShakeRootBytecodeBuildItem> rootBytecode) {
         try (OpenPathTree openTree = tree.open()) {
             openTree.walkIfContains(META_INF_NATIVE_IMAGE, visit -> {
                 String path = visit.getResourceName();
@@ -58,6 +69,8 @@ final class NativeImageConfigRootCollector {
                     }
                 } else if (path.endsWith("reflect-config.json") || path.endsWith("jni-config.json")) {
                     parseJsonClassConfig(visit.getPath(), roots);
+                } else if (nativeTarget && path.endsWith(PREDEFINED_CLASSES_CONFIG)) {
+                    parsePredefinedClassesConfig(visit.getPath(), rootBytecode);
                 }
             });
         } catch (IOException e) {
@@ -72,7 +85,7 @@ final class NativeImageConfigRootCollector {
      * Lines starting with {@code #} are comments. A trailing {@code \} continues a line,
      * so an argument value never spans lines.
      */
-    private static void parseNativeImageProperties(Path file, Consumer<String> roots) {
+    private static void parseNativeImageProperties(Path file, BuildProducer<JarTreeShakeRootClassBuildItem> roots) {
         final String content;
         try {
             content = Files.readString(file, StandardCharsets.UTF_8);
@@ -91,7 +104,8 @@ final class NativeImageConfigRootCollector {
         }
     }
 
-    private static void parseNativeImagePropertiesLine(String content, int start, int end, Consumer<String> roots) {
+    private static void parseNativeImagePropertiesLine(String content, int start, int end,
+            BuildProducer<JarTreeShakeRootClassBuildItem> roots) {
         start = skipWhitespace(content, start, end);
         if (start == end || content.charAt(start) == '#') {
             return;
@@ -123,12 +137,13 @@ final class NativeImageConfigRootCollector {
     /**
      * Adds the comma-separated names in the given range, which contains no whitespace.
      */
-    private static void addCommaSeparatedNames(String content, int start, int end, Consumer<String> roots) {
+    private static void addCommaSeparatedNames(String content, int start, int end,
+            BuildProducer<JarTreeShakeRootClassBuildItem> roots) {
         while (start < end) {
             int comma = content.indexOf(',', start);
             int nameEnd = comma < 0 || comma > end ? end : comma;
             if (nameEnd > start) {
-                roots.accept(content.substring(start, nameEnd));
+                roots.produce(new JarTreeShakeRootClassBuildItem(content.substring(start, nameEnd)));
             }
             start = nameEnd + 1;
         }
@@ -146,7 +161,7 @@ final class NativeImageConfigRootCollector {
      * extracts the {@code name} of each entry of the top-level array.
      * Files whose top level is not an array are ignored.
      */
-    private static void parseJsonClassConfig(Path file, Consumer<String> roots) {
+    private static void parseJsonClassConfig(Path file, BuildProducer<JarTreeShakeRootClassBuildItem> roots) {
         try (InputStream is = Files.newInputStream(file);
                 JsonParser parser = Json.createParser(is)) {
             if (!parser.hasNext() || parser.next() != JsonParser.Event.START_ARRAY) {
@@ -164,7 +179,7 @@ final class NativeImageConfigRootCollector {
                             if (value == JsonParser.Event.VALUE_STRING) {
                                 String name = parser.getString();
                                 if (!name.isEmpty()) {
-                                    roots.accept(name);
+                                    roots.produce(new JarTreeShakeRootClassBuildItem(name));
                                 }
                             } else if (value == JsonParser.Event.START_ARRAY || value == JsonParser.Event.START_OBJECT) {
                                 depth++;
@@ -178,5 +193,75 @@ final class NativeImageConfigRootCollector {
         } catch (IOException | JsonException e) {
             log.debugf(e, "Failed to read native-image config: %s", file);
         }
+    }
+
+    /**
+     * Parses a {@code predefined-classes-config.json} file and reports the bytecode of each listed class,
+     * read from {@code agent-extracted-predefined-classes/<hash>.classdata} next to the config file.
+     * The only class origin type {@code native-image} supports is {@code agent-extracted}, so the type isn't checked.
+     */
+    private static void parsePredefinedClassesConfig(Path file,
+            BuildProducer<JarTreeShakeRootBytecodeBuildItem> rootBytecode) {
+        final Path classesDir = file.resolveSibling(PREDEFINED_CLASSES_DIR);
+        try (InputStream is = Files.newInputStream(file);
+                JsonParser parser = Json.createParser(is)) {
+            // depth 1 is the top-level array of class origins, depth 2 an origin,
+            // depth 3 its "classes" array and depth 4 a class descriptor
+            int depth = 0;
+            String hash = null;
+            String nameInfo = null;
+            while (parser.hasNext()) {
+                switch (parser.next()) {
+                    case START_ARRAY, START_OBJECT -> depth++;
+                    case END_ARRAY -> depth--;
+                    case END_OBJECT -> {
+                        if (depth == 4 && hash != null) {
+                            addPredefinedClass(classesDir, hash, nameInfo, rootBytecode);
+                        }
+                        hash = null;
+                        nameInfo = null;
+                        depth--;
+                    }
+                    case KEY_NAME -> {
+                        if (depth == 4) {
+                            String key = parser.getString();
+                            if (parser.next() == JsonParser.Event.VALUE_STRING) {
+                                if (key.equals("hash")) {
+                                    hash = parser.getString();
+                                } else if (key.equals("nameInfo")) {
+                                    nameInfo = parser.getString();
+                                }
+                            }
+                        }
+                    }
+                    default -> {
+                    }
+                }
+            }
+        } catch (IOException | JsonException e) {
+            log.debugf(e, "Failed to read native-image config: %s", file);
+        }
+    }
+
+    private static void addPredefinedClass(Path classesDir, String hash, String nameInfo,
+            BuildProducer<JarTreeShakeRootBytecodeBuildItem> rootBytecode) {
+        final Path classFile = classesDir.resolve(hash + PREDEFINED_CLASS_SUFFIX);
+        final byte[] bytecode;
+        try {
+            bytecode = Files.readAllBytes(classFile);
+        } catch (IOException e) {
+            log.debugf(e, "Failed to read predefined class: %s", classFile);
+            return;
+        }
+        String className = nameInfo;
+        if (className == null) {
+            try {
+                className = ClassFile.of().parse(bytecode).thisClass().asInternalName();
+            } catch (IllegalArgumentException e) {
+                log.debugf(e, "Failed to parse predefined class: %s", classFile);
+                return;
+            }
+        }
+        rootBytecode.produce(new JarTreeShakeRootBytecodeBuildItem(className.replace('/', '.'), bytecode));
     }
 }

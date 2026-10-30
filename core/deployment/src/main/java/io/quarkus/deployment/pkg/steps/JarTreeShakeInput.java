@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -24,7 +25,9 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
 import io.quarkus.deployment.pkg.TreeShakeConfig;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeConditionalRootClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeExcludedArtifactBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeRootBytecodeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeRootClassBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
@@ -62,7 +65,12 @@ class JarTreeShakeInput implements AutoCloseable {
     final TreeShakeConfig.TreeShakeMode treeShakeMode;
     /** Dot-separated class names that are unconditionally reachable (BFS starting points). */
     final Set<String> roots;
-    /** Map from condition class to classes that become roots when the condition is reachable. */
+    /**
+     * Map from condition class to classes that become roots when the condition is reachable.
+     * Consumed by the analysis: {@link JarTreeShaker} removes an entry when its condition class is reached,
+     * so the map must be mutable. Once all reachable classes have been traced, it holds only the conditions
+     * that were never met, until {@link #releaseAnalysisData()} clears it.
+     */
     final Map<String, Set<String>> conditionalRoots;
     /** Classes listed in {@code META-INF/sisu/javax.inject.Named} files. */
     final Set<String> sisuNamedClasses;
@@ -229,6 +237,8 @@ class JarTreeShakeInput implements AutoCloseable {
             TransformedClassesBuildItem transformedClasses,
             List<ReflectiveClassConditionBuildItem> reflectiveClassConditions,
             List<JarTreeShakeRootClassBuildItem> rootClasses,
+            List<JarTreeShakeConditionalRootClassBuildItem> conditionalRootClasses,
+            List<JarTreeShakeRootBytecodeBuildItem> rootBytecode,
             List<JarTreeShakeExcludedArtifactBuildItem> excludedArtifactItems) {
 
         final Set<String> roots = new HashSet<>();
@@ -271,8 +281,18 @@ class JarTreeShakeInput implements AutoCloseable {
         for (JarTreeShakeRootClassBuildItem item : rootClasses) {
             roots.add(item.getClassName());
         }
+        for (JarTreeShakeRootBytecodeBuildItem item : rootBytecode) {
+            final byte[] bytecode = item.getBytecode();
+            appBytecode.put(item.getClassName(), () -> bytecode);
+            roots.add(item.getClassName());
+        }
 
         final Map<String, Set<String>> conditionalRoots = collectConditionalRoots(reflectiveClassConditions);
+        final Set<ArtifactKey> excludedArtifacts = getExcludedArtifacts(excludedArtifactItems);
+        addConditionalRoots(conditionalRootClasses,
+                reachabilityAnalyzed(depBytecode, classToDep, excludedArtifacts),
+                alwaysPresent(depBytecode, appBytecode, generatedBytecode),
+                roots, conditionalRoots);
 
         return new JarTreeShakeInput(
                 treeShakeMode,
@@ -292,7 +312,7 @@ class JarTreeShakeInput implements AutoCloseable {
                 appPaths,
                 transformedClassNames,
                 higherVersionBytecode,
-                getExcludedArtifacts(excludedArtifactItems));
+                excludedArtifacts);
     }
 
     /**
@@ -520,9 +540,88 @@ class JarTreeShakeInput implements AutoCloseable {
     }
 
     /**
+     * Returns a predicate telling whether the analysis determines the reachability of a class:
+     * true for dependency classes, except those of artifacts excluded from tree shaking, which are always kept.
+     */
+    static Predicate<String> reachabilityAnalyzed(
+            Map<String, Supplier<byte[]>> depBytecode,
+            Map<String, ArtifactKey> classToDep,
+            Set<ArtifactKey> excludedArtifacts) {
+        return name -> depBytecode.containsKey(name)
+                && (excludedArtifacts.isEmpty() || !excludedArtifacts.contains(classToDep.get(name)));
+    }
+
+    /**
+     * Returns a predicate telling whether a class is present at runtime regardless of the analysis:
+     * dependency classes (to be combined with {@link #reachabilityAnalyzed}, so effectively those of excluded
+     * artifacts), application and generated classes, which are never removed, and JDK and GraalVM classes.
+     */
+    static Predicate<String> alwaysPresent(
+            Map<String, Supplier<byte[]>> depBytecode,
+            Map<String, Supplier<byte[]>> appBytecode,
+            Map<String, Supplier<byte[]>> generatedBytecode) {
+        return name -> depBytecode.containsKey(name)
+                || appBytecode.containsKey(name)
+                || generatedBytecode.containsKey(name)
+                || isPlatformClass(name);
+    }
+
+    /**
+     * Package prefixes of JDK and GraalVM classes. The JVM running the build may not have all of them,
+     * e.g. platform-specific JDK classes, classes of a newer JDK used by {@code native-image}, or
+     * GraalVM builder classes, which aren't on the application class path.
+     */
+    private static final String[] PLATFORM_PACKAGE_PREFIXES = {
+            "java.", "javax.", "jdk.", "sun.", "com.sun.", "org.graalvm.", "com.oracle.svm.", "com.oracle.graal."
+    };
+
+    /**
+     * Whether the class belongs to the JDK or GraalVM rather than to the application class path.
+     */
+    private static boolean isPlatformClass(String name) {
+        for (String prefix : PLATFORM_PACKAGE_PREFIXES) {
+            if (name.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return ClassLoader.getPlatformClassLoader().getResource(name.replace('.', '/') + ".class") != null;
+    }
+
+    /**
+     * Adds conditional roots from {@link JarTreeShakeConditionalRootClassBuildItem}s:
+     * <ul>
+     * <li>if the analysis determines the reachability of the condition class, the class is a conditional root;</li>
+     * <li>otherwise, if the condition class is always present (e.g. a JDK class, or a class of an artifact excluded
+     * from tree shaking), the class is an unconditional root;</li>
+     * <li>otherwise the condition class isn't on the classpath, can never be reachable, and the class isn't a root.</li>
+     * </ul>
+     *
+     * @param items conditional root build items
+     * @param reachabilityAnalyzed whether the analysis determines the reachability of a class
+     * @param alwaysPresent whether a class whose reachability isn't analyzed is present at runtime
+     * @param roots unconditional roots to add to
+     * @param conditionalRoots condition class to classes that become roots when the condition is reachable, to add to
+     */
+    static void addConditionalRoots(
+            List<JarTreeShakeConditionalRootClassBuildItem> items,
+            Predicate<String> reachabilityAnalyzed,
+            Predicate<String> alwaysPresent,
+            Set<String> roots,
+            Map<String, Set<String>> conditionalRoots) {
+        for (JarTreeShakeConditionalRootClassBuildItem item : items) {
+            final String condition = item.getConditionClassName();
+            if (reachabilityAnalyzed.test(condition)) {
+                conditionalRoots.computeIfAbsent(condition, k -> new HashSet<>()).add(item.getClassName());
+            } else if (alwaysPresent.test(condition)) {
+                roots.add(item.getClassName());
+            }
+        }
+    }
+
+    /**
      * Builds a map from condition type to the set of class names that should become roots
-     * when that condition type is reachable. Used by {@link JarTreeShaker#evaluateConditionalRoots}
-     * for fixed-point evaluation.
+     * when that condition type is reachable. {@link JarTreeShaker} consumes an entry when its condition type
+     * is reached.
      */
     private static Map<String, Set<String>> collectConditionalRoots(
             List<ReflectiveClassConditionBuildItem> reflectiveClassConditions) {

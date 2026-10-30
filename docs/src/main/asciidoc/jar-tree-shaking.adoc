@@ -128,7 +128,10 @@ The analysis starts by collecting root classes — classes that must be preserve
 Roots include:
 
 * In all build modes: the application main class, all generated classes, classes registered for reflection or JNI access (by extensions or in `reflect-config.json` and `jni-config.json` files under `META-INF/native-image`), and service provider implementations.
-* Additionally, when building a native executable: GraalVM Features (`--features` arguments and Features registered by extensions), classes named in class initialization settings (`--initialize-at-run-time` and `--initialize-at-build-time` arguments, and runtime-initialized classes registered by extensions), and classes containing GraalVM substitution annotations (`@TargetClass`, `@Substitute`).
+* Additionally, when building a native executable: GraalVM Features (`--features` arguments and Features registered by extensions), classes named in class initialization settings (`--initialize-at-run-time` and `--initialize-at-build-time` arguments, and runtime-initialized classes registered by extensions), security providers registered by extensions, and classes referenced by predefined classes (classes defined at runtime from bytecode listed in `predefined-classes-config.json`).
+* Also only when building a native executable, GraalVM substitution classes (`@TargetClass`), in dependencies or in the application: a substitution class is kept when its target class is kept, and its target class is kept when the substitution class is kept.
+A substitution whose target is always present (a JDK or GraalVM class, an application class, or a class of an artifact excluded from tree shaking) is always kept, while a substitution whose target is not on the class path at all is removed.
+Substitutions whose target is computed by a `classNameProvider`, and other classes using GraalVM substitution annotations, are always kept.
 
 The native-only roots are not considered for JVM builds, so a JVM build may remove classes that a native build of the same application keeps.
 

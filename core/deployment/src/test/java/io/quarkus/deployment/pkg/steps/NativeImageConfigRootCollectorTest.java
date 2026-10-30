@@ -5,16 +5,20 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.constant.ClassDesc;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkus.paths.PathTree;
+import io.smallrye.classfile.ClassFile;
 
 class NativeImageConfigRootCollectorTest {
 
@@ -128,6 +132,66 @@ class NativeImageConfigRootCollectorTest {
     }
 
     @Test
+    void predefinedClassesAreRootBytecodeForNative() {
+        Path root = dir.resolve("lib");
+        write(root, CONFIG_DIR + "predefined-classes-config.json",
+                "[{\"type\":\"agent-extracted\",\"classes\":[{\"hash\":\"h1\",\"nameInfo\":\"org/acme/Predef\"}]}]");
+        byte[] bytecode = classBytes("org.acme.Predef");
+        write(root, CONFIG_DIR + "agent-extracted-predefined-classes/h1.classdata", bytecode);
+
+        Collected collected = collectAll(true, root);
+
+        assertThat(collected.roots).isEmpty();
+        assertThat(collected.rootBytecode).containsOnlyKeys("org.acme.Predef");
+        assertThat(collected.rootBytecode.get("org.acme.Predef")).isEqualTo(bytecode);
+    }
+
+    @Test
+    void predefinedClassNameFromBytecodeWhenNameInfoMissing() {
+        Path root = dir.resolve("lib");
+        write(root, CONFIG_DIR + "predefined-classes-config.json",
+                "[{\"type\":\"agent-extracted\",\"classes\":[{\"hash\":\"h1\"}]}]");
+        write(root, CONFIG_DIR + "agent-extracted-predefined-classes/h1.classdata", classBytes("org.acme.Predef"));
+
+        assertThat(collectAll(true, root).rootBytecode).containsOnlyKeys("org.acme.Predef");
+    }
+
+    @Test
+    void malformedClassdataWithoutNameInfoIsSkipped() {
+        Path root = dir.resolve("lib");
+        write(root, CONFIG_DIR + "predefined-classes-config.json",
+                "[{\"type\":\"agent-extracted\",\"classes\":[{\"hash\":\"bad\"},{\"hash\":\"h2\"}]}]");
+        write(root, CONFIG_DIR + "agent-extracted-predefined-classes/bad.classdata", "not a class file");
+        write(root, CONFIG_DIR + "agent-extracted-predefined-classes/h2.classdata", classBytes("org.acme.Present"));
+
+        assertThat(collectAll(true, root).rootBytecode).containsOnlyKeys("org.acme.Present");
+    }
+
+    @Test
+    void missingClassdataIsSkipped() {
+        Path root = dir.resolve("lib");
+        write(root, CONFIG_DIR + "predefined-classes-config.json",
+                "[{\"type\":\"agent-extracted\",\"classes\":[{\"hash\":\"missing\",\"nameInfo\":\"org/acme/Missing\"},"
+                        + "{\"hash\":\"h2\",\"nameInfo\":\"org/acme/Present\"}]}]");
+        write(root, CONFIG_DIR + "agent-extracted-predefined-classes/h2.classdata", classBytes("org.acme.Present"));
+
+        assertThat(collectAll(true, root).rootBytecode).containsOnlyKeys("org.acme.Present");
+    }
+
+    @Test
+    void predefinedClassesAreIgnoredForJvm() {
+        Path root = dir.resolve("lib");
+        write(root, CONFIG_DIR + "predefined-classes-config.json",
+                "[{\"type\":\"agent-extracted\",\"classes\":[{\"hash\":\"h1\",\"nameInfo\":\"org/acme/Predef\"}]}]");
+        write(root, CONFIG_DIR + "agent-extracted-predefined-classes/h1.classdata", classBytes("org.acme.Predef"));
+
+        Collected collected = collectAll(false, root);
+
+        assertThat(collected.roots).isEmpty();
+        assertThat(collected.rootBytecode).isEmpty();
+    }
+
+    @Test
     void invalidJsonIsSkipped() {
         Path broken = dir.resolve("broken");
         write(broken, CONFIG_DIR + "reflect-config.json", "{ not json");
@@ -147,11 +211,36 @@ class NativeImageConfigRootCollectorTest {
     }
 
     private static Set<String> collect(boolean nativeTarget, Path... roots) {
-        final Set<String> collected = new HashSet<>();
+        return collectAll(nativeTarget, roots).roots;
+    }
+
+    private static Collected collectAll(boolean nativeTarget, Path... roots) {
+        final Collected collected = new Collected();
         for (Path root : roots) {
-            NativeImageConfigRootCollector.collect(PathTree.ofDirectoryOrArchive(root), nativeTarget, collected::add);
+            NativeImageConfigRootCollector.collect(PathTree.ofDirectoryOrArchive(root), nativeTarget,
+                    item -> collected.roots.add(item.getClassName()),
+                    item -> collected.rootBytecode.put(item.getClassName(), item.getBytecode()));
         }
         return collected;
+    }
+
+    private static final class Collected {
+        final Set<String> roots = new HashSet<>();
+        final Map<String, byte[]> rootBytecode = new HashMap<>();
+    }
+
+    private static byte[] classBytes(String name) {
+        return ClassFile.of().build(ClassDesc.of(name), classBuilder -> classBuilder.withFlags(ClassFile.ACC_PUBLIC));
+    }
+
+    private static void write(Path root, String relativePath, byte[] content) {
+        Path file = root.resolve(relativePath);
+        try {
+            Files.createDirectories(file.getParent());
+            Files.write(file, content);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private static void write(Path root, String relativePath, String content) {

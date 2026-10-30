@@ -6,6 +6,8 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.constant.ClassDesc;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -17,6 +19,7 @@ import org.junit.jupiter.api.TestInstance;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
+import io.smallrye.classfile.ClassFile;
 
 @DisableForNative
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -29,6 +32,7 @@ public class TreeShakeIT extends MojoTestBase {
     void installLibs() throws Exception {
         libsDir = initProject("projects/tree-shake/libs");
         generateSerializedResource(libsDir);
+        generatePredefinedClass(libsDir);
         RunningInvoker libsInvoker = new RunningInvoker(libsDir, false);
         MavenProcessInvocationResult result = libsInvoker.execute(
                 List.of("clean install -DskipTests"), Map.of());
@@ -72,6 +76,23 @@ public class TreeShakeIT extends MojoTestBase {
             dos.writeByte(0x74); // TC_STRING (field value)
             dos.writeUTF("deserialized");
         }
+    }
+
+    /**
+     * Generates the bytecode of {@code org.acme.nativeconfig.Predefined}, a class defined at runtime from bytecode
+     * listed in {@code lib-native-config}'s {@code predefined-classes-config.json}. It extends
+     * {@code PredefinedBase}, which nothing else references, so only analyzing the predefined bytecode keeps it.
+     * The file name stands for the hash {@code native-image} would compute, which isn't checked since
+     * {@code native-image} doesn't run in these tests.
+     */
+    private static void generatePredefinedClass(File libsDir) throws IOException {
+        File classesDir = new File(libsDir, "lib-native-config/src/main/resources/META-INF/native-image/"
+                + "org.acme.treeshake/lib-native-config/agent-extracted-predefined-classes");
+        classesDir.mkdirs();
+        byte[] bytecode = ClassFile.of().build(ClassDesc.of("org.acme.nativeconfig.Predefined"),
+                classBuilder -> classBuilder.withFlags(ClassFile.ACC_PUBLIC)
+                        .withSuperclass(ClassDesc.of("org.acme.nativeconfig.PredefinedBase")));
+        Files.write(new File(classesDir, "predefined.classdata").toPath(), bytecode);
     }
 
     // --- Helper methods ---
@@ -259,6 +280,17 @@ public class TreeShakeIT extends MojoTestBase {
         assertJarNotContains(libDir, "lib-native-config", "org/acme/nativeconfig/NativeConfigFeature.class");
         assertJarNotContains(libDir, "lib-native-config", "org/acme/nativeconfig/NativeConfigRunInit.class");
         assertJarNotContains(libDir, "lib-native-config", "org/acme/nativeconfig/UnusedNativeConfig.class");
+        assertJarNotContains(libDir, "lib-native-config", "org/acme/nativeconfig/NativeConfigSecurityProvider.class");
+        assertJarNotContains(libDir, "lib-native-config", "org/acme/nativeconfig/PredefinedBase.class");
+
+        // GraalVM substitutions only matter when building a native executable
+        assertJarContains(libDir, "lib-native-substitution", "org/acme/substitution/UsedTarget.class");
+        assertJarNotContains(libDir, "lib-native-substitution", "org/acme/substitution/UnusedTarget.class");
+        assertJarNotContains(libDir, "lib-native-substitution", "org/acme/substitution/Target_UsedTarget.class");
+        assertJarNotContains(libDir, "lib-native-substitution", "org/acme/substitution/Target_UnusedTarget.class");
+        assertJarNotContains(libDir, "lib-native-substitution", "org/acme/substitution/Target_java_util_UUID.class");
+        assertJarNotContains(libDir, "lib-native-substitution", "org/acme/substitution/AppSubstitutedTarget.class");
+        assertJarNotContains(libDir, "lib-native-substitution", "org/acme/substitution/AppSubstitutionHelper.class");
 
         // Serialized resource classes (ObjectInputStream + getResource pattern)
         assertJarContains(libDir, "lib-serialization", "org/acme/serialization/SerializedTarget.class");
@@ -327,6 +359,20 @@ public class TreeShakeIT extends MojoTestBase {
         assertJarContains(nativeLibDir, "lib-native-config", "org/acme/nativeconfig/NativeConfigFeature.class");
         assertJarContains(nativeLibDir, "lib-native-config", "org/acme/nativeconfig/NativeConfigRunInit.class");
         assertJarNotContains(nativeLibDir, "lib-native-config", "org/acme/nativeconfig/UnusedNativeConfig.class");
+        // security provider registered by an extension
+        assertJarContains(nativeLibDir, "lib-native-config", "org/acme/nativeconfig/NativeConfigSecurityProvider.class");
+        // superclass of a predefined class listed in predefined-classes-config.json
+        assertJarContains(nativeLibDir, "lib-native-config", "org/acme/nativeconfig/PredefinedBase.class");
+
+        // substitutions are kept together with their targets, substitutions of JDK classes are always kept
+        assertJarContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/UsedTarget.class");
+        assertJarContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/Target_UsedTarget.class");
+        assertJarNotContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/UnusedTarget.class");
+        assertJarNotContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/Target_UnusedTarget.class");
+        assertJarContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/Target_java_util_UUID.class");
+        // target of a substitution in the application, and a class only the substituted code uses
+        assertJarContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/AppSubstitutedTarget.class");
+        assertJarContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/AppSubstitutionHelper.class");
     }
 
     @Test

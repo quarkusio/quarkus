@@ -1,17 +1,11 @@
 package io.quarkus.deployment.pkg.steps;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 
-import org.jboss.logging.Logger;
-
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -23,6 +17,7 @@ import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
@@ -35,17 +30,16 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.TreeShakeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeConditionalRootClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeExcludedArtifactBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeRootBytecodeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeRootClassBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.paths.OpenPathTree;
 import io.quarkus.runtime.LaunchMode;
 
 public class JarTreeShakeProcessor {
-
-    private static final Logger log = Logger.getLogger(JarTreeShakeProcessor.class);
 
     static class TreeShakeEnabled implements BooleanSupplier {
         private final PackageConfig packageConfig;
@@ -91,6 +85,8 @@ public class JarTreeShakeProcessor {
             TransformedClassesBuildItem transformedClasses,
             List<ReflectiveClassConditionBuildItem> reflectiveClassConditions,
             List<JarTreeShakeRootClassBuildItem> rootClasses,
+            List<JarTreeShakeConditionalRootClassBuildItem> conditionalRootClasses,
+            List<JarTreeShakeRootBytecodeBuildItem> rootBytecode,
             List<JarTreeShakeExcludedArtifactBuildItem> excludedArtifacts,
             BuildProducer<JarTreeShakeBuildItem> treeShakeProducer) {
 
@@ -101,6 +97,8 @@ public class JarTreeShakeProcessor {
                 transformedClasses,
                 reflectiveClassConditions,
                 rootClasses,
+                conditionalRootClasses,
+                rootBytecode,
                 excludedArtifacts)) {
             treeShakeProducer.produce(new JarTreeShaker(input).run());
         }
@@ -152,11 +150,11 @@ public class JarTreeShakeProcessor {
             List<ServiceProviderBuildItem> serviceProviderItems,
             BuildProducer<JarTreeShakeRootClassBuildItem> roots) {
         TreeShakeBuildItemRoots.allModes(reflectiveClasses, reflectiveFields, reflectiveMethods,
-                jniClasses, jniFields, jniMethods, serviceProviderItems, rootProducer(roots));
+                jniClasses, jniFields, jniMethods, serviceProviderItems, roots);
     }
 
     /**
-     * Class initialization settings and GraalVM Features are only meaningful to {@code native-image},
+     * Class initialization settings, GraalVM Features and security providers are only meaningful to {@code native-image},
      * so they are roots only when building a native executable.
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -165,9 +163,10 @@ public class JarTreeShakeProcessor {
             List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClasses,
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
             List<NativeImageConfigBuildItem> nativeImageConfigs,
+            List<NativeImageSecurityProviderBuildItem> securityProviders,
             BuildProducer<JarTreeShakeRootClassBuildItem> roots) {
         TreeShakeBuildItemRoots.nativeOnly(runtimeInitializedClasses, runtimeReinitializedClasses,
-                nativeImageFeatures, nativeImageConfigs, rootProducer(roots));
+                nativeImageFeatures, nativeImageConfigs, securityProviders, roots);
     }
 
     /**
@@ -179,60 +178,30 @@ public class JarTreeShakeProcessor {
     void collectNativeImageConfigRoots(
             NativeConfig nativeConfig,
             CurateOutcomeBuildItem curateOutcome,
-            BuildProducer<JarTreeShakeRootClassBuildItem> roots) {
+            BuildProducer<JarTreeShakeRootClassBuildItem> roots,
+            BuildProducer<JarTreeShakeRootBytecodeBuildItem> rootBytecode) {
         final boolean nativeTarget = nativeConfig.enabled();
-        final Consumer<String> rootProducer = rootProducer(roots);
         for (ResolvedDependency dep : curateOutcome.getApplicationModel().getDependencies(DependencyFlags.RUNTIME_CP)) {
-            NativeImageConfigRootCollector.collect(dep.getContentTree(), nativeTarget, rootProducer);
+            NativeImageConfigRootCollector.collect(dep.getContentTree(), nativeTarget, roots, rootBytecode);
         }
-    }
-
-    private static Consumer<String> rootProducer(BuildProducer<JarTreeShakeRootClassBuildItem> roots) {
-        return className -> roots.produce(new JarTreeShakeRootClassBuildItem(className));
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void collectNativeImageRoots(
             CurateOutcomeBuildItem curateOutcome,
-            BuildProducer<JarTreeShakeRootClassBuildItem> roots) {
+            BuildProducer<JarTreeShakeRootClassBuildItem> roots,
+            BuildProducer<JarTreeShakeConditionalRootClassBuildItem> conditionalRoots) {
         /*
          * Scans dependency JARs for classes that reference GraalVM/SVM annotations
          * ({@code @TargetClass}, {@code @Substitute}, {@code @InjectAccessors}, etc.).
          * These substitution classes are discovered by GraalVM through classpath scanning,
          * not through normal code references, so they must be explicitly preserved as roots.
          */
-        byte[] svmMarker = "com/oracle/svm/core/annotate/".getBytes(StandardCharsets.UTF_8);
-        for (ResolvedDependency dep : curateOutcome.getApplicationModel().getDependencies(DependencyFlags.RUNTIME_CP)) {
-            try (OpenPathTree openTree = dep.getContentTree().open()) {
-                openTree.walk(visit -> {
-                    String path = visit.getResourceName();
-                    if (path.endsWith(".class") && !path.equals("module-info.class")) {
-                        try {
-                            byte[] classBytes = Files.readAllBytes(visit.getPath());
-                            if (containsBytes(classBytes, svmMarker)) {
-                                String className = path.substring(0, path.length() - 6).replace('/', '.');
-                                roots.produce(new JarTreeShakeRootClassBuildItem(className));
-                            }
-                        } catch (IOException e) {
-                            log.debugf(e, "Failed to read class file: %s", path);
-                        }
-                    }
-                });
-            } catch (IOException e) {
-                throw new UncheckedIOException("Failed to read content of " + dep.toCompactCoords(), e);
-            }
+        final ApplicationModel appModel = curateOutcome.getApplicationModel();
+        // application classes aren't removed, but their substitution targets in dependencies must be kept
+        SubstitutionRootCollector.collect(appModel.getAppArtifact().getContentTree(), roots, conditionalRoots);
+        for (ResolvedDependency dep : appModel.getDependencies(DependencyFlags.RUNTIME_CP)) {
+            SubstitutionRootCollector.collect(dep.getContentTree(), roots, conditionalRoots);
         }
-    }
-
-    private static boolean containsBytes(byte[] haystack, byte[] needle) {
-        outer: for (int i = 0; i <= haystack.length - needle.length; i++) {
-            for (int j = 0; j < needle.length; j++) {
-                if (haystack[i + j] != needle[j]) {
-                    continue outer;
-                }
-            }
-            return true;
-        }
-        return false;
     }
 }

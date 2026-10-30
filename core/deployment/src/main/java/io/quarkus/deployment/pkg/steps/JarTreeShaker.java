@@ -102,9 +102,6 @@ class JarTreeShaker {
                     reachable.size(), input.roots.size(), callerIndex.size());
         }
 
-        // Evaluate conditional roots to fixed point
-        reachable = evaluateConditionalRoots(reachable);
-
         // Analyze class-loading chains (fixed-point loop) — skip if no seed methods
         // (ClassLoader.loadClass, Class.forName, etc.) were called by any reachable code
         if (hasCallerIndexSeedEntries()) {
@@ -276,7 +273,6 @@ class JarTreeShaker {
                     break;
                 }
                 traceReachableClasses(discovered, reachable);
-                evaluateConditionalRoots(reachable);
             }
         } catch (IOException | InterruptedException e) {
             log.warnf(e, "Failed to run class-loading chain analysis in forked JVM, skipping Phase 3");
@@ -312,6 +308,7 @@ class JarTreeShaker {
         while (!queue.isEmpty()) {
             String name = queue.poll();
 
+            enqueueConditionalRoots(name, visited, queue);
             enqueueJBossLoggingCompanions(name, visited, queue);
             enqueueServiceProviders(name, visited, queue);
 
@@ -389,40 +386,19 @@ class JarTreeShaker {
     }
 
     /**
-     * Iterates conditional roots (from {@link io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem})
-     * to a fixed point: when a condition type becomes reachable, its associated class names are added as new roots
-     * and traced. Repeats until no new classes are discovered.
+     * Enqueues the conditional roots (from
+     * {@link io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem}
+     * and {@link io.quarkus.deployment.pkg.builditem.JarTreeShakeConditionalRootClassBuildItem}) whose condition
+     * is the given, just reached, class. Each condition is consumed once.
      */
-    private Set<String> evaluateConditionalRoots(Set<String> reachable) {
+    private void enqueueConditionalRoots(String name, Set<String> visited, Queue<String> queue) {
         if (input.conditionalRoots.isEmpty()) {
-            return reachable;
+            return;
         }
-        Map<String, Set<String>> remaining = new HashMap<>(input.conditionalRoots);
-        boolean changed = true;
-        int iteration = 0;
-        while (changed) {
-            changed = false;
-            iteration++;
-            Set<String> newRoots = new HashSet<>();
-            var it = remaining.entrySet().iterator();
-            while (it.hasNext()) {
-                var entry = it.next();
-                if (reachable.contains(entry.getKey())) {
-                    newRoots.addAll(entry.getValue());
-                    it.remove();
-                }
-            }
-            newRoots.removeAll(reachable);
-            if (!newRoots.isEmpty()) {
-                changed = true;
-                if (log.isDebugEnabled()) {
-                    log.debugf("Conditional roots iteration %d: %d new roots, %d conditions remaining",
-                            iteration, newRoots.size(), remaining.size());
-                }
-                traceReachableClasses(newRoots, reachable);
-            }
+        final Set<String> conditional = input.conditionalRoots.remove(name);
+        if (conditional != null) {
+            enqueueNotVisited(conditional, visited, queue);
         }
-        return reachable;
     }
 
     /**
@@ -470,6 +446,10 @@ class JarTreeShaker {
                     for (String ref : refs) {
                         if (ref != null && input.allKnownClasses.contains(ref) && reachable.add(ref)) {
                             changed = true;
+                            final Set<String> conditional = input.conditionalRoots.remove(ref);
+                            if (conditional != null) {
+                                traceReachableClasses(conditional, reachable);
+                            }
                         }
                     }
                 }
@@ -735,7 +715,7 @@ class JarTreeShaker {
         }
     }
 
-    /**
+    /*
      * Bit flags used as a heuristic to detect dependencies that may deserialize objects from
      * bundled resources. When a dependency's classes both access resources
      * ({@link #FLAG_RESOURCE_ACCESS}) and use {@code ObjectInputStream}

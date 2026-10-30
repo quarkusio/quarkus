@@ -13,6 +13,7 @@ import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
@@ -34,7 +35,7 @@ class TreeShakeBuildItemRootsTest {
                 List.of(new JniRuntimeAccessFieldBuildItem("a.JniField", "f")),
                 List.of(new JniRuntimeAccessMethodBuildItem("a.JniMethod", "m")),
                 List.of(new ServiceProviderBuildItem("a.Service", "a.Provider1", "a.Provider2")),
-                roots::add);
+                item -> roots.add(item.getClassName()));
 
         assertThat(roots).containsExactlyInAnyOrder(
                 "a.Strong", "a.FieldOwner", "a.MethodOwner", "a.Jni", "a.JniField", "a.JniMethod",
@@ -49,17 +50,20 @@ class TreeShakeBuildItemRootsTest {
                 List.of(new RuntimeReinitializedClassBuildItem("n.Reinit")),
                 List.of(new NativeImageFeatureBuildItem("n.Feature")),
                 List.of(NativeImageConfigBuildItem.builder().addRuntimeInitializedClass("n.ConfigRun").build()),
-                roots::add);
+                List.of(new NativeImageSecurityProviderBuildItem("n.Provider")),
+                item -> roots.add(item.getClassName()));
 
-        assertThat(roots).containsExactlyInAnyOrder("n.Run", "n.Reinit", "n.Feature", "n.ConfigRun");
+        assertThat(roots).containsExactlyInAnyOrder("n.Run", "n.Reinit", "n.Feature", "n.ConfigRun",
+                "n.Provider");
     }
 
     @Test
     void emptyInputsGiveNoRoots() {
         Set<String> roots = new HashSet<>();
         TreeShakeBuildItemRoots.allModes(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
-                roots::add);
-        TreeShakeBuildItemRoots.nativeOnly(List.of(), List.of(), List.of(), List.of(), roots::add);
+                item -> roots.add(item.getClassName()));
+        TreeShakeBuildItemRoots.nativeOnly(List.of(), List.of(), List.of(), List.of(), List.of(),
+                item -> roots.add(item.getClassName()));
         assertThat(roots).isEmpty();
     }
 }

@@ -30,10 +30,17 @@ import org.acme.throws_.ThrowingService;
 import org.acme.loadchain.ChainProvider;
 import org.acme.pkginfo.PkgInfoService;
 import org.acme.serialization.ResourceDeserializer;
+import org.acme.substitution.UsedTarget;
 import org.acme.transform.TransformableClass;
 
 @Path("/tree-shake")
 public class TreeShakeResource {
+
+    @GET
+    @Path("/substitution")
+    public String substitution() {
+        return new UsedTarget().hello();
+    }
 
     @GET
     @Path("/basic")

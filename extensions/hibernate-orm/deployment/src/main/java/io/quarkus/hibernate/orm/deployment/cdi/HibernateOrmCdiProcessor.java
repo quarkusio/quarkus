@@ -124,16 +124,20 @@ public class HibernateOrmCdiProcessor {
                 FieldInfo field = transformationContext.getTarget().asField();
 
                 DotName fieldTypeName = field.type().name();
-                if (!SESSION_EXPOSED_TYPES.contains(fieldTypeName)
-                        && !SESSION_FACTORY_EXPOSED_TYPES.contains(fieldTypeName)) {
-                    return;
-                }
 
                 DotName jpaAnnotation;
-                if (field.hasAnnotation(ClassNames.JPA_PERSISTENCE_UNIT)) {
-                    jpaAnnotation = ClassNames.JPA_PERSISTENCE_UNIT;
-                } else if (field.hasAnnotation(ClassNames.JPA_PERSISTENCE_CONTEXT)) {
-                    jpaAnnotation = ClassNames.JPA_PERSISTENCE_CONTEXT;
+                if (STATELESS_SESSION_EXPOSED_TYPES.contains(fieldTypeName)
+                        && field.hasAnnotation(ClassNames.JPA_PERSISTENCE_AGENT)) {
+                    jpaAnnotation = ClassNames.JPA_PERSISTENCE_AGENT;
+                } else if (SESSION_EXPOSED_TYPES.contains(fieldTypeName)
+                        || SESSION_FACTORY_EXPOSED_TYPES.contains(fieldTypeName)) {
+                    if (field.hasAnnotation(ClassNames.JPA_PERSISTENCE_UNIT)) {
+                        jpaAnnotation = ClassNames.JPA_PERSISTENCE_UNIT;
+                    } else if (field.hasAnnotation(ClassNames.JPA_PERSISTENCE_CONTEXT)) {
+                        jpaAnnotation = ClassNames.JPA_PERSISTENCE_CONTEXT;
+                    } else {
+                        return;
+                    }
                 } else {
                     return;
                 }

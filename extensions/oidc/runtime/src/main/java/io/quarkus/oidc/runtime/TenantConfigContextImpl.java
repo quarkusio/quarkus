@@ -34,9 +34,16 @@ final class TenantConfigContextImpl implements TenantConfigContext {
     private final OidcProvider provider;
 
     /**
-     * Tenant configuration
+     * Tenant configuration. It differs from the {@link #originalConfig} when UserInfo is required
+     * because it is injected and the OpenID Provider supports it.
      */
     private final OidcTenantConfig oidcConfig;
+
+    /**
+     * Tenant configuration this context has been created from. It is used to detect
+     * whether a dynamic tenant configuration has been updated.
+     */
+    private final OidcTenantConfig originalConfig;
 
     private final Map<Redirect.Location, List<OidcRedirectFilter>> redirectFilters;
 
@@ -64,7 +71,9 @@ final class TenantConfigContextImpl implements TenantConfigContext {
 
     TenantConfigContextImpl(OidcProvider provider, OidcTenantConfig config, boolean ready, Credentials credentials) {
         this.provider = provider;
-        this.oidcConfig = config;
+        this.originalConfig = config;
+        this.oidcConfig = OidcUtils.resolveUserInfoRequired(config, provider == null ? null : provider.getMetadata(),
+                TenantContextFactory.userInfoInjectionPointDetected);
         this.redirectFilters = getRedirectFiltersMap(TenantFeatureFinder.find(config, OidcRedirectFilter.class));
         this.ready = ready;
 
@@ -82,7 +91,9 @@ final class TenantConfigContextImpl implements TenantConfigContext {
     }
 
     TenantConfigContextImpl(TenantConfigContext tenantConfigContext, OidcTenantConfig oidcConfig) {
-        this.oidcConfig = oidcConfig;
+        this.originalConfig = oidcConfig;
+        this.oidcConfig = OidcUtils.resolveUserInfoRequired(oidcConfig, tenantConfigContext.getOidcMetadata(),
+                TenantContextFactory.userInfoInjectionPointDetected);
         this.ready = tenantConfigContext.ready();
         this.provider = tenantConfigContext.provider();
         this.sessionCookieEncryptionKey = tenantConfigContext.getSessionCookieEncryptionKey();
@@ -262,6 +273,11 @@ final class TenantConfigContextImpl implements TenantConfigContext {
     @Override
     public OidcTenantConfig getOidcTenantConfig() {
         return oidcConfig;
+    }
+
+    @Override
+    public boolean isCreatedFrom(OidcTenantConfig oidcConfig) {
+        return originalConfig == oidcConfig;
     }
 
     @Override

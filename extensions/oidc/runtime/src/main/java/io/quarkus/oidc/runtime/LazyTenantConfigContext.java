@@ -65,6 +65,11 @@ final class LazyTenantConfigContext implements TenantConfigContext {
     }
 
     @Override
+    public boolean isCreatedFrom(OidcTenantConfig oidcConfig) {
+        return delegate.isCreatedFrom(oidcConfig);
+    }
+
+    @Override
     public OidcConfigurationMetadata getOidcMetadata() {
         return delegate.getOidcMetadata();
     }

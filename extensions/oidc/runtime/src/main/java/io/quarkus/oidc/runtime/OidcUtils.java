@@ -575,6 +575,15 @@ public final class OidcUtils {
         }
     }
 
+    static OidcTenantConfig resolveUserInfoRequired(OidcTenantConfig oidcConfig, OidcConfigurationMetadata metadata,
+            boolean userInfoInjected) {
+        if (userInfoInjected && metadata != null && metadata.getUserInfoUri() != null
+                && oidcConfig.authentication().userInfoRequired().isEmpty()) {
+            return OidcTenantConfig.builder(oidcConfig).authentication().userInfoRequired().end().build();
+        }
+        return oidcConfig;
+    }
+
     public static byte[] getSha256Digest(String value) throws NoSuchAlgorithmException {
         return getSha256Digest(value, StandardCharsets.UTF_8);
     }

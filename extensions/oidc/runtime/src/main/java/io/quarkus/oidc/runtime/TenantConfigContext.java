@@ -46,6 +46,15 @@ public sealed interface TenantConfigContext permits TenantConfigContextImpl, Laz
     Map<Redirect.Location, List<OidcRedirectFilter>> getLocationToRedirectFilters();
 
     /**
+     * The {@link #oidcConfig()} differs from the tenant configuration this context has been created from
+     * when UserInfo is required because it is injected and the OpenID Provider supports it.
+     *
+     * @param oidcConfig tenant configuration
+     * @return true if this context has been created from the given tenant configuration instance
+     */
+    boolean isCreatedFrom(OidcTenantConfig oidcConfig);
+
+    /**
      * Only static tenants that are not {@link #ready()} can and need to be initialized.
      *
      * @return self, or in case of not {@link #ready()}, possibly ready self

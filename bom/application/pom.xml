@@ -7143,9 +7143,6 @@
                                         <dependency>
                                             <artifact>org.hibernate.models:hibernate-models</artifact>
                                         </dependency>
-                                        <dependency>
-                                            <artifact>org.hibernate.accessor:hibernate-accessor</artifact>
-                                        </dependency>
                                     </dependencies>
                                 </dependencyAlignmentRule>
                                 <dependencyAlignmentRule>

@@ -55,8 +55,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.impl.HttpServerConnection;
 import io.vertx.core.net.HostAndPort;
-import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
 public class ServletRequestContext extends ResteasyReactiveRequestContext
@@ -168,7 +168,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
 
     @Override
     protected EventLoop getEventLoop() {
-        return ((ConnectionBase) context.request().connection()).channel().eventLoop();
+        return ((HttpServerConnection) context.request().connection()).context().nettyEventLoop();
     }
 
     @Override

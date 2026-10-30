@@ -183,11 +183,11 @@ public class VertxInputStream extends InputStream {
         public VertxBlockingInput(HttpServerRequest request, long timeout) {
             this.request = request;
             this.timeout = timeout;
-            final ConnectionBase connection = (ConnectionBase) request.connection();
+            final var connection = request.connection();
             // Lock before registering handlers: a buffer arriving immediately after fetch(1) must not race with initialization.
             lock.lock();
             try {
-                if (!connection.channel().isOpen()) {
+                if (connection instanceof ConnectionBase cb && !cb.channel().isOpen()) {
                     readException = new ClosedChannelException();
                 } else if (!request.isEnded()) {
                     request.pause();

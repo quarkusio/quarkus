@@ -166,4 +166,106 @@ class Http3RestTest {
             client.close().await(5, TimeUnit.SECONDS);
         }
     }
+
+    @Test
+    void testHttp3NonBlocking() throws Exception {
+        HttpClientAgent client = createHttp3Client();
+
+        try {
+            int port = tlsUrl.getPort();
+
+            var response = client.request(HttpMethod.GET, port, "localhost", "/non-blocking")
+                    .compose(HttpClientRequest::send)
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(10, TimeUnit.SECONDS);
+
+            assertThat(response.version).isEqualTo("HTTP_3");
+            assertThat(response.status).isEqualTo(200);
+            assertThat(response.body).isEqualTo("non-blocking-response");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void testHttp3Delayed() throws Exception {
+        HttpClientAgent client = createHttp3Client();
+
+        try {
+            int port = tlsUrl.getPort();
+
+            var response = client.request(HttpMethod.GET, port, "localhost", "/delayed")
+                    .compose(HttpClientRequest::send)
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(10, TimeUnit.SECONDS);
+
+            assertThat(response.version).isEqualTo("HTTP_3");
+            assertThat(response.status).isEqualTo(200);
+            assertThat(response.body).isEqualTo("delayed-response");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void testHttp3Stream() throws Exception {
+        HttpClientAgent client = createHttp3Client();
+
+        try {
+            int port = tlsUrl.getPort();
+
+            var response = client.request(HttpMethod.GET, port, "localhost", "/stream")
+                    .compose(HttpClientRequest::send)
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(10, TimeUnit.SECONDS);
+
+            assertThat(response.version).isEqualTo("HTTP_3");
+            assertThat(response.status).isEqualTo(200);
+            assertThat(response.body).contains("event1", "event2", "event3");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void testHttp3CompletionStage() throws Exception {
+        HttpClientAgent client = createHttp3Client();
+
+        try {
+            int port = tlsUrl.getPort();
+
+            var response = client.request(HttpMethod.GET, port, "localhost", "/completion-stage")
+                    .compose(HttpClientRequest::send)
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(10, TimeUnit.SECONDS);
+
+            assertThat(response.version).isEqualTo("HTTP_3");
+            assertThat(response.status).isEqualTo(200);
+            assertThat(response.body).isEqualTo("completion-stage-response");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void testHttp3Error() throws Exception {
+        HttpClientAgent client = createHttp3Client();
+
+        try {
+            int port = tlsUrl.getPort();
+
+            var response = client.request(HttpMethod.GET, port, "localhost", "/error")
+                    .compose(HttpClientRequest::send)
+                    .await(10, TimeUnit.SECONDS);
+
+            assertThat(response.version().name()).isEqualTo("HTTP_3");
+            assertThat(response.statusCode()).isEqualTo(500);
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
+    }
 }

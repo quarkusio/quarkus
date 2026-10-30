@@ -52,6 +52,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.impl.HttpServerConnection;
 import io.vertx.core.impl.buffer.VertxByteBufAllocator;
 import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.net.HostAndPort;
@@ -145,7 +146,20 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     protected EventLoop getEventLoop() {
-        return ((ConnectionBase) context.request().connection()).channel().eventLoop();
+        Object connection = context.request().connection();
+        // HTTP/1.1 and HTTP/2 connections extend ConnectionBase and provide direct channel access
+        if (connection instanceof ConnectionBase) {
+            return ((ConnectionBase) connection).channel().eventLoop();
+        }
+        // HTTP/3 connections implement HttpServerConnection but do not extend ConnectionBase
+        // Use the Vert.x context to obtain the EventLoop instead
+        if (connection instanceof HttpServerConnection) {
+            return ((HttpServerConnection) connection).context().nettyEventLoop();
+        }
+        // This should never happen as Vert.x guarantees all server connections implement HttpServerConnection
+        throw new IllegalStateException(
+                "Unable to obtain EventLoop from connection of type: " +
+                        (connection == null ? "null" : connection.getClass().getName()));
     }
 
     @Override
@@ -397,7 +411,17 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public boolean isOnIoThread() {
-        return ((ConnectionBase) request.connection()).channel().eventLoop().inEventLoop();
+        Object connection = request.connection();
+        // HTTP/1.1 and HTTP/2 connections extend ConnectionBase
+        if (connection instanceof ConnectionBase) {
+            return ((ConnectionBase) connection).channel().eventLoop().inEventLoop();
+        }
+        // HTTP/3 connections implement HttpServerConnection but do not extend ConnectionBase
+        if (connection instanceof HttpServerConnection) {
+            return ((HttpServerConnection) connection).context().nettyEventLoop().inEventLoop();
+        }
+        // Unknown connection type (or null) - assume not on IO thread for safety
+        return false;
     }
 
     @SuppressWarnings("unchecked")

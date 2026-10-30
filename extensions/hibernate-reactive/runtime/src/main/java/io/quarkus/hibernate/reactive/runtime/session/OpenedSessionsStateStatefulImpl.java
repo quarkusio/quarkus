@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive.runtime;
+package io.quarkus.hibernate.reactive.runtime.session;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 

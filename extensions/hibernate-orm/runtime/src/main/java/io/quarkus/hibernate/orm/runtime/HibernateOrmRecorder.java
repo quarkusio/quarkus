@@ -15,18 +15,19 @@ import jakarta.persistence.Cache;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
 import jakarta.persistence.spi.LoadState;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.TransactionSynchronizationRegistry;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
-import org.hibernate.engine.spi.SessionLazyDelegator;
-import org.hibernate.engine.spi.StatelessSessionLazyDelegator;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.relational.SchemaManager;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.arc.ActiveResult;
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
@@ -36,6 +37,8 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRunti
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
+import io.quarkus.hibernate.orm.runtime.session.TransactionScopedSession;
+import io.quarkus.hibernate.orm.runtime.session.TransactionScopedStatelessSession;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
@@ -174,13 +177,14 @@ public class HibernateOrmRecorder {
 
             @Override
             public Session apply(SyntheticCreationalContext<Session> context) {
-                TransactionSessions transactionSessions = context.getInjectedReference(TransactionSessions.class);
-                return new SessionLazyDelegator() {
-                    @Override
-                    public Session delegate() {
-                        return transactionSessions.getSession(persistenceUnitName);
-                    }
-                };
+                JPAConfig jpaConfig = context.getInjectedReference(JPAConfig.class);
+                return new TransactionScopedSession(
+                        context.getInjectedReference(TransactionManager.class),
+                        context.getInjectedReference(TransactionSynchronizationRegistry.class),
+                        jpaConfig.getEntityManagerFactory(persistenceUnitName, false).unwrap(SessionFactory.class),
+                        persistenceUnitName,
+                        jpaConfig.getRequestScopedSessionEnabled(),
+                        Arc.container().select(RequestScopedSessionHolder.class));
             }
         };
     }
@@ -191,13 +195,15 @@ public class HibernateOrmRecorder {
 
             @Override
             public StatelessSession apply(SyntheticCreationalContext<StatelessSession> context) {
-                TransactionSessions transactionSessions = context.getInjectedReference(TransactionSessions.class);
-                return new StatelessSessionLazyDelegator() {
-                    @Override
-                    public StatelessSession delegate() {
-                        return transactionSessions.getStatelessSession(persistenceUnitName);
-                    }
-                };
+                JPAConfig jpaConfig = context.getInjectedReference(JPAConfig.class);
+                return new TransactionScopedStatelessSession(
+                        context.getInjectedReference(TransactionManager.class),
+                        context.getInjectedReference(TransactionSynchronizationRegistry.class),
+                        jpaConfig.getEntityManagerFactory(persistenceUnitName, false).unwrap(SessionFactory.class),
+                        persistenceUnitName,
+                        jpaConfig.getRequestScopedSessionEnabled(),
+                        jpaConfig.getRequestScopedStatelessSessionAllowWrite(),
+                        Arc.container().select(RequestScopedStatelessSessionHolder.class));
             }
         };
     }

@@ -1,10 +1,15 @@
 package io.quarkus.smallrye.reactivemessaging.deployment;
 
 import java.lang.annotation.Annotation;
+import java.util.Objects;
+
+import jakarta.enterprise.util.AnnotationLiteral;
 
 import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
 
-public class ConnectorAttributeLiteral implements ConnectorAttribute {
+public class ConnectorAttributeLiteral extends AnnotationLiteral<ConnectorAttribute> implements ConnectorAttribute {
+
+    private static final long serialVersionUID = 1L;
 
     private final String name;
     private final String description;
@@ -74,5 +79,39 @@ public class ConnectorAttributeLiteral implements ConnectorAttribute {
     @Override
     public Class<? extends Annotation> annotationType() {
         return ConnectorAttribute.class;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        } else if (other instanceof ConnectorAttribute that) {
+            return Objects.equals(this.name, that.name())
+                    && Objects.equals(this.description, that.description())
+                    && this.hidden == that.hiddenFromDocumentation()
+                    && this.mandatory == that.mandatory()
+                    && Objects.equals(this.direction, that.direction())
+                    && Objects.equals(this.defaultValue, that.defaultValue())
+                    && this.deprecated == that.deprecated()
+                    && Objects.equals(this.alias, that.alias())
+                    && Objects.equals(this.type, that.type());
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        int result = 0;
+        result += 127 * "name".hashCode() ^ Objects.hashCode(this.name);
+        result += 127 * "description".hashCode() ^ Objects.hashCode(this.description);
+        result += 127 * "hiddenFromDocumentation".hashCode() ^ Boolean.hashCode(this.hidden);
+        result += 127 * "mandatory".hashCode() ^ Boolean.hashCode(this.mandatory);
+        result += 127 * "direction".hashCode() ^ Objects.hashCode(this.direction);
+        result += 127 * "defaultValue".hashCode() ^ Objects.hashCode(this.defaultValue);
+        result += 127 * "deprecated".hashCode() ^ Boolean.hashCode(this.deprecated);
+        result += 127 * "alias".hashCode() ^ Objects.hashCode(this.alias);
+        result += 127 * "type".hashCode() ^ Objects.hashCode(this.type);
+        return result;
     }
 }

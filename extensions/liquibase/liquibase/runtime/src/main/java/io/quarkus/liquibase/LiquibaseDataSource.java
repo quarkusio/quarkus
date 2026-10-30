@@ -54,6 +54,22 @@ public @interface LiquibaseDataSource {
         }
 
         @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            } else if (other instanceof LiquibaseDataSource that) {
+                return this.value.equals(that.value());
+            } else {
+                return false;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return 127 * "value".hashCode() ^ this.value.hashCode();
+        }
+
+        @Override
         public String toString() {
             return "LiquibaseDataSourceLiteral [value=" + value + "]";
         }

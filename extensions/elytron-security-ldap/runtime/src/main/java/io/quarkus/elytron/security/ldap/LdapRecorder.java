@@ -2,7 +2,6 @@ package io.quarkus.elytron.security.ldap;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import javax.naming.NamingException;
 import javax.naming.directory.DirContext;
@@ -80,12 +79,31 @@ public class LdapRecorder {
             return false;
         }
         String name = dirContext.tlsConfigurationName().get();
-        TlsConfiguration tlsConfiguration = TlsConfiguration.from(tlsRegistry, Optional.of(name))
+        checkLdapsUrls(dirContext.url(), name);
+        TlsConfiguration tlsConfiguration = tlsRegistry.get(name)
                 .orElseThrow(() -> new IllegalArgumentException("Unable to find the TLS configuration '" + name
                         + "' set with 'quarkus.security.ldap.dir-context.tls-configuration-name': "
                         + "check that 'quarkus.tls." + name + ".*' is configured"));
         QuarkusLdapSocketFactory.configure(name, tlsConfiguration);
         return true;
+    }
+
+    /**
+     * Checks that every URL of the dir context uses the {@code ldaps} scheme. The socket factory of a TLS configuration
+     * opens TLS connections only, so a plain {@code ldap} URL cannot work with it.
+     *
+     * @param url the space-separated URLs of {@code quarkus.security.ldap.dir-context.url}
+     * @param tlsConfigurationName the name of the TLS configuration
+     */
+    static void checkLdapsUrls(String url, String tlsConfigurationName) {
+        for (String value : url.trim().split("\\s+")) {
+            if (!value.regionMatches(true, 0, "ldaps://", 0, "ldaps://".length())) {
+                throw new IllegalArgumentException("The URL '" + value + "' of 'quarkus.security.ldap.dir-context.url' "
+                        + "does not use the 'ldaps' scheme, but 'quarkus.security.ldap.dir-context.tls-configuration-name' "
+                        + "is set to '" + tlsConfigurationName
+                        + "': use an 'ldaps://' URL, or remove the TLS configuration name");
+            }
+        }
     }
 
     private static AttributeMapping[] createAttributeMappings(IdentityMappingConfig identityMappingConfig) {

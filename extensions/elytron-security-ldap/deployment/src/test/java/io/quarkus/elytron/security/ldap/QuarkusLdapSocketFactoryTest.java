@@ -1,9 +1,12 @@
 package io.quarkus.elytron.security.ldap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.Socket;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -12,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.tls.BaseTlsConfiguration;
 import io.quarkus.tls.TlsConfiguration;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.ClientSSLOptions;
 
 public class QuarkusLdapSocketFactoryTest {
@@ -41,6 +45,52 @@ public class QuarkusLdapSocketFactoryTest {
         try (Socket socket = QuarkusLdapSocketFactory.getDefault().createSocket()) {
             assertThat(((SSLSocket) socket).getEnabledProtocols()).containsExactly("TLSv1.3");
         }
+    }
+
+    @Test
+    public void testTlsConfigurationWithoutClientOptionsIsRejected() {
+        TlsConfiguration noClientOptions = new BaseTlsConfiguration() {
+            @Override
+            public SSLContext createSSLContext() throws Exception {
+                return SSLContext.getDefault();
+            }
+        };
+
+        assertThatThrownBy(() -> QuarkusLdapSocketFactory.configure("server-only", noClientOptions))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("'server-only' has no client SSL settings");
+    }
+
+    @Test
+    public void testTlsConfigurationWithoutSslContextIsRejected() {
+        TlsConfiguration noSslContext = new BaseTlsConfiguration() {
+            @Override
+            public ClientSSLOptions getClientSSLOptions() {
+                return new ClientSSLOptions();
+            }
+        };
+
+        assertThatThrownBy(() -> QuarkusLdapSocketFactory.configure("no-context", noSslContext))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("'no-context' has no client SSL settings");
+    }
+
+    @Test
+    public void testDefaultClientOptionsHaveNoIgnoredSettings() {
+        assertThat(QuarkusLdapSocketFactory.ignoredSettings(new ClientSSLOptions())).isEmpty();
+    }
+
+    @Test
+    public void testSettingsTheLdapConnectionsDoNotApplyAreReported() {
+        ClientSSLOptions options = new ClientSSLOptions();
+        options.setHostnameVerificationAlgorithm("NONE");
+        options.addCrlValue(Buffer.buffer("crl"));
+        options.setSslHandshakeTimeout(30);
+        options.setSslHandshakeTimeoutUnit(TimeUnit.SECONDS);
+        options.setKeyExchangeGroups(List.of("X25519MLKEM768"));
+
+        assertThat(QuarkusLdapSocketFactory.ignoredSettings(options)).containsExactly("hostname-verification-algorithm",
+                "certificate-revocation-list", "handshake-timeout", "key-exchange-groups");
     }
 
     private static TlsConfiguration tlsConfiguration(Set<String> protocols, Set<String> cipherSuites) {

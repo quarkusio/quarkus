@@ -51,7 +51,7 @@ class ElytronSecurityLdapProcessor {
                 .onStart((ctx, runtimeConfig, tlsRegistry) -> LdapRecorder.createRealm(runtimeConfig, tlsRegistry));
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsLdapSecurityEnabled.class)
     AdditionalBeanBuildItem tlsConfigurationObserver() {
         return new AdditionalBeanBuildItem(LdapTlsConfigurationObserver.class);
     }

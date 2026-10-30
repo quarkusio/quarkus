@@ -8,6 +8,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -46,7 +48,12 @@ class SharedArchivePathTree extends ArchivePathTree {
     }
 
     private final AtomicInteger openCount = new AtomicInteger();
-    private volatile SharedOpenArchivePathTree lastOpen;
+    private final AtomicReference<SharedOpenArchivePathTree> lastOpen = new AtomicReference<>();
+    /**
+     * Guards creation of new open archive trees. It is not a monitor, since a new archive file system is opened
+     * while holding it, which would pin virtual threads on JDK versions before 24.
+     */
+    private final ReentrantLock openLock = new ReentrantLock();
 
     SharedArchivePathTree(Path archive) {
         super(archive);
@@ -54,19 +61,36 @@ class SharedArchivePathTree extends ArchivePathTree {
 
     @Override
     public OpenPathTree open() {
-        var lastOpen = this.lastOpen;
-        if (lastOpen != null) {
-            var acquired = lastOpen.acquire();
+        var acquired = acquireLastOpen();
+        if (acquired != null) {
+            return acquired;
+        }
+        // Creating a new open archive tree is guarded by a lock to make sure there is at most one open instance
+        // of this archive at any time. Otherwise, concurrent callers could each create their own instance,
+        // only one of which would be referenced by lastOpen. Once that one is closed, subsequent callers
+        // would end up opening new instances instead of sharing the ones that remain open.
+        openLock.lock();
+        try {
+            acquired = acquireLastOpen();
             if (acquired != null) {
                 return acquired;
             }
+            final SharedOpenArchivePathTree newOpen;
+            try {
+                newOpen = new SharedOpenArchivePathTree(openFs());
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to read " + archive, e);
+            }
+            lastOpen.set(newOpen);
+            return new CallerOpenPathTree(newOpen);
+        } finally {
+            openLock.unlock();
         }
-        try {
-            lastOpen = this.lastOpen = new SharedOpenArchivePathTree(openFs());
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to read " + archive, e);
-        }
-        return new CallerOpenPathTree(lastOpen);
+    }
+
+    private CallerOpenPathTree acquireLastOpen() {
+        var current = lastOpen.get();
+        return current == null ? null : current.acquire();
     }
 
     private class SharedOpenArchivePathTree extends OpenArchivePathTree {
@@ -91,7 +115,7 @@ class SharedArchivePathTree extends ArchivePathTree {
         private CallerOpenPathTree acquire() {
             readLock().lock();
             try {
-                final boolean result = lastOpen == this && isOpen();
+                final boolean result = lastOpen.get() == this && isOpen();
                 if (result) {
                     users.incrementAndGet();
                     return new CallerOpenPathTree(this);
@@ -113,26 +137,39 @@ class SharedArchivePathTree extends ArchivePathTree {
             if (users.decrementAndGet() > 0) {
                 return;
             }
-            // Slow path: we may be the last user. Acquire the write lock to perform cleanup.
+            // Slow path: we may be the last user. Try to acquire the write lock to perform cleanup.
             // Re-check under the lock because between our decrement and lock acquisition,
             // another thread could have called acquire() (incrementing users) and then closed
             // (decrementing back to 0), meaning two threads both saw 0 and race for the lock.
             // The !isOpen() guard handles this: the first closer sets open=false via super.close(),
             // so the second closer sees !isOpen() and skips the duplicate cleanup.
-            writeLock().lock();
-            try {
-                if (users.get() > 0 || !isOpen()) {
+            //
+            // The write lock is never waited for, since waiting could deadlock if a reader holding the read lock
+            // needed a lock held by the caller of this method. If the write lock is not available, either
+            // - another closer holds it, which re-checks the users after releasing the lock, or
+            // - a thread in acquire() holds the read lock, which will become a user that will close its handle later.
+            while (writeLock().tryLock()) {
+                try {
+                    if (!isOpen()) {
+                        return;
+                    }
+                    if (users.get() == 0) {
+                        // clears lastOpen only if it still references this instance
+                        lastOpen.compareAndSet(this, null);
+                        if (openCount.decrementAndGet() == 0) {
+                            removeFromCache(archive);
+                        }
+                        super.close();
+                        return;
+                    }
+                } finally {
+                    writeLock().unlock();
+                }
+                // While we were holding the lock, a user could have closed its handle and given up on the lock,
+                // in which case the cleanup is up to us.
+                if (users.get() > 0) {
                     return;
                 }
-                if (lastOpen == this) {
-                    lastOpen = null;
-                }
-                if (openCount.decrementAndGet() == 0) {
-                    removeFromCache(archive);
-                }
-                super.close();
-            } finally {
-                writeLock().unlock();
             }
         }
 

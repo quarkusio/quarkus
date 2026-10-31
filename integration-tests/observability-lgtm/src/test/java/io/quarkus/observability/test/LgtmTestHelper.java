@@ -25,8 +25,14 @@ public abstract class LgtmTestHelper {
         GrafanaClient client = new GrafanaClient(grafanaEndpoint(), prometheusEndpoint(), tempoEndpoint(), "admin",
                 "admin");
 
-        // Use a local pollInterval to avoid mutating Awaitility's global default,
-        // which would slow down every subsequent test in the same JVM.
+        // Why this test is no longer flaky:
+        //  - Before the fix, Awaitility.setDefaultPollInterval(5, s) was mutating
+        //    Awaitility's GLOBAL static state, which slowed down EVERY other
+        //    Awaitility-based test in the same JVM — and in reverse, other tests'
+        //    poll-intervals leaked into this one, causing unpredictable timing.
+        //  - Now we set pollInterval(2, s) per await chain (local scope only).
+        //  - atMost raised from 90s to 120s to give Grafana/Tempo/Prometheus more
+        //    breathing room after each dev-mode reload cycle, especially in CI.
         Awaitility.given().ignoreException(UncheckedIOException.class).pollInterval(2, TimeUnit.SECONDS)
                 .await().atMost(120, TimeUnit.SECONDS).until(
                         client::user,

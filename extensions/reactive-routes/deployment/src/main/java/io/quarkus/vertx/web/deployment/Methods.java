@@ -71,7 +71,6 @@ class Methods {
     static final MethodDesc BODY = MethodDesc.of(RoutingContext.class, "body", RequestBody.class);
     static final MethodDesc REQUEST_BODY_BUFFER = MethodDesc.of(RequestBody.class, "buffer", Buffer.class);
     static final MethodDesc REQUEST_BODY_AS_STRING = MethodDesc.of(RequestBody.class, "asString", String.class);
-    static final MethodDesc JSON_OBJECT_MAP_TO = MethodDesc.of(JsonObject.class, "mapTo", Object.class, Class.class);
     static final MethodDesc REQUEST_PARAMS = MethodDesc.of(HttpServerRequest.class, "params", MultiMap.class);
     static final MethodDesc REQUEST_HEADERS = MethodDesc.of(HttpServerRequest.class, "headers", MultiMap.class);
     static final MethodDesc RESPONSE = MethodDesc.of(RoutingContext.class, "response", HttpServerResponse.class);
@@ -149,6 +148,8 @@ class Methods {
             JsonObject.class, RequestBody.class);
     static final MethodDesc ROUTE_HANDLERS_BODY_AS_JSON_ARRAY = MethodDesc.of(RouteHandlers.class, "bodyAsJsonArray",
             JsonArray.class, RequestBody.class);
+    static final MethodDesc ROUTE_HANDLERS_BODY_MAP_TO = MethodDesc.of(RouteHandlers.class, "bodyMapTo",
+            Object.class, JsonObject.class, Class.class);
     static final MethodDesc ROUTE_HANDLERS_SET_CONTENT_TYPE = MethodDesc.of(RouteHandlers.class, "setContentType",
             void.class, RoutingContext.class, String.class);
 

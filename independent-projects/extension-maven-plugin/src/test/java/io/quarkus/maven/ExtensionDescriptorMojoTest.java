@@ -6,8 +6,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
@@ -17,6 +19,7 @@ import org.apache.maven.execution.DefaultMavenExecutionRequest;
 import org.apache.maven.execution.MavenExecutionRequest;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuilder;
@@ -37,12 +40,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 @ExtendWith(SystemStubsExtension.class)
-class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
+public class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
 
     @SystemStub
     private EnvironmentVariables environment;
@@ -56,6 +60,11 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
         super.setUp();
         // Make sure that we don't have the GITHUB_REPOSITORY environment variable masking what this mojo does
         environment.set("GITHUB_REPOSITORY", null);
+        // Disable the registry-client fallback used to resolve known extension categories when no local
+        // categoriesFile is configured, so these tests never depend on network access. The fallback itself is
+        // exercised explicitly in shouldNotWarnWhenNoCategoryDataIsAvailable().
+        environment.set("QUARKUS_REGISTRY_CLIENT", "false");
+        QuarkusProjectHelper.reset();
     }
 
     @AfterEach
@@ -173,6 +182,66 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
                 + "  status: \"deprecated\"\n");
 
         mojo.execute();
+    }
+
+    @Test
+    public void shouldWarnOnUnknownCategory()
+            throws Exception {
+        ExtensionDescriptorMojo mojo = makeMojo("simple-pom-with-checks-disabled");
+
+        Path categoriesFile = Files.createTempFile("catalog-overrides", ".json");
+        Files.writeString(categoriesFile, "{\"categories\":[{\"id\":\"web\"}]}");
+        mojo.localPlatformOverridesFile = categoriesFile.toFile();
+
+        Path yamlPath = mojo.project.getBasedir().toPath().resolve("target/classes/META-INF/quarkus-extension.yaml");
+        Files.createDirectories(yamlPath.getParent());
+        Files.writeString(yamlPath, ""
+                + "name: \"an arbitrary name\"\n"
+                + "metadata:\n"
+                + "  categories:\n"
+                + "  - \"web\"\n"
+                + "  - \"not-a-real-category\"\n");
+
+        List<String> warnings = new ArrayList<>();
+        mojo.setLog(new SystemStreamLog() {
+            @Override
+            public void warn(CharSequence content) {
+                warnings.add(content.toString());
+            }
+        });
+
+        try {
+            mojo.execute();
+            Assertions.assertTrue(warnings.stream().anyMatch(w -> w.contains("not-a-real-category")),
+                    "Expected a warning about the unknown category but got: " + warnings);
+        } finally {
+            Files.deleteIfExists(yamlPath);
+            Files.deleteIfExists(categoriesFile);
+        }
+    }
+
+    @Test
+    public void shouldNotWarnWhenNoCategoryDataIsAvailable()
+            throws Exception {
+        ExtensionDescriptorMojo mojo = makeMojo("simple-pom-with-checks-disabled");
+        // mojo.localPlatformOverridesFile is intentionally left unset, and the registry-client fallback is
+        // disabled in setup(), so no known categories are available at all
+
+        Path yamlPath = mojo.project.getBasedir().toPath().resolve("target/classes/META-INF/quarkus-extension.yaml");
+        Files.createDirectories(yamlPath.getParent());
+        Files.writeString(yamlPath, ""
+                + "name: \"an arbitrary name\"\n"
+                + "metadata:\n"
+                + "  categories:\n"
+                + "  - \"not-a-real-category\"\n");
+
+        try {
+            // Should not fail even though the category is unknown, since the check is skipped without any
+            // known categories to check against
+            mojo.execute();
+        } finally {
+            Files.deleteIfExists(yamlPath);
+        }
     }
 
     @Test

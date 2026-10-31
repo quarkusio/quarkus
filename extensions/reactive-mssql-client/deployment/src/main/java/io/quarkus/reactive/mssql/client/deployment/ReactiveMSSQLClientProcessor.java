@@ -2,35 +2,36 @@ package io.quarkus.reactive.mssql.client.deployment;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.IntSupplier;
 
-import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DataSourceDefinedBuildItem;
 import io.quarkus.datasource.deployment.spi.DatabaseVersionLoader;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
+import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.devservices.datasource.common.DevServicesDatasourceConfigurationHandlerBuildItem;
+import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.spi.ReactivePoolBuildItem;
+import io.quarkus.reactive.mssql.client.runtime.DataSourcesReactiveMSSQLConfig;
 import io.quarkus.reactive.mssql.client.runtime.MSSQLPoolRecorder;
 import io.quarkus.reactive.mssql.client.runtime.MsSQLServiceBindingConverter;
 import io.quarkus.runtime.util.ProgrammingParadigm;
-import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
-import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
-import io.quarkus.vertx.deployment.VertxBuildItem;
+import io.quarkus.tls.TlsConfigurationRegistry;
+import io.vertx.core.Vertx;
 import io.vertx.mssqlclient.spi.MSSQLDriver;
 import io.vertx.sqlclient.Pool;
 
@@ -47,14 +48,9 @@ class ReactiveMSSQLClientProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
     ServiceStartBuildItem build(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<ReactivePoolBuildItem> pools,
-            MSSQLPoolRecorder recorder,
-            VertxBuildItem vertx,
-            EventLoopCountBuildItem eventLoopCount,
-            ShutdownContextBuildItem shutdown,
-            Optional<TlsRegistryBuildItem> tlsRegistryBuildItem,
+            ServiceRegistrar serviceRegistrar,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             List<DataSourceDefinedBuildItem> definedDataSources) {
 
@@ -67,10 +63,25 @@ class ReactiveMSSQLClientProcessor {
             }
             String dataSourceName = dataSource.getName();
 
-            Function<SyntheticCreationalContext<Pool>, Pool> poolFunction = recorder.configureMSSQLPool(vertx.getVertx(),
-                    eventLoopCount.getEventLoopCount(), dataSourceName, shutdown,
-                    tlsRegistryBuildItem.map(TlsRegistryBuildItem::registry).orElse(null));
-            pools.produce(new ReactivePoolBuildItem(dataSourceName, TYPE, poolFunction, HEALTH_CHECK_SQL));
+            serviceRegistrar.forService(Pool.class, dataSourceName)
+                    .atPhase(Phase.DATA)
+                    .require(DataSourcesRuntimeConfig.class)
+                    .require(DataSourcesReactiveRuntimeConfig.class)
+                    .require(DataSourcesReactiveMSSQLConfig.class)
+                    .require(Vertx.class)
+                    .require(IntSupplier.class, "io.quarkus.vertx.event-loop-count")
+                    .require(BeanContainer.class)
+                    .request(TlsConfigurationRegistry.class)
+                    .optional()
+                    .onStart((ctx, runtimeConfig, reactiveRuntimeConfig, dbConfig, vertx, eventLoopCount, beanContainer,
+                            tlsRegistry) -> {
+                        Optional<Pool> pool = MSSQLPoolRecorder.createPool(dataSourceName, runtimeConfig,
+                                reactiveRuntimeConfig, dbConfig, vertx, eventLoopCount.getAsInt(),
+                                tlsRegistry.orElse(null));
+                        pool.ifPresent(p -> ctx.onStop(p::close));
+                        return pool;
+                    });
+            pools.produce(new ReactivePoolBuildItem(dataSourceName, TYPE, HEALTH_CHECK_SQL));
         }
 
         // Enable SSL support by default

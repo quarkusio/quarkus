@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -759,6 +760,7 @@ public class DevMojo extends AbstractMojo {
                             var clone = e.clone();
                             clone.setGoals(List.of(QUARKUS_GENERATE_CODE_GOAL));
                             // this will schedule it before the compile phase goals
+                            clone.setPriority(Integer.MIN_VALUE);
                             phaseExecutions.computeIfAbsent("compile", k -> new ArrayList<>())
                                     .add(0, new PluginExec(p, goalPrefix, clone));
                             bootstrapId = e.getId();
@@ -766,6 +768,7 @@ public class DevMojo extends AbstractMojo {
                             var clone = e.clone();
                             clone.setGoals(List.of(QUARKUS_GENERATE_CODE_TESTS_GOAL));
                             // this will schedule it before the test-compile phase goals
+                            clone.setPriority(Integer.MIN_VALUE);
                             phaseExecutions.computeIfAbsent("test-compile", k -> new ArrayList<>())
                                     .add(0, new PluginExec(p, goalPrefix, clone));
                         } else {
@@ -781,6 +784,7 @@ public class DevMojo extends AbstractMojo {
                 }
             }
         }
+        phaseExecutions.values().forEach(DevMojo::sortByPriority);
 
         // Map<pluginId, List<goals>>
         final Map<String, List<String>> executedPluginGoals = new HashMap<>();
@@ -1862,7 +1866,18 @@ public class DevMojo extends AbstractMojo {
         return p;
     }
 
-    private static final class PluginExec {
+    /**
+     * Orders executions bound to the same phase the way Maven does: by their priority, keeping the declaration order
+     * of executions with the same priority. Lifecycle mappings, such as the one of the {@code quarkus} packaging,
+     * rely on it to run {@code resources:resources} before {@code quarkus:generate-code}.
+     *
+     * @param executions executions bound to the same phase
+     */
+    static void sortByPriority(List<PluginExec> executions) {
+        executions.sort(Comparator.comparingInt(pe -> pe.execution.getPriority()));
+    }
+
+    static final class PluginExec {
         final Plugin plugin;
         final String prefix;
         final PluginExecution execution;

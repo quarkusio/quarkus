@@ -16,14 +16,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.ImageMode;
 import io.smallrye.config.Config;
+import io.smallrye.config.ConfigUnknownReporter;
 import io.smallrye.config.ConfigValue;
-import io.smallrye.config.common.utils.StringUtil;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
  * Utility methods to log configuration problems.
@@ -70,13 +72,8 @@ public final class ConfigDiagnostic {
     /**
      * Report any unused properties.
      * <br>
-     * The list of unused properties may contain false positives. This is caused when an environment variable is set up,
-     * and we cannot determine correctly if it was used or not.
-     * <br>
-     * Environment variables require a conversion to regular property names so a Map can be properly populated when
-     * iterating {@link Config#getPropertyNames()}. Because an Environment variable name may match multiple property
-     * names, we try the best effort to report unknowns by matching used properties in their Environment variable name
-     * format.
+     * The set of unused properties must not contain names from environment variables, because an Environment variable
+     * name may match multiple property names, and we cannot determine correctly if it was used or not.
      *
      * @param properties the set of possible unused properties
      */
@@ -85,69 +82,58 @@ public final class ConfigDiagnostic {
             return;
         }
         Config config = Config.get();
-        Set<String> usedProperties = new HashSet<>();
-        StringBuilder tmp = null;
-        for (String property : config.getPropertyNames()) {
-            if (properties.contains(property)) {
-                continue;
-            }
-            if (tmp == null) {
-                tmp = new StringBuilder(property.length());
-            } else {
-                tmp.setLength(0);
-            }
-            String usedProperty = StringUtil.replaceNonAlphanumericByUnderscores(property, tmp);
-            if (properties.contains(usedProperty)) {
-                continue;
-            }
-            usedProperties.add(usedProperty);
-        }
         for (String property : properties) {
             // Indexed properties not supported by @ConfigRoot, but they can show up due to the YAML source. Just ignore them.
             if (property.indexOf('[') != -1 && property.indexOf(']') != -1) {
                 continue;
             }
 
-            boolean found = false;
-            if (!usedProperties.isEmpty()) {
-                if (tmp == null) {
-                    tmp = new StringBuilder(property.length());
-                } else {
-                    tmp.setLength(0);
-                }
-                String propertyWithUnderscores = StringUtil.replaceNonAlphanumericByUnderscores(property, tmp);
-                for (String usedProperty : usedProperties) {
-                    if (usedProperty.equalsIgnoreCase(propertyWithUnderscores)) {
-                        found = true;
-                        break;
-                    }
-                }
+            ConfigValue configValue = config.getConfigValue(property);
+            if (property.equals(configValue.getName())) {
+                unknown(configValue);
             }
-            if (!found) {
-                ConfigValue configValue = config.getConfigValue(property);
-                if (property.equals(configValue.getName())) {
+        }
+    }
+
+    /**
+     * Used to generate bytecode by RunTimeConfigurationGenerator.
+     */
+    @SuppressWarnings("unused")
+    public static void reportUnknown(SmallRyeConfigBuilder builder, Set<String> roots, Predicate<NameIterator> mapped) {
+        if (ImageMode.current() == ImageMode.NATIVE_BUILD) {
+            reportUnknownRuntime(builder, roots, mapped);
+        }
+    }
+
+    /**
+     * Used to generate bytecode by RunTimeConfigurationGenerator.
+     */
+    @SuppressWarnings("unused")
+    public static void reportUnknownRuntime(SmallRyeConfigBuilder builder, Set<String> roots, Predicate<NameIterator> mapped) {
+        builder.withUnknownReporter(new ConfigUnknownReporter() {
+            @Override
+            public boolean accepts(final String name) {
+                NameIterator nameIterator = new NameIterator(name);
+                if (!PropertiesUtil.isPropertyQuarkusCompoundName(nameIterator)
+                        && !PropertiesUtil.isPropertyInRoots(name, roots)) {
+                    return false;
+                }
+                // SmallRye Config only knows the mappings of its phase, so names of other phases are not used
+                return !mapped.test(nameIterator);
+            }
+
+            @Override
+            public void report(final String name, final ConfigValue configValue) {
+                // Indexed properties not supported by @ConfigRoot, but they can show up due to the YAML source. Just ignore them.
+                if (name.indexOf('[') != -1 && name.indexOf(']') != -1) {
+                    return;
+                }
+                // A different name means that the property was relocated or has a fallback
+                if (name.equals(configValue.getName())) {
                     unknown(configValue);
                 }
             }
-        }
-    }
-
-    /**
-     * Used to generate bytecode by RunTimeConfigurationGenerator.
-     */
-    @SuppressWarnings("unused")
-    public static void reportUnknown(Set<String> properties) {
-        if (ImageMode.current() == ImageMode.NATIVE_BUILD) {
-            unknownProperties(properties);
-        }
-    }
-
-    /**
-     * Used to generate bytecode by RunTimeConfigurationGenerator.
-     */
-    @SuppressWarnings("unused")
-    public static void reportUnknownRuntime(Set<String> properties) {
-        unknownProperties(properties);
+        });
     }
 
     private static final String APPLICATION = "application";

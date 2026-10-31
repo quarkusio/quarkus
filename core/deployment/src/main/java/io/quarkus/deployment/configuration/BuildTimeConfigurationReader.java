@@ -323,13 +323,19 @@ public final class BuildTimeConfigurationReader {
 
             // Remove unknown properties from relocates / fallbacks
             Set<String> relocatesOrFallbacks = new HashSet<>();
+            // Remove unknown properties from Environment Variables, because a name may match multiple property names
+            Set<String> environment = new HashSet<>();
             for (String unknownBuildProperty : unknownBuildProperties) {
                 ConfigValue configValue = config.getConfigValue(unknownBuildProperty);
                 if (!unknownBuildProperties.contains(configValue.getName())) {
                     relocatesOrFallbacks.add(unknownBuildProperty);
+                } else if (configValue.getConfigSourceName() != null
+                        && configValue.getConfigSourceName().startsWith(EnvConfigSource.NAME)) {
+                    environment.add(unknownBuildProperty);
                 }
             }
             unknownBuildProperties.removeAll(relocatesOrFallbacks);
+            unknownBuildProperties.removeAll(environment);
 
             return new ReadResult.Builder()
                     .setAllBuildTimeValues(allBuildTimeValues)

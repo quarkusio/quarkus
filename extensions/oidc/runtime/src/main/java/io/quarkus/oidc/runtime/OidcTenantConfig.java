@@ -458,6 +458,20 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
          */
         @WithDefault("sub")
         String logoutTokenKey();
+
+        /**
+         * Log out all the current sessions of the user identified by the logout token `sub` (subject) claim
+         * when this token has no `sid` (session id) claim, for example, when the user has logged in from several browsers.
+         * By default, such a logout token logs out only the first session which is found after the token has arrived.
+         * Enabling this property keeps the logout token cached until it expires or is evicted,
+         * so all the sessions created before the token was issued are logged out as they are found.
+         * Logout tokens with the `sid` claim always log out only the session identified by this claim,
+         * therefore this property can not be enabled when `logout-token-key` is set to `sid`.
+         * Logout tokens without the `sid` claim are rejected when they have no `iat` (issued at) claim,
+         * because sessions created after the logout token was issued must not be logged out.
+         */
+        @WithDefault("false")
+        boolean logoutAllSessions();
     }
 
     /**

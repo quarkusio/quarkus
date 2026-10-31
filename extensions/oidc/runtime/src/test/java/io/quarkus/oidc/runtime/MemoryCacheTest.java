@@ -144,6 +144,29 @@ public class MemoryCacheTest {
     }
 
     @Test
+    public void testRemoveIfKeepsInsertionOrder() {
+        MemoryCache<Bean> cache = new MemoryCache<Bean>(null, Optional.empty(), Duration.ofMinutes(10), 3);
+        cache.add("1", new Bean("a"));
+        cache.add("2", new Bean("b"));
+        cache.add("3", new Bean("a"));
+        cache.removeIf(bean -> "a".equals(bean.name));
+        assertEquals(1, cache.getCacheSize());
+        assertNull(cache.get("1"));
+        assertNull(cache.get("3"));
+        assertEquals("b", cache.get("2").name);
+
+        cache.add("4", new Bean("c"));
+        cache.add("5", new Bean("d"));
+        // "2" is the eldest entry now
+        cache.add("6", new Bean("e"));
+        assertEquals(3, cache.getCacheSize());
+        assertNull(cache.get("2"));
+        assertEquals("c", cache.get("4").name);
+        assertEquals("d", cache.get("5").name);
+        assertEquals("e", cache.get("6").name);
+    }
+
+    @Test
     public void testDeferredValues() {
         MemoryCache<Bean> cache = new MemoryCache<Bean>(null, Optional.empty(), Duration.ofMinutes(10), 2);
 

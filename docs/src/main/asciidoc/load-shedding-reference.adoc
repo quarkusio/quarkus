@@ -48,9 +48,9 @@ Priority load shedding only rejects a fraction of requests even if overload is d
 By default, priority load shedding is enabled.
 It can be disabled by setting `quarkus.load-shedding.priority.enabled` to `false.`
 
-WARNING: Pure load shedding rejects _all_ requests while the application is overloaded, including requests to the non-application endpoints such as health checks.
-An orchestrator that probes those endpoints may conclude that the application is dead and restart it.
-Request priority, described below, is the only mechanism that can exempt them.
+WARNING: Pure load shedding rejects _all_ requests while the application is overloaded, including requests to the non-application endpoints.
+The only exceptions are the health probes (liveness, readiness and startup) and the metrics endpoint, which are never shed: an orchestrator that probes them would otherwise restart an application that is merely overloaded, or cut it off and push its load onto the remaining replicas.
+Request priority, described below, is the only mechanism that can exempt other requests.
 If you disable priority load shedding, consider also exposing the management endpoints on the xref:management-interface-reference.adoc[separate management interface], which is not subject to load shedding.
 
 There are 2 ways of customizing priority load shedding:
@@ -123,6 +123,9 @@ Further, there's a special priority level called `NEVER`, which is exempt from l
 
 There is one default prioritizer which assigns the priority of `NEVER` to requests to the non-application endpoints.
 It declares no `@Priority`.
+
+Independently of priority load shedding, the health probes (liveness, readiness and startup) and the metrics endpoint are never shed, even if priority load shedding is disabled.
+Extensions declare such paths with the `io.quarkus.load.shedding.deployment.spi.LoadSheddingExemptPathBuildItem` build item from the `quarkus-load-shedding-deployment-spi` artifact.
 
 IMPORTANT: The `NEVER` priority must be used sparingly.
 A request should only be assigned `NEVER` if it is part of the operational control plane (health checks, in-memory metrics scraping, etc.), where failures would trigger cascading failures, AND if it satisfies strict execution bounds.

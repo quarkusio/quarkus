@@ -364,7 +364,9 @@ public class BootstrapMavenContext {
                             throw new BootstrapMavenException("Settings problem encountered at " + problem.getLocation(),
                                     problem.getException());
                         default:
-                            log.warn("Settings problem encountered at " + problem.getLocation(), problem.getException());
+                            // Maven parses settings leniently, so warnings are reported on one line like Maven does
+                            log.warn("Settings problem encountered at " + problem.getLocation() + ": " + problem.getMessage());
+                            log.debug("Settings problem details", problem.getException());
                     }
                 }
             }

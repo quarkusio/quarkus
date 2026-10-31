@@ -14,6 +14,7 @@ import java.util.StringTokenizer;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.vertx.core.MultiMap;
@@ -442,13 +443,10 @@ public class OidcCommonUtilsTest {
     private static OidcClientCommonConfig createConfig(Map<String, String> properties) {
         var configBuilder = new SmallRyeConfigBuilder()
                 .addDiscoveredConverters()
-                .withMapping(io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.class)
+                .withMapping(OidcClientCommonConfig.class)
                 .withDefaultValue("client-id", "client");
         properties.forEach(configBuilder::withDefaultValue);
-        var mapping = configBuilder.build()
-                .getConfigMapping(io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.class);
-        return new OidcClientCommonConfig(mapping) {
-        };
+        return configBuilder.build().getConfigMapping(OidcClientCommonConfig.class);
     }
 
     public static JsonObject decodeJwtContent(String jwt) {

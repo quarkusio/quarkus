@@ -814,12 +814,23 @@ public class OidcTenantConfigBuilderTest {
                 .tenantPath("tenant-path-test-1")
                 .tenantPaths("tenant-path-test-2", "tenant-path-test-3")
                 .publicKey("public-key-test-1")
+                .applicationType(ApplicationType.HYBRID)
                 .allowTokenIntrospectionCache()
                 .allowUserInfoCache()
                 .cacheUserInfoInIdtoken()
                 .provider(Provider.GOOGLE)
                 .dpop(Duration.ofMinutes(4))
-                // the rest of c&p tests for the OidcTenantConfig are tested in their dedicated builder tests below
+                .introspectionCredentials("introspection-name-test", "introspection-secret-test")
+                .roles(accesstoken, "role-claim-path-test")
+                .token("principal-claim-test")
+                .logout().path("/logout-path-test").end()
+                .certificateChain().leafCertificateName("leaf-certificate-test").end()
+                .resourceMetadata().resource("resource-metadata-test").end()
+                .clientIdMetadata().forceHttpsScheme(false).end()
+                .authentication().redirectPath("/redirect-path-test").end()
+                .codeGrant(Map.of("code-grant-header-test", "code-grant-header-value"))
+                .tokenStateManager().encryptionSecret("token-state-manager-secret-test").end()
+                .jwks().cacheSize(55).end()
                 .build();
 
         // OidcTenantConfig methods
@@ -834,6 +845,35 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(existingConfig.allowUserInfoCache());
         assertTrue(existingConfig.cacheUserInfoInIdtoken().orElseThrow());
         assertEquals(Duration.ofMinutes(4), existingConfig.dpop().proofAge());
+
+        // every property must be copied as is when nothing is changed
+        var copy = OidcTenantConfig.builder(existingConfig).build();
+        assertEquals("test-copy-tenant-props", copy.tenantId().orElse(null));
+        assertFalse(copy.tenantEnabled());
+        assertEquals(ApplicationType.HYBRID, copy.applicationType().orElse(null));
+        assertEquals("authorization-path-test-1", copy.authorizationPath().orElse(null));
+        assertEquals("user-info-path-test-1", copy.userInfoPath().orElse(null));
+        assertEquals("introspection-path-test-1", copy.introspectionPath().orElse(null));
+        assertEquals("jwks-path-test-1", copy.jwksPath().orElse(null));
+        assertEquals("end-session-path-test-1", copy.endSessionPath().orElse(null));
+        assertEquals(tenantPaths, copy.tenantPaths().orElseThrow());
+        assertEquals("public-key-test-1", copy.publicKey().orElse(null));
+        assertTrue(copy.allowTokenIntrospectionCache());
+        assertTrue(copy.allowUserInfoCache());
+        assertTrue(copy.cacheUserInfoInIdtoken().orElseThrow());
+        assertEquals(Provider.GOOGLE, copy.provider().orElse(null));
+        assertEquals("introspection-name-test", copy.introspectionCredentials().name().orElse(null));
+        assertEquals(accesstoken, copy.roles().source().orElse(null));
+        assertEquals("principal-claim-test", copy.token().principalClaim().orElse(null));
+        assertEquals(Duration.ofMinutes(4), copy.dpop().proofAge());
+        assertEquals("/logout-path-test", copy.logout().path().orElse(null));
+        assertEquals("leaf-certificate-test", copy.certificateChain().leafCertificateName().orElse(null));
+        assertEquals("resource-metadata-test", copy.resourceMetadata().resource().orElse(null));
+        assertFalse(copy.clientIdMetadata().forceHttpsScheme());
+        assertEquals("/redirect-path-test", copy.authentication().redirectPath().orElse(null));
+        assertEquals("code-grant-header-value", copy.codeGrant().headers().get("code-grant-header-test"));
+        assertEquals("token-state-manager-secret-test", copy.tokenStateManager().encryptionSecret().orElse(null));
+        assertEquals(55, copy.jwks().cacheSize());
 
         var newConfig = OidcTenantConfig.builder(existingConfig)
                 // OidcTenantConfig methods
@@ -960,6 +1000,15 @@ public class OidcTenantConfigBuilderTest {
         assertEquals(852, jwt.lifespan());
         assertTrue(jwt.assertion());
 
+        // every property must be copied as is when nothing is changed
+        var copy = OidcTenantConfig.builder(existingConfig).build();
+        assertEquals("token-path-yep", copy.tokenPath().orElse(null));
+        assertEquals("revoke-path-yep", copy.revokePath().orElse(null));
+        assertEquals("client-id-yep", copy.clientId().orElse(null));
+        assertEquals("client-name-yep", copy.clientName().orElse(null));
+        assertEquals(credentials, copy.credentials());
+        assertEquals("secret-yep", copy.credentials().secret().orElse(null));
+
         var newConfig = OidcTenantConfig.builder(existingConfig)
                 // OidcClientCommonConfig methods
                 .tokenPath("token-path-yep-CHANGED")
@@ -1041,6 +1090,7 @@ public class OidcTenantConfigBuilderTest {
         var previousConfig = OidcTenantConfig.builder()
                 .tenantId("common-props-test")
                 .authServerUrl("we")
+                .discoveryPath("/discovery-path-test")
                 .discoveryEnabled(false)
                 .registrationPath("don't")
                 .connectionDelay(Duration.ofSeconds(656))
@@ -1052,6 +1102,23 @@ public class OidcTenantConfigBuilderTest {
                 .tlsConfigurationName("Teacher!")
                 .proxyConfigurationName("Kreacher!")
                 .build();
+
+        // every property must be copied as is when nothing is changed
+        var copy = OidcTenantConfig.builder(previousConfig).build();
+        assertEquals("common-props-test", copy.tenantId().orElse(null));
+        assertEquals("we", copy.authServerUrl().orElse(null));
+        assertEquals("/discovery-path-test", copy.discoveryPath());
+        assertFalse(copy.discoveryEnabled().orElseThrow());
+        assertEquals("don't", copy.registrationPath().orElse(null));
+        assertEquals(656, copy.connectionDelay().map(Duration::getSeconds).orElse(null));
+        assertEquals(565, copy.connectionRetryCount());
+        assertEquals(673, copy.connectionTimeout().getSeconds());
+        assertTrue(copy.useBlockingDnsLookup());
+        assertEquals(376, copy.maxPoolSize().orElse(0));
+        assertFalse(copy.followRedirects());
+        assertEquals("Teacher!", copy.tls().tlsConfigurationName().orElse(null));
+        assertEquals("Kreacher!", copy.proxy().proxyConfigurationName().orElse(null));
+
         var newConfig = OidcTenantConfig.builder(previousConfig)
                 .discoveryEnabled(true)
                 .connectionDelay(Duration.ofSeconds(753))

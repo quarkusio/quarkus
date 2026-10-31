@@ -51,7 +51,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      */
     private static volatile OidcTenantConfig configWithDefaults = null;
 
-    private static final class OidcTenantConfigImpl extends OidcClientCommonConfigImpl implements OidcTenantConfig {
+    static final class OidcTenantConfigImpl extends OidcClientCommonConfigImpl implements io.quarkus.oidc.OidcTenantConfig {
         private final Optional<String> tenantId;
         private final boolean tenantEnabled;
         private final Optional<ApplicationType> applicationType;
@@ -755,7 +755,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
             mergeProviderConfig(KnownOidcProviders.provider(provider.get()));
         }
         enableImpliedProperties();
-        return new io.quarkus.oidc.OidcTenantConfig(new OidcTenantConfigImpl(this));
+        return new OidcTenantConfigImpl(this);
     }
 
     private void enableImpliedProperties() {

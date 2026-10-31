@@ -3,6 +3,7 @@ package io.quarkus.observability.test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Tag;
@@ -70,51 +71,94 @@ public class LgtmReloadTest extends LgtmTestHelper {
         //    and ContainerLocator treated the containers as "external" on reload.
         assertOwnershipLabelsApplied();
 
-        // 3. Hot reload: modify source file → Quarkus restarts,
+        // 3. Capture the container IDs that currently belong to this JVM.
+        //    This is what we actually expect to SURVIVE the hot reload — the
+        //    exact bug before the fix was that ContainerLocator would rediscover
+        //    them as "external shared" and stop them.
+        Set<String> containerIdsBeforeReload = ourContainerIds();
+        assertThat(containerIdsBeforeReload)
+                .describedAs("Expected at least one dev service container owned by this JVM before reload")
+                .isNotEmpty();
+        log.infof("Container IDs owned by this JVM before reload: %s", containerIdsBeforeReload);
+
+        // 4. Hot reload: modify source file → Quarkus restarts,
         //    observability dev services close() + start() behind the scenes.
         test.modifySourceFile(ReloadEndpoint.class, s -> s.replace("/reload", "/new"));
         poke("/new");
 
-        // 4. Modify resource → another reload cycle
+        // 5. The SAME container IDs must still be running — this is the actual
+        //    regression check. Before the fix, container IDs would disappear
+        //    (stopped by ContainerLocator) and then new ones would be started.
+        Set<String> containerIdsAfterReload = ourContainerIds();
+        log.infof("Container IDs owned by this JVM after reload: %s", containerIdsAfterReload);
+
+        assertThat(containerIdsAfterReload)
+                .describedAs("Expected at least one dev service container owned by this JVM after reload")
+                .isNotEmpty();
+
+        assertThat(containerIdsAfterReload)
+                .describedAs(
+                        "All pre-reload containers owned by this JVM should still be running after reload. "
+                                + "Before the fix (#57067) ContainerLocator would stop them because "
+                                + "ConfigureUtil.configureLabels was never called on the observability "
+                                + "Container abstraction.")
+                .containsAll(containerIdsBeforeReload);
+
+        // 6. Modify resource → another reload cycle, same survival check
         test.modifyResourceFile("application.properties", s -> s.replace("timeout=PT3M", "timeout=PT4M"));
         poke("/new");
 
-        // 5. Labels still present after reload – proof the JVM's own containers
-        //    were not rediscovered (and possibly stopped) by ContainerLocator.
+        Set<String> containerIdsAfterSecondReload = ourContainerIds();
+        log.infof("Container IDs owned by this JVM after second reload: %s", containerIdsAfterSecondReload);
+
+        assertThat(containerIdsAfterSecondReload)
+                .describedAs("All pre-reload containers should survive the second reload cycle too")
+                .containsAll(containerIdsAfterReload);
+
+        // 7. Labels still present after both reloads – double proof
         assertOwnershipLabelsApplied();
     }
 
     /**
-     * Lists Docker containers that carry {@link Labels#QUARKUS_DEV_SERVICE} and
-     * asserts at least one of them has this JVM's own
-     * {@link RunningDevServicesRegistry#APPLICATION_UUID} and DEVELOPMENT launch
-     * mode set as labels.
+     * Returns Docker container IDs of dev services owned by <b>this JVM</b>.
+     * <p>
+     * Filters by both the generic {@link Labels#QUARKUS_DEV_SERVICE} label AND
+     * this JVM's own {@link RunningDevServicesRegistry#APPLICATION_UUID}, so
+     * containers from other test processes running in the same CI Docker daemon
+     * are excluded.
      */
-    private void assertOwnershipLabelsApplied() {
-        List<Container> quarkusDevServiceContainers = DockerClientFactory.lazyClient()
+    private Set<String> ourContainerIds() {
+        String thisProcessUuid = RunningDevServicesRegistry.APPLICATION_UUID;
+        List<Container> all = DockerClientFactory.lazyClient()
                 .listContainersCmd()
                 .withLabelFilter(Labels.QUARKUS_DEV_SERVICE)
                 .exec();
+        return all.stream()
+                .filter(c -> thisProcessUuid.equals(c.getLabels().get(Labels.QUARKUS_PROCESS_UUID)))
+                .map(Container::getId)
+                .collect(Collectors.toSet());
+    }
 
-        assertThat(quarkusDevServiceContainers)
-                .describedAs("Expected at least one Quarkus dev service container in Docker")
-                .isNotEmpty();
-
+    /**
+     * Asserts that all Docker containers owned by this JVM (matched by
+     * {@link RunningDevServicesRegistry#APPLICATION_UUID}) carry both
+     * {@link Labels#QUARKUS_PROCESS_UUID} and {@link Labels#QUARKUS_LAUNCH_MODE}
+     * with the DEVELOPMENT value.
+     */
+    private void assertOwnershipLabelsApplied() {
         String thisProcessUuid = RunningDevServicesRegistry.APPLICATION_UUID;
-        log.infof("Looking for containers labeled with QUARKUS_PROCESS_UUID=%s", thisProcessUuid);
-
-        List<Container> ours = quarkusDevServiceContainers.stream()
+        List<Container> ours = DockerClientFactory.lazyClient()
+                .listContainersCmd()
+                .withLabelFilter(Labels.QUARKUS_DEV_SERVICE)
+                .exec()
+                .stream()
                 .filter(c -> thisProcessUuid.equals(c.getLabels().get(Labels.QUARKUS_PROCESS_UUID)))
                 .collect(Collectors.toList());
 
         assertThat(ours)
                 .describedAs(
-                        "Expected at least one dev service container owned by this JVM (process-uuid=%s). "
-                                + "Containers found: %s",
-                        thisProcessUuid,
-                        quarkusDevServiceContainers.stream()
-                                .map(c -> c.getLabels().get(Labels.QUARKUS_PROCESS_UUID))
-                                .collect(Collectors.toList()))
+                        "Expected at least one dev service container owned by this JVM (process-uuid=%s).",
+                        thisProcessUuid)
                 .isNotEmpty();
 
         // Every container owned by this process should also carry the launch-mode label

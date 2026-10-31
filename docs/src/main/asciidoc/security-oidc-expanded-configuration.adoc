@@ -759,6 +759,7 @@ PLease be aware that supporting the back-channel logout option requires managing
 
 |quarkus.oidc.logout.backchannel.path || Back-channel logout path
 |quarkus.oidc.logout.backchannel.logout-token-key |`sub` claim| Back-channel logout token key
+|quarkus.oidc.logout.backchannel.logout-all-sessions |false| Log out all user sessions
 |quarkus.oidc.logout.backchannel.token-cache-size |10| Back-channel logout token cache size
 |quarkus.oidc.logout.backchannel.token-cache-time-to-live |10 minutes| Back-channel logout token cache time to live
 |quarkus.oidc.logout.backchannel.clean-up-timer-interval || Back-channel logout token cache clean up interval
@@ -767,6 +768,9 @@ PLease be aware that supporting the back-channel logout option requires managing
 `quarkus.oidc.logout.backchannel.path` is a relative path the OIDC provider must send the back-channel logout notifications to.
 
 The back-channel notification contains a logout token. It must be cached so that when one of the authenticated users tries to access Quarkus, this user's ID token can be matched against this logout token. The subject (`sub`) claim value is used by default to match the ID and logout tokens, but the session id (`sid`) claim can be used instead.
+
+Set `quarkus.oidc.logout.backchannel.logout-all-sessions=true` to log out all the sessions that the user had when a logout token without the `sid` claim was issued, for example, when the user has logged in from several browsers.
+This property cannot be enabled when `quarkus.oidc.logout.backchannel.logout-token-key` is set to `sid`.
 
 `quarkus.oidc.logout.backchannel.token-cache-size`, `quarkus.oidc.logout.backchannel.token-cache-time-to-live` and `quarkus.oidc.logout.backchannel.clean-up-timer-interval` are properties for managing the back-channel notification cache.
 

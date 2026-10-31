@@ -173,17 +173,14 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
                                                 .verifyLogoutJwtToken(encodedLogoutToken);
 
                                         if (verifyLogoutTokenClaims(result)) {
-                                            String key = result.localVerificationResult()
-                                                    .getString(
-                                                            tenantContext.oidcConfig().logout().backchannel().logoutTokenKey());
                                             BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
                                                     .get(tenantId);
                                             if (tokens == null) {
-                                                tokens = new BackChannelLogoutTokenCache(tenantContext.oidcConfig(),
-                                                        context.vertx());
-                                                resolver.getBackChannelLogoutTokens().put(tenantId, tokens);
+                                                tokens = resolver.getBackChannelLogoutTokens().computeIfAbsent(tenantId,
+                                                        k -> new BackChannelLogoutTokenCache(tenantContext.oidcConfig(),
+                                                                context.vertx()));
                                             }
-                                            tokens.addTokenVerification(key, result);
+                                            tokens.addTokenVerification(result);
 
                                             if (resolver.isSecurityEventObserved()) {
                                                 SecurityEventHelper.fire(resolver.getSecurityEvent(),
@@ -228,6 +225,12 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
             }
             if (result.localVerificationResult().containsKey(Claims.nonce.name())) {
                 LOG.debug("Back channel logout token must not contain 'nonce' claim");
+                return false;
+            }
+            if (tenantContext.oidcConfig().logout().backchannel().logoutAllSessions()
+                    && !result.localVerificationResult().containsKey(OidcConstants.BACK_CHANNEL_LOGOUT_SID_CLAIM)
+                    && !result.localVerificationResult().containsKey(Claims.iat.name())) {
+                LOG.debug("Back channel logout token without 'sid' claim must contain 'iat' claim to log out all the sessions");
                 return false;
             }
 

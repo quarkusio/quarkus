@@ -198,6 +198,7 @@ public final class LogoutConfigBuilder {
         private Duration tokenCacheTimeToLive;
         private Optional<Duration> cleanUpTimerInterval;
         private String logoutTokenKey;
+        private boolean logoutAllSessions;
 
         public BackchannelBuilder() {
             this(new LogoutConfigBuilder());
@@ -211,6 +212,7 @@ public final class LogoutConfigBuilder {
             this.tokenCacheTimeToLive = backchannel.tokenCacheTimeToLive();
             this.cleanUpTimerInterval = backchannel.cleanUpTimerInterval();
             this.logoutTokenKey = backchannel.logoutTokenKey();
+            this.logoutAllSessions = backchannel.logoutAllSessions();
         }
 
         /**
@@ -228,6 +230,15 @@ public final class LogoutConfigBuilder {
          */
         public BackchannelBuilder logoutTokenKey(String logoutTokenKey) {
             this.logoutTokenKey = Objects.requireNonNull(logoutTokenKey);
+            return this;
+        }
+
+        /**
+         * @param logoutAllSessions {@link OidcTenantConfig.Backchannel#logoutAllSessions()}
+         * @return this builder
+         */
+        public BackchannelBuilder logoutAllSessions(boolean logoutAllSessions) {
+            this.logoutAllSessions = logoutAllSessions;
             return this;
         }
 
@@ -287,6 +298,7 @@ public final class LogoutConfigBuilder {
                     .with(OidcTenantConfig.Backchannel::tokenCacheTimeToLive, tokenCacheTimeToLive)
                     .with(OidcTenantConfig.Backchannel::cleanUpTimerInterval, cleanUpTimerInterval)
                     .with(OidcTenantConfig.Backchannel::logoutTokenKey, logoutTokenKey)
+                    .with(OidcTenantConfig.Backchannel::logoutAllSessions, logoutAllSessions)
                     .build();
         }
     }

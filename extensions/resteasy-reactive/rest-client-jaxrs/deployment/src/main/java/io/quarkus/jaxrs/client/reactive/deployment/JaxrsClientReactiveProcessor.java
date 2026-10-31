@@ -143,6 +143,7 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Types;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -316,6 +317,7 @@ public class JaxrsClientReactiveProcessor {
             List<MessageBodyWriterOverrideBuildItem> messageBodyWriterOverrideBuildItems,
             List<JaxrsClientReactiveEnricherBuildItem> enricherBuildItems,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            ValidationPhaseBuildItem validationPhase,
             ApplicationIndexBuildItem applicationIndexBuildItem,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             Capabilities capabilities, Optional<MetricsCapabilityBuildItem> metricsCapability,
@@ -341,7 +343,7 @@ public class JaxrsClientReactiveProcessor {
 
         SerializersUtil.setupSerializers(recorder, reflectiveClassBuildItemBuildProducer, messageBodyReaderBuildItems,
                 messageBodyWriterBuildItems, messageBodyReaderOverrideBuildItems, messageBodyWriterOverrideBuildItems,
-                beanContainerBuildItem, applicationResultBuildItem, serialisers,
+                beanContainerBuildItem, validationPhase, applicationResultBuildItem, serialisers,
                 RuntimeType.CLIENT);
         Set<DotName> scannedParameterContainers = new HashSet<>();
 

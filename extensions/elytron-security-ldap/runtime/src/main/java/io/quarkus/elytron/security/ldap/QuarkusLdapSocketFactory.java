@@ -16,6 +16,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.tls.TlsConfiguration;
 import io.vertx.core.net.ClientSSLOptions;
+import io.vertx.core.net.PqcEnforcementPolicy;
 import io.vertx.core.net.SSLOptions;
 
 /**
@@ -43,6 +44,21 @@ public class QuarkusLdapSocketFactory extends SocketFactory {
     }
 
     static void configure(String name, TlsConfiguration tlsConfiguration) {
+        ClientSSLOptions options = apply(name, tlsConfiguration);
+        List<String> ignored = ignoredSettings(options);
+        if (!ignored.isEmpty()) {
+            LOG.warnf("The TLS configuration '%s' sets %s, which the LDAP connections do not apply", name,
+                    String.join(", ", ignored));
+        }
+    }
+
+    static void reload(String name, TlsConfiguration tlsConfiguration) {
+        if (name.equals(tlsConfigurationName)) {
+            apply(name, tlsConfiguration);
+        }
+    }
+
+    private static ClientSSLOptions apply(String name, TlsConfiguration tlsConfiguration) {
         SSLContext sslContext;
         try {
             sslContext = tlsConfiguration.createSSLContext();
@@ -55,27 +71,16 @@ public class QuarkusLdapSocketFactory extends SocketFactory {
             throw new IllegalStateException("The TLS configuration '" + name
                     + "' has no client SSL settings and cannot be used for the LDAP connections");
         }
-        List<String> ignored = ignoredSettings(options);
-        if (!ignored.isEmpty()) {
-            LOG.warnf("The TLS configuration '%s' sets %s, which the LDAP connections do not apply", name,
-                    String.join(", ", ignored));
-        }
-        SSLSocketFactory socketFactory = sslContext.getSocketFactory();
         tlsConfigurationName = name;
-        settings = new Settings(socketFactory, toArray(options.getEnabledSecureTransportProtocols()),
+        settings = new Settings(sslContext.getSocketFactory(), toArray(options.getEnabledSecureTransportProtocols()),
                 toArray(options.getEnabledCipherSuites()));
-    }
-
-    static void reload(String name, TlsConfiguration tlsConfiguration) {
-        if (name.equals(tlsConfigurationName)) {
-            configure(name, tlsConfiguration);
-        }
+        return options;
     }
 
     /**
      * Returns the settings of the TLS configuration that the LDAP connections do not apply.
-     * JNDI verifies the host name of LDAPS connections itself, and the socket factory applies only the protocols and
-     * cipher suites to the sockets.
+     * JNDI verifies the host name of LDAPS connections itself, with the {@code LDAPS} algorithm, and the socket factory
+     * applies only the protocols and cipher suites to the sockets.
      *
      * @param options the client SSL options of the TLS configuration
      * @return the names of the ignored settings, empty if none is set
@@ -83,7 +88,8 @@ public class QuarkusLdapSocketFactory extends SocketFactory {
     static List<String> ignoredSettings(ClientSSLOptions options) {
         List<String> ignored = new ArrayList<>();
         String hostnameVerificationAlgorithm = options.getHostnameVerificationAlgorithm();
-        if (hostnameVerificationAlgorithm != null && !hostnameVerificationAlgorithm.isEmpty()) {
+        if (hostnameVerificationAlgorithm != null && !hostnameVerificationAlgorithm.isEmpty()
+                && !"LDAPS".equalsIgnoreCase(hostnameVerificationAlgorithm)) {
             ignored.add("hostname-verification-algorithm");
         }
         if (!options.getCrlPaths().isEmpty() || !options.getCrlValues().isEmpty()) {
@@ -97,6 +103,9 @@ public class QuarkusLdapSocketFactory extends SocketFactory {
         }
         if (options.getKeyExchangeGroups() != null && !options.getKeyExchangeGroups().isEmpty()) {
             ignored.add("key-exchange-groups");
+        }
+        if (options.getPqcEnforcementPolicy() != null && options.getPqcEnforcementPolicy() != PqcEnforcementPolicy.RELAXED) {
+            ignored.add("pqc-enforcement-policy");
         }
         return ignored;
     }

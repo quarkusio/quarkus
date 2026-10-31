@@ -17,6 +17,7 @@ import io.quarkus.tls.BaseTlsConfiguration;
 import io.quarkus.tls.TlsConfiguration;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.ClientSSLOptions;
+import io.vertx.core.net.PqcEnforcementPolicy;
 
 public class QuarkusLdapSocketFactoryTest {
 
@@ -88,9 +89,18 @@ public class QuarkusLdapSocketFactoryTest {
         options.setSslHandshakeTimeout(30);
         options.setSslHandshakeTimeoutUnit(TimeUnit.SECONDS);
         options.setKeyExchangeGroups(List.of("X25519MLKEM768"));
+        options.setPqcEnforcementPolicy(PqcEnforcementPolicy.STRICT);
 
         assertThat(QuarkusLdapSocketFactory.ignoredSettings(options)).containsExactly("hostname-verification-algorithm",
-                "certificate-revocation-list", "handshake-timeout", "key-exchange-groups");
+                "certificate-revocation-list", "handshake-timeout", "key-exchange-groups", "pqc-enforcement-policy");
+    }
+
+    @Test
+    public void testLdapsHostnameVerificationIsNotReported() {
+        ClientSSLOptions options = new ClientSSLOptions();
+        options.setHostnameVerificationAlgorithm("LDAPS");
+
+        assertThat(QuarkusLdapSocketFactory.ignoredSettings(options)).isEmpty();
     }
 
     private static TlsConfiguration tlsConfiguration(Set<String> protocols, Set<String> cipherSuites) {

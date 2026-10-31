@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 
 import org.jboss.jandex.DotName;
 
+import io.quarkus.qute.CheckedTemplateParam;
 import io.quarkus.qute.EngineConfiguration;
 import io.quarkus.qute.Locate;
 import io.quarkus.qute.Locate.Locates;
@@ -34,6 +35,7 @@ final class Names {
     static final DotName BUNDLE = DotName.createSimple(MessageBundle.class.getName());
     static final DotName MESSAGE = DotName.createSimple(Message.class.getName());
     static final DotName MESSAGE_PARAM = DotName.createSimple(MessageParam.class.getName());
+    static final DotName CHECKED_TEMPLATE_PARAM = DotName.createSimple(CheckedTemplateParam.class.getName());
     static final DotName LOCALIZED = DotName.createSimple(Localized.class.getName());
     static final DotName LOCALE_AWARE = DotName.createSimple(LocaleAware.class.getName());
     static final DotName TEMPLATE = DotName.createSimple(Template.class.getName());

@@ -8,11 +8,14 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.security.auth.x500.X500Principal;
 
+import io.quarkus.runtime.configuration.QuarkusConfigBuilderCustomizer;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
-import io.quarkus.vertx.http.runtime.DefaultAuthConfig;
-import io.smallrye.config.Config;
+import io.quarkus.vertx.http.runtime.AuthRuntimeConfig;
+import io.quarkus.vertx.http.runtime.cors.CORSConfig;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import io.vertx.core.internal.net.RFC3986;
 import io.vertx.ext.web.RoutingContext;
 
@@ -221,7 +224,41 @@ public final class HttpSecurityUtils {
         return null;
     }
 
-    public static DefaultAuthConfig getDefaultAuthConfig() {
-        return Config.get().getConfigMapping(DefaultAuthConfig.class);
+    /**
+     * @return an {@link AuthRuntimeConfig} with only the default values of the mapping, built on first use
+     */
+    public static AuthRuntimeConfig getDefaultAuthRuntimeConfig() {
+        return DefaultsHolder.AUTH;
+    }
+
+    /**
+     * @return a {@link CORSConfig} with only the default values of the mapping, built on first use
+     */
+    public static CORSConfig getDefaultCorsConfig() {
+        return DefaultsHolder.CORS;
+    }
+
+    /**
+     * The default instances are only needed by the programmatic {@code HttpSecurity} API, so they are built lazily,
+     * from a configuration without any source, rather than registered as a config root instantiated at every
+     * startup. Such a configuration gives the mappings the default values of their properties, converted and
+     * expanded (some defaults are expressions) exactly like in the application configuration.
+     */
+    private static final class DefaultsHolder {
+        static final AuthRuntimeConfig AUTH;
+        static final CORSConfig CORS;
+
+        static {
+            SmallRyeConfig config = new SmallRyeConfigBuilder()
+                    .forClassLoader(Thread.currentThread().getContextClassLoader())
+                    .withCustomizers(new QuarkusConfigBuilderCustomizer())
+                    .addDiscoveredConverters()
+                    .addDefaultInterceptors()
+                    .withMapping(AuthRuntimeConfig.class, "quarkus.http.auth")
+                    .withMapping(CORSConfig.class, "quarkus.http.cors")
+                    .build();
+            AUTH = config.getConfigMapping(AuthRuntimeConfig.class, "quarkus.http.auth");
+            CORS = config.getConfigMapping(CORSConfig.class, "quarkus.http.cors");
+        }
     }
 }

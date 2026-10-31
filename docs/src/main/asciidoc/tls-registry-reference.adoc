@@ -1112,6 +1112,11 @@ Additionally, the `TlsConfiguration` implementation must support reloading, as i
 The `reload` method returns a `boolean` indicating whether the reload was successful.
 A value of `true` means the reload operation was successful, not necessarily that there were updates to the certificates.
 
+To find out whether the certificates actually changed, use `getContentVersion`.
+It returns a value that changes only when a reload loads a different keystore, truststore, or CRL content, so a component can remember the version it last applied and compare it with the current one before applying the configuration again.
+Keeping that version per component means a reload triggered elsewhere, by another component or by your own code, does not hide the change from the others.
+A negative value means the `TlsConfiguration` implementation cannot detect content changes, in which case every successful reload must be treated as a change.
+
 After a `TlsConfiguration` has been reloaded, servers and clients using this configuration may need to perform specific actions to apply the new certificates.
 
 The preferred approach for informing clients and servers about the certificate reload is to fire a CDI event of type `io.quarkus.tls.CertificateUpdatedEvent`.
@@ -1128,7 +1133,8 @@ TlsConfigurationRegistry registry;
 
 public void reload() {
     TlsConfiguration config = registry.get("name").orElseThrow();
-    if (config.reload()) {
+    long before = config.getContentVersion();
+    if (config.reload() && config.getContentVersion() != before) {
         event.fire(new CertificateUpdatedEvent("name", config));
     }
 }
@@ -1148,7 +1154,10 @@ public void onCertificateUpdate(@Observes CertificateUpdatedEvent reload) {
 === Periodic reloading
 
 The TLS registry includes a built-in mechanism that periodically checks the file system for changes and reloads certificates.
-The `reload-period` property specifies the interval for reloading certificates and emits a `CertificateUpdatedEvent` each time certificates are reloaded.
+The `reload-period` property specifies the interval for reloading certificates.
+A `CertificateUpdatedEvent` is emitted only when the reloaded keystore, truststore, or CRL content differs from the content currently in use.
+Reload periods during which nothing changed are silent, so servers and clients do not swap their SSL options for nothing.
+If the keystore or truststore cannot be reloaded, for example because the file is being rewritten or is corrupted, the cause is logged and the previously loaded content is kept.
 
 . To configure periodic certificate reloading:
 +

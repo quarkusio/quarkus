@@ -121,9 +121,9 @@ public class RequestImpl implements Request {
     }
 
     private Response.ResponseBuilder ifModifiedSince(String strDate, Date lastModified) {
-        Date date = DateUtil.parseDate(strDate);
+        Date date = parseDateOrNull(strDate);
 
-        if (date.getTime() >= millisecondsWithSecondsPrecision(lastModified)) {
+        if (date != null && date.getTime() >= millisecondsWithSecondsPrecision(lastModified)) {
             return Response.notModified();
         }
         return null;
@@ -131,13 +131,24 @@ public class RequestImpl implements Request {
     }
 
     private Response.ResponseBuilder ifUnmodifiedSince(String strDate, Date lastModified) {
-        Date date = DateUtil.parseDate(strDate);
+        Date date = parseDateOrNull(strDate);
 
-        if (date.getTime() >= millisecondsWithSecondsPrecision(lastModified)) {
+        if (date == null || date.getTime() >= millisecondsWithSecondsPrecision(lastModified)) {
             return null;
         }
         return Response.status(Response.Status.PRECONDITION_FAILED).lastModified(lastModified);
 
+    }
+
+    /**
+     * RFC 9110 requires ignoring If-Modified-Since and If-Unmodified-Since if the value is not a valid date
+     */
+    private Date parseDateOrNull(String strDate) {
+        try {
+            return DateUtil.parseDate(strDate);
+        } catch (DateUtil.DateParseException e) {
+            return null;
+        }
     }
 
     /**

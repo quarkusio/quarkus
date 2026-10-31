@@ -44,6 +44,7 @@ public final class ClassNames {
     public static final DotName EMBEDDED = createConstant("jakarta.persistence.Embedded");
     public static final DotName EMBEDDED_ID = createConstant("jakarta.persistence.EmbeddedId");
     public static final DotName ELEMENT_COLLECTION = createConstant("jakarta.persistence.ElementCollection");
+    public static final DotName TRANSIENT = createConstant("jakarta.persistence.Transient");
     public static final DotName HIBERNATE_PROXY = createConstant("org.hibernate.proxy.HibernateProxy");
     public static final DotName TYPE = createConstant("org.hibernate.annotations.Type");
     public static final DotName INJECT_SERVICE = createConstant("org.hibernate.service.spi.InjectService");

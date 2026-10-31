@@ -1453,6 +1453,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-accessor-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-accessor</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-orm</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -5886,6 +5896,11 @@
             </dependency>
             <dependency>
                 <groupId>org.hibernate.accessor</groupId>
+                <artifactId>hibernate-accessor-asm</artifactId>
+                <version>${hibernate-accessor.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.accessor</groupId>
                 <artifactId>hibernate-accessor-bytebuddy</artifactId>
                 <version>${hibernate-accessor.version}</version>
             </dependency>
@@ -7127,9 +7142,6 @@
                                         </dependency>
                                         <dependency>
                                             <artifact>org.hibernate.models:hibernate-models</artifact>
-                                        </dependency>
-                                        <dependency>
-                                            <artifact>org.hibernate.accessor:hibernate-accessor</artifact>
                                         </dependency>
                                     </dependencies>
                                 </dependencyAlignmentRule>

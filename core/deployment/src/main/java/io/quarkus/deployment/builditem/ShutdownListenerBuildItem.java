@@ -11,7 +11,11 @@ import io.quarkus.runtime.shutdown.ShutdownListener;
  * <p>
  * It should be noted, that in most cases, this build item should not be used and instead extensions should opt for
  * {@link ShutdownContext} (via {@link ShutdownContextBuildItem})
+ *
+ * @deprecated Use {@link io.quarkus.core.StartContext#onGracefulPreShutdown(Runnable)} and
+ *             {@link io.quarkus.core.StartContext#onGracefulShutdown(Runnable)} (or their async variants) instead.
  */
+@Deprecated(since = "4.0", forRemoval = true)
 public final class ShutdownListenerBuildItem extends MultiBuildItem {
 
     final ShutdownListener shutdownListener;

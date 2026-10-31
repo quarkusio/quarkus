@@ -1854,7 +1854,9 @@ quarkus tls lets-encrypt issue-certificate \
 <2> Provide your contact email address that Let's Encrypt can use to contact you in case of any issues with your Let's Encrypt account.
 <3> Set your application management URL, which you can use to handle ACME challenges.
 Use `https://localhost:8443/` if you choose not to enable a management router in the <<lets-encrypt-prerequisites,Let's Encrypt prerequisites>> step.
-If you set a custom `quarkus.management.root-path` (or `quarkus.http.non-application-root-path` when the management interface is disabled), use the full Let's Encrypt endpoint URL, for example `https://localhost:9000/admin/lets-encrypt`.
+If you set a custom root path, use the full Let's Encrypt endpoint URL.
+For example, with `quarkus.management.root-path=/admin`, use `https://localhost:9000/admin/lets-encrypt`.
+If the management interface is disabled and you set `quarkus.http.non-application-root-path=/internal`, use `https://localhost:8443/internal/lets-encrypt`.
 +
 Additional options are available:
 +
@@ -1905,6 +1907,8 @@ quarkus tls lets-encrypt renew-certificate \
   --domain=<domain-dns-name> \
   --management-url=https://localhost:9000
 ----
+
+If you use a custom root path, set `--management-url` to the full Let's Encrypt endpoint URL, as described in <<lets-encrypt-issue-certificate,Issue a certificate>>.
 
 During this command, the TLS registry CLI reads the Let's Encrypt account information recorded during the <<lets-encrypt-issue-certificate,Issue certificates with Let's Encrypt>> step, issues a Let's Encrypt certificate request, and communicates with the Quarkus application to resolve ACME challenges.
 

@@ -53,10 +53,22 @@ class AcmeClientTest {
         assertChallengePath("/admin/lets-encrypt/", "/admin/lets-encrypt/challenge");
     }
 
+    @Test
+    void testCertsPath() {
+        try (AcmeClient client = newClient("/admin/lets-encrypt")) {
+            client.certificateChainAndKeyAreReady();
+        }
+        Assertions.assertEquals("/admin/lets-encrypt/certs", requestedPath.get());
+    }
+
     private void assertChallengePath(String managementPath, String expectedPath) {
-        String managementUrl = "http://localhost:" + server.actualPort() + managementPath;
-        AcmeClient client = new AcmeClient(managementUrl, null, null, null, false);
-        Assertions.assertTrue(client.checkReadiness());
+        try (AcmeClient client = newClient(managementPath)) {
+            Assertions.assertTrue(client.checkReadiness());
+        }
         Assertions.assertEquals(expectedPath, requestedPath.get());
+    }
+
+    private AcmeClient newClient(String managementPath) {
+        return new AcmeClient("http://localhost:" + server.actualPort() + managementPath, null, null, null, false);
     }
 }

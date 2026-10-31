@@ -22,7 +22,7 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 
-public class AcmeClient extends AcmeClientSpi {
+public class AcmeClient extends AcmeClientSpi implements AutoCloseable {
 
     static Logger LOGGER = Logger.getLogger(AcmeClient.class);
 
@@ -227,6 +227,12 @@ public class AcmeClient extends AcmeClientSpi {
         if (response.statusCode() != 204) {
             throw new RuntimeException("Failed to notify the Quarkus management endpoint");
         }
+    }
+
+    @Override
+    public void close() {
+        managementClient.close();
+        await(vertx.close());
     }
 
     private void addKeyAndUser(HttpRequest<Buffer> request) {

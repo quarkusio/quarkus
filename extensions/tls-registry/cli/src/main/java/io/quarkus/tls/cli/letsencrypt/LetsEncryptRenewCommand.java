@@ -27,7 +27,8 @@ public class LetsEncryptRenewCommand implements Callable<Integer> {
     String tlsConfigurationName;
 
     @CommandLine.Option(names = {
-            "--management-url" }, description = "The URL of the management endpoint to use for the ACME challenge", required = true)
+            "--management-url" }, description = "The URL of the management endpoint to use for the ACME challenge. "
+                    + "With a custom root path, use the URL that ends with /lets-encrypt", required = true)
     String managementUrl;
 
     @CommandLine.Option(names = {

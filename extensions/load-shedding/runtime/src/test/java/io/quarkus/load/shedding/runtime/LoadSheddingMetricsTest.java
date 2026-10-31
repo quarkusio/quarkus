@@ -26,7 +26,8 @@ public class LoadSheddingMetricsTest {
             .build();
     private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
     private final OverloadDetector detector = new OverloadDetector(config);
-    private final LoadSheddingMetrics metrics = new LoadSheddingMetrics(detector, config);
+    private final LoadSheddingCounter counter = new LoadSheddingCounter();
+    private final LoadSheddingMetrics metrics = new LoadSheddingMetrics(detector, counter, config);
 
     @BeforeEach
     public void bind() {
@@ -54,7 +55,7 @@ public class LoadSheddingMetricsTest {
     public void noMetersAreRegisteredWhenLoadSheddingIsDisabled() {
         SimpleMeterRegistry other = new SimpleMeterRegistry();
 
-        new LoadSheddingMetrics(detector, new TestConfig.Builder().withEnabled(false).build()).bindTo(other);
+        new LoadSheddingMetrics(detector, counter, new TestConfig.Builder().withEnabled(false).build()).bindTo(other);
 
         assertThat(other.getMeters()).isEmpty();
     }
@@ -63,8 +64,8 @@ public class LoadSheddingMetricsTest {
     public void shedRequestsAreCounted() {
         assertThat(shedRequests()).isZero();
 
-        metrics.requestShed();
-        metrics.requestShed();
+        counter.requestShed();
+        counter.requestShed();
 
         assertThat(shedRequests()).isEqualTo(2.0);
     }
@@ -72,7 +73,7 @@ public class LoadSheddingMetricsTest {
     @Test
     public void shedRequestsAreNotCountedAsCurrent() {
         // a rejected request is answered and forgotten; it never enters the detector
-        metrics.requestShed();
+        counter.requestShed();
 
         assertThat(currentRequests()).isZero();
     }

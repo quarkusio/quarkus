@@ -29,9 +29,9 @@ public class LetsEncryptIssueCommand implements Callable<Integer> {
             "--tls-configuration-name" }, description = "The name of the TLS configuration to be used, if not set, the default configuration is used")
     String tlsConfigurationName;
 
-    // TODO Check if /lets-encrypt is appended
     @CommandLine.Option(names = {
-            "--management-url" }, description = "The URL of the management endpoint to use for the ACME challenge", required = true)
+            "--management-url" }, description = "The URL of the management endpoint to use for the ACME challenge. "
+                    + "With a custom root path, use the URL that ends with /lets-encrypt", required = true)
     String managementUrl;
 
     @CommandLine.Option(names = {

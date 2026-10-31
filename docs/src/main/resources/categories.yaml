@@ -326,7 +326,6 @@ categories:
         guides:
           - context-propagation.adoc
           - duplicated-context.adoc
-
   - id: cloud
     title: Cloud
     description: Cloud platforms and deployment
@@ -450,6 +449,22 @@ categories:
       - aesh.adoc
       - scripting.adoc
 
+  - id: automation
+    title: Automation
+    description: Scheduling, rules engines, business process managemanagement, and workflows
+    subcategories:
+      - id: automation-scheduling
+      - title: Scheduling
+      - guides:
+          - scheduler.adoc
+          - scheduler-reference.adoc
+          - quartz.adoc
+      - id: automation-rule-engine
+        title: Rule engine
+        description: Business rules
+        guides:
+          - drools.adoc
+
   - id: miscellaneous
     title: Miscellaneous
     description: Other topics, such as mail, scheduling, and templating
@@ -459,12 +474,6 @@ categories:
         guides:
           - mailer.adoc
           - mailer-reference.adoc
-      - id: miscellaneous-scheduling
-        title: Scheduling
-        guides:
-          - scheduler.adoc
-          - scheduler-reference.adoc
-          - quartz.adoc
       - id: miscellaneous-templating
         title: Templating
         guides:
@@ -553,8 +562,4 @@ categories:
       - doc-reference.adoc
       - doc-create-tutorial.adoc
 
-  - id: rule-engine
-    title: Rule engine
-    description: Business rules with Drools
-    guides:
-      - drools.adoc
+

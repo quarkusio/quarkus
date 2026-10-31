@@ -29,6 +29,7 @@ For more information, see the Quarkus xref:security-authorize-web-endpoints-refe
 
 Quarkus Security also supports the following features:
 
+* <<programmatic-set-up,Programmatic setup with the `HttpSecurity` API>>
 * xref:security-proactive-authentication.adoc[Proactive authentication]
 * xref:http-reference.adoc#ssl[Secure connections with SSL/TLS]
 * <<cross-origin-resource-sharing>>
@@ -49,6 +50,23 @@ To get started with security in Quarkus, consider securing your Quarkus applicat
 Complete the steps in the xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence] tutorial.
 
 After successfully securing your Quarkus application with Basic authentication, you can increase the security further by adding more advanced authentication mechanisms, for example, the Quarkus xref:security-oidc-code-flow-authentication.adoc[OpenID Connect (OIDC) authorization code flow mechanism] guide.
+
+[id="programmatic-set-up"]
+== Programmatic setup
+
+You can set up authentication mechanisms, OIDC tenants, path-specific authorization, CORS, and CSRF prevention in code instead of the `application.properties` file, for example, to build the setup from values that your code reads when the application starts.
+A method that observes the `io.quarkus.vertx.http.security.HttpSecurity` CDI event configures these features with a fluent API, and runtime configuration properties are available to that method.
+OIDC tenants use the same approach with a different event: a method that observes `io.quarkus.oidc.Oidc` registers tenants with the `OidcTenantConfig` builder.
+For instructions, see the following sections:
+
+* xref:security-authorize-web-endpoints-reference.adoc#path-specific-authz-programmatic-set-up[Programmatic path-specific authorization]
+* xref:security-basic-authentication.adoc#basic-auth-programmatic-set-up[Set up Basic authentication programmatically]
+* xref:security-authentication-mechanisms.adoc#form-based-auth-programmatic-set-up[Set up Form-based authentication programmatically]
+* xref:security-authentication-mechanisms.adoc#mtls-programmatic-set-up[Set up the mutual TLS client authentication programmatically]
+* xref:security-openid-connect-multitenancy.adoc#programmatic-startup[Programmatic OIDC start-up for multitenant application]
+* xref:security-oidc-expanded-configuration.adoc#creating-tenants-programmatically[Creating OIDC configuration programmatically]
+* xref:security-cors.adoc#cors-filter-programmatic-set-up[Configuring the CORS filter programmatically]
+* xref:security-csrf-prevention.adoc#csrf-prevention-programmatic-set-up[Configuring the CSRF prevention programmatically]
 
 == Quarkus Security testing
 

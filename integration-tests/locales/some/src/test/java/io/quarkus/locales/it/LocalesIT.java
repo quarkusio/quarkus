@@ -10,9 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import io.quarkus.test.junit.DisableIfBuiltWithGraalVMNewerThan;
-import io.quarkus.test.junit.DisableIfBuiltWithGraalVMOlderThan;
-import io.quarkus.test.junit.GraalVMVersion;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
@@ -84,24 +81,7 @@ public class LocalesIT {
     }
 
     @Test
-    @DisableIfBuiltWithGraalVMNewerThan(value = GraalVMVersion.GRAALVM_24_1_999)
-    public void testDefaultLocalePre24_2() {
-        RestAssured.given().when()
-                .get("/default/de-CH")
-                .then()
-                .statusCode(HttpStatus.SC_OK)
-                /*
-                 * Prior to GraalVM 24.2, the locale could not be changed at runtime.
-                 * "Švýcarsko" is the correct name for Switzerland in Czech language.
-                 * Czech is the default language as per quarkus.default-locale=cs.
-                 */
-                .body(is("Švýcarsko"))
-                .log().all();
-    }
-
-    @Test
-    @DisableIfBuiltWithGraalVMOlderThan(value = GraalVMVersion.GRAALVM_24_2_0)
-    public void testDefaultLocalePost24_1() {
+    public void testDefaultLocale() {
         RestAssured.given().when()
                 .get("/default/de-CH")
                 .then()

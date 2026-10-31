@@ -287,13 +287,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
                 clazz.setPath(sanitizePath(path));
             }
-            if (factoryCreator != null && !classInfo.isInterface() && !classInfo.isAbstract()) {
-                // Most likely an interface or an abstract class in the hierarchy of a sub resource.
-                // The ResourceLocatorHandler does not use the factory to create new instances, but uses the result of the sub resource locator method instead
-                // Interfaces therefore do not need a factory here
-                // Otherwise, when having multiple implementations of the interface or abstract class, an Ambiguous Bean Resolution error occurs,
-                // since io.quarkus.arc.runtime.BeanContainerImpl.createFactory is run, even if the factory is never invoked
-                clazz.setFactory(factoryCreator.apply(classInfo.name().toString()));
+            if (factoryCreator != null) {
+                boolean isInterfaceOrAbstract = classInfo.isInterface() || classInfo.isAbstract();
+                boolean isRootResource = path != null;
+
+                // Skip factory only for interface/abstract sub-resources to avoid ambiguous bean resolution.
+                // Root resources need a factory even if interface/abstract (e.g., Spring Web @RestController interfaces).
+                if (!isInterfaceOrAbstract || isRootResource) {
+                    clazz.setFactory(factoryCreator.apply(classInfo.name().toString()));
+                }
             }
             Map<String, String> classLevelExceptionMappers = this.classLevelExceptionMappers.get(classInfo.name());
             if (classLevelExceptionMappers != null) {

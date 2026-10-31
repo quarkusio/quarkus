@@ -121,6 +121,7 @@ public class OidcTenantConfigBuilderTest {
         assertEquals(10, backchannel.tokenCacheTimeToLive().toMinutes());
         assertTrue(backchannel.cleanUpTimerInterval().isEmpty());
         assertEquals("sub", backchannel.logoutTokenKey());
+        assertFalse(backchannel.logoutAllSessions());
 
         var frontchannel = logout.frontchannel();
         assertNotNull(frontchannel);
@@ -308,6 +309,7 @@ public class OidcTenantConfigBuilderTest {
                 .tokenCacheTimeToLive(Duration.ofMinutes(3))
                 .cleanUpTimerInterval(Duration.ofMinutes(5))
                 .logoutTokenKey("logout-token-key-6")
+                .logoutAllSessions(true)
                 .tokenCacheSize(9)
                 .endLogout()
                 .certificateChain()
@@ -506,6 +508,7 @@ public class OidcTenantConfigBuilderTest {
         assertEquals(3, backchannel.tokenCacheTimeToLive().toMinutes());
         assertEquals(5, backchannel.cleanUpTimerInterval().orElseThrow().toMinutes());
         assertEquals("logout-token-key-6", backchannel.logoutTokenKey());
+        assertTrue(backchannel.logoutAllSessions());
 
         var frontchannel = logout.frontchannel();
         assertNotNull(frontchannel);
@@ -1334,6 +1337,7 @@ public class OidcTenantConfigBuilderTest {
         assertEquals(10, backchannel.tokenCacheTimeToLive().toMinutes());
         assertTrue(backchannel.cleanUpTimerInterval().isEmpty());
         assertEquals("sub", backchannel.logoutTokenKey());
+        assertFalse(backchannel.logoutAllSessions());
 
         var frontchannel = builtThird.frontchannel();
         assertNotNull(frontchannel);

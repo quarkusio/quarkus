@@ -18,6 +18,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.jwt.Claims;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
@@ -29,6 +31,7 @@ import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
 import io.quarkus.oidc.common.runtime.OidcWebClient;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
@@ -359,6 +362,27 @@ final class TenantContextFactory {
                     "The '" + tokenIssuedAtRequired + "' can only be set to false if '" + tokenAge + "' is not set." +
                             " Either set '" + tokenIssuedAtRequired + "' to true or do not set '" + tokenAge + "'.",
                     Set.of(tokenIssuedAtRequired, tokenAge));
+        }
+
+        if (oidcConfig.logout().backchannel().path().isPresent()) {
+            String logoutTokenKey = oidcConfig.logout().backchannel().logoutTokenKey();
+            String logoutTokenKeyProperty = getConfigPropertyForTenant(tenantId, "logout.backchannel.logout-token-key");
+            boolean sessionIdKey = OidcConstants.BACK_CHANNEL_LOGOUT_SID_CLAIM.equals(logoutTokenKey);
+            if (!sessionIdKey && !Claims.sub.name().equals(logoutTokenKey)) {
+                throw new ConfigurationException(
+                        "The '%s' property must be set to either 'sub' or 'sid' but it is set to '%s'"
+                                .formatted(logoutTokenKeyProperty, logoutTokenKey),
+                        Set.of(logoutTokenKeyProperty));
+            }
+            if (sessionIdKey && oidcConfig.logout().backchannel().logoutAllSessions()) {
+                String logoutAllSessionsProperty = getConfigPropertyForTenant(tenantId,
+                        "logout.backchannel.logout-all-sessions");
+                throw new ConfigurationException(
+                        ("The '%s' property can not be enabled when the '%s' property is set to 'sid'"
+                                + " because logout tokens with the 'sid' claim always identify a single session")
+                                .formatted(logoutAllSessionsProperty, logoutTokenKeyProperty),
+                        Set.of(logoutAllSessionsProperty, logoutTokenKeyProperty));
+            }
         }
 
         if (!DPOP_SCHEME.equalsIgnoreCase(oidcConfig.token().authorizationScheme())) {

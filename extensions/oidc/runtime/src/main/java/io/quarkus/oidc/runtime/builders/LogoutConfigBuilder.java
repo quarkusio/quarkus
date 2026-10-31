@@ -192,7 +192,8 @@ public final class LogoutConfigBuilder {
     public static final class BackchannelBuilder {
 
         private record BackchannelImpl(Optional<String> path, int tokenCacheSize, Duration tokenCacheTimeToLive,
-                Optional<Duration> cleanUpTimerInterval, String logoutTokenKey) implements OidcTenantConfig.Backchannel {
+                Optional<Duration> cleanUpTimerInterval, String logoutTokenKey,
+                boolean logoutAllSessions) implements OidcTenantConfig.Backchannel {
         }
 
         private final LogoutConfigBuilder logoutBuilder;
@@ -201,6 +202,7 @@ public final class LogoutConfigBuilder {
         private Duration tokenCacheTimeToLive;
         private Optional<Duration> cleanUpTimerInterval;
         private String logoutTokenKey;
+        private boolean logoutAllSessions;
 
         public BackchannelBuilder() {
             this(new LogoutConfigBuilder());
@@ -214,6 +216,7 @@ public final class LogoutConfigBuilder {
             this.tokenCacheTimeToLive = backchannel.tokenCacheTimeToLive();
             this.cleanUpTimerInterval = backchannel.cleanUpTimerInterval();
             this.logoutTokenKey = backchannel.logoutTokenKey();
+            this.logoutAllSessions = backchannel.logoutAllSessions();
         }
 
         /**
@@ -231,6 +234,15 @@ public final class LogoutConfigBuilder {
          */
         public BackchannelBuilder logoutTokenKey(String logoutTokenKey) {
             this.logoutTokenKey = Objects.requireNonNull(logoutTokenKey);
+            return this;
+        }
+
+        /**
+         * @param logoutAllSessions {@link OidcTenantConfig.Backchannel#logoutAllSessions()}
+         * @return this builder
+         */
+        public BackchannelBuilder logoutAllSessions(boolean logoutAllSessions) {
+            this.logoutAllSessions = logoutAllSessions;
             return this;
         }
 
@@ -284,7 +296,8 @@ public final class LogoutConfigBuilder {
          * @return built {@link OidcTenantConfig.Backchannel}
          */
         public OidcTenantConfig.Backchannel build() {
-            return new BackchannelImpl(path, tokenCacheSize, tokenCacheTimeToLive, cleanUpTimerInterval, logoutTokenKey);
+            return new BackchannelImpl(path, tokenCacheSize, tokenCacheTimeToLive, cleanUpTimerInterval, logoutTokenKey,
+                    logoutAllSessions);
         }
     }
 }

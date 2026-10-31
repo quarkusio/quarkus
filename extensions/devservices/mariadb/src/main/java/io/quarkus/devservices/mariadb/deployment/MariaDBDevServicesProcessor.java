@@ -20,6 +20,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
@@ -38,7 +39,11 @@ public class MariaDBDevServicesProcessor {
     public static final Integer PORT = 3306;
     public static final String MY_CNF_CONFIG_OVERRIDE_PARAM_NAME = "TC_MY_CNF";
 
+    static final String DEV_SERVICE_LABEL = "quarkus-dev-service-mariadb";
+
     private static final MariaDBDatasourceServiceConfigurator configurator = new MariaDBDatasourceServiceConfigurator();
+    private static final ContainerLocator mariadbContainerLocator = ContainerLocator
+            .locateContainerWithLabels(PORT, true, DEV_SERVICE_LABEL);
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMariaDB(
@@ -70,6 +75,8 @@ public class MariaDBDevServicesProcessor {
                         .withDatabaseName(effectiveDbName)
                         .withReuse(containerConfig.isReuse());
                 Labels.addDataSourceLabel(container, datasourceName);
+                ConfigureUtil.configureSharedServiceLabel(container, launchMode, DEV_SERVICE_LABEL,
+                        containerConfig.getServiceName());
                 Volumes.addVolumes(container, containerConfig.getVolumes());
 
                 container.withEnv(containerConfig.getContainerEnv());
@@ -87,6 +94,14 @@ public class MariaDBDevServicesProcessor {
                 }
 
                 return new DatasourceStartableContainer<>(container);
+            }
+
+            @Override
+            public Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningSharedDatasource(
+                    LaunchMode launchMode, DevServicesDatasourceContainerConfig containerConfig) {
+                return mariadbContainerLocator
+                        .locateContainer(containerConfig.getServiceName(), containerConfig.isShared(), launchMode)
+                        .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
 
             @Override

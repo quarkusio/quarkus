@@ -29,7 +29,7 @@ public class NumberMessageBodyHandler extends PrimitiveBodyHandler implements Me
         if ((Class<? extends Number>) type == Byte.class || (Class<? extends Number>) type == byte.class)
             return Byte.valueOf(text);
         if ((Class<? extends Number>) type == Short.class || (Class<? extends Number>) type == short.class)
-            return Integer.valueOf(text);
+            return Short.valueOf(text);
         if ((Class<? extends Number>) type == Integer.class || (Class<? extends Number>) type == int.class)
             return Integer.valueOf(text);
         if ((Class<? extends Number>) type == Long.class || (Class<? extends Number>) type == long.class)

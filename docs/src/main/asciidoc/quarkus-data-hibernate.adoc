@@ -5,14 +5,14 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus Data Hibernate reference guide
 include::_attributes.adoc[]
-:summary: Hibernate is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. Quarkus Data Hibernate focuses on making simple and common mappings trivial.
+:summary: Quarkus Data Hibernate validates repository methods and queries at build time and generates CDI repository implementations for Hibernate ORM.
 :config-file: application.properties
 :topics: data,hibernate-orm,hibernate-reactive,panache,sql,jdbc
 :extensions: io.quarkus:quarkus-data-hibernate,io.quarkus:quarkus-hibernate-orm,io.quarkus:quarkus-hibernate-reactive
 :hibernate-panache-api: https://javadoc.io/doc/io.quarkus.data.hibernate/hibernate-panache/{quarkus-version}
 :extension-status: experimental
 
-Quarkus Data Hibernate is the perfect solution if you want to get started using Hibernate in Quarkus.
+Quarkus Data Hibernate provides repositories and entity operations for Hibernate ORM applications.
 
 If you are new to Quarkus Data Hibernate, start with the
 xref:quarkus-data-hibernate-getting-started.adoc[Quarkus Data Hibernate getting started tutorial].
@@ -42,7 +42,7 @@ Enable the annotation processor in your build configuration:
 
 include::{includes}/quarkus-data-processor-config.adoc[]
 
-For step-by-step instructions, including the required extensions, database driver, and datasource configuration, see the
+For step-by-step instructions, including the required extensions, database driver, and data source configuration, see the
 xref:quarkus-data-hibernate-getting-started.adoc[Quarkus Data Hibernate getting started tutorial].
 
 == Entities
@@ -56,7 +56,7 @@ Jakarta Persistence annotations.
 To map a Java class to a database table:
 
 - Write a class.
-- Annotate it with link:{jakarta-persistence-javadocs-url}/jakarta/persistence/entity[`@Entity`].
+- Annotate it with link:{jakarta-persistence-javadocs-url}jakarta/persistence/Entity.html[`@Entity`].
 - Optionally, make it extend `ManagedEntity` or `RecordEntity` (see <<session-and-access-models,Session and access models>>).
 - Make its fields `public`. <<entity-field-access,Getters and setters are not necessary thanks to bytecode enhancement>>.
 
@@ -79,8 +79,8 @@ public class Cat extends ManagedEntity {
 }
 ----
 
-Instances of `ManagedEntity` are managed by Hibernate ORM. After an instance is persisted, changes to its fields are
-automatically sent to the database without an explicit `update` instruction.
+When an instance of `ManagedEntity` is persisted or obtained using a stateful session, Hibernate ORM manages it.
+Changes to its fields are automatically sent to the database without an explicit `update` instruction.
 
 [[entity-field-access]]
 === Entity field access
@@ -256,8 +256,8 @@ supertypes, see <<alternative-repository-definitions,Advanced usage>>.
 
 === Generated finder and query methods
 
-You can use `@Find` methods to find single instances or collections of entities by using the parameters of the method
-to build a query. The Hibernate documentation contains the complete
+`@Find` methods derive a query from their parameters and can return an entity, a collection of entities, or a count.
+The Hibernate documentation contains the complete
 link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/introduction/html_single/#generated-finder-methods[generated finder method reference].
 
 .A few common examples
@@ -321,7 +321,7 @@ List<String> findNames(String name); <4>
 ----
 <1> Query methods may return collections of entities
 <2> Or projections of a single column, even multiple columns with `Object[]` and `List<Object[]>` types
-<3> Queries can of course refer to method parameters.
+<3> Queries can refer to method parameters.
 <4> Native queries refer to database tables and columns instead of entity names and fields.
 
 `@Query` also supports bulk `UPDATE` and `DELETE` queries. These methods can return the number of affected entities:
@@ -338,7 +338,7 @@ long deleteByName(String name);
 ----
 
 Generated finder and HQL query methods are type-checked at build time. They are validated for entity names, fields,
-HQL syntax, and parameter names. Native SQL is validated by the database when the query is executed at run time.
+HQL syntax, and parameter names. Native SQL is validated by the database when the query is executed at runtime.
 
 === Obtaining and using a repository
 
@@ -480,6 +480,8 @@ The query methods provided by `ManagedRepository` and `RecordRepository` can use
 generated Jakarta Persistence metamodel `Cat_`. These constants contain attribute names as strings; unlike the
 typed attributes of `_Cat`, they do not make query parameters or expressions type-safe.
 
+The following example uses metamodel attribute constants in repository query methods:
+
 [source,java]
 ----
 import jakarta.inject.Inject;
@@ -507,6 +509,8 @@ public void metamodelAttributeQueries() {
 
 For queries that cannot be expressed with restrictions, use the query methods provided by `ManagedRepository` or
 `RecordRepository`. These methods accept query strings, so they are not type-safe.
+
+The following example passes a query string and sort order to repository query methods:
 
 [source,java]
 ----
@@ -571,7 +575,7 @@ and `RecordRepository` for its repository. Compared with a managed entity:
 - Changes to entity fields must be explicitly pushed to the database by calling `update()` on the entity or repository.
 - Call `insert()` instead of `persist()` to insert the entity.
 - The session type is `StatelessSession` instead of `Session`.
-- Accessing an unfetched lazy association does not trigger automatic loading. Fetch the associations you need as part
+- Accessing an unfetched lazy association throws an exception. Fetch the associations you need as part
 of a repository query, using a `join fetch` clause in `@Query`. Alternatively, fetch an association explicitly with
 `repo.getSession().fetch(association)`. Managed blocking sessions can load lazy associations automatically while the
 session is open.
@@ -589,6 +593,8 @@ for alternative entity and repository APIs.
 [[lets-get-reactive]]
 === Reactive access
 
+Quarkus Data Hibernate supports reactive applications using non-blocking Hibernate Reactive sessions and Mutiny types.
+
 ==== Reactive managed entities
 
 For reactive access:
@@ -597,6 +603,9 @@ For reactive access:
 - The repository extends `ManagedRepository.Reactive`.
 - Operations return `Uni<T>` instead of `T`, which is the standard Mutiny reactive type.
 - Use `jakarta.transaction.Transactional` for transaction boundaries and compose operations as usual with Mutiny.
+  For reactive methods, only `Transactional.TxType.REQUIRED` (the default) is supported.
+
+The following example defines a reactive managed entity and a companion repository:
 
 [source,java]
 ----
@@ -641,6 +650,8 @@ must be fetched explicitly, even for managed entities; see xref:hibernate-reacti
 Use `RecordEntity.Reactive` and `RecordRepository.Reactive` for reactive stateless sessions. Changes must be explicitly
 pushed by calling `update()`, and insertion uses `insert()` instead of `persist()`.
 
+The following example defines a reactive record entity and a companion repository:
+
 [source,java]
 ----
 import io.quarkus.data.hibernate.RecordEntity;
@@ -678,7 +689,7 @@ public Uni<Void> renameCat(String name, String newName) {
 ----
 
 The xref:quarkus-data-hibernate-getting-started.adoc#reactive[getting started tutorial] describes the
-required dependencies and reactive datasource configuration. You can use any of the
+required dependencies for reactive access. You can use any of the
 xref:hibernate-reactive.adoc#hr-getting-started[supported reactive drivers].
 
 [[entity-and-repository-type-matrix]]
@@ -911,7 +922,7 @@ The `totalElements` and `totalPages` fields are only included when the `PageRequ
 === Example endpoint
 
 Here is an example of a REST endpoint that uses `PageRequest` and `Order` to return a paginated, sorted
-list of cats. Paging and sorting are configured on the `PanacheQuery` returned by `findAll()`:
+list of cats. Paging and sorting are configured on the `BlockingDataQuery` returned by `findAll()`:
 
 [source,java]
 ----
@@ -940,7 +951,7 @@ public class CatResource {
 
 A client can then call:
 
-[source]
+[source,http]
 ----
 GET /cats?page=1&size=20&sort=name&sort=-birth
 ----
@@ -949,8 +960,7 @@ This produces a `PageRequest.ofPage(1, 20, true)` and `Order.by(Sort.asc("name")
 
 == Query languages
 
-There are multiple technologies to express queries in Quarkus Data Hibernate. They are related languages rather than
-separate query engines: each standard defines a different level of functionality or portability.
+Quarkus Data Hibernate supports several related query languages at different levels of functionality and portability:
 
 - The link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/querylanguage/html_single/[Hibernate Query Language]
   (HQL) is Hibernate's full query language. Hibernate ORM accepts HQL in Jakarta Data's `@Query`, including features
@@ -993,6 +1003,8 @@ If a delete query does not start with `delete`, the following additional forms a
 Quarkus Security provides initial support for securing repositories with security annotations. Security annotations can
 be placed on methods directly declared by a repository.
 
+The following example secures a repository finder method with permission checks:
+
 [source,java]
 ----
 import io.quarkus.security.PermissionsAllowed;
@@ -1029,7 +1041,9 @@ Only methods directly declared on an annotated repository interface are secured.
 `ManagedRepository`, such as `findById`, `persist`, or `deleteAll`, are not secured because type-level annotations only
 affect the type they annotate.
 
-If you need security in the repository layer, consider <<alternative-repository-definitions,plain repository classes>> that do not extend Quarkus Data ones, or roll out your own repository super interfaces, adding security annotations wherever relevant for your security model.
+If you need security in the repository layer, consider <<alternative-repository-definitions,plain repository interfaces>>
+that do not extend Quarkus Data types, or define custom repository superinterfaces with the security annotations required
+by your security model.
 ====
 
 Generic interface methods using type variables or wildcards cannot currently be secured reliably with standard security
@@ -1040,6 +1054,8 @@ See the xref:security-authorize-web-endpoints-reference.adoc[authorization of we
 about Quarkus Security annotations.
 
 == Advanced usage
+
+Use the following alternatives when the default entity and repository supertypes do not match your application architecture.
 
 [[alternative-repository-definitions]]
 === Standalone repositories and entities without supertypes

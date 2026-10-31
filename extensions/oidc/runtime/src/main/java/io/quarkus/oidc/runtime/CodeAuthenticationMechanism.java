@@ -554,66 +554,37 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private boolean isBackChannelLogoutPending(TenantConfigContext configContext, SecurityIdentity identity) {
-        if (configContext.oidcConfig().logout().backchannel().path().isEmpty()) {
-            return false;
-        }
-        BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
-                .get(configContext.oidcConfig().tenantId().get());
-        if (tokens != null) {
-            JsonObject idTokenJson = OidcCommonUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
-
-            String logoutTokenKeyValue = idTokenJson
-                    .getString(configContext.oidcConfig().logout().backchannel().logoutTokenKey());
-
-            return tokens.containsTokenVerification(logoutTokenKeyValue);
-        }
-        return false;
+        BackChannelLogoutTokenCache tokens = getBackChannelLogoutTokens(configContext);
+        return tokens != null && tokens.findLogoutToken(decodeIdToken(identity)) != null;
     }
 
     private boolean isBackChannelLogoutPendingAndValid(TenantConfigContext configContext, SecurityIdentity identity) {
-        if (configContext.oidcConfig().logout().backchannel().path().isEmpty()) {
+        BackChannelLogoutTokenCache tokens = getBackChannelLogoutTokens(configContext);
+        if (tokens == null) {
             return false;
         }
-        BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
-                .get(configContext.oidcConfig().tenantId().get());
-        if (tokens != null) {
-            JsonObject idTokenJson = OidcCommonUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
-
-            String logoutTokenKeyValue = idTokenJson
-                    .getString(configContext.oidcConfig().logout().backchannel().logoutTokenKey());
-
-            TokenVerificationResult backChannelLogoutTokenResult = tokens.removeTokenVerification(logoutTokenKeyValue);
-            if (backChannelLogoutTokenResult == null) {
-                return false;
-            }
-
-            String idTokenIss = idTokenJson.getString(Claims.iss.name());
-            String logoutTokenIss = backChannelLogoutTokenResult.localVerificationResult().getString(Claims.iss.name());
-            if (logoutTokenIss != null && !logoutTokenIss.equals(idTokenIss)) {
-                LOG.debugf("Logout token issuer does not match the ID token issuer");
-                return false;
-            }
-            String idTokenSub = idTokenJson.getString(Claims.sub.name());
-            String logoutTokenSub = backChannelLogoutTokenResult.localVerificationResult().getString(Claims.sub.name());
-            if (logoutTokenSub != null && idTokenSub != null && !logoutTokenSub.equals(idTokenSub)) {
-                LOG.debugf("Logout token subject does not match the ID token subject");
-                return false;
-            }
-            String idTokenSid = idTokenJson.getString(OidcConstants.ID_TOKEN_SID_CLAIM);
-            String logoutTokenSid = backChannelLogoutTokenResult.localVerificationResult()
-                    .getString(OidcConstants.BACK_CHANNEL_LOGOUT_SID_CLAIM);
-            if (logoutTokenSid != null && idTokenSid != null && !logoutTokenSid.equals(idTokenSid)) {
-                LOG.debugf("Logout token session id does not match the ID token session id");
-                return false;
-            }
-            LOG.debugf("Backchannel logout request for the tenant %s has been completed",
-                    configContext.oidcConfig().tenantId().get());
-
-            fireEvent(SecurityEvent.Type.OIDC_BACKCHANNEL_LOGOUT_COMPLETED, identity);
-
-            return true;
+        TokenVerificationResult logoutToken = tokens.findLogoutToken(decodeIdToken(identity));
+        if (logoutToken == null) {
+            return false;
         }
-        return false;
+        tokens.logoutCompleted(logoutToken);
+        LOG.debugf("Backchannel logout request for the tenant %s has been completed",
+                configContext.oidcConfig().tenantId().get());
+
+        fireEvent(SecurityEvent.Type.OIDC_BACKCHANNEL_LOGOUT_COMPLETED, identity);
+
+        return true;
+    }
+
+    private BackChannelLogoutTokenCache getBackChannelLogoutTokens(TenantConfigContext configContext) {
+        if (configContext.oidcConfig().logout().backchannel().path().isEmpty()) {
+            return null;
+        }
+        return resolver.getBackChannelLogoutTokens().get(configContext.oidcConfig().tenantId().get());
+    }
+
+    private static JsonObject decodeIdToken(SecurityIdentity identity) {
+        return OidcCommonUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
     }
 
     private boolean isFrontChannelLogoutValid(RoutingContext context, TenantConfigContext configContext,
@@ -1243,8 +1214,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         final long sessionMaxAge = sessionAge;
                         context.put(SESSION_MAX_AGE_PARAM, sessionAge);
                         context.put(TenantConfigContext.class.getName(), configContext);
-                        // Just in case, remove the stale Back-Channel Logout data if the previous session was not terminated correctly
-                        resolver.getBackChannelLogoutTokens().remove(configContext.oidcConfig().tenantId().get());
                         AuthorizationCodeTokens encryptedTokens = encryptTokens(context, configContext.oidcConfig(), tokens);
                         return resolver.getTokenStateManager()
                                 .createTokenState(context, configContext.oidcConfig(), encryptedTokens,

@@ -30,6 +30,10 @@ public class GenerateKey extends BaseBuildCommand implements Callable<Integer> {
     @Option(names = { "-a", "--algo" }, description = "Key algorithm: RSA or EC (Defaults to RSA)")
     String algo;
 
+    @Option(names = { "--enc",
+            "--encryption" }, description = "Configure the keys to encrypt and decrypt token claims or already signed tokens")
+    boolean encryption;
+
     @Override
     public Integer call() throws Exception {
         if (algo != null) {
@@ -59,16 +63,20 @@ public class GenerateKey extends BaseBuildCommand implements Callable<Integer> {
         Path privateKey = resourcesFolder.resolve("privateKey.pem");
         Path publicKey = resourcesFolder.resolve("publicKey.pem");
 
+        Map<String, String> config = new LinkedHashMap<>();
+        if (encryption) {
+            config.put("mp.jwt.decrypt.key.location", "privateKey.pem");
+            config.put("smallrye.jwt.encrypt.key.location", "publicKey.pem");
+        } else {
+            config.put("mp.jwt.verify.publickey.location", "publicKey.pem");
+            config.put("smallrye.jwt.sign.key.location", "privateKey.pem");
+        }
+
         if (!force) {
             Path properties = projectRoot().resolve("src/main/resources/application.properties");
             if (Files.exists(properties)) {
                 List<String> existingLines = Files.readAllLines(properties);
-                Map<String, String> expectedValues = Map.of(
-                        "mp.jwt.verify.publickey.location", "publicKey.pem",
-                        "mp.jwt.decrypt.key.location", "privateKey.pem",
-                        "smallrye.jwt.sign.key.location", "privateKey.pem",
-                        "smallrye.jwt.encrypt.key.location", "publicKey.pem");
-                for (Map.Entry<String, String> entry : expectedValues.entrySet()) {
+                for (Map.Entry<String, String> entry : config.entrySet()) {
                     String existing = getProperty(existingLines, entry.getKey());
                     if (existing != null && !existing.equals(entry.getValue())) {
                         output.error(
@@ -98,12 +106,6 @@ public class GenerateKey extends BaseBuildCommand implements Callable<Integer> {
                 fw.append("-----END PUBLIC KEY-----\n");
             }
             output.info("Public and private keys created in %s and %s", publicKey, privateKey);
-
-            Map<String, String> config = new LinkedHashMap<>();
-            config.put("mp.jwt.verify.publickey.location", "publicKey.pem");
-            config.put("mp.jwt.decrypt.key.location", "privateKey.pem");
-            config.put("smallrye.jwt.sign.key.location", "privateKey.pem");
-            config.put("smallrye.jwt.encrypt.key.location", "publicKey.pem");
 
             Path properties = projectRoot().resolve("src/main/resources/application.properties");
             if (!Files.exists(properties)) {

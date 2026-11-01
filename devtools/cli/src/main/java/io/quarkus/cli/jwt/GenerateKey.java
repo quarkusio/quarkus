@@ -1,6 +1,7 @@
 package io.quarkus.cli.jwt;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +31,18 @@ public class GenerateKey extends BaseBuildCommand implements Callable<Integer> {
     @Option(names = { "-a", "--algo" }, description = "Key algorithm: RSA or EC (Defaults to RSA)")
     String algo;
 
+    @Option(names = { "--enc",
+            "--encryption" }, description = "Configure the keys to encrypt and decrypt token claims or already signed tokens")
+    boolean encryption;
+
+    @Option(names = {
+            "--private-key-file" }, description = "Private key file name, relative to src/main/resources (Defaults to privateKey.pem)", defaultValue = "privateKey.pem")
+    String privateKeyFile;
+
+    @Option(names = {
+            "--public-key-file" }, description = "Public key file name, relative to src/main/resources (Defaults to publicKey.pem)", defaultValue = "publicKey.pem")
+    String publicKeyFile;
+
     @Override
     public Integer call() throws Exception {
         if (algo != null) {
@@ -53,22 +66,44 @@ public class GenerateKey extends BaseBuildCommand implements Callable<Integer> {
             }
         }
 
-        Path resourcesFolder = projectRoot().resolve("src/main/resources");
-        if (!Files.exists(resourcesFolder))
-            Files.createDirectories(resourcesFolder);
-        Path privateKey = resourcesFolder.resolve("privateKey.pem");
-        Path publicKey = resourcesFolder.resolve("publicKey.pem");
+        Path resourcesFolder = projectRoot().resolve("src/main/resources").normalize();
+        Path privateKey = resourcesFolder.resolve(privateKeyFile).normalize();
+        Path publicKey = resourcesFolder.resolve(publicKeyFile).normalize();
+
+        // the key file names become classpath resource locations, so they must stay inside src/main/resources
+        if (!isInside(resourcesFolder, privateKey) || !isInside(resourcesFolder, publicKey)) {
+            output.error("Key file names must be relative paths inside src/main/resources, got %s and %s.",
+                    privateKeyFile, publicKeyFile);
+            return CommandLine.ExitCode.USAGE;
+        }
+        if (privateKey.equals(publicKey)) {
+            output.error("--private-key-file and --public-key-file must name different files, got %s and %s.",
+                    privateKeyFile, publicKeyFile);
+            return CommandLine.ExitCode.USAGE;
+        }
+        // classpath resource locations, normalized and with forward slashes on every platform
+        String privateKeyLocation = resourcesFolder.relativize(privateKey).toString().replace(File.separatorChar, '/');
+        String publicKeyLocation = resourcesFolder.relativize(publicKey).toString().replace(File.separatorChar, '/');
+
+        // validation is done, only now touch the file system
+        Files.createDirectories(resourcesFolder);
+        Path properties = resourcesFolder.resolve("application.properties");
+        boolean privateKeyExists = Files.exists(privateKey);
+        boolean publicKeyExists = Files.exists(publicKey);
+
+        Map<String, String> config = new LinkedHashMap<>();
+        if (encryption) {
+            config.put("mp.jwt.decrypt.key.location", privateKeyLocation);
+            config.put("smallrye.jwt.encrypt.key.location", publicKeyLocation);
+        } else {
+            config.put("mp.jwt.verify.publickey.location", publicKeyLocation);
+            config.put("smallrye.jwt.sign.key.location", privateKeyLocation);
+        }
 
         if (!force) {
-            Path properties = projectRoot().resolve("src/main/resources/application.properties");
             if (Files.exists(properties)) {
                 List<String> existingLines = Files.readAllLines(properties);
-                Map<String, String> expectedValues = Map.of(
-                        "mp.jwt.verify.publickey.location", "publicKey.pem",
-                        "mp.jwt.decrypt.key.location", "privateKey.pem",
-                        "smallrye.jwt.sign.key.location", "privateKey.pem",
-                        "smallrye.jwt.encrypt.key.location", "publicKey.pem");
-                for (Map.Entry<String, String> entry : expectedValues.entrySet()) {
+                for (Map.Entry<String, String> entry : config.entrySet()) {
                     String existing = getProperty(existingLines, entry.getKey());
                     if (existing != null && !existing.equals(entry.getValue())) {
                         output.error(
@@ -80,11 +115,13 @@ public class GenerateKey extends BaseBuildCommand implements Callable<Integer> {
             }
         }
 
-        if (force || (!Files.exists(privateKey) && !Files.exists(publicKey))) {
+        if (force || (!privateKeyExists && !publicKeyExists)) {
             KeyPairGenerator kpg = KeyPairGenerator.getInstance(algo);
             kpg.initialize(size);
             KeyPair kp = kpg.generateKeyPair();
 
+            Files.createDirectories(privateKey.getParent());
+            Files.createDirectories(publicKey.getParent());
             try (FileWriter fw = new FileWriter(privateKey.toFile())) {
                 fw.append("-----BEGIN PRIVATE KEY-----\n");
                 fw.append(Base64.getMimeEncoder().encodeToString(kp.getPrivate().getEncoded()));
@@ -99,13 +136,6 @@ public class GenerateKey extends BaseBuildCommand implements Callable<Integer> {
             }
             output.info("Public and private keys created in %s and %s", publicKey, privateKey);
 
-            Map<String, String> config = new LinkedHashMap<>();
-            config.put("mp.jwt.verify.publickey.location", "publicKey.pem");
-            config.put("mp.jwt.decrypt.key.location", "privateKey.pem");
-            config.put("smallrye.jwt.sign.key.location", "privateKey.pem");
-            config.put("smallrye.jwt.encrypt.key.location", "publicKey.pem");
-
-            Path properties = projectRoot().resolve("src/main/resources/application.properties");
             if (!Files.exists(properties)) {
                 Files.createFile(properties);
             }
@@ -113,7 +143,7 @@ public class GenerateKey extends BaseBuildCommand implements Callable<Integer> {
             for (Map.Entry<String, String> entry : config.entrySet()) {
                 setProperty(lines, entry.getKey(), entry.getValue());
             }
-            appendToProperty(lines, "quarkus.native.resources.includes", "publicKey.pem", "privateKey.pem");
+            appendToProperty(lines, "quarkus.native.resources.includes", publicKeyLocation, privateKeyLocation);
             try (BufferedWriter writer = Files.newBufferedWriter(properties)) {
                 for (String line : lines) {
                     writer.write(line);
@@ -121,12 +151,22 @@ public class GenerateKey extends BaseBuildCommand implements Callable<Integer> {
                 }
             }
             output.info("Configuration added to application.properties");
-        } else {
+        } else if (privateKeyExists && publicKeyExists) {
             output.info("Public and private keys already exist in %s and %s (use --force to overwrite them).",
                     publicKey, privateKey);
+        } else {
+            Path existing = privateKeyExists ? privateKey : publicKey;
+            output.error("%s already exists but its counterpart does not. Use --force to overwrite it, "
+                    + "or pass --private-key-file and --public-key-file names that do not clash with existing files.",
+                    existing);
+            return CommandLine.ExitCode.USAGE;
         }
 
         return CommandLine.ExitCode.OK;
+    }
+
+    private static boolean isInside(Path folder, Path file) {
+        return !file.equals(folder) && file.startsWith(folder);
     }
 
     private String getProperty(List<String> lines, String name) {

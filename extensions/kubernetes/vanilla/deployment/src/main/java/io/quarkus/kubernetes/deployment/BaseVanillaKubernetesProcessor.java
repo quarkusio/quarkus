@@ -123,32 +123,36 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
             return;
         }
 
-        for (Map.Entry<String, String> annotation : config.ingress().annotations().entrySet()) {
-            context.add(new AddAnnotationDecorator(context.name(), annotation.getKey(), annotation.getValue(), INGRESS));
-        }
+        config.ingress().annotations().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(annotation -> context
+                        .add(new AddAnnotationDecorator(context.name(), annotation.getKey(), annotation.getValue(), INGRESS)));
 
-        for (IngressConfig.IngressRuleConfig rule : config.ingress().rules().values()) {
-            context.add(new AddIngressRuleDecorator(context.name(), optionalPort(ports),
-                    new IngressRuleBuilder()
-                            .withHost(rule.host())
-                            .withPath(rule.path())
-                            .withPathType(rule.pathType())
-                            .withServiceName(rule.serviceName().orElse(null))
-                            .withServicePortName(rule.servicePortName().orElse(null))
-                            .withServicePortNumber(rule.servicePortNumber().orElse(-1))
-                            .build()));
-        }
+        config.ingress().rules().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> {
+                    IngressConfig.IngressRuleConfig rule = e.getValue();
+                    context.add(new AddIngressRuleDecorator(context.name(), optionalPort(ports),
+                            new IngressRuleBuilder()
+                                    .withHost(rule.host())
+                                    .withPath(rule.path())
+                                    .withPathType(rule.pathType())
+                                    .withServiceName(rule.serviceName().orElse(null))
+                                    .withServicePortName(rule.servicePortName().orElse(null))
+                                    .withServicePortNumber(rule.servicePortNumber().orElse(-1))
+                                    .build()));
+                });
     }
 
     protected void service(DecoratorsContext context, KubernetesConfig config) {
         context.add(new ApplyServiceTypeDecorator(context.name(), ServiceType.NodePort.name()));
         List<Map.Entry<String, PortConfig>> nodeConfigPorts = config.ports().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
                 .filter(e -> e.getValue().nodePort().isPresent())
                 .toList();
         if (!nodeConfigPorts.isEmpty()) {
-            for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
-                context.add(new AddNodePortDecorator(context.name(), entry.getValue().nodePort().getAsInt(), entry.getKey()));
-            }
+            nodeConfigPorts.forEach(entry -> context
+                    .add(new AddNodePortDecorator(context.name(), entry.getValue().nodePort().getAsInt(), entry.getKey())));
         } else {
             context.add(new AddNodePortDecorator(context.name(),
                     config.nodePort().orElseGet(

@@ -162,6 +162,7 @@ public interface SecurityContextConfig {
         supplementalGroups().ifPresent(securityContextBuilder::addAllToSupplementalGroups);
         fsGroup().ifPresent(securityContextBuilder::withFsGroup);
         sysctls().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
                 .map(e -> new Sysctl(e.getKey(), e.getValue()))
                 .forEach(securityContextBuilder::addToSysctls);
         fsGroupChangePolicy().map(Enum::name).ifPresent(securityContextBuilder::withFsGroupChangePolicy);

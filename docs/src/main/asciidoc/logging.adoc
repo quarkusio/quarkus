@@ -577,6 +577,15 @@ When you use xref:opentelemetry-tracing.adoc[OpenTelemetry], Quarkus flattens tr
 +
 Google Cloud requires the `trace` field to follow the `"projects/<my-trace-project>/traces/12345"` format.
 `<my-trace-project>` uses the value of the `quarkus.application.name` configuration property.
+* *logstash*: Uses the field conventions of the link:https://github.com/logstash/logstash-logback-encoder[logstash-logback-encoder], so logs can be ingested by the same Logstash or ELK pipelines as services that log with Logback.
++
+Fields include `@timestamp`, `@version`, `message`, `logger_name`, `thread_name`, `level`, `level_value`, and `stack_trace` when an exception is logged.
++
+The `level_value` field uses the Logback level values (`ERROR` 40000, `WARN` 30000, `INFO` 20000, `DEBUG` 10000, `TRACE` 5000), so records from Quarkus and Logback services can be filtered uniformly.
++
+MDC entries are always written as root-level fields, as the encoder does by default, so `mdc.flat-fields` has no effect in this mode.
++
+Fields that are not part of the Logstash format, such as `sequence`, `loggerClassName`, `hostName`, `processName`, `processId`, and `threadId`, are not written to the output.
 
 
 [id="json-provider"]

@@ -80,11 +80,11 @@ public class RequestMetricInfo {
     }
 
     protected static String normalizePath(String uri) {
-        if (uri == null || uri.isEmpty() || ROOT.equals(uri)) {
+        String workingPath = stripQueryString(uri);
+
+        if (workingPath == null || workingPath.isEmpty() || ROOT.equals(workingPath)) {
             return ROOT;
         }
-
-        String workingPath = new String(uri);
 
         // Remove all leading slashes
         // detect
@@ -108,5 +108,18 @@ public class RequestMetricInfo {
         }
 
         return workingPath;
+    }
+
+    /**
+     * Returns the given uri up to the first {@code '?'}. The uri tag is a path, and the query
+     * string is client controlled, so keeping it would add a time series for every distinct query
+     * whenever no URL template is published for the request.
+     */
+    protected static String stripQueryString(String uri) {
+        if (uri == null) {
+            return null;
+        }
+        int queryStart = uri.indexOf('?');
+        return queryStart < 0 ? uri : uri.substring(0, queryStart);
     }
 }

@@ -60,6 +60,22 @@ The project is generated in a directory named after the passed artifactId.
 A pair of Dockerfiles for native and JVM modes are also generated in `src/main/docker`.
 Instructions to build the image and run the container are written in those Dockerfiles.
 
+[[project-creation-without-cli-or-maven]]
+=== Creating a project without the Quarkus CLI or Maven
+
+If you cannot install the Quarkus CLI and would rather not install Maven just to scaffold a project,
+Gradle's own `init` command can generate one directly, using Gradle's
+link:https://docs.gradle.org/current/userguide/build_init_plugin.html#supported_gradle_build_types[build init specs]:
+
+[source, bash, subs=attributes+]
+----
+gradle init -Dorg.gradle.buildinit.specs=io.quarkus.init:{quarkus-version} --type quarkus-app
+----
+
+NOTE: `org.gradle.buildinit.specs` is still `@Incubating`, so `gradle init` doesn't yet accept custom
+values for its parameters: this always generates `code-with-quarkus`/`org.acme` with the Kotlin DSL. Use the
+xref:cli-tooling.adoc[Quarkus CLI] or the Maven plugin above to customize those values.
+
 [[custom-test-configuration-profile]]
 === Custom test configuration profile in JVM mode
 

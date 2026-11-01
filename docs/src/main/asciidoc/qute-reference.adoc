@@ -1781,6 +1781,14 @@ public class CustomLocator implements TemplateLocator {
 <2> A regular expression `foo.*` disables validation for templates whose name is starting with `foo`.
 <3> Injection fields are resolved as template locators annotated with `@Locate` are registered as singleton session beans.
 
+[[extension-provided-templates]]
+==== Templates Provided by Extensions
+
+An extension can contribute templates at build time, so that they are validated and available in all modes like the templates found in `src/main/resources/templates`:
+
+* Produce a `io.quarkus.qute.deployment.TemplateRootBuildItem` to register an additional template root. The root is a directory inside an application archive, relative to the archive root, for example `web/templates`; a directory outside the application archives cannot be registered as a root.
+* Produce a `io.quarkus.qute.deployment.TemplatePathBuildItem` to register a single template whose content is known at build time, wherever it comes from. Use `TemplatePathBuildItem.builder().path("foo.html").content(content).build()`; the path is relative to the template root and must be unique. This is the way to provide templates that live outside `src/main/resources`, for example in a directory at the project root: read the file during the build and pass its content.
+
 === Template Variants
 
 Sometimes it's useful to render a specific variant of the template based on the content negotiation.

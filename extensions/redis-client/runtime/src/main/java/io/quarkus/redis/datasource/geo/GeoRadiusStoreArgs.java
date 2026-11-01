@@ -93,7 +93,6 @@ public class GeoRadiusStoreArgs<K> implements RedisCommandExtraArguments {
      * When ANY is provided the command will return as soon as enough matches are found, so the results may not be the
      * ones closest to the specified point, but on the other hand, the effort invested by the server is significantly
      * lower.
-     *
      * Using {@code ANY} requires {@code count} to be set.
      *
      * @return the current {@code GeoRadiusStoreArgs}
@@ -156,7 +155,9 @@ public class GeoRadiusStoreArgs<K> implements RedisCommandExtraArguments {
             list.add("ANY");
         }
 
-        list.add(direction);
+        if (direction != null) {
+            list.add(direction);
+        }
 
         if (storeKey != null) {
             list.add("STORE");

@@ -15,6 +15,7 @@ import java.util.function.Predicate;
 
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Typed;
 import jakarta.inject.Singleton;
 
 import org.jboss.threads.ScheduledViewExecutor;
@@ -52,12 +53,24 @@ import io.quarkus.opentelemetry.runtime.tracing.TracerUtil;
 import io.quarkus.runtime.ApplicationConfig;
 import io.smallrye.common.net.HostName;
 
+/**
+ * @deprecated OpenTelemetry SDK initialization is moving from
+ *             {@link io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk} to the OpenTelemetry
+ *             declarative configuration model, where no {@link AutoConfiguredOpenTelemetrySdkBuilder} exists and
+ *             implementations of this interface will no longer be invoked. Instead, contribute CDI beans of the
+ *             component types directly: {@link io.opentelemetry.sdk.trace.samplers.Sampler},
+ *             {@link io.opentelemetry.sdk.trace.IdGenerator}, {@link io.opentelemetry.sdk.trace.SpanProcessor},
+ *             {@link io.opentelemetry.sdk.resources.Resource} or
+ *             {@link io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer}.
+ */
+@Deprecated(since = "4.0", forRemoval = true)
 public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
     void customize(AutoConfiguredOpenTelemetrySdkBuilder builder);
 
     @Singleton
-    final class SimpleLogRecordProcessorCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    @Typed(InternalSdkBuilderCustomizer.class)
+    final class SimpleLogRecordProcessorCustomizer implements InternalSdkBuilderCustomizer {
         private SimpleLogRecordProcessorBiFunction biFunction;
 
         public SimpleLogRecordProcessorCustomizer(
@@ -98,7 +111,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
-    final class ResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    @Typed(InternalSdkBuilderCustomizer.class)
+    final class ResourceCustomizer implements InternalSdkBuilderCustomizer {
 
         private final ApplicationConfig appConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
@@ -151,7 +165,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
-    final class SamplerCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    @Typed(InternalSdkBuilderCustomizer.class)
+    final class SamplerCustomizer implements InternalSdkBuilderCustomizer {
         private final OTelBuildConfig oTelBuildConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final List<Sampler> sampler;
@@ -217,7 +232,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
-    final class SpanProcessorCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    @Typed(InternalSdkBuilderCustomizer.class)
+    final class SpanProcessorCustomizer implements InternalSdkBuilderCustomizer {
         private final OTelBuildConfig oTelBuildConfig;
         private final List<SpanProcessor> spanProcessors;
 
@@ -251,7 +267,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
-    final class TracerProviderCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    @Typed(InternalSdkBuilderCustomizer.class)
+    final class TracerProviderCustomizer implements InternalSdkBuilderCustomizer {
 
         private final OTelBuildConfig oTelBuildConfig;
         private final List<IdGenerator> idGenerator;
@@ -283,7 +300,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
-    final class MetricProviderCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    @Typed(InternalSdkBuilderCustomizer.class)
+    final class MetricProviderCustomizer implements InternalSdkBuilderCustomizer {
         private final OTelBuildConfig oTelBuildConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final Instance<Clock> clock;
@@ -367,7 +385,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     }
 
     @Singleton
-    final class TextMapPropagatorCustomizers implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    @Typed(InternalSdkBuilderCustomizer.class)
+    final class TextMapPropagatorCustomizers implements InternalSdkBuilderCustomizer {
 
         private final List<TextMapPropagatorCustomizer> customizers;
 

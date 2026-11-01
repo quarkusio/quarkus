@@ -99,6 +99,40 @@
             <artifactId>opentelemetry-sdk-extension-autoconfigure-spi</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk-extension-declarative-config</artifactId>
+            <!-- Used ONLY for the declarative-config model POJOs (the *Model classes) and
+                 YamlDeclarativeConfigProperties, which have no Jackson/SnakeYAML dependency at runtime: the model
+                 classes carry jackson-annotations in their bytecode, but the JVM ignores annotation types that are
+                 absent from the classpath, and we never read them reflectively.
+
+                 DeclarativeConfiguration itself (and its EnvLoad/EnvComposer inner classes) is the only code in
+                 this artifact that uses jackson-databind/snakeyaml-engine, and we must never load it: Jackson 2 is
+                 not allowed in Quarkus 4 (see https://github.com/open-telemetry/opentelemetry-java/issues/8820).
+                 Quarkus builds the OpenTelemetryConfigurationModel programmatically and interprets it itself
+                 instead of calling DeclarativeConfiguration.create(). The exclusions below enforce that: any code
+                 path reaching DeclarativeConfiguration fails fast with NoClassDefFoundError.
+
+                 Note: AutoConfiguredOpenTelemetrySdkBuilder probes for DeclarativeConfiguration with
+                 Class.forName(name, false, cl) - no static init - so its presence check stays safe with these
+                 exclusions as long as no DeclarativeConfigurationProvider SPI is registered and otel.config.file
+                 is not set (file-based config is explicitly unsupported). -->
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-annotations</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.snakeyaml</groupId>
+                    <artifactId>snakeyaml-engine</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>io.opentelemetry.semconv</groupId>
             <artifactId>opentelemetry-semconv</artifactId>
         </dependency>

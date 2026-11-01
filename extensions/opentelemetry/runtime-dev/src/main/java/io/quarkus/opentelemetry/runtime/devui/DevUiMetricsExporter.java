@@ -21,7 +21,8 @@ import io.quarkus.devui.observability.store.metrics.MetricsTimeSeriesStore;
 /**
  * Dev-mode-only, in-memory OpenTelemetry MetricExporter that converts each collected
  * MetricData point into a {@link MetricSample} and records it into the shared store.
- * Wrapped in a PeriodicMetricReader by {@link DevUiMetricsSdkBuilderCustomizer}. Reports
+ * Wrapped in a PeriodicMetricReader by {@link DevUiMetricsReaderProducer}, or by
+ * {@link DevUiMetricsSdkBuilderCustomizer} on the legacy initialization path. Reports
  * CUMULATIVE temporality so counters/sums arrive as running totals (the client derives the
  * per-interval rate). This is LOAD-BEARING: if the exporter defaulted to DELTA, each export
  * would already be a per-interval delta and the client would difference an already-differenced

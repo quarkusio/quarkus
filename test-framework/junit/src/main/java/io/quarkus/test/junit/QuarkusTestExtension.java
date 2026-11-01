@@ -599,8 +599,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             state.setTestFailed(null);
             currentJUnitTestClass = extensionContext.getRequiredTestClass();
         }
-        boolean isNewApplication = isNewApplication(state, extensionContext.getRequiredTestClass());
+        boolean isNewApplication = isNewApplication(state, extensionContext.getRequiredTestClass(), isNewTestClass);
 
+        if (state != null && !isNewApplication && isMavenFork()) {
+            restoreMavenForkConfig(extensionContext);
+        }
         QuarkusClassLoader incomingClassLoader = getClassLoaderFromTestClass(extensionContext.getRequiredTestClass());
 
         CuratedApplication previousCuratedApplication = runningQuarkusApplication != null
@@ -627,7 +630,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
         // We want to start if the profile changed (or there are new test resources),
         // or if we don't have an app and that's not because the previous attempt to start it failed
-        if ((state == null && !failedBoot) || (runningQuarkusApplication != null && isNewApplication)) {
+        if ((state == null && !failedBoot) || (state != null && isNewApplication)) {
             if (isNewApplication) {
                 if (state != null) {
                     try {
@@ -942,10 +945,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         resetHangTimeout();
 
         try {
-            Class<?> testClassFromTCCL = extensionContext.getRequiredTestClass();
             Map<Class<?>, Object> allTestsClasses = new HashMap<>();
-            // static loading
-            allTestsClasses.put(testClassFromTCCL, actualTestInstance);
+            allTestsClasses.put(actualTestInstance.getClass(), actualTestInstance);
             // this is needed to support before*** and after*** methods that are part of class that encloses the test class
             // (the test class is in this case a @Nested test)
             outerInstances.forEach(i -> allTestsClasses.put(i.getClass(), i));

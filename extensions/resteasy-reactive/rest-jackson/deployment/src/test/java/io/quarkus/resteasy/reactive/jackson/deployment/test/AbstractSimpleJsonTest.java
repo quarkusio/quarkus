@@ -207,8 +207,10 @@ public abstract class AbstractSimpleJsonTest {
 
     @Test
     public void testJsonMulti() {
+        TestIdentityController.resetRoles().add("max", "max", "admin");
         RestAssured
-                .with()
+                .given()
+                .auth().preemptive().basic("max", "max")
                 .get("/simple/multi2")
                 .then()
                 .statusCode(200)
@@ -218,7 +220,8 @@ public abstract class AbstractSimpleJsonTest {
                 .body("[1].first", Matchers.equalTo("Bob2"))
                 .body("[1].last", Matchers.equalTo("Builder2"));
         RestAssured
-                .with()
+                .given()
+                .auth().preemptive().basic("max", "max")
                 .get("/simple/multi1")
                 .then()
                 .statusCode(200)

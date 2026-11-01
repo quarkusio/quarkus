@@ -19,7 +19,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
 // We keep it here to take advantage of the abstract tests
-abstract class AbstractGradleBuildFile extends BuildFile {
+public abstract class AbstractGradleBuildFile extends BuildFile {
 
     private static final Pattern DEPENDENCIES_SECTION = Pattern.compile("^[\\t ]*dependencies\\s*\\{\\s*$", Pattern.MULTILINE);
 
@@ -39,9 +39,9 @@ abstract class AbstractGradleBuildFile extends BuildFile {
         this.rootProjectPath = rootProjectPath;
     }
 
-    abstract String getSettingsGradlePath();
+    protected abstract String getSettingsGradlePath();
 
-    abstract String getBuildGradlePath();
+    protected abstract String getBuildGradlePath();
 
     @Override
     public void writeToDisk() throws IOException {
@@ -66,12 +66,12 @@ abstract class AbstractGradleBuildFile extends BuildFile {
         writeToProjectFile(getBuildGradlePath(), getModel().getBuildContent());
     }
 
-    static boolean containsProperty(ArtifactCoords coords) {
+    protected static boolean containsProperty(ArtifactCoords coords) {
         return coords.getGroupId().charAt(0) == '$' || coords.getArtifactId().charAt(0) == '$'
                 || coords.getVersion() != null && coords.getVersion().charAt(0) == '$';
     }
 
-    static String createDependencyCoordinatesString(ArtifactCoords coords, boolean managed, char quoteChar) {
+    protected static String createDependencyCoordinatesString(ArtifactCoords coords, boolean managed, char quoteChar) {
         StringBuilder newDependency = new StringBuilder().append(quoteChar)
                 .append(coords.getGroupId()).append(":").append(coords.getArtifactId());
         if (!managed &&
@@ -85,7 +85,7 @@ abstract class AbstractGradleBuildFile extends BuildFile {
         return newDependency.append(quoteChar).toString();
     }
 
-    static boolean addDependencyInModel(Model model, String newDependency) {
+    protected static boolean addDependencyInModel(Model model, String newDependency) {
         StringBuilder buildContent = new StringBuilder(model.getBuildContent());
         // Add dependency after "dependencies {"
         Matcher matcher = DEPENDENCIES_SECTION.matcher(buildContent);
@@ -130,7 +130,7 @@ abstract class AbstractGradleBuildFile extends BuildFile {
         return getProperty(getModel(), propertyName);
     }
 
-    Model getModel() {
+    protected Model getModel() {
         return modelReference.updateAndGet(model -> {
             if (model == null) {
                 try {
@@ -198,7 +198,7 @@ abstract class AbstractGradleBuildFile extends BuildFile {
         return getModel().getBuildContent();
     }
 
-    static class Model {
+    protected static class Model {
         private String settingsContent;
         private String buildContent;
         private final Properties propertiesContent;

@@ -289,6 +289,7 @@ public class QuteProcessor {
             message.append("\n");
             TemplateException exception = new TemplateException(message.toString());
             for (TemplateException error : errors) {
+                error.setStackTrace(new StackTraceElement[0]);
                 exception.addSuppressed(error);
             }
             throw exception;

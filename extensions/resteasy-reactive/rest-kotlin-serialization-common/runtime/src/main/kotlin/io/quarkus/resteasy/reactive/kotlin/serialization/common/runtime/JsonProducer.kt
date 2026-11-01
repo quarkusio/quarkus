@@ -39,6 +39,8 @@ class JsonProducer {
         useArrayPolymorphism = configuration.json().useArrayPolymorphism()
         decodeEnumsCaseInsensitive = configuration.json().decodeEnumsCaseInsensitive()
         allowTrailingComma = configuration.json().allowTrailingComma()
+        allowComments = configuration.json().allowComments()
+        maxNestingDepth = configuration.json().maxNestingDepth()
 
         configuration.json().namingStrategy().ifPresent { strategy ->
             loadStrategy(this, strategy, this@JsonProducer)

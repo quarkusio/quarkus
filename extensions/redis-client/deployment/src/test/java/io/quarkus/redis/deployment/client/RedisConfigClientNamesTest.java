@@ -105,6 +105,18 @@ public class RedisConfigClientNamesTest {
         assertThat(names).containsOnly("my-redis", "my-redis-2");
     }
 
+    @Test
+    void testWithDisabledDefaultDevServiceWithValkeyHostsConfig() {
+        createConfig(Map.of("quarkus.redis.hosts", "valkey://localhost:1234",
+                "quarkus.redis.valkey-client.hosts", "valkeys://localhost:5678"));
+
+        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(
+                Map.of(DEFAULT_CLIENT_NAME, createDevServiceConfiguration(false)));
+
+        Set<String> names = RedisClientProcessor.configuredClientNames(redisBuildTimeConfig, config);
+        assertThat(names).containsOnly("<default>", "valkey-client");
+    }
+
     private static RedisBuildTimeConfig createRedisBuildTimeConfig(Map<String, DevServicesConfig> devServices) {
         return new RedisBuildTimeConfig() {
             @Override

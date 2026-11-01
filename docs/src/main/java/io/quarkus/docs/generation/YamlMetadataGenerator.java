@@ -382,7 +382,7 @@ public class YamlMetadataGenerator {
     enum Category {
         alt_languages("alt-languages", "Alternative languages"),
         architecture("architecture", "Architecture"),
-        business_automation("business-automation", "Business Automation"),
+        automation("automation", "Automation"),
         cloud("cloud", "Cloud"),
         command_line("command-line", "Command Line Applications"),
         compatibility("compatibility", "Compatibility"),

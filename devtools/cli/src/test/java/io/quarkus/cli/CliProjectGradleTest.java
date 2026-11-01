@@ -373,6 +373,19 @@ public class CliProjectGradleTest {
 
         Assertions.assertTrue(result.stdout.contains("-Dquarkus.args=\"arg1 arg2\""),
                 "mvn command should not specify -Dquarkus.args=\"arg1 arg2\"\n" + result);
+
+        // 7 remote dev mode
+        result = CliDriver.execute(project, "dev", "-e", "--dry-run", "--remote",
+                "-Dquarkus.live-reload.url=http://my-remote-host:8080");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("Run current project in remote dev mode"), result.toString());
+        Assertions.assertTrue(result.stdout.contains(" quarkusRemoteDev"),
+                "gradle command should specify quarkusRemoteDev\n" + result);
+        Assertions.assertFalse(result.stdout.contains(" quarkusDev"),
+                "gradle command should not specify quarkusDev\n" + result);
+        Assertions.assertTrue(result.stdout.contains("-Dquarkus.live-reload.url=http://my-remote-host:8080"),
+                "gradle command should specify the live reload URL\n" + result);
     }
 
     @Test

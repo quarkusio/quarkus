@@ -404,7 +404,8 @@ public class QuteProcessor {
                     } else {
                         throw new TemplateException(
                                 startsWith + " match the path " + templatePath
-                                        + " but the file suffix is not configured via the quarkus.qute.suffixes property");
+                                        + " but the file suffix is not configured via the quarkus.qute.suffixes property"
+                                        + " [configured suffixes: " + filePaths.getSuffixes() + "]");
                     }
                 }
 
@@ -489,7 +490,8 @@ public class QuteProcessor {
                     } else {
                         throw new TemplateException(
                                 startsWith + " match the path " + templatePath
-                                        + " but the file suffix is not configured via the quarkus.qute.suffixes property");
+                                        + " but the file suffix is not configured via the quarkus.qute.suffixes property"
+                                        + " [configured suffixes: " + filePaths.getSuffixes() + "]");
                     }
                 }
 
@@ -2503,7 +2505,7 @@ public class QuteProcessor {
                 }
             }
         }
-        return new TemplateFilePathsBuildItem(filePaths);
+        return new TemplateFilePathsBuildItem(filePaths, List.copyOf(config.suffixes()));
     }
 
     @BuildStep

@@ -57,6 +57,7 @@ public class KubernetesWithFlywayInitBase {
         assertThat(job).isPresent().get().satisfies(j -> {
             assertThat(j.getSpec()).satisfies(jobSpec -> {
                 assertThat(jobSpec.getCompletionMode()).isEqualTo("NonIndexed");
+                assertThat(jobSpec.getTtlSecondsAfterFinished()).isNull();
                 assertThat(jobSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getImagePullSecrets()).singleElement()

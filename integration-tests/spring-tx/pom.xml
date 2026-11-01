@@ -42,7 +42,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -55,7 +55,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -68,7 +68,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-spring-tx-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>

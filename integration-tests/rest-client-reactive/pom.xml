@@ -85,7 +85,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client-jackson-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -98,7 +98,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-fault-tolerance-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -111,7 +111,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-routes-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -124,7 +124,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-opentelemetry-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>

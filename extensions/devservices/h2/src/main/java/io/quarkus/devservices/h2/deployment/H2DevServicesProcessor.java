@@ -87,6 +87,9 @@ public class H2DevServicesProcessor {
 
                         @Override
                         public void start() {
+                            Thread currentThread = Thread.currentThread();
+                            ClassLoader old = currentThread.getContextClassLoader();
+                            currentThread.setContextClassLoader(ClassLoader.getSystemClassLoader());
                             try {
                                 tcpServer.start();
                                 connectionUrl = "jdbc:h2:tcp://localhost:" + tcpServer.getPort() + "/mem:"
@@ -94,6 +97,8 @@ public class H2DevServicesProcessor {
                                         + ";DB_CLOSE_DELAY=-1" + additionalArgs;
                             } catch (SQLException throwables) {
                                 throw new RuntimeException(throwables);
+                            } finally {
+                                currentThread.setContextClassLoader(old);
                             }
                         }
 

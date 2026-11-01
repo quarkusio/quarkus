@@ -80,6 +80,7 @@ class ObservabilityDevServiceProcessor {
             DevServicesConfig devServicesConfig,
             BuildProducer<DevServicesResultBuildItem> services,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> properties,
+            BuildProducer<DevResourceEnabledBuildItem> enabledResources,
             Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration) {
 
@@ -126,6 +127,8 @@ class ObservabilityDevServiceProcessor {
             if (!dev.enable()) {
                 continue;
             }
+
+            enabledResources.produce(new DevResourceEnabledBuildItem(devId));
 
             Map<String, Object> propertiesToOverride = ContainerConfigUtil
                     .propertiesToOverride(currentDevServicesConfiguration);

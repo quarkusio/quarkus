@@ -22,6 +22,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
+import io.smallrye.mutiny.Uni;
 
 public class ApplicationWithRunOnVirtualThreadTest {
 
@@ -53,6 +54,9 @@ public class ApplicationWithRunOnVirtualThreadTest {
 
         RestAssured.get("/tname/virtual")
                 .then().body(Matchers.containsString("virtual"), Matchers.not(Matchers.containsString("executor")));
+
+        RestAssured.get("/tname/uni")
+                .then().body(Matchers.containsString("virtual"), Matchers.not(Matchers.containsString("executor")));
     }
 
     @RunOnVirtualThread
@@ -81,6 +85,12 @@ public class ApplicationWithRunOnVirtualThreadTest {
         @GET
         public String virtual() {
             return Thread.currentThread().getName();
+        }
+
+        @Path("uni")
+        @GET
+        public Uni<String> uni() {
+            return Uni.createFrom().item(Thread.currentThread().getName());
         }
     }
 

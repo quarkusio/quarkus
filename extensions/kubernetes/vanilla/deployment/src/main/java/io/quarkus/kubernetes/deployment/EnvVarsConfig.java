@@ -23,6 +23,18 @@ public interface EnvVarsConfig {
     Optional<List<String>> configmaps();
 
     /**
+     * The optional list of Secret names to load environment variables from, marked as optional in the generated
+     * resources so that the container still starts when a Secret does not exist.
+     */
+    Optional<List<String>> optionalSecrets();
+
+    /**
+     * The optional list of ConfigMap names to load environment variables from, marked as optional in the generated
+     * resources so that the container still starts when a ConfigMap does not exist.
+     */
+    Optional<List<String>> optionalConfigmaps();
+
+    /**
      * The map associating environment variable names to their associated field references they take their value from.
      */
     @ConfigDocMapKey("environment-variable-name")

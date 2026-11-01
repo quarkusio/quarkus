@@ -67,6 +67,9 @@ public final class HibernateEnversProcessor {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(ENVERS_JPA_MODEL_CLASSES)
                 .reason(getClass().getName())
                 .methods().build());
+        // Accessors are not registered here: addJpaModelClasses contributes these classes as
+        // AdditionalJpaModelBuildItem, so PropertyAccessorProcessor already registers all of their
+        // members, which is a superset of the constructors this step used to request.
 
         List<String> classes = new ArrayList<>(buildTimeConfig.persistenceUnits().size() * 2);
         for (HibernateEnversBuildTimeConfigPersistenceUnit pu : buildTimeConfig.persistenceUnits().values()) {

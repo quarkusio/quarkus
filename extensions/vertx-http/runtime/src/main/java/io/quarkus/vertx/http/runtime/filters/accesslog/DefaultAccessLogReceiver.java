@@ -26,9 +26,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Deque;
 import java.util.List;
@@ -36,6 +38,10 @@ import java.util.Locale;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
@@ -85,6 +91,7 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
     private volatile boolean closed = false;
     private boolean initialRun = true;
     private final boolean rotate;
+    private final int maxBackupIndex;
     private final LogFileHeaderGenerator fileHeaderGenerator;
 
     public DefaultAccessLogReceiver(final Executor logWriteExecutor, final File outputDirectory, final String logBaseName) {
@@ -117,10 +124,16 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
 
     private DefaultAccessLogReceiver(final Executor logWriteExecutor, final Path outputDirectory, final String logBaseName,
             final String logNameSuffix, boolean rotate, LogFileHeaderGenerator fileHeader) {
+        this(logWriteExecutor, outputDirectory, logBaseName, logNameSuffix, rotate, fileHeader, -1);
+    }
+
+    private DefaultAccessLogReceiver(final Executor logWriteExecutor, final Path outputDirectory, final String logBaseName,
+            final String logNameSuffix, boolean rotate, LogFileHeaderGenerator fileHeader, int maxBackupIndex) {
         this.logWriteExecutor = logWriteExecutor;
         this.outputDirectory = outputDirectory;
         this.logBaseName = effectiveLogBaseName(logBaseName);
         this.rotate = rotate;
+        this.maxBackupIndex = maxBackupIndex;
         this.fileHeaderGenerator = fileHeader;
         this.logNameSuffix = effectiveLogNameSuffix(logNameSuffix);
         this.pendingMessages = new ConcurrentLinkedDeque<>();
@@ -304,11 +317,59 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
                 newFile = outputDirectory.resolve(logBaseName + DOT + currentDateString + "-" + count + logNameSuffix);
             }
             Files.move(defaultLogFile, newFile);
+            pruneRotatedFiles();
         } catch (IOException e) {
             log.error("Error rotating access log", e);
         } finally {
             calculateChangeOverPoint();
         }
+    }
+
+    /**
+     * Deletes the oldest rotated files so that at most {@code maxBackupIndex} of them remain. The rotated files are
+     * recognized by their name ({@code <base>.<yyyy-MM-dd>[-<counter>]<suffix>}) and ordered by their last modification
+     * time, which {@link Files#move} preserves, since the counter of a name is reused once a file was deleted.
+     */
+    private void pruneRotatedFiles() throws IOException {
+        if (maxBackupIndex <= 0) {
+            return;
+        }
+        Pattern rotatedFile = Pattern.compile(Pattern.quote(logBaseName) + "\\.(\\d{4}-\\d{2}-\\d{2})(?:-(\\d+))?"
+                + Pattern.quote(logNameSuffix));
+        List<RotatedFile> rotatedFiles = new ArrayList<>();
+        try (Stream<Path> files = Files.list(outputDirectory)) {
+            files.forEach(new Consumer<Path>() {
+                @Override
+                public void accept(Path file) {
+                    Matcher matcher = rotatedFile.matcher(file.getFileName().toString());
+                    if (matcher.matches()) {
+                        int counter = matcher.group(2) == null ? 0 : Integer.parseInt(matcher.group(2));
+                        rotatedFiles.add(new RotatedFile(file, lastModified(file), matcher.group(1), counter));
+                    }
+                }
+            });
+        }
+        rotatedFiles.sort(Comparator.comparing(RotatedFile::lastModified).thenComparing(RotatedFile::date)
+                .thenComparingInt(RotatedFile::counter).reversed());
+        for (int i = maxBackupIndex; i < rotatedFiles.size(); i++) {
+            Path file = rotatedFiles.get(i).path();
+            try {
+                Files.deleteIfExists(file);
+            } catch (IOException e) {
+                log.warnf(e, "Unable to delete the rotated access log file %s", file);
+            }
+        }
+    }
+
+    private static FileTime lastModified(Path file) {
+        try {
+            return Files.getLastModifiedTime(file);
+        } catch (IOException e) {
+            return FileTime.fromMillis(0);
+        }
+    }
+
+    private record RotatedFile(Path path, FileTime lastModified, String date, int counter) {
     }
 
     /**
@@ -340,6 +401,7 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
         private String logBaseName;
         private String logNameSuffix;
         private boolean rotate;
+        private int maxBackupIndex = -1;
         private LogFileHeaderGenerator logFileHeaderGenerator;
 
         public Executor getLogWriteExecutor() {
@@ -396,9 +458,21 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
             return this;
         }
 
+        public int getMaxBackupIndex() {
+            return maxBackupIndex;
+        }
+
+        /**
+         * @param maxBackupIndex the maximum number of rotated files to keep; zero or a negative value keeps all of them
+         */
+        public Builder setMaxBackupIndex(int maxBackupIndex) {
+            this.maxBackupIndex = maxBackupIndex;
+            return this;
+        }
+
         public DefaultAccessLogReceiver build() {
             return new DefaultAccessLogReceiver(logWriteExecutor, outputDirectory, logBaseName, logNameSuffix, rotate,
-                    logFileHeaderGenerator);
+                    logFileHeaderGenerator, maxBackupIndex);
         }
     }
 }

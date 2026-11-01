@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive.runtime;
+package io.quarkus.hibernate.reactive.runtime.session;
 
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 
@@ -49,7 +49,7 @@ public abstract class OpenedSessionsState<T extends Mutiny.Closeable> {
     private final ComputingCache<String, Mutiny.SessionFactory> sessionFactories = new ComputingCache<>(
             k -> createSessionFactory(k));
 
-    void clearCaches() {
+    public void clearCaches() {
         sessionKeys.clear();
         sessionFactories.clear();
     }

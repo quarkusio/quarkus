@@ -477,11 +477,18 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     }
 
     public static String getLogoutToken(String sub) {
-        return Jwt.issuer(TOKEN_ISSUER)
+        return getLogoutToken(sub, "session-id");
+    }
+
+    public static String getLogoutToken(String sub, String sid) {
+        JwtClaimsBuilder builder = Jwt.issuer(TOKEN_ISSUER)
                 .audience(TOKEN_AUDIENCE)
                 .subject(sub)
-                .claim("events", createEventsClaim())
-                .claim("sid", "session-id")
+                .claim("events", createEventsClaim());
+        if (sid != null) {
+            builder.claim("sid", sid);
+        }
+        return builder
                 .jws()
                 .keyId("1")
                 .sign("privateKey.jwk");

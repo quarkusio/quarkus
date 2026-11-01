@@ -1,5 +1,6 @@
 package io.quarkus.spring.boot.properties.runtime;
 
+import java.io.Serial;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -19,7 +20,7 @@ public @interface SpringBootConfigProperties {
         @SuppressWarnings("unused")
         public static final Literal INSTANCE = new Literal();
 
+        @Serial
         private static final long serialVersionUID = 1L;
-
     }
 }

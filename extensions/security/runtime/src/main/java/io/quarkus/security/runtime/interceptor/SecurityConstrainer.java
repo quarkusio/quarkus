@@ -5,6 +5,7 @@ import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_
 
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -15,6 +16,7 @@ import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Singleton;
 
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
+import io.quarkus.runtime.ExecutionMode;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
@@ -30,22 +32,20 @@ import io.smallrye.mutiny.Uni;
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
  */
 @Singleton
-public class SecurityConstrainer {
+public final class SecurityConstrainer {
 
     public static final Object CHECK_OK = new Object();
+    private static volatile Supplier<Map<String, Object>> additionalEventPropsSupplier = Map::of;
     private final SecurityCheckStorage storage;
     private final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> securityEventHelper;
     private final Instance<CurrentIdentityAssociation> securityIdentityAssociation;
-    private final Supplier<Map<String, Object>> additionalEventPropsSupplier;
 
-    public SecurityConstrainer(SecurityCheckStorage storage, BeanManager beanManager,
+    SecurityConstrainer(SecurityCheckStorage storage, BeanManager beanManager,
             Event<AuthorizationFailureEvent> authZFailureEvent, Event<AuthorizationSuccessEvent> authZSuccessEvent,
-            boolean runtimeConfigReady, Instance<CurrentIdentityAssociation> securityIdentityAssociation,
-            Supplier<Map<String, Object>> additionalEventPropsSupplier) {
+            Instance<CurrentIdentityAssociation> securityIdentityAssociation) {
         this.securityIdentityAssociation = securityIdentityAssociation;
-        this.additionalEventPropsSupplier = additionalEventPropsSupplier;
         this.storage = storage;
-        if (runtimeConfigReady) {
+        if (isRuntimeConfigReady()) {
             boolean securityEventsEnabled = Config.get().getValue("quarkus.security.events.enabled",
                     Boolean.class);
             this.securityEventHelper = new SecurityEventHelper<>(authZSuccessEvent, authZFailureEvent, AUTHORIZATION_SUCCESS,
@@ -140,5 +140,19 @@ public class SecurityConstrainer {
         securityEventHelper
                 .fireFailureEvent(new AuthorizationFailureEvent(identity, failure, securityCheck.getClass().getName(),
                         additionalEventPropsSupplier.get(), MethodDescription.ofMethod(method)));
+    }
+
+    private static boolean isRuntimeConfigReady() {
+        // the runtime config is created when the runtime init starts, before any runtime service runs
+        ExecutionMode executionMode = ExecutionMode.current();
+        return executionMode == ExecutionMode.RUNTIME_INIT || executionMode == ExecutionMode.RUNNING;
+    }
+
+    public static void setAdditionalSecurityEventPropsSupplier(Supplier<Map<String, Object>> additionalEventPropsSupplier) {
+        SecurityConstrainer.additionalEventPropsSupplier = Objects.requireNonNull(additionalEventPropsSupplier);
+    }
+
+    public static void clearAdditionalSecurityEventPropsSupplier() {
+        SecurityConstrainer.additionalEventPropsSupplier = Map::of;
     }
 }

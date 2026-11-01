@@ -12,7 +12,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 public final class QuarkusSecurityRolesAllowedConfigBuilder implements ConfigBuilder {
 
     private static final String ROLES_ALLOWED_CONFIG_SOURCE = "QuarkusSecurityRolesAllowedConfigSource";
-    private static final Map<String, String> properties = new HashMap<>();
+    private static volatile Map<String, String> properties = Map.of();
     private final ConfigSource configSource = new ConfigSource() {
         @Override
         public Set<String> getPropertyNames() {
@@ -36,9 +36,12 @@ public final class QuarkusSecurityRolesAllowedConfigBuilder implements ConfigBui
         return builder;
     }
 
-    static void addProperty(int key, String value) {
-        // this method should be called during static init
-        properties.put(transformToKey(key), value);
+    public static void setProperties(Map<Integer, String> keyToConfigExpression) {
+        Map<String, String> result = new HashMap<>(keyToConfigExpression.size());
+        for (Map.Entry<Integer, String> entry : keyToConfigExpression.entrySet()) {
+            result.put(transformToKey(entry.getKey()), entry.getValue());
+        }
+        properties = Map.copyOf(result);
     }
 
     static String transformToKey(int i) {

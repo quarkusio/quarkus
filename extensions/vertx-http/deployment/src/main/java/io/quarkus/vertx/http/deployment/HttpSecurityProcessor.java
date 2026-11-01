@@ -105,6 +105,7 @@ import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityEventPropertiesSupplier;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.AuthenticationHandler;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
@@ -618,12 +619,11 @@ public class HttpSecurityProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void addRoutingCtxToSecurityEventsForCdiBeans(HttpSecurityRecorder recorder, Capabilities capabilities,
+    void addRoutingCtxToSecurityEventsForCdiBeans(Capabilities capabilities,
             BuildProducer<AdditionalSecurityConstrainerEventPropsBuildItem> producer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
             producer.produce(
-                    new AdditionalSecurityConstrainerEventPropsBuildItem(recorder.createAdditionalSecEventPropsSupplier()));
+                    new AdditionalSecurityConstrainerEventPropsBuildItem(new HttpSecurityEventPropertiesSupplier()));
         }
     }
 

@@ -3,6 +3,7 @@ package io.quarkus.kubernetes.deployment;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,33 @@ class EnvVarValidatorTest {
         final Collection<KubernetesEnvBuildItem> items = validator.getBuildItems();
         assertEquals(1, items.size());
         assertEquals(initial, items.stream().findFirst().orElseGet(() -> fail("no item was found when one was expected")));
+    }
+
+    @Test
+    void getBuildItemsShouldBeSortedByName() {
+        validator.process(KubernetesEnvBuildItem.createSimpleVar("ZULU", "z", TARGET));
+        validator.process(KubernetesEnvBuildItem.createSimpleVar("alpha", "a", TARGET));
+        validator.process(KubernetesEnvBuildItem.createSimpleVar("MIKE", "m", TARGET));
+
+        assertEquals(List.of("MIKE", "ZULU", "alpha"), names(validator));
+    }
+
+    @Test
+    void getBuildItemsShouldNotDependOnProcessingOrder() {
+        final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createSimpleVar("FIRST", "1", TARGET);
+        final KubernetesEnvBuildItem second = KubernetesEnvBuildItem.createFromField("SECOND", "metadata.name", TARGET);
+        final KubernetesEnvBuildItem third = KubernetesEnvBuildItem.createSimpleVar("THIRD", "3", TARGET);
+
+        validator.process(first);
+        validator.process(second);
+        validator.process(third);
+
+        final EnvVarValidator reversed = new EnvVarValidator();
+        reversed.process(third);
+        reversed.process(second);
+        reversed.process(first);
+
+        assertEquals(names(validator), names(reversed));
     }
 
     @Test
@@ -119,5 +147,9 @@ class EnvVarValidatorTest {
             assertTrue(
                     message.contains(name) && message.contains(value1) && message.contains(configmap) && message.contains(key));
         }
+    }
+
+    private static List<String> names(EnvVarValidator validator) {
+        return validator.getBuildItems().stream().map(KubernetesEnvBuildItem::getName).toList();
     }
 }

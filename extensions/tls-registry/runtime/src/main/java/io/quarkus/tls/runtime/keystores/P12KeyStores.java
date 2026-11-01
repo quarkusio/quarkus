@@ -1,8 +1,7 @@
 package io.quarkus.tls.runtime.keystores;
 
-import static io.quarkus.tls.runtime.config.TlsConfigUtils.read;
+import static io.quarkus.tls.runtime.config.TlsConfigUtils.readStore;
 
-import java.io.UncheckedIOException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -53,8 +52,8 @@ public class P12KeyStores {
 
     private static PfxOptions toOptions(P12KeyStoreConfig config, KeyStoreCredentialProviderConfig pc, String name) {
         PfxOptions options = new PfxOptions();
+        options.setValue(Buffer.buffer(readStore(config.path(), config.value(), "P12 key store", name)));
         try {
-            options.setValue(Buffer.buffer(read(config.path())));
             String password = CredentialProviders.getKeyStorePassword(config.password(), pc)
                     .orElse(null);
             if (password == null) {
@@ -67,9 +66,6 @@ public class P12KeyStores {
             }
             String ap = CredentialProviders.getAliasPassword(config.aliasPassword(), pc).orElse(null);
             options.setAliasPassword(ap);
-        } catch (UncheckedIOException e) {
-            throw new IllegalStateException("Invalid P12 key store configuration for certificate '" + name
-                    + "' - cannot read the key store file '" + config.path() + "'", e);
         } catch (Exception e) {
             throw new IllegalStateException("Invalid P12 key store configuration for certificate '" + name + "'", e);
         }
@@ -78,8 +74,8 @@ public class P12KeyStores {
 
     private static PfxOptions toOptions(P12TrustStoreConfig config, TrustStoreCredentialProviderConfig cp, String name) {
         PfxOptions options = new PfxOptions();
+        options.setValue(Buffer.buffer(readStore(config.path(), config.value(), "P12 trust store", name)));
         try {
-            options.setValue(Buffer.buffer(read(config.path())));
             String password = CredentialProviders.getTrustStorePassword(config.password(), cp)
                     .orElse(null);
             if (password == null) {
@@ -90,9 +86,6 @@ public class P12KeyStores {
             if (config.alias().isPresent()) {
                 options.setAlias(config.alias().get());
             }
-        } catch (UncheckedIOException e) {
-            throw new IllegalStateException("Invalid P12 trust store configuration for certificate '" + name
-                    + "' - cannot read the trust store file '" + config.path() + "'", e);
         } catch (Exception e) {
             throw new IllegalStateException("Invalid P12 trust store configuration for certificate '" + name + "'", e);
         }

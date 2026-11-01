@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Base64;
+import java.util.Optional;
 
 import org.jboss.logging.Logger;
 
@@ -53,6 +55,54 @@ public class TlsConfigUtils {
             throw new UncheckedIOException("Unable to read file " + path, e);
         }
         return data;
+    }
+
+    /**
+     * Decode a base64 value, ignoring whitespace such as the line breaks commonly found in values coming from environment
+     * variables.
+     *
+     * @param value the base64 value
+     * @return the decoded content
+     * @throws IllegalArgumentException if the value is not a valid base64 string
+     */
+    public static byte[] decodeBase64(String value) {
+        // Not using the MIME decoder as it silently skips any invalid character
+        return Base64.getDecoder().decode(value.replaceAll("\\s", ""));
+    }
+
+    /**
+     * Read the content of a key store or trust store configured either with a file {@code path} or with an inline,
+     * base64-encoded {@code value}.
+     *
+     * @param path the configured path
+     * @param value the configured base64-encoded content
+     * @param store the description of the store, used in error messages (e.g. {@code JKS trust store})
+     * @param name the name of the TLS configuration, used in error messages
+     * @return the content of the store
+     * @throws IllegalStateException if both or none of {@code path} and {@code value} are set, if the value is not valid
+     *         base64, or if the file cannot be read
+     */
+    public static byte[] readStore(Optional<Path> path, Optional<String> value, String store, String name) {
+        String prefix = "Invalid " + store + " configuration for certificate '" + name + "'";
+        if (path.isPresent() && value.isPresent()) {
+            throw new IllegalStateException(prefix + " - the `path` and `value` properties cannot be set at the same time");
+        }
+        if (value.isPresent()) {
+            try {
+                return decodeBase64(value.get());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalStateException(prefix + " - the `value` property is not a valid base64 string", e);
+            }
+        }
+        if (path.isEmpty()) {
+            throw new IllegalStateException(prefix + " - either the `path` or the `value` property must be set");
+        }
+        try {
+            return read(path.get());
+        } catch (UncheckedIOException e) {
+            String type = store.substring(store.indexOf(' ') + 1);
+            throw new IllegalStateException(prefix + " - cannot read the " + type + " file '" + path.get() + "'", e);
+        }
     }
 
     /**

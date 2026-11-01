@@ -840,6 +840,44 @@ class TokensHelperTest {
     }
 
     /**
+     * Only the callers arriving after a refresh has started are served the tokens being refreshed:
+     * the caller which starts the refresh is handed the refresh itself, so it waits for the token
+     * endpoint even though the tokens it would replace are still valid.
+     */
+    @Test
+    void testCallerStartingRefreshWaitsWhileLaterCallersAreServedTokensBeingRefreshed() throws Exception {
+        Tokens current = tokens("current", 8);
+        assertThat(current.isAccessTokenExpired()).isFalse();
+        assertThat(current.isAccessTokenWithinRefreshInterval()).isTrue();
+        assertThat(current.hasMinRemainingAccessTokenLifespan()).isTrue();
+
+        BlockingOidcClient client = new BlockingOidcClient(tokens("refreshed", 300));
+        TokensHelper helper = new TokensHelper();
+        helper.initTokens(new ImmediateOidcClient(current), Map.of());
+
+        final AtomicReference<Tokens> first = new AtomicReference<>();
+        final CountDownLatch firstCompleted = new CountDownLatch(1);
+        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {
+            first.set(t);
+            firstCompleted.countDown();
+        }, t -> firstCompleted.countDown());
+        client.awaitInFlight();
+
+        Tokens second = helper.getTokens(client, Map.of(), false).await().atMost(Duration.ofSeconds(2));
+        assertThat(second).as("the caller arriving during the refresh is served the tokens being refreshed")
+                .isSameAs(current);
+
+        assertThat(firstCompleted.await(1, TimeUnit.SECONDS))
+                .as("the caller which started the refresh waits for it, although the tokens being refreshed are still valid")
+                .isFalse();
+
+        client.release.countDown();
+        assertThat(firstCompleted.await(10, TimeUnit.SECONDS)).as("the first caller should have completed").isTrue();
+        assertThat(first.get().getAccessToken()).isEqualTo("refreshed");
+        assertThat(client.acquisitions.get()).isEqualTo(1);
+    }
+
+    /**
      * Expired tokens are never served, even though a refresh is already in flight: the caller
      * waits for it, exactly as a caller waits when it starts a refresh itself. This is the same
      * rule applied when no refresh is running -- an expired access token is not usable.

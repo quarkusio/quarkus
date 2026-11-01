@@ -1,11 +1,13 @@
 package io.quarkus.deployment.builditem;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.quarkus.builder.item.SimpleBuildItem;
@@ -64,7 +66,7 @@ public final class DevServicesComposeProjectBuildItem extends SimpleBuildItem {
      *
      * @param imagePartials image partials
      * @param port exposed port
-     * @return the running container or null if not found
+     * @return an Optional running container
      */
     public Optional<RunningContainer> locate(List<String> imagePartials, int port) {
         return locateContainers(imagePartials)
@@ -72,6 +74,26 @@ public final class DevServicesComposeProjectBuildItem extends SimpleBuildItem {
                         .map(ports -> Arrays.stream(ports)
                                 .anyMatch(p -> Objects.equals(p.privatePort(), port)))
                         .isPresent())
+                .findFirst();
+    }
+
+    /**
+     * Locate a running container by image partial and ports
+     * The container image partial can be a substring of the full image name
+     * The container must expose all the given ports
+     *
+     * @param imagePartials image partials
+     * @param ports exposed ports
+     * @return an Optional running container
+     */
+    public Optional<RunningContainer> locate(List<String> imagePartials, Collection<Integer> ports) {
+        return locateContainers(imagePartials)
+                .filter(r -> Optional.ofNullable(r.containerInfo().exposedPorts())
+                        .map(exposed -> Arrays.stream(exposed)
+                                .map(ContainerInfo.ContainerPort::privatePort)
+                                .collect(Collectors.toSet())
+                                .containsAll(ports))
+                        .orElse(false))
                 .findFirst();
     }
 

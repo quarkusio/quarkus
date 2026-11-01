@@ -63,7 +63,11 @@ public class MariaDBDevServicesProcessor {
                         containerConfig.getFixedExposedPort(),
                         composeProjectBuildItem.getDefaultNetworkId(),
                         useSharedNetwork);
-                startupTimeout.ifPresent(container::withStartupTimeout);
+                startupTimeout.ifPresent(timeout -> {
+                    container.withStartupTimeout(timeout);
+                    // JdbcDatabaseContainer waits for a JDBC connection with its own timeout, not the wait strategy's
+                    container.withStartupTimeoutSeconds((int) timeout.toSeconds());
+                });
 
                 container.withUsername(effectiveUsername)
                         .withPassword(effectivePassword)

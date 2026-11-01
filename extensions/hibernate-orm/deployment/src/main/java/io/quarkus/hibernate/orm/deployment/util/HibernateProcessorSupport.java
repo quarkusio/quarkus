@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -42,6 +43,7 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceValidation.DdlInfluence;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceValidation.ValidationMode;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
@@ -429,19 +431,47 @@ public final class HibernateProcessorSupport {
         return new QuarkusPersistenceUnitCacheConfiguration(caches);
     }
 
+    @SuppressWarnings("deprecation")
     private static void configureValidation(QuarkusPersistenceUnitDescriptor descriptor,
             HibernateOrmConfigPersistenceUnit config) {
+        Set<ValidationMode> modes = config.validation().mode();
+        Optional<DdlInfluence> ddlInfluenceOpt = config.validation().ddlInfluence();
+        DdlInfluence ddlInfluence;
+
+        if (modes.contains(ValidationMode.DDL)) {
+            if (ddlInfluenceOpt.isPresent()) {
+                throw new ConfigurationException(
+                        "Persistence unit '" + descriptor.getName() + "': the deprecated 'ddl' validation mode"
+                                + " conflicts with 'ddl-influence="
+                                + ddlInfluenceOpt.get().name().toLowerCase(Locale.ROOT) + "'."
+                                + " Remove 'ddl' from 'quarkus.hibernate-orm.validation.mode'"
+                                + " and use 'quarkus.hibernate-orm.validation.ddl-influence' instead.");
+            }
+            LOG.warnf("Persistence unit '%s': the 'ddl' validation mode is deprecated."
+                    + " Use 'quarkus.hibernate-orm.validation.ddl-influence' instead.",
+                    descriptor.getName());
+            ddlInfluence = DdlInfluence.AUTO;
+            EnumSet<ValidationMode> cleanedModes = EnumSet.copyOf(modes);
+            cleanedModes.remove(ValidationMode.DDL);
+            if (cleanedModes.isEmpty()) {
+                cleanedModes.add(ValidationMode.NONE);
+            }
+            modes = cleanedModes;
+        } else if (ddlInfluenceOpt.isPresent()) {
+            ddlInfluence = ddlInfluenceOpt.get();
+        } else {
+            ddlInfluence = modes.contains(ValidationMode.AUTO) ? DdlInfluence.AUTO : DdlInfluence.DISABLED;
+        }
+
         descriptor.getProperties().setProperty(
                 AvailableSettings.JAKARTA_VALIDATION_MODE,
-                config.validation().mode()
-                        .stream()
+                modes.stream()
                         .map(Enum::name)
                         .collect(Collectors.joining(",")));
-        // ORM 8 controls validation-derived DDL independently of lifecycle validation.
-        if (!config.validation().mode().contains(ValidationMode.AUTO)
-                && !config.validation().mode().contains(ValidationMode.DDL)) {
-            descriptor.getProperties().setProperty(AvailableSettings.APPLY_VALIDATION_CONSTRAINTS, "disabled");
-        }
+
+        descriptor.getProperties().setProperty(
+                AvailableSettings.APPLY_VALIDATION_CONSTRAINTS,
+                ddlInfluence.name().toLowerCase(Locale.ROOT));
     }
 
     private static void configureQuoting(QuarkusPersistenceUnitDescriptor desc,

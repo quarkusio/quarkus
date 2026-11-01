@@ -4,16 +4,15 @@ import static io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil.qual
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
-import jakarta.enterprise.util.TypeLiteral;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.arc.Arc;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
@@ -22,9 +21,6 @@ import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.ReactivePoolUtil;
 import io.quarkus.reactive.mysql.client.MySQLPoolCreator;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -37,56 +33,36 @@ import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnectOptions;
 
-@Recorder
-public class MySQLPoolRecorder {
+public final class MySQLPoolRecorder {
 
     private static final Logger log = Logger.getLogger(MySQLPoolRecorder.class);
 
-    private static final TypeLiteral<Instance<PoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
-    };
-
-    private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
-    private final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig;
-    private final RuntimeValue<DataSourcesReactiveMySQLConfig> reactiveMySQLRuntimeConfig;
-
-    public MySQLPoolRecorder(
-            final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
-            final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig,
-            final RuntimeValue<DataSourcesReactiveMySQLConfig> reactiveMySQLRuntimeConfig) {
-        this.runtimeConfig = runtimeConfig;
-        this.reactiveRuntimeConfig = reactiveRuntimeConfig;
-        this.reactiveMySQLRuntimeConfig = reactiveMySQLRuntimeConfig;
+    private MySQLPoolRecorder() {
     }
 
-    public Function<SyntheticCreationalContext<Pool>, Pool> configureMySQLPool(RuntimeValue<Vertx> vertx,
-            Supplier<Integer> eventLoopCount, String dataSourceName, ShutdownContext shutdown,
-            Supplier<TlsConfigurationRegistry> tlsRegistrySupplier) {
-        return new Function<>() {
-            @Override
-            public Pool apply(SyntheticCreationalContext<Pool> context) {
-                Pool pool = initialize((VertxInternal) vertx.getValue(),
-                        eventLoopCount.get(),
-                        dataSourceName,
-                        runtimeConfig.getValue().dataSources().get(dataSourceName),
-                        reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive(),
-                        reactiveMySQLRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().mysql(),
-                        tlsRegistrySupplier != null ? tlsRegistrySupplier.get() : null,
-                        context);
-
-                shutdown.addShutdownTask(pool::close);
-                return pool;
-            }
-        };
+    public static Optional<Pool> createPool(String dataSourceName, DataSourcesRuntimeConfig runtimeConfig,
+            DataSourcesReactiveRuntimeConfig reactiveRuntimeConfig,
+            DataSourcesReactiveMySQLConfig reactiveMySQLRuntimeConfig, Vertx vertx, int eventLoopCount,
+            TlsConfigurationRegistry tlsRegistry) {
+        if (!ReactivePoolUtil.checkActive(dataSourceName, runtimeConfig, reactiveRuntimeConfig).value()) {
+            return Optional.empty();
+        }
+        return Optional.of(initialize((VertxInternal) vertx,
+                eventLoopCount,
+                dataSourceName,
+                runtimeConfig.dataSources().get(dataSourceName),
+                reactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
+                reactiveMySQLRuntimeConfig.dataSources().get(dataSourceName).reactive().mysql(),
+                tlsRegistry));
     }
 
-    private Pool initialize(VertxInternal vertx,
+    private static Pool initialize(VertxInternal vertx,
             Integer eventLoopCount,
             String dataSourceName,
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig,
-            TlsConfigurationRegistry tlsRegistry,
-            SyntheticCreationalContext<Pool> context) {
+            TlsConfigurationRegistry tlsRegistry) {
         PoolOptions poolOptions = ReactivePoolUtil.toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         if (dataSourceReactiveRuntimeConfig.connectionTimeout().isEmpty()
                 && dataSourceReactiveMySQLConfig.connectionTimeout().isPresent()) {
@@ -99,10 +75,10 @@ public class MySQLPoolRecorder {
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig, tlsRegistry);
         Supplier<Future<SqlConnectOptions>> databasesSupplier = ReactivePoolUtil.toDatabasesSupplier(mysqlConnectOptionsList,
                 dataSourceRuntimeConfig, MySQLConnectOptions::new);
-        return createPool(vertx, poolOptions, mysqlConnectOptionsList, dataSourceName, databasesSupplier, context);
+        return createPool(vertx, poolOptions, mysqlConnectOptionsList, dataSourceName, databasesSupplier);
     }
 
-    private void logWarningForDeprecatedConnectionTimeout(String dataSourceName) {
+    private static void logWarningForDeprecatedConnectionTimeout(String dataSourceName) {
         if (DataSourceUtil.isDefault(dataSourceName)) {
             log.warn("'quarkus.datasource.reactive.mysql.connection-timeout' is deprecated,"
                     + " use 'quarkus.datasource.reactive.connection-timeout' instead");
@@ -113,7 +89,7 @@ public class MySQLPoolRecorder {
         }
     }
 
-    private List<MySQLConnectOptions> toMySQLConnectOptions(String dataSourceName,
+    private static List<MySQLConnectOptions> toMySQLConnectOptions(String dataSourceName,
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig,
@@ -187,11 +163,10 @@ public class MySQLPoolRecorder {
         return mysqlConnectOptionsList;
     }
 
-    private Pool createPool(Vertx vertx, PoolOptions poolOptions,
+    private static Pool createPool(Vertx vertx, PoolOptions poolOptions,
             List<MySQLConnectOptions> mysqlConnectOptionsList,
-            String dataSourceName, Supplier<Future<SqlConnectOptions>> databases,
-            SyntheticCreationalContext<Pool> context) {
-        Instance<PoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL, qualifier(dataSourceName));
+            String dataSourceName, Supplier<Future<SqlConnectOptions>> databases) {
+        Instance<PoolCreator> instance = Arc.container().select(PoolCreator.class, qualifier(dataSourceName));
         if (instance.isResolvable()) {
             PoolCreator.Input input = new DefaultInput(vertx, poolOptions, mysqlConnectOptionsList);
             return instance.get().create(input);

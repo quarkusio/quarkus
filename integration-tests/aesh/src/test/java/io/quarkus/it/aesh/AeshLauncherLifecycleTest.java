@@ -69,13 +69,16 @@ public class AeshLauncherLifecycleTest {
     /**
      * Returns the currently live threads owned by aesh REPL sessions:
      * the launcher thread, the stream reader, and upstream pipe stages.
+     * The reader runs under upstream's fixed {@code aesh-stream-reader}
+     * name ({@code AeshStreamConnection} extends {@code StreamConnection}).
      */
     private static Map<Thread, Boolean> liveAeshThreads() {
         Map<Thread, Boolean> result = new IdentityHashMap<>();
         for (Thread thread : Thread.getAllStackTraces().keySet()) {
             String name = thread.getName();
             if (thread.isAlive()
-                    && (name.startsWith("aesh-test-") || name.startsWith("aesh-pipe-"))) {
+                    && (name.startsWith("aesh-test-") || name.startsWith("aesh-pipe-")
+                            || name.startsWith("aesh-stream-"))) {
                 result.put(thread, Boolean.TRUE);
             }
         }

@@ -65,6 +65,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.mongodb.MongoClientName;
+import io.quarkus.mongodb.deployment.spi.MongoClientBuildItem.Type;
 import io.quarkus.mongodb.deployment.spi.MongoClientsBuildItem;
 import io.quarkus.mongodb.metrics.MicrometerCommandListener;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
@@ -231,7 +232,6 @@ public class MongoClientProcessor {
     @BuildStep
     public void mongoClients(
             CombinedIndexBuildItem indexBuildItem,
-            BeanRegistrationPhaseBuildItem registrationPhase,
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
             BuildProducer<io.quarkus.mongodb.deployment.spi.MongoClientBuildItem> mongoClient) {
 
@@ -246,19 +246,8 @@ public class MongoClientProcessor {
             mongoClient.produce(io.quarkus.mongodb.deployment.spi.MongoClientBuildItem.of(name));
         }
 
-        boolean defaultUnremoveable = false;
+        // the injected client types are registered in generateClientBeans
         if (mongoClientBuildTimeConfig.forceDefaultClients()) {
-            defaultUnremoveable = true;
-        } else {
-            for (InjectionPointInfo injectionPoint : registrationPhase.getContext().get(INJECTION_POINTS)) {
-                DotName injectionPointType = injectionPoint.getRequiredType().name();
-                if ((injectionPointType.equals(MONGO_CLIENT) || injectionPointType.equals(REACTIVE_MONGO_CLIENT))
-                        && injectionPoint.hasDefaultedQualifier()) {
-                    defaultUnremoveable = true;
-                }
-            }
-        }
-        if (defaultUnremoveable) {
             mongoClient.produce(io.quarkus.mongodb.deployment.spi.MongoClientBuildItem.defaultClientUnremovable());
         } else {
             mongoClient.produce(io.quarkus.mongodb.deployment.spi.MongoClientBuildItem.defaultClient());
@@ -278,16 +267,7 @@ public class MongoClientProcessor {
 
     @BuildStep
     MongoClientsBuildItem mongoClients(List<io.quarkus.mongodb.deployment.spi.MongoClientBuildItem> mongoClients) {
-        Map<String, io.quarkus.mongodb.deployment.spi.MongoClientBuildItem> names = new HashMap<>();
-        for (io.quarkus.mongodb.deployment.spi.MongoClientBuildItem mongoClient : mongoClients) {
-            io.quarkus.mongodb.deployment.spi.MongoClientBuildItem existent = names.put(mongoClient.getName(), mongoClient);
-            if (existent == null) {
-                names.put(mongoClient.getName(), mongoClient);
-            } else if (existent.isUnremovable() && !mongoClient.isUnremovable()) {
-                names.put(mongoClient.getName(), existent);
-            }
-        }
-        return MongoClientsBuildItem.of(names.values().stream().toList());
+        return MongoClientsBuildItem.of(mongoClients);
     }
 
     @BuildStep
@@ -376,25 +356,59 @@ public class MongoClientProcessor {
     @BuildStep
     void generateClientBeans(
             MongoClientRecorder recorder,
+            BeanRegistrationPhaseBuildItem registrationPhase,
             io.quarkus.mongodb.deployment.spi.MongoClientsBuildItem mongoClients,
             List<MongoUnremovableClientsBuildItem> unremovableClients,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             VertxBuildItem vertxBuildItem) {
 
-        for (io.quarkus.mongodb.deployment.spi.MongoClientBuildItem mongoClient : mongoClients.getMongoClients()) {
-            boolean unremovable = mongoClient.isUnremovable() || !unremovableClients.isEmpty();
-            // previous implementation skipped the synthetic bean entire if it wasn't unremovable
-            if (mongoClient.isDefault() && !unremovable) {
+        // The blocking and the reactive client are separate driver clients, each with its own connection pool, and
+        // the beans are created at startup, so only the client types that are injected are registered
+        Set<String> blockingClients = new HashSet<>();
+        Set<String> reactiveClients = new HashSet<>();
+        for (InjectionPointInfo injectionPoint : registrationPhase.getContext().get(INJECTION_POINTS)) {
+            String clientName = injectedClientName(injectionPoint);
+            if (clientName == null) {
                 continue;
             }
-            // but for named clients, it would always register them with the unremovable flag
-            syntheticBeanBuildItemBuildProducer
-                    .produce(createBlockingSyntheticBean(recorder, unremovable, mongoClient.getName()));
-            syntheticBeanBuildItemBuildProducer
-                    .produce(createReactiveSyntheticBean(recorder, unremovable, mongoClient.getName()));
+            DotName injectionPointType = injectionPoint.getRequiredType().name();
+            if (injectionPointType.equals(MONGO_CLIENT)) {
+                blockingClients.add(clientName);
+            } else if (injectionPointType.equals(REACTIVE_MONGO_CLIENT)) {
+                reactiveClients.add(clientName);
+            }
+        }
+
+        for (io.quarkus.mongodb.deployment.spi.MongoClientBuildItem mongoClient : mongoClients.getMongoClients()) {
+            // unremovable client types may be looked up programmatically, so they are registered without injection points
+            boolean blockingUnremovable = !unremovableClients.isEmpty() || mongoClient.isUnremovable(Type.BLOCKING);
+            boolean reactiveUnremovable = !unremovableClients.isEmpty() || mongoClient.isUnremovable(Type.REACTIVE);
+            if (blockingUnremovable || blockingClients.contains(mongoClient.getName())) {
+                syntheticBeanBuildItemBuildProducer
+                        .produce(createBlockingSyntheticBean(recorder, blockingUnremovable, mongoClient.getName()));
+            }
+            if (reactiveUnremovable || reactiveClients.contains(mongoClient.getName())) {
+                syntheticBeanBuildItemBuildProducer
+                        .produce(createReactiveSyntheticBean(recorder, reactiveUnremovable, mongoClient.getName()));
+            }
         }
 
         recorder.performInitialization(vertxBuildItem.getVertx());
+    }
+
+    /**
+     * The client an injection point asks for: the default client, or the name from {@link MongoClientName} or
+     * {@code @Named}; {@code null} for other qualifiers, such as {@code @Any}.
+     */
+    private static String injectedClientName(InjectionPointInfo injectionPoint) {
+        if (injectionPoint.hasDefaultedQualifier()) {
+            return DEFAULT_CLIENT_NAME;
+        }
+        AnnotationInstance qualifier = injectionPoint.getRequiredQualifier(MONGO_CLIENT_ANNOTATION);
+        if (qualifier == null) {
+            qualifier = injectionPoint.getRequiredQualifier(DotNames.NAMED);
+        }
+        return qualifier == null || qualifier.value() == null ? null : qualifier.value().asString();
     }
 
     private SyntheticBeanBuildItem createBlockingSyntheticBean(MongoClientRecorder recorder,
@@ -427,7 +441,7 @@ public class MongoClientProcessor {
 
     private SyntheticBeanBuildItem applyCommonBeanConfig(boolean unremovable, String clientName,
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator) {
-        if (!unremovable) {
+        if (unremovable) {
             configurator.unremovable();
         }
 

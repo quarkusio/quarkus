@@ -11,6 +11,7 @@ import org.jboss.logging.Logger;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.CompositeMetricExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.metrics.NoopMetricExporter;
 
 public class MetricsExporterCDIProvider implements ConfigurableMetricExporterProvider {
@@ -29,7 +30,7 @@ public class MetricsExporterCDIProvider implements ConfigurableMetricExporterPro
         if (exporters.isUnsatisfied()) {
             return NoopMetricExporter.INSTANCE;
         } else {
-            return exporters.get();
+            return CompositeMetricExporter.of(exporters.stream().toList());
         }
     }
 

@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -58,6 +59,10 @@ public class TransactionSessions {
                 jpaConfig.getEntityManagerFactory(un, false).unwrap(SessionFactory.class), un,
                 jpaConfig.getRequestScopedSessionEnabled(), jpaConfig.getRequestScopedStatelessSessionAllowWrite(),
                 requestScopedStatelessSession));
+    }
+
+    public Collection<TransactionScopedSession> getSessions() {
+        return sessions.values();
     }
 
     private TransactionManager getTransactionManager() {

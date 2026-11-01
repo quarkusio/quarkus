@@ -173,11 +173,18 @@ public class KafkaProcessor {
         if (config.jmxEnabled()) {
             return;
         }
-        transformers.produce(new BytecodeTransformerBuildItem.Builder()
-                .setClassToTransform("org.apache.kafka.common.utils.AppInfoParser")
-                .setCacheable(true)
-                .setVisitorFunction((className, classVisitor) -> new AppInfoClassVisitor(classVisitor))
-                .build());
+        // Kafka 4.4 relocated AppInfoParser to the internals package. Registering both
+        // class names keeps the transformation compatible with existing Kafka clients;
+        // only the class present on the application classpath is transformed.
+        for (String className : List.of(
+                "org.apache.kafka.common.utils.AppInfoParser",
+                "org.apache.kafka.common.utils.internals.AppInfoParser")) {
+            transformers.produce(new BytecodeTransformerBuildItem.Builder()
+                    .setClassToTransform(className)
+                    .setCacheable(true)
+                    .setVisitorFunction((name, classVisitor) -> new AppInfoClassVisitor(classVisitor))
+                    .build());
+        }
         runtimeConfig.produce(new RunTimeConfigurationDefaultBuildItem("kafka.metric.reporters", ""));
     }
 

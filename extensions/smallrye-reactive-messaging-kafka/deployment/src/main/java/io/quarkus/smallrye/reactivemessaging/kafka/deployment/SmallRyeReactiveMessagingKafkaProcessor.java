@@ -86,9 +86,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     public void ignoreDuplicateJmxRegistrationInDevAndTestModes(LaunchModeBuildItem launchMode,
             BuildProducer<LogCleanupFilterBuildItem> log) {
         if (launchMode.getLaunchMode().isDevOrTest()) {
-            log.produce(new LogCleanupFilterBuildItem(
+            for (String parser : List.of(
                     "org.apache.kafka.common.utils.AppInfoParser",
-                    "Error registering AppInfo mbean"));
+                    "org.apache.kafka.common.utils.internals.AppInfoParser")) {
+                log.produce(new LogCleanupFilterBuildItem(parser, "Error registering AppInfo mbean"));
+            }
         }
     }
 

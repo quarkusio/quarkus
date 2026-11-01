@@ -32,6 +32,7 @@
 
         <asciidoctorj.version>3.0.0</asciidoctorj.version>
         <htmlunit.version>5.6.0</htmlunit.version>
+        <playwright.version>1.63.0</playwright.version>
         <javaparser-core.version>3.28.2</javaparser-core.version>
         <jdeparser2.version>2.1.0</jdeparser2.version>
         <jdeparser.version>3.0.beta1</jdeparser.version>
@@ -382,6 +383,11 @@
                         <artifactId>commons-logging</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.playwright</groupId>
+                <artifactId>playwright</artifactId>
+                <version>${playwright.version}</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.jms</groupId>

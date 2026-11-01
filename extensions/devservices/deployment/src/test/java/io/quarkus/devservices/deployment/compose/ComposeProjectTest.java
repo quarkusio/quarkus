@@ -80,6 +80,19 @@ public class ComposeProjectTest {
     }
 
     @Test
+    void testRyukOnlyWhenEverythingIsRemovedAnyway() {
+        ComposeFiles files = new ComposeFiles(List.of(composeFile));
+        assertTrue(new ComposeProject.Builder(files, COMPOSE_EXECUTABLE).withProject("test").build().usesRyuk());
+        assertFalse(new ComposeProject.Builder(files, COMPOSE_EXECUTABLE).withProject("test")
+                .withRyukEnabled(false).build().usesRyuk());
+        // Ryuk would stop the services and remove the volumes regardless of these settings
+        assertFalse(new ComposeProject.Builder(files, COMPOSE_EXECUTABLE).withProject("test")
+                .withStopContainers(false).build().usesRyuk());
+        assertFalse(new ComposeProject.Builder(files, COMPOSE_EXECUTABLE).withProject("test")
+                .withRemoveVolumes(false).build().usesRyuk());
+    }
+
+    @Test
     void testProjectWithWaitStrategies() {
         ComposeFiles files = new ComposeFiles(List.of(composeFileWithProfiles));
         composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE)

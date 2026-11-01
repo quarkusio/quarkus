@@ -33,7 +33,10 @@ public class EncryptedPemWithWrongPasswordTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .add(new StringAsset(configuration), "application.properties"))
-            .assertException(t -> assertThat(t.getMessage()).contains("key/certificate pair", "default"));
+            .assertException(t -> {
+                assertThat(t.getMessage()).contains("key/certificate pair", "default");
+                assertThat(t).hasStackTraceContaining("the secret is probably wrong");
+            });
 
     @Test
     void test() throws KeyStoreException, CertificateParsingException {

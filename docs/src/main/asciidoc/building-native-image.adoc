@@ -138,7 +138,7 @@ There is an explanation of how to do this in the xref:native-reference.adoc#mult
 
 1. Install GraalVM if you haven't already. You have a few options for this:
 ** Download the appropriate archive from <https://github.com/graalvm/mandrel/releases> or <https://www.graalvm.org/downloads/>, and unpack it like you would any other JDK.
-** Use platform-specific installer tools like https://sdkman.io/jdks#graalce[sdkman], https://github.com/graalvm/homebrew-tap[homebrew], or https://github.com/ScoopInstaller/Java[scoop].
+** Use platform-specific installer tools like https://sdkman.io/jdks#graalce[SDKman], https://github.com/graalvm/homebrew-tap[homebrew], https://mise.jdx.dev/lang/java.html[mise], or https://github.com/ScoopInstaller/Java[scoop].
 For example, install it with `sdk install java {graalvm-flavor}`.
 2. Configure the runtime environment. Set `GRAALVM_HOME` environment variable to the GraalVM installation directory, for example:
 +

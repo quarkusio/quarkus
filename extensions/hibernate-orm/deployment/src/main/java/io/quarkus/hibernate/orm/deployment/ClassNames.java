@@ -31,6 +31,7 @@ public final class ClassNames {
             "io.quarkus.hibernate.orm.PersistenceUnit$List");
     public static final DotName JPA_PERSISTENCE_UNIT = createConstant("jakarta.persistence.PersistenceUnit");
     public static final DotName JPA_PERSISTENCE_CONTEXT = createConstant("jakarta.persistence.PersistenceContext");
+    public static final DotName JPA_PERSISTENCE_AGENT = createConstant("jakarta.persistence.PersistenceAgent");
     public static final DotName PERSISTENCE_UNIT_EXTENSION = createConstant(
             "io.quarkus.hibernate.orm.PersistenceUnitExtension");
     public static final DotName PERSISTENCE_UNIT_EXTENSION_REPEATABLE_CONTAINER = createConstant(

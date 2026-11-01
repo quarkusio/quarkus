@@ -391,44 +391,32 @@ class AwtProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void setupFfmReachability(
             BuildProducer<FfmDowncallBuildItem> downcalls,
-            BuildProducer<FfmUpcallBuildItem> upcalls,
-            NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
-        final GraalVM.Version v;
-        if (nativeImageRunnerBuildItem.getBuildRunner() instanceof NoopNativeImageBuildRunner) {
-            v = CURRENT;
-            log.warnf("native-image is not installed. " +
-                    "Using the default %s version as a reference to build native-sources step.", v.getVersionAsString());
-        } else {
-            v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
-        }
-        // Not needed with older GraalVM
-        if (v.compareTo(GraalVM.Version.VERSION_25_0_0) >= 0) {
-            // Downcalls
-            // malloc
-            downcalls.produce(FfmDowncallBuildItem.builder(ADDRESS, LONG).build());
-            // HBCreateFace
-            downcalls.produce(FfmDowncallBuildItem.builder(ADDRESS, ADDRESS).build());
-            // HBDisposeFace
-            downcalls.produce(FfmDowncallBuildItem.builder(VOID, ADDRESS).build());
-            // jdk_hb_shape
-            downcalls.produce(FfmDowncallBuildItem.builder(VOID, FLOAT, ADDRESS, ADDRESS, ADDRESS, INT, INT, INT, INT, INT,
-                    FLOAT, FLOAT, INT, INT, ADDRESS, ADDRESS).build());
-            // HBCreateFontFuncs
-            downcalls.produce(FfmDowncallBuildItem.builder(ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS).build());
+            BuildProducer<FfmUpcallBuildItem> upcalls) {
+        // Downcalls
+        // malloc
+        downcalls.produce(FfmDowncallBuildItem.builder(ADDRESS, LONG).build());
+        // HBCreateFace
+        downcalls.produce(FfmDowncallBuildItem.builder(ADDRESS, ADDRESS).build());
+        // HBDisposeFace
+        downcalls.produce(FfmDowncallBuildItem.builder(VOID, ADDRESS).build());
+        // jdk_hb_shape
+        downcalls.produce(FfmDowncallBuildItem.builder(VOID, FLOAT, ADDRESS, ADDRESS, ADDRESS, INT, INT, INT, INT, INT,
+                FLOAT, FLOAT, INT, INT, ADDRESS, ADDRESS).build());
+        // HBCreateFontFuncs
+        downcalls.produce(FfmDowncallBuildItem.builder(ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS).build());
 
-            // Upcalls
-            // getFontTableData
-            upcalls.produce(new FfmUpcallBuildItem(INT, INT, ADDRESS));
-            // get_variation_glyph
-            upcalls.produce(new FfmUpcallBuildItem(INT, ADDRESS, ADDRESS, INT, INT, ADDRESS, ADDRESS));
-            // get_nominal_glyph
-            upcalls.produce(new FfmUpcallBuildItem(INT, ADDRESS, ADDRESS, INT, ADDRESS, ADDRESS));
-            // get_glyph_h_advance & get_glyph_v_advance
-            upcalls.produce(new FfmUpcallBuildItem(INT, ADDRESS, ADDRESS, INT, ADDRESS));
-            // get_contour_pt_stub
-            upcalls.produce(new FfmUpcallBuildItem(INT, ADDRESS, ADDRESS, INT, INT, ADDRESS, ADDRESS, ADDRESS));
-            // store_layout_results_stub
-            upcalls.produce(new FfmUpcallBuildItem(VOID, INT, INT, INT, FLOAT, FLOAT, FLOAT, INT, INT, ADDRESS, ADDRESS));
-        }
+        // Upcalls
+        // getFontTableData
+        upcalls.produce(new FfmUpcallBuildItem(INT, INT, ADDRESS));
+        // get_variation_glyph
+        upcalls.produce(new FfmUpcallBuildItem(INT, ADDRESS, ADDRESS, INT, INT, ADDRESS, ADDRESS));
+        // get_nominal_glyph
+        upcalls.produce(new FfmUpcallBuildItem(INT, ADDRESS, ADDRESS, INT, ADDRESS, ADDRESS));
+        // get_glyph_h_advance & get_glyph_v_advance
+        upcalls.produce(new FfmUpcallBuildItem(INT, ADDRESS, ADDRESS, INT, ADDRESS));
+        // get_contour_pt_stub
+        upcalls.produce(new FfmUpcallBuildItem(INT, ADDRESS, ADDRESS, INT, INT, ADDRESS, ADDRESS, ADDRESS));
+        // store_layout_results_stub
+        upcalls.produce(new FfmUpcallBuildItem(VOID, INT, INT, INT, FLOAT, FLOAT, FLOAT, INT, INT, ADDRESS, ADDRESS));
     }
 }

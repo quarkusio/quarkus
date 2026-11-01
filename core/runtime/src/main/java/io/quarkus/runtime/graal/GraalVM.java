@@ -126,18 +126,22 @@ public final class GraalVM {
          * Versions prior to this are expected to cause major issues and are thus not allowed.
          *
          * See {@link #MINIMUM_SUPPORTED} for the minimum fully supported version.
+         * <p>
+         * GraalVM 25.0.0 through 25.0.3 have a known bug (oracle/graal#12453) that silently
+         * prevents all constant bootstrap ({@code ConstantBootstrapBuildItem}) registration
+         * during native image generation, so 25.0.4 is the effective minimum.
          */
-        public static final Version MINIMUM = VERSION_25_0_0;
+        public static final Version MINIMUM = VERSION_25_0_4;
         /**
          * The current version of GraalVM supported by Quarkus.
          * This version is the one actively being tested and is expected to give the best experience.
          */
-        public static final Version CURRENT = VERSION_25_0_0;
+        public static final Version CURRENT = VERSION_25_0_4;
         /**
          * The minimum version of GraalVM officially supported by Quarkus.
          * Versions prior to this are expected to work but are not given the same level of testing or priority.
          */
-        public static final Version MINIMUM_SUPPORTED = VERSION_25_0_0;
+        public static final Version MINIMUM_SUPPORTED = VERSION_25_0_4;
 
         private static final String DEFAULT_JDK_VERSION = "25";
         protected final String fullVersion;

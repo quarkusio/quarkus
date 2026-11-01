@@ -23,6 +23,9 @@ guidance before starting work:
   when building, testing, or understanding Maven flags and build commands.
 - **Pull requests** — Read `.agents/skills/pull-requests/SKILL.md`
   when preparing a pull request, writing commit messages, or choosing labels.
+- **Writing style** — Read `.agents/skills/writing-style/SKILL.md`
+  when writing a pull request description, an issue, a commit message,
+  a review reply, Javadoc or a code comment.
 - **Building docs** — Read `.agents/skills/building-docs/SKILL.md`
   when building, previewing, or testing documentation changes locally.
 - **Manage deprecations** — Read `.agents/skills/manage-deprecations/SKILL.md`

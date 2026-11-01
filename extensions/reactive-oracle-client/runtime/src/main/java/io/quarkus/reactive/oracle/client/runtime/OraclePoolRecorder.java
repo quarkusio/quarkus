@@ -111,6 +111,17 @@ public class OraclePoolRecorder {
 
         ReactivePoolUtil.configureCredentials(oracleConnectOptions, dataSourceRuntimeConfig);
 
+        if (dataSourceReactiveRuntimeConfig.tcpKeepAlive()
+                || dataSourceReactiveRuntimeConfig.tcpKeepAliveIdle().isPresent()
+                || dataSourceReactiveRuntimeConfig.tcpKeepAliveInterval().isPresent()
+                || dataSourceReactiveRuntimeConfig.tcpKeepAliveCount().isPresent()
+                || dataSourceReactiveRuntimeConfig.socketReadIdleTimeout().isPresent()
+                || dataSourceReactiveRuntimeConfig.socketWriteIdleTimeout().isPresent()) {
+            log.warn("The Reactive Oracle client does not support the tcp-keep-alive* and socket-*-idle-timeout"
+                    + " properties, they are ignored. Use the Oracle JDBC driver properties in additional-properties"
+                    + " instead.");
+        }
+
         // Oracle has no SSL mode concept — TLS config is applied directly via ClientSSLOptions
         ReactivePoolUtil.configureSsl(oracleConnectOptions, dataSourceReactiveRuntimeConfig, tlsRegistry);
 

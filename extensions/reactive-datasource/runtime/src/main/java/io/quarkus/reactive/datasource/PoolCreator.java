@@ -3,6 +3,7 @@ package io.quarkus.reactive.datasource;
 import java.util.List;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.net.NetClientOptions;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnectOptions;
@@ -27,5 +28,15 @@ public interface PoolCreator {
         PoolOptions poolOptions();
 
         List<SqlConnectOptions> connectOptionsList();
+
+        /**
+         * The TCP options configured with the {@code tcp-keep-alive*} and {@code socket-*-idle-timeout} properties.
+         * <p>
+         * Pass them to the client builder ({@code with(NetClientOptions)}) so that the created pool honours these
+         * properties.
+         */
+        default NetClientOptions netClientOptions() {
+            return new NetClientOptions();
+        }
     }
 }

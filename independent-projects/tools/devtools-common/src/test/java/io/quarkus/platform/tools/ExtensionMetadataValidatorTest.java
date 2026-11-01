@@ -229,6 +229,19 @@ class ExtensionMetadataValidatorTest {
     }
 
     @Test
+    void rejectsIntegratesEntryWithoutVersion() {
+        ObjectNode extObject = mapper.createObjectNode();
+        extObject.put("name", "My Extension");
+        ObjectNode integrates = extObject.putObject("metadata").putArray("integrates").addObject();
+        integrates.put("name", "Jakarta REST");
+        integrates.put("artifact", "jakarta.ws.rs:jakarta.ws.rs-api");
+
+        assertThatThrownBy(() -> ExtensionMetadataValidator.validate(extObject))
+                .hasMessageContaining("metadata/integrates/0")
+                .hasMessageContaining("version");
+    }
+
+    @Test
     void errorMessageIncludesDescriptorFileName() {
         ObjectNode extObject = mapper.createObjectNode();
         extObject.put("name", "My Extension");

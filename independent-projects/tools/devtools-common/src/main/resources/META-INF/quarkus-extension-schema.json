@@ -89,6 +89,30 @@
           },
           "x-doc-group": "template"
         },
+        "integrates": {
+          "type": "array",
+          "description": "Underlying libraries this extension integrates with, exposed to users and tooling such as https://code.quarkus.io. Each entry requires a name (display name), an artifact (groupId:artifactId) and a full version.",
+          "items": {
+            "type": "object",
+            "required": ["name", "artifact", "version"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Display name of the integrated library."
+              },
+              "artifact": {
+                "type": "string",
+                "description": "Maven coordinates of the integrated library as groupId:artifactId."
+              },
+              "version": {
+                "type": "string",
+                "description": "Full version of the integrated library. For platform extensions, the Quarkus Platform BOM Generator replaces it with the version managed in the platform BOM when the two differ."
+              }
+            },
+            "additionalProperties": true
+          },
+          "x-doc-group": "template"
+        },
         "codestart": {
           "type": "object",
           "description": "Codestart information. See https://quarkus.io/guides/extension-codestart.",

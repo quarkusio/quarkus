@@ -27,6 +27,8 @@ public class ExtensionMetadataSchemaDocGeneratorTest {
         assertTrue(generated.contains("metadata.unlisted"));
         assertTrue(generated.contains("`deprecated`"));
         assertTrue(generated.contains("metadata.capabilities.provides"));
+        assertTrue(generated.contains("metadata.integrates[].version"));
+        assertTrue(generated.contains("| Required. Full version of the integrated library. For platform extensions"));
         assertTrue(generated.contains("Author template fields"));
         assertTrue(generated.contains("Build-augmented fields"));
         assertTrue(generated.contains("Extension offering fields"));

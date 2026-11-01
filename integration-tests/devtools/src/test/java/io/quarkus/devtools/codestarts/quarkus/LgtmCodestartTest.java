@@ -22,6 +22,13 @@ public class LgtmCodestartTest {
     }
 
     @Test
+    void testObservabilityDevServicesEnabledInTests() throws Throwable {
+        codestartTest.assertThatGeneratedFile(JAVA, "src/main/resources/application.properties")
+                .content()
+                .contains("quarkus.observability.enabled-in-tests=true");
+    }
+
+    @Test
     @EnabledIfSystemProperty(named = "build-projects", matches = "true")
     void buildAllProjectsForLocalUse() throws Throwable {
         codestartTest.buildAllProjects();

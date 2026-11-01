@@ -144,7 +144,7 @@ class ObservabilityDevServiceProcessor {
                                 .serviceName(devId)
                                 .serviceConfig(currentDevServicesConfiguration)
                                 .startable(() -> new ObservabilityStartable(dev, currentDevServicesConfiguration,
-                                        configuration, devServicesConfig.timeout()))
+                                        configuration, devServicesConfig.timeout(), launchMode.getLaunchMode()))
                                 .configProvider(ObservabilityStartable::getDevServiceConfig)
                                 .postStartHook(s -> {
                                     log.infof("Dev Service %s started, config: %s", devId, s.getDevServiceConfig());
@@ -212,21 +212,33 @@ class ObservabilityDevServiceProcessor {
         private final ContainerConfig config;
         private final ModulesConfiguration root;
         private final Optional<Duration> timeout;
+        private final LaunchMode launchMode;
 
         private Container<?> container;
         private Map<String, String> devServiceConfig;
 
         ObservabilityStartable(DevResourceLifecycleManager<ContainerConfig> dev,
-                ContainerConfig config, ModulesConfiguration root, Optional<Duration> timeout) {
+                ContainerConfig config, ModulesConfiguration root, Optional<Duration> timeout, LaunchMode launchMode) {
             this.dev = dev;
             this.config = config;
             this.root = root;
             this.timeout = timeout;
+            this.launchMode = launchMode;
         }
 
         @Override
         public void start() {
             container = dev.container(config, root);
+            // Apply process ownership labels (QUARKUS_PROCESS_UUID, QUARKUS_LAUNCH_MODE)
+            // before starting the container. This is the same ConfigureUtil.configureLabels
+            // path that DevServicesProcessor uses for StartableContainer / GenericContainer.
+            // Without these labels, ContainerLocator treats this JVM's own container as an
+            // external shared service during hot reload (close() then start()), and either
+            // stops it or fails to find it after the restart (issue #57067).
+            // ObservabilityStartable wraps the GenericContainer behind the Container
+            // abstraction, so the generic DevServicesCustomizer never reaches it —
+            // hence this explicit call here.
+            container.configureDevServicesLabels(launchMode.name());
             timeout.ifPresent(container::withStartupTimeout);
             devServiceConfig = dev.start();
         }

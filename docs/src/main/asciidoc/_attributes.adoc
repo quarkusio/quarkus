@@ -102,17 +102,15 @@ endif::[]
 :create-app-group-id: org.acme
 :create-cli-group-id: {create-app-group-id}
 // Attributes required for single-sourcing to downstream.
-:jdk-version-earliest: 17
-:jdk-version-other: 21
-:jdk-version-latest: 25
-:jdk-version-all: 17, 21, or 25
+:jdk-version-earliest: ${minimum-java-version}
+:jdk-version-latest: ${recommended-java-version}
+:jdk-version-all: {jdk-version-earliest} or {jdk-version-latest}
 :openshift-long: OpenShift
 :openshift: OpenShift
-:name-image-ubi9-open-jdk-17: registry.access.redhat.com/ubi9/openjdk-17
-:name-image-ubi9-open-jdk-17-short: ubi9/openjdk-17
-:name-image-ubi10-open-jdk-21: registry.access.redhat.com/ubi10/openjdk-21
 :name-image-ubi10-open-jdk-21-short: ubi10/openjdk-21
-:name-image-ubi10-open-jdk-25: registry.access.redhat.com/ubi10/openjdk-25
-:name-image-ubi10-open-jdk-25-short: ubi10/openjdk-25
+:name-image-open-jdk-earliest: registry.access.redhat.com/ubi10/openjdk-{jdk-version-earliest}
+:name-image-open-jdk-earliest-short: ubi10/openjdk-{jdk-version-earliest}
+:name-image-open-jdk-latest: registry.access.redhat.com/ubi10/openjdk-{jdk-version-latest}
+:name-image-open-jdk-latest-short: ubi10/openjdk-{jdk-version-latest}
 // .
 include::_attributes-local.adoc[]

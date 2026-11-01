@@ -827,6 +827,12 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
         ResourceBundle.clearCache(this);
 
+        try {
+            ThreadLocalCleaner.cleanLoadedBy(this);
+        } catch (Throwable t) {
+            log.debug("Failed to clean ThreadLocal entries", t);
+        }
+
         status = STATUS_CLOSED;
     }
 

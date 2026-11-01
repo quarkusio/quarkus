@@ -94,6 +94,7 @@
         <gizmo2.version>2.3.1</gizmo2.version>
         <jackson-bom.version>3.1.8</jackson-bom.version>
         <jackson2-bom.version>2.21.8</jackson2-bom.version>
+        <lettuce.version>8.0.0.BETA1</lettuce.version>
         <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.21.0</commons-lang3.version>
         <commons-codec.version>1.23.0</commons-codec.version>
@@ -6599,6 +6600,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-redis-client-lettuce</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-redis-cache</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -6610,8 +6616,24 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-redis-client-lettuce-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-redis-cache-deployment</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.lettuce</groupId>
+                <artifactId>lettuce-core</artifactId>
+                <version>${lettuce.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>io.projectreactor</groupId>
+                        <artifactId>reactor-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <!--  Qute  -->

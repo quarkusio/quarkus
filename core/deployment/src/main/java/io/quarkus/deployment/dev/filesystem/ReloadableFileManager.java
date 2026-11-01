@@ -130,7 +130,8 @@ public class ReloadableFileManager extends QuarkusFileManager {
     public FileObject getFileForInput(Location location, String packageName, String relativeName) throws IOException {
         FileObject result = super.getFileForInput(location, packageName, relativeName);
         if (result == null && this.reloadableFileManager != null) {
-            result = this.reloadableFileManager.getFileForInput(location, packageName, relativeName);
+            result = filterGeneratedSource(location,
+                    this.reloadableFileManager.getFileForInput(location, packageName, relativeName));
         }
         return result;
     }

@@ -205,7 +205,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
     private final ServiceGraph graph;
 
     /** Direct dependents. Built up during construction, used as-is during lifecycle. */
-    private final ArrayList<ServiceNode> dependents = new ArrayList<>();
+    private volatile List<ServiceNode> dependents = new ArrayList<>();
 
     // ═══════════════════════════════════════════════
     // Packed lifecycle state (atomic via PACKED VarHandle)
@@ -668,9 +668,14 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             int ld = liveDependentsOf(old) - 1;
             int s = stateOf(old);
             long next;
-            if (ld == 0 && s == S_COMPLETED) {
-                // atomically decrement AND transition to STOPPING
-                next = pack(S_STOPPING, remainingDepsOf(old), 0);
+            if (ld == 0 && (s == S_COMPLETED || s == S_FAILED)) {
+                // atomically decrement AND transition to STOPPING/FAILED_STOPPING
+                int nextState = switch (s) {
+                    case S_COMPLETED -> S_STOPPING;
+                    case S_FAILED -> S_FAILED_STOPPING;
+                    default -> throw Assert.impossibleSwitchCase(s);
+                };
+                next = pack(nextState, remainingDepsOf(old), 0);
                 shouldStop = true;
             } else {
                 next = pack(s, remainingDepsOf(old), ld);
@@ -802,7 +807,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
         for (ServiceNode dep : dependencies) {
             dep.dependentTerminated();
         }
-        dependents.clear();
+        dependents = List.of();
     }
 
     // ═══════════════════════════════════════════════

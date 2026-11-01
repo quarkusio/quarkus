@@ -22,7 +22,7 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 
-public class AcmeClient extends AcmeClientSpi {
+public class AcmeClient extends AcmeClientSpi implements AutoCloseable {
 
     static Logger LOGGER = Logger.getLogger(AcmeClient.class);
 
@@ -71,13 +71,9 @@ public class AcmeClient extends AcmeClientSpi {
             // Otherwise, use system trust store for proper SSL validation (secure default)
         }
         this.managementClient = WebClient.create(vertx, options);
-        if (managementUrl.endsWith("/q/lets-encrypt")) {
-            this.challengeUrl = managementUrl + "/challenge";
-            this.certsUrl = managementUrl + "/certs";
-        } else {
-            this.challengeUrl = managementUrl + "/q/lets-encrypt/challenge";
-            this.certsUrl = managementUrl + "/q/lets-encrypt/certs";
-        }
+        String base = letsEncryptBaseUrl(managementUrl);
+        this.challengeUrl = base + "/challenge";
+        this.certsUrl = base + "/certs";
         this.managementUser = managementUser;
         this.managementPassword = managementPassword;
         this.managementKey = managementKey;
@@ -233,6 +229,12 @@ public class AcmeClient extends AcmeClientSpi {
         }
     }
 
+    @Override
+    public void close() {
+        managementClient.close();
+        await(vertx.close());
+    }
+
     private void addKeyAndUser(HttpRequest<Buffer> request) {
         if (managementKey != null) {
             AUDIT.info("Using API key authentication for management endpoint");
@@ -243,6 +245,16 @@ public class AcmeClient extends AcmeClientSpi {
         } else {
             AUDIT.warn("No authentication credentials provided for management endpoint");
         }
+    }
+
+    private static String letsEncryptBaseUrl(String managementUrl) {
+        if (managementUrl.endsWith("/")) {
+            managementUrl = managementUrl.substring(0, managementUrl.length() - 1);
+        }
+        if (managementUrl.endsWith("/lets-encrypt")) {
+            return managementUrl;
+        }
+        return managementUrl + "/q/lets-encrypt";
     }
 
     private <T> T await(Future<T> future) {

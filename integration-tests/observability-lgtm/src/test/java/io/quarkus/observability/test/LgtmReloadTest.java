@@ -3,6 +3,7 @@ package io.quarkus.observability.test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -122,19 +123,19 @@ public class LgtmReloadTest extends LgtmTestHelper {
     /**
      * Returns Docker container IDs of dev services owned by <b>this JVM</b>.
      * <p>
-     * Filters by both the generic {@link Labels#QUARKUS_DEV_SERVICE} label AND
-     * this JVM's own {@link RunningDevServicesRegistry#APPLICATION_UUID}, so
-     * containers from other test processes running in the same CI Docker daemon
-     * are excluded.
+     * Uses Docker's server-side label filter on {@link Labels#QUARKUS_PROCESS_UUID}
+     * = this JVM's {@link RunningDevServicesRegistry#APPLICATION_UUID}. This
+     * guarantees we only see containers spawned by the current test process —
+     * even when the CI Docker daemon hosts containers from other parallel tests
+     * that happen to carry {@link Labels#QUARKUS_DEV_SERVICE}.
      */
     private Set<String> ourContainerIds() {
         String thisProcessUuid = RunningDevServicesRegistry.APPLICATION_UUID;
         List<Container> all = DockerClientFactory.lazyClient()
                 .listContainersCmd()
-                .withLabelFilter(Labels.QUARKUS_DEV_SERVICE)
+                .withLabelFilter(Map.of(Labels.QUARKUS_PROCESS_UUID, thisProcessUuid))
                 .exec();
         return all.stream()
-                .filter(c -> thisProcessUuid.equals(c.getLabels().get(Labels.QUARKUS_PROCESS_UUID)))
                 .map(Container::getId)
                 .collect(Collectors.toSet());
     }
@@ -144,16 +145,17 @@ public class LgtmReloadTest extends LgtmTestHelper {
      * {@link RunningDevServicesRegistry#APPLICATION_UUID}) carry both
      * {@link Labels#QUARKUS_PROCESS_UUID} and {@link Labels#QUARKUS_LAUNCH_MODE}
      * with the DEVELOPMENT value.
+     * <p>
+     * The server-side {@code QUARKUS_PROCESS_UUID=<this-process>} filter ensures
+     * containers from other parallel tests on the same CI Docker daemon are
+     * never included.
      */
     private void assertOwnershipLabelsApplied() {
         String thisProcessUuid = RunningDevServicesRegistry.APPLICATION_UUID;
         List<Container> ours = DockerClientFactory.lazyClient()
                 .listContainersCmd()
-                .withLabelFilter(Labels.QUARKUS_DEV_SERVICE)
-                .exec()
-                .stream()
-                .filter(c -> thisProcessUuid.equals(c.getLabels().get(Labels.QUARKUS_PROCESS_UUID)))
-                .collect(Collectors.toList());
+                .withLabelFilter(Map.of(Labels.QUARKUS_PROCESS_UUID, thisProcessUuid))
+                .exec();
 
         assertThat(ours)
                 .describedAs(

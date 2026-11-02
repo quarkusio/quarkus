@@ -1289,7 +1289,7 @@ In this example, interceptor bindings are read from the `MyClass` class.
 IMPORTANT: Note that `InterceptionProxy` only supports `@AroundInvoke` interceptors declared on interceptor classes.
 Other kinds of interception, as well as `@AroundInvoke` interceptors declared on the target class and its superclasses, are not supported.
 
-The intercepted class should be https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#unproxyable[proxyable] and therefore should not be `final`, should not have non-private `final` methods, and should have a non-private zero-parameter constructor.
+The intercepted class should be https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#unproxyable[proxyable] and therefore should not be `final`, should not have non-private `final` methods, and should have a non-private zero-parameter constructor.
 If it isn't, a bytecode transformation will attempt to fix it if <<unproxyable_classes_transformation,enabled>>, but note that adding a zero-parameter constructor is not always possible.
 
 It is often the case that the produced classes come from external libraries and don't contain interceptor binding annotations at all.

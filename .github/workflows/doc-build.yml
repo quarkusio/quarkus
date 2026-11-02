@@ -11,6 +11,8 @@ on:
       - '3.0'
     paths:
       - 'core/processor/**'
+      - 'core/deployment/src/main/java/io/quarkus/deployment/images/ContainerImages.java'
+      - 'core/runtime/src/main/java/io/quarkus/runtime/graal/GraalVM.java'
       - 'devtools/config-doc-maven-plugin/**'
       - 'docs/**'
       - 'extensions/**/pom.xml'
@@ -26,6 +28,8 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - 'core/processor/**'
+      - 'core/deployment/src/main/java/io/quarkus/deployment/images/ContainerImages.java'
+      - 'core/runtime/src/main/java/io/quarkus/runtime/graal/GraalVM.java'
       - 'devtools/config-doc-maven-plugin/**'
       - 'docs/**'
       - 'extensions/**/pom.xml'

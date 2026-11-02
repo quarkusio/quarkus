@@ -2,7 +2,7 @@
 This guide is maintained in the main Quarkus repository.
 ////
 [id="quarkus-data-hibernate-sql-tutorial"]
-= Native SQL queries with Quarkus
+= Native SQL queries with Quarkus Data
 include::_attributes.adoc[]
 :diataxis-type: tutorial
 :categories: data

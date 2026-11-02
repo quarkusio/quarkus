@@ -12,7 +12,11 @@ import io.quarkus.builder.item.MultiBuildItem;
  * metrics endpoint: an orchestrator that probes such an endpoint would otherwise conclude
  * that an overloaded application is dead and restart it. A request to such a path should
  * execute quickly, read pre-aggregated values from memory, and perform no I/O.
+ *
+ * @deprecated use {@code io.quarkus.vertx.http.deployment.spi.ControlPlanePathBuildItem}, which
+ *             exempts the path from every admission control and not only from load shedding
  */
+@Deprecated(forRemoval = true, since = "4.1")
 public final class LoadSheddingExemptPathBuildItem extends MultiBuildItem {
     private final String path;
     private final String reason;

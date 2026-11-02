@@ -39,7 +39,7 @@ public class AcmeClient extends AcmeClientSpi {
 
     final String managementUser;
     final String managementPassword;
-    final String managementKey;
+    final String tlsConfigurationName;
 
     private final WebClient managementClient;
 
@@ -49,7 +49,7 @@ public class AcmeClient extends AcmeClientSpi {
     public AcmeClient(String managementUrl,
             String managementUser,
             String managementPassword,
-            String managementKey,
+            String tlsConfigurationName,
             boolean insecureMode) {
         this.vertx = Vertx.vertx();
         LOGGER.infof("\uD83D\uDD35 Creating AcmeClient with %s", managementUrl);
@@ -80,7 +80,7 @@ public class AcmeClient extends AcmeClientSpi {
         }
         this.managementUser = managementUser;
         this.managementPassword = managementPassword;
-        this.managementKey = managementKey;
+        this.tlsConfigurationName = tlsConfigurationName;
     }
 
     private void checkRateLimit(String operation) {
@@ -234,10 +234,10 @@ public class AcmeClient extends AcmeClientSpi {
     }
 
     private void addKeyAndUser(HttpRequest<Buffer> request) {
-        if (managementKey != null) {
-            AUDIT.info("Using API key authentication for management endpoint");
-            request.addQueryParam("key", managementKey);
-        } else if (managementUser != null && managementPassword != null) {
+        if (tlsConfigurationName != null) {
+            request.addQueryParam("key", tlsConfigurationName);
+        }
+        if (managementUser != null && managementPassword != null) {
             AUDIT.info("Using basic authentication for management endpoint (user: " + managementUser + ")");
             request.basicAuthentication(managementUser, managementPassword);
         } else {

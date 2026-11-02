@@ -124,7 +124,7 @@
         <cronutils.version>9.2.1</cronutils.version>
         <quartz.version>2.5.2</quartz.version>
         <postgresql-jdbc.version>42.7.14</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.5.10</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.5.11</mariadb-jdbc.version>
         <mysql-jdbc.version>26.10.0</mysql-jdbc.version>
         <mssql-jdbc.version>13.6.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>

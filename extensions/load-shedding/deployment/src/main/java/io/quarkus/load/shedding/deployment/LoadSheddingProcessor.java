@@ -25,6 +25,7 @@ import io.quarkus.load.shedding.runtime.ManagementRequestPrioritizer;
 import io.quarkus.load.shedding.runtime.OverloadDetector;
 import io.quarkus.load.shedding.runtime.PriorityLoadShedding;
 import io.quarkus.runtime.metrics.MetricsFactory;
+import io.quarkus.vertx.http.deployment.spi.ControlPlanePathBuildItem;
 
 public class LoadSheddingProcessor {
     private static final Logger LOG = Logger.getLogger(LoadSheddingProcessor.class);
@@ -72,10 +73,16 @@ public class LoadSheddingProcessor {
     // and the metrics endpoint. The built-in prioritizer already assigns `NEVER` to all
     // non-application endpoints, but that only matters when priority load shedding is enabled;
     // this applies to pure load shedding too.
+    @SuppressWarnings("removal")
     @BuildStep
     SyntheticBeanBuildItem exemptPaths(ServiceRegistrar serviceRegistrar,
+            List<ControlPlanePathBuildItem> controlPlanePaths,
             List<LoadSheddingExemptPathBuildItem> exemptPathItems) {
         Set<String> exemptPaths = new HashSet<>();
+        for (ControlPlanePathBuildItem item : controlPlanePaths) {
+            LOG.debugf("Exempting %s from load shedding: %s", item.getPath(), item.getReason());
+            exemptPaths.add(item.getPath());
+        }
         for (LoadSheddingExemptPathBuildItem item : exemptPathItems) {
             LOG.debugf("Exempting %s from load shedding: %s", item.getPath(), item.getReason());
             exemptPaths.add(item.getPath());

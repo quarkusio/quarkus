@@ -13,14 +13,14 @@ import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * With the default schema management strategy in tests (drop-and-create),
- * both the default schema init script (import.sql) and the default data init script (data.sql) are executed.
+ * both the default schema init script (schema.sql) and the default data init script (data.sql) are executed.
  */
 public class DefaultDataInitScriptTestCase {
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application.properties")
-                    .addAsResource("import.sql")
+                    .addAsResource("schema.sql")
                     .addAsResource("data.sql")
                     .addClasses(MyEntity.class));
 
@@ -29,7 +29,7 @@ public class DefaultDataInitScriptTestCase {
 
     @Test
     public void schemaInitScriptExecuted() {
-        assertThat(entityName(1)).isEqualTo("default sql load script entity");
+        assertThat(entityName(1)).isEqualTo("default schema init script entity");
     }
 
     @Test

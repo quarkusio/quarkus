@@ -24,7 +24,7 @@ public class ProdModeDefaultInitScriptsWithSchemaManagementNoneTestCase {
     static QuarkusProdModeTest runner = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application.properties")
-                    .addAsResource("import.sql")
+                    .addAsResource("schema.sql")
                     .addAsResource("data.sql")
                     .addClasses(InitScriptTestResource.class, MyEntity.class, PreexistingSchemaH2Database.class))
             .setForcedDependencies(List.of(

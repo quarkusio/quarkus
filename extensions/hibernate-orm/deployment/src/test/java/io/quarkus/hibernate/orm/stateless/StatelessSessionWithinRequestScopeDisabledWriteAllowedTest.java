@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import jakarta.inject.Inject;
 
 import org.hibernate.StatelessSession;
-import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,8 +20,7 @@ public class StatelessSessionWithinRequestScopeDisabledWriteAllowedTest {
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class)
-                    .addAsResource(EmptyAsset.INSTANCE, "import.sql"))
+                    .addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class))
             .overrideConfigKey("quarkus.hibernate-orm.request-scoped.enabled", "false")
             // allow-write 'true' without active session should not alter the behavior, i.e. we should get a ContextNotActiveException
             .overrideConfigKey("quarkus.hibernate-orm.request-scoped.stateless-session.allow-write", "true");

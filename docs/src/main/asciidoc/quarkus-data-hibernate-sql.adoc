@@ -75,7 +75,7 @@ TIP: A _datasource_ provides connections to your database. In dev and test modes
 == Database initialization
 
 Since we're writing raw SQL without entity mapping, we'll create the schema and sample data ourselves.
-Create an `import.sql` file in `src/main/resources/`.
+Create a `schema.sql` file in `src/main/resources/`.
 Hibernate ORM automatically runs this script during schema initialization in dev and test modes.
 
 [source,sql]

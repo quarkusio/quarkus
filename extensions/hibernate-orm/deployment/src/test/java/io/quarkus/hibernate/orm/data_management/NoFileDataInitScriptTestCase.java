@@ -19,7 +19,7 @@ public class NoFileDataInitScriptTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application.properties")
-                    .addAsResource("import.sql")
+                    .addAsResource("schema.sql")
                     .addAsResource("data.sql")
                     .addClasses(MyEntity.class))
             .overrideConfigKey("quarkus.hibernate-orm.data-management.init-script", "no-file");
@@ -34,7 +34,7 @@ public class NoFileDataInitScriptTestCase {
 
     @Test
     public void schemaInitScriptExecuted() {
-        assertThat(entityName(1)).isEqualTo("default sql load script entity");
+        assertThat(entityName(1)).isEqualTo("default schema init script entity");
     }
 
     private String entityName(long id) {

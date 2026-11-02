@@ -14,8 +14,8 @@ import io.quarkus.test.QuarkusProdModeTest;
 import io.restassured.RestAssured;
 
 /**
- * The default init scripts (import.sql and data.sql) are picked up in production mode too.
- * When Hibernate ORM creates the schema, the schema init script (import.sql) is executed as part of it,
+ * The default init scripts (schema.sql and data.sql) are picked up in production mode too.
+ * When Hibernate ORM creates the schema, the schema init script (schema.sql) is executed as part of it,
  * but the data init script (data.sql) is not, since the data management strategy defaults to "none" in production.
  */
 public class ProdModeDefaultInitScriptsTestCase {
@@ -24,7 +24,7 @@ public class ProdModeDefaultInitScriptsTestCase {
     static QuarkusProdModeTest runner = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application.properties")
-                    .addAsResource("import.sql")
+                    .addAsResource("schema.sql")
                     .addAsResource("data.sql")
                     .addClasses(InitScriptTestResource.class, MyEntity.class))
             .setForcedDependencies(List.of(
@@ -39,7 +39,7 @@ public class ProdModeDefaultInitScriptsTestCase {
     @Test
     public void schemaInitScriptExecuted() {
         RestAssured.when().get("/orm-init-script/1").then()
-                .body(Matchers.is("default sql load script entity"));
+                .body(Matchers.is("default schema init script entity"));
     }
 
     @Test

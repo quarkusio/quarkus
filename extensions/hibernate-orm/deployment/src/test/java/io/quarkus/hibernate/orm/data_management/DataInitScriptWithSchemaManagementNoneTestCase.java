@@ -14,14 +14,14 @@ import io.quarkus.test.QuarkusExtensionTest;
 /**
  * When the schema is managed by another tool (schema management strategy "none"),
  * the data init script (data.sql) is still executed on startup,
- * while the schema init script (import.sql) is not, since Hibernate ORM did not create the schema.
+ * while the schema init script (schema.sql) is not, since Hibernate ORM did not create the schema.
  */
 public class DataInitScriptWithSchemaManagementNoneTestCase {
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application.properties")
-                    .addAsResource("import.sql")
+                    .addAsResource("schema.sql")
                     .addAsResource("data.sql")
                     .addClasses(MyEntity.class, PreexistingSchemaH2Database.class))
             .overrideConfigKey("quarkus.datasource.db-kind", "h2")

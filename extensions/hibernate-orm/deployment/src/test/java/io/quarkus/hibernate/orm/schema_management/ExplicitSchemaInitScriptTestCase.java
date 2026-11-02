@@ -12,7 +12,7 @@ import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.test.QuarkusExtensionTest;
 
 /**
- * An explicit schema init script replaces the default one (import.sql)
+ * An explicit schema init script replaces the default one (schema.sql)
  * and is executed right after Hibernate ORM created the schema.
  */
 public class ExplicitSchemaInitScriptTestCase {
@@ -20,7 +20,7 @@ public class ExplicitSchemaInitScriptTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application.properties")
-                    .addAsResource("import.sql")
+                    .addAsResource("schema.sql")
                     .addAsResource("schema-init.sql")
                     .addClasses(MyEntity.class))
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.init-script", "schema-init.sql");

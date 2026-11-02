@@ -13,14 +13,14 @@ import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * An explicit data init script replaces the default one (data.sql),
- * but does not affect the default schema init script (import.sql).
+ * but does not affect the default schema init script (schema.sql).
  */
 public class ExplicitDataInitScriptTestCase {
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application.properties")
-                    .addAsResource("import.sql")
+                    .addAsResource("schema.sql")
                     .addAsResource("data.sql")
                     .addAsResource("data-custom.sql")
                     .addClasses(MyEntity.class))
@@ -41,7 +41,7 @@ public class ExplicitDataInitScriptTestCase {
 
     @Test
     public void defaultSchemaInitScriptExecuted() {
-        assertThat(entityName(1)).isEqualTo("default sql load script entity");
+        assertThat(entityName(1)).isEqualTo("default schema init script entity");
     }
 
     private String entityName(long id) {

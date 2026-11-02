@@ -3,7 +3,6 @@ package io.quarkus.hibernate.orm.validation;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -17,8 +16,7 @@ public class JPAValidationTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, JPATestValidationResource.class)
-                    .addAsResource("application.properties")
-                    .addAsResource(new StringAsset(""), "import.sql")); // define an empty import.sql file
+                    .addAsResource("application.properties"));
 
     @Test
     public void testValidEntity() {

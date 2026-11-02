@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 
-import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +20,6 @@ public class PhysicalNamingStrategyTest {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class)
-                    .addAsResource(EmptyAsset.INSTANCE, "import.sql")
                     .addAsResource("application-physical-naming-strategy.properties", "application.properties"));
 
     @Inject

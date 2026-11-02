@@ -124,6 +124,12 @@ public class McpHttpHandler implements Handler<RoutingContext> {
 
     private void routeMcpRequest(JsonRpcRequest jsonRpcRequest, String methodName, McpResponseWriter writer) {
         JsonRpcRouter jsonRpcRouter = CDI.current().select(JsonRpcRouter.class).get();
+        if (!jsonRpcRouter.isReady()) {
+            // The route is only registered once the router is initialized, so this is only a safety net
+            codec.writeErrorResponse(writer, jsonRpcRequest.getId(), INTERNAL_ERROR,
+                    "The Dev MCP server is starting, try again");
+            return;
+        }
         // First see if this a protocol specific method
 
         if (methodName.equalsIgnoreCase(McpBuiltinMethods.INITIALIZE)) {

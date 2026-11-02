@@ -13,6 +13,7 @@ public class HibernateAccessorPrivateMethodTest extends HibernateAccessorBaseTes
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .overrideConfigKey("quarkus.hibernate-accessor.strategy", "generated")
             .withApplicationRoot(root -> root.addClasses(PrivateMethodEntity.class));
 
     @Test

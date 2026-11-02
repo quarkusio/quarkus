@@ -14,6 +14,7 @@ public class HibernateAccessorAllPrimitivesTest extends HibernateAccessorBaseTes
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .overrideConfigKey("quarkus.hibernate-accessor.strategy", "generated")
             .withApplicationRoot(root -> root.addClasses(PrimitiveEntity.class));
 
     @Test

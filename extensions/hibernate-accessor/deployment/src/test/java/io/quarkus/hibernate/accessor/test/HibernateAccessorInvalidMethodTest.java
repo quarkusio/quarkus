@@ -15,6 +15,7 @@ public class HibernateAccessorInvalidMethodTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root.addClasses(InvalidMethodEntity.class))
+            .overrideConfigKey("quarkus.hibernate-accessor.strategy", "generated")
             .setExpectedException(IllegalArgumentException.class);
 
     @Test

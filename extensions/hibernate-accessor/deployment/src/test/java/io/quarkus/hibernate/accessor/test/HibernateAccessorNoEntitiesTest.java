@@ -12,8 +12,8 @@ public class HibernateAccessorNoEntitiesTest extends HibernateAccessorBaseTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
-            .withApplicationRoot(root -> {
-            });
+            .overrideConfigKey("quarkus.hibernate-accessor.strategy", "generated")
+            .withEmptyApplication();
 
     @Test
     void extensionBootsWithNoAnnotatedClasses() throws Exception {

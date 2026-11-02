@@ -16,6 +16,7 @@ public class HibernateAccessorDifferentHostTest extends HibernateAccessorBaseTes
      */
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .overrideConfigKey("quarkus.hibernate-accessor.strategy", "generated")
             .withApplicationRoot(root -> root.addClasses(
                     HostOneEntity.class,
                     HostOneEntity.Nested.class,

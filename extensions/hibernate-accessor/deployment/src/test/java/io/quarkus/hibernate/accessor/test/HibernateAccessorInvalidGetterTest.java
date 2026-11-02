@@ -14,6 +14,7 @@ class HibernateAccessorInvalidGetterTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root.addClasses(InvalidGetterEntity.class))
+            .overrideConfigKey("quarkus.hibernate-accessor.strategy", "generated")
             .assertException(throwable -> assertThat(throwable)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("non-void")

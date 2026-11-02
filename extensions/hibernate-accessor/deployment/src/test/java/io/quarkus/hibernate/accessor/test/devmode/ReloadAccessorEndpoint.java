@@ -54,7 +54,8 @@ public class ReloadAccessorEndpoint {
     private static AccessorFactory accessorFactory() throws Exception {
         Class<?> factoryClass = Thread.currentThread().getContextClassLoader()
                 .loadClass("io.quarkus.hibernate.accessor.runtime.QuarkusHibernateAccessorFactory");
-        return (AccessorFactory) factoryClass.getMethod("create").invoke(null);
+        return (AccessorFactory) factoryClass.getMethod("create", AccessorFactory.class).invoke(null,
+                AccessorFactory.reflection());
     }
 
     private static void respondWithFailure(RoutingContext context, Throwable t) {

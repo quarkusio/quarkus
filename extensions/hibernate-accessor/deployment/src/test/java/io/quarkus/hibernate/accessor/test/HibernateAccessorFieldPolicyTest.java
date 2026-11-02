@@ -16,6 +16,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 class HibernateAccessorFieldPolicyTest extends HibernateAccessorBaseTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .overrideConfigKey("quarkus.hibernate-accessor.strategy", "generated")
             .withApplicationRoot(root -> root.addClasses(Model.class));
 
     @Test

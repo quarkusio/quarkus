@@ -17,8 +17,8 @@ Quarkus Data Hibernate is the perfect solution if you want to get started using 
 If you are new to Quarkus Data Hibernate, start with the
 xref:quarkus-data-hibernate-getting-started.adoc[Quarkus Data Hibernate getting started tutorial].
 
-For native SQL queries, see the
-xref:quarkus-data-hibernate-sql.adoc[Quarkus Data Hibernate native SQL tutorial].
+To work with native SQL only, without entities, see the
+xref:quarkus-data-hibernate-sql.adoc[Quarkus Data native SQL tutorial].
 
 [NOTE]
 ====

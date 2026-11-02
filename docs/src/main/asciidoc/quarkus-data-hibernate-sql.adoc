@@ -137,7 +137,7 @@ See xref:hibernate-orm.adoc#sql-init-scripts[SQL init scripts] for more details 
 
 == Querying data
 
-Create a file called `BookQueries.java` in the package `org.acme` to query books by title:
+Create a file called `Library.java` in the package `org.acme` to query books by title:
 
 [source,java]
 ----
@@ -164,7 +164,7 @@ public interface Library { // <1>
 WARNING: Native SQL syntax and database column names are checked by the database when a statement executes, rather than by the annotation processor at build time.
 Make sure every query is covered by a test, or you might miss typos.
 
-We can now create a test in `src/test/java/org/acme/BookQueriesTest.java` that will check everything is working correctly:
+We can now create a test in `src/test/java/org/acme/LibraryTest.java` that will check everything is working correctly:
 
 [source,java]
 ----
@@ -180,27 +180,27 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest // <1>
-public class BookQueriesTest {
+public class LibraryTest {
 
     @Inject
-    BookQueries bookQueries; // <2>
+    Library library; // <2>
 
     @Test
     void shouldFindBookByTitle() {
-        List<BookQueries.BookRecord> books = bookQueries.findByTitle("Effective Java"); // <3>
+        List<Library.Book> books = library.findByTitle("Effective Java"); // <3>
         assertEquals(1, books.size());
         assertEquals("Effective Java", books.get(0).title());
     }
 
     @Test
     void shouldReturnEmptyListForUnknownTitle() {
-        List<BookQueries.BookRecord> books = bookQueries.findByTitle("Unknown Book");
+        List<Library.Book> books = library.findByTitle("Unknown Book");
         assertTrue(books.isEmpty());
     }
 }
 ----
 <1> `@QuarkusTest` starts the full Quarkus application for the test, including the database and Dev Services. The data from `data.sql` is loaded automatically.
-<2> We inject our `BookQueries` just like we would in application code.
+<2> We inject our `Library` just like we would in application code.
 <3> We query for a book we know exists in `data.sql` and verify it's returned.
 
 If you have continuous testing running in another terminal, these tests will run automatically as soon as you save the file.
@@ -208,7 +208,7 @@ If you have continuous testing running in another terminal, these tests will run
 == Updating data
 
 Native SQL can also modify rows without mapped entities.
-Add an `updatePrice` method to `BookQueries`:
+Add an `updatePrice` method to `Library`:
 
 [source,java]
 ----
@@ -224,7 +224,7 @@ In application code, invoke the repository from a CDI bean method annotated with
 
 For the test, use `@TestTransaction` to run the update and verification in a transaction that is rolled back after the test.
 This keeps the sample data unchanged for other tests and subsequent continuous-testing runs.
-Add this import to `BookQueriesTest`:
+Add this import to `LibraryTest`:
 
 [source,java]
 ----
@@ -239,10 +239,10 @@ Then add the following test method:
     @TestTransaction
     void shouldUpdateBookPrice() {
         BigDecimal newPrice = new BigDecimal("39.00");
-        int updated = bookQueries.updatePrice("978-0134685991", newPrice);
+        int updated = library.updatePrice("978-0134685991", newPrice);
         assertEquals(1, updated);
 
-        List<BookQueries.BookRecord> books = bookQueries.findByTitle("Effective Java");
+        List<Library.Book> books = library.findByTitle("Effective Java");
         assertEquals(1, books.size());
         assertEquals(newPrice, books.get(0).price());
     }

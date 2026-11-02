@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - Jakarta CDI</name>
 
     <properties>
-        <version.cdi-tck>4.1.0</version.cdi-tck>
+        <version.cdi-tck>5.0.0</version.cdi-tck>
     </properties>
 
     <dependencies>
@@ -31,8 +31,8 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>jakarta.enterprise</groupId>
-            <artifactId>cdi-tck-core-impl</artifactId>
+            <groupId>jakarta.cdi</groupId>
+            <artifactId>jakarta.cdi-tck-core-impl</artifactId>
             <version>${version.cdi-tck}</version>
         </dependency>
 
@@ -86,7 +86,7 @@
                         <quarkus.arc.transform-unproxyable-classes>false</quarkus.arc.transform-unproxyable-classes>
                     </systemPropertyVariables>
                     <dependenciesToScan>
-                        <dependency>jakarta.enterprise:cdi-tck-core-impl</dependency>
+                        <dependency>jakarta.cdi:jakarta.cdi-tck-core-impl</dependency>
                     </dependenciesToScan>
                     <suiteXmlFiles>
                         <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>

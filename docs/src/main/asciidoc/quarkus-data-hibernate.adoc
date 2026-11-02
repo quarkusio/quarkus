@@ -257,7 +257,7 @@ For the behavioral differences between managed and record entities, see
 <<session-and-access-models,Session and access models>>. For standalone repositories and entities without Quarkus Data
 supertypes, see <<alternative-repository-definitions,Advanced usage>>.
 
-For queries without mapped entities, see the
+TIP: For queries without mapped entities, see the
 xref:quarkus-data-hibernate-sql.adoc[native SQL guide].
 
 === Generated finder and query methods

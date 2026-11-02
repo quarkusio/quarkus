@@ -74,6 +74,8 @@ You don't need to restart Quarkus testing, it will re-run tests continuously aft
 
 TIP: A _datasource_ provides connections to your database. In dev and test modes, if you don't configure a database connection, Quarkus can automatically start a PostgreSQL container for you via xref:dev-services.adoc[Dev Services]. See the xref:datasource.adoc[Datasource guide] for more details.
 
+== Database initialization
+
 Since we're writing raw SQL without entity mapping, we'll create the schema and sample data ourselves.
 Create an `import.sql` file in `src/main/resources/`.
 Hibernate ORM automatically runs this script during schema initialization in dev and test modes.

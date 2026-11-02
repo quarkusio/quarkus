@@ -223,8 +223,10 @@ public class VertxClientInputStream extends InputStream {
         }
 
         public int readBytesAvailable() {
-            if (input1 != null) {
-                return ((BufferInternal) input1).getByteBuf().readableBytes();
+            synchronized (this) {
+                if (input1 != null) {
+                    return ((BufferInternal) input1).getByteBuf().readableBytes();
+                }
             }
 
             String length = request.getHeader(HttpHeaders.CONTENT_LENGTH);
@@ -236,8 +238,12 @@ public class VertxClientInputStream extends InputStream {
             try {
                 return Integer.parseInt(length);
             } catch (NumberFormatException e) {
-                Long.parseLong(length); // ignore the value as can only return an int anyway
-                return Integer.MAX_VALUE;
+                try {
+                    Long.parseLong(length);
+                    return Integer.MAX_VALUE;
+                } catch (NumberFormatException e2) {
+                    return 0;
+                }
             }
         }
 

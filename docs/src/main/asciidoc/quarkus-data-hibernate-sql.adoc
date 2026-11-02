@@ -149,7 +149,7 @@ public interface Library { // <1>
 }
 ----
 <1> A repository interface that groups all your query methods for books. The annotation processor generates the implementation for you.
-<2> A Java record that maps to the columns returned by the SQL query. The selected columns match the record components in order and type.
+<2> A Java record that maps to the columns returned by the SQL query. The selected columns match the record components in name and type.
 <3> `@NativeQuery` sends raw SQL to the database. The `:title` syntax is a named parameter, it avoids SQL injection attacks.
 <4> The method signature defines the parameters.
 

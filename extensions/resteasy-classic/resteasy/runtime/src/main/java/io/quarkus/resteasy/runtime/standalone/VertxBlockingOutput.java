@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -39,14 +40,15 @@ public class VertxBlockingOutput implements VertxOutput {
                 //TODO: do we need this?
                 terminateResponse();
                 request.connection().close();
-                // Lock to signal blocked writers from the event loop: connection error, all must unblock to propagate it.
-                lock.lock();
-                try {
-                    if (waitingForDrain) {
-                        drainAvailable.signalAll(); // Error received; wake all blocked writers.
+                // tryLock: avoid deadlock with the Vert.x connection monitor held by the event loop
+                if (lock.tryLock()) {
+                    try {
+                        if (waitingForDrain) {
+                            drainAvailable.signalAll();
+                        }
+                    } finally {
+                        lock.unlock();
                     }
-                } finally {
-                    lock.unlock();
                 }
             }
         });
@@ -54,14 +56,15 @@ public class VertxBlockingOutput implements VertxOutput {
         request.response().endHandler(new Handler<Void>() {
             @Override
             public void handle(Void event) {
-                // Lock to signal blocked writers from the event loop: response ended, all must unblock.
-                lock.lock();
-                try {
-                    if (waitingForDrain) {
-                        drainAvailable.signalAll(); // Response ended; wake all blocked writers.
+                // tryLock: same deadlock avoidance as the exception handler above
+                if (lock.tryLock()) {
+                    try {
+                        if (waitingForDrain) {
+                            drainAvailable.signalAll();
+                        }
+                    } finally {
+                        lock.unlock();
                     }
-                } finally {
-                    lock.unlock();
                 }
                 terminateResponse();
             }
@@ -187,7 +190,13 @@ public class VertxBlockingOutput implements VertxOutput {
             }
             try {
                 waitingForDrain = true;
-                drainAvailable.await(); // Park and release lock; resumes when the write queue drains, or connection ends/errors.
+                drainAvailable.await(1, TimeUnit.SECONDS);
+                if (throwable != null) {
+                    throw new IOException(throwable);
+                }
+                if (request.response().ended() || request.response().closed()) {
+                    throw new IOException("Connection has been closed");
+                }
             } catch (InterruptedException e) {
                 throw new InterruptedIOException(e.getMessage());
             } finally {

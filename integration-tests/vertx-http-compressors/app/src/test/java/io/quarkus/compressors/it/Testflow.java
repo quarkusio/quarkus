@@ -32,6 +32,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
@@ -42,11 +43,6 @@ public class Testflow {
     // the compressed content length may vary slightly between
     // Vert.x/Netty versions over time.
     public static final int COMPRESSION_TOLERANCE_PERCENT = 2;
-
-    static {
-        // Our test code does compression
-        Brotli4jLoader.ensureAvailability();
-    }
 
     /**
      * This test logic is shared by both "all" module and "some" module. See their RESTEndpointsTest classes.
@@ -135,7 +131,17 @@ public class Testflow {
                     .setFollowRedirects(true)
                     .setDecompressionSupported(false));
             final CompletableFuture<HttpResponse<Buffer>> future = new CompletableFuture<>();
-            client.postAbs(endpoint)
+
+            HttpRequest<Buffer> request;
+            if ("POST".equalsIgnoreCase(method)) {
+                request = client.postAbs(endpoint);
+            } else if ("PUT".equalsIgnoreCase(method)) {
+                request = client.putAbs(endpoint);
+            } else {
+                throw new IllegalArgumentException("Unsupported method: " + method);
+            }
+
+            request
                     .putHeader(HttpHeaders.CONTENT_ENCODING.toString(), contentEncoding)
                     .putHeader(HttpHeaders.ACCEPT.toString(), "*/*")
                     .putHeader(HttpHeaders.USER_AGENT.toString(), "Tester")
@@ -170,11 +176,7 @@ public class Testflow {
             }
             return Buffer.buffer(byteStream.toByteArray());
         } else if ("br".equalsIgnoreCase(algorithm)) {
-            try (BrotliOutputStream brotliStream = new BrotliOutputStream(byteStream)) {
-                brotliStream.write(payload.getBytes(StandardCharsets.UTF_8));
-            } catch (IOException e) {
-                throw new RuntimeException("Brotli compression failed", e);
-            }
+            BrotliSupport.compress(byteStream, payload);
             return Buffer.buffer(byteStream.toByteArray());
         } else if ("deflate".equalsIgnoreCase(algorithm)) {
             try (DeflaterOutputStream deflateStream = new DeflaterOutputStream(byteStream)) {
@@ -203,7 +205,7 @@ public class Testflow {
             } else if ("deflate".equalsIgnoreCase(algorithm)) {
                 channel = new EmbeddedChannel(newZlibDecoder(ZlibWrapper.ZLIB, 0));
             } else if ("br".equalsIgnoreCase(algorithm)) {
-                channel = new EmbeddedChannel(new BrotliDecoder());
+                channel = BrotliSupport.newDecoderChannel();
             } else if ("snappy".equalsIgnoreCase(algorithm)) {
                 channel = new EmbeddedChannel(new SnappyFrameDecoder());
             } else {
@@ -226,6 +228,28 @@ public class Testflow {
             return result.toString();
         } else {
             return new String(payload, StandardCharsets.UTF_8);
+        }
+    }
+
+    /**
+     * Holds what needs Brotli4j, which is only available in the "all" module.
+     */
+    private static final class BrotliSupport {
+
+        static {
+            Brotli4jLoader.ensureAvailability();
+        }
+
+        static void compress(ByteArrayOutputStream byteStream, String payload) {
+            try (BrotliOutputStream brotliStream = new BrotliOutputStream(byteStream)) {
+                brotliStream.write(payload.getBytes(StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                throw new RuntimeException("Brotli compression failed", e);
+            }
+        }
+
+        static EmbeddedChannel newDecoderChannel() {
+            return new EmbeddedChannel(new BrotliDecoder());
         }
     }
 }

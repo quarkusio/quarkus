@@ -1066,8 +1066,9 @@ The _customizer_ beans received the `VertxOptions` (coming from the application 
 == Brotli4J and cross-platform support
 
 Brotli4J is a native library that provides support for the Brotli compression algorithm.
-By default, Quarkus includes the Brotli native library matching the platform you are running on.
-But sometimes, you need to include the native library for a different platform.
+It is not included by default: see xref:http-reference.adoc#http-compression[the HTTP reference guide] to enable it.
+When added with Maven, the `com.aayushatharva.brotli4j:brotli4j` dependency brings the Brotli native library matching the platform you are running on.
+But sometimes, you need to include the native library for a different platform, for example when building a native executable in a container.
 
 In this case, you need to explicitly add a dependency to your project.
 For example, if you need to include the native library for `linux-aarch64`, you can add the following dependency:
@@ -1092,5 +1093,5 @@ Here is the list of available brotli4j artifacts for the different platforms:
 * `native-linux-riscv64`
 * `native-windows-x86_64`
 * `native-windows-aarch64`
-* `native-macos-x86_64`
-* `native-macos-aarch64`
+* `native-osx-x86_64`
+* `native-osx-aarch64`

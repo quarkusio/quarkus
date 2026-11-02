@@ -15,5 +15,6 @@
         <module>app</module>
         <module>all</module>
         <module>some</module>
+        <module>decompress-only</module>
     </modules>
 </project>

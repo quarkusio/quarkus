@@ -279,12 +279,10 @@ class NettyProcessor {
                 builder.addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdOptions")
                         .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdConstants");
             }
-            // Brotli is an optional dependency, we should only runtime initialize BrotliOptions to avoid
-            // IllegalStateException when brotli (e.g. com.aayushatharva.brotli4j.Brotli4jLoader) is not available.
-            // This will result in a runtime ClassNotFoundException if the user tries to use Brotli.
-            // Due to https://github.com/quarkusio/quarkus/issues/43662 we cannot do this yet though so we always enable
-            // runtime initialization of BrotliOptions if the class is present
-            if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.compression.BrotliOptions")) {
+            // Brotli is an optional dependency, we should only runtime initialize BrotliOptions when it is available
+            // (e.g. com.aayushatharva.brotli4j.Brotli4jLoader is present): BrotliOptions references Brotli4j and its
+            // static initializer fails without it. It is cut from the native image otherwise.
+            if (QuarkusClassLoader.isClassPresentAtRuntime("com.aayushatharva.brotli4j.Brotli4jLoader")) {
                 builder.addRuntimeInitializedClass("io.netty.handler.codec.compression.BrotliOptions");
             }
         } else {

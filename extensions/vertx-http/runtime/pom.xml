@@ -65,11 +65,6 @@
             <groupId>org.crac</groupId>
             <artifactId>crac</artifactId>
         </dependency>
-        <!-- needed when quarkus.http.compressors contains "br" see https://github.com/quarkusio/quarkus/issues/43556 -->
-        <dependency>
-            <groupId>com.aayushatharva.brotli4j</groupId>
-            <artifactId>brotli4j</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.graalvm.sdk</groupId>
             <artifactId>nativeimage</artifactId>

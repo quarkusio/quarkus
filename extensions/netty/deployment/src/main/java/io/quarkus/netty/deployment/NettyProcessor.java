@@ -119,8 +119,7 @@ class NettyProcessor {
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
         String maxOrder = calculateMaxOrder(config.allocatorMaxOrder(), minMaxOrderBuildItems, true);
 
-        //in native mode we limit the size of the epoll array
-        //if the array overflows the selector just moves the overflow to a map
+        // Set maxOrder for PooledByteBufAllocator (does not affect the default AdaptiveByteBufAllocator)
         return new SystemPropertyBuildItem("io.netty.allocator.maxOrder", maxOrder);
     }
 
@@ -232,8 +231,7 @@ class NettyProcessor {
         String maxOrder = calculateMaxOrder(config.allocatorMaxOrder(), minMaxOrderBuildItems, false);
 
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
-                // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)
-                // Since buffers are cached to threads, the malloc overhead is temporary anyway
+                // Set maxOrder for PooledByteBufAllocator (not used by the default AdaptiveByteBufAllocator)
                 .addNativeImageSystemProperty("io.netty.allocator.maxOrder", maxOrder)
                 // Spotted with Netty 4.1.135.Final
                 .addRuntimeInitializedClass("io.netty.internal.tcnative.SSL")

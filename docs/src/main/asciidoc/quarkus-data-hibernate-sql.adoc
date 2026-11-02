@@ -138,12 +138,12 @@ import jakarta.persistence.query.NativeQuery;
 import java.math.BigDecimal;
 import java.util.List;
 
-public interface BookQueries { // <1>
+public interface Library { // <1>
 
-    record BookRecord(Long id, String title, String isbn, BigDecimal price) {} // <2>
+    record Book(Long id, String title, String isbn, BigDecimal price) {} // <2>
 
     @NativeQuery("SELECT id, title, isbn, price FROM Book WHERE title = :title") // <3>
-    List<BookRecord> findByTitle(String title); // <4>
+    List<Book> findByTitle(String title); // <4>
 }
 ----
 <1> A repository interface that groups all your query methods for books. The annotation processor generates the implementation for you.

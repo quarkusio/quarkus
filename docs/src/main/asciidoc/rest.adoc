@@ -2329,9 +2329,14 @@ public class Endpoint {
 }
 ----
 
-If a method or class is annotated with `jakarta.transaction.Transactional` then it will also be treated as a blocking
-method. This is because JTA is a blocking technology, and is generally used with other blocking technology such as
-Hibernate and JDBC. An explicit `@Blocking` or `@NonBlocking` on the class will override this behaviour.
+If a method or class is annotated with `jakarta.transaction.Transactional`, it is no longer automatically treated as a blocking method
+(since Quarkus 3.35). The default behavior is now based on the return type: methods returning `Uni` (or other reactive types)
+execute on the event loop, while others execute on a worker thread.
+
+If you have a blocking method that returns a `Uni` and uses JTA transactions (e.g., with Hibernate ORM or JDBC), you must add an explicit `@Blocking` annotation.
+
+This change was made to support `@Transactional` with Hibernate Reactive, where the transaction runs on the event loop within the reactive pipeline.
+An explicit `@Blocking` or `@NonBlocking` annotation on the class or method will override the default behavior.
 
 ==== Overriding the default behaviour
 

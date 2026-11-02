@@ -106,8 +106,8 @@ If authentication or authorization fails with the `jakarta.enterprise.context.Co
 Users can also activate xref:cdi-reference.adoc#request-context-lifecycle[CDI request context], for example, by using the `@ActivateRequestContext` annotation.
 However, some CDI beans may not be ready for use.
 
-One exception to this solution is a situation when application endpoints are secured with the xref:security-authorize-web-endpoints-reference.adoc#authorization-using-configuration[Authorization using configuration].
-For more information, see the xref:security-authorize-web-endpoints-reference.adoc#policy-active-cdi-request-context[Inject RequestScoped beans into HttpSecurityPolicy] section of the "Authorization of Web endpoints" guide for more information.
+One exception to this solution is a situation when application endpoints are secured with HTTP permissions, as described in xref:security-authorize-web-endpoints-reference.adoc#authorization-using-configuration[Authorize requests in configuration].
+For more information, see the xref:security-authorize-web-endpoints-reference.adoc#policy-active-cdi-request-context[Inject RequestScoped beans into HttpSecurityPolicy] section of the "Authorize access to web endpoints" guide for more information.
 
 [[customize-auth-exception-responses]]
 == Customize authentication exception responses

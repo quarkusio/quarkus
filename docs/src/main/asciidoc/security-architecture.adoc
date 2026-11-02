@@ -82,4 +82,4 @@ For more information about customizing Quarkus Security, including reactive secu
 * xref:security-overview.adoc[Quarkus Security overview]
 * xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Other supported authentication mechanisms]
 * xref:security-identity-providers.adoc[Identity providers]
-* xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints]
+* xref:security-authorize-web-endpoints-reference.adoc[Authorize access to web endpoints]

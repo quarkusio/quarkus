@@ -136,6 +136,14 @@ public class TransactionScopedSession extends SessionLazyDelegator {
         return session;
     }
 
+    public Session getSessionIfExists() {
+        if (isInTransaction()) {
+            return (Session) transactionSynchronizationRegistry.getResource(sessionKey);
+        } else {
+            throw new IllegalStateException("This method can only be called in a transaction");
+        }
+    }
+
     private boolean isInTransaction() {
         try {
             switch (transactionManager.getStatus()) {

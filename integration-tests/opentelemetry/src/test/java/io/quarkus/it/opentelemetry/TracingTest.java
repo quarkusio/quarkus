@@ -38,13 +38,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanId;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.TraceId;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
+import io.quarkus.arc.Arc;
 import io.quarkus.it.opentelemetry.util.SocketClient;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -330,20 +332,14 @@ public class TracingTest {
 
     @Test
     void testTracingWithParentHeaders() {
-        buildGlobalTelemetryInstance();
-        Span parentSpan = GlobalOpenTelemetry.getTracer("io.quarkus.opentelemetry")
-                .spanBuilder("testTracingWithParentHeaders")
-                .setNoParent()
-                .setSpanKind(SpanKind.CLIENT)
-                .startSpan();
+        Span parentSpan = createParentSpan();
 
         Context parentContext = Context.root().with(parentSpan);
 
         RequestSpecification requestSpec = given().contentType("application/json");
 
         // Inject Tracer header into REST call
-        GlobalOpenTelemetry.getPropagators().getTextMapPropagator()
-                .inject(parentContext, requestSpec, SETTER);
+        parentSpanPropagator().inject(parentContext, requestSpec, SETTER);
 
         requestSpec
                 .when().get("/direct")
@@ -809,8 +805,30 @@ public class TracingTest {
         assertNotNull(spanData.get("resource_telemetry.sdk.version"));
     }
 
-    protected void buildGlobalTelemetryInstance() {
-        // Do nothing in JVM mode
+    /**
+     * In JVM mode the test runs in the same JVM as the application, so the OpenTelemetry instance
+     * built by Quarkus is the one that must be used. It is looked up programmatically because
+     * {@code @Inject} is rejected on any test whose class hierarchy is shared with a
+     * {@code @QuarkusIntegrationTest}.
+     * <p>
+     * Private on purpose: an integration test runs in a separate JVM from the application and has no
+     * CDI container, so subclasses must override {@link #createParentSpan()} and
+     * {@link #parentSpanPropagator()} rather than reach for a bean here.
+     */
+    private OpenTelemetry openTelemetry() {
+        return Arc.container().instance(OpenTelemetry.class).get();
+    }
+
+    protected Span createParentSpan() {
+        return openTelemetry().getTracer("io.quarkus.opentelemetry")
+                .spanBuilder("testTracingWithParentHeaders")
+                .setNoParent()
+                .setSpanKind(SpanKind.CLIENT)
+                .startSpan();
+    }
+
+    protected TextMapPropagator parentSpanPropagator() {
+        return openTelemetry().getPropagators().getTextMapPropagator();
     }
 
     private static final TextMapSetter<RequestSpecification> SETTER = new TextMapSetter<RequestSpecification>() {

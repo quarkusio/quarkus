@@ -186,6 +186,7 @@ class JarTreeShakeInput implements AutoCloseable {
      *
      * <p>
      * The caller must close the returned instance to release the opened dependency trees.
+     * If collection fails, the trees opened so far are closed before the exception is propagated.
      */
     static JarTreeShakeInput collect(
             TreeShakeConfig.TreeShakeMode treeShakeMode,
@@ -200,41 +201,47 @@ class JarTreeShakeInput implements AutoCloseable {
             List<JarTreeShakeExcludedArtifactBuildItem> excludedArtifactItems) {
 
         final JarTreeShakeInput input = new JarTreeShakeInput(treeShakeMode, detectAppJavaVersion(appModel));
-        input.collectGeneratedClasses(generatedClasses);
-        input.collectRuntimeClasses(appModel);
-        input.collectTransformedClasses(transformedClasses);
-        input.collectApplicationClasses(appModel);
-        for (Path p : appModel.getAppArtifact().getResolvedPaths()) {
-            input.appPaths.add(p);
-        }
+        try {
+            input.collectGeneratedClasses(generatedClasses);
+            input.collectRuntimeClasses(appModel);
+            input.collectTransformedClasses(transformedClasses);
+            input.collectApplicationClasses(appModel);
+            for (Path p : appModel.getAppArtifact().getResolvedPaths()) {
+                input.appPaths.add(p);
+            }
 
-        input.addServiceProviderRoots();
+            input.addServiceProviderRoots();
 
-        input.collectAllKnownClasses();
-        input.addStringClassReferenceRoots();
+            input.collectAllKnownClasses();
+            input.addStringClassReferenceRoots();
 
-        for (JarTreeShakeRootClassBuildItem item : rootClasses) {
-            input.roots.add(item.getClassName());
-        }
-        for (JarTreeShakeRootBytecodeBuildItem item : rootBytecode) {
-            final byte[] bytecode = item.getBytecode();
-            input.appBytecode.put(item.getClassName(), () -> bytecode);
-            input.roots.add(item.getClassName());
-        }
+            for (JarTreeShakeRootClassBuildItem item : rootClasses) {
+                input.roots.add(item.getClassName());
+            }
+            for (JarTreeShakeRootBytecodeBuildItem item : rootBytecode) {
+                final byte[] bytecode = item.getBytecode();
+                input.appBytecode.put(item.getClassName(), () -> bytecode);
+                input.roots.add(item.getClassName());
+            }
 
-        input.collectConditionalRoots(reflectiveClassConditions);
-        input.collectExcludedArtifacts(excludedArtifactItems);
-        final Predicate<String> reachabilityAnalyzed = reachabilityAnalyzed(input.depBytecode, input.classToDep,
-                input.excludedArtifacts);
-        final Predicate<String> alwaysPresent = alwaysPresent(input.depBytecode, input.appBytecode,
-                input.generatedBytecode);
-        addConditionalRoots(conditionalRootClasses, reachabilityAnalyzed, alwaysPresent, input.roots,
-                input.conditionalRoots);
-        for (JarTreeShakeDeclaredClassesBuildItem item : declaredClasses) {
-            addConditional(item.getConditionClassName(), item.getHolderClassName(), reachabilityAnalyzed, alwaysPresent,
-                    input.declaredClassesHolders, input.conditionalDeclaredClasses);
+            input.collectConditionalRoots(reflectiveClassConditions);
+            input.collectExcludedArtifacts(excludedArtifactItems);
+            final Predicate<String> reachabilityAnalyzed = reachabilityAnalyzed(input.depBytecode, input.classToDep,
+                    input.excludedArtifacts);
+            final Predicate<String> alwaysPresent = alwaysPresent(input.depBytecode, input.appBytecode,
+                    input.generatedBytecode);
+            addConditionalRoots(conditionalRootClasses, reachabilityAnalyzed, alwaysPresent, input.roots,
+                    input.conditionalRoots);
+            for (JarTreeShakeDeclaredClassesBuildItem item : declaredClasses) {
+                addConditional(item.getConditionClassName(), item.getHolderClassName(), reachabilityAnalyzed, alwaysPresent,
+                        input.declaredClassesHolders, input.conditionalDeclaredClasses);
+            }
+            return input;
+        } catch (RuntimeException | Error e) {
+            // the caller only closes the input once it's returned
+            input.close();
+            throw e;
         }
-        return input;
     }
 
     /**

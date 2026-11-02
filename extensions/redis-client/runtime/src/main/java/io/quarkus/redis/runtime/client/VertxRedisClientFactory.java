@@ -256,6 +256,10 @@ public class VertxRedisClientFactory {
         return providers.get();
     }
 
+    static boolean isSecureScheme(String scheme) {
+        return "rediss".equalsIgnoreCase(scheme) || "valkeys".equalsIgnoreCase(scheme);
+    }
+
     private static void configureTLS(String name, RedisClientConfig config, TlsConfigurationRegistry tlsRegistry,
             NetClientOptions net, List<URI> hosts) {
         TlsConfiguration configuration = null;
@@ -263,7 +267,7 @@ public class VertxRedisClientFactory {
 
         boolean tlsFromHosts = false;
         for (URI uri : hosts) {
-            if ("rediss".equals(uri.getScheme())) {
+            if (isSecureScheme(uri.getScheme())) {
                 tlsFromHosts = true;
                 break;
             }
@@ -287,7 +291,7 @@ public class VertxRedisClientFactory {
 
         if (configuration != null && !tlsFromHosts) {
             LOGGER.warnf("The Redis client %s is configured with a named TLS configuration but the hosts are not " +
-                    "using the `rediss://` scheme - Disabling TLS", name);
+                    "using the `rediss://` or `valkeys://` scheme - Disabling TLS", name);
         }
 
         // Apply the configuration

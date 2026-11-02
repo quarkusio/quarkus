@@ -1842,7 +1842,7 @@ A Java record is a very convenient way to define such an intermediate CDI bean.
 public record UserData(UserInfo info, @LoggedIn String username) { <3>
 }
 ----
-<1> If no name is explicitly specified by the `value` member the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#default_name[default name is assigned] - the simple name of the bean class, after converting the first character to lower case. In this particular case, the default name is `userData`.
+<1> If no name is explicitly specified by the `value` member the https://jakarta.ee/specifications/cdi/5.0/jakarta-cdi-spec-5.0.html#default_name[default name is assigned] - the simple name of the bean class, after converting the first character to lower case. In this particular case, the default name is `userData`.
 <2> The `@Singleton` scope is added automatically.
 <3> All parameters of the canonical constructor are injection points. The accessor methods can be used to obtain the injected bean.
 

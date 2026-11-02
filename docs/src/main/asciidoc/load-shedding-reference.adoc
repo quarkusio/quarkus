@@ -125,7 +125,7 @@ There is one default prioritizer which assigns the priority of `NEVER` to reques
 It declares no `@Priority`.
 
 Independently of priority load shedding, the health probes (liveness, readiness and startup) and the metrics endpoint are never shed, even if priority load shedding is disabled.
-Extensions declare such paths with the `io.quarkus.load.shedding.deployment.spi.LoadSheddingExemptPathBuildItem` build item from the `quarkus-load-shedding-deployment-spi` artifact.
+Extensions declare such paths with the `io.quarkus.vertx.http.deployment.spi.ControlPlanePathBuildItem` build item from the `quarkus-vertx-http-deployment-spi` artifact.
 
 IMPORTANT: The `NEVER` priority must be used sparingly.
 A request should only be assigned `NEVER` if it is part of the operational control plane (health checks, in-memory metrics scraping, etc.), where failures would trigger cascading failures, AND if it satisfies strict execution bounds.

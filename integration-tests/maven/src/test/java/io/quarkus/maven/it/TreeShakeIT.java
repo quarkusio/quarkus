@@ -291,6 +291,10 @@ public class TreeShakeIT extends MojoTestBase {
         assertJarNotContains(libDir, "lib-native-substitution", "org/acme/substitution/Target_java_util_UUID.class");
         assertJarNotContains(libDir, "lib-native-substitution", "org/acme/substitution/AppSubstitutedTarget.class");
         assertJarNotContains(libDir, "lib-native-substitution", "org/acme/substitution/AppSubstitutionHelper.class");
+        assertJarContains(libDir, "lib-native-substitution", "org/acme/substitution/InnerHolder$Used.class");
+        assertJarNotContains(libDir, "lib-native-substitution", "org/acme/substitution/Target_InnerHolder_Used.class");
+        assertJarNotContains(libDir, "lib-native-substitution", "org/acme/substitution/UnusedBase.class");
+        assertJarNotContains(libDir, "lib-native-substitution", "org/acme/substitution/UnusedHelper.class");
 
         // Serialized resource classes (ObjectInputStream + getResource pattern)
         assertJarContains(libDir, "lib-serialization", "org/acme/serialization/SerializedTarget.class");
@@ -373,6 +377,14 @@ public class TreeShakeIT extends MojoTestBase {
         // target of a substitution in the application, and a class only the substituted code uses
         assertJarContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/AppSubstitutedTarget.class");
         assertJarContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/AppSubstitutionHelper.class");
+        // native-image looks up an innerClass target in InnerHolder.getDeclaredClasses(), which loads all member
+        // classes of InnerHolder and their superclasses, but the code of unused member classes is never run
+        assertJarContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/Target_InnerHolder_Used.class");
+        assertJarContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/InnerHolder.class");
+        assertJarContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/InnerHolder$Used.class");
+        assertJarContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/InnerHolder$Unused.class");
+        assertJarContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/UnusedBase.class");
+        assertJarNotContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/UnusedHelper.class");
     }
 
     @Test

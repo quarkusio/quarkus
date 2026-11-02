@@ -49,6 +49,7 @@ class SubstitutionRootCollectorTest {
 
         Collected collected = collect();
 
+        assertThat(collected.declaredClasses).isEmpty();
         assertThat(collected.roots).isEmpty();
         assertThat(collected.conditional).containsExactlyInAnyOrder(
                 Map.entry("lib.Target", "lib.Target_Subst"), Map.entry("lib.Target_Subst", "lib.Target"));
@@ -67,6 +68,10 @@ class SubstitutionRootCollectorTest {
         assertThat(collected.conditional).containsExactlyInAnyOrder(
                 Map.entry("lib.Outer$Inner$Deeper", "lib.Target_Outer_Inner"),
                 Map.entry("lib.Target_Outer_Inner", "lib.Outer$Inner$Deeper"));
+        // native-image looks up Inner in Outer's and Deeper in Outer$Inner's declared classes
+        assertThat(collected.declaredClasses).containsExactlyInAnyOrder(
+                Map.entry("lib.Target_Outer_Inner", "lib.Outer"),
+                Map.entry("lib.Target_Outer_Inner", "lib.Outer$Inner"));
     }
 
     @Test
@@ -81,6 +86,7 @@ class SubstitutionRootCollectorTest {
         assertThat(collected.conditional).containsExactlyInAnyOrder(
                 Map.entry("lib.Outer$Inner", "lib.Target_Outer_Inner"),
                 Map.entry("lib.Target_Outer_Inner", "lib.Outer$Inner"));
+        assertThat(collected.declaredClasses).containsExactly(Map.entry("lib.Target_Outer_Inner", "lib.Outer"));
     }
 
     @Test
@@ -155,7 +161,8 @@ class SubstitutionRootCollectorTest {
         Collected collected = new Collected();
         SubstitutionRootCollector.collect(PathTree.ofDirectoryOrArchive(dir),
                 item -> collected.roots.add(item.getClassName()),
-                item -> collected.conditional.add(Map.entry(item.getConditionClassName(), item.getClassName())));
+                item -> collected.conditional.add(Map.entry(item.getConditionClassName(), item.getClassName())),
+                item -> collected.declaredClasses.add(Map.entry(item.getConditionClassName(), item.getHolderClassName())));
         return collected;
     }
 
@@ -176,5 +183,6 @@ class SubstitutionRootCollectorTest {
     private static final class Collected {
         final Set<String> roots = new HashSet<>();
         final List<Map.Entry<String, String>> conditional = new ArrayList<>();
+        final List<Map.Entry<String, String>> declaredClasses = new ArrayList<>();
     }
 }

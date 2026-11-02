@@ -31,6 +31,7 @@ import io.quarkus.deployment.pkg.TreeShakeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeConditionalRootClassBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeDeclaredClassesBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeExcludedArtifactBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeRootBytecodeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeRootClassBuildItem;
@@ -87,6 +88,7 @@ public class JarTreeShakeProcessor {
             List<JarTreeShakeRootClassBuildItem> rootClasses,
             List<JarTreeShakeConditionalRootClassBuildItem> conditionalRootClasses,
             List<JarTreeShakeRootBytecodeBuildItem> rootBytecode,
+            List<JarTreeShakeDeclaredClassesBuildItem> declaredClasses,
             List<JarTreeShakeExcludedArtifactBuildItem> excludedArtifacts,
             BuildProducer<JarTreeShakeBuildItem> treeShakeProducer) {
 
@@ -99,6 +101,7 @@ public class JarTreeShakeProcessor {
                 rootClasses,
                 conditionalRootClasses,
                 rootBytecode,
+                declaredClasses,
                 excludedArtifacts)) {
             treeShakeProducer.produce(new JarTreeShaker(input).run());
         }
@@ -190,7 +193,8 @@ public class JarTreeShakeProcessor {
     void collectNativeImageRoots(
             CurateOutcomeBuildItem curateOutcome,
             BuildProducer<JarTreeShakeRootClassBuildItem> roots,
-            BuildProducer<JarTreeShakeConditionalRootClassBuildItem> conditionalRoots) {
+            BuildProducer<JarTreeShakeConditionalRootClassBuildItem> conditionalRoots,
+            BuildProducer<JarTreeShakeDeclaredClassesBuildItem> declaredClasses) {
         /*
          * Scans dependency JARs for classes that reference GraalVM/SVM annotations
          * ({@code @TargetClass}, {@code @Substitute}, {@code @InjectAccessors}, etc.).
@@ -199,9 +203,10 @@ public class JarTreeShakeProcessor {
          */
         final ApplicationModel appModel = curateOutcome.getApplicationModel();
         // application classes aren't removed, but their substitution targets in dependencies must be kept
-        SubstitutionRootCollector.collect(appModel.getAppArtifact().getContentTree(), roots, conditionalRoots);
+        SubstitutionRootCollector.collect(appModel.getAppArtifact().getContentTree(), roots, conditionalRoots,
+                declaredClasses);
         for (ResolvedDependency dep : appModel.getDependencies(DependencyFlags.RUNTIME_CP)) {
-            SubstitutionRootCollector.collect(dep.getContentTree(), roots, conditionalRoots);
+            SubstitutionRootCollector.collect(dep.getContentTree(), roots, conditionalRoots, declaredClasses);
         }
     }
 }

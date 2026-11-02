@@ -2,83 +2,46 @@ package io.quarkus.deployment.pkg.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
-
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import io.quarkus.deployment.pkg.TreeShakeConfig;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
-import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
  * Tests for the collection of JDK package references used by module tree shaking.
  */
 class JarTreeShakerJdkPackagesTest {
 
-    private static final ArtifactKey LIB = ArtifactKey.ga("org.lib", "lib");
-    private static final ArtifactKey EXCLUDED = ArtifactKey.ga("org.lib", "excluded");
+    private static final String LIB = "org.lib:lib";
+    private static final String EXCLUDED = "org.lib:excluded";
 
     @Test
     void jdkPackagesOutsideJavaPrefixAreCollected() {
-        Map<String, Supplier<byte[]>> depBytecode = new HashMap<>();
-        Map<String, ArtifactKey> classToDep = new HashMap<>();
-        addDepClass(depBytecode, classToDep, LIB, "org.lib.Root", "org/w3c/dom/Document");
+        JarTreeShakeInput input = TreeShakeInputFixture.builder()
+                .dependency(LIB, generateClassReferencing("org.lib.Root", "org/w3c/dom/Document"))
+                .root("org.lib.Root")
+                .build();
 
-        JarTreeShakeBuildItem result = run(Set.of("org.lib.Root"), depBytecode, classToDep, Set.of());
+        JarTreeShakeBuildItem result = new JarTreeShaker(input).run();
 
         assertThat(result.getReferencedJdkPackages()).contains("org.w3c.dom");
     }
 
     @Test
     void jdkPackagesOfExcludedArtifactsAreCollected() {
-        Map<String, Supplier<byte[]>> depBytecode = new HashMap<>();
-        Map<String, ArtifactKey> classToDep = new HashMap<>();
-        addDepClass(depBytecode, classToDep, LIB, "org.lib.Root", "java/lang/Runnable");
-        addDepClass(depBytecode, classToDep, EXCLUDED, "org.excluded.Integrity", "java/sql/Connection");
+        JarTreeShakeInput input = TreeShakeInputFixture.builder()
+                .dependency(LIB, generateClassReferencing("org.lib.Root", "java/lang/Runnable"))
+                .dependency(EXCLUDED, generateClassReferencing("org.excluded.Integrity", "java/sql/Connection"))
+                .excludedArtifact(EXCLUDED)
+                .root("org.lib.Root")
+                .build();
 
-        JarTreeShakeBuildItem result = run(Set.of("org.lib.Root"), depBytecode, classToDep, Set.of(EXCLUDED));
+        JarTreeShakeBuildItem result = new JarTreeShaker(input).run();
 
         assertThat(result.getReachableClassNames()).contains("org.excluded.Integrity");
         assertThat(result.getReferencedJdkPackages()).contains("java.sql");
-    }
-
-    private static JarTreeShakeBuildItem run(Set<String> roots, Map<String, Supplier<byte[]>> depBytecode,
-            Map<String, ArtifactKey> classToDep, Set<ArtifactKey> excluded) {
-        JarTreeShakeInput input = new JarTreeShakeInput(
-                TreeShakeConfig.TreeShakeMode.CLASSES,
-                new HashSet<>(roots),
-                new HashMap<>(),
-                new HashSet<>(),
-                depBytecode,
-                new HashMap<>(),
-                new HashMap<>(),
-                classToDep,
-                new HashMap<>(),
-                new HashMap<>(),
-                new HashSet<>(depBytecode.keySet()),
-                21,
-                new HashMap<>(),
-                new ArrayList<>(),
-                new ArrayList<>(),
-                new HashSet<>(),
-                new HashMap<>(),
-                new HashSet<>(excluded));
-        return new JarTreeShaker(input).run();
-    }
-
-    private static void addDepClass(Map<String, Supplier<byte[]>> depBytecode, Map<String, ArtifactKey> classToDep,
-            ArtifactKey dep, String className, String referencedType) {
-        byte[] bytecode = generateClassReferencing(className, referencedType);
-        depBytecode.put(className, () -> bytecode);
-        classToDep.put(className, dep);
     }
 
     /** Generates a class with a static method taking a parameter of the referenced type. */

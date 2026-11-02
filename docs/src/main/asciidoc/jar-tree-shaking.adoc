@@ -132,6 +132,7 @@ Roots include:
 * Also only when building a native executable, GraalVM substitution classes (`@TargetClass`), in dependencies or in the application: a substitution class is kept when its target class is kept, and its target class is kept when the substitution class is kept.
 A substitution whose target is always present (a JDK or GraalVM class, an application class, or a class of an artifact excluded from tree shaking) is always kept, while a substitution whose target is not on the class path at all is removed.
 Substitutions whose target is computed by a `classNameProvider`, and other classes using GraalVM substitution annotations, are always kept.
+For a target given as an `innerClass`, `native-image` looks it up among the declared classes of the enclosing classes, so when such a substitution is kept, the enclosing classes and all their member classes are kept loadable: together with their superclasses and interfaces, but without the classes only their code references.
 
 The native-only roots are not considered for JVM builds, so a JVM build may remove classes that a native build of the same application keeps.
 

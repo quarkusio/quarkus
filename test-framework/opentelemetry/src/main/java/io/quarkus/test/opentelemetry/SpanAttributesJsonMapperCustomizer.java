@@ -1,17 +1,19 @@
 package io.quarkus.test.opentelemetry;
 
+import java.io.IOException;
 import java.util.Map;
 
 import jakarta.inject.Singleton;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.quarkus.jackson.JsonMapperBuilderCustomizer;
-import tools.jackson.core.JsonGenerator;
-import tools.jackson.databind.SerializationContext;
-import tools.jackson.databind.ValueSerializer;
-import tools.jackson.databind.json.JsonMapper;
-import tools.jackson.databind.module.SimpleModule;
+import io.quarkus.jackson.ObjectMapperCustomizer;
 
 /**
  * OTel SDK 1.65 changed AttributesMap so it no longer extends HashMap. As a result the default
@@ -21,21 +23,22 @@ import tools.jackson.databind.module.SimpleModule;
  * exposing their attributes to the tests.
  */
 @Singleton
-public class SpanAttributesJsonMapperCustomizer implements JsonMapperBuilderCustomizer {
+public class SpanAttributesJsonMapperCustomizer implements ObjectMapperCustomizer {
 
     @Override
-    public void customize(JsonMapper.Builder builder) {
+    public void customize(ObjectMapper objectMapper) {
         SimpleModule module = new SimpleModule();
-        module.addSerializer(Attributes.class, new ValueSerializer<Attributes>() {
+        module.addSerializer(Attributes.class, new JsonSerializer<Attributes>() {
             @Override
-            public void serialize(Attributes attributes, JsonGenerator gen, SerializationContext ctxt) {
+            public void serialize(Attributes attributes, JsonGenerator gen, SerializerProvider serializers)
+                    throws IOException {
                 gen.writeStartObject();
                 for (Map.Entry<AttributeKey<?>, Object> entry : attributes.asMap().entrySet()) {
-                    gen.writePOJOProperty(entry.getKey().getKey(), entry.getValue());
+                    gen.writePOJOField(entry.getKey().getKey(), entry.getValue());
                 }
                 gen.writeEndObject();
             }
         });
-        builder.addModule(module);
+        objectMapper.registerModule(module);
     }
 }

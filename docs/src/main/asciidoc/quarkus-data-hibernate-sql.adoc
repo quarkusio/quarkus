@@ -20,8 +20,6 @@ The examples work directly with query results and do not require entity classes.
 You can also use native SQL with mapped entities.
 See the xref:quarkus-data-hibernate.adoc#repositories[Quarkus Data Hibernate reference guide] for repository queries with entities, or the xref:quarkus-data-hibernate-getting-started.adoc[Getting Started with Quarkus Data Hibernate] guide to learn about entity mapping.
 
-NOTE: Native SQL syntax and database column names are checked by the database when a statement executes, rather than by the annotation processor at build time.
-
 == Prerequisites
 
 :prerequisites-docker:
@@ -100,7 +98,15 @@ CREATE TABLE IF NOT EXISTS Book (
     price NUMERIC(10,2),
     publisher_id BIGINT REFERENCES Publisher(id)
 );
+----
 
+This SQL script creates sequences for ID generation and the `Publisher` and `Book` tables.
+
+Next, create a `data.sql` file in `src/main/resources/` to load the sample data.
+Hibernate ORM automatically runs this script after schema initialization in dev and test modes.
+
+[source,sql]
+----
 DELETE FROM Book;
 DELETE FROM Publisher;
 
@@ -123,9 +129,11 @@ SELECT setval('Publisher_SEQ', (SELECT MAX(id) FROM Publisher));
 SELECT setval('Book_SEQ', (SELECT MAX(id) FROM Book));
 ----
 
-This SQL script creates sequences for ID generation, the `Publisher` and `Book` tables, and inserts sample data.
+This SQL script inserts sample data.
 Each book is linked to a publisher.
 The final statements set each sequence to the largest imported ID, so the next generated ID follows the sample data even if you add more rows to the script.
+
+See xref:hibernate-orm.adoc#sql-init-scripts[SQL init scripts] for more details about schema and data initialization.
 
 == Querying data
 
@@ -152,6 +160,9 @@ public interface Library { // <1>
 <2> A Java record that maps to the columns returned by the SQL query. The selected columns match the record components in name and type.
 <3> `@NativeQuery` sends raw SQL to the database. The `:title` syntax is a named parameter, it avoids SQL injection attacks.
 <4> The method signature defines the parameters.
+
+WARNING: Native SQL syntax and database column names are checked by the database when a statement executes, rather than by the annotation processor at build time.
+Make sure every query is covered by a test, or you might miss typos.
 
 We can now create a test in `src/test/java/org/acme/BookQueriesTest.java` that will check everything is working correctly:
 
@@ -188,9 +199,9 @@ public class BookQueriesTest {
     }
 }
 ----
-<1> `@QuarkusTest` starts the full Quarkus application for the test, including the database and Dev Services. The data from `import.sql` is loaded automatically.
+<1> `@QuarkusTest` starts the full Quarkus application for the test, including the database and Dev Services. The data from `data.sql` is loaded automatically.
 <2> We inject our `BookQueries` just like we would in application code.
-<3> We query for a book we know exists in `import.sql` and verify it's returned.
+<3> We query for a book we know exists in `data.sql` and verify it's returned.
 
 If you have continuous testing running in another terminal, these tests will run automatically as soon as you save the file.
 

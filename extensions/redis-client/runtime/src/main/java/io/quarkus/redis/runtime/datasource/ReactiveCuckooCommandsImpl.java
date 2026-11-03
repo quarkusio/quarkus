@@ -3,7 +3,6 @@ package io.quarkus.redis.runtime.datasource;
 import java.lang.reflect.Type;
 import java.util.List;
 
-import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.cuckoo.CfInsertArgs;
 import io.quarkus.redis.datasource.cuckoo.CfReserveArgs;
@@ -12,7 +11,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.redis.client.Response;
 
 public class ReactiveCuckooCommandsImpl<K, V> extends AbstractCuckooCommands<K, V>
-        implements ReactiveCuckooCommands<K, V>, ReactiveRedisCommands {
+        implements ReactiveCuckooCommands<K, V> {
 
     private final ReactiveRedisDataSource reactive;
 

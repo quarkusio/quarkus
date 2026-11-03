@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -18,7 +19,7 @@ import io.smallrye.mutiny.Uni;
  * @param <F> the key type of the messages, generally {@link String}
  * @param <V> the value type of the messages
  */
-public interface ReactiveStreamCommands<K, F, V> {
+public interface ReactiveStreamCommands<K, F, V> extends ReactiveRedisCommands {
 
     /**
      * Execute the command <a href="https://redis.io/commands/xack">XACK</a>.
@@ -29,7 +30,7 @@ public interface ReactiveStreamCommands<K, F, V> {
      * The {@code XACK} command removes one or multiple messages from the Pending Entries List (PEL) of a stream consumer
      * group. A message is pending, and as such stored inside the PEL, when it was delivered to some consumer, normally
      * as a side effect of calling {@code XREADGROUP}, or when a consumer took ownership of a message
-     * calling {@code XCLAIM}. The pending message was delivered to some consumer but the server is yet not sure it was
+     * calling {@code XCLAIM}. The pending message was delivered to some consumer but the server is yet not sure if it was
      * processed at least once. So new calls to {@code XREADGROUP} to grab the messages history for a consumer
      * (for instance using an ID of 0), will return such message. Similarly, the pending message will be listed by the
      * {@code XPENDING} command, that inspects the PEL.
@@ -636,7 +637,7 @@ public interface ReactiveStreamCommands<K, F, V> {
      * Requires Redis 5.0.0+
      * <p>
      * This variant of xpending uses the <em>extended</em> form.
-     *
+     * <p>
      * If the extra parameter include the name of the consumer, the produced list will only contain 0 or 1 item.
      *
      * @param key the key

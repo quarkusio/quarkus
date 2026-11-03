@@ -29,7 +29,7 @@ public class DeprecatedSqlLoadScriptAndDataSqlTestCase {
                     .hasMessageContainingAll(
                             "('quarkus.hibernate-orm.sql-load-script' is set)",
                             "(the file 'data.sql' exists in the classpath)",
-                            "To use the SQL init scripts, remove 'quarkus.hibernate-orm.sql-load-script'"
+                            "To use the newer SQL init script behavior, remove 'quarkus.hibernate-orm.sql-load-script'"
                                     + " and use 'quarkus.hibernate-orm.data-management.init-script'"
                                     + " or 'quarkus.hibernate-orm.schema-management.init-script' instead,"
                                     + " and move the statements of 'import.sql' to 'data.sql' if they load data"));

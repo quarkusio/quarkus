@@ -28,9 +28,9 @@ public class ImportSqlAndDataSqlTestCase {
                     .hasMessageContainingAll(
                             "Persistence unit '<default>' would use both the deprecated SQL load script behavior"
                                     + " (the file 'import.sql' exists in the classpath)"
-                                    + " and the SQL init scripts that replace it (the file 'data.sql' exists in the classpath),"
+                                    + " and the newer SQL init script behavior that replaces it (the file 'data.sql' exists in the classpath),"
                                     + " which is ambiguous.",
-                            "To use the SQL init scripts, move the statements of 'import.sql' to 'data.sql'"
+                            "To use the newer SQL init script behavior, move the statements of 'import.sql' to 'data.sql'"
                                     + " if they load data and/or to 'schema.sql' if they complete the schema,"
                                     + " then delete it (updating any property that refers to it),"
                                     + " or set 'quarkus.hibernate-orm.sql-load-script' to 'no-file'.",

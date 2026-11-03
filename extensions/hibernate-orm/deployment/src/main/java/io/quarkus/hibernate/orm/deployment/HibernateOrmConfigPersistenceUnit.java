@@ -70,7 +70,8 @@ public interface HibernateOrmConfigPersistenceUnit {
      * nor with `quarkus.hibernate-orm.data-management.strategy`.
      * When set to `no-file`, those properties and their default files apply.
      *
-     * An `import.sql` file in the classpath has the same effect as setting this property to `import.sql`.
+     * In dev and test modes, an `import.sql` file in the classpath has the same effect as setting this property
+     * to `import.sql`.
      * To stop using it, move its statements to `data.sql` if they load data and/or to `schema.sql`
      * if they complete the schema, then delete it, or set this property to `no-file`.
      *
@@ -102,6 +103,7 @@ public interface HibernateOrmConfigPersistenceUnit {
      */
     // @formatter:on
     @Deprecated(since = "4.0", forRemoval = true)
+    @ConfigDocDefault("import.sql in dev and test modes if it exists in the classpath; no-file otherwise")
     Optional<List<@WithConverter(TrimmedStringConverter.class) String>> sqlLoadScript();
 
     /**
@@ -819,7 +821,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          * without having to set this property, in every launch mode:
          * whether the script is executed only depends on `quarkus.hibernate-orm.schema-management.strategy`.
          * Pass `no-file` to force Hibernate ORM to ignore the file.
-         * An `import.sql` file is not picked up: it enables a deprecated behavior instead.
+         * An `import.sql` file is not picked up: in dev and test modes, it enables a deprecated behavior instead.
          *
          * [NOTE]
          * ====

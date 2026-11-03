@@ -112,9 +112,10 @@ public final class InitScriptSupport {
                         HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SCHEMA_INIT_SCRIPT_PROPERTY),
                         HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, DATA_INIT_SCRIPT_PROPERTY)));
             }
-            // Scripts set through the deprecated 'quarkus.hibernate-orm.sql-load-script' (or a default 'import.sql')
+            // Scripts set through the deprecated 'quarkus.hibernate-orm.sql-load-script'
+            // (or a default 'import.sql', which is only picked up in dev and test modes)
             // keep their historical behavior:
-            // Hibernate ORM executes them when it creates the schema, regardless of the launch mode.
+            // Hibernate ORM executes them when it creates the schema, whatever the launch mode.
             return false;
         }
 

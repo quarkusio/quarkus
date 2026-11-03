@@ -50,6 +50,7 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCacheConfiguration;
 import io.quarkus.hibernate.orm.runtime.schema.InitScriptSupport;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
 /**
@@ -475,7 +476,7 @@ public final class HibernateProcessorSupport {
      * {@code schema.sql} by default if it exists in the classpath), executed right after Hibernate ORM created the schema.</li>
      * </ul>
      * Scripts configured through the deprecated {@code quarkus.hibernate-orm.sql-load-script} property,
-     * or an {@code import.sql} file in the classpath when that property is not set,
+     * or an {@code import.sql} file in the classpath when that property is not set (in dev and test modes only),
      * keep their historical behavior: they are only executed when Hibernate ORM creates the schema.
      * Using both that deprecated behavior and the init scripts that replace it is ambiguous and fails the build;
      * setting a property to {@code no-file} takes it and its default file out of the picture.
@@ -483,6 +484,7 @@ public final class HibernateProcessorSupport {
     public static void configureInitScripts(String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            LaunchMode launchMode,
             WorkspaceModule applicationModule,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
@@ -495,8 +497,10 @@ public final class HibernateProcessorSupport {
         String dataPropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, DATA_INIT_SCRIPT_PROPERTY);
         String schemaPropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SCHEMA_INIT_SCRIPT_PROPERTY);
 
+        // As in Quarkus 3, the default of 'sql-load-script' is 'import.sql' in dev and test modes, 'no-file' otherwise
+        String legacyDefaultScript = launchMode.isProduction() ? null : LEGACY_DEFAULT_SQL_LOAD_SCRIPT;
         // What makes the persistence unit use the deprecated behavior of 'sql-load-script', if anything
-        InitScriptTrigger legacyTrigger = trigger(legacyPropertyKey, legacySqlLoadScript, LEGACY_DEFAULT_SQL_LOAD_SCRIPT,
+        InitScriptTrigger legacyTrigger = trigger(legacyPropertyKey, legacySqlLoadScript, legacyDefaultScript,
                 applicationArchivesBuildItem);
         // What makes the persistence unit use the init scripts that replace it
         List<InitScriptTrigger> initScriptTriggers = new ArrayList<>();
@@ -510,7 +514,7 @@ public final class HibernateProcessorSupport {
         if (legacyTrigger != InitScriptTrigger.NONE && !initScriptTriggers.isEmpty()) {
             throw new ConfigurationException(ambiguousInitScriptsMessage(persistenceUnitName, legacyTrigger,
                     initScriptTriggers, dataPropertyKey, schemaPropertyKey,
-                    exists(applicationArchivesBuildItem, LEGACY_DEFAULT_SQL_LOAD_SCRIPT)));
+                    legacyDefaultScript != null && exists(applicationArchivesBuildItem, legacyDefaultScript)));
         }
 
         // Data init scripts, executed to load data
@@ -545,20 +549,6 @@ public final class HibernateProcessorSupport {
                     legacySqlLoadScript.isPresent() ? InitScriptSupport.LEGACY_SQL_LOAD_SCRIPT_FROM_PROPERTY
                             : InitScriptSupport.LEGACY_SQL_LOAD_SCRIPT_FROM_DEFAULT_FILE);
         } else {
-            if (legacySqlLoadScript.isPresent()) {
-                // Only 'no-file' values: the deprecated property can only be meant to ignore 'import.sql',
-                // possibly because another persistence unit uses that file
-                LOG.warnf("Persistence unit '%s' sets the deprecated configuration property '%s' to '%s'. %s",
-                        persistenceUnitName, legacyPropertyKey, NO_SQL_LOAD_SCRIPT_FILE,
-                        exists(applicationArchivesBuildItem, LEGACY_DEFAULT_SQL_LOAD_SCRIPT)
-                                ? String.format(Locale.ROOT,
-                                        "This is only needed as long as the file '%s' exists in the classpath:"
-                                                + " consider moving its statements to '%s' if they load data"
-                                                + " and/or to '%s' if they complete the schema.",
-                                        LEGACY_DEFAULT_SQL_LOAD_SCRIPT, DEFAULT_DATA_INIT_SCRIPT, DEFAULT_SCHEMA_INIT_SCRIPT)
-                                : "It has no effect, since there is no file '" + LEGACY_DEFAULT_SQL_LOAD_SCRIPT
-                                        + "' in the classpath.");
-            }
             if (dataInitScript.isPresent()) {
                 dataScripts = InitScriptConfig.explicit(DATA_INIT_SCRIPT_PROPERTY, dataInitScript.get());
             } else {
@@ -599,6 +589,7 @@ public final class HibernateProcessorSupport {
     }
 
     /**
+     * @param defaultScript The default file of the property, or {@code null} if it has none.
      * @return What makes a persistence unit use the given property:
      *         the property itself if it is set to anything other than {@code no-file},
      *         or the default file if the property is not set and the file exists.
@@ -613,7 +604,7 @@ public final class HibernateProcessorSupport {
             }
             return InitScriptTrigger.NONE;
         }
-        return exists(applicationArchivesBuildItem, defaultScript)
+        return defaultScript != null && exists(applicationArchivesBuildItem, defaultScript)
                 ? new InitScriptTrigger(propertyKey, defaultScript)
                 : InitScriptTrigger.NONE;
     }
@@ -646,8 +637,8 @@ public final class HibernateProcessorSupport {
                 .collect(Collectors.joining(", and "));
         return String.format(Locale.ROOT,
                 "Persistence unit '%s' would use both the deprecated SQL load script behavior (%s)"
-                        + " and the SQL init scripts that replace it (%s), which is ambiguous."
-                        + " To use the SQL init scripts, %s. To keep the deprecated behavior, %s.",
+                        + " and the newer SQL init script behavior that replaces it (%s), which is ambiguous."
+                        + " To use the newer SQL init script behavior, %s. To keep the deprecated behavior, %s.",
                 persistenceUnitName,
                 legacyTrigger.description(),
                 initScriptTriggers.stream().map(InitScriptTrigger::description).collect(Collectors.joining(", ")),

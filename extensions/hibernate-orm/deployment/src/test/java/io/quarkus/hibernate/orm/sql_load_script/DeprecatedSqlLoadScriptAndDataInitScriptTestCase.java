@@ -28,9 +28,9 @@ public class DeprecatedSqlLoadScriptAndDataInitScriptTestCase {
                     .hasMessageContainingAll(
                             "Persistence unit '<default>' would use both the deprecated SQL load script behavior"
                                     + " ('quarkus.hibernate-orm.sql-load-script' is set)"
-                                    + " and the SQL init scripts that replace it ('quarkus.hibernate-orm.data-management.init-script' is set),"
+                                    + " and the newer SQL init script behavior that replaces it ('quarkus.hibernate-orm.data-management.init-script' is set),"
                                     + " which is ambiguous.",
-                            "To use the SQL init scripts, remove 'quarkus.hibernate-orm.sql-load-script'",
+                            "To use the newer SQL init script behavior, remove 'quarkus.hibernate-orm.sql-load-script'",
                             "To keep the deprecated behavior, set 'quarkus.hibernate-orm.data-management.init-script' to 'no-file'."));
 
     @Test

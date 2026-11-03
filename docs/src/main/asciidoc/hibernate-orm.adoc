@@ -208,8 +208,9 @@ This is useful to have a data set ready for your tests or demos.
 
 [NOTE]
 ====
-An `import.sql` file, which Quarkus used to pick up by default, enables a deprecated behavior instead:
-the file is executed whenever Hibernate ORM creates the schema, in every launch mode,
+An `import.sql` file, which Quarkus used to pick up by default, enables a deprecated behavior instead,
+in dev and test modes only:
+the file is executed whenever Hibernate ORM creates the schema,
 and it cannot be combined with `schema.sql`, `data.sql`, the properties above set to a script,
 or `quarkus.hibernate-orm.data-management.strategy`.
 Move its statements to `data.sql` if they load data and/or to `schema.sql` if they complete the schema,

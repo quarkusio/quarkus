@@ -5,14 +5,14 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus Data Hibernate reference guide
 include::_attributes.adoc[]
-:summary: Quarkus Data Hibernate validates repository methods and queries at build time and generates CDI repository implementations for Hibernate ORM.
+:summary: At build time, Quarkus Data Hibernate validates repository methods and queries, and generates CDI repository implementations for Hibernate ORM.
 :config-file: application.properties
 :topics: data,hibernate-orm,hibernate-reactive,panache,sql,jdbc
 :extensions: io.quarkus:quarkus-data-hibernate,io.quarkus:quarkus-hibernate-orm,io.quarkus:quarkus-hibernate-reactive
 :hibernate-panache-api: https://javadoc.io/doc/io.quarkus.data.hibernate/hibernate-panache/{quarkus-version}
 :extension-status: experimental
 
-Quarkus Data Hibernate provides repositories and entity operations for Hibernate ORM applications.
+Use Quarkus Data Hibernate to build Hibernate ORM applications with generated repositories and entity operations.
 
 If you are new to Quarkus Data Hibernate, start with the
 xref:quarkus-data-hibernate-getting-started.adoc[Quarkus Data Hibernate getting started tutorial].
@@ -695,9 +695,10 @@ public Uni<Void> renameCat(String name, String newName) {
 }
 ----
 
-The xref:quarkus-data-hibernate-getting-started.adoc#reactive[getting started tutorial] describes the
-required dependencies for reactive access. You can use any of the
-xref:hibernate-reactive.adoc#hr-getting-started[supported reactive drivers].
+The xref:quarkus-data-hibernate-getting-started.adoc#reactive[getting started tutorial] adds the
+required dependencies for reactive access.
+For reactive data source configuration, see the xref:hibernate-reactive.adoc#hr-getting-started[Hibernate Reactive guide],
+which lists the supported reactive drivers.
 
 [[entity-and-repository-type-matrix]]
 === Entity and repository type matrix

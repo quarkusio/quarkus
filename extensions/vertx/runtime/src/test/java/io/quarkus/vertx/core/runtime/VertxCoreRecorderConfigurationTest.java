@@ -109,6 +109,11 @@ public class VertxCoreRecorderConfigurationTest {
     public void shouldConfigurePreferNativeTransport() {
         VertxCoreRecorder.buildTimeConfig = new VertxBuildTimeConfig() {
             @Override
+            public boolean useAsyncDNS() {
+                return false;
+            }
+
+            @Override
             public NativeTransportMode nativeTransport() {
                 return NativeTransportMode.IF_AVAILABLE;
             }

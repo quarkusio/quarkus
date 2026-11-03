@@ -94,12 +94,6 @@ public interface VertxConfiguration {
     boolean prefill();
 
     /**
-     * Enables the async DNS resolver.
-     */
-    @WithDefault("false")
-    boolean useAsyncDNS();
-
-    /**
      * The address resolver configuration.
      */
     AddressResolverConfiguration resolver();

@@ -231,11 +231,6 @@ public class VertxCoreProducerTest {
         }
 
         @Override
-        public boolean useAsyncDNS() {
-            return false;
-        }
-
-        @Override
         public Duration blockedThreadCheckInterval() {
             return Duration.ofSeconds(1);
         }

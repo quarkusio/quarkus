@@ -45,6 +45,7 @@ import io.quarkus.arc.All;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
+import io.quarkus.opentelemetry.runtime.tracing.DropAllSpanProcessor;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
 import io.quarkus.opentelemetry.runtime.tracing.SimpleSpanProcessorWithBatchShutdown;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
@@ -240,6 +241,17 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             }
                             // NoopSpanExporter is package friendly
                             if ("NoopSpanExporter".equals(spanExporter.getClass().getSimpleName())) {
+                                if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
+                                    // Tracing is on but there is no exporter to send the spans to, e.g.
+                                    // quarkus.otel.exporter.otlp.enabled=false. Keep a processor so the SDK still
+                                    // hands out real tracers: spans keep valid ids for log correlation and context
+                                    // propagation, and are dropped instead of exported. See DropAllSpanProcessor.
+                                    return new DropAllSpanProcessor(spanProcessor);
+                                }
+                                // Tracing is disabled, letting the processor list collapse makes the SDK hand out
+                                // no-op tracers, which is what we want. The orphaned batch processor already started
+                                // its worker thread, so it must still be shut down.
+                                spanProcessor.shutdown();
                                 return SpanProcessor.composite();
                             }
                         }
@@ -275,6 +287,14 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
                                 idGenerator.stream().findFirst().ifPresent(tracerProviderBuilder::setIdGenerator); // from cdi
                                 spanProcessors.forEach(tracerProviderBuilder::addSpanProcessor);
+
+                                if (spanProcessors.isEmpty()
+                                        && configProperties.getList("otel.traces.exporter").contains("none")) {
+                                    // With no exporter the autoconfiguration creates no span processor at all, so
+                                    // SpanProcessorCustomizer is never called. Tracing is on, so we still need a
+                                    // processor for the SDK to hand out real tracers. See DropAllSpanProcessor.
+                                    tracerProviderBuilder.addSpanProcessor(new DropAllSpanProcessor());
+                                }
                             }
                             return tracerProviderBuilder;
                         }

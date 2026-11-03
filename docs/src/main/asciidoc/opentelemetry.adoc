@@ -123,7 +123,10 @@ Telemetry will be generated, contexts will be propagated but no telemetry will b
 | Traces output
 |`quarkus.otel.traces.exporter`
 |cdi
-|List of exporters to be used for tracing, separated by commas. Has one of the values from _ExporterType_: `otlp`, `cdi`, `none`. This is a *build* time property and setting it to `none` will disable tracing data output.
+|List of exporters to be used for tracing, separated by commas. Has one of the values from _ExporterType_: `otlp`, `cdi`, `none`.
+
+This is a *build* time property and setting it to `none` will disable tracing data output.
+Telemetry will still be generated and contexts will still be propagated but nothing will be exported. To stop creating spans altogether, use `quarkus.otel.traces.enabled`.
 
 | Metrics
 |`quarkus.otel.metrics.enabled`
@@ -150,6 +153,8 @@ Telemetry will be generated, contexts will be propagated but no telemetry will b
 |true
 |If false, disable the OpenTelemetry logs handler at *runtime*. This removes the bridge between the Quarkus logging system (JBoss LogManager) and OpenTelemetry logs.
 |===
+
+The output properties and the enablement properties are not interchangeable. Disabling the output (`quarkus.otel.exporter.otlp.enabled=false`, or an exporter list set to `none`) stops telemetry from being *sent out*, while telemetry keeps being generated: trace and span ids remain available for log correlation and keep being propagated to downstream services. Disabling a signal (`quarkus.otel.traces.enabled=false`) or the whole SDK (`quarkus.otel.sdk.disabled=true`) stops the telemetry from being *generated* in the first place, which is the cheaper option when you want nothing at all.
 
 If you need to enable or disable the exporter at runtime, you can use the xref:opentelemetry-tracing.adoc#sampler[sampler] because it has the ability to filter out all the spans if needed.
 

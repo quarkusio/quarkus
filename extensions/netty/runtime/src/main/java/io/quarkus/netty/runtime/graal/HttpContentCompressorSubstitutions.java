@@ -92,8 +92,10 @@ class IsZstdAbsent implements BooleanSupplier {
 
 class IsBrotli4jAbsent implements BooleanSupplier {
 
-    // WARNING: There is another copy of this class: io.quarkus.vertx.http.runtime.graal.IsBrotli4jAbsent.
-    // If you change this class, make sure to change the other one as well.
+    // WARNING: There are other copies of this class:
+    // - io.quarkus.vertx.http.runtime.graal.IsBrotli4jAbsent.
+    // - io.quarkus.elasticsearch.restclient.common.runtime.graal.IsBrotli4jAbsent.
+    // If you change this class, make sure to change the other ones as well.
 
     @Override
     public boolean getAsBoolean() {

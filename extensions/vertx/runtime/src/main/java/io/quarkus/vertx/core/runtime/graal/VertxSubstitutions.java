@@ -22,7 +22,23 @@ import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
+import io.vertx.core.Vertx;
+import io.vertx.core.dns.AddressResolverOptions;
+import io.vertx.core.dns.impl.DefaultAddressResolverProvider;
 import io.vertx.core.internal.VertxInternal;
+import io.vertx.core.spi.dns.AddressResolverProvider;
+
+/**
+ * This substitution forces the usage of the blocking DNS resolver
+ */
+@TargetClass(className = "io.vertx.core.spi.dns.AddressResolverProvider")
+final class Target_io_vertx_core_spi_dns_AddressResolverProvider {
+
+    @Substitute
+    public static AddressResolverProvider factory(Vertx vertx, AddressResolverOptions options) {
+        return new DefaultAddressResolverProvider();
+    }
+}
 
 @TargetClass(className = "io.vertx.core.net.OpenSSLEngineOptions")
 final class Target_io_vertx_core_net_OpenSSLEngineOptions {

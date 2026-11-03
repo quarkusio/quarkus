@@ -140,6 +140,14 @@ public class DataSources {
         return ClientProxy.unwrap(AgroalDataSourceUtil.dataSourceInstance(dataSourceName).get());
     }
 
+    /**
+     * Retained for backward compatibility with callers compiled against the two-argument method.
+     */
+    @SuppressWarnings("resource")
+    public AgroalDataSource createDataSource(String dataSourceName, boolean otelEnabled) {
+        return createDataSource(dataSourceName, otelEnabled, Map.of());
+    }
+
     @SuppressWarnings("resource")
     public AgroalDataSource createDataSource(String dataSourceName, boolean otelEnabled,
             Map<String, String> buildTimeJdbcProperties) {

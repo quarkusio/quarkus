@@ -64,19 +64,19 @@ but executes at runtime.
 
 ```java
 @BuildStep
-void setupAtRuntime(ServiceRegistrar reg, SomeBuildItem item) {
-    reg.forService("io.quarkus.my-feature.setup")
-       .onStart(ctx -> {
-           // This lambda runs at runtime
-           MyFeature.initialize(item.getValue());
-       });
+void setupAtRuntime(ServiceRegistrar serviceRegistrar, SomeBuildItem item) {
+    serviceRegistrar.forService("io.quarkus.my-feature.setup")
+            .onStart(ctx -> {
+                // This lambda runs at runtime
+                MyFeature.initialize(item.getValue());
+            });
 }
 ```
 
 ### Service Types
 
-- **Typed services** produce a value: `reg.forService(MyService.class)`
-- **Void services** produce no value, identified by name: `reg.forService("io.quarkus.feature.setup")`
+- **Typed services** produce a value: `serviceRegistrar.forService(MyService.class)`
+- **Void services** produce no value, identified by name: `serviceRegistrar.forService("io.quarkus.feature.setup")`
 
 Use typed services when other services need to depend on the value produced.
 Use void services for side effects like initialization tasks.

@@ -466,6 +466,7 @@
                 <module>management-interface</module>
                 <module>management-interface-auth</module>
                 <module>mtls-certificates</module>
+                <module>tls-registry-lets-encrypt</module>
                 <module>virtual-threads</module>
                 <module>mutiny-native-jctools</module>
             </modules>

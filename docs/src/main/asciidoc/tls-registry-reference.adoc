@@ -1750,6 +1750,8 @@ The TLS registry extension allows a CLI ACME client to issue and renew Let's Enc
 Your application uses this TLS registry extension to resolve ACME protocol challenges.
 
 Follow the steps below to prepare your Quarkus application and automatically update it with new and renewed Let's Encrypt certificates.
+The application can also order and renew the certificate itself, without the CLI.
+See <<lets-encrypt-client>>.
 
 [[lets-encrypt-prerequisites]]
 === Prerequisites
@@ -1980,6 +1982,57 @@ quarkus tls lets-encrypt issue-certificate \
 
 IMPORTANT: Each ACME provider may have different rate limits, account requirements, and supported features.
 Consult the provider's documentation before using them in production.
+
+[[lets-encrypt-client]]
+=== Let the application order and renew the certificate
+
+With the Let's Encrypt client of the application, the application creates the ACME account, orders the certificate, and renews it.
+It answers the HTTP-01 challenge itself, so the Quarkus CLI and the management routes are not necessary.
+
+[source,properties]
+----
+quarkus.tls.lets-encrypt.client.enabled=true <1>
+quarkus.tls.lets-encrypt.client.domains=example.org,www.example.org <2>
+quarkus.tls.lets-encrypt.client.emails=admin@example.org <3>
+quarkus.tls.lets-encrypt.client.terms-of-service-agreed=true <4>
+quarkus.tls.lets-encrypt.client.storage-directory=/var/lib/my-app/letsencrypt <5>
+quarkus.http.insecure-requests=redirect <6>
+----
+<1> Enable the client at build time.
+<2> The domains of the certificate. Each domain must resolve to the application. Port 80 of the domain must reach the HTTP server of the application.
+<3> The email addresses of the account. This property is optional.
+<4> Agree to the link:https://letsencrypt.org/repository/[terms of service of Let's Encrypt]. Without this agreement, the application does not start.
+<5> The directory of the account key, the certificate and its private key. Keep it on a persistent volume.
+<6> Let's Encrypt validates the challenge over HTTP. The redirect keeps the other HTTP requests on HTTPS.
+
+The client works as follows:
+
+* The client provides the key store of the default TLS configuration.
+To use another TLS configuration, set `quarkus.tls.lets-encrypt.client.tls-configuration-name` at build time.
+Do not configure a key store in this TLS configuration.
+* Until Let's Encrypt issues the first certificate, the application uses a self-signed certificate for the domains.
+* When Let's Encrypt issues a certificate, the client stores it, reloads the TLS configuration, and fires a `CertificateUpdatedEvent`.
+The HTTP server then uses the new certificate.
+* The client checks the certificate twice a day by default.
+It asks Let's Encrypt when to renew the certificate, with link:https://datatracker.ietf.org/doc/html/rfc9773[ACME Renewal Information].
+Without this information, the client renews the certificate when a third of its validity remains.
+* In dev and test modes, the client uses the Let's Encrypt staging directory by default.
+In production mode, it uses the production directory.
+To use another ACME server, set `quarkus.tls.lets-encrypt.client.directory-url`.
+To trust a private ACME server, set `quarkus.tls.lets-encrypt.client.acme-server-tls-configuration-name` to a TLS configuration with a trust store.
+* After a failure, the client tries again after 10 minutes. The delay doubles after each failure, up to the renewal check interval.
+The application keeps its current certificate.
+
+[IMPORTANT]
+====
+The client is for one instance of the application.
+Behind a load balancer, the challenge request of Let's Encrypt can reach another instance.
+Also, each instance orders its own certificate.
+
+Keep the storage directory between restarts.
+Without the stored certificate, the application orders a new certificate at each start.
+Let's Encrypt allows only five certificates for the same domains in seven days.
+====
 
 [[lets-encrypt-ngrok]]
 === Testing with ngrok

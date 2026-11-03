@@ -18,7 +18,7 @@ A signal is an object -- optionally augmented with qualifiers and metadata -- th
 
 include::{includes}/extension-status.adoc[]
 
-Resolution:: The extension provides a type-safe resolution model, inspired by the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#events[CDI events].
+Resolution:: The extension provides a type-safe resolution model, inspired by the https://jakarta.ee/specifications/cdi/5.0/jakarta-cdi-spec-5.0.html#events[CDI events].
 Emission Modes:: Inspired by the https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x EventBus], the API supports unicast (point-to-point) and request-reply patterns in addition to the traditional multicast (publish-subscribe) pattern.
 Execution Model:: Receivers are always executed asynchronously and support both blocking and non-blocking logic. The execution model is determined from the method return type and annotations such as `@Blocking`, `@NonBlocking`, and `@RunOnVirtualThread`, following Quarkus conventions.
 
@@ -245,7 +245,7 @@ For `publish` emissions (multicast), where multiple receivers may fail, the fail
 A _receiver method_ is a non-private, non-static method declared on a CDI bean.
 It must have exactly one parameter annotated with `@Receives`.
 The type of the annotated parameter determines the _received signal type_.
-Additional parameters may be declared and are treated as injection points -- the container will obtain and inject the corresponding bean instances when the receiver is invoked, just like https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#observes[CDI observer methods].
+Additional parameters may be declared and are treated as injection points -- the container will obtain and inject the corresponding bean instances when the receiver is invoked, just like https://jakarta.ee/specifications/cdi/5.0/jakarta-cdi-spec-5.0.html#observes[CDI observer methods].
 
 [source,java]
 ----
@@ -402,7 +402,7 @@ receivers.newReceiver(new TypeLiteral<List<OrderPlaced>>() {})
 == Receiver Resolution
 
 When a signal is emitted, the container resolves the set of matching receivers using the signal type, qualifiers, and -- for request emissions -- the response type.
-The resolution rules are inspired by the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#observer_resolution[CDI observer resolution] rules:
+The resolution rules are inspired by the https://jakarta.ee/specifications/cdi/5.0/jakarta-cdi-spec-5.0.html#observer_resolution[CDI observer resolution] rules:
 
 * A receiver matches if the signal type is assignable to the received signal type.
 * A receiver matches only if the receiver's qualifiers are a _subset_ of the signal's qualifiers.
@@ -469,7 +469,7 @@ ShipmentConfirmation confirmation = placeOrder.request(
 
 == Comparison with CDI Events and Vert.x EventBus
 
-Signals address the same broad goal - loosely coupled, in-process communication between application components - as two other mechanisms commonly used in Quarkus applications: https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#events[CDI events] and the https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x EventBus].
+Signals address the same broad goal - loosely coupled, in-process communication between application components - as two other mechanisms commonly used in Quarkus applications: https://jakarta.ee/specifications/cdi/5.0/jakarta-cdi-spec-5.0.html#events[CDI events] and the https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x EventBus].
 The Signals resolution model is inspired by CDI events, while the emission modes are inspired by the Vert.x EventBus.
 
 The following table summarizes the main differences.

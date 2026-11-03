@@ -1,11 +1,25 @@
 ---
 name: building-docs
 description: >
-  How to build, preview, and verify Quarkus documentation locally:
-  root Maven build, docs rebuild, Roq dev server preview.
+  How to write, build, preview, and verify Quarkus documentation locally:
+  what a docs change contains, root Maven build, docs rebuild, Roq dev
+  server preview.
 ---
 
 # Building Documentation
+
+## What a Docs Change Contains
+
+- Keep a docs change short: say what the feature or the property does, and
+  give one example.
+- Show one recommended way. Do not list every possible way to get the same
+  result.
+- Do not document a value that does nothing, such as `none` for an option
+  that is off by default, and do not document internal classes.
+- Explain one case or one bug in the issue or in the pull request, not in
+  the guide.
+- The Javadoc of a `@ConfigMapping` method becomes the reference text of the
+  property. Write it for users.
 
 ## Supported Platforms
 

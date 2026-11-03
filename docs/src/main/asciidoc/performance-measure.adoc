@@ -210,7 +210,7 @@ Measuring TTFR end-to-end captures the full cost.
 
 == How do we measure throughput
 
-Throughput is measured using https://hyperfoil.io[Hyperfoil], a tool designed to avoid the <<coordinated-omission,coordinated omission problem>>.
+Throughput is measured using https://github.com/Hyperfoil/Hyperfoil[Hyperfoil], a tool designed to avoid the <<coordinated-omission,coordinated omission problem>>.
 We run Hyperfoil via https://www.jbang.dev[JBang], which handles downloading and launching it automatically.
 
 The https://github.com/quarkusio/spring-quarkus-perf-comparison/blob/main/scripts/perf-lab/main.yml[performance lab] invokes Hyperfoil as follows:
@@ -319,7 +319,7 @@ Tools that at current time of writing are known to exhibit the problem and shoul
 Tools that are known to not be affected:
 
  * https://github.com/giltene/wrk2[wrk2]
- * https://hyperfoil.io[Hyperfoil] — this is what the https://github.com/quarkusio/spring-quarkus-perf-comparison[Quarkus benchmark suite] uses
+ * https://github.com/Hyperfoil/Hyperfoil[Hyperfoil] — this is what the https://github.com/quarkusio/spring-quarkus-perf-comparison[Quarkus benchmark suite] uses
 
 Mind you, the tools are not better than your own understanding of what they measure thus even when using `wrk2` or `hyperfoil` make sure you understand what the numbers mean.
 

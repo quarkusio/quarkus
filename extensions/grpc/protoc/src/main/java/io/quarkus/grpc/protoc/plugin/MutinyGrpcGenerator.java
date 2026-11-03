@@ -187,6 +187,9 @@ public class MutinyGrpcGenerator extends Generator {
                 tc.method = rule.getCustom().getKind();
                 tc.path = rule.getCustom().getPath();
                 break;
+            default:
+                log.log(Level.WARNING, "Unsupported or unset HTTP pattern case: transcoding rule will be skipped");
+                break;
         }
         return tc;
     }
@@ -197,10 +200,16 @@ public class MutinyGrpcGenerator extends Generator {
         methodContext.methodName = adaptMethodName(methodProto.getName());
         methodContext.inputType = typeMap.toJavaTypeName(methodProto.getInputType());
         methodContext.outputType = typeMap.toJavaTypeName(methodProto.getOutputType());
-        methodContext.deprecated = methodProto.getOptions() != null && methodProto.getOptions().getDeprecated();
-        if (methodProto.getOptions().hasExtension(AnnotationsProto.http)) {
-            methodContext.transcodingContext = buildTranscodingContext(
-                    methodProto.getOptions().getExtension(AnnotationsProto.http));
+        methodContext.deprecated = methodProto.getOptions().getDeprecated();
+        if (methodProto.getOptions() != null && methodProto.getOptions().hasExtension(AnnotationsProto.http)) {
+            if (methodProto.getClientStreaming() && methodProto.getServerStreaming()) {
+                log.log(Level.WARNING,
+                        "gRPC transcoding does not support bidi streaming; ignoring google.api.http annotation on {0}",
+                        methodProto.getName());
+            } else {
+                methodContext.transcodingContext = buildTranscodingContext(
+                        methodProto.getOptions().getExtension(AnnotationsProto.http));
+            }
         }
         methodContext.isManyInput = methodProto.getClientStreaming();
         methodContext.isManyOutput = methodProto.getServerStreaming();
@@ -464,16 +473,6 @@ public class MutinyGrpcGenerator extends Generator {
         public String methodNameCamelCase() {
             String mn = methodName.replace("_", "");
             return String.valueOf(Character.toLowerCase(mn.charAt(0))) + mn.substring(1);
-        }
-
-        public String cardinality() {
-            if (!isManyInput && !isManyOutput)
-                return "UNARY";
-            if (!isManyInput && isManyOutput)
-                return "SERVER_STREAMING";
-            if (isManyInput && !isManyOutput)
-                return "CLIENT_STREAMING";
-            return "BIDI_STREAMING";
         }
 
         public String methodHeader() {

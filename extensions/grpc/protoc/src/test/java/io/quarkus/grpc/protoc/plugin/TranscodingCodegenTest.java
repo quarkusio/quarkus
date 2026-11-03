@@ -29,10 +29,17 @@ class TranscodingCodegenTest {
                     .build()));
 
     private MutinyGrpcGenerator.MethodContext build(DescriptorProtos.MethodOptions options) {
+        return build(options, false, false);
+    }
+
+    private MutinyGrpcGenerator.MethodContext build(DescriptorProtos.MethodOptions options, boolean clientStreaming,
+            boolean serverStreaming) {
         DescriptorProtos.MethodDescriptorProto.Builder method = DescriptorProtos.MethodDescriptorProto.newBuilder()
                 .setName("GetItem")
                 .setInputType(".test.TestRequest")
-                .setOutputType(".test.TestResponse");
+                .setOutputType(".test.TestResponse")
+                .setClientStreaming(clientStreaming)
+                .setServerStreaming(serverStreaming);
         if (options != null) {
             method.setOptions(options);
         }
@@ -42,6 +49,29 @@ class TranscodingCodegenTest {
     @Test
     void transcodingContextIsNullWhenNoAnnotation() {
         assertThat(build(null).transcodingContext).isNull();
+    }
+
+    @Test
+    void transcodingContextIsNullForBidiStreaming() {
+        DescriptorProtos.MethodOptions options = DescriptorProtos.MethodOptions.newBuilder()
+                .setExtension(AnnotationsProto.http, HttpRule.newBuilder()
+                        .setGet("/v1/items/{item_id}")
+                        .build())
+                .build();
+
+        // bidi streaming must be ignored even when a google.api.http annotation is present
+        assertThat(build(options, true, true).transcodingContext).isNull();
+    }
+
+    @Test
+    void transcodingContextIsSetForServerStreaming() {
+        DescriptorProtos.MethodOptions options = DescriptorProtos.MethodOptions.newBuilder()
+                .setExtension(AnnotationsProto.http, HttpRule.newBuilder()
+                        .setGet("/v1/items/{item_id}")
+                        .build())
+                .build();
+
+        assertThat(build(options, false, true).transcodingContext).isNotNull();
     }
 
     @Test

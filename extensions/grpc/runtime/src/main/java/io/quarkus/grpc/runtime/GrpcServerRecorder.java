@@ -1,7 +1,17 @@
 package io.quarkus.grpc.runtime;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import jakarta.enterprise.inject.Any;
@@ -11,7 +21,10 @@ import jakarta.enterprise.util.TypeLiteral;
 import org.jboss.logging.Logger;
 
 import grpc.health.v1.HealthOuterClass;
-import io.grpc.*;
+import io.grpc.BindableService;
+import io.grpc.ServerInterceptor;
+import io.grpc.ServerInterceptors;
+import io.grpc.ServerServiceDefinition;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.Subclass;
@@ -32,6 +45,7 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.QuarkusErrorHandler;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -57,7 +71,6 @@ public class GrpcServerRecorder {
     private static volatile List<GrpcServiceDefinition> services = Collections.emptyList();
 
     private static final Pattern GRPC_CONTENT_TYPE = Pattern.compile("^application/grpc.*");
-    private HashSet<String> transcodingPaths = new HashSet<>();
     private final RuntimeValue<GrpcConfiguration> runtimeConfig;
 
     public GrpcServerRecorder(final RuntimeValue<GrpcConfiguration> runtimeConfig) {
@@ -117,6 +130,7 @@ public class GrpcServerRecorder {
             GrpcContainer grpcContainer, LaunchMode launchMode, boolean securityPresent,
             Map<Integer, Handler<RoutingContext>> securityHandlers, Set<String> transcodingClasses) {
 
+        HashSet<String> transcodingPaths = new HashSet<>();
         List<? extends Class<?>> transcodingClassesLoaded = transcodingClasses.stream().map(name -> {
             try {
                 return Thread.currentThread().getContextClassLoader().loadClass(name);
@@ -224,7 +238,9 @@ public class GrpcServerRecorder {
                 Route route = router.route().order(e.getKey()).handler(new Handler<RoutingContext>() {
                     @Override
                     public void handle(RoutingContext ctx) {
-                        if (!isGrpc(ctx)) {
+                        // Transcoding requests arrive in plain HTTP, so isGrpc(ctx) will return false.
+                        // We must hence check isGrpcTranscoding to make sure authentication is not skipped
+                        if (!isGrpc(ctx) && !isGrpcTranscoding(ctx, transcodingPaths)) {
                             ctx.next();
                         } else if (isAuthenticationHandler && ctx.get(HttpAuthenticator.class.getName()) != null) {
                             // this IF branch shouldn't be invoked with current implementation
@@ -307,7 +323,22 @@ public class GrpcServerRecorder {
     }
 
     private static boolean isGrpcTranscoding(RoutingContext rc, Set<String> transcodingPaths) {
-        return transcodingPaths.stream().anyMatch(rc.request().uri()::startsWith);
+        String path = HttpSecurityUtils.normalizePath(rc.normalizedPath());
+        return matchesTranscodingPath(path, transcodingPaths);
+    }
+
+    static boolean matchesTranscodingPath(String path, Set<String> transcodingPaths) {
+        return transcodingPaths.stream().anyMatch(prefix -> {
+            if (!path.startsWith(prefix)) {
+                return false;
+            }
+            // The prefix either ends on:
+            // - '/' if it was built from a parameterized URI such as /vi/items/{id};
+            // - An arbitrary character if it wasn't built from a parameterized URI, in which case it is the full URI.
+            // We need to check both
+
+            return prefix.endsWith("/") || path.length() == prefix.length();
+        });
     }
 
     private void initHealthStorage() {
@@ -339,7 +370,6 @@ public class GrpcServerRecorder {
             // TODO - This may force a query to port before port being assigned
             ServerServiceDefinition definition = service.bindService();
             GrpcServiceDefinition def = new GrpcServiceDefinition(service, definition);
-            def.definition.getMethods();
             definitions.add(def);
             results.add(new GrpcServiceAndDefinition(service, def));
         }

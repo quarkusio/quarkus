@@ -175,6 +175,20 @@ You can override this setting with the `quarkus.http.test-timeout` property:
 quarkus.http.test-timeout=10s
 ----
 
+=== Logging of the request and the response when a validation fails
+
+Quarkus configures REST Assured to log the request and the response when a validation fails.
+To log the response, REST Assured reads the complete response body, also when all the validations pass.
+
+A response that never ends, such as a stream of server-sent events, therefore blocks the test.
+The `quarkus.http.test-timeout` timeout stops the test only when the server sends no data for that time.
+To test such an endpoint with REST Assured, disable the logging:
+
+[source,properties]
+----
+quarkus.test.rest-assured.enable-logging-on-failure=false
+----
+
 === Injecting a URI
 
 It is also possible to directly inject the URL into the test which can make is easy to use a different client. This is

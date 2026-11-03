@@ -8,7 +8,7 @@ metadata:
   - "handler"
   guide: "https://quarkus.io/guides/centralized-log-management"
   categories:
-  - "core"
+  - "observability"
   status: "deprecated"
   config:
   - "quarkus.log.handler.gelf."

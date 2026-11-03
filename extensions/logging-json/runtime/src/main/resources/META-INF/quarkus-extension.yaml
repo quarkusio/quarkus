@@ -7,7 +7,7 @@ metadata:
   - "json"
   - "formatter"
   categories:
-  - "core"
+  - "observability"
   status: "preview"
   guide: "https://quarkus.io/guides/logging#json-logging"
   config:

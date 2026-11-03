@@ -406,6 +406,12 @@ public class DevModeCommandLineBuilder {
         args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
         args.add("--add-opens=java.base/java.lang.invoke=ALL-UNNAMED");
         args.add("--add-exports=java.base/jdk.internal.module=ALL-UNNAMED");
+        // aesh, used by the dev mode console, calls restricted java.lang.foreign methods
+        // to set up the native terminal on Windows; unless native access is enabled for
+        // code on the class path, the JVM logs restricted method warnings on every launch
+        if (!jvmOptionsBuilder.contains("enable-native-access")) {
+            args.add("--enable-native-access=ALL-UNNAMED");
+        }
 
         outputDir.mkdirs();
 

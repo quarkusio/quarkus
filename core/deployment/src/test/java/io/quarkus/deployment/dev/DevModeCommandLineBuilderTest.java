@@ -43,7 +43,14 @@ public class DevModeCommandLineBuilderTest {
                 Set.of());
 
         var args = getCliArguments(acmeMagic);
-        assertThat(args).contains("--enable-native-access=ALL-UNNAMED");
+        assertThat(args).containsOnlyOnce("--enable-native-access=ALL-UNNAMED");
+    }
+
+    @Test
+    public void nativeAccessEnabledByDefault() throws Exception {
+        // the dev mode console (aesh) calls restricted java.lang.foreign methods on Windows
+        var args = getCliArguments();
+        assertThat(args).containsOnlyOnce("--enable-native-access=ALL-UNNAMED");
     }
 
     @Test

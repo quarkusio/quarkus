@@ -46,6 +46,7 @@ public class CertificateRegistryImpl implements TlsConfigurationRegistry {
     private volatile Vertx vertx;
 
     private final TlsConfig config;
+    private final Map<String, KeyStoreProvider> serviceKeyStoreProviders;
 
     /**
      * Construct a new instance.
@@ -53,7 +54,19 @@ public class CertificateRegistryImpl implements TlsConfigurationRegistry {
      * @param config the TLS configuration (must not be {@code null})
      */
     public CertificateRegistryImpl(TlsConfig config) {
+        this(config, Map.of());
+    }
+
+    /**
+     * Construct a new instance with key store providers that come from the service graph instead of CDI.
+     * Such a provider exists before the CDI beans that are created at runtime.
+     *
+     * @param config the TLS configuration (must not be {@code null})
+     * @param serviceKeyStoreProviders the providers, by TLS configuration name (must not be {@code null})
+     */
+    public CertificateRegistryImpl(TlsConfig config, Map<String, KeyStoreProvider> serviceKeyStoreProviders) {
         this.config = config;
+        this.serviceKeyStoreProviders = Map.copyOf(serviceKeyStoreProviders);
     }
 
     /**
@@ -104,7 +117,8 @@ public class CertificateRegistryImpl implements TlsConfigurationRegistry {
 
     private void verifyCertificateConfig(TlsBucketConfig config, Vertx vertx, String name) {
         verifySslEngineSupportedInNativeImage(config, name);
-        final TlsConfiguration tlsConfig = verifyCertificateConfigInternal(config, vertx, name);
+        final TlsConfiguration tlsConfig = verifyCertificateConfigInternal(config, vertx, name,
+                serviceKeyStoreProviders.get(name));
         certificates.put(name, tlsConfig);
 
         // Handle reloading if needed
@@ -139,9 +153,23 @@ public class CertificateRegistryImpl implements TlsConfigurationRegistry {
                 Set.of(key));
     }
 
-    private static TlsConfiguration verifyCertificateConfigInternal(TlsBucketConfig config, Vertx vertx, String name) {
+    private static TlsConfiguration verifyCertificateConfigInternal(TlsBucketConfig config, Vertx vertx, String name,
+            KeyStoreProvider serviceKeyStoreProvider) {
         // Verify the key store
-        KeyStoreAndKeyCertOptions ks = getKeyStore(config, vertx, name);
+        KeyStoreAndKeyCertOptions ks;
+        if (serviceKeyStoreProvider != null) {
+            if (config.keyStore().isPresent() && (config.keyStore().get().pem().isPresent()
+                    || config.keyStore().get().p12().isPresent() || config.keyStore().get().jks().isPresent()
+                    || config.keyStore().get().other().isPresent())) {
+                String prefix = TlsConfig.DEFAULT_NAME.equals(name) ? "quarkus.tls." : "quarkus.tls." + name + ".";
+                throw new ConfigurationException("The TLS configuration " + name
+                        + " gets its key store from the Let's Encrypt client, remove the " + prefix
+                        + "key-store.* properties", Set.of(prefix + "key-store"));
+            }
+            ks = serviceKeyStoreProvider.getKeyStore(vertx);
+        } else {
+            ks = getKeyStore(config, vertx, name);
+        }
 
         // Verify the trust store
         TrustStoreAndTrustOptions ts = getTrustStore(config, vertx, name);
@@ -153,7 +181,7 @@ public class CertificateRegistryImpl implements TlsConfigurationRegistry {
             LOGGER.warn("This configuration is INSECURE and must not be used in production");
             ts = new TrustStoreAndTrustOptions(null, TrustAllOptions.INSTANCE);
         }
-        return new VertxCertificateHolder(vertx, name, config, ks, ts);
+        return new VertxCertificateHolder(vertx, name, config, ks, ts, serviceKeyStoreProvider);
     }
 
     public static KeyStoreAndKeyCertOptions getKeyStore(TlsBucketConfig bucketConfig, Vertx vertx, String name) {

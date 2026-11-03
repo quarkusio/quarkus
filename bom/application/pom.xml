@@ -7141,6 +7141,7 @@
                                         </dependency>
                                         <dependency>
                                             <artifact>org.hibernate.accessor:hibernate-accessor</artifact>
+                                            <allowNewer>true</allowNewer>
                                         </dependency>
                                     </dependencies>
                                 </dependencyAlignmentRule>

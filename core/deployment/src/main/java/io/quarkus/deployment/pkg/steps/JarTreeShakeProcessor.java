@@ -9,6 +9,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
@@ -170,6 +171,13 @@ public class JarTreeShakeProcessor {
             BuildProducer<JarTreeShakeRootClassBuildItem> roots) {
         TreeShakeBuildItemRoots.nativeOnly(runtimeInitializedClasses, runtimeReinitializedClasses,
                 nativeImageFeatures, nativeImageConfigs, securityProviders, roots);
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void collectGeneratedNativeImageClassRoots(
+            List<GeneratedNativeImageClassBuildItem> generatedClasses,
+            BuildProducer<JarTreeShakeRootBytecodeBuildItem> rootBytecode) {
+        TreeShakeBuildItemRoots.generatedNativeImageClasses(generatedClasses, rootBytecode);
     }
 
     /**

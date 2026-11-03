@@ -282,6 +282,7 @@ public class TreeShakeIT extends MojoTestBase {
         assertJarNotContains(libDir, "lib-native-config", "org/acme/nativeconfig/UnusedNativeConfig.class");
         assertJarNotContains(libDir, "lib-native-config", "org/acme/nativeconfig/NativeConfigSecurityProvider.class");
         assertJarNotContains(libDir, "lib-native-config", "org/acme/nativeconfig/PredefinedBase.class");
+        assertJarNotContains(libDir, "lib-native-config", "org/acme/nativeconfig/NativeImageClassReference.class");
 
         // GraalVM substitutions only matter when building a native executable
         assertJarContains(libDir, "lib-native-substitution", "org/acme/substitution/UsedTarget.class");
@@ -367,6 +368,8 @@ public class TreeShakeIT extends MojoTestBase {
         assertJarContains(nativeLibDir, "lib-native-config", "org/acme/nativeconfig/NativeConfigSecurityProvider.class");
         // superclass of a predefined class listed in predefined-classes-config.json
         assertJarContains(nativeLibDir, "lib-native-config", "org/acme/nativeconfig/PredefinedBase.class");
+        // referenced from a class an extension generates for native-image only
+        assertJarContains(nativeLibDir, "lib-native-config", "org/acme/nativeconfig/NativeImageClassReference.class");
 
         // substitutions are kept together with their targets, substitutions of JDK classes are always kept
         assertJarContains(nativeLibDir, "lib-native-substitution", "org/acme/substitution/UsedTarget.class");

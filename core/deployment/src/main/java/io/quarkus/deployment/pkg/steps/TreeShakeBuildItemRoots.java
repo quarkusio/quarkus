@@ -3,6 +3,7 @@ package io.quarkus.deployment.pkg.steps;
 import java.util.List;
 
 import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessFieldBuildItem;
@@ -15,6 +16,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeRootBytecodeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeRootClassBuildItem;
 
 /**
@@ -101,6 +103,21 @@ final class TreeShakeBuildItemRoots {
         }
         for (NativeImageSecurityProviderBuildItem item : securityProviders) {
             roots.produce(new JarTreeShakeRootClassBuildItem(item.getSecurityProvider()));
+        }
+    }
+
+    /**
+     * Root bytecode from classes generated only for {@code native-image}, such as GraalVM Features.
+     * They aren't on the build classpath, so the classes they reference are kept by tracing their bytecode.
+     *
+     * @param rootBytecode receives the bytecode of the generated classes
+     */
+    static void generatedNativeImageClasses(List<GeneratedNativeImageClassBuildItem> generatedClasses,
+            BuildProducer<JarTreeShakeRootBytecodeBuildItem> rootBytecode) {
+        for (GeneratedNativeImageClassBuildItem item : generatedClasses) {
+            // the name may be given as a binary name, with '/' separators
+            rootBytecode.produce(
+                    new JarTreeShakeRootBytecodeBuildItem(item.getName().replace('/', '.'), item.getClassData()));
         }
     }
 }

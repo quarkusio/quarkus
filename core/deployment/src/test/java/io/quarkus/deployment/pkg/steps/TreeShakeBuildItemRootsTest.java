@@ -2,12 +2,15 @@ package io.quarkus.deployment.pkg.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessFieldBuildItem;
@@ -55,6 +58,19 @@ class TreeShakeBuildItemRootsTest {
 
         assertThat(roots).containsExactlyInAnyOrder("n.Run", "n.Reinit", "n.Feature", "n.ConfigRun",
                 "n.Provider");
+    }
+
+    @Test
+    void generatedNativeImageClassesAreRootBytecode() {
+        final byte[] slashed = { 1 };
+        final byte[] dotted = { 2 };
+        Map<String, byte[]> rootBytecode = new HashMap<>();
+        TreeShakeBuildItemRoots.generatedNativeImageClasses(
+                List.of(new GeneratedNativeImageClassBuildItem("n/Slashed", slashed),
+                        new GeneratedNativeImageClassBuildItem("n.Dotted", dotted)),
+                item -> rootBytecode.put(item.getClassName(), item.getBytecode()));
+
+        assertThat(rootBytecode).containsOnly(Map.entry("n.Slashed", slashed), Map.entry("n.Dotted", dotted));
     }
 
     @Test

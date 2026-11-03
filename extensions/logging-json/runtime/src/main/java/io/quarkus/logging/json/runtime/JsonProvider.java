@@ -9,6 +9,19 @@ import io.quarkus.logging.json.runtime.JsonFormatter.JsonLogGenerator;
  * Implementations will be called for each log record during JSON formatting, allowing dynamic,
  * per-record injection of custom JSON keys and values.
  * <p>
+ * Arrays can be written by starting one with {@code generator.startArray(key)} and writing the
+ * elements with the keyless {@code add(...)} overloads of
+ * {@link JsonFormatter.JsonLogGenerator}, e.g.:
+ *
+ * <pre>{@code
+ * generator.startArray("tags");
+ * for (String tag : tags) {
+ *     generator.add(tag);
+ * }
+ * generator.endArray();
+ * }</pre>
+ *
+ * <p>
  * Implementations can be registered in two ways:
  * <ul>
  * <li>Via the Java {@link java.util.ServiceLoader} mechanism by creating a

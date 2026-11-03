@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 
+import java.util.Arrays;
 import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -60,7 +61,7 @@ public class FormAuthCookieDomainTestCase {
                 .statusCode(302)
                 .header("location", containsString("/login.html"))
                 .extract();
-        assertThat(getSetCookie(response, LOCATION_COOKIE)).contains("Domain=example.test", "Path=/");
+        assertThat(getSetCookieAttributes(response, LOCATION_COOKIE)).contains("Domain=example.test", "Path=/");
         String location = response.cookie(LOCATION_COOKIE);
 
         response = RestAssured
@@ -76,9 +77,10 @@ public class FormAuthCookieDomainTestCase {
                 .statusCode(302)
                 .header("location", containsString("/admin"))
                 .extract();
-        assertThat(getSetCookie(response, CREDENTIAL_COOKIE)).contains("Domain=example.test", "Path=/")
+        assertThat(getSetCookieAttributes(response, CREDENTIAL_COOKIE)).contains("Domain=example.test", "Path=/")
                 .doesNotContain("Max-Age=0");
-        assertThat(getSetCookie(response, LOCATION_COOKIE)).contains("Max-Age=0", "Domain=example.test", "Path=/");
+        assertThat(getSetCookieAttributes(response, LOCATION_COOKIE)).contains("Max-Age=0", "Domain=example.test",
+                "Path=/");
         String credential = response.cookie(CREDENTIAL_COOKIE);
 
         RestAssured
@@ -102,16 +104,16 @@ public class FormAuthCookieDomainTestCase {
                 .assertThat()
                 .statusCode(200)
                 .extract();
-        assertThat(getSetCookie(response, CREDENTIAL_COOKIE)).startsWith(CREDENTIAL_COOKIE + "=;")
+        assertThat(getSetCookieAttributes(response, CREDENTIAL_COOKIE)).startsWith(CREDENTIAL_COOKIE + "=")
                 .contains("Max-Age=0", "Domain=example.test", "Path=/");
     }
 
-    private static String getSetCookie(ExtractableResponse<Response> response, String cookieName) {
+    private static List<String> getSetCookieAttributes(ExtractableResponse<Response> response, String cookieName) {
         List<String> setCookies = response.headers().getValues("Set-Cookie").stream()
                 .filter(setCookie -> setCookie.startsWith(cookieName + "="))
                 .toList();
         assertThat(setCookies).hasSize(1);
-        return setCookies.get(0);
+        return Arrays.stream(setCookies.get(0).split(";")).map(String::trim).toList();
     }
 
     @ApplicationScoped

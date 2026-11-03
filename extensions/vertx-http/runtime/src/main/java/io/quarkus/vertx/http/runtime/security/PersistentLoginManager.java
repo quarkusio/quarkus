@@ -167,7 +167,8 @@ public class PersistentLoginManager {
         // the same domain and path as the cookie created by the 'save' method, otherwise it is not cleared
         Cookie cookie = Cookie.cookie(cookieName, "")
                 .setMaxAge(0)
-                .setPath(cookiePath);
+                .setPath(cookiePath)
+                .setSecure(ctx.request().isSSL());
         if (cookieDomain != null) {
             cookie.setDomain(cookieDomain);
         }

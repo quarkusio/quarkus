@@ -191,8 +191,6 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
             verifyRedirectBackLocation(exchange.request().absoluteURI(), redirect.getValue());
             redirect.setSecure(exchange.request().isSSL());
             redirect.setSameSite(cookieSameSite);
-            // request cookies have neither path nor domain, but web clients only clear the location cookie
-            // if the expired cookie has the same domain and path as the cookie created by 'storeInitialLocation'
             redirect.setPath(cookiePath);
             if (cookieDomain != null) {
                 redirect.setDomain(cookieDomain);

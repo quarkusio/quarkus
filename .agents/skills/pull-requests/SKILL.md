@@ -62,6 +62,16 @@ it first with the matching template. End the description with
 `Fixes #1234` on its own line. Do not put the issue number in the title.
 Write a reference as a bare `#1234` so GitHub shows its title.
 
+## One concern per pull request
+
+- A pull request fixes one issue or adds one feature. Put an unrelated fix or
+  a clean-up in a separate pull request, even when it is small.
+- Do not open a second pull request with another solution to the same issue.
+  Describe the other solutions in the issue or in the description, and let
+  the reviewers choose.
+- When a pull request needs another one first, say so in the description and
+  link it.
+
 ## Updating a pull request after review
 
 - Rebase on `main` and push with `--force-with-lease`. Never merge `main`

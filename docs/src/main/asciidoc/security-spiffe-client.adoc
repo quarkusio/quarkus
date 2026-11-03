@@ -299,7 +299,7 @@ quarkus.keycloak.devservices.realm-name=quarkus-spiffe
 quarkus.keycloak.devservices.create-realm=false
 ----
 
-Alternatively, if you already have an existing realm, export it to a JSON file and set the SPIFFE identity provider's `trustDomain` to `spiffe://test.quarkus.io` and `bundleEndpoint` to `http://host.testcontainers.internal:18443/bundle`.
+Alternatively, if you already have an existing realm, export it to a JSON file and set the SPIFFE identity provider's `trustDomain` to `spiffe://test.quarkus.io` and `bundleEndpoint` to `\http://host.testcontainers.internal:18443/bundle`.
 In your realm JSON file, add or update the SPIFFE identity provider entry in the `identityProviders` array:
 
 [source,json]

@@ -759,7 +759,7 @@ class NettyProcessor {
                                     m.returnVoid();
                                 }
 
-                                // --- readBitsMaxDirectMemory() -> reads Bits.MAX_MEMORY via reflection ---
+                                // --- readBitsMaxDirectMemory() -> VM.maxDirectMemory(), or Bits.MAX_MEMORY via reflection ---
                                 generateReadBitsMaxDirectMemory(transformer, className);
 
                                 // --- Java 25+ specific transforms ---
@@ -1716,12 +1716,19 @@ class NettyProcessor {
     }
 
     /**
-     * Generates a private static helper method {@code readBitsMaxDirectMemory()} that reads
-     * {@code java.nio.Bits.MAX_MEMORY} via reflection. This is used by the clinit patcher to
-     * replace the {@code BITS_MAX_DIRECT_MEMORY = -1} assignment in the {@code unsafe == null}
-     * branch, so that the value is available even without Unsafe. This avoids the expensive
-     * {@code ManagementFactory.getRuntimeMXBean()} fallback in
-     * {@code PlatformDependent.estimateMaxDirectMemory()}.
+     * Generates a private static helper method {@code readBitsMaxDirectMemory()} that returns the value of
+     * {@code java.nio.Bits.MAX_MEMORY}. This is used by the clinit patcher to replace the
+     * {@code BITS_MAX_DIRECT_MEMORY = -1} assignment in the {@code unsafe == null} branch, so that the value is
+     * available even without Unsafe. This avoids the expensive {@code ManagementFactory.getRuntimeMXBean()} fallback
+     * in {@code PlatformDependent.estimateMaxDirectMemory()}.
+     * <p>
+     * {@code Bits.MAX_MEMORY} is initialized from {@code jdk.internal.misc.VM.maxDirectMemory()}, so the generated
+     * code calls that method directly: the {@code java.base/jdk.internal.misc} package is opened to the application by
+     * the {@code Add-Opens} manifest entry Quarkus generates, and an open package is also exported. The direct call
+     * avoids the reflective {@code Field.get()}, whose first use builds a method handle based field accessor, which
+     * was the most expensive part of the Netty pre-initialization thread. If the package is not accessible (for
+     * instance when the application is started without the manifest options), the method falls back to the reflective
+     * read.
      */
     private static void generateReadBitsMaxDirectMemory(ClassTransformer transformer, String className) {
         MethodDescriptor md = MethodDescriptor.ofMethod(className, "readBitsMaxDirectMemory", long.class);
@@ -1729,6 +1736,13 @@ class NettyProcessor {
 
         AssignableResultHandle result = m.createVariable(long.class);
         m.assign(result, m.load(-1L));
+
+        // try { return jdk.internal.misc.VM.maxDirectMemory(); } catch (Throwable ignored) { }
+        TryBlock directBlock = m.tryBlock();
+        ResultHandle maxDirectMemory = directBlock.invokeStaticMethod(
+                MethodDescriptor.ofMethod("jdk.internal.misc.VM", "maxDirectMemory", long.class));
+        directBlock.returnValue(maxDirectMemory);
+        directBlock.addCatch(Throwable.class);
 
         TryBlock tryBlock = m.tryBlock();
 

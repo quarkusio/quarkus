@@ -1,8 +1,13 @@
 package io.quarkus.qute.runtime;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,9 +21,19 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class QuteRecorder {
 
-    public Supplier<Object> createContext(Map<String, List<String>> variants,
-            Set<String> templateRoots, Map<String, TemplateInfo> templates, List<String> excludePatterns,
-            Map<ParserConfig, Set<String>> nonDefaultParserConfigs) {
+    /**
+     * Create the supplier of the Qute context. The template data is read here, at static init, so that a native
+     * image holds it in the image heap and does not need the resource at run time.
+     *
+     * @param templateRoots the template roots
+     * @param excludePatterns the template path exclude patterns
+     * @return the supplier of the Qute context
+     */
+    public Supplier<Object> createContext(Set<String> templateRoots, List<String> excludePatterns) {
+        QuteContextData data = readData();
+        Map<String, TemplateInfo> templates = data.templates();
+        Map<String, List<String>> variants = data.variants();
+        Map<ParserConfig, Set<String>> nonDefaultParserConfigs = data.nonDefaultParserConfigs();
         return new Supplier<Object>() {
 
             @Override
@@ -82,6 +97,32 @@ public class QuteRecorder {
                 };
             }
         };
+    }
+
+    /**
+     * Read the template data of the application. Only one copy of the resource may be visible, so that a
+     * dependency that contains its own copy cannot replace the data of the application.
+     */
+    private static QuteContextData readData() {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        if (cl == null) {
+            cl = QuteRecorder.class.getClassLoader();
+        }
+        try {
+            List<URL> copies = Collections.list(cl.getResources(QuteContextData.RESOURCE));
+            if (copies.isEmpty()) {
+                throw new IllegalStateException("Qute template data not found: " + QuteContextData.RESOURCE);
+            }
+            if (copies.size() > 1) {
+                throw new IllegalStateException("Only one copy of " + QuteContextData.RESOURCE
+                        + " may be visible, but there are " + copies.size() + ": " + copies);
+            }
+            try (InputStream in = copies.get(0).openStream()) {
+                return QuteContextData.read(in.readAllBytes());
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public void initializeGeneratedClasses(List<String> resolverClasses, List<String> templateGlobalProviderClasses) {

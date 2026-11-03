@@ -567,6 +567,8 @@ public class LibraryService {
 . Replace `DiscountService` with the managed-session implementation:
 +
 --
+The managed session handles updates to loaded entities, so the service can focus on business logic.
+
 [source,java]
 ----
 @ApplicationScoped

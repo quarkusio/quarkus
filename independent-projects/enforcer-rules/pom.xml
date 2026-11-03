@@ -87,6 +87,12 @@
             <version>${aether.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.aether</groupId>
+            <artifactId>aether-util</artifactId>
+            <version>${aether.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

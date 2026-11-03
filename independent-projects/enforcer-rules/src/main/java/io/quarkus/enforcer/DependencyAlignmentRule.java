@@ -18,6 +18,10 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
+import org.eclipse.aether.util.version.GenericVersionScheme;
+import org.eclipse.aether.version.InvalidVersionSpecificationException;
+import org.eclipse.aether.version.Version;
+import org.eclipse.aether.version.VersionScheme;
 
 /**
  * Custom enforcer rule to ensure dependency versions are aligned with a reference artifact.
@@ -97,6 +101,7 @@ public class DependencyAlignmentRule extends AbstractEnforcerRule {
                 repositorySystem, repositorySession, remoteRepositories);
 
         // Check each configured dependency
+        VersionScheme versionScheme = new GenericVersionScheme();
         var errors = new StringBuilder();
         for (var dependency : dependencies) {
             var artifact = dependency.getArtifact();
@@ -120,7 +125,24 @@ public class DependencyAlignmentRule extends AbstractEnforcerRule {
                 continue;
             }
 
-            if (!expectedVersion.equals(actualVersion)) {
+            if (dependency.isAllowNewer()) {
+                try {
+                    Version actual = versionScheme.parseVersion(actualVersion);
+                    Version expected = versionScheme.parseVersion(expectedVersion);
+                    if (actual.compareTo(expected) < 0) {
+                        errors.append("""
+                                  - Version mismatch for '%s':
+                                    Project declares version '%s'
+                                    which is older than the reference artifact's '%s'
+                                """.formatted(artifact, actualVersion, expectedVersion));
+                    } else {
+                        getLog().debug("✓ %s version %s is aligned (>= %s)".formatted(artifact, actualVersion,
+                                expectedVersion));
+                    }
+                } catch (InvalidVersionSpecificationException e) {
+                    errors.append("  - Cannot parse version for '%s': %s\n".formatted(artifact, e.getMessage()));
+                }
+            } else if (!expectedVersion.equals(actualVersion)) {
                 errors.append("""
                           - Version mismatch for '%s':
                             Project declares version '%s'

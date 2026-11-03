@@ -20,6 +20,10 @@ You should consider using it if your application runs in a dynamic environment w
 
 In Quarkus, the `quarkus-load-shedding` extension provides a load shedding mechanism.
 
+Load shedding answers overload with `503 Service Unavailable`: the application as a whole cannot keep up.
+It does not limit how much a single client may ask for.
+A client that exceeds its own allowance is answered with `429 Too Many Requests` by the xref:http-rate-limit-reference.adoc[HTTP rate limit extension], which can be used together with load shedding.
+
 == Use the load shedding extension
 
 To use the load shedding extension, you need to add the `io.quarkus:quarkus-load-shedding` extension to your project:

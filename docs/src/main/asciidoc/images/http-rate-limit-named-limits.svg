@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="440" viewBox="0 0 800 440" role="img" aria-labelledby="title description">
+  <title id="title">Two rules reuse one named quota and keep separate allowances</title>
+  <desc id="description">The standard named limit supplies 100 requests per minute to the orders and search rules. Each rule matches its own paths and counts requests by IP address. IP A and IP B each have an independent allowance in each rule.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#526477"/>
+    </marker>
+  </defs>
+  <rect width="800" height="440" fill="#fff"/>
+  <g font-family="sans-serif" font-size="15" fill="#243746" text-anchor="middle">
+    <rect x="240" y="16" width="320" height="88" rx="8" fill="#f3edff" stroke="#7855a3"/>
+    <text x="400" y="43" font-family="monospace" font-weight="bold">limits.standard</text>
+    <text x="400" y="67">permits=100, window=1m</text>
+    <text x="400" y="89" font-size="13">Quota values only; no request counters</text>
+
+    <g fill="none" stroke="#526477" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arrow)">
+      <path d="M 320 104 L 320 128 L 200 128 L 200 176"/>
+      <path d="M 480 104 L 480 128 L 600 128 L 600 176"/>
+    </g>
+    <text x="100" y="155" font-size="13">Quota values</text>
+    <text x="700" y="155" font-size="13">Quota values</text>
+
+    <rect x="24" y="180" width="352" height="112" rx="8" fill="#edf5ff" stroke="#2a78b8"/>
+    <text x="200" y="205" font-family="monospace" font-weight="bold">rules.orders</text>
+    <text x="200" y="230">Matches requests to /orders/*</text>
+    <text x="200" y="254" font-family="monospace">request-key=ip</text>
+    <text x="200" y="278" font-family="monospace">limit=standard</text>
+
+    <rect x="424" y="180" width="352" height="112" rx="8" fill="#edf5ff" stroke="#2a78b8"/>
+    <text x="600" y="205" font-family="monospace" font-weight="bold">rules.search</text>
+    <text x="600" y="230">Matches requests to /search/*</text>
+    <text x="600" y="254" font-family="monospace">request-key=ip</text>
+    <text x="600" y="278" font-family="monospace">limit=standard</text>
+
+    <g fill="none" stroke="#526477" stroke-width="2" marker-end="url(#arrow)">
+      <path d="M 112 292 L 112 338"/>
+      <path d="M 288 292 L 288 338"/>
+      <path d="M 512 292 L 512 338"/>
+      <path d="M 688 292 L 688 338"/>
+    </g>
+    <g fill="#f4f7f9" stroke="#8595a3">
+      <rect x="24" y="342" width="168" height="64" rx="8"/>
+      <rect x="208" y="342" width="168" height="64" rx="8"/>
+      <rect x="424" y="342" width="168" height="64" rx="8"/>
+      <rect x="608" y="342" width="168" height="64" rx="8"/>
+    </g>
+    <text x="108" y="367">IP A: own allowance</text>
+    <text x="108" y="390">100 requests/min</text>
+    <text x="292" y="367">IP B: own allowance</text>
+    <text x="292" y="390">100 requests/min</text>
+    <text x="508" y="367">IP A: own allowance</text>
+    <text x="508" y="390">100 requests/min</text>
+    <text x="692" y="367">IP B: own allowance</text>
+    <text x="692" y="390">100 requests/min</text>
+    <text x="400" y="431" font-size="13">Each rule and IP address has its own allowance, even though all use the same quota values.</text>
+  </g>
+</svg>

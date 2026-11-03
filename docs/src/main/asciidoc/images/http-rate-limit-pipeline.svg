@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 190" width="860" height="190" font-family="sans-serif" font-size="12">
+<title>Where the rate limit rules run in the processing of a request</title>
+<rect width="860" height="190" fill="#ffffff"/>
+<rect x="10" y="50" width="80" height="50" rx="4" fill="#f6f6f3" stroke="#c3c2b7" stroke-width="1"/>
+<text x="50.0" y="79.0" text-anchor="middle" fill="#222" font-weight="600">request</text>
+<rect x="110" y="50" width="112" height="50" rx="4" fill="#f6f6f3" stroke="#c3c2b7" stroke-width="1"/>
+<text x="166.0" y="79.0" text-anchor="middle" fill="#222" font-weight="600">load shedding</text>
+<line x1="90" y1="75" x2="101.0" y2="75.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="108.0,75.0 99.7,78.5 99.7,71.5" fill="#666"/>
+<rect x="242" y="50" width="142" height="50" rx="4" fill="#e8f1fc" stroke="#2a78d6" stroke-width="1.5"/>
+<text x="313.0" y="72.0" text-anchor="middle" fill="#222" font-weight="600">pre-authentication</text>
+<text x="313.0" y="88.0" text-anchor="middle" fill="#666" font-size="11" font-family="monospace">rules</text>
+<line x1="222" y1="75" x2="233.0" y2="75.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="240.0,75.0 231.7,78.5 231.7,71.5" fill="#666"/>
+<rect x="404" y="50" width="116" height="50" rx="4" fill="#f6f6f3" stroke="#c3c2b7" stroke-width="1"/>
+<text x="462.0" y="79.0" text-anchor="middle" fill="#222" font-weight="600">authentication</text>
+<line x1="384" y1="75" x2="395.0" y2="75.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="402.0,75.0 393.7,78.5 393.7,71.5" fill="#666"/>
+<rect x="540" y="50" width="150" height="50" rx="4" fill="#e8f1fc" stroke="#2a78d6" stroke-width="1.5"/>
+<text x="615.0" y="72.0" text-anchor="middle" fill="#222" font-weight="600">post-authentication</text>
+<text x="615.0" y="88.0" text-anchor="middle" fill="#666" font-size="11" font-family="monospace">rules</text>
+<line x1="520" y1="75" x2="531.0" y2="75.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="538.0,75.0 529.7,78.5 529.7,71.5" fill="#666"/>
+<rect x="710" y="50" width="140" height="50" rx="4" fill="#f6f6f3" stroke="#c3c2b7" stroke-width="1"/>
+<text x="780.0" y="72.0" text-anchor="middle" fill="#222" font-weight="600">permission checks</text>
+<text x="780.0" y="88.0" text-anchor="middle" fill="#666" font-size="11" font-family="monospace">then the endpoint</text>
+<line x1="690" y1="75" x2="701.0" y2="75.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="708.0,75.0 699.7,78.5 699.7,71.5" fill="#666"/>
+<line x1="166.0" y1="100" x2="166.0" y2="129.0" stroke="#d03b3b" stroke-width="1.5"/>
+<polygon points="166.0,136.0 162.5,127.7 169.5,127.7" fill="#d03b3b"/>
+<text x="166.0" y="152" text-anchor="middle" fill="#d03b3b" font-family="monospace">503</text>
+<line x1="313.0" y1="100" x2="313.0" y2="129.0" stroke="#d03b3b" stroke-width="1.5"/>
+<polygon points="313.0,136.0 309.5,127.7 316.5,127.7" fill="#d03b3b"/>
+<text x="313.0" y="152" text-anchor="middle" fill="#d03b3b" font-family="monospace">429</text>
+<line x1="462.0" y1="100" x2="462.0" y2="129.0" stroke="#d03b3b" stroke-width="1.5"/>
+<polygon points="462.0,136.0 458.5,127.7 465.5,127.7" fill="#d03b3b"/>
+<text x="462.0" y="152" text-anchor="middle" fill="#d03b3b" font-family="monospace">401</text>
+<line x1="615.0" y1="100" x2="615.0" y2="129.0" stroke="#d03b3b" stroke-width="1.5"/>
+<polygon points="615.0,136.0 611.5,127.7 618.5,127.7" fill="#d03b3b"/>
+<text x="615.0" y="152" text-anchor="middle" fill="#d03b3b" font-family="monospace">429</text>
+<text x="313.0" y="30" text-anchor="middle" fill="#666" font-size="11">limit by IP address or header</text>
+<text x="615.0" y="30" text-anchor="middle" fill="#666" font-size="11">limit by user</text>
+<text x="10" y="182" text-anchor="start" fill="#666" font-size="11">CORS and host validation run before the pre-authentication rules; a request with wrong credentials stops at authentication.</text>
+</svg>

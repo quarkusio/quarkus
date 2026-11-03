@@ -137,6 +137,15 @@ class NettyProcessor {
     }
 
     @BuildStep
+    public SystemPropertyBuildItem disableNettyJfrEventRegistration() {
+        // Netty 4.2.20+ registers a JFR FlightRecorder listener that strongly references the classloader.
+        // Its prevents the classloader from being garbage collected and causes metaspace OOM in test suites and dev mode.
+        // Quarkus does not use Netty JFR buffer events anyway, so we disable these.
+        // See io.netty.buffer.JfrEventRegistration
+        return new SystemPropertyBuildItem("io.netty.jfr.enabled", "false");
+    }
+
+    @BuildStep
     public SystemPropertyBuildItem ignoreExpensiveClean() {
         // On JDK 25+ without --enable-native-access, Netty's CleanerJava25 (shared arenas) has
         // hasExpensiveClean()=true. Without this flag, unpooled direct buffers fall back to the NOOP

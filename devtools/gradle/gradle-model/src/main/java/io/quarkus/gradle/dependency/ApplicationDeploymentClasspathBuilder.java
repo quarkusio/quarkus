@@ -295,12 +295,14 @@ public class ApplicationDeploymentClasspathBuilder {
         if (!project.getConfigurations().getNames().contains(this.runtimeConfigurationName)) {
             final String baseConfig;
             final boolean disableComponentVariants = isDisableComponentVariants(project);
+            final QuarkusComponentVariants componentVariants;
             if (disableComponentVariants) {
                 baseConfig = ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode);
+                componentVariants = null;
             } else {
                 Property<PlatformSpec> platformSpecProperty = project.getObjects()
                         .property(PlatformSpec.class);
-                QuarkusComponentVariants.addVariants(project, mode,
+                componentVariants = QuarkusComponentVariants.create(project, mode,
                         platformSpecProperty.value(project.provider(this::resolvePlatformSpec)));
                 baseConfig = QuarkusComponentVariants.getConditionalConfigurationName(mode);
             }
@@ -309,6 +311,9 @@ public class ApplicationDeploymentClasspathBuilder {
                 configuration.extendsFrom(project.getConfigurations().getByName(baseConfig));
                 if (!disableComponentVariants) {
                     QuarkusComponentVariants.setConditionalAttributes(configuration, project, mode);
+                    // This configuration is the resolution root used by the application tasks. The metadata rules
+                    // backing its conditional and deployment variants must be registered from its beforeResolve hook.
+                    componentVariants.prepareVariantsBeforeResolve(configuration);
                 }
             });
         }

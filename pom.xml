@@ -84,6 +84,8 @@
         <hibernate-validator.version>9.1.5.Final</hibernate-validator.version>
         <hibernate-search.version>9.0.0.Beta1</hibernate-search.version>
 
+        <smallrye-openssl.version>0.2.3+tcnative-2.0.84.Final</smallrye-openssl.version>
+
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.81.0</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->
                                             <!-- com.google.auth -->

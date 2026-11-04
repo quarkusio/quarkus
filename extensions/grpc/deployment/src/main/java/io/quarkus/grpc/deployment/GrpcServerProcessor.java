@@ -744,11 +744,13 @@ public class GrpcServerProcessor {
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans,
             Capabilities capabilities,
+            GrpcBuildTimeConfig buildTimeConfig,
+            GrpcServerBuildTimeConfig serverBuildTimeConfig,
             List<BindableServiceBuildItem> bindables, BuildProducer<FeatureBuildItem> features) {
         // @GrpcService is a CDI qualifier
         beans.produce(new AdditionalBeanBuildItem(GrpcService.class));
 
-        if (!bindables.isEmpty() || LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+        if (shouldStartServer(serverBuildTimeConfig, buildTimeConfig, bindables)) {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcContainer.class));
 
             // this makes GrpcRequestContextGrpcInterceptor registered as a global gRPC interceptor.
@@ -765,9 +767,25 @@ public class GrpcServerProcessor {
 
             beans.produce(AdditionalBeanBuildItem.unremovableOf(ExceptionInterceptor.class));
             beans.produce(AdditionalBeanBuildItem.unremovableOf(DefaultExceptionHandlerProvider.class));
+        } else if (!serverBuildTimeConfig.enabled()) {
+            log.debug("The gRPC server is explicitly disabled - not starting the gRPC server");
         } else {
             log.debug("Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
         }
+    }
+
+    /**
+     * The gRPC server is only started if it is enabled and if there is at least one gRPC service to expose.
+     * In dev mode, the server can also be started without any services to ease incremental development
+     * (see {@code quarkus.grpc.dev-mode.force-server-start}).
+     */
+    private static boolean shouldStartServer(GrpcServerBuildTimeConfig serverBuildTimeConfig,
+            GrpcBuildTimeConfig buildTimeConfig, List<BindableServiceBuildItem> bindables) {
+        if (!serverBuildTimeConfig.enabled()) {
+            return false;
+        }
+        return !bindables.isEmpty()
+                || (LaunchMode.current() == LaunchMode.DEVELOPMENT && buildTimeConfig.devMode().forceServerStart());
     }
 
     @BuildStep
@@ -880,6 +898,7 @@ public class GrpcServerProcessor {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     ServiceStartBuildItem initializeServer(GrpcServerRecorder recorder,
             GrpcBuildTimeConfig buildTimeConfig,
+            GrpcServerBuildTimeConfig serverBuildTimeConfig,
             ShutdownContextBuildItem shutdown,
             List<BindableServiceBuildItem> bindables,
             List<RecorderBeanInitializedBuildItem> orderEnforcer,
@@ -904,8 +923,7 @@ public class GrpcServerProcessor {
             }
         }
 
-        if (!bindables.isEmpty()
-                || (LaunchMode.current() == LaunchMode.DEVELOPMENT && buildTimeConfig.devMode().forceServerStart())) {
+        if (shouldStartServer(serverBuildTimeConfig, buildTimeConfig, bindables)) {
             //Uses mainrouter when the 'quarkus.http.root-path' is not '/'
             Map<Integer, Handler<RoutingContext>> securityHandlers = null;
             final RuntimeValue<Router> routerRuntimeValue;
@@ -947,7 +965,7 @@ public class GrpcServerProcessor {
             BuildProducer<HealthBuildItem> healthBuildItems,
             BuildProducer<AdditionalBeanBuildItem> beans) {
         boolean healthEnabled = false;
-        if (!bindables.isEmpty()) {
+        if (config.enabled() && !bindables.isEmpty()) {
             healthEnabled = config.mpHealthEnabled();
 
             if (config.grpcHealthEnabled()) {
@@ -994,8 +1012,10 @@ public class GrpcServerProcessor {
     @Record(RUNTIME_INIT)
     @BuildStep
     void initGrpcSecurityInterceptor(List<BindableServiceBuildItem> bindables, Capabilities capabilities,
+            GrpcServerBuildTimeConfig serverBuildTimeConfig,
             GrpcSecurityRecorder recorder, BeanContainerBuildItem beanContainer) {
-        if (capabilities.isPresent(Capability.SECURITY)) {
+        // The recorder requires the GrpcContainer bean, which is only registered when the server is enabled
+        if (serverBuildTimeConfig.enabled() && capabilities.isPresent(Capability.SECURITY)) {
 
             // Grpc service to blocking method
             Map<String, List<String>> blocking = new LinkedHashMap<>();

@@ -71,6 +71,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
@@ -563,7 +564,15 @@ public class KafkaProcessor {
     }
 
     @BuildStep(onlyIf = NativeImageFutureDefault.RunTimeInitializeSecurityProvider.class)
-    RuntimeInitializedPackageBuildItem runtimeInitializedClasses() {
+    RuntimeInitializedPackageBuildItem runtimeInitializedClasses(
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClass) {
+        // These login modules register the Kafka SASL client providers in their static initializers.
+        // When the JDK security providers are initialized at run time, a registration performed at
+        // build time is lost, so initialize these classes at run time to register the providers then.
+        runtimeInitializedClass.produce(new RuntimeInitializedClassBuildItem(
+                "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule"));
+        runtimeInitializedClass.produce(new RuntimeInitializedClassBuildItem(
+                "org.apache.kafka.common.security.scram.ScramLoginModule"));
         return new RuntimeInitializedPackageBuildItem("org.apache.kafka.common.security.ssl");
     }
 

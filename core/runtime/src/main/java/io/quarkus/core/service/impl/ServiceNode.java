@@ -205,7 +205,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
     private final ServiceGraph graph;
 
     /** Direct dependents. Built up during construction, used as-is during lifecycle. */
-    private final ArrayList<ServiceNode> dependents = new ArrayList<>();
+    private final ArrayList<ServiceNode> dependents;
 
     // ═══════════════════════════════════════════════
     // Packed lifecycle state (atomic via PACKED VarHandle)
@@ -301,6 +301,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
         this.action = action;
         this.graph = graph;
         this.dependencies = List.copyOf(dependencies);
+        this.dependents = new ArrayList<>(dependentCount);
         this.packed = pack(S_PENDING, dependencies.size(), dependentCount);
         for (ServiceNode dep : dependencies) {
             dep.addDependent(this);

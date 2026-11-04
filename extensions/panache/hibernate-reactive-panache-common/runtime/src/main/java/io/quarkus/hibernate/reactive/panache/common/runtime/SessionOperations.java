@@ -1,8 +1,6 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
-import static io.quarkus.hibernate.reactive.runtime.session.ReactiveTransactionScopedSession.OPENED_SESSIONS_STATE;
-import static io.quarkus.hibernate.reactive.runtime.session.ReactiveTransactionScopedStatelessSession.OPENED_SESSIONS_STATE_STATELESS;
 import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.SESSION_ON_DEMAND_KEY;
 import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
 
@@ -18,7 +16,6 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.Mutiny.Transaction;
 import org.jboss.logging.Logger;
 
-import io.quarkus.hibernate.reactive.runtime.session.OpenedSessionsState;
 import io.quarkus.hibernate.reactive.runtime.session.ReactiveTransactionScopedSession;
 import io.quarkus.hibernate.reactive.runtime.session.ReactiveTransactionScopedStatelessSession;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
@@ -168,27 +165,26 @@ public final class SessionOperations {
         if (error != null) {
             return error;
         }
-        Optional<OpenedSessionsState.SessionWithKey<Mutiny.Session>> opened = OPENED_SESSIONS_STATE
-                .getOpenedSession(context,
-                        persistenceUnitName);
+        Optional<Mutiny.Session> opened = ReactiveTransactionScopedSession
+                .getExistingSession(context, persistenceUnitName);
         if (opened.isPresent()) {
-            return work.apply(opened.get().session());
+            return work.apply(opened.get());
         } else {
             // The session is opened lazily, when the returned Uni is subscribed, so that each subscription gets its own session
             // and a Uni that is never subscribed has no side effects
             return Uni.createFrom().deferred(() -> {
-                Mutiny.Session session = OPENED_SESSIONS_STATE
+                Mutiny.Session session = ReactiveTransactionScopedSession
                         .createNewSession(persistenceUnitName, context);
                 LOG.debugf("Opening lazy managed session for Persistence Unit '%s'", persistenceUnitName);
                 return work.apply(session);
             }).eventually(
-                    () -> OPENED_SESSIONS_STATE.closeSession(context, persistenceUnitName));
+                    () -> ReactiveTransactionScopedSession.closeSession(context, persistenceUnitName));
         }
     }
 
     private static <T> Uni<T> checkNoStatelessSession(Context context, String persistenceUnitName) {
-        Optional<OpenedSessionsState.SessionWithKey<Mutiny.StatelessSession>> opened = OPENED_SESSIONS_STATE_STATELESS
-                .getOpenedSession(context, persistenceUnitName);
+        Optional<Mutiny.StatelessSession> opened = ReactiveTransactionScopedStatelessSession
+                .getExistingSession(context, persistenceUnitName);
         if (opened.isPresent()) {
             return Uni.createFrom().failure(
                     new IllegalStateException("There is already a stateless session opened for this persistence unit"));
@@ -225,28 +221,26 @@ public final class SessionOperations {
         if (error != null) {
             return error;
         }
-        Optional<OpenedSessionsState.SessionWithKey<Mutiny.StatelessSession>> opened = OPENED_SESSIONS_STATE_STATELESS
-                .getOpenedSession(context, persistenceUnitName);
+        Optional<Mutiny.StatelessSession> opened = ReactiveTransactionScopedStatelessSession
+                .getExistingSession(context, persistenceUnitName);
         if (opened.isPresent()) {
-            return work.apply(opened.get().session());
+            return work.apply(opened.get());
         } else {
             // The session is opened lazily, when the returned Uni is subscribed, so that each subscription gets its own session
             // and a Uni that is never subscribed has no side effects
             return Uni.createFrom().deferred(() -> {
-                Mutiny.StatelessSession session = OPENED_SESSIONS_STATE_STATELESS
-                        .createNewSession(persistenceUnitName,
-                                context);
+                Mutiny.StatelessSession session = ReactiveTransactionScopedStatelessSession
+                        .createNewSession(persistenceUnitName, context);
                 LOG.debugf("Opening lazy stateless session for Persistence Unit '%s'", persistenceUnitName);
                 return work.apply(session);
-            }).eventually(() -> OPENED_SESSIONS_STATE_STATELESS.closeSession(context,
+            }).eventually(() -> ReactiveTransactionScopedStatelessSession.closeSession(context,
                     persistenceUnitName));
         }
     }
 
     private static <T> Uni<T> checkNoManagedSession(Context context, String persistenceUnitName) {
-        Optional<OpenedSessionsState.SessionWithKey<Mutiny.Session>> opened = OPENED_SESSIONS_STATE
-                .getOpenedSession(context,
-                        persistenceUnitName);
+        Optional<Mutiny.Session> opened = ReactiveTransactionScopedSession
+                .getExistingSession(context, persistenceUnitName);
         if (opened.isPresent()) {
             return Uni.createFrom()
                     .failure(new IllegalStateException("There is already a managed session opened for this persistence unit"));
@@ -292,11 +286,10 @@ public final class SessionOperations {
         if (error != null) {
             return error;
         }
-        Optional<OpenedSessionsState.SessionWithKey<Mutiny.Session>> opened = OPENED_SESSIONS_STATE
-                .getOpenedSession(context,
-                        persistenceUnitName);
+        Optional<Mutiny.Session> opened = ReactiveTransactionScopedSession
+                .getExistingSession(context, persistenceUnitName);
         if (opened.isPresent()) {
-            return Uni.createFrom().item(opened.get().session());
+            return Uni.createFrom().item(opened.get());
         } else if (ContextLocals.get(context, SESSION_ON_DEMAND_KEY, null) != null) {
             trackOnDemandSession(context, persistenceUnitName);
             return Uni.createFrom()
@@ -342,10 +335,10 @@ public final class SessionOperations {
         if (error != null) {
             return error;
         }
-        Optional<OpenedSessionsState.SessionWithKey<Mutiny.StatelessSession>> opened = OPENED_SESSIONS_STATE_STATELESS
-                .getOpenedSession(context, persistenceUnitName);
+        Optional<Mutiny.StatelessSession> opened = ReactiveTransactionScopedStatelessSession
+                .getExistingSession(context, persistenceUnitName);
         if (opened.isPresent()) {
-            return Uni.createFrom().item(opened.get().session());
+            return Uni.createFrom().item(opened.get());
         } else if (ContextLocals.get(context, SESSION_ON_DEMAND_KEY, null) != null) {
             trackOnDemandSession(context, persistenceUnitName);
             return Uni.createFrom()
@@ -366,8 +359,7 @@ public final class SessionOperations {
      */
     public static Mutiny.Session getCurrentSession(String persistenceUnitName) {
         Context context = vertxContext();
-        return OPENED_SESSIONS_STATE.getOpenedSession(context, persistenceUnitName)
-                .map(OpenedSessionsState.SessionWithKey::session)
+        return ReactiveTransactionScopedSession.getExistingSession(context, persistenceUnitName)
                 .orElse(null);
     }
 
@@ -376,8 +368,7 @@ public final class SessionOperations {
      */
     public static Mutiny.StatelessSession getCurrentStatelessSession(String persistenceUnitName) {
         Context context = vertxContext();
-        return OPENED_SESSIONS_STATE_STATELESS.getOpenedSession(context, persistenceUnitName)
-                .map(OpenedSessionsState.SessionWithKey::session)
+        return ReactiveTransactionScopedStatelessSession.getExistingSession(context, persistenceUnitName)
                 .orElse(null);
     }
 
@@ -406,8 +397,8 @@ public final class SessionOperations {
     static Uni<Void> closeSession(String persistenceUnitName) {
         LOG.debugf("Closing session for Persistence Unit '%s'", persistenceUnitName);
         Context context = vertxContext();
-        return OPENED_SESSIONS_STATE.closeSession(context, persistenceUnitName)
-                .chain(() -> OPENED_SESSIONS_STATE_STATELESS.closeSession(context,
+        return ReactiveTransactionScopedSession.closeSession(context, persistenceUnitName)
+                .chain(() -> ReactiveTransactionScopedStatelessSession.closeSession(context,
                         persistenceUnitName));
     }
 }

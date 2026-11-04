@@ -1,8 +1,5 @@
 package io.quarkus.hibernate.reactive.runtime;
 
-import static io.quarkus.hibernate.reactive.runtime.session.ReactiveTransactionScopedSession.OPENED_SESSIONS_STATE;
-import static io.quarkus.hibernate.reactive.runtime.session.ReactiveTransactionScopedStatelessSession.OPENED_SESSIONS_STATE_STATELESS;
-
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,8 +38,8 @@ public class HibernateReactiveRecorder {
     public void clearOpenedSessionsStateOnShutdown(ShutdownContext shutdownContext) {
         // Static state can outlive an application restart, so release proxies bound to the old Arc container.
         shutdownContext.addLastShutdownTask(() -> {
-            OPENED_SESSIONS_STATE.clearCaches();
-            OPENED_SESSIONS_STATE_STATELESS.clearCaches();
+            ReactiveTransactionScopedSession.clearCaches();
+            ReactiveTransactionScopedStatelessSession.clearCaches();
         });
     }
 

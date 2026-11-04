@@ -11,6 +11,7 @@ import org.hibernate.reactive.mutiny.delegation.MutinyStatelessSessionDelegator;
 import org.jboss.logging.Logger;
 
 import io.smallrye.common.vertx.ContextLocals;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
@@ -18,7 +19,7 @@ public class ReactiveTransactionScopedStatelessSession extends MutinyStatelessSe
 
     private static final Logger LOG = Logger.getLogger(ReactiveTransactionScopedStatelessSession.class);
 
-    public static final OpenedSessionsState<Mutiny.StatelessSession> OPENED_SESSIONS_STATE_STATELESS = new OpenedSessionsStateStatelessImpl();
+    private static final OpenedSessionsState<Mutiny.StatelessSession> STATE = new OpenedSessionsStateStatelessImpl();
 
     private final String persistenceUnitName;
 
@@ -30,10 +31,9 @@ public class ReactiveTransactionScopedStatelessSession extends MutinyStatelessSe
     public Mutiny.StatelessSession delegate() {
         Context context = Vertx.currentContext();
 
-        Optional<OpenedSessionsState.SessionWithKey<Mutiny.StatelessSession>> openedSession = OPENED_SESSIONS_STATE_STATELESS
-                .getOpenedSession(context, persistenceUnitName);
-        if (openedSession.isPresent()) {
-            return openedSession.get().session();
+        Optional<Mutiny.StatelessSession> existingSession = getExistingSession(context, persistenceUnitName);
+        if (existingSession.isPresent()) {
+            return existingSession.get();
         } else if (ContextLocals.get(TRANSACTIONAL_METHOD_KEY).isEmpty()) {
             throw new IllegalStateException(
                     "No current Mutiny.StatelessSession found"
@@ -50,10 +50,9 @@ public class ReactiveTransactionScopedStatelessSession extends MutinyStatelessSe
      */
     public static Mutiny.StatelessSession getOrOpenStatelessSession(String persistenceUnitName) {
         Context context = Vertx.currentContext();
-        Optional<OpenedSessionsState.SessionWithKey<Mutiny.StatelessSession>> openedSession = OPENED_SESSIONS_STATE_STATELESS
-                .getOpenedSession(context, persistenceUnitName);
-        if (openedSession.isPresent()) {
-            return openedSession.get().session();
+        Optional<Mutiny.StatelessSession> existingSession = getExistingSession(context, persistenceUnitName);
+        if (existingSession.isPresent()) {
+            return existingSession.get();
         } else if (ContextLocals.get(TRANSACTIONAL_METHOD_KEY).isEmpty()
                 && ContextLocals.get(SESSION_ON_DEMAND_KEY).isEmpty()) {
             throw new IllegalStateException(
@@ -65,10 +64,35 @@ public class ReactiveTransactionScopedStatelessSession extends MutinyStatelessSe
         return openStatelessSession(persistenceUnitName);
     }
 
+    public static Optional<Mutiny.StatelessSession> getExistingSession(Context context, String persistenceUnitName) {
+        return STATE.getOpenedSession(context, persistenceUnitName)
+                .map(OpenedSessionsState.SessionWithKey::session);
+    }
+
+    public static Mutiny.StatelessSession createNewSession(String persistenceUnitName, Context context) {
+        return STATE.createNewSession(persistenceUnitName, context);
+    }
+
+    public static Uni<Void> flushSession(Context context, String persistenceUnitName) {
+        return STATE.flushSession(context, persistenceUnitName);
+    }
+
+    public static Uni<Void> closeSession(Context context, String persistenceUnitName) {
+        return STATE.closeSession(context, persistenceUnitName);
+    }
+
+    public static Optional<Mutiny.Transaction> currentTransaction(Context context, String persistenceUnitName) {
+        return STATE.currentTransaction(context, persistenceUnitName);
+    }
+
+    public static void clearCaches() {
+        STATE.clearCaches();
+    }
+
     private static Mutiny.StatelessSession openStatelessSession(String persistenceUnitName) {
         Context context = Vertx.currentContext();
         ContextLocals.put(PERSISTENCE_UNIT_NAME_KEY, persistenceUnitName);
         LOG.debugf("Opening lazy stateless session for Persistence Unit '%s'", persistenceUnitName);
-        return OPENED_SESSIONS_STATE_STATELESS.createNewSession(persistenceUnitName, context);
+        return STATE.createNewSession(persistenceUnitName, context);
     }
 }

@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 :diataxis-type: concept
-:summary: What is post-quantum key exchange and how to enable it in Quarkus using X25519MLKEM768, covering TLS background, Diffie-Hellman, ML-KEM, and a step-by-step guide regardless of JDK version.
+:summary: What is post-quantum key exchange and how Quarkus supports it, covering TLS background, Diffie-Hellman, ML-KEM, Vert.x integration, and JDK compatibility.
 :sectnums:
 :sectnumlevels: 4
 :topics: security, TLS, cryptography, pqc, post-quantum
@@ -81,7 +81,7 @@ The following table summarizes what information is publicly sent on the network 
 
 If the server agrees, the client generates `privKeyC` and `pubKeyC`, and sends only `pubKeyC` to the server. The server then generates `privKeyS` and `pubKeyS`, and sends only `pubKeyS` to the client.
 
-public and private keys are combined so that there exist a function `f` such that `f(p, g, privKeyC, pubKeyS) = f(p, g, privKeyS, pubKeyC) = secret`. In other words, both the client and the server can agree on a private common secret by executing a function `f` requiring their own private key and the public key of their peer.
+Public and private keys are combined so that there exist a function `f` such that `f(p, g, privKeyC, pubKeyS) = f(p, g, privKeyS, pubKeyC) = secret`. In other words, both the client and the server can agree on a private common secret by executing a function `f` requiring their own private key and the public key of their peer.
 
 Once both peers have built `secret` privately, they can use it as a symmetric encryption key.
 
@@ -231,7 +231,6 @@ This was also an opportunity to have proper SSL engine selection in Quarkus, as 
 
 Vert.x already had a way to leverage OpenSSL using link:https://github.com/netty/netty-tcnative[*netty-tcnative*] (`io.netty:netty-tcnative`), a JNI bridge that allows Netty to delegate TLS operations to a native SSL library, bypassing the JDK's built-in SSL implementation.
 
-==== Netty-tcnative
 Netty-tcnative ships in several variants: statically linked (the native library is bundled inside the JAR) and dynamically linked (it links against a native library installed on the host at runtime), each available for OpenSSL, LibreSSL, and BoringSSL.
 
 The static OpenSSL version is too old (1.1.1) and does not support PQC. A dynamic OpenSSL variant also exists, acting as a thin JNI mapping between the `netty-tcnative-classes` Java API and the host OpenSSL library. However, this variant was compiled against OpenSSL 1.x headers. OpenSSL 3.x is not a drop-in replacement: loading the 1.x-compiled `.so` against a 3.x host library causes a runtime crash. Relinking is not sufficient, the C sources must be recompiled against the 3.x headers.
@@ -267,122 +266,96 @@ The following table indicates how PQC is available depending on the JDK version:
 
 Rows listing OpenSSL require OpenSSL 3.5+ and `libapr-1` on the host, and the `netty-tcnative-classes` and `smallrye-openssl` Maven dependencies listed above. Dates follow the link:https://www.java.com/en/jre-jdk-cryptoroadmap.html[Oracle JRE and JDK Cryptographic Roadmap] and may change.
 
-==== Vert.x API
-
-Three options are relevant when setting PQC in Vert.x:
-
-`SSLOptions setKeyExchangeGroups(List<String> keyExchangeGroups)`::
-Added for PQC.
-`SSLOptions setPqcEnforcementPolicy(PqcEnforcementPolicy policy)`::
-Added for PQC.
-`TCPSSLOptions setSslEngineOptions(SslEngineOptions engine)`::
-Already available in Vert.x.
-
-The first option is self-explanatory: the user specifies a list of key exchange groups they want to use for TLS sessions. If the list is not applicable, typically because the SSL engine does not support at least one group of the list, the application crashes and logs an error at startup.
-
-The second option defines how Vert.x will enforce the use of quantum-resistant key exchange groups; it can take three values:
-
-. `RELAXED`: the runtime will not enforce PQ groups.
-. `CLIENT_NEGOTIATED`: the server has to support PQ groups but will accept clients who do not support them and use classical key exchange with them.
-. `STRICT`: the server has to support PQ groups and will reject clients not supporting PQ groups.
-
-Finally, the third option allows users to specify which SSL engine should be used in the application. If omitted, the application defaults to `JdkSSLEngineOptions`. This behavior has been changed as the automatic engine selection has been modified for PQC, as detailed below.
-
-Key exchange groups and PQC enforcement policy work together and are resolved once at startup in `SslEngineUtils.resolveKeyExchangeGroups(List<String> groups, PqcEnforcementPolicy pqcPolicy)` as described by the following table.
-
-[cols="2,2,2,2", options="header"]
-|===
-| `groups` | `STRICT` | `CLIENT_NEGOTIATED` | `RELAXED` / `null`
-
-| `null` / empty
-| *Defaulted* → `PQ_COMPLIANT_GROUPS`
-| *Defaulted* → `DEFAULT_KEY_EXCHANGE_GROUPS`
-| *Passed through* → `null`/empty
-
-| All PQ-compliant
-| *Accepted* → `groups` as-is
-| *Accepted* → `groups` as-is
-| *Passed through* → `groups` as-is
-
-| Mixed (some PQ-compliant)
-| *Overridden* → `PQ_COMPLIANT_GROUPS`
-| *Accepted* → `groups` as-is
-| *Passed through* → `groups` as-is
-
-| None PQ-compliant
-| *Overridden* → `PQ_COMPLIANT_GROUPS`
-| *Augmented* → `PQ_COMPLIANT_GROUPS + groups`
-| *Passed through* → `groups` as-is
-|===
-
-Once groups are resolved according to the policy, SSL engine resolution is performed using `SslContextManager.resolveEngineOptions(SSLEngineOptions engineOptions, boolean useAlpn, PqcEnforcementPolicy pqcPolicy)`. The following table shows how resolution is conducted.
-
-[cols="2,1,3,2", options="header"]
-|===
-| `pqcPolicy` | `engineOptions` | Runtime condition | Outcome
-
-| `STRICT` or `CLIENT_NEGOTIATED`
-| provided
-| engine `isPqcAvailable()` = true
-| *Validated* - provided engine kept
-
-| `STRICT` or `CLIENT_NEGOTIATED`
-| provided
-| engine `isPqcAvailable()` = false
-| *Thrown* - engine lacks PQC support
-
-| `STRICT` or `CLIENT_NEGOTIATED`
-| `null`
-| JDK `isPqcAvailable()` = true
-| *Auto-selected* `JdkSSLEngineOptions`
-
-| `STRICT` or `CLIENT_NEGOTIATED`
-| `null`
-| JDK = false, OpenSSL `isPqcAvailable()` = true
-| *Auto-selected* `OpenSSLEngineOptions`
-
-| `STRICT` or `CLIENT_NEGOTIATED`
-| `null`
-| neither JDK nor OpenSSL support PQC
-| *Thrown* - no PQC-capable engine available
-
-| `RELAXED` / `null`
-| provided
-| -
-| *Accepted* - provided engine kept
-
-| `RELAXED` / `null`
-| `null`
-| -
-| *Accepted* - `JdkSSLEngineOptions` used by default
-|===
-
 [#quarkus-integration]
 === Quarkus integration
 
-Quarkus uses a centralized mechanism for specifying TLS-related properties: the `TlsConfigurationRegistry` class. Properties are declared in the `application.properties` file and are propagated to the underlying Vert.x server or client. The following table shows the equivalence between Vert.x and Quarkus properties.
+Quarkus uses a centralized mechanism for specifying TLS-related properties: the `TlsConfigurationRegistry` class. Properties are declared in `application.properties` and propagated to the underlying TLS stack.
 
-[cols="2,1", options="header"]
+Three properties control post-quantum key exchange:
+
+`quarkus.tls.key-exchange-groups`::
+A comma-separated list of key exchange groups to advertise during the TLS handshake (for example, `X25519MLKEM768`). If the active SSL engine does not support at least one group in the list, the application fails at startup.
+
+`quarkus.tls.pqc-enforcement-policy`::
+Controls how strictly the application requires post-quantum key exchange. Accepts `relaxed`, `client-negotiated`, or `strict`.
+
+`quarkus.tls.ssl-engine`::
+Selects the SSL engine: `jdkssl` or `openssl`. When omitted and `pqc-enforcement-policy` is `client-negotiated` or `strict`, the engine is selected automatically as described below.
+
+==== Key exchange group resolution
+
+`key-exchange-groups` and `pqc-enforcement-policy` interact and are resolved once at startup. The following table shows how `key-exchange-groups` is interpreted depending on the policy.
+
+[cols="2,2,2,2", options="header"]
 |===
-| Vert.x | Quarkus
+| `key-exchange-groups` | `strict` | `client-negotiated` | `relaxed` / not set
 
-| `SSLOptions setKeyExchangeGroups(List<String> keyExchangeGroups)`
-| `key-exchange-groups`
+| not set / empty
+| *Defaulted* → PQC-compliant groups (`X25519MLKEM768`)
+| *Defaulted* → JDK/OpenSSL default groups
+| *Passed through* → not set / empty
 
-| `SSLOptions setPqcEnforcementPolicy(PqcEnforcementPolicy policy)`
-| `pqc-enforcement-policy`
+| All PQC-compliant
+| *Accepted* as-is
+| *Accepted* as-is
+| *Passed through* as-is
 
-| `TCPSSLOptions setSslEngineOptions(SslEngineOptions engine)`
-| `ssl-engine`
+| Mixed (some PQC-compliant)
+| *Overridden* → PQC-compliant groups only
+| *Accepted* as-is
+| *Passed through* as-is
+
+| None PQC-compliant
+| *Overridden* → PQC-compliant groups only
+| *Augmented* → PQC-compliant groups prepended
+| *Passed through* as-is
 |===
 
-The values expected by these Quarkus properties reflect the parameters expected by the Vert.x methods:
+==== SSL engine resolution
 
-* `key-exchange-groups` takes a comma-separated list of key exchange groups.
-* `pqc-enforcement-policy` takes one of three values: `relaxed`, `client-negotiated`, `strict`.
-* `ssl-engine` takes one of two values: `jdkssl` or `openssl`.
+When `pqc-enforcement-policy` is `client-negotiated` or `strict` and `ssl-engine` is not set, Quarkus selects the SSL engine automatically at startup. The following table shows the resolution logic.
 
-Key exchange group resolution as well as engine resolution are performed by Vert.x as indicated in the section above. The same prerequisites as Vert.x apply for using OpenSSL.
+[cols="2,1,3,2", options="header"]
+|===
+| `pqc-enforcement-policy` | `ssl-engine` | Runtime condition | Outcome
+
+| `strict` or `client-negotiated`
+| set
+| engine supports PQC
+| *Validated* - provided engine used
+
+| `strict` or `client-negotiated`
+| set
+| engine does not support PQC
+| *Startup failure* - engine lacks PQC support
+
+| `strict` or `client-negotiated`
+| not set
+| JDK supports PQC
+| *Auto-selected* `jdkssl`
+
+| `strict` or `client-negotiated`
+| not set
+| JDK does not support PQC, OpenSSL supports PQC
+| *Auto-selected* `openssl`
+
+| `strict` or `client-negotiated`
+| not set
+| neither JDK nor OpenSSL support PQC
+| *Startup failure* - no PQC-capable engine available
+
+| `relaxed` / not set
+| set
+| -
+| *Accepted* - provided engine used
+
+| `relaxed` / not set
+| not set
+| -
+| *Default* - `jdkssl` used
+|===
+
+The OpenSSL engine requires OpenSSL 3.5+, `libapr-1`, and the Maven dependencies listed in the requirements above.
 
 ==== JVM mode vs. native mode
 
@@ -417,397 +390,12 @@ The following table summarizes the current state:
 | No
 |===
 
-== Enabling PQC in a Quarkus application
-
-The following walkthrough demonstrates PQC negotiation step by step using the enforcement policy. On JDK 25 (October 2026 Critical Patch Update or later) and JDK 27+, PQC is already active by default; the policy is introduced to show how to guarantee it and reject peers that do not support it.
-
-The walkthrough is based on the Quarkus xref:getting-started.adoc[Getting Started guide].
-
-=== Prerequisites
-
-Depending on your Java version, one of the two setups below is required.
-
-[NOTE]
-====
-The OpenSSL path is JVM-only. Native mode is not supported when relying on `smallrye-openssl` for PQC; use JDK 27+ for native image builds.
-====
-
-[discrete]
-===== Java 17 / 21
-
-* OpenSSL 3.5+ installed on the host machine
-* `libapr-1` installed on the host machine (on UBI-based container images: `microdnf install -y apr`)
-* `netty-tcnative-classes` and `smallrye-openssl` dependencies in `pom.xml`:
-
-[source,xml,subs=attributes+]
-----
-<dependency>
-    <groupId>io.netty</groupId>
-    <artifactId>netty-tcnative-classes</artifactId>
-</dependency>
-<!-- native library, pick the classifier matching your platform -->
-<dependency>
-    <groupId>io.smallrye</groupId>
-    <artifactId>smallrye-openssl</artifactId>
-    <version>{smallrye-openssl-version}</version>
-    <classifier>linux-x86_64</classifier>  <!-- or linux-aarch_64 -->
-</dependency>
-----
-
-[discrete]
-===== Java 25 (October 2026 Critical Patch Update or later) and Java 27+
-
-No additional dependencies required.
-
-=== Step 1: Bootstrap the server
-
-Create a basic Quarkus REST application using the Quarkus CLI or Maven.
-
-[source,bash,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.CLI
-----
-quarkus create app org.acme:pqc-server \
-    --extension='rest'
-cd pqc-server
-----
-
-[source,bash,role="secondary asciidoc-tabs-target-sync-maven",subs=attributes+]
-.Maven
-----
-mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=pqc-server \
-    -Dextensions='rest'
-cd pqc-server
-----
-
-Before enabling PQC, the server must serve HTTPS. Generate a self-signed certificate and keystore:
-
-[source,bash]
-----
-keytool -genkeypair -alias server -keyalg EC -keysize 256 \
-  -storetype PKCS12 -keystore src/main/resources/server-keystore.p12 \
-  -validity 3650 -storepass password \
-  -dname "CN=localhost, OU=Test, O=Test, L=Test, ST=Test, C=US"
-----
-
-Add the following to `src/main/resources/application.properties`:
-
-[source,properties]
-----
-quarkus.http.ssl-port=8443
-quarkus.http.insecure-requests=disabled
-quarkus.tls.key-store.p12.path=server-keystore.p12
-quarkus.tls.key-store.p12.password=password
-----
-
-The `GreetingResource` generated by the scaffold is already a suitable test endpoint:
-
-[source,java]
-----
-@Path("/hello")
-public class GreetingResource {
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String hello() {
-        return "Hello from Quarkus REST";
-    }
-}
-----
-
-=== Step 2: Bootstrap the client
-
-Create a second Quarkus application that will act as the REST client.
-
-[source,bash,role="primary asciidoc-tabs-target-sync-cli-client asciidoc-tabs-target-sync-maven-client"]
-.CLI
-----
-quarkus create app org.acme:pqc-client \
-    --extension='rest-client,rest'
-cd pqc-client
-----
-
-[source,bash,role="secondary asciidoc-tabs-target-sync-maven-client",subs=attributes+]
-.Maven
-----
-mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=pqc-client \
-    -Dextensions='rest-client,rest'
-cd pqc-client
-----
-
-If the client runs on JDK 17 or 21, it needs the same OpenSSL 3.5+, `libapr-1`, and Maven dependencies as the server. PQC key exchange must be supported by the SSL engine on both ends of the handshake:
-
-[source,xml,subs=attributes+]
-----
-<dependency>
-    <groupId>io.netty</groupId>
-    <artifactId>netty-tcnative-classes</artifactId>
-</dependency>
-<!-- native library, pick the classifier matching your platform -->
-<dependency>
-    <groupId>io.smallrye</groupId>
-    <artifactId>smallrye-openssl</artifactId>
-    <version>{smallrye-openssl-version}</version>
-    <classifier>linux-x86_64</classifier>  <!-- or linux-aarch_64 -->
-</dependency>
-----
-
-The scaffold generates a default `GreetingResource`. Delete it and create two new files under `src/main/java/org/acme/`.
-
-`src/main/java/org/acme/GreetingClient.java` - a typed REST client interface that maps to the server endpoint:
-
-[source,java]
-----
-package org.acme;
-
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
-
-@RegisterRestClient(baseUri = "https://localhost:8443")
-public interface GreetingClient {
-    @GET
-    @Path("/hello")
-    @Produces(MediaType.TEXT_PLAIN)
-    String hello();
-}
-----
-
-`src/main/java/org/acme/ClientResource.java` - a REST endpoint that invokes the client and returns the result:
-
-[source,java]
-----
-package org.acme;
-
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
-
-@Path("/client")
-public class ClientResource {
-    @Inject
-    @RestClient
-    GreetingClient greetingClient;
-
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String hello() {
-        return greetingClient.hello();
-    }
-}
-----
-
-Since the server uses a self-signed certificate, export it and import it into the client's truststore so the TLS handshake can succeed:
-
-[source,bash]
-----
-keytool -exportcert -alias server \
-  -keystore ../pqc-server/src/main/resources/server-keystore.p12 \
-  -storetype PKCS12 -storepass password -rfc \
-  -file server.crt
-
-keytool -importcert -alias server -file server.crt \
-  -keystore src/main/resources/client-truststore.p12 \
-  -storetype PKCS12 -storepass password -noprompt
-----
-
-Add the truststore configuration to `src/main/resources/application.properties`:
-
-[source,properties]
-----
-quarkus.http.port=8081
-quarkus.tls.client.trust-store.p12.path=client-truststore.p12
-quarkus.tls.client.trust-store.p12.password=password
-quarkus.rest-client."org.acme.GreetingClient".tls-configuration-name=client
-----
-
-`quarkus.tls.client.*` creates a *named* TLS configuration called `client` in the TLS registry. The `default` name is only registered when the application itself serves HTTPS. Since the client app has no TLS server, `default` does not exist. The REST client then references the named config via `tls-configuration-name`; without that line it sets up its own SSL context independently and ignores the registry entirely.
-
-=== Step 3: Relaxed policy - baseline behavior
-
-With both applications running in their default state, TLS is negotiated using classical key exchange groups. Explicitly set the enforcement policy on the server to `relaxed` to confirm the baseline:
-
-[source,properties]
-----
-# pqc-server/src/main/resources/application.properties
-quarkus.tls.pqc-enforcement-policy=relaxed
-----
-
-Start both applications and trigger the client:
-
-[source,bash]
-----
-# Terminal 1 - server
-cd pqc-server && ./mvnw quarkus:dev
-
-# Terminal 2 - client
-cd pqc-client && ./mvnw quarkus:dev
-
-# Terminal 3 - test
-curl http://localhost:8081/client
-# → Hello from Quarkus REST
-----
-
-The connection succeeds as expected. Under `relaxed`, the server imposes no constraint on the key exchange group negotiated with the client. Classical groups such as X25519 are accepted.
-
-[NOTE]
-====
-On JDK 25 (October 2026 Critical Patch Update or later) and JDK 27+, X25519MLKEM768 is negotiated even without an enforcement policy. A server with no policy will still fall back to classical groups with a client that does not support PQC; `strict` turns that fallback into a hard failure at handshake time. Both `strict` and `client-negotiated` also fail at startup if no PQC-capable engine is available, surfacing misconfiguration early.
-====
-
-=== Step 4: Client-negotiated policy
-
-`client-negotiated` is the recommended first step for a real deployment. The server advertises PQC groups and uses them with clients that support PQC, but falls back to classical key exchange with clients that do not. Existing peers are not disrupted.
-
-Switch the server policy to `client-negotiated`:
-
-[source,properties]
-----
-# pqc-server/src/main/resources/application.properties
-quarkus.tls.pqc-enforcement-policy=client-negotiated
-----
-
-Restart the server, then trigger the client again:
-
-[source,bash]
-----
-curl http://localhost:8081/client
-# → Hello from Quarkus REST
-----
-
-The connection succeeds. A PQC-capable client negotiates X25519MLKEM768; a classical client negotiates a classical group and is still accepted.
-
-=== Step 5: Strict policy - locking out classical peers
-
-[WARNING]
-====
-`strict` rejects any peer that does not advertise PQC groups. On a *server*, this includes older clients, health checks, and load balancers that do not support PQC. On a *client*, this causes connection failures against any server that does not support PQC, including third-party APIs. Only use `strict` when all peers are known to support PQC.
-====
-
-Switch the server policy to `strict`:
-
-[source,properties]
-----
-# pqc-server/src/main/resources/application.properties
-quarkus.tls.pqc-enforcement-policy=strict
-----
-
-Trigger the client again:
-
-[source,bash]
-----
-curl http://localhost:8081/client
-# → HTTP 500 - javax.net.ssl.SSLHandshakeException: ...
-----
-
-The client fails to connect. The server now only accepts connections using PQC-compliant key exchange groups. The default Quarkus client does not advertise PQC groups, so the server rejects it.
-
-Set the same policy on the client side:
-
-[source,properties]
-----
-# pqc-client/src/main/resources/application.properties
-quarkus.tls.client.pqc-enforcement-policy=strict
-----
-
-Trigger the client again:
-
-[source,bash]
-----
-curl http://localhost:8081/client
-# → Hello from Quarkus REST
-----
-
-The connection is restored. Both sides now advertise and negotiate X25519MLKEM768, and the TLS handshake completes using a quantum-resistant key exchange.
-
-A Wireshark capture show that the client offered X25519MLKEM768 (1184 bytes for the ML-KEM-768 encapsulation key plus 32 bytes for X25519, totaling 1216 bytes):
-
-----
-Extension: key_share (len=1222) X25519MLKEM768
-    Type: key_share (51)
-    Length: 1222
-    Key Share extension
-        Client Key Share Length: 1220
-        Key Share Entry: Group: X25519MLKEM768, Key Exchange length: 1216
-            Group: X25519MLKEM768 (4588)
-            Key Exchange Length: 1216
-            Key Exchange [...]: .......
-----
-
-The ServerHello key share confirms the group was selected. The server's share is 1120 bytes (1088 bytes for the ML-KEM-768 ciphertext plus 32 bytes for X25519):
-
-----
-Extension: key_share (len=1124) X25519MLKEM768
-    Type: key_share (51)
-    Length: 1124
-    Key Share extension
-        Key Share Entry: Group: X25519MLKEM768, Key Exchange length: 1120
-            Group: X25519MLKEM768 (4588)
-            Key Exchange Length: 1120
-            Key Exchange [...]: .......
-----
-
-[NOTE]
-====
-To inspect the TLS handshake in detail directly from a Quarkus application, the link:https://github.com/quarkiverse/quarkus-network-capture[Quarkus Network Capture] extension (requires Quarkus 4) captures network traffic without requiring an external tool.
-====
-
-For fine-grained control over which groups are advertised or which engine is used, see the `key-exchange-groups` and `ssl-engine` properties described in the <<quarkus-integration,Quarkus integration>> section above.
-
-== Enabling PQC in mTLS
-
-In mutual TLS, both the client and the server authenticate each other using certificates, in addition to the standard server-only authentication. From a post-quantum perspective, mTLS introduces no additional complexity: the key exchange step is identical to regular TLS and X25519MLKEM768 is negotiated the same way regardless of whether mutual authentication is required.
-
-The `pqc-enforcement-policy`, `key-exchange-groups`, and `ssl-engine` properties apply without modification.
-
-The certificate-based mutual authentication step uses classical signature schemes (RSA or ECDSA) on both sides. As discussed in the introduction, forging a certificate signature requires a quantum computer operating in real time, which is a future concern rather than an immediate one.
-
-Post-quantum signature schemes (such as ML-DSA) exist and are standardized, but migrating certificate authentication is a separate effort outside the scope of this guide.
-
-In practice, enabling PQC in a Quarkus mTLS setup requires only the same configuration changes described above, applied to both client and server.
-
-== Scope of the TLS registry configuration
-
-The `pqc-enforcement-policy`, `key-exchange-groups`, and `ssl-engine` properties, apply to connections managed through the Quarkus TLS registry. In a standard Quarkus application this covers:
-
-* the HTTP server
-* the HTTP client
-* the REST client
-* the Quarkus Mailer
-
-Connections managed outside the TLS registry are not controlled by these properties. On JDK 25 (October 2026 Critical Patch Update or later) and JDK 27+, those connections still advertise X25519MLKEM768 automatically because the JDK SSL engine does so by default. On older JDKs, they negotiate classical groups regardless of any Quarkus configuration.
-
-[NOTE]
-====
-If TLS terminates at an ingress controller or load balancer before reaching the Quarkus application, the enforcement policy has no effect on that hop. In that setup, PQC must be configured at the ingress level. This is a common deployment pattern and the Quarkus configuration described in this guide does not cover it.
-====
-
 == Conclusion
 
-The rise of quantum computers threatens the security of TLS not only in a few years but also today: existing key exchange protocols such as X25519 are prone to harvest-now-decrypt-later attacks. Consequently, new Post-Quantum Cryptography (PQC) standards such as X25519MLKEM768 have been adopted to ensure that communications cannot be collected today and decrypted when a sufficiently capable quantum computer becomes available.
+The rise of quantum computers threatens the security of TLS not only in a few years but also today: existing key exchange protocols such as X25519 are prone to harvest-now-decrypt-later attacks. Consequently, new post-quantum standards such as X25519MLKEM768 have been adopted to ensure that communications cannot be collected today and decrypted when a sufficiently capable quantum computer becomes available.
 
 OpenSSL integrates these new schemes in its version 3.5, and in Java starting with JDK 25 (October 2026 Critical Patch Update) and JDK 27+. The Java team is working to backport the integration to JDK 17 and 21, expected in the first half of 2027 according to the link:https://www.java.com/en/jre-jdk-cryptoroadmap.html[Oracle JRE and JDK Cryptographic Roadmap]; dates may change.
 
 Due to the pressing nature of harvest-now-decrypt-later attacks, Quarkus had to integrate PQC in Java 21 before January 2027. To that end, `netty-tcnative` was used for Vert.x, the underlying engine of Quarkus, to leverage OpenSSL 3.5+ and benefit from PQC.
 
-The API for setting PQC in both Vert.x and Quarkus is centered around three properties:
-
-. `key-exchange-groups` is a user-supplied list of key exchange groups to use in TLS.
-. `pqc-enforcement-policy` defines how the application will handle missing support for PQC: will the application crash or fall back on classical cryptography? It can take three values: `strict`, `client-negotiated`, `relaxed`.
-. `ssl-engine` specifies the SSL engine the application should use: either JdkSSL or OpenSSL.
-
-`pqc-enforcement-policy` is the easiest way to configure PQC:
-
-* `strict`: uses only PQC schemes and crashes the application if none is available. The engine is selected automatically by the runtime.
-* `client-negotiated`: the server must support PQC for clients asking for it, but can fall back on classical cryptography for clients without PQC support. Fails at startup if no PQC-capable engine is available.
-* `relaxed`: no check is performed.
-
-The initial contributions are available in Vert.x 4.5.28+ and Vert.x 5.1.0+, and were integrated in Quarkus 3.39.
 

@@ -22,7 +22,7 @@ import io.vertx.ext.web.Router;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-hybrid-jdkssl-strict-invalid-test", password = "secret", formats = {
         Format.JKS, Format.PKCS12, Format.PEM }))
-@DisabledIf("isJdk27OrLater")
+@DisabledIf("isPqcSupported")
 public class HybridKeyExchangeJdkSslStrictInvalidTest extends AbstractHybridKeyExchangeTest {
 
     @TestHTTPResource(value = "/jdkssl-strict-invalid", tls = true)

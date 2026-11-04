@@ -117,7 +117,10 @@ env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
-  COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation"
+  # Scalpel is only run in the initial build (report mode, on the full reactor): the resulting list of impacted modules
+  # is passed to the test jobs as explicit -pl selections. Scalpel must not run again in these jobs: it would only see
+  # the reactor of the job and not the changes made to modules outside of it (e.g. core/ when building integration-tests/).
+  COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation -Dscalpel.enabled=false"
   NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=6g -Dnative -Dnative.surefire.skip -Dno-descriptor-tests clean install -DskipDocs"
   JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.test.hang-detection-timeout=300"
   # Important: keep these selectors in sync with the grep commands in the calc_run_flags job!
@@ -159,7 +162,7 @@ jobs:
         run: |
           echo -n ${{ github.event.number }} > pull-request-number
       - name: Upload pull request number
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pull-request-number-${{ github.event.number }}
           path: pull-request-number
@@ -212,7 +215,7 @@ jobs:
           echo "Base JDK version: ${BASE_JDK}"
           rm -rf .base-jdk-checkout
       - name: Set up JDK 25
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 25
@@ -323,7 +326,7 @@ jobs:
         run: echo "${{ github.sha }}" > main-last-build-sha.txt
       - name: Upload build SHA artifact
         if: github.event_name == 'schedule' && github.ref_name == 'main' && github.repository == 'quarkusio/quarkus'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: main-last-build-sha
           path: main-last-build-sha.txt
@@ -338,7 +341,6 @@ jobs:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
     outputs:
-      scalpel_args: ${{ steps.get-scalpel-config.outputs.scalpel_args }}
       scalpel_impacted: ${{ steps.get-scalpel-config.outputs.impacted_modules }}
       scalpel_impacted_gav: ${{ steps.get-scalpel-config.outputs.impacted_modules_gav }}
     steps:
@@ -358,7 +360,7 @@ jobs:
       - name: Print disk usage before build
         run: .github/ci-disk-usage.sh
       - name: Set up JDK ${{ needs.configure.outputs.base-jdk-version }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: ${{ needs.configure.outputs.base-jdk-version }}
@@ -425,7 +427,6 @@ jobs:
         run: |
           SCALPEL_IMPACTED_GAV='_all_'
           if [[ "$SCALPEL_DISABLED" == "true" ]] || [[ "$PUSH_BRANCH" =~ ^main|[0-9]+\.[0-9]+$ ]] || [[ "$PULL_REQUEST_HEAD" =~ ^.*backport.*$ ]]; then
-            SCALPEL_ARGS=''
             SCALPEL_IMPACTED='_all_'
           else
             # See also: https://github.com/maveniverse/scalpel#configuration
@@ -453,12 +454,9 @@ jobs:
               SCALPEL_IMPACTED=$(jq -r '.affectedModules[] | select(.category != "UPSTREAM") | .path' target/scalpel-report.json)
               if [ -z "$SCALPEL_IMPACTED" ]; then
                 SCALPEL_IMPACTED='_all_'
-                SCALPEL_ARGS=''
               fi
             else
               SCALPEL_IMPACTED='_all_'
-              # when we impact all modules, we do not need to run Scalpel in further jobs
-              SCALPEL_ARGS=''
             fi
 
             # Extract GAV-formatted impacted modules from the JSON report for quickstarts testing
@@ -469,10 +467,8 @@ jobs:
               fi
             fi
 
-            echo "SCALPEL_ARGS: $SCALPEL_ARGS"
           fi
 
-          echo "scalpel_args=${SCALPEL_ARGS}" >> $GITHUB_OUTPUT
           echo "SCALPEL_IMPACTED: ${SCALPEL_IMPACTED}"
           # three steps to retain linefeeds in output for other jobs
           # (see https://github.com/github/docs/issues/21529 and https://github.com/orgs/community/discussions/26288#discussioncomment-3876281)
@@ -492,7 +488,7 @@ jobs:
             tar -czf m2-content.tgz -C ~ .m2/repository/io/quarkus
           fi
       - name: Upload .m2 content pushed to subsequent jobs
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: m2-content
           path: m2-content.tgz
@@ -507,7 +503,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Initial JDK ${{ needs.configure.outputs.base-jdk-version }} Build"
@@ -529,10 +525,11 @@ jobs:
       otp_native_matrix: ${{ steps.calc-otp-native-matrix.outputs.matrix }}
       run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
       run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
-      run_maven: ${{ steps.calc-run-flags.outputs.run_maven }}
       run_kubernetes: ${{ steps.calc-run-flags.outputs.run_kubernetes }}
       run_quickstarts: ${{ steps.calc-run-flags.outputs.run_quickstarts }}
-      run_tcks: ${{ steps.calc-run-flags.outputs.run_tcks }}
+      # -pl selections for the Maven tests and TCKs jobs, an empty value means the job is skipped
+      maven_modules: ${{ steps.calc-run-flags.outputs.maven_modules }}
+      tcks_modules: ${{ steps.calc-run-flags.outputs.tcks_modules }}
     steps:
       - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -573,28 +570,36 @@ jobs:
       - name: Calculate run flags
         id: calc-run-flags
         run: |
-          run_devtools=true; run_gradle=true; run_maven=true; run_kubernetes=true; run_quickstarts=true; run_tcks=true;
+          run_devtools=true; run_gradle=true; run_kubernetes=true; run_quickstarts=true;
+          # -pl selections for the jobs building a subset of the impacted modules, an empty value means the job is skipped
+          # Scalpel is not run in the jobs (it would not see the changes outside of the reactor of the job) so we need the exact list of modules
+          maven_modules="-pl integration-tests/maven -pl integration-tests/devmode"
+          tcks_modules="-pl tcks -amd"
           if [ -z "${SCALPEL_IMPACTED_MODULES}" ]
           then
-            run_devtools=false; run_gradle=false; run_maven=false; run_kubernetes=false; run_quickstarts=false; run_tcks=false
+            run_devtools=false; run_gradle=false; run_kubernetes=false; run_quickstarts=false
+            maven_modules=''; tcks_modules=''
           elif [ "${SCALPEL_IMPACTED_MODULES}" != '_all_' ]
           then
             # Important: keep -pl ... in actual jobs in sync with the following grep commands!
             # do not use grep -q as it can exit before echo has finished outputting and cause broken pipes
             if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep 'integration-tests/devtools' > /dev/null); then run_devtools=false; fi
             if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep 'integration-tests/gradle' > /dev/null); then run_gradle=false; fi
-            if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -P 'integration-tests/(maven|devmode)' > /dev/null); then run_maven=false; fi
             if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -P 'integration-tests/kubernetes/.*' > /dev/null); then run_kubernetes=false; fi
             if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -Pv '(docs|integration-tests|tcks)/.*' > /dev/null); then run_quickstarts=false; fi
-            if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep 'tcks/.*' > /dev/null); then run_tcks=false; fi
+            maven_modules=$(echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -P '^integration-tests/(maven|devmode)$' | paste -sd, || echo '')
+            if [ -n "${maven_modules}" ]; then maven_modules="-pl ${maven_modules}"; fi
+            tcks_modules=$(echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -P '^tcks(/.*)?$' | paste -sd, || echo '')
+            if [ -n "${tcks_modules}" ]; then tcks_modules="-pl ${tcks_modules}"; fi
           fi
-          echo "run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_kubernetes=${run_kubernetes}, run_quickstarts=${run_quickstarts}, run_tcks=${run_tcks}"
+          echo "run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_kubernetes=${run_kubernetes}, run_quickstarts=${run_quickstarts}"
+          echo "maven_modules=${maven_modules}, tcks_modules=${tcks_modules}"
           echo "run_devtools=${run_devtools}" >> $GITHUB_OUTPUT
           echo "run_gradle=${run_gradle}" >> $GITHUB_OUTPUT
-          echo "run_maven=${run_maven}" >> $GITHUB_OUTPUT
           echo "run_kubernetes=${run_kubernetes}" >> $GITHUB_OUTPUT
           echo "run_quickstarts=${run_quickstarts}" >> $GITHUB_OUTPUT
-          echo "run_tcks=${run_tcks}" >> $GITHUB_OUTPUT
+          echo "maven_modules=${maven_modules}" >> $GITHUB_OUTPUT
+          echo "tcks_modules=${tcks_modules}" >> $GITHUB_OUTPUT
 
   jvm-tests:
     name: ${{ matrix.java.name }}
@@ -626,11 +631,6 @@ jobs:
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # this is important for Scalpel to work
-          fetch-depth: 0
-      - name: Add quarkusio remote for Scalpel
-        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
 
       - name: apt clean
         if: ${{ !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos') }}
@@ -646,7 +646,7 @@ jobs:
 
       - name: Set up JDK ${{ env.JAVA_VERSION_GRADLE }} for Gradle (if needed)
         if: env.JAVA_VERSION_GRADLE != matrix.java.java-version
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version-gradle }}
@@ -660,7 +660,7 @@ jobs:
           echo "GRADLE_JAVA_HOME=${!GRADLE_JAVA_HOME_VARIABLE}" >> "$GITHUB_ENV"
 
       - name: Set up JDK ${{ matrix.java.java-version }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version }}
@@ -675,7 +675,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-content
           path: .
@@ -719,7 +719,7 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: test-reports-${{matrix.java.name}}
@@ -734,7 +734,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-${{ matrix.java.name }}"
@@ -742,7 +742,7 @@ jobs:
             build-reports.zip
           retention-days: 7
       - name: Upload test-produced debug dumps
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         # We need this as soon as there's a matching file
         # -- even in case of success, as some flaky tests won't fail the build
         if: always()
@@ -752,7 +752,7 @@ jobs:
           if-no-files-found: ignore # If we're not currently debugging any test, it's fine.
           retention-days: 28 # We don't get notified for flaky tests, so let's give maintainers time to get back to it
       - name: Upload build.log (if build failed)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-logs-${{ matrix.java.name }}"
@@ -769,7 +769,7 @@ jobs:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.run_maven == 'true'
+    if: needs.calculate-test-jobs.outputs.maven_modules != ''
     timeout-minutes: 160
     strategy:
       fail-fast: false
@@ -801,11 +801,6 @@ jobs:
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # this is important for Scalpel to work
-          fetch-depth: 0
-      - name: Add quarkusio remote for Scalpel
-        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Restore Maven Repository
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
@@ -815,14 +810,14 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-content
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version }}
@@ -838,14 +833,13 @@ jobs:
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
-        # Important: keep -pl ... in sync with "Calculate run flags"!
-        # Despite the pre-calculated run_maven flag, Scalpel has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.initial-build.outputs.scalpel_args }}
+        # the -pl selection is computed in "Calculate run flags" from the impacted modules
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install ${{ needs.calculate-test-jobs.outputs.maven_modules }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: test-reports-maven-java${{matrix.java.name}}
@@ -867,7 +861,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Maven Tests - JDK ${{matrix.java.name}}"
@@ -924,14 +918,14 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-content
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
@@ -964,7 +958,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Gradle Tests - JDK ${{matrix.java.name}}"
@@ -1021,14 +1015,14 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-content
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version }}
@@ -1050,7 +1044,7 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: test-reports-devtools-java${{matrix.java.name}}
@@ -1065,7 +1059,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Devtools Tests - JDK ${{matrix.java.name}}"
@@ -1114,14 +1108,14 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-content
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version }}
@@ -1143,7 +1137,7 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: test-reports-kubernetes-java${{matrix.java.name}}
@@ -1158,7 +1152,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Kubernetes Tests - JDK ${{matrix.java.name}}"
@@ -1203,14 +1197,14 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-content
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
@@ -1274,7 +1268,7 @@ jobs:
               'quarkus-quickstarts/target/build-report.json' \
               'quarkus-quickstarts/LICENSE' \
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Quickstarts - JDK ${{matrix.java.name}}"
@@ -1319,14 +1313,14 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-content
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
@@ -1373,7 +1367,7 @@ jobs:
               'quarkus-platform/target/build-report.json' \
               'quarkus-platform/LICENSE.txt' \
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Platform Tests - JDK ${{matrix.java.name}}"
@@ -1412,14 +1406,14 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-content
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Set up JDK 25
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 25
@@ -1454,7 +1448,7 @@ jobs:
               'integration-tests/**/target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Virtual Thread Support Tests Native - ${{matrix.category}}"
@@ -1466,7 +1460,7 @@ jobs:
     name: MicroProfile TCKs Tests
     needs: [configure, initial-build, calculate-test-jobs]
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.run_tcks == 'true'
+    if: needs.calculate-test-jobs.outputs.tcks_modules != ''
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn, 'microprofile-tcks') || 'ubuntu-latest' }}
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
@@ -1479,15 +1473,10 @@ jobs:
           echo "GE_TAGS=jdk-${{ needs.configure.outputs.base-jdk-version }}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=MicroProfile TCKs Tests" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # this is important for Scalpel to work
-          fetch-depth: 0
-      - name: Add quarkusio remote
-        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK ${{ needs.configure.outputs.base-jdk-version }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: ${{ needs.configure.outputs.base-jdk-version }}
@@ -1500,7 +1489,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-content
           path: .
@@ -1518,9 +1507,8 @@ jobs:
       - name: Verify
         env:
           CAPTURE_BUILD_SCAN: true
-        # Important: keep -pl ... in sync with "Calculate run flags"!
-        # Despite the pre-calculated run_tcks flag, Scalpel has to be re-run here to figure out the exact tcks submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -Dtcks -pl tcks -amd clean install ${{ needs.initial-build.outputs.scalpel_args }}
+        # the -pl selection is computed in "Calculate run flags" from the impacted modules
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -Dtcks ${{ needs.calculate-test-jobs.outputs.tcks_modules }} clean install
       - name: Verify resteasy-reative dependencies
         # note: ideally, this would be run _before_ mvnw but that would required building tcks/resteasy-reactive in two steps
         run: ./tcks/resteasy-reactive/update-dependencies.sh $COMMON_MAVEN_ARGS
@@ -1528,7 +1516,7 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: test-reports-tcks
@@ -1544,7 +1532,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-MicroProfile TCKs Tests"
@@ -1585,7 +1573,7 @@ jobs:
         run: .github/ci-prerequisites.sh
         if: ${{ !startsWith(matrix.os-name, 'windows') }}
       - name: Set up JDK 25
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 25
@@ -1621,7 +1609,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-content
           path: .
@@ -1662,7 +1650,7 @@ jobs:
         if: failure()
         run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: test-reports-native-${{matrix.category}}
@@ -1678,7 +1666,7 @@ jobs:
               'target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Native Tests - ${{matrix.category}}"
@@ -1689,7 +1677,7 @@ jobs:
         shell: bash
         run: find . -name '*runner*.json' | tar czvf build-stats.tgz -T -
       - name: Upload build JSON stats
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-stats-${{matrix.category}}
           path: 'build-stats.tgz'
@@ -1703,7 +1691,7 @@ jobs:
     runs-on: ubuntu-slim
     steps:
       - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           pattern: build-stats-*
           path: .
@@ -1786,14 +1774,14 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-content
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
       - name: Set up JDK ${{ needs.configure.outputs.base-jdk-version }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: ${{ needs.configure.outputs.base-jdk-version }}
@@ -1857,7 +1845,7 @@ jobs:
               'integration-tests/**/target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Oracle Test Pilot ${{matrix.category}} - JDK ${{matrix.java-version}}"
@@ -1896,7 +1884,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-content
           path: .
@@ -1979,7 +1967,7 @@ jobs:
               'integration-tests/**/target/gradle-build-scan-url.txt' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Oracle Test Pilot ${{matrix.category}} - Native"
@@ -2002,7 +1990,7 @@ jobs:
           apt-get update && apt-get install -y git curl unzip openssl libssl-dev libapr1t64 p7zip-full
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up JDK 21
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 21
@@ -2017,7 +2005,7 @@ jobs:
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
       - name: Download previously uploaded .m2 content
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-content
           path: .
@@ -2035,7 +2023,7 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: test-reports-pqc-tests
@@ -2049,7 +2037,7 @@ jobs:
               'target/build-report.json' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-PQC Tests"
@@ -2065,11 +2053,11 @@ jobs:
     if: always() && needs.configure.outputs.run-ci-build == 'true'
     steps:
       - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           path: build-reports-artifacts
       - name: Set up JDK 25
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 25

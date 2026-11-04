@@ -17,8 +17,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
@@ -32,6 +30,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.smallrye.config.Config;
 import io.smallrye.graphql.client.impl.GraphQLClientConfiguration;
 import io.smallrye.graphql.client.impl.GraphQLClientsConfiguration;
 import io.smallrye.graphql.client.model.ClientModels;
@@ -228,7 +227,7 @@ public class SmallRyeGraphQLClientRecorder {
     }
 
     private String getTestingServerUrl() {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         // the client extension doesn't have dependencies on neither the server extension nor quarkus-vertx-http, so guessing
         // is somewhat limited
         return "http://localhost:" + config.getOptionalValue("quarkus.http.test-port", int.class).orElse(8081) + "/graphql";

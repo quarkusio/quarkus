@@ -107,13 +107,28 @@ The algorithm runs in several stages:
                                      ▼
                     ┌───────────────────────────────────┐
                     │  Compute removals, produce JAR    │
+                    └────────────────┬──────────────────┘
+                                     │
+                       modular packaging active?
+                           ╱                ╲
+                         yes                 no ──► done
+                          │
+                          ▼
+                    ┌───────────────────────────────────┐
+                    │  Module-level tree-shaking        │
+                    │  • Remove class-dead modules      │
+                    │  • Clean stale requires/provides  │
+                    │  • Recompute JDK module set       │
                     └───────────────────────────────────┘
 ----
 
+[[root-collection]]
 === Root collection
 
 The analysis starts by collecting root classes — classes that must be preserved regardless of bytecode references.
-Roots include: the application main class, all generated classes, classes registered for reflection or JNI access, service provider implementations, runtime-initialized classes, classes referenced in `META-INF/native-image` configuration files, and classes containing GraalVM substitution annotations (`@TargetClass`, `@Substitute`).
+Roots include the application main class, all generated classes, classes registered for reflection or JNI access (by extensions or in `reflect-config.json` and `jni-config.json` files under `META-INF/native-image`), and service provider implementations.
+
+Building a native executable adds more roots, see <<native-builds>>.
 
 === BFS reachability
 
@@ -128,7 +143,7 @@ ServiceLoader / SPI:: `ServiceLoader.load()` calls where the service interface i
 
 Dynamic class loading:: `Class.forName()`, `ClassLoader.loadClass()`, and `MethodHandles.Lookup.findClass()` calls where the class name is a string constant in the bytecode. For cases where class names are constructed at runtime (e.g., via `StringBuilder` or `invokedynamic` string concatenation), the tree-shaker traces the call chain up to the class whose constructor or static initializer triggers the loading, then executes it in a forked JVM with an isolated class loader to dynamically capture which classes are loaded. This handles libraries like BouncyCastle that build class names from package prefixes and algorithm name arrays.
 
-Reflection, JNI, and service provider registrations:: Classes registered by extensions for reflection (`ReflectiveClassBuildItem`, `ReflectiveFieldBuildItem`, `ReflectiveMethodBuildItem`), JNI runtime access (`JniRuntimeAccessBuildItem`, `JniRuntimeAccessFieldBuildItem`, `JniRuntimeAccessMethodBuildItem`), and service providers (`ServiceProviderBuildItem`) are treated as root classes. Weak reflective registrations are excluded — they are only preserved if bytecode analysis independently reaches them. Conditional registrations (`ReflectiveClassConditionBuildItem`) are evaluated to a fixed point: a conditionally registered class becomes a root only when its condition type is reachable.
+Reflection, JNI, and service provider registrations:: Classes registered by extensions for reflection (`ReflectiveClassBuildItem`, `ReflectiveFieldBuildItem`, `ReflectiveMethodBuildItem`), JNI runtime access (`JniRuntimeAccessBuildItem`, `JniRuntimeAccessFieldBuildItem`, `JniRuntimeAccessMethodBuildItem`), and service providers (`ServiceProviderBuildItem`) are treated as root classes, see <<root-collection>>. Weak reflective registrations are excluded — they are only preserved if bytecode analysis independently reaches them. Conditional registrations (`ReflectiveClassConditionBuildItem`) are evaluated to a fixed point: a conditionally registered class becomes a root only when its condition type is reachable.
 
 String constants:: When a method contains a string constant that exactly matches a fully-qualified dependency class name, that class is marked reachable. Comma- or colon-delimited lists of class names (as used by some frameworks) are also handled by splitting and matching each part.
 
@@ -156,6 +171,58 @@ The chain analysis runs in an incremental fixed-point loop: the reverse caller i
 For example, BouncyCastle's `BouncyCastleProvider` constructor calls `setup()` which calls `loadAlgorithms()` which calls `loadServiceClass()` which calls `ClassUtil.loadClass()`.
 The tree-shaker identifies `BouncyCastleProvider` as the entry point, instantiates it in the recording class loader, and captures all dynamically loaded algorithm classes.
 
+=== Module-level tree-shaking
+
+When a Quarkus modular packaging extension is present (for example, `quarkus-jlink`), tree-shaking also operates at the module level.
+After the class-level analysis determines which classes are reachable, the module tree-shaker evaluates each module in the application's module model:
+
+* A module is *class-dead* if it contains `.class` entries but none of them are in the reachable set. Class-dead modules are removed entirely from the packaged application.
+* A module with no `.class` entries at all (a resource-only JAR) is kept alive — it may provide configuration files, native libraries, or other resources needed at runtime.
+* A module with an empty content tree (no content to contribute) is treated as dead.
+
+After dead modules are removed, surviving modules are cleaned up:
+
+* `requires` directives pointing to removed modules are dropped.
+* Auto-dependency groups whose entries all point to removed modules are dropped.
+* Service provider entries (`provides ... with ...`) whose implementation classes are not in the reachable set are removed.
+* Unreachable classes are removed from the module, while non-class resources (for example, resource bundles) are always kept.
+Packages left with no content are removed from the module descriptor, together with any `add-exports` or `add-opens` of those packages declared by other modules.
+* The set of JDK modules required by the application is recomputed from surviving modules only, which can reduce the size of a `jlink` image.
+
+The module tree-shaker also performs a graph reachability analysis — a BFS from root modules (the application module and boot modules) through the dependency graph.
+Modules that are not reachable from any root but still contain reachable classes are *not* removed, since they may be accessed via reflection, service loading, or from automatic modules without explicit `requires` directives.
+A warning is logged for such modules to help diagnose missing dependency declarations.
+
+[[native-builds]]
+== Native builds
+
+When tree-shaking is enabled for a native build, it applies to the JARs passed to `native-image`, including those produced with `quarkus.native.sources-only=true`.
+`native-image` performs its own reachability analysis and only includes reachable code in the executable, so tree-shaking the JARs is not expected to make the native executable smaller.
+
+In addition to the <<root-collection,roots of all builds>>, the tree-shaker keeps the following classes when building a native executable:
+
+* GraalVM Features: `--features` arguments in `native-image.properties` files and Features registered by extensions. `native-image` loads them.
+* Classes named in class initialization settings: `--initialize-at-run-time` and `--initialize-at-build-time` arguments in `native-image.properties` files, and runtime-initialized classes registered by extensions.
+These settings don't make `native-image` include a class, but the tree-shaker currently keeps the classes they name.
+* Security providers registered by extensions, which `native-image` fails to build without.
+* Classes referenced by classes that extensions generate only for `native-image`, such as generated GraalVM Features.
+* Classes referenced by predefined classes, i.e. classes defined at runtime from bytecode listed in `predefined-classes-config.json`.
+* GraalVM substitutions, as described below.
+
+These roots are not considered for JVM builds, so a JVM build may remove classes that a native build of the same application keeps.
+
+=== GraalVM substitutions
+
+`native-image` discovers substitution classes (`@TargetClass`), in dependencies or in the application, by scanning the class path, and fails if a substitution's target class is missing.
+So a substitution class is kept when its target class is kept, and its target class is kept when the substitution class is kept:
+
+* A substitution whose target is always present (a JDK or GraalVM class, an application class, or a class of an artifact excluded from tree-shaking) is always kept.
+* A substitution whose target is not on the class path at all is removed.
+* Substitutions whose target is computed by a `classNameProvider`, and other classes using GraalVM substitution annotations, are always kept.
+
+For a target given as an `innerClass`, `native-image` looks it up among the declared classes of the enclosing classes.
+So when such a substitution is kept, the enclosing classes and all their member classes are kept loadable: together with their superclasses and interfaces, but without the classes only their code references.
+
 == Excluding artifacts from tree-shaking
 
 Some libraries may not work correctly if classes are removed — for example, libraries that perform self-integrity checks (e.g., BouncyCastle FIPS) or that load classes through mechanisms the tree-shaker cannot detect.
@@ -176,6 +243,7 @@ Extensions can also exclude artifacts programmatically by producing a `JarTreeSh
 * Tree-shaking is not supported for the `mutable-jar` package type, since re-augmentation requires all classes to be present.
 * Only classes from runtime dependencies are candidates for removal. Application classes are never removed.
 * The `classes` level only removes class files. Other resources (such as configuration files, property files, and `META-INF` entries) are preserved. Dependencies from which all classes have been removed are still included in the final JAR, since they may contain resources required at runtime.
+* Module-level tree-shaking (removing entire modules) is only performed when a modular packaging extension (for example, `quarkus-jlink`) is present. Otherwise, only class-level removal applies.
 
 == Troubleshooting
 

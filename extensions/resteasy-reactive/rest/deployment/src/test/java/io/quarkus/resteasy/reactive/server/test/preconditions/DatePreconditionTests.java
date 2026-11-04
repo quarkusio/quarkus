@@ -49,6 +49,24 @@ public class DatePreconditionTests {
                 .statusCode(304);
     }
 
+    @Test
+    public void testInvalidDates() {
+        RestAssured
+                .with()
+                .header("If-Modified-Since", "invalid")
+                .get("/preconditions")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("foo"));
+        RestAssured
+                .with()
+                .header("If-Unmodified-Since", "invalid")
+                .get("/preconditions")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("foo"));
+    }
+
     @Path("/preconditions")
     public static class Resource {
         @GET

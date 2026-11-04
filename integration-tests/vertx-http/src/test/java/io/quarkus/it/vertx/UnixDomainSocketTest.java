@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.config.Config;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.mutiny.core.Vertx;
@@ -35,7 +35,7 @@ public class UnixDomainSocketTest {
 
     @Test
     public void testUnixDomainSocketHttpExchange() {
-        String address = ConfigProvider.getConfig().getValue("quarkus.http.domain-socket", String.class);
+        String address = Config.get().getValue("quarkus.http.domain-socket", String.class);
         SocketAddress socketAddress = SocketAddress.domainSocketAddress(address);
 
         RequestOptions requestOptions = new RequestOptions()

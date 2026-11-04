@@ -163,6 +163,7 @@
                 <module>core</module>
                 <module>agroal</module>
                 <module>avro-reload</module>
+                <module>banner</module>
                 <module>awt</module>
                 <module>awt-packaging</module>
                 <module>no-awt</module>
@@ -237,6 +238,7 @@
                 <module>hibernate-orm-spatial</module>
                 <module>hibernate-orm-vector</module>
                 <module>hibernate-orm-temporal</module>
+                <module>netty</module>
                 <module>vertx-http</module>
                 <module>vertx-http-compressors</module>
                 <module>vertx-native-transport</module>

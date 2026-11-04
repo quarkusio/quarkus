@@ -29,7 +29,6 @@ import jakarta.ws.rs.core.Configuration;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.ParamConverterProvider;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
@@ -59,7 +58,7 @@ import io.quarkus.rest.client.reactive.ParamStyle;
 import io.quarkus.rest.client.reactive.runtime.context.HttpClientOptionsContextResolver;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.tls.TlsConfiguration;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.net.KeyCertOptions;
@@ -516,7 +515,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
                     "The Reactive REST Client needs to be built within the context of a Quarkus application with a valid ArC (CDI) context running.");
         }
 
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         RestClientsConfig restClients = config.getConfigMapping(RestClientsConfig.class);
 
         // support overriding the URI from the override-uri property
@@ -599,7 +598,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
 
         Boolean effectiveTrustAll = trustAll;
         if (effectiveTrustAll == null) {
-            effectiveTrustAll = ConfigProvider.getConfig().getOptionalValue(TLS_TRUST_ALL, Boolean.class)
+            effectiveTrustAll = config.getOptionalValue(TLS_TRUST_ALL, Boolean.class)
                     .orElse(false);
         }
 
@@ -615,7 +614,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
 
         Boolean effectiveDisableDefaultMapper = disableDefaultMapper;
         if (effectiveDisableDefaultMapper == null) {
-            var configOpt = ConfigProvider.getConfig().getOptionalValue(DEFAULT_MAPPER_DISABLED, Boolean.class);
+            var configOpt = config.getOptionalValue(DEFAULT_MAPPER_DISABLED, Boolean.class);
             if (configOpt.isEmpty()) {
                 // need to support the legacy way where the user does .property("microprofile.rest.client.disable.default.mapper", true)
                 var defaultMapperDisabledFromProperty = getConfiguration().getProperty(DEFAULT_MAPPER_DISABLED);
@@ -674,7 +673,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
             }
         }
         if (effectiveEnableCompression == null) {
-            var maybeGlobalEnableCompression = ConfigProvider.getConfig().getOptionalValue(ENABLE_COMPRESSION, Boolean.class);
+            var maybeGlobalEnableCompression = config.getOptionalValue(ENABLE_COMPRESSION, Boolean.class);
             if (maybeGlobalEnableCompression.isPresent()) {
                 effectiveEnableCompression = maybeGlobalEnableCompression.get();
             }

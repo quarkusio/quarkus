@@ -2,8 +2,8 @@ package io.quarkus.hibernate.orm.deployment.persistenceunit;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.configureInitScripts;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.configureProperties;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.configureSqlLoadScript;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.setDialectAndStorageEngine;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.isHibernateValidatorPresent;
 
@@ -43,6 +43,7 @@ import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -62,6 +63,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.dev.spi.DevModeType;
@@ -183,6 +185,7 @@ final class PersistenceUnitProcessor {
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchModeBuildItem launchMode,
+            CurateOutcomeBuildItem curateOutcome,
             Capabilities capabilities,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
@@ -190,6 +193,7 @@ final class PersistenceUnitProcessor {
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
+        WorkspaceModule applicationModule = curateOutcome.getApplicationModel().getApplicationModule();
         for (PersistenceUnitDefinitionBuildItem puDefinition : persistenceUnitDefinitions) {
             if (puDefinition.getParadigm() != ProgrammingParadigm.BLOCKING) {
                 continue;
@@ -200,7 +204,7 @@ final class PersistenceUnitProcessor {
             }
             buildBlockingPersistenceUnitFromConfig(
                     hibernateOrmConfig, puDefinition, model,
-                    jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), capabilities,
+                    jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), applicationModule, capabilities,
                     additionalSqlLoadScriptDefaults,
                     nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     reflectiveMethods, dbKindMetadataBuildItems);
@@ -407,6 +411,7 @@ final class PersistenceUnitProcessor {
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
+            WorkspaceModule applicationModule,
             Capabilities capabilities,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
@@ -468,8 +473,8 @@ final class PersistenceUnitProcessor {
         }
 
         if (additionalPuConfig.isEmpty()) {
-            configureSqlLoadScript(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
-                    additionalSqlLoadScriptDefaults,
+            configureInitScripts(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
+                    applicationModule, additionalSqlLoadScriptDefaults,
                     nativeImageResources, hotDeploymentWatchedFiles, descriptor);
         }
 

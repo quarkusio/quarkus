@@ -805,7 +805,7 @@ You can find instructions on how to quickly set up this application in this guid
 
 This debugging guide has the following requirements:
 
-* JDK 21+ installed with `JAVA_HOME` configured appropriately
+* JDK {jdk-version-earliest}+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * A working container runtime (Docker, podman)
 
@@ -2147,9 +2147,9 @@ such as importing test data into the database.
 [source,properties]
 ----
 quarkus.native.resources.includes=version.txt
-%test.quarkus.native.resources.includes=version.txt,import-dev.sql
+%test.quarkus.native.resources.includes=version.txt,data-dev.sql
 %test.quarkus.hibernate-orm.schema-management.strategy=drop-and-create
-%test.quarkus.hibernate-orm.sql-load-script=import-dev.sql
+%test.quarkus.hibernate-orm.data-management.init-script=data-dev.sql
 ----
 
 With the aforementioned example in your `application.properties`, your Hibernate ORM managed database will be populated with test
@@ -2867,16 +2867,11 @@ See <<gc-logging,Native Memory Management GC Logging section>> for details.
 
 === Can I get a thread dump of a native executable?
 
-Yes, Quarkus sets up a signal handler for the `SIGQUIT` signal (or `SIGBREAK` on windows) that will result in a thread
-dump being printed when receiving the `SIGQUIT/SIGBREAK` signal.
+Yes, Quarkus enables GraalVM's built-in thread dump support by default.
+A thread dump is printed when the native executable receives `SIGQUIT` (or `SIGBREAK` on Windows).
 You may use `kill -SIGQUIT <pid>` to trigger a thread dump.
 
-[NOTE]
-====
-Quarkus uses its own signal handler, to use GraalVM's default signal handler instead you will need to:
-1. Add `-H:+DumpThreadStacksOnSignal` to `quarkus.native.additional-build-args` and rebuild the application.
-2. Set the environment variable `DISABLE_SIGNAL_HANDLERS` before running the app.
-====
+Setting `quarkus.native.monitoring=none` disables this support.
 
 [[heap-dumps]]
 === Can I get a heap dump of a native executable? e.g. if it runs out of memory

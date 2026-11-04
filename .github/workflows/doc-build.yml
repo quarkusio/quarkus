@@ -67,7 +67,7 @@ jobs:
           echo "base-jdk-version=${BASE_JDK}" >> $GITHUB_OUTPUT
           echo "Base JDK version: ${BASE_JDK}"
       - name: Set up JDK ${{ steps.base-jdk.outputs.base-jdk-version }}
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
@@ -106,7 +106,7 @@ jobs:
           fi
 
       - name: Persist documentation
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: documentation
           path: |
@@ -122,7 +122,7 @@ jobs:
               'target/build-report.json' \
               LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Documentation Build"
@@ -153,7 +153,7 @@ jobs:
           path: quarkus-main
 
       - name: Download documentation artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: documentation
           path: documentation-temp
@@ -169,7 +169,7 @@ jobs:
           rm -rf documentation-temp quarkus-main
 
       - name: Set up JDK
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           java-version: '25'
           distribution: temurin
@@ -215,8 +215,9 @@ jobs:
         id: link_scope
         run: |
           # Compare the built guides against what is currently on gh-pages.
-          # version/main/ is excluded: it is overwritten daily by the nightly
-          # sync and will almost always differ regardless of this PR's changes.
+          # Only version/main/ is considered: that's where this PR's synced
+          # docs land, and everything else would just add noise from drift
+          # unrelated to this PR.
           git fetch origin gh-pages --filter=blob:none 2>/dev/null || {
             echo "mode=full" >> $GITHUB_OUTPUT
             echo "Could not fetch gh-pages, running full link check"
@@ -240,13 +241,13 @@ jobs:
             exit 0
           }
 
-          CHANGED=$(echo "$RSYNC_OUT" | grep '\.html$' | grep -v '^version/main/' || true)
+          CHANGED=$(echo "$RSYNC_OUT" | grep '\.html$' | grep '^version/main/' || true)
 
           git worktree remove /tmp/gh-pages 2>/dev/null || true
 
           if [ -z "$CHANGED" ]; then
             echo "mode=skip" >> $GITHUB_OUTPUT
-            echo "No HTML files changed outside version/main/, skipping link crawl"
+            echo "No HTML files changed under version/main/, skipping link crawl"
             exit 0
           fi
 
@@ -278,8 +279,27 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: 1
 
-      - name: Upload build reports
+      # Same changed-page detection as the link crawler uses, so the preview job can report on it:
+      # the first line is the scope (skip, full or partial), the second the comma separated pages
+      - name: Store changed pages
+        env:
+          SCOPE_MODE: ${{ steps.link_scope.outputs.mode }}
+          CHANGED_PATHS: ${{ steps.link_scope.outputs.paths }}
+        run: |
+          if [ -n "$SCOPE_MODE" ]; then
+            printf '%s\n%s\n' "$SCOPE_MODE" "$CHANGED_PATHS" > changed-pages.txt
+          fi
+
+      - name: Upload changed pages
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: changed-pages
+          path: changed-pages.txt
+          retention-days: 1
+          if-no-files-found: ignore
+
+      - name: Upload build reports
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: "build-reports-${{ github.run_attempt }}-Documentation Site Tests"

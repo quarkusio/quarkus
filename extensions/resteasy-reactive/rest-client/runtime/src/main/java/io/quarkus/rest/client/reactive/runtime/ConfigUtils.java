@@ -2,8 +2,9 @@ package io.quarkus.rest.client.reactive.runtime;
 
 import java.util.Optional;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
+
+import io.smallrye.config.Config;
 
 public class ConfigUtils {
 
@@ -53,7 +54,7 @@ public class ConfigUtils {
      */
     public static String doGetConfigValue(String configPropertyName, boolean required, String propertyName) {
         try {
-            Optional<String> optionalValue = ConfigProvider.getConfig().getOptionalValue(propertyName, String.class);
+            Optional<String> optionalValue = Config.get().getOptionalValue(propertyName, String.class);
             if (optionalValue.isEmpty()) {
                 String message = String.format("Failed to find value for config property %s in application configuration. "
                         + "Please provide the value for the property, e.g. by adding %s=<desired-value> to your application.properties",

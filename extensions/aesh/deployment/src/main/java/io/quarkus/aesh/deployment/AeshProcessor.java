@@ -20,7 +20,6 @@ import org.jboss.jandex.Type;
 import io.quarkus.aesh.runtime.AeshCommandMetadata;
 import io.quarkus.aesh.runtime.AeshContext;
 import io.quarkus.aesh.runtime.AeshMode;
-import io.quarkus.aesh.runtime.AeshRecorder;
 import io.quarkus.aesh.runtime.AeshRemoteConnectionHandler;
 import io.quarkus.aesh.runtime.AeshRunner;
 import io.quarkus.aesh.runtime.CliRunner;
@@ -33,11 +32,11 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -362,31 +361,31 @@ class AeshProcessor {
      * that is available for injection at runtime.
      */
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void recordAeshMetadata(AeshRecorder recorder,
+    void registerAeshContext(ServiceRegistrar serviceRegistrar,
             AeshModeBuildItem mode,
             List<AeshCommandBuildItem> commands,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         List<AeshCommandMetadata> metadata = new ArrayList<>();
         for (AeshCommandBuildItem cmd : commands) {
-            AeshCommandMetadata m = new AeshCommandMetadata();
-            m.setClassName(cmd.getClassName());
-            m.setCommandName(cmd.getCommandName());
-            m.setDescription(cmd.getDescription());
-            m.setGroupCommand(cmd.isGroupCommand());
-            m.setSubCommandClassNames(cmd.getSubCommandClassNames());
-            metadata.add(m);
+            metadata.add(new AeshCommandMetadata(cmd.getClassName(), cmd.getCommandName(), cmd.getDescription(),
+                    cmd.isGroupCommand(), cmd.getSubCommandClassNames()));
         }
+        List<AeshCommandMetadata> immutableMetadata = List.copyOf(metadata);
+        AeshMode resolvedMode = mode.getResolvedMode();
 
         // Detect top command for runtime mode
         String topCommandClassName = null;
-        if (mode.getResolvedMode() == AeshMode.runtime) {
+        if (resolvedMode == AeshMode.runtime) {
             topCommandClassName = detectTopCommand(commands);
         }
+        String topCommand = topCommandClassName;
+
+        serviceRegistrar.forService(AeshContext.class)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> AeshContext.of(immutableMetadata, resolvedMode, topCommand));
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(AeshContext.class)
-                .setRuntimeInit()
-                .supplier(recorder.createContext(metadata, mode.getResolvedMode().name(), topCommandClassName))
+                .serviceValue(AeshContext.class)
                 .done());
     }
 

@@ -306,7 +306,7 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 21+ installed with `JAVA_HOME` configured appropriately
+* JDK {jdk-version-earliest}+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.9.3+
 * Docker
 * link:{https://quarkus.io/guides/building-native-image}[GraalVM installed] if you want to run in native mode

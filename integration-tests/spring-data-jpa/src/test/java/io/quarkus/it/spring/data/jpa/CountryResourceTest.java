@@ -79,10 +79,8 @@ public class CountryResourceTest {
                 .statusCode(200)
                 .body(containsString("Greece"));
 
-        // Jackson 3 no longer wraps exceptions from property getters in JacksonException,
-        // so EntityNotFoundException propagates as a 500 instead of being mapped to 400
         when().get("/country/getOne/100").then()
-                .statusCode(500);
+                .statusCode(400);
     }
 
     @Test

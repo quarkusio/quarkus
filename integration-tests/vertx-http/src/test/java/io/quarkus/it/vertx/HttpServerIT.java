@@ -3,11 +3,11 @@ package io.quarkus.it.vertx;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.smallrye.config.Config;
 
 @QuarkusIntegrationTest
 public class HttpServerIT extends HttpServerTest {
@@ -16,7 +16,7 @@ public class HttpServerIT extends HttpServerTest {
 
     @BeforeAll
     static void configAvailableInBeforeAll() {
-        beforeAllPort = ConfigProvider.getConfig().getValue("quarkus.http.port", Integer.class);
+        beforeAllPort = Config.get().getValue("quarkus.http.port", Integer.class);
         assertTrue(beforeAllPort > 0);
     }
 

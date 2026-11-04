@@ -59,6 +59,7 @@ endif::[]
 :hibernate-validator-version-major-minor: ${hibernate-validator.majorVersion}.${hibernate-validator.minorVersion}
 :jakarta-persistence-version-major-minor: ${jakarta-persistence.majorVersion}.${jakarta-persistence.minorVersion}
 :jakarta-data-version-major-minor: ${jakarta-data.majorVersion}.${jakarta-data.minorVersion}
+:smallrye-fault-tolerance-version: ${smallrye-fault-tolerance.version}
 // .
 :quarkus-home-url: ${quarkus-home-url}
 :quarkus-org-url: https://github.com/quarkusio
@@ -86,9 +87,10 @@ endif::[]
 :hibernate-orm-dialect-docs-url: https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/dialect/dialect.html
 :hibernate-search-docs-url: https://docs.hibernate.org/search/{hibernate-search-version-major-minor}/reference/en-US/html_single/
 :hibernate-validator-docs-url: https://docs.hibernate.org/validator/{hibernate-validator-version-major-minor}/reference/en-US/html_single/
-:jakarta-persistence-spec-url: https://jakarta.ee/specifications/persistence/{jakarta-persistence-version-major-minor}/jakarta-persistence-spec-{jakarta-persistence-version-major-minor}
+// Jakarta Persistence 4.0 currently publishes the specification under a milestone filename.
+:jakarta-persistence-spec-url: https://jakarta.ee/specifications/persistence/{jakarta-persistence-version-major-minor}/jakarta-persistence-spec-{jakarta-persistence-version-major-minor}-M4.html
 :jakarta-persistence-javadocs-url: https://jakarta.ee/specifications/persistence/{jakarta-persistence-version-major-minor}/apidocs/jakarta.persistence/
-:jakarta-data-spec-url: https://jakarta.ee/specifications/data/{jakarta-data-version-major-minor}/jakarta-data-{jakarta-data-version-major-minor}
+:jakarta-data-spec-url: https://jakarta.ee/specifications/data/{jakarta-data-version-major-minor}/jakarta-data-{jakarta-data-version-major-minor}.html
 // .
 :amazon-services-guide: https://docs.quarkiverse.io/quarkus-amazon-services/dev/index.html
 :config-consul-guide: https://docs.quarkiverse.io/quarkus-config-extensions/dev/consul.html
@@ -102,14 +104,12 @@ endif::[]
 :create-app-group-id: org.acme
 :create-cli-group-id: {create-app-group-id}
 // Attributes required for single-sourcing to downstream.
-:jdk-version-earliest: 17
-:jdk-version-other: 21
-:jdk-version-latest: 25
-:jdk-version-all: 17, 21, or 25
+:jdk-version-earliest: ${minimum-java-version}
+:jdk-version-latest: ${recommended-java-version}
+// jdk-version-all lists every supported version by hand: the two build properties cannot name a third one.
+:jdk-version-all: 21 or 25
 :openshift-long: OpenShift
 :openshift: OpenShift
-:name-image-ubi9-open-jdk-17: registry.access.redhat.com/ubi9/openjdk-17
-:name-image-ubi9-open-jdk-17-short: ubi9/openjdk-17
 :name-image-ubi10-open-jdk-21: registry.access.redhat.com/ubi10/openjdk-21
 :name-image-ubi10-open-jdk-21-short: ubi10/openjdk-21
 :name-image-ubi10-open-jdk-25: registry.access.redhat.com/ubi10/openjdk-25

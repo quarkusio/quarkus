@@ -74,13 +74,13 @@ import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ScopeInfo;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -90,7 +90,6 @@ import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -233,10 +232,11 @@ class RestClientReactiveProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void setupAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            RestClientRecorder restClientRecorder) {
-        restClientRecorder.setRestClientBuilderResolver();
+            ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar.forService("io.quarkus.rest-client.builder-resolver")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> RestClientRecorder.setRestClientBuilderResolver());
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
         additionalBeans.produce(new AdditionalBeanBuildItem(CertificateUpdateEventListener.class));
     }
@@ -651,7 +651,6 @@ class RestClientReactiveProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void addRestClientBeans(
             Capabilities capabilities,
             CombinedIndexBuildItem combinedIndexBuildItem,
@@ -661,8 +660,7 @@ class RestClientReactiveProcessor {
             List<RestClientAnnotationsTransformerBuildItem> restClientAnnotationsTransformerBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             LaunchModeBuildItem launchMode,
-            RestClientRecorder recorder,
-            ShutdownContextBuildItem shutdown) {
+            ServiceRegistrar serviceRegistrar) {
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
@@ -709,6 +707,12 @@ class RestClientReactiveProcessor {
 
             ClassDesc interfaceClassDesc = classDescOf(jaxrsInterface);
             ClassDesc wrapperBaseClassDesc = ClassDesc.of(RestClientReactiveCDIWrapperBase.class.getName());
+
+            // If the interface declares type parameters, the wrapper must use erased signatures
+            // to avoid generating methods with type variable references (e.g., <T>) that the
+            // wrapper class itself does not declare, which would cause ClassMate/Hibernate
+            // Validator to fail when resolving generic parameter types.
+            boolean interfaceHasTypeParameters = !jaxrsInterface.typeParameters().isEmpty();
 
             Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeans));
             gizmo.class_(wrapperClassName, cc -> {
@@ -768,7 +772,12 @@ class RestClientReactiveProcessor {
                     // }
                     cc.method(method.name(), mc -> {
                         mc.public_();
-                        mc.returning(genericTypeOf(method.returnType()));
+                        // Use erased signatures if the interface has type parameters
+                        if (interfaceHasTypeParameters) {
+                            mc.returning(classDescOf(method.returnType()));
+                        } else {
+                            mc.returning(genericTypeOf(method.returnType()));
+                        }
 
                         // Collect parameter annotations grouped by position
                         Map<Short, List<AnnotationInstance>> paramAnnotations = new HashMap<>();
@@ -786,7 +795,12 @@ class RestClientReactiveProcessor {
                             List<AnnotationInstance> annotations = paramAnnotations.get(i);
                             final IndexView indexView = index;
                             params.add(mc.parameter(param.nameOrDefault(), pc -> {
-                                pc.setType(genericTypeOf(param.type(), indexView));
+                                // Use erased signatures if the interface has type parameters
+                                if (interfaceHasTypeParameters) {
+                                    pc.setType(classDescOf(param.type()));
+                                } else {
+                                    pc.setType(genericTypeOf(param.type(), indexView));
+                                }
                                 if (annotations != null) {
                                     for (AnnotationInstance annotation : annotations) {
                                         addAnnotation(pc, annotation, indexView);
@@ -852,8 +866,6 @@ class RestClientReactiveProcessor {
             }
         }
 
-        recorder.setBlockingClassNames(blockingClassNames);
-
         Set<String> interfacesWithUrlParam = new HashSet<>();
         for (AnnotationInstance urlAnnotation : index.getAnnotations(URL)) {
             if (urlAnnotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
@@ -861,13 +873,21 @@ class RestClientReactiveProcessor {
                         urlAnnotation.target().asMethodParameter().method().declaringClass().name().toString());
             }
         }
-        recorder.setInterfacesWithUrlParam(interfacesWithUrlParam);
 
-        if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
-            recorder.setConfigKeys(configKeys);
-        }
-
-        recorder.cleanUp(shutdown);
+        Set<String> blockingClasses = Set.copyOf(blockingClassNames);
+        Set<String> urlParamInterfaces = Set.copyOf(interfacesWithUrlParam);
+        boolean devMode = launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT;
+        Map<String, String> clientConfigKeys = devMode ? Map.copyOf(configKeys) : Map.of();
+        serviceRegistrar.forService("io.quarkus.rest-client.setup")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> {
+                    RestClientRecorder.setBlockingClassNames(blockingClasses);
+                    RestClientRecorder.setInterfacesWithUrlParam(urlParamInterfaces);
+                    if (devMode) {
+                        RestClientRecorder.setConfigKeys(clientConfigKeys);
+                    }
+                    ctx.onStop(() -> RestClientRecorder.cleanUp());
+                });
     }
 
     /**

@@ -2,9 +2,8 @@ package io.quarkus.oidc.runtime.dev.ui;
 
 import java.util.List;
 
-import org.eclipse.microprofile.config.Config;
-
 import io.quarkus.oidc.runtime.OidcConfigPropertySupplier;
+import io.smallrye.config.Config;
 
 public class OidcDevUiRuntimePropertiesDTO {
     private static final String CONFIG_PREFIX = "quarkus.oidc.";

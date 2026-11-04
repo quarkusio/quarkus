@@ -10,6 +10,29 @@ public class GetterAccessorsContainer {
 
     private final Map<String, Map<String, GetterAccessor>> getterAccessors = new HashMap<>();
 
+    /**
+     * Creates a container from the accessor class names, mapped by entity type and then by field name.
+     */
+    public static GetterAccessorsContainer of(Map<String, Map<String, String>> accessorClassNames) {
+        GetterAccessorsContainer container = new GetterAccessorsContainer();
+        for (Map.Entry<String, Map<String, String>> byClass : accessorClassNames.entrySet()) {
+            for (Map.Entry<String, String> byField : byClass.getValue().entrySet()) {
+                String accessorName = byField.getValue();
+                try {
+                    GetterAccessor accessor = (GetterAccessor) Thread.currentThread()
+                            .getContextClassLoader()
+                            .loadClass(accessorName)
+                            .getDeclaredConstructor()
+                            .newInstance();
+                    container.put(byClass.getKey(), byField.getKey(), accessor);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to initialize " + accessorName + ": " + e.getMessage());
+                }
+            }
+        }
+        return container;
+    }
+
     public GetterAccessor get(String className, String fieldName) {
         return getterAccessors.get(className).get(fieldName);
     }

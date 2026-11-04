@@ -17,7 +17,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that the {@link AeshContext} synthetic bean is produced correctly by the
- * {@link io.quarkus.aesh.runtime.AeshRecorder} and contains build-time command metadata.
+ * {@code AeshProcessor} service and contains build-time command metadata.
  */
 public class AeshContextTest {
 
@@ -63,18 +63,18 @@ public class AeshContextTest {
     @Test
     public void testCommandMetadata() {
         var gitCmd = aeshContext.getCommands().stream()
-                .filter(c -> "git".equals(c.getCommandName()))
+                .filter(c -> "git".equals(c.commandName()))
                 .findFirst();
         Assertions.assertThat(gitCmd).isPresent();
-        Assertions.assertThat(gitCmd.get().isGroupCommand()).isTrue();
-        Assertions.assertThat(gitCmd.get().getSubCommandClassNames())
+        Assertions.assertThat(gitCmd.get().groupCommand()).isTrue();
+        Assertions.assertThat(gitCmd.get().subCommandClassNames())
                 .contains(CloneCommand.class.getName());
 
         var statusCmd = aeshContext.getCommands().stream()
-                .filter(c -> "status".equals(c.getCommandName()))
+                .filter(c -> "status".equals(c.commandName()))
                 .findFirst();
         Assertions.assertThat(statusCmd).isPresent();
-        Assertions.assertThat(statusCmd.get().isGroupCommand()).isFalse();
+        Assertions.assertThat(statusCmd.get().groupCommand()).isFalse();
     }
 
     @CommandDefinition(name = "git", description = "Git-like commands", groupCommands = { CloneCommand.class })

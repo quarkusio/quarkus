@@ -27,7 +27,7 @@ public class SortOnPanacheQueryTest {
 
     @Transactional
     void createEntities() {
-        MyEntity_.managedBlocking().deleteAll();
+        MyEntity_.managed().deleteAll();
         for (int i = 0; i < 5; i++) {
             MyEntity entity = new MyEntity();
             entity.foo = "foo" + i;
@@ -38,7 +38,7 @@ public class SortOnPanacheQueryTest {
 
     @Transactional
     void findAllWithSort() {
-        List<MyEntity> sorted = MyEntity_.managedBlocking().findAll()
+        List<MyEntity> sorted = MyEntity_.managed().findAll()
                 .sort(Sort.asc("foo"))
                 .list();
         assertThat(sorted).hasSize(5);
@@ -48,7 +48,7 @@ public class SortOnPanacheQueryTest {
 
     @Transactional
     void findAllWithSortDesc() {
-        List<MyEntity> sorted = MyEntity_.managedBlocking().findAll()
+        List<MyEntity> sorted = MyEntity_.managed().findAll()
                 .sort(Sort.desc("foo"))
                 .list();
         assertThat(sorted.get(0).foo).isEqualTo("foo4");
@@ -57,7 +57,7 @@ public class SortOnPanacheQueryTest {
 
     @Transactional
     void findWithSort() {
-        List<MyEntity> sorted = MyEntity_.managedBlocking().find("foo", "foo2")
+        List<MyEntity> sorted = MyEntity_.managed().find("foo", "foo2")
                 .sort(Sort.asc("bar"))
                 .list();
         assertThat(sorted).hasSize(1);
@@ -66,17 +66,17 @@ public class SortOnPanacheQueryTest {
 
     @Transactional
     void findAllWithNoSort() {
-        List<MyEntity> unsorted = MyEntity_.managedBlocking().findAll()
+        List<MyEntity> unsorted = MyEntity_.managed().findAll()
                 .sort((Order<? super MyEntity>) null)
                 .list();
         assertThat(unsorted).hasSize(5);
 
-        unsorted = MyEntity_.managedBlocking().findAll()
+        unsorted = MyEntity_.managed().findAll()
                 .sort((Sort<? super MyEntity>) null)
                 .list();
         assertThat(unsorted).hasSize(5);
 
-        unsorted = MyEntity_.managedBlocking().findAll()
+        unsorted = MyEntity_.managed().findAll()
                 .sort(Order.by())
                 .list();
         assertThat(unsorted).hasSize(5);
@@ -84,7 +84,7 @@ public class SortOnPanacheQueryTest {
 
     @Transactional
     void streamWithSort() {
-        List<String> names = MyEntity_.managedBlocking().findAll()
+        List<String> names = MyEntity_.managed().findAll()
                 .sort(Sort.asc("foo"))
                 .stream()
                 .map(e -> e.foo)
@@ -94,7 +94,7 @@ public class SortOnPanacheQueryTest {
 
     @Transactional
     void findAllWithPageRequestAndSort() {
-        List<MyEntity> page = MyEntity_.managedBlocking().findAll()
+        List<MyEntity> page = MyEntity_.managed().findAll()
                 .pages().request(PageRequest.ofPage(1, 2, false))
                 .sort(Sort.asc("foo"))
                 .list();
@@ -105,7 +105,7 @@ public class SortOnPanacheQueryTest {
 
     @Transactional
     void findAllWithPageRequestAndEmptyOrder() {
-        BlockingDataQuery<MyEntity> query = MyEntity_.managedBlocking().findAll()
+        BlockingDataQuery<MyEntity> query = MyEntity_.managed().findAll()
                 .pages().request(PageRequest.ofPage(2, 2, false));
         Order<? super MyEntity> order = Order.by();
         if (!order.sorts().isEmpty()) {
@@ -117,7 +117,7 @@ public class SortOnPanacheQueryTest {
 
     @Transactional
     void replaceSort() {
-        BlockingDataQuery<MyEntity> query = MyEntity_.managedBlocking().findAll()
+        BlockingDataQuery<MyEntity> query = MyEntity_.managed().findAll()
                 .sort(Sort.asc("foo"));
         assertThat(query.list().get(0).foo).isEqualTo("foo0");
 
@@ -127,7 +127,7 @@ public class SortOnPanacheQueryTest {
 
     @Transactional
     void clear() {
-        MyEntity_.managedBlocking().deleteAll();
+        MyEntity_.managed().deleteAll();
     }
 
     @Test

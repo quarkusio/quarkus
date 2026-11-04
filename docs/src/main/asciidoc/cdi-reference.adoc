@@ -13,7 +13,7 @@ include::_attributes.adoc[]
 :topics: cdi,arc,injection,interceptor,observer
 :extensions: io.quarkus:quarkus-arc
 
-Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html[Jakarta Contexts and Dependency Injection 4.1, window="_blank"] specification.
+Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifications/cdi/5.0/jakarta-cdi-spec-5.0.html[Jakarta Contexts and Dependency Injection 5.0, window="_blank"] specification.
 It implements the CDI Lite specification, with selected improvements on top, and passes the CDI Lite TCK.
 It does not implement CDI Full.
 See also <<supported_features_and_limitations,the list of supported features and limitations>>.
@@ -28,7 +28,7 @@ TIP: The xref:cdi-integration.adoc[CDI integration guide] has more detail on com
 
 Bean discovery in CDI is a complex process which involves legacy deployment structures and accessibility requirements of the underlying module architecture.
 However, Quarkus is using a *simplified bean discovery*.
-There is only single bean archive with the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"] and no visibility boundaries.
+There is only single bean archive with the https://jakarta.ee/specifications/cdi/5.0/jakarta-cdi-spec-5.0.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"] and no visibility boundaries.
 
 The bean archive is synthesized from:
 
@@ -38,7 +38,7 @@ The bean archive is synthesized from:
 * dependencies referenced by `quarkus.index-dependency` in `application.properties`,
 * and Quarkus integration code.
 
-Bean classes that don't have a https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.
+Bean classes that don't have a https://jakarta.ee/specifications/cdi/5.0/jakarta-cdi-spec-5.0.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.
 This behavior is defined by CDI.
 But producer methods and fields and observer methods are discovered even if the declaring class is not annotated with a bean defining annotation (this behavior is different to what is defined in CDI).
 In fact, the declaring bean classes are considered annotated with `@Dependent`.
@@ -272,7 +272,7 @@ Outside of this use-case, just use `@Identifier`.
 == Native Executables and Private Members
 
 Quarkus is using GraalVM to build a native executable.
-One of the limitations of GraalVM is the usage of link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Reflection/[Reflection, window="_blank"].
+One of the limitations of GraalVM is the usage of link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/#reflection[Reflection, window="_blank"].
 Reflective operations are supported, but all relevant members must be registered for reflection explicitly.
 Those registrations result in a bigger native executable.
 
@@ -1289,7 +1289,7 @@ In this example, interceptor bindings are read from the `MyClass` class.
 IMPORTANT: Note that `InterceptionProxy` only supports `@AroundInvoke` interceptors declared on interceptor classes.
 Other kinds of interception, as well as `@AroundInvoke` interceptors declared on the target class and its superclasses, are not supported.
 
-The intercepted class should be https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#unproxyable[proxyable] and therefore should not be `final`, should not have non-private `final` methods, and should have a non-private zero-parameter constructor.
+The intercepted class should be https://jakarta.ee/specifications/cdi/5.0/jakarta-cdi-spec-5.0.html#unproxyable[proxyable] and therefore should not be `final`, should not have non-private `final` methods, and should have a non-private zero-parameter constructor.
 If it isn't, a bytecode transformation will attempt to fix it if <<unproxyable_classes_transformation,enabled>>, but note that adding a zero-parameter constructor is not always possible.
 
 It is often the case that the produced classes come from external libraries and don't contain interceptor binding annotations at all.

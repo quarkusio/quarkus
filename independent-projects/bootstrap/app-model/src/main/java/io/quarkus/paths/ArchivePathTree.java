@@ -265,17 +265,8 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         @Override
         protected void initManifest(Manifest m) {
             super.initManifest(m);
-            ArchivePathTree.this.manifestReadLock().lock();
-            try {
-                if (!ArchivePathTree.this.manifestInitialized) {
-                    ArchivePathTree.this.manifestReadLock().unlock();
-                    ArchivePathTree.this.manifestWriteLock().lock();
-                    ArchivePathTree.this.initManifest(m);
-                    ArchivePathTree.this.manifestReadLock().lock();
-                    ArchivePathTree.this.manifestWriteLock().unlock();
-                }
-            } finally {
-                ArchivePathTree.this.manifestReadLock().unlock();
+            if (!ArchivePathTree.this.isManifestInitialized()) {
+                ArchivePathTree.this.initManifest(m);
             }
         }
 

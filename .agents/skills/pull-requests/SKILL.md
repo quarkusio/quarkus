@@ -55,6 +55,23 @@ If the change is breaking, explain in the description:
 2. Why it was necessary
 3. How users should migrate
 
+## Linked issue
+
+Every pull request fixes or implements an issue. When none exists, open
+it first with the matching template. End the description with
+`Fixes #1234` on its own line. Do not put the issue number in the title.
+Write a reference as a bare `#1234` so GitHub shows its title.
+
+## Updating a pull request after review
+
+- Rebase on `main` and push with `--force-with-lease`. Never merge `main`
+  into the branch: a merge commit fails the "Merge commits" check.
+- Answer every review thread after the push. Start with the answer, then
+  link the commit that applies it.
+- Change the description when the change changed. A reviewer reads the
+  description first, and a stale one costs a review round.
+- Keep the title in sync with the change.
+
 ## Commits
 
 - Commits must be **atomic and semantic** — each commit should represent one

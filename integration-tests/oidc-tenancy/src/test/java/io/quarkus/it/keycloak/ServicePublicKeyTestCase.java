@@ -51,6 +51,38 @@ public class ServicePublicKeyTestCase {
     }
 
     @Test
+    public void testSubjectRequired() {
+        String jwt = Jwt.subject("alice").preferredUserName("alice").audience("https://service.example.com").sign();
+        assertEquals("tenant-public-key-subject:alice", RestAssured.given().auth()
+                .oauth2(jwt)
+                .get("/service/tenant-public-key-subject").getBody().asString());
+
+        String jwtWithoutSubject = Jwt.claims().preferredUserName("alice").audience("https://service.example.com").sign();
+        RestAssured.given().auth()
+                .oauth2(jwtWithoutSubject)
+                .get("/service/tenant-public-key-subject")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testAudienceRequired() {
+        String jwt = Jwt.subject("alice").preferredUserName("alice").audience("wrong-audience").sign();
+        RestAssured.given().auth()
+                .oauth2(jwt)
+                .get("/service/tenant-public-key-subject")
+                .then()
+                .statusCode(401);
+
+        String jwtWithoutAudience = Jwt.subject("alice").preferredUserName("alice").sign();
+        RestAssured.given().auth()
+                .oauth2(jwtWithoutAudience)
+                .get("/service/tenant-public-key-subject")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
     public void testTokenIssuerVerification() {
         String jwt = Jwt.claim("scope", "read:data").preferredUserName("alice").issuer("acceptable-issuer").sign();
         assertEquals("tenant-public-key:alice", RestAssured.given().auth()

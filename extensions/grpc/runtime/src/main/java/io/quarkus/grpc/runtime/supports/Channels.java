@@ -29,7 +29,6 @@ import java.util.concurrent.TimeoutException;
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.Any;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.jboss.logging.Logger;
 
@@ -60,7 +59,7 @@ import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.vertx.http.HttpServer;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 import io.smallrye.stork.Stork;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -89,8 +88,7 @@ public class Channels {
         }
         instance.get();
 
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        GrpcConfiguration grpcConfig = config.getConfigMapping(GrpcConfiguration.class);
+        GrpcConfiguration grpcConfig = Config.get().getConfigMapping(GrpcConfiguration.class);
         GrpcClientConfiguration clientConfig = grpcConfig.clients().get(name);
 
         String host = clientConfig.host();

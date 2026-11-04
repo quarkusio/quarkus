@@ -2,6 +2,7 @@ package io.quarkus.it.cache;
 
 import static io.quarkus.it.cache.ExpensiveResource.EXPENSIVE_RESOURCE_CACHE_NAME;
 import static io.quarkus.it.cache.GetIfPresentResource.GET_IF_PRESENT_CACHE_NAME;
+import static io.quarkus.it.cache.GetIfPresentResource.PENDING_PUT_CACHE_NAME;
 import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
@@ -69,6 +70,16 @@ public class CacheTestCase {
                 .when().get("/get-if-present/{key}")
                 .then().statusCode(200).body(is(cacheValue));
         assertCacheMetrics(GET_IF_PRESENT_CACHE_NAME, 1, 2, 2);
+    }
+
+    @Test
+    void testPendingPutMetrics() {
+        assertCacheMetrics(PENDING_PUT_CACHE_NAME, 0, 0, 0);
+
+        given().pathParam("key", "foo").body("bar")
+                .when().put("/get-if-present/pending/{key}")
+                .then().statusCode(204);
+        assertCacheMetrics(PENDING_PUT_CACHE_NAME, 1, 0, 0);
     }
 
     private void assertCacheMetrics(String cacheName, double expectedPuts, double expectedMisses, double expectedHits) {

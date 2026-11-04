@@ -11,12 +11,17 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 
+import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.undertow.servlet.handlers.ServletRequestContext;
 import io.undertow.servlet.spec.HttpServletRequestImpl;
 
 public class ResteasyReactiveServlet extends HttpServlet {
 
     private final RestInitialHandler initialHandler;
+
+    public ResteasyReactiveServlet() {
+        this(ResteasyReactiveRecorder.getCurrentDeployment());
+    }
 
     public ResteasyReactiveServlet(Deployment deployment) {
         this.initialHandler = new RestInitialHandler(deployment);

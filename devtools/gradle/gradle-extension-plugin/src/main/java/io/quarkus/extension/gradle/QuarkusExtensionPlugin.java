@@ -23,11 +23,11 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.extension.gradle.dependency.DeploymentClasspathBuilder;
 import io.quarkus.extension.gradle.tasks.ExtensionDescriptorTask;
 import io.quarkus.extension.gradle.tasks.ValidateExtensionTask;
-import io.quarkus.gradle.GradleVersionSupport;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
-import io.quarkus.gradle.extension.ExtensionConstants;
+import io.quarkus.gradle.tooling.GradleVersionSupport;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
+import io.quarkus.gradle.tooling.dependency.ExtensionConstants;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusExtensionPlugin implements Plugin<Project> {

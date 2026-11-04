@@ -97,7 +97,7 @@ public class ElementUtil {
                         Function.identity()));
     }
 
-    public Map<String, Object> getAnnotationValues(AnnotationMirror annotation) {
+    public static Map<String, Object> getAnnotationValues(AnnotationMirror annotation) {
         return annotation.getElementValues().entrySet().stream()
                 .collect(Collectors.toMap(e -> e.getKey().getSimpleName().toString(), e -> e.getValue().getValue()));
     }

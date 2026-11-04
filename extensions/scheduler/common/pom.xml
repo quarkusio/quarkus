@@ -45,5 +45,10 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit-config</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

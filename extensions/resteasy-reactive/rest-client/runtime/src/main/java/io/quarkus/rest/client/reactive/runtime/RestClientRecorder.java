@@ -10,11 +10,8 @@ import java.util.function.Function;
 
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
 
-import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.http.HttpClient;
 
-@Recorder
 public class RestClientRecorder {
     private static volatile Map<String, String> configKeys;
     private static volatile Set<String> blockingClassNames;
@@ -22,11 +19,11 @@ public class RestClientRecorder {
 
     private static final Map<String, List<HttpClient>> tlsConfigNameToVertxHttpClients = new ConcurrentHashMap<>();
 
-    public void setConfigKeys(Map<String, String> configKeys) {
+    public static void setConfigKeys(Map<String, String> configKeys) {
         RestClientRecorder.configKeys = configKeys;
     }
 
-    public void setBlockingClassNames(Set<String> blockingClassNames) {
+    public static void setBlockingClassNames(Set<String> blockingClassNames) {
         RestClientRecorder.blockingClassNames = blockingClassNames;
     }
 
@@ -38,7 +35,7 @@ public class RestClientRecorder {
         return blockingClassNames.contains(exceptionMapperClass.getName());
     }
 
-    public void setInterfacesWithUrlParam(Set<String> interfacesWithUrlParam) {
+    public static void setInterfacesWithUrlParam(Set<String> interfacesWithUrlParam) {
         RestClientRecorder.interfacesWithUrlParam = interfacesWithUrlParam;
     }
 
@@ -58,7 +55,7 @@ public class RestClientRecorder {
         return false;
     }
 
-    public void setRestClientBuilderResolver() {
+    public static void setRestClientBuilderResolver() {
         RestClientBuilderResolver.setInstance(new BuilderResolver());
     }
 
@@ -86,13 +83,7 @@ public class RestClientRecorder {
         httpClients.remove(httpClient);
     }
 
-    public void cleanUp(ShutdownContext shutdown) {
-        shutdown.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                tlsConfigNameToVertxHttpClients.clear();
-            }
-        });
+    public static void cleanUp() {
+        tlsConfigNameToVertxHttpClients.clear();
     }
-
 }

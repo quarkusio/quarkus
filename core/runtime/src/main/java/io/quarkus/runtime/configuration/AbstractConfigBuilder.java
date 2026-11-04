@@ -3,11 +3,11 @@ package io.quarkus.runtime.configuration;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.eclipse.microprofile.config.spi.Converter;
 
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigMappingHandler;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigSourceFactory;
@@ -15,7 +15,6 @@ import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.SecretKeysHandler;
 import io.smallrye.config.SecretKeysHandlerFactory;
-import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 import io.smallrye.config.common.MapBackedConfigSource;
@@ -107,8 +106,8 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
     }
 
     protected static void withMappingInstance(SmallRyeConfigBuilder builder, ConfigClass mapping) {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        builder.getMappingsBuilder().mappingInstance(mapping, config.getConfigMapping(mapping.getType(), mapping.getPrefix()));
+        builder.getMappingsBuilder().mappingInstance(mapping,
+                Config.get().getConfigMapping(mapping.getType(), mapping.getPrefix()));
     }
 
     protected static void withMappingIgnore(SmallRyeConfigBuilder builder, String path) {

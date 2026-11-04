@@ -38,6 +38,7 @@ import tools.jackson.core.sym.PropertyNameMatcher;
 import tools.jackson.databind.BeanProperty;
 import tools.jackson.databind.DatabindException;
 import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JavaType;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectWriter;
@@ -45,6 +46,7 @@ import tools.jackson.databind.PropertyNamingStrategy;
 import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.exc.MismatchedInputException;
 import tools.jackson.databind.introspect.AnnotatedMethod;
 import tools.jackson.databind.node.ObjectNode;
 import tools.jackson.databind.util.NameTransformer;
@@ -307,6 +309,20 @@ public class JacksonMapperUtil {
             valueTypes[i] = wrapperType.containedType(i);
         }
         return valueTypes;
+    }
+
+    /**
+     * Called by the generated deserializers when a primitive property is null: like Jackson, it fails if
+     * {@link DeserializationFeature#FAIL_ON_NULL_FOR_PRIMITIVES} is enabled, otherwise the caller uses the default value.
+     */
+    public static void checkNullForPrimitive(DeserializationContext context, Object referrer, String propertyName,
+            Class<?> primitiveType) {
+        if (context.isEnabled(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)) {
+            throw MismatchedInputException.from(context.getParser(), primitiveType,
+                    "Cannot map `null` into type `" + primitiveType.getName()
+                            + "` (set `DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES` to 'false' to allow)")
+                    .prependPath(referrer, propertyName);
+        }
     }
 
     public static void serializePojo(Object value, JsonGenerator generator, SerializationContext serializationContext) {

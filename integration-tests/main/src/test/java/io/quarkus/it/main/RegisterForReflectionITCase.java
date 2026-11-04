@@ -5,9 +5,6 @@ import static org.hamcrest.Matchers.startsWith;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.DisableIfBuiltWithGraalVMNewerThan;
-import io.quarkus.test.junit.DisableIfBuiltWithGraalVMOlderThan;
-import io.quarkus.test.junit.GraalVMVersion;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
@@ -47,7 +44,7 @@ public class RegisterForReflectionITCase {
     }
 
     @Test
-    public void testTargetWithNestedPost22_1() {
+    public void testTargetWithNested() {
         final String resourceC = BASE_PKG + ".ResourceC";
         // Starting with GraalVM 22.1 ResourceC implicitly gets registered by GraalVM
         // (see https://github.com/oracle/graal/pull/4414)
@@ -57,19 +54,7 @@ public class RegisterForReflectionITCase {
     }
 
     @Test
-    @DisableIfBuiltWithGraalVMNewerThan(GraalVMVersion.GRAALVM_24_0_0)
-    public void testTargetWithoutNested_Mandrel21() {
-        final String resourceD = BASE_PKG + ".ResourceD";
-        // GraalVM/Mandrel for JDK 21 traverses up and flags the enclosing
-        // class as reachable when processing reachability-metadata.json for a nested target.
-        assertRegistration("ResourceD", resourceD);
-        assertRegistration("StaticClassOfD", resourceD + "$StaticClassOfD");
-        assertRegistration("OtherAccessibleClassOfD", resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
-    }
-
-    @Test
-    @DisableIfBuiltWithGraalVMOlderThan(GraalVMVersion.GRAALVM_24_0_0)
-    public void testTargetWithoutNested_Mandrel25() {
+    public void testTargetWithoutNested() {
         final String resourceD = BASE_PKG + ".ResourceD";
         // GraalVM/Mandrel for JDK 25 isolates the nested target without
         // leaking reachability to the enclosing class.
@@ -82,11 +67,8 @@ public class RegisterForReflectionITCase {
         assertRegistration("OtherAccessibleClassOfD", resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
     }
 
-    // NOTE: This test is expected to fail with GraalVM >= 23.1.0 and < 23.1.3 yet we enable it for all 23.1 versions
-    // due to https://github.com/quarkusio/quarkus/issues/45873
     @Test
-    @DisableIfBuiltWithGraalVMOlderThan(GraalVMVersion.GRAALVM_23_1_0)
-    public void testLambdaCapturingPost23_1_2() {
+    public void testLambdaCapturing() {
         // Starting with GraalVM 23.1.3 lambda class names match the ones from HotSpot
         // (see https://github.com/oracle/graal/pull/7775 and https://github.com/oracle/graal/commit/7d158e5c141e2f5c84f27095d8718189ab4953c2)
         RestAssured.given().when().get("/reflection/lambda").then().body(startsWith("Comparator$$Lambda/"));

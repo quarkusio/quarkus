@@ -2,12 +2,12 @@ package io.quarkus.opentelemetry.deployment.traces;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.config.Config;
 
 public class TestModeSamplerDefaultTest {
 
@@ -19,7 +19,7 @@ public class TestModeSamplerDefaultTest {
 
     @Test
     void testModeDefaultsSamplerArgTo100Percent() {
-        String samplerArg = ConfigProvider.getConfig()
+        String samplerArg = Config.get()
                 .getValue("quarkus.otel.traces.sampler.arg", String.class);
         assertThat(samplerArg).isEqualTo("1.0d");
     }

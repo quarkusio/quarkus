@@ -24,7 +24,6 @@ import io.quarkus.signals.Receivers;
 import io.quarkus.signals.Signal;
 import io.quarkus.signals.SignalContext;
 import io.quarkus.signals.runtime.impl.ReceiverDefinitionImpl.CallbackReceiver;
-import io.quarkus.signals.runtime.impl.SignalsRecorder.SignalsContext;
 import io.quarkus.signals.spi.Receiver;
 import io.quarkus.signals.spi.ReceiverInterceptor;
 import io.quarkus.signals.spi.SignalMetadataEnricher;

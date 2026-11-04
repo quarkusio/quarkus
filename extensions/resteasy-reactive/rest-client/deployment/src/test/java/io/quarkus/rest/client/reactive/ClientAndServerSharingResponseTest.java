@@ -4,7 +4,7 @@ import static io.restassured.RestAssured.when;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +64,7 @@ public class ClientAndServerSharingResponseTest {
                 throws MalformedURLException {
             this.mapper = mapper;
             this.headersService = QuarkusRestClientBuilder.newBuilder()
-                    .baseUrl(new URL(String.format("http://localhost:%d", testPort)))
+                    .baseUrl(URI.create(String.format("http://localhost:%d", testPort)).toURL())
                     .readTimeout(1, TimeUnit.SECONDS)
                     .build(HeadersService.class);
         }

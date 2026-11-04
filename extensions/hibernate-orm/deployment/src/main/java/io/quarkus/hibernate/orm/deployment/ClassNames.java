@@ -31,6 +31,7 @@ public final class ClassNames {
             "io.quarkus.hibernate.orm.PersistenceUnit$List");
     public static final DotName JPA_PERSISTENCE_UNIT = createConstant("jakarta.persistence.PersistenceUnit");
     public static final DotName JPA_PERSISTENCE_CONTEXT = createConstant("jakarta.persistence.PersistenceContext");
+    public static final DotName JPA_PERSISTENCE_AGENT = createConstant("jakarta.persistence.PersistenceAgent");
     public static final DotName PERSISTENCE_UNIT_EXTENSION = createConstant(
             "io.quarkus.hibernate.orm.PersistenceUnitExtension");
     public static final DotName PERSISTENCE_UNIT_EXTENSION_REPEATABLE_CONTAINER = createConstant(
@@ -55,6 +56,8 @@ public final class ClassNames {
     public static final DotName ENTITY_AGENT = createConstant("jakarta.persistence.EntityAgent");
     public static final DotName JAKARTA_DATA_REPOSITORY = createConstant("jakarta.data.repository.Repository");
     public static final Set<DotName> REPOSITORY_METHOD_ANNOTATIONS = Set.of(
+            createConstant("jakarta.persistence.query.JakartaQuery"),
+            createConstant("jakarta.persistence.query.NativeQuery"),
             createConstant("jakarta.data.repository.Query"),
             createConstant("jakarta.data.repository.Find"),
             createConstant("jakarta.data.repository.Delete"),
@@ -410,6 +413,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.FractionalSeconds"),
             createConstant("org.hibernate.annotations.Generated"),
             createConstant("org.hibernate.annotations.GeneratedColumn"),
+            createConstant("org.hibernate.annotations.GeneratorOptimizer"),
             createConstant("org.hibernate.annotations.GenericGenerator"),
             createConstant("org.hibernate.annotations.HQLSelect"),
             createConstant("org.hibernate.annotations.IdGeneratorType"),
@@ -615,5 +619,7 @@ public final class ClassNames {
             // Accessed in org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryImpl.buildServiceRegistry
             createConstant("org.hibernate.service.spi.SessionFactoryServiceContributor"),
             // Accessed in org.hibernate.engine.extension.internal.ExtensionIntegrationServiceImpl.create
-            createConstant("org.hibernate.engine.extension.spi.ExtensionIntegration"));
+            createConstant("org.hibernate.engine.extension.spi.ExtensionIntegration"),
+            // Accessed in io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder.getSessionFactoryBuilder
+            createConstant("org.hibernate.boot.spi.SessionFactoryBuilderFactory"));
 }

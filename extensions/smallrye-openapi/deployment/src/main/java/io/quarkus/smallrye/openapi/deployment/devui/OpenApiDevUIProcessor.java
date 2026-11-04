@@ -2,9 +2,6 @@ package io.quarkus.smallrye.openapi.deployment.devui;
 
 import java.util.Optional;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -17,6 +14,7 @@ import io.quarkus.smallrye.openapi.runtime.dev.OpenApiJsonRpcService;
 import io.quarkus.swaggerui.deployment.SwaggerUiConfig;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.smallrye.config.Config;
 
 public class OpenApiDevUIProcessor {
 
@@ -37,7 +35,7 @@ public class OpenApiDevUIProcessor {
         String uiPath = devUIContextRoot + nonApplicationRootPathBuildItem.resolveManagementPath(swaggerUiConfig.path(),
                 managementBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
 
-        Config c = ConfigProvider.getConfig();
+        Config c = Config.get();
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
         if (c.getOptionalValue("quarkus.swagger-ui.enabled", Boolean.class).orElse(Boolean.TRUE)) {
             cardPageBuildItem.addPage(Page.externalPageBuilder("Swagger UI")

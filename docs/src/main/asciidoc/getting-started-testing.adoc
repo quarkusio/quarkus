@@ -175,6 +175,20 @@ You can override this setting with the `quarkus.http.test-timeout` property:
 quarkus.http.test-timeout=10s
 ----
 
+=== Logging of the request and the response when a validation fails
+
+Quarkus configures REST Assured to log the request and the response when a validation fails.
+To log the response, REST Assured reads the complete response body, also when all the validations pass.
+
+A response that never ends, such as a stream of server-sent events, therefore blocks the test.
+The `quarkus.http.test-timeout` timeout stops the test only when the server sends no data for that time.
+To test such an endpoint with REST Assured, disable the logging:
+
+[source,properties]
+----
+quarkus.test.rest-assured.enable-logging-on-failure=false
+----
+
 === Injecting a URI
 
 It is also possible to directly inject the URL into the test which can make is easy to use a different client. This is
@@ -1213,7 +1227,7 @@ but it is common to create custom implementations to address specific applicatio
 Common cases include starting docker containers using https://www.testcontainers.org/[Testcontainers] (an example of which can be found https://github.com/quarkusio/quarkus/blob/main/test-framework/keycloak-server/src/main/java/io/quarkus/test/keycloak/server/KeycloakTestResourceLifecycleManager.java[here]),
 or starting a mock HTTP server using https://wiremock.org/[Wiremock] (an example of which can be found https://github.com/geoand/quarkus-test-demo/blob/main/src/test/java/org/acme/getting/started/country/WiremockCountries.java[here]).
 
-NOTE: As `QuarkusTestResourceLifecycleManager` is not a CDI Bean, classes that implement it can't have fields injected with `@Inject`. You can use `String propertyName = ConfigProvider.getConfig().getValue("quarkus.my-config-group.myconfig", String.class);`
+NOTE: As `QuarkusTestResourceLifecycleManager` is not a CDI Bean, classes that implement it can't have fields injected with `@Inject`. You can use `String propertyName = Config.get().getValue("quarkus.my-config-group.myconfig", String.class);`
 
 
 === Altering the test class

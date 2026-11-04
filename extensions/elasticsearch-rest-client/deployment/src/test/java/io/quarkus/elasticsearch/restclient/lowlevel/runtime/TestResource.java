@@ -12,11 +12,11 @@ import jakarta.ws.rs.QueryParam;
 
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 import co.elastic.clients.transport.rest5_client.low_level.Request;
 import co.elastic.clients.transport.rest5_client.low_level.Response;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
+import io.smallrye.config.Config;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -63,7 +63,7 @@ public class TestResource {
     @GET
     @Path("/configured-hosts")
     public String configuredHosts() {
-        return ConfigProvider.getConfig().getConfigValue("quarkus.elasticsearch.hosts").getValue();
+        return Config.get().getConfigValue("quarkus.elasticsearch.hosts").getValue();
     }
 
     public static class Fruit {

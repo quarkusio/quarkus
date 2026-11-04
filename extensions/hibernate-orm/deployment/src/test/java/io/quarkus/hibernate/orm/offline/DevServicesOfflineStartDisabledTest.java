@@ -2,11 +2,11 @@ package io.quarkus.hibernate.orm.offline;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.config.Config;
 
 public class DevServicesOfflineStartDisabledTest {
 
@@ -19,7 +19,7 @@ public class DevServicesOfflineStartDisabledTest {
 
     @Test
     public void testOfflineDisabledStrategyDropCreate() {
-        String value = ConfigProvider.getConfig()
+        String value = Config.get()
                 .getValue("quarkus.hibernate-orm.schema-management.strategy", String.class);
         assertThat(value).isEqualTo("drop-and-create");
     }

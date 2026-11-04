@@ -11,6 +11,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorder;
@@ -30,6 +31,7 @@ public class SerializersUtil {
             List<MessageBodyReaderOverrideBuildItem> messageBodyReaderOverrideBuildItems,
             List<MessageBodyWriterOverrideBuildItem> messageBodyWriterOverrideBuildItems,
             BeanContainerBuildItem beanContainerBuildItem,
+            ValidationPhaseBuildItem validationPhase,
             ApplicationResultBuildItem applicationResultBuildItem,
             Serialisers serialisers, RuntimeType runtimeType) {
 
@@ -49,7 +51,7 @@ public class SerializersUtil {
             }
             writer.setFactory(FactoryUtils.factory(writerClassName,
                     applicationResultBuildItem.getResult().getSingletonClasses(), recorder,
-                    beanContainerBuildItem));
+                    beanContainerBuildItem, validationPhase));
             writer.setConstraint(additionalWriter.getRuntimeType());
             if (!additionalWriter.getMediaTypeStrings().isEmpty()) {
                 writer.setMediaTypeStrings(additionalWriter.getMediaTypeStrings());
@@ -80,7 +82,7 @@ public class SerializersUtil {
             }
             reader.setFactory(FactoryUtils.factory(readerClassName,
                     applicationResultBuildItem.getResult().getSingletonClasses(), recorder,
-                    beanContainerBuildItem));
+                    beanContainerBuildItem, validationPhase));
             reader.setConstraint(additionalReader.getRuntimeType());
             if (!additionalReader.getMediaTypeStrings().isEmpty()) {
                 reader.setMediaTypeStrings(additionalReader.getMediaTypeStrings());

@@ -22,8 +22,8 @@ public class HibernateOrmCodestartIT {
     void testContent() throws Throwable {
         codestartTest.checkGeneratedSource(JAVA, "org.acme.MyEntity");
         codestartTest.checkGeneratedSource(KOTLIN, "org.acme.MyKotlinEntity");
-        codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/resources/import.sql");
-        codestartTest.assertThatGeneratedFileMatchSnapshot(KOTLIN, "src/main/resources/import.sql");
+        codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/resources/data.sql");
+        codestartTest.assertThatGeneratedFileMatchSnapshot(KOTLIN, "src/main/resources/data.sql");
     }
 
     @Test

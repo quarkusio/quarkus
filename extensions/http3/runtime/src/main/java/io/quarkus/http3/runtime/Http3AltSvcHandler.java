@@ -2,9 +2,9 @@ package io.quarkus.http3.runtime;
 
 import java.time.Duration;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import io.smallrye.config.Config;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.ext.web.RoutingContext;
@@ -20,7 +20,7 @@ public class Http3AltSvcHandler implements Handler<RoutingContext> {
     private final long maxAgeSeconds;
 
     public Http3AltSvcHandler() {
-        this.maxAgeSeconds = ConfigProvider.getConfig()
+        this.maxAgeSeconds = Config.get()
                 .getOptionalValue("quarkus.http3.alt-svc-max-age", Duration.class).map(Duration::getSeconds).orElse(86400L);
     }
 

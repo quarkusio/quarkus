@@ -15,7 +15,6 @@ import java.util.concurrent.TimeUnit;
 import jakarta.inject.Inject;
 
 import org.awaitility.Awaitility;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jose4j.base64url.Base64;
 import org.junit.jupiter.api.Assertions;
@@ -24,6 +23,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.smallrye.config.Config;
 import io.vertx.core.Vertx;
 
 @QuarkusTestResource(KeycloakRealmUserPasswordManager.class)
@@ -65,7 +65,7 @@ class OidcClientProxyTest {
         CountDownLatch latch = new CountDownLatch(1);
         var httpServer = vertx.createHttpServer();
         var httpClient = vertx.createHttpClient();
-        var keycloakUrl = new URL(ConfigProvider.getConfig().getValue("keycloak.url", String.class));
+        var keycloakUrl = new URL(Config.get().getValue("keycloak.url", String.class));
         try {
             httpServer.requestHandler(serverReq -> {
                 serverReq.headers().forEach((k, v) -> HEADERS.put(k.toLowerCase(Locale.ROOT), v));

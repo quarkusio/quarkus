@@ -79,4 +79,24 @@ public class VertxJsonTest {
                 .body("payload[1]", Matchers.equalTo("last"));
     }
 
+    @Test
+    public void testInvalidJsonObject() {
+        RestAssured.with()
+                .body("{\"name\": ")
+                .contentType("application/json")
+                .post("/vertx/jsonObject")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    public void testInvalidJsonArray() {
+        RestAssured.with()
+                .body("[\"first\",")
+                .contentType("application/json")
+                .post("/vertx/jsonArray")
+                .then()
+                .statusCode(400);
+    }
+
 }

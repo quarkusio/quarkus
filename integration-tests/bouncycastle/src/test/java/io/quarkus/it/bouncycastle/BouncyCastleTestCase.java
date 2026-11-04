@@ -72,6 +72,16 @@ public class BouncyCastleTestCase {
     }
 
     @Test
+    public void testMLKEM() {
+        RestAssured.given()
+                .when()
+                .get("/jca/checkMLKEM")
+                .then()
+                .statusCode(200)
+                .body(equalTo("ML-KEM-768"));
+    }
+
+    @Test
     public void readEcPrivatePemKey() {
         RestAssured.given()
                 .when()

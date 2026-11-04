@@ -2,12 +2,12 @@ package io.quarkus.hibernate.orm.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.config.namedpu.MyEntity;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.config.Config;
 
 /**
  * Verifies that Dev Services automatically sets schema-management.strategy=drop-and-create
@@ -24,10 +24,11 @@ public class DevServicesSchemaManagementStrategyNamedPUQuotedTest {
 
     @Test
     public void testDevServicesSchemaManagementStrategy() {
-        assertThat(ConfigProvider.getConfig()
+        Config config = Config.get();
+        assertThat(config
                 .getValue("quarkus.hibernate-orm.pu-1.schema-management.strategy", String.class))
                 .isEqualTo("drop-and-create");
-        assertThat(ConfigProvider.getConfig()
+        assertThat(config
                 .getValue("quarkus.hibernate-orm.\"pu-1\".schema-management.strategy", String.class))
                 .isEqualTo("drop-and-create");
     }

@@ -4,8 +4,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.config.yaml.runtime.YamlConfigBuilder;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -14,7 +12,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public final class ConfigYamlProcessor {
 
@@ -44,7 +42,7 @@ public final class ConfigYamlProcessor {
         configWatchedFiles.add(Paths.get(userDir, "config", "application.yml").toAbsolutePath().toString());
 
         // Profiles
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         for (String profile : config.getProfiles()) {
             configWatchedFiles.add(String.format("application-%s.yaml", profile));
             configWatchedFiles.add(String.format("application-%s.yml", profile));

@@ -34,19 +34,21 @@ import org.jboss.logging.Logger;
 import io.quarkus.agroal.deployment.AgroalDataSourceBuildUtil;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
+import io.quarkus.arc.processor.BeanConfiguratorBase;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.spi.component.DataSourceRequestBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Consume;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -63,6 +65,9 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.liquibase.LiquibaseDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.liquibase.common.LiquibaseChangeLogResourceDiscovery;
@@ -70,9 +75,11 @@ import io.quarkus.liquibase.common.LiquibaseChangeLogResourceDiscovery.LogicalPh
 import io.quarkus.liquibase.common.runtime.LiquibaseLogicalPathMappings;
 import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseDataSourceBuildTimeConfig;
+import io.quarkus.liquibase.runtime.LiquibaseFactoryCreator;
 import io.quarkus.liquibase.runtime.LiquibaseFactoryProducer;
 import io.quarkus.liquibase.runtime.LiquibaseFactoryUtil;
 import io.quarkus.liquibase.runtime.LiquibaseRecorder;
+import io.quarkus.liquibase.runtime.LiquibaseRuntimeConfig;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.paths.PathFilter;
@@ -332,9 +339,7 @@ class LiquibaseProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void createBeans(LiquibaseRecorder recorder,
-            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
+    void createBeans(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
@@ -357,8 +362,9 @@ class LiquibaseProcessor {
                     .addInjectionPoint(ClassType.create(DotName.createSimple(DataSource.class)),
                             AgroalDataSourceBuildUtil.qualifier(dataSourceName))
                     .startup()
-                    .checkActive(recorder.liquibaseCheckActiveSupplier(dataSourceName))
-                    .createWith(recorder.liquibaseFunction(dataSourceName));
+                    .checkActive(checkActive(dataSourceName))
+                    .creator(LiquibaseFactoryCreator.class)
+                    .param(LiquibaseFactoryCreator.DATA_SOURCE_NAME, dataSourceName);
 
             if (DataSourceUtil.isDefault(dataSourceName)) {
                 configurator.addQualifier(Default.class);
@@ -374,18 +380,36 @@ class LiquibaseProcessor {
         }
     }
 
+    private static Consumer<BeanConfiguratorBase.CheckActiveGeneration> checkActive(String dataSourceName) {
+        return new Consumer<>() {
+            @Override
+            public void accept(BeanConfiguratorBase.CheckActiveGeneration cag) {
+                BlockCreator b0 = cag.checkActiveMethod();
+                b0.return_(b0.invokeStatic(
+                        MethodDesc.of(LiquibaseRecorder.class, "checkActive", ActiveResult.class, String.class),
+                        Const.of(dataSourceName)));
+            }
+        };
+    }
+
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @Consume(BeanContainerBuildItem.class)
-    ServiceStartBuildItem startLiquibase(LiquibaseRecorder recorder,
+    ServiceStartBuildItem startLiquibase(ServiceRegistrar serviceRegistrar,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem,
             BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
 
-        Set<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
-        for (String dataSourceName : dataSourceNames) {
-            recorder.doStartActions(dataSourceName);
-        }
+        Set<String> dataSourceNames = Set.copyOf(getDataSourceNames(jdbcDataSourceBuildItems));
+        serviceRegistrar.forService("io.quarkus.liquibase.start")
+                .atPhase(Phase.INIT)
+                .require(LiquibaseRuntimeConfig.class)
+                .require(BeanContainer.class)
+                .afterBuildItem(JdbcDataSourceBuildItem.class)
+                .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                .onStart((ctx, config, beanContainer) -> {
+                    for (String dataSourceName : dataSourceNames) {
+                        LiquibaseRecorder.doStartActions(config, dataSourceName);
+                    }
+                });
         // once we are done running the migrations, we produce a build item indicating that the
         // schema is "ready"
         schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(dataSourceNames));

@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -24,12 +25,19 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
 import io.quarkus.deployment.pkg.TreeShakeConfig;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeConditionalRootClassBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeDeclaredClassesBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeExcludedArtifactBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeRootBytecodeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeRootClassBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.OpenPathTree;
+import io.smallrye.classfile.Attributes;
+import io.smallrye.classfile.ClassFile;
+import io.smallrye.classfile.attribute.ModuleProvideInfo;
+import io.smallrye.classfile.constantpool.ClassEntry;
 
 /**
  * Assembles all data needed by {@link JarTreeShaker} for reachability analysis.
@@ -50,112 +58,74 @@ class JarTreeShakeInput implements AutoCloseable {
     private static final Logger log = Logger.getLogger(JarTreeShakeInput.class.getName());
 
     private static final String SISU_NAMED_RESOURCE = "META-INF/sisu/javax.inject.Named";
-    private static final String META_INF_VERSIONS = "META-INF/versions";
+    private static final String META_INF_VERSIONS_PREFIX = "META-INF/versions/";
     private static final String META_INF_SERVICES = "META-INF/services/";
+    private static final String MODULE_INFO_CLASS = "module-info.class";
 
     /** Configured tree-shake mode controlling analysis aggressiveness. */
     final TreeShakeConfig.TreeShakeMode treeShakeMode;
     /** Dot-separated class names that are unconditionally reachable (BFS starting points). */
-    final Set<String> roots;
-    /** Map from condition class to classes that become roots when the condition is reachable. */
-    final Map<String, Set<String>> conditionalRoots;
+    final Set<String> roots = new HashSet<>();
+    /**
+     * Map from condition class to classes that become roots when the condition is reachable.
+     * Consumed by the analysis: {@link JarTreeShaker} removes an entry when its condition class is reached,
+     * so the map must be mutable. Once all reachable classes have been traced, it holds only the conditions
+     * that were never met, until {@link #releaseAnalysisData()} clears it.
+     */
+    final Map<String, Set<String>> conditionalRoots = new HashMap<>();
     /** Classes listed in {@code META-INF/sisu/javax.inject.Named} files. */
-    final Set<String> sisuNamedClasses;
+    final Set<String> sisuNamedClasses = new HashSet<>();
     /** Bytecode suppliers for runtime dependency classes, keyed by dot-separated class name. */
-    final Map<String, Supplier<byte[]>> depBytecode;
+    final Map<String, Supplier<byte[]>> depBytecode = new HashMap<>();
     /** Bytecode suppliers for application classes, keyed by dot-separated class name. */
-    final Map<String, Supplier<byte[]>> appBytecode;
+    final Map<String, Supplier<byte[]>> appBytecode = new HashMap<>();
     /** Bytecode suppliers for build-time generated classes, keyed by dot-separated class name. */
-    final Map<String, Supplier<byte[]>> generatedBytecode;
+    final Map<String, Supplier<byte[]>> generatedBytecode = new HashMap<>();
     /** Maps dot-separated dependency class names to their originating artifact. */
-    final Map<String, ArtifactKey> classToDep;
+    final Map<String, ArtifactKey> classToDep = new HashMap<>();
     /** Service interface to provider class names parsed from {@code META-INF/services/} files. */
-    final Map<String, Set<String>> serviceProviders;
+    final Map<String, Set<String>> serviceProviders = new HashMap<>();
     /** Service interface to consumer class names detected via {@code ServiceLoader.load()} calls. */
-    final Map<String, Set<String>> serviceLoaderCalls;
+    final Map<String, Set<String>> serviceLoaderCalls = new HashMap<>();
     /** Union of dependency and generated class names, used for string-constant reference matching. */
-    final Set<String> allKnownClasses;
+    final Set<String> allKnownClasses = new HashSet<>();
     /** Java feature version detected from application bytecode (e.g. 17, 21). */
     final int appJavaVersion;
     /** Open content trees for dependencies, kept alive until {@link #close()}. */
-    final Map<ArtifactKey, OpenPathTree> openTrees;
+    final Map<ArtifactKey, OpenPathTree> openTrees = new HashMap<>();
     /** Filesystem paths of resolved runtime dependency JARs. */
-    final List<Path> depJarPaths;
+    final List<Path> depJarPaths = new ArrayList<>();
     /** Filesystem paths of the application artifact. */
-    final List<Path> appPaths;
+    final List<Path> appPaths = new ArrayList<>();
     /** Class names whose bytecode was replaced by a build-time transformation. */
-    final Set<String> transformedClassNames;
+    final Set<String> transformedClassNames = new HashSet<>();
     /**
      * Bytecode from multi-release entries targeting Java versions newer than {@code appJavaVersion}.
      * Keyed by dot-separated class name. These are not used for the main reachability analysis
      * but their references must be traced after analysis to ensure classes they depend on
      * are also marked reachable.
      */
-    final Map<String, List<Supplier<byte[]>>> higherVersionBytecode;
+    final Map<String, List<Supplier<byte[]>>> higherVersionBytecode = new HashMap<>();
     /** Artifacts excluded from tree-shaking via {@link JarTreeShakeExcludedArtifactBuildItem}. */
-    final Set<ArtifactKey> excludedArtifacts;
+    final Set<ArtifactKey> excludedArtifacts = new HashSet<>();
+    /**
+     * Map from condition class to classes whose declared classes must be loadable when the condition is reachable,
+     * from {@link JarTreeShakeDeclaredClassesBuildItem}. Consumed by the analysis like {@link #conditionalRoots}.
+     */
+    final Map<String, Set<String>> conditionalDeclaredClasses = new HashMap<>();
+    /** Classes whose declared classes must be loadable regardless of other classes. */
+    final Set<String> declaredClassesHolders = new HashSet<>();
 
     /**
-     * Creates a new tree-shake input with all collected data.
-     * Prefer the {@link #collect} factory method, which assembles input from the application model
-     * and build items. This constructor is used internally by {@code collect} and in tests.
+     * Creates an empty tree-shake input, whose collections are mutable and are filled by {@link #collect}
+     * or, in tests, directly.
      *
      * @param treeShakeMode configured tree-shake mode
-     * @param roots unconditionally reachable class names (BFS starting points)
-     * @param conditionalRoots condition class to classes that become roots when the condition is reachable
-     * @param sisuNamedClasses classes from {@code META-INF/sisu/javax.inject.Named}
-     * @param depBytecode bytecode suppliers for runtime dependency classes
-     * @param appBytecode bytecode suppliers for application classes
-     * @param generatedBytecode bytecode suppliers for build-time generated classes
-     * @param classToDep dependency class name to originating artifact mapping
-     * @param serviceProviders service interface to provider class names from {@code META-INF/services/}
-     * @param serviceLoaderCalls service interface to consumer class names from {@code ServiceLoader.load()} calls
-     * @param allKnownClasses union of dependency and generated class names
      * @param appJavaVersion Java feature version detected from application bytecode
-     * @param openTrees open content trees for dependencies, closed by {@link #close()}
-     * @param depJarPaths filesystem paths of resolved runtime dependency JARs
-     * @param appPaths filesystem paths of the application artifact
-     * @param transformedClassNames class names whose bytecode was replaced by a build-time transformation
-     * @param higherVersionBytecode multi-release bytecode for Java versions above {@code appJavaVersion}
-     * @param excludedArtifacts artifacts excluded from tree-shaking
      */
-    JarTreeShakeInput(
-            TreeShakeConfig.TreeShakeMode treeShakeMode,
-            Set<String> roots,
-            Map<String, Set<String>> conditionalRoots,
-            Set<String> sisuNamedClasses,
-            Map<String, Supplier<byte[]>> depBytecode,
-            Map<String, Supplier<byte[]>> appBytecode,
-            Map<String, Supplier<byte[]>> generatedBytecode,
-            Map<String, ArtifactKey> classToDep,
-            Map<String, Set<String>> serviceProviders,
-            Map<String, Set<String>> serviceLoaderCalls,
-            Set<String> allKnownClasses,
-            int appJavaVersion,
-            Map<ArtifactKey, OpenPathTree> openTrees,
-            List<Path> depJarPaths,
-            List<Path> appPaths,
-            Set<String> transformedClassNames,
-            Map<String, List<Supplier<byte[]>>> higherVersionBytecode,
-            Set<ArtifactKey> excludedArtifacts) {
+    JarTreeShakeInput(TreeShakeConfig.TreeShakeMode treeShakeMode, int appJavaVersion) {
         this.treeShakeMode = treeShakeMode;
-        this.roots = roots;
-        this.conditionalRoots = conditionalRoots;
-        this.sisuNamedClasses = sisuNamedClasses;
-        this.depBytecode = depBytecode;
-        this.appBytecode = appBytecode;
-        this.generatedBytecode = generatedBytecode;
-        this.classToDep = classToDep;
-        this.serviceProviders = serviceProviders;
-        this.serviceLoaderCalls = serviceLoaderCalls;
-        this.allKnownClasses = allKnownClasses;
         this.appJavaVersion = appJavaVersion;
-        this.openTrees = openTrees;
-        this.depJarPaths = depJarPaths;
-        this.appPaths = appPaths;
-        this.transformedClassNames = transformedClassNames;
-        this.higherVersionBytecode = higherVersionBytecode;
-        this.excludedArtifacts = excludedArtifacts;
     }
 
     /**
@@ -216,6 +186,7 @@ class JarTreeShakeInput implements AutoCloseable {
      *
      * <p>
      * The caller must close the returned instance to release the opened dependency trees.
+     * If collection fails, the trees opened so far are closed before the exception is propagated.
      */
     static JarTreeShakeInput collect(
             TreeShakeConfig.TreeShakeMode treeShakeMode,
@@ -224,70 +195,53 @@ class JarTreeShakeInput implements AutoCloseable {
             TransformedClassesBuildItem transformedClasses,
             List<ReflectiveClassConditionBuildItem> reflectiveClassConditions,
             List<JarTreeShakeRootClassBuildItem> rootClasses,
+            List<JarTreeShakeConditionalRootClassBuildItem> conditionalRootClasses,
+            List<JarTreeShakeRootBytecodeBuildItem> rootBytecode,
+            List<JarTreeShakeDeclaredClassesBuildItem> declaredClasses,
             List<JarTreeShakeExcludedArtifactBuildItem> excludedArtifactItems) {
 
-        final Set<String> roots = new HashSet<>();
+        final JarTreeShakeInput input = new JarTreeShakeInput(treeShakeMode, detectAppJavaVersion(appModel));
+        try {
+            input.collectGeneratedClasses(generatedClasses);
+            input.collectRuntimeClasses(appModel);
+            input.collectTransformedClasses(transformedClasses);
+            input.collectApplicationClasses(appModel);
+            for (Path p : appModel.getAppArtifact().getResolvedPaths()) {
+                input.appPaths.add(p);
+            }
 
-        final Map<String, Supplier<byte[]>> generatedBytecode = getGeneratedClassesMap(generatedClasses);
+            input.addServiceProviderRoots();
 
-        final Map<String, Supplier<byte[]>> depBytecode = new HashMap<>();
-        final Map<String, ArtifactKey> classToDep = new HashMap<>();
-        final Map<String, Integer> depBytecodeVersion = new HashMap<>();
-        final Map<String, Set<String>> serviceProviders = new HashMap<>();
-        final Set<String> sisuNamedClasses = new HashSet<>();
-        final Map<String, Supplier<byte[]>> appBytecode = new HashMap<>();
-        final Map<String, Set<String>> serviceLoaderCalls = new HashMap<>();
-        final Map<ArtifactKey, OpenPathTree> openTrees = new HashMap<>();
+            input.collectAllKnownClasses();
+            input.addStringClassReferenceRoots();
 
-        final int appJavaVersion = detectAppJavaVersion(appModel);
+            for (JarTreeShakeRootClassBuildItem item : rootClasses) {
+                input.roots.add(item.getClassName());
+            }
+            for (JarTreeShakeRootBytecodeBuildItem item : rootBytecode) {
+                final byte[] bytecode = item.getBytecode();
+                input.appBytecode.put(item.getClassName(), () -> bytecode);
+                input.roots.add(item.getClassName());
+            }
 
-        final List<Path> depJarPaths = new ArrayList<>();
-        final Map<String, List<Supplier<byte[]>>> higherVersionBytecode = new HashMap<>();
-
-        collectRuntimeClasses(appModel, appJavaVersion, roots, depBytecode,
-                classToDep, depBytecodeVersion, serviceProviders, sisuNamedClasses, openTrees,
-                depJarPaths, higherVersionBytecode);
-
-        final Set<String> transformedClassNames = new HashSet<>();
-        collectTransformedClasses(transformedClasses, depBytecode, transformedClassNames);
-
-        collectApplicationClasses(appModel, appBytecode, serviceProviders, openTrees);
-
-        final List<Path> appPaths = new ArrayList<>();
-        for (Path p : appModel.getAppArtifact().getResolvedPaths()) {
-            appPaths.add(p);
+            input.collectConditionalRoots(reflectiveClassConditions);
+            input.collectExcludedArtifacts(excludedArtifactItems);
+            final Predicate<String> reachabilityAnalyzed = reachabilityAnalyzed(input.depBytecode, input.classToDep,
+                    input.excludedArtifacts);
+            final Predicate<String> alwaysPresent = alwaysPresent(input.depBytecode, input.appBytecode,
+                    input.generatedBytecode);
+            addConditionalRoots(conditionalRootClasses, reachabilityAnalyzed, alwaysPresent, input.roots,
+                    input.conditionalRoots);
+            for (JarTreeShakeDeclaredClassesBuildItem item : declaredClasses) {
+                addConditional(item.getConditionClassName(), item.getHolderClassName(), reachabilityAnalyzed, alwaysPresent,
+                        input.declaredClassesHolders, input.conditionalDeclaredClasses);
+            }
+            return input;
+        } catch (RuntimeException | Error e) {
+            // the caller only closes the input once it's returned
+            input.close();
+            throw e;
         }
-
-        addServiceProviderRoots(serviceProviders, classToDep, generatedBytecode, roots);
-
-        final Set<String> allKnownClasses = collectAllKnownClasses(classToDep, generatedBytecode);
-        addStringClassReferenceRoots(generatedBytecode, allKnownClasses, roots);
-
-        for (JarTreeShakeRootClassBuildItem item : rootClasses) {
-            roots.add(item.getClassName());
-        }
-
-        final Map<String, Set<String>> conditionalRoots = collectConditionalRoots(reflectiveClassConditions);
-
-        return new JarTreeShakeInput(
-                treeShakeMode,
-                roots,
-                conditionalRoots,
-                sisuNamedClasses,
-                depBytecode,
-                appBytecode,
-                generatedBytecode,
-                classToDep,
-                serviceProviders,
-                serviceLoaderCalls,
-                allKnownClasses,
-                appJavaVersion,
-                openTrees,
-                depJarPaths,
-                appPaths,
-                transformedClassNames,
-                higherVersionBytecode,
-                getExcludedArtifacts(excludedArtifactItems));
     }
 
     /**
@@ -295,31 +249,23 @@ class JarTreeShakeInput implements AutoCloseable {
      * class-to-dependency mappings, service provider files, and sisu named components.
      * Classes from {@code quarkus-bootstrap-runner} are added as roots.
      */
-    private static void collectRuntimeClasses(
-            ApplicationModel appModel,
-            int appJavaVersion,
-            Set<String> roots,
-            Map<String, Supplier<byte[]>> depBytecode,
-            Map<String, ArtifactKey> classToDep,
-            Map<String, Integer> depBytecodeVersion,
-            Map<String, Set<String>> serviceProviders,
-            Set<String> sisuNamedClasses,
-            Map<ArtifactKey, OpenPathTree> openTrees,
-            List<Path> depJarPaths,
-            Map<String, List<Supplier<byte[]>>> higherVersionBytecode) {
-
+    private void collectRuntimeClasses(ApplicationModel appModel) {
+        final Map<String, Integer> depBytecodeVersion = new HashMap<>();
         for (ResolvedDependency dep : appModel.getDependencies(DependencyFlags.RUNTIME_CP)) {
             final boolean addClassesAsRoots = "quarkus-bootstrap-runner".equals(dep.getArtifactId());
 
             for (Path p : dep.getResolvedPaths()) {
                 depJarPaths.add(p);
             }
-            openPathTree(dep, openTrees).walkRaw(visit -> {
+            final ModuleDescriptorSelector moduleDescriptors = new ModuleDescriptorSelector(appJavaVersion, serviceProviders);
+            openPathTree(dep).walkRaw(visit -> {
                 String entry = visit.getResourceName();
+                if (isModuleInfoEntry(entry)) {
+                    moduleDescriptors.add(entry, visit.getPath());
+                    return;
+                }
                 if (isClassEntry(entry)) {
-                    processRuntimeClassEntry(entry, visit.getPath(), dep, appJavaVersion, addClassesAsRoots,
-                            roots, depBytecode, classToDep, depBytecodeVersion,
-                            higherVersionBytecode);
+                    processRuntimeClassEntry(entry, visit.getPath(), dep, addClassesAsRoots, depBytecodeVersion);
                     return;
                 }
                 if (entry.startsWith(META_INF_SERVICES) && !entry.endsWith("/")) {
@@ -330,6 +276,7 @@ class JarTreeShakeInput implements AutoCloseable {
                     parseSisuNamedFile(visit.getPath(), sisuNamedClasses);
                 }
             });
+            moduleDescriptors.complete();
         }
     }
 
@@ -338,42 +285,30 @@ class JarTreeShakeInput implements AutoCloseable {
      * resolution (keeping the highest version &le; {@code appJavaVersion}), records the
      * bytecode supplier and class-to-dependency mapping, and optionally adds the class as a root.
      */
-    private static void processRuntimeClassEntry(
+    private void processRuntimeClassEntry(
             String entry,
             Path path,
             ResolvedDependency dep,
-            int appJavaVersion,
             boolean addClassesAsRoots,
-            Set<String> roots,
-            Map<String, Supplier<byte[]>> depBytecode,
-            Map<String, ArtifactKey> classToDep,
-            Map<String, Integer> depBytecodeVersion,
-            Map<String, List<Supplier<byte[]>>> higherVersionBytecode) {
+            Map<String, Integer> depBytecodeVersion) {
 
-        String className;
-        int classJavaVersion = 0;
+        final int classJavaVersion = multiReleaseVersion(entry);
+        if (classJavaVersion < 0) {
+            // not a valid multi-release version directory, the JVM never loads it
+            return;
+        }
+        final String className = classJavaVersion == 0 ? classNameOf(entry)
+                : classNameOf(entry, entry.indexOf('/', META_INF_VERSIONS_PREFIX.length()) + 1);
 
-        if (entry.startsWith(META_INF_VERSIONS)) {
-            int resolved = resolveMultiReleaseVersion(entry, appJavaVersion);
-            if (resolved < 0) {
-                // Multi-release entry for a Java version newer than appJavaVersion.
-                // Collect its bytecode so references can be traced after the main analysis
-                // for classes that are reachable. Also register in classToDep so the class
-                // is part of allKnownClasses (needed for reference matching).
-                int javaVersionSeparator = entry.indexOf('/', META_INF_VERSIONS.length() + 1);
-                if (javaVersionSeparator > 0) {
-                    String cn = classNameOf(entry, javaVersionSeparator + 1);
-                    higherVersionBytecode.computeIfAbsent(cn, k -> new ArrayList<>())
-                            .add(new BytecodeSupplier(path));
-                    classToDep.putIfAbsent(cn, dep.getKey());
-                }
-                return;
-            }
-            classJavaVersion = resolved;
-            int javaVersionSeparator = entry.indexOf('/', META_INF_VERSIONS.length() + 1);
-            className = classNameOf(entry, javaVersionSeparator + 1);
-        } else {
-            className = classNameOf(entry);
+        if (classJavaVersion > appJavaVersion) {
+            // Multi-release entry for a Java version newer than appJavaVersion.
+            // Collect its bytecode so references can be traced after the main analysis
+            // for classes that are reachable. Also register in classToDep so the class
+            // is part of allKnownClasses (needed for reference matching).
+            higherVersionBytecode.computeIfAbsent(className, k -> new ArrayList<>())
+                    .add(new BytecodeSupplier(path));
+            classToDep.putIfAbsent(className, dep.getKey());
+            return;
         }
 
         int currentVersion = depBytecodeVersion.getOrDefault(className, -1);
@@ -391,24 +326,22 @@ class JarTreeShakeInput implements AutoCloseable {
     }
 
     /**
-     * Resolves a multi-release version entry, returning the Java version number
-     * if it should be included, or -1 if it should be skipped.
+     * Returns the Java version a JAR entry targets: {@code 0} for an entry outside of
+     * {@code META-INF/versions/}, {@code N} for an entry under {@code META-INF/versions/N/}
+     * or {@code -1} for an entry under a version directory the JVM ignores, i.e. one that isn't
+     * a number or is below 9, the first release supporting multi-release JARs.
      */
-    private static int resolveMultiReleaseVersion(String entry, int appJavaVersion) {
-        if (entry.length() == META_INF_VERSIONS.length() || entry.charAt(META_INF_VERSIONS.length()) != '/') {
-            return -1;
+    static int multiReleaseVersion(String entry) {
+        if (!entry.startsWith(META_INF_VERSIONS_PREFIX)) {
+            return 0;
         }
-        final int javaVersionSeparator = entry.indexOf('/', META_INF_VERSIONS.length() + 1);
+        final int javaVersionSeparator = entry.indexOf('/', META_INF_VERSIONS_PREFIX.length());
         if (javaVersionSeparator == -1) {
             return -1;
         }
         try {
-            int classJavaVersion = Integer.parseInt(
-                    entry.substring(META_INF_VERSIONS.length() + 1, javaVersionSeparator));
-            if (classJavaVersion > appJavaVersion) {
-                return -1;
-            }
-            return classJavaVersion;
+            int version = Integer.parseInt(entry.substring(META_INF_VERSIONS_PREFIX.length(), javaVersionSeparator));
+            return version < 9 ? -1 : version;
         } catch (NumberFormatException e) {
             return -1;
         }
@@ -419,10 +352,7 @@ class JarTreeShakeInput implements AutoCloseable {
      * Transformations can add interfaces, annotations, or other references
      * that aren't in the original bytecode (e.g. NettySharable marker interface).
      */
-    private static void collectTransformedClasses(
-            TransformedClassesBuildItem transformedClasses,
-            Map<String, Supplier<byte[]>> depBytecode,
-            Set<String> transformedClassNames) {
+    private void collectTransformedClasses(TransformedClassesBuildItem transformedClasses) {
         for (Set<TransformedClassesBuildItem.TransformedClass> transformedSet : transformedClasses
                 .getTransformedClassesByJar().values()) {
             for (TransformedClassesBuildItem.TransformedClass tc : transformedSet) {
@@ -443,13 +373,14 @@ class JarTreeShakeInput implements AutoCloseable {
      * App bytecode is needed so the reachability trace can follow references from app classes
      * to dependency classes (e.g. app code using a library utility class).
      */
-    private static void collectApplicationClasses(
-            ApplicationModel appModel,
-            Map<String, Supplier<byte[]>> appBytecode,
-            Map<String, Set<String>> serviceProviders,
-            Map<ArtifactKey, OpenPathTree> openTrees) {
-        openPathTree(appModel.getAppArtifact(), openTrees).walk(visit -> {
+    private void collectApplicationClasses(ApplicationModel appModel) {
+        final ModuleDescriptorSelector moduleDescriptors = new ModuleDescriptorSelector(appJavaVersion, serviceProviders);
+        openPathTree(appModel.getAppArtifact()).walk(visit -> {
             String entry = visit.getResourceName();
+            if (isModuleInfoEntry(entry)) {
+                moduleDescriptors.add(entry, visit.getPath());
+                return;
+            }
             if (isClassEntry(entry)) {
                 appBytecode.put(classNameOf(entry), new BytecodeSupplier(visit.getPath()));
                 return;
@@ -458,6 +389,7 @@ class JarTreeShakeInput implements AutoCloseable {
                 parseServiceFile(visit.getPath(), entry, serviceProviders);
             }
         });
+        moduleDescriptors.complete();
     }
 
     /**
@@ -466,11 +398,7 @@ class JarTreeShakeInput implements AutoCloseable {
      * Non-JDK service providers are discovered through ServiceLoader.load() call
      * tracing in reachable dependency/app code.
      */
-    private static void addServiceProviderRoots(
-            Map<String, Set<String>> serviceProviders,
-            Map<String, ArtifactKey> classToDep,
-            Map<String, Supplier<byte[]>> generatedBytecode,
-            Set<String> roots) {
+    private void addServiceProviderRoots() {
         for (Map.Entry<String, Set<String>> entry : serviceProviders.entrySet()) {
             String serviceInterface = entry.getKey();
             if (!classToDep.containsKey(serviceInterface) && !generatedBytecode.containsKey(serviceInterface)) {
@@ -480,15 +408,12 @@ class JarTreeShakeInput implements AutoCloseable {
     }
 
     /**
-     * Returns the union of dependency and generated class names, used for string-constant
+     * Collects the union of dependency and generated class names, used for string-constant
      * class reference matching.
      */
-    private static Set<String> collectAllKnownClasses(
-            Map<String, ArtifactKey> classToDep,
-            Map<String, Supplier<byte[]>> generatedBytecode) {
-        final Set<String> allKnownClasses = new HashSet<>(classToDep.keySet());
+    private void collectAllKnownClasses() {
+        allKnownClasses.addAll(classToDep.keySet());
         allKnownClasses.addAll(generatedBytecode.keySet());
-        return allKnownClasses;
     }
 
     /**
@@ -496,10 +421,7 @@ class JarTreeShakeInput implements AutoCloseable {
      * Generated recorder bytecode often passes class names as strings to methods like
      * factory(className) that eventually call Class.forName() at runtime.
      */
-    private static void addStringClassReferenceRoots(
-            Map<String, Supplier<byte[]>> generatedBytecode,
-            Set<String> allKnownClasses,
-            Set<String> roots) {
+    private void addStringClassReferenceRoots() {
         for (Supplier<byte[]> bytecode : generatedBytecode.values()) {
             Set<String> stringClassRefs = JarTreeShaker.extractStringClassReferences(bytecode.get(), allKnownClasses);
             for (String ref : stringClassRefs) {
@@ -511,40 +433,116 @@ class JarTreeShakeInput implements AutoCloseable {
     }
 
     /**
-     * Builds a map from condition type to the set of class names that should become roots
-     * when that condition type is reachable. Used by {@link JarTreeShaker#evaluateConditionalRoots}
-     * for fixed-point evaluation.
+     * Returns a predicate telling whether the analysis determines the reachability of a class:
+     * true for dependency classes, except those of artifacts excluded from tree shaking, which are always kept.
      */
-    private static Map<String, Set<String>> collectConditionalRoots(
-            List<ReflectiveClassConditionBuildItem> reflectiveClassConditions) {
-        Map<String, Set<String>> conditionalRoots = new HashMap<>();
+    static Predicate<String> reachabilityAnalyzed(
+            Map<String, Supplier<byte[]>> depBytecode,
+            Map<String, ArtifactKey> classToDep,
+            Set<ArtifactKey> excludedArtifacts) {
+        return name -> depBytecode.containsKey(name)
+                && (excludedArtifacts.isEmpty() || !excludedArtifacts.contains(classToDep.get(name)));
+    }
+
+    /**
+     * Returns a predicate telling whether a class is present at runtime regardless of the analysis:
+     * dependency classes (to be combined with {@link #reachabilityAnalyzed}, so effectively those of excluded
+     * artifacts), application and generated classes, which are never removed, and JDK and GraalVM classes.
+     */
+    static Predicate<String> alwaysPresent(
+            Map<String, Supplier<byte[]>> depBytecode,
+            Map<String, Supplier<byte[]>> appBytecode,
+            Map<String, Supplier<byte[]>> generatedBytecode) {
+        return name -> depBytecode.containsKey(name)
+                || appBytecode.containsKey(name)
+                || generatedBytecode.containsKey(name)
+                || isPlatformClass(name);
+    }
+
+    /**
+     * Package prefixes of JDK and GraalVM classes. The JVM running the build may not have all of them,
+     * e.g. platform-specific JDK classes, classes of a newer JDK used by {@code native-image}, or
+     * GraalVM builder classes, which aren't on the application class path.
+     */
+    private static final String[] PLATFORM_PACKAGE_PREFIXES = {
+            "java.", "javax.", "jdk.", "sun.", "com.sun.", "org.graalvm.", "com.oracle.svm.", "com.oracle.graal."
+    };
+
+    /**
+     * Whether the class belongs to the JDK or GraalVM rather than to the application class path.
+     */
+    private static boolean isPlatformClass(String name) {
+        for (String prefix : PLATFORM_PACKAGE_PREFIXES) {
+            if (name.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return ClassLoader.getPlatformClassLoader().getResource(name.replace('.', '/') + ".class") != null;
+    }
+
+    /**
+     * Adds conditional roots from {@link JarTreeShakeConditionalRootClassBuildItem}s:
+     * <ul>
+     * <li>if the analysis determines the reachability of the condition class, the class is a conditional root;</li>
+     * <li>otherwise, if the condition class is always present (e.g. a JDK class, or a class of an artifact excluded
+     * from tree shaking), the class is an unconditional root;</li>
+     * <li>otherwise the condition class isn't on the classpath, can never be reachable, and the class isn't a root.</li>
+     * </ul>
+     *
+     * @param items conditional root build items
+     * @param reachabilityAnalyzed whether the analysis determines the reachability of a class
+     * @param alwaysPresent whether a class whose reachability isn't analyzed is present at runtime
+     * @param roots unconditional roots to add to
+     * @param conditionalRoots condition class to classes that become roots when the condition is reachable, to add to
+     */
+    static void addConditionalRoots(
+            List<JarTreeShakeConditionalRootClassBuildItem> items,
+            Predicate<String> reachabilityAnalyzed,
+            Predicate<String> alwaysPresent,
+            Set<String> roots,
+            Map<String, Set<String>> conditionalRoots) {
+        for (JarTreeShakeConditionalRootClassBuildItem item : items) {
+            addConditional(item.getConditionClassName(), item.getClassName(), reachabilityAnalyzed, alwaysPresent,
+                    roots, conditionalRoots);
+        }
+    }
+
+    private static void addConditional(String condition, String className, Predicate<String> reachabilityAnalyzed,
+            Predicate<String> alwaysPresent, Set<String> unconditional, Map<String, Set<String>> conditional) {
+        if (reachabilityAnalyzed.test(condition)) {
+            conditional.computeIfAbsent(condition, k -> new HashSet<>()).add(className);
+        } else if (alwaysPresent.test(condition)) {
+            unconditional.add(className);
+        }
+    }
+
+    /**
+     * Maps each condition type to the set of class names that should become roots
+     * when that condition type is reachable. {@link JarTreeShaker} consumes an entry when its condition type
+     * is reached.
+     */
+    private void collectConditionalRoots(List<ReflectiveClassConditionBuildItem> reflectiveClassConditions) {
         for (ReflectiveClassConditionBuildItem item : reflectiveClassConditions) {
             conditionalRoots
                     .computeIfAbsent(item.getTypeReached(), k -> new HashSet<>())
                     .add(item.getClassName());
         }
-        return conditionalRoots;
     }
 
     /**
-     * Converts {@link GeneratedClassBuildItem} list to a class-name-to-bytecode-supplier map,
+     * Collects bytecode suppliers of {@link GeneratedClassBuildItem}s,
      * translating binary names (with {@code /}) to dot-separated class names.
      */
-    private static Map<String, Supplier<byte[]>> getGeneratedClassesMap(List<GeneratedClassBuildItem> generatedClasses) {
-        final Map<String, Supplier<byte[]>> generatedBytecode = new HashMap<>(generatedClasses.size());
+    private void collectGeneratedClasses(List<GeneratedClassBuildItem> generatedClasses) {
         for (GeneratedClassBuildItem gen : generatedClasses) {
             generatedBytecode.put(gen.binaryName().replace('/', '.'), gen::getClassData);
         }
-        return generatedBytecode;
     }
 
-    private static Set<ArtifactKey> getExcludedArtifacts(
-            List<JarTreeShakeExcludedArtifactBuildItem> excludedArtifacts) {
-        Set<ArtifactKey> excludedKeys = new HashSet<>(excludedArtifacts.size());
-        for (JarTreeShakeExcludedArtifactBuildItem item : excludedArtifacts) {
-            excludedKeys.add(item.getArtifactKey());
+    private void collectExcludedArtifacts(List<JarTreeShakeExcludedArtifactBuildItem> excludedArtifactItems) {
+        for (JarTreeShakeExcludedArtifactBuildItem item : excludedArtifactItems) {
+            excludedArtifacts.add(item.getArtifactKey());
         }
-        return excludedKeys;
     }
 
     // ---- Supporting methods ----
@@ -552,7 +550,7 @@ class JarTreeShakeInput implements AutoCloseable {
     /**
      * Opens a dependency's content tree and registers it for cleanup on {@link #close()}.
      */
-    private static OpenPathTree openPathTree(ResolvedDependency dep, Map<ArtifactKey, OpenPathTree> openTrees) {
+    private OpenPathTree openPathTree(ResolvedDependency dep) {
         return openTrees.computeIfAbsent(dep.getKey(), k -> dep.getContentTree().open());
     }
 
@@ -602,6 +600,41 @@ class JarTreeShakeInput implements AutoCloseable {
      */
     static String classNameOf(String resourceName, int classNameStartIndex) {
         return resourceName.substring(classNameStartIndex, resourceName.length() - 6).replace('/', '.');
+    }
+
+    /**
+     * Checks whether the entry is a module descriptor, either at the root
+     * or in a multi-release {@code META-INF/versions/N/} directory.
+     */
+    static boolean isModuleInfoEntry(String resourceName) {
+        final int descriptorStart = resourceName.length() - MODULE_INFO_CLASS.length();
+        if (descriptorStart < 0 || !resourceName.startsWith(MODULE_INFO_CLASS, descriptorStart)) {
+            return false;
+        }
+        if (descriptorStart == 0) {
+            return true;
+        }
+        // the version directory must be the only one between the prefix and the descriptor
+        return resourceName.startsWith(META_INF_VERSIONS_PREFIX)
+                && resourceName.indexOf('/', META_INF_VERSIONS_PREFIX.length()) == descriptorStart - 1;
+    }
+
+    /**
+     * Parses the {@code provides} directives of a {@code module-info.class}, grouping provider
+     * class names by service interface. Modules may register service providers only in their
+     * descriptor (without a {@code META-INF/services/} file), in which case they are found
+     * by {@code ServiceLoader} when the application runs on the module path.
+     */
+    static void parseModuleInfoProviders(byte[] bytecode, Map<String, Set<String>> serviceProviders) {
+        ClassFile.of().parse(bytecode).findAttribute(Attributes.module()).ifPresent(module -> {
+            for (ModuleProvideInfo provide : module.provides()) {
+                Set<String> names = serviceProviders.computeIfAbsent(
+                        provide.provides().asInternalName().replace('/', '.'), k -> new HashSet<>());
+                for (ClassEntry provider : provide.providesWith()) {
+                    names.add(provider.asInternalName().replace('/', '.'));
+                }
+            }
+        });
     }
 
     /**
@@ -676,6 +709,72 @@ class JarTreeShakeInput implements AutoCloseable {
         roots.clear();
         conditionalRoots.clear();
         excludedArtifacts.clear();
+        conditionalDeclaredClasses.clear();
+        declaredClassesHolders.clear();
+    }
+
+    /**
+     * Selects the module descriptors of an artifact that the JVM may read, following the same
+     * multi-release rules as for classes: the highest version not newer than {@code appJavaVersion}
+     * (a lower one is always overridden by it) and every newer version, since the application
+     * may run on a newer JVM.
+     * <p>
+     * Newer versions are always selected, so their providers are collected as soon as they are
+     * visited. The highest version not newer than {@code appJavaVersion} is only known once all the
+     * entries have been visited, which is why its providers are collected by {@link #complete()}.
+     */
+    static class ModuleDescriptorSelector {
+
+        private final int appJavaVersion;
+        private final Map<String, Set<String>> serviceProviders;
+        private int selectedVersion = -1;
+        private byte[] selected;
+
+        ModuleDescriptorSelector(int appJavaVersion, Map<String, Set<String>> serviceProviders) {
+            this.appJavaVersion = appJavaVersion;
+            this.serviceProviders = serviceProviders;
+        }
+
+        /**
+         * Registers a module descriptor entry accepted by {@link #isModuleInfoEntry(String)}.
+         * The descriptor is read right away, since the path is only guaranteed to be readable
+         * while it's being visited.
+         */
+        void add(String entry, Path path) {
+            final int version = multiReleaseVersion(entry);
+            if (version > appJavaVersion) {
+                final byte[] bytecode = readModuleDescriptor(path);
+                if (bytecode != null) {
+                    parseModuleInfoProviders(bytecode, serviceProviders);
+                }
+            } else if (version > selectedVersion) {
+                final byte[] bytecode = readModuleDescriptor(path);
+                if (bytecode != null) {
+                    selectedVersion = version;
+                    selected = bytecode;
+                }
+            }
+        }
+
+        /**
+         * Collects the providers of the highest descriptor version not newer than {@code appJavaVersion}.
+         * Must be called after all the entries of the artifact have been visited.
+         */
+        void complete() {
+            if (selected != null) {
+                parseModuleInfoProviders(selected, serviceProviders);
+                selected = null;
+            }
+        }
+
+        private static byte[] readModuleDescriptor(Path path) {
+            try {
+                return Files.readAllBytes(path);
+            } catch (IOException e) {
+                log.debugf(e, "Failed to read module descriptor: %s", path);
+                return null;
+            }
+        }
     }
 
     /**

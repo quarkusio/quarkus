@@ -8,4 +8,11 @@ public interface DatabaseSchemaProvider {
     void resetDatabase(String dbName);
 
     void resetAllDatabases();
+
+    /**
+     * Loads data into the database, once every provider had a chance to reset the schema
+     * through {@link #resetDatabase(String)}.
+     */
+    default void populateDatabase(String dbName) {
+    }
 }

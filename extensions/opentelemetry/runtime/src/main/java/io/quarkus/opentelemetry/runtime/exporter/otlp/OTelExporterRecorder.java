@@ -20,7 +20,9 @@ import org.jboss.logging.Logger;
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.exporter.internal.EndpointUtil;
 import io.opentelemetry.exporter.otlp.internal.GrpcExporter;
+import io.opentelemetry.exporter.otlp.internal.GrpcExporterBuilder;
 import io.opentelemetry.exporter.otlp.internal.HttpExporter;
+import io.opentelemetry.exporter.otlp.internal.HttpExporterBuilder;
 import io.opentelemetry.exporter.otlp.internal.OtlpUserAgent;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigurationException;
 import io.opentelemetry.sdk.common.InternalTelemetryVersion;
@@ -145,7 +147,8 @@ public class OTelExporterRecorder {
                         InternalTelemetryVersion.LATEST,
                         ComponentId.generateLazy(StandardComponentId.ExporterType.OTLP_GRPC_SPAN_EXPORTER), // use the same as OTel does
                         MeterProvider::noop,
-                        baseUri),
+                        baseUri,
+                        GrpcExporterBuilder.DEFAULT_MAX_REQUEST_MESSAGE_SIZE),
                         memoryMode);
             }
 
@@ -172,7 +175,8 @@ public class OTelExporterRecorder {
                         MeterProvider::noop,
                         InternalTelemetryVersion.LATEST,
                         baseUri,
-                        false),
+                        false,
+                        HttpExporterBuilder.DEFAULT_MAX_REQUEST_BODY_SIZE),
                         memoryMode);
             }
         };
@@ -217,7 +221,8 @@ public class OTelExporterRecorder {
                                         InternalTelemetryVersion.LATEST,
                                         ComponentId.generateLazy(OTLP_GRPC_METRIC_EXPORTER), // use the same as OTel does
                                         MeterProvider::noop,
-                                        baseUri),
+                                        baseUri,
+                                        GrpcExporterBuilder.DEFAULT_MAX_REQUEST_MESSAGE_SIZE),
                                 aggregationTemporalityResolver(metricsConfig),
                                 aggregationResolver(metricsConfig),
                                 memoryMode);
@@ -239,7 +244,8 @@ public class OTelExporterRecorder {
                                         MeterProvider::noop,
                                         InternalTelemetryVersion.LATEST,
                                         baseUri,
-                                        false),
+                                        false,
+                                        HttpExporterBuilder.DEFAULT_MAX_REQUEST_BODY_SIZE),
                                 aggregationTemporalityResolver(metricsConfig),
                                 aggregationResolver(metricsConfig),
                                 memoryMode);
@@ -296,7 +302,8 @@ public class OTelExporterRecorder {
                                         ComponentId.generateLazy(
                                                 StandardComponentId.ExporterType.OTLP_GRPC_LOG_EXPORTER), // use the same as OTel does
                                         MeterProvider::noop,
-                                        baseUri),
+                                        baseUri,
+                                        GrpcExporterBuilder.DEFAULT_MAX_REQUEST_MESSAGE_SIZE),
                                 memoryMode);
                     } else if (HTTP_PROTOBUF.equals(protocol)) {
                         boolean exportAsJson = false; //TODO: this will be enhanced in the future
@@ -316,7 +323,8 @@ public class OTelExporterRecorder {
                                         MeterProvider::noop,
                                         InternalTelemetryVersion.LATEST,
                                         baseUri,
-                                        false),
+                                        false,
+                                        HttpExporterBuilder.DEFAULT_MAX_REQUEST_BODY_SIZE),
                                 memoryMode);
                     } else {
                         throw new IllegalArgumentException(String.format("Unsupported OTLP protocol %s specified. " +

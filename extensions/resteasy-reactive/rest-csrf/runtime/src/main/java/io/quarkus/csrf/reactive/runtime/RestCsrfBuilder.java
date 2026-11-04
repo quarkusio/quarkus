@@ -5,10 +5,8 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.vertx.http.security.CSRF;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public final class RestCsrfBuilder implements CSRF.Builder {
 
@@ -153,6 +151,6 @@ public final class RestCsrfBuilder implements CSRF.Builder {
     }
 
     private static RestCsrfConfig getRestCsrfConfig() {
-        return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(RestCsrfConfig.class);
+        return Config.get().getConfigMapping(RestCsrfConfig.class);
     }
 }

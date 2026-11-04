@@ -312,8 +312,12 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                     e.printStackTrace();
                 }
                 try {
-                    // TODO is this even useful?
-                    //  It's not using the config factory from the right classloader...
+                    // Clears the build time configuration between restarts, releasing it from both the deployment
+                    // and the augmentation classloaders, because setConfig releases by instance. This is the
+                    // QuarkusConfigFactory from the augmentation classloader, which is the one holding the build
+                    // time configuration, because this class is loaded with that classloader. The runtime
+                    // configuration is cleared separately by ConfigRecorder#releaseConfig, which operates on the
+                    // QuarkusConfigFactory from the runtime classloader.
                     QuarkusConfigFactory.setConfig(null);
                 } catch (Exception e) {
                     e.printStackTrace();

@@ -26,12 +26,8 @@ import com.arjuna.common.internal.util.propertyservice.BeanPopulator;
 import com.arjuna.common.util.propertyservice.PropertiesFactory;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
-@Recorder
 public class NarayanaJtaRecorder {
     public static final String HASH_ALGORITHM_FOR_SHORTENING = "SHA-224";
 
@@ -39,18 +35,12 @@ public class NarayanaJtaRecorder {
 
     private static final Logger log = Logger.getLogger(NarayanaJtaRecorder.class);
 
-    private final RuntimeValue<TransactionManagerConfiguration> transactions;
-
-    public NarayanaJtaRecorder(final RuntimeValue<TransactionManagerConfiguration> transactions) {
-        this.transactions = transactions;
-    }
-
-    public void setNodeName() {
+    public static void setNodeName(TransactionManagerConfiguration transactions) {
         try {
-            String nodeName = transactions.getValue().nodeName();
+            String nodeName = transactions.nodeName();
             if (nodeName.getBytes(StandardCharsets.UTF_8).length > 28
-                    && transactions.getValue().shortenNodeNameIfNecessary()) {
-                nodeName = shortenNodeName(transactions.getValue().nodeName());
+                    && transactions.shortenNodeNameIfNecessary()) {
+                nodeName = shortenNodeName(transactions.nodeName());
             }
             arjPropertyManager.getCoreEnvironmentBean().setNodeIdentifier(nodeName);
             jtaPropertyManager.getJTAEnvironmentBean().setXaRecoveryNodes(List.of(nodeName));
@@ -60,7 +50,7 @@ public class NarayanaJtaRecorder {
         }
     }
 
-    String shortenNodeName(String originalNodeName) throws NoSuchAlgorithmException {
+    static String shortenNodeName(String originalNodeName) throws NoSuchAlgorithmException {
         log.warnf("Node name \"%s\" is longer than 28 bytes, shortening it by using %s.", originalNodeName,
                 HASH_ALGORITHM_FOR_SHORTENING);
         final byte[] nodeNameAsBytes = originalNodeName.getBytes();
@@ -78,9 +68,11 @@ public class NarayanaJtaRecorder {
         return shorterNodeName;
     }
 
-    public void setDefaultProperties(Properties properties) {
+    public static void setDefaultProperties(Map<String, String> buildTimeProperties) {
         //TODO: this is a huge hack to avoid loading XML parsers
         //this needs a proper SPI
+        Properties properties = new Properties();
+        properties.putAll(buildTimeProperties);
         properties.putAll(System.getProperties());
 
         try {
@@ -95,15 +87,15 @@ public class NarayanaJtaRecorder {
         defaultProperties = properties;
     }
 
-    public void setDefaultTimeout() {
+    public static void setDefaultTimeout(TransactionManagerConfiguration transactions) {
         arjPropertyManager.getCoordinatorEnvironmentBean()
-                .setDefaultTimeout((int) transactions.getValue().defaultTransactionTimeout().getSeconds());
-        TxControl.setDefaultTimeout((int) transactions.getValue().defaultTransactionTimeout().getSeconds());
+                .setDefaultTimeout((int) transactions.defaultTransactionTimeout().getSeconds());
+        TxControl.setDefaultTimeout((int) transactions.defaultTransactionTimeout().getSeconds());
     }
 
-    public void setReaperConfig() {
+    public static void setReaperConfig(TransactionManagerConfiguration transactions) {
         var coordinatorBean = arjPropertyManager.getCoordinatorEnvironmentBean();
-        var reaper = transactions.getValue().reaper();
+        var reaper = transactions.reaper();
         coordinatorBean.setTxReaperTimeout(reaper.checkPeriod().toMillis());
         coordinatorBean.setTxReaperCancelWaitPeriod(reaper.cancelWaitPeriod().toMillis());
         coordinatorBean.setTxReaperCancelFailWaitPeriod(reaper.cancelFailWaitPeriod().toMillis());
@@ -114,32 +106,32 @@ public class NarayanaJtaRecorder {
         return defaultProperties;
     }
 
-    public void disableTransactionStatusManager() {
+    public static void disableTransactionStatusManager() {
         arjPropertyManager.getCoordinatorEnvironmentBean()
                 .setTransactionStatusManagerEnable(false);
     }
 
-    public void setConfig() {
+    public static void setConfig(TransactionManagerConfiguration transactions) {
         List<String> objectStores = Arrays.asList(null, "communicationStore", "stateStore");
-        if (transactions.getValue().objectStore().type().equals(ObjectStoreType.File_System)) {
-            objectStores.forEach(name -> setObjectStoreDir(name, transactions.getValue()));
-        } else if (transactions.getValue().objectStore().type().equals(ObjectStoreType.JDBC)) {
-            objectStores.forEach(name -> setJDBCObjectStore(name, transactions.getValue()));
+        if (transactions.objectStore().type().equals(ObjectStoreType.File_System)) {
+            objectStores.forEach(name -> setObjectStoreDir(name, transactions));
+        } else if (transactions.objectStore().type().equals(ObjectStoreType.JDBC)) {
+            objectStores.forEach(name -> setJDBCObjectStore(name, transactions));
         }
         BeanPopulator.getDefaultInstance(RecoveryEnvironmentBean.class)
-                .setRecoveryModuleClassNames(transactions.getValue().recoveryModules());
+                .setRecoveryModuleClassNames(transactions.recoveryModules());
         BeanPopulator.getDefaultInstance(RecoveryEnvironmentBean.class)
-                .setExpiryScannerClassNames(transactions.getValue().expiryScanners());
+                .setExpiryScannerClassNames(transactions.expiryScanners());
         BeanPopulator.getDefaultInstance(JTAEnvironmentBean.class)
-                .setXaResourceOrphanFilterClassNames(transactions.getValue().xaResourceOrphanFilters());
+                .setXaResourceOrphanFilterClassNames(transactions.xaResourceOrphanFilters());
     }
 
-    private void setObjectStoreDir(String name, TransactionManagerConfiguration config) {
+    private static void setObjectStoreDir(String name, TransactionManagerConfiguration config) {
         BeanPopulator.getNamedInstance(ObjectStoreEnvironmentBean.class, name)
                 .setObjectStoreDir(config.objectStore().directory());
     }
 
-    private void setJDBCObjectStore(String name, TransactionManagerConfiguration config) {
+    private static void setJDBCObjectStore(String name, TransactionManagerConfiguration config) {
         final ObjectStoreEnvironmentBean instance = BeanPopulator.getNamedInstance(ObjectStoreEnvironmentBean.class, name);
         instance.setObjectStoreType(JDBCStore.class.getName());
         instance.setJdbcDataSource(new QuarkusDataSource(config.objectStore().datasource()));
@@ -148,12 +140,16 @@ public class NarayanaJtaRecorder {
         instance.setTablePrefix(config.objectStore().tablePrefix());
     }
 
-    public void startRecoveryService(Map<String, String> configuredDataSourcesConfigKeys,
-            Set<String> dataSourcesWithTransactionIntegration, boolean xaResourcesPresent, ShutdownContext context) {
+    /**
+     * @return {@code true} if the recovery service was started and must be stopped with {@link #stopRecoveryService()}
+     */
+    public static boolean startRecoveryService(TransactionManagerConfiguration transactions,
+            Map<String, String> configuredDataSourcesConfigKeys,
+            Set<String> dataSourcesWithTransactionIntegration, boolean xaResourcesPresent) {
 
-        if (transactions.getValue().objectStore().type().equals(ObjectStoreType.JDBC)) {
+        if (transactions.objectStore().type().equals(ObjectStoreType.JDBC)) {
             final String objectStoreDataSourceName;
-            if (transactions.getValue().objectStore().datasource().isEmpty()) {
+            if (transactions.objectStore().datasource().isEmpty()) {
                 if (!DataSourceUtil.hasDefault(configuredDataSourcesConfigKeys.keySet())) {
                     throw new ConfigurationException(
                             "The Narayana JTA extension does not have a datasource configured as the JDBC object store,"
@@ -166,7 +162,7 @@ public class NarayanaJtaRecorder {
                 }
                 objectStoreDataSourceName = DataSourceUtil.DEFAULT_DATASOURCE_NAME;
             } else {
-                objectStoreDataSourceName = transactions.getValue().objectStore().datasource().get();
+                objectStoreDataSourceName = transactions.objectStore().datasource().get();
 
                 if (!configuredDataSourcesConfigKeys.keySet().contains(objectStoreDataSourceName)) {
                     throw new ConfigurationException(
@@ -190,27 +186,27 @@ public class NarayanaJtaRecorder {
                         objectStoreDataSourceName, configuredDataSourcesConfigKeys.get(objectStoreDataSourceName)));
             }
         }
-        boolean recoveryEnabled = transactions.getValue().enableRecovery().orElse(xaResourcesPresent);
+        boolean recoveryEnabled = transactions.enableRecovery().orElse(xaResourcesPresent);
         if (!recoveryEnabled) {
-            return;
+            return false;
         }
         QuarkusRecoveryService.getInstance().create();
         QuarkusRecoveryService.getInstance().start();
-        context.addShutdownTask(() -> {
-            try {
-                QuarkusRecoveryService.getInstance().stop();
-            } catch (Exception e) {
-                // the recovery manager throws IllegalStateException if it has already been shutdown
-                log.warn("The recovery manager has already been shutdown", e);
-            } finally {
-                QuarkusRecoveryService.getInstance().destroy();
-            }
-        });
+        return true;
     }
 
-    public void handleShutdown(ShutdownContext context) {
-        context.addLastShutdownTask(() -> {
-            TransactionReaper.terminate(false);
-        });
+    public static void stopRecoveryService() {
+        try {
+            QuarkusRecoveryService.getInstance().stop();
+        } catch (Exception e) {
+            // the recovery manager throws IllegalStateException if it has already been shutdown
+            log.warn("The recovery manager has already been shutdown", e);
+        } finally {
+            QuarkusRecoveryService.getInstance().destroy();
+        }
+    }
+
+    public static void terminateReaper() {
+        TransactionReaper.terminate(false);
     }
 }

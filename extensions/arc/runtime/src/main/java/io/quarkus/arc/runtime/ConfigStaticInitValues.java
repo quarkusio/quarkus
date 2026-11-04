@@ -14,11 +14,10 @@ import jakarta.enterprise.inject.spi.AnnotatedParameter;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 import jakarta.inject.Singleton;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.ConfigValue;
 
 import io.quarkus.runtime.StartupEvent;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 /**
  * This is a store for all config values injected (directly or programmatically) during the static init phase.
@@ -40,7 +39,7 @@ public class ConfigStaticInitValues {
             // No config values were recorded during static init phase
             return;
         }
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         List<String> mismatches = new ArrayList<>();
         for (InjectedValue injectedValue : injectedValues) {
             ConfigValue currentValue = config.getConfigValue(injectedValue.name);

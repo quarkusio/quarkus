@@ -3,6 +3,8 @@ package io.quarkus.redis.datasource.search;
 import static io.quarkus.redis.runtime.datasource.Validation.notNullOrBlank;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.util.List;
+
 import io.quarkus.redis.datasource.geo.GeoUnit;
 
 /**
@@ -28,8 +30,8 @@ public class GeoFilter {
         return new GeoFilter(field, longitude, latitude, radius, unit);
     }
 
-    @Override
-    public String toString() {
-        return "GEOFILTER " + field + " " + longitude + " " + latitude + " " + radius + " " + unit;
+    List<String> toArgs() {
+        return List.of("GEOFILTER", field, Double.toString(longitude), Double.toString(latitude), Double.toString(radius),
+                unit.toString());
     }
 }

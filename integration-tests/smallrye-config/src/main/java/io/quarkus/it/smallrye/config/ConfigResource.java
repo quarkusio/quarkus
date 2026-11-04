@@ -8,9 +8,8 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfig;
 
 @Path("/config")
@@ -34,7 +33,7 @@ public class ConfigResource {
     @GET
     @Path("/uuid")
     public Response uuid() {
-        return Response.ok(ConfigProvider.getConfig().getConfigValue("quarkus.uuid")).build();
+        return Response.ok(Config.get().getConfigValue("quarkus.uuid")).build();
     }
 
     @RegisterForReflection(targets = {

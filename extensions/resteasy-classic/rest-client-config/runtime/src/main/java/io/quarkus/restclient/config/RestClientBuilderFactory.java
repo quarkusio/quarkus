@@ -2,10 +2,9 @@ package io.quarkus.restclient.config;
 
 import java.util.ServiceLoader;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 /**
  * Factory which creates MicroProfile RestClientBuilder instance configured according to current Quarkus application
@@ -17,7 +16,7 @@ public interface RestClientBuilderFactory {
 
     default RestClientBuilder newBuilder(Class<?> proxyType) {
         return newBuilder(proxyType,
-                ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(RestClientsConfig.class));
+                Config.get().getConfigMapping(RestClientsConfig.class));
     }
 
     RestClientBuilder newBuilder(Class<?> proxyType, RestClientsConfig restClientsConfigRoot);

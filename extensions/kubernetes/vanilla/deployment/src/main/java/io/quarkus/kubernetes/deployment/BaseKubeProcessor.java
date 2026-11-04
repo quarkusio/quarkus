@@ -18,8 +18,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.JobCompletionMode;
 import io.dekorate.kubernetes.annotation.JobRestartPolicy;
@@ -97,6 +95,7 @@ import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.RoleRef;
 import io.quarkus.kubernetes.spi.Subject;
 import io.quarkus.kubernetes.spi.Targetable;
+import io.smallrye.config.Config;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
@@ -670,7 +669,7 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
             if (port.isPresent() && path != null) {
                 // Determine the effective Prometheus port: management port if enabled, otherwise use container port
                 final int containerPort = port.get().getContainerPort();
-                final int managementPort = ConfigProvider.getConfig()
+                final int managementPort = Config.get()
                         .getOptionalValue("quarkus.management.port", Integer.class)
                         .orElse(9000);
                 final int prometheusPort = KubernetesConfigUtil.managementPortIsEnabled()

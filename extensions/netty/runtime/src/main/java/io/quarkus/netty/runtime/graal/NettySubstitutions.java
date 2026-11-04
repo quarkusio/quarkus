@@ -42,6 +42,7 @@ import io.netty.bootstrap.AbstractBootstrapConfig;
 import io.netty.bootstrap.ChannelFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -511,6 +512,15 @@ final class Target_io_netty_buffer_EmptyByteBuf {
     @Alias
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
     private static long EMPTY_BYTE_BUFFER_ADDRESS;
+
+    @Alias
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
+    private ByteBufAllocator alloc;
+
+    @Substitute
+    public ByteBufAllocator alloc() {
+        return UnpooledByteBufAllocator.DEFAULT;
+    }
 
     @Substitute
     public ByteBuffer nioBuffer() {

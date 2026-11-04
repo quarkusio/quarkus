@@ -676,6 +676,15 @@ public class GeneratedAnnotationResource {
         return bean;
     }
 
+    // --- FormatArrayShapeNoCreatorBean: @JsonFormat(shape = ARRAY) deserialized through setters ---
+
+    @POST
+    @Path("/format-array-shape-no-creator")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public FormatArrayShapeNoCreatorBean echoFormatArrayShapeNoCreator(FormatArrayShapeNoCreatorBean bean) {
+        return bean;
+    }
+
     // --- JavaBeansTransientBean: @java.beans.Transient ---
 
     @GET

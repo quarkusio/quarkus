@@ -139,4 +139,10 @@ public interface JsonConfig {
     @WithDefault("false")
     boolean allowComments();
 
+    /**
+     * Specifies the maximum depth of JSON nesting allowed during parsing.
+     */
+    @WithDefault("400")
+    int maxNestingDepth();
+
 }

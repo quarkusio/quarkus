@@ -37,7 +37,7 @@ public class MixinCommandTest {
     public void testMixinCommandIsDiscovered() {
         Assertions.assertThat(aeshContext.getCommands()).isNotEmpty();
         var greetCmd = aeshContext.getCommands().stream()
-                .filter(c -> "greet".equals(c.getCommandName()))
+                .filter(c -> "greet".equals(c.commandName()))
                 .findFirst();
         Assertions.assertThat(greetCmd).isPresent();
     }

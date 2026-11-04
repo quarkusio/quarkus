@@ -2,7 +2,6 @@ package io.quarkus.vertx.core.runtime.graal;
 
 import static io.quarkus.vertx.core.runtime.graal.VertxSubstitutions.HTTP3_QUIC_NOT_AVAILABLE_MESSAGE;
 
-import java.lang.ref.Cleaner;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -24,7 +23,6 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
 import io.vertx.core.internal.VertxInternal;
-import io.vertx.core.internal.WorkerPool;
 
 @TargetClass(className = "io.vertx.core.net.OpenSSLEngineOptions")
 final class Target_io_vertx_core_net_OpenSSLEngineOptions {
@@ -114,14 +112,6 @@ final class Target_io_vertx_core_spi_tls_DefaultJDKCipherSuite {
     @Alias
     static List<String> get() {
         return null;
-    }
-}
-
-@TargetClass(className = "io.vertx.core.impl.WorkerExecutorImpl")
-final class Target_io_vertx_core_impl_WorkerExecutorImpl {
-    // Access the package-private constructor via @TargetClass
-    @Alias
-    public Target_io_vertx_core_impl_WorkerExecutorImpl(VertxInternal vertx, Cleaner cleaner, WorkerPool pool) {
     }
 }
 

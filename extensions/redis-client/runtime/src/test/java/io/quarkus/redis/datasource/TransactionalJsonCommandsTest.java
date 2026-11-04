@@ -90,6 +90,23 @@ public class TransactionalJsonCommandsTest extends DatasourceTestBase {
         assertThat(((JsonObject) result.get(13)).mapTo(Person.class)).isEqualTo(person3);
     }
 
+    @SuppressWarnings("unchecked")
+    @Test
+    public void arrTrimBlocking() {
+        TransactionResult result = blocking.withTransaction(tx -> {
+            TransactionalJsonCommands<String> json = tx.json();
+            json.jsonSet(key, "$", JsonArray.of(0, 1, 2, 3, 4)); // 0
+            json.jsonArrTrim(key, "$", 1, 2); // 1 -> [2]
+            json.jsonGetArray(key); // 2 -> [1, 2]
+        });
+        assertThat(result.size()).isEqualTo(3);
+        assertThat(result.discarded()).isFalse();
+
+        assertThat((Void) result.get(0)).isNull();
+        assertThat((List<Integer>) result.get(1)).containsExactly(2);
+        assertThat(((JsonArray) result.get(2)).getList()).containsExactly(1, 2);
+    }
+
     @Test
     public void setReactive() {
         TransactionResult result = reactive.withTransaction(tx -> {

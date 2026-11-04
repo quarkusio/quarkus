@@ -4,8 +4,7 @@ import java.util.HashSet;
 import java.util.OptionalInt;
 import java.util.Set;
 
-import org.eclipse.microprofile.config.Config;
-
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigSourceInterceptorFactory;

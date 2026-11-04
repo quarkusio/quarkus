@@ -1,14 +1,18 @@
 package io.quarkus.logging.gelf.deployment;
 
+import java.util.logging.ErrorManager;
+import java.util.logging.Handler;
+
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.logging.gelf.GelfConfig;
 import io.quarkus.logging.gelf.GelfLogHandlerRecorder;
+import io.quarkus.runtime.logging.LogCleanupFilter;
 
 class GelfLogHandlerProcessor {
 
@@ -18,9 +22,15 @@ class GelfLogHandlerProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    LogHandlerBuildItem build(GelfLogHandlerRecorder recorder) {
-        return new LogHandlerBuildItem(recorder.initializeHandler());
+    void build(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar.forService(Handler.class, "gelf")
+                .atPhase(Phase.LOGGING)
+                .require(GelfConfig.class)
+                .require(ErrorManager.class)
+                .require(LogCleanupFilter.class)
+                .optional()
+                .onStart((ctx, config, errorManager, cleanupFilter) -> GelfLogHandlerRecorder.initializeHandler(config,
+                        errorManager, cleanupFilter));
     }
 
     @BuildStep

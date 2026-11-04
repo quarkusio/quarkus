@@ -19,6 +19,10 @@ import io.vertx.core.http.WebSocketClientOptions;
 /**
  * Keeps a Dev UI JSON-RPC websocket open across a hot reload, like a browser tab does, and checks that the connection
  * keeps working without Vert.x reporting uncaught exceptions (see issue #57277).
+ * <p>
+ * Dev mode closes the open connections on a restart, so the old socket is either closed or still answering, and a new
+ * socket (what the Dev UI opens when it reconnects) must answer. The new socket also checks that the JSON-RPC websocket
+ * route, which is registered at runtime init once the router is initialized, is served after a reload.
  */
 public class JsonRpcWebSocketReloadTest {
 
@@ -48,6 +52,11 @@ public class JsonRpcWebSocketReloadTest {
                     String response = request(socket, 2);
                     assertThat(response == null || hasId(response, 2)).isTrue();
                 }
+
+                // Reconnecting, like the Dev UI does, gives a working connection to the reloaded application
+                WebSocket reconnected = client.connect("/q/dev-ui/json-rpc-ws").await(30, TimeUnit.SECONDS);
+                assertThat(request(reconnected, 3)).isNotNull().satisfies(m -> assertThat(hasId(m, 3)).isTrue())
+                        .doesNotContain("\"error\"");
             } finally {
                 client.close().await(30, TimeUnit.SECONDS);
             }

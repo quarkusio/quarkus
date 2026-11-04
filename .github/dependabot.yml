@@ -14,6 +14,7 @@ updates:
       - dependency-name: org.jboss.resteasy:*
       - dependency-name: org.jboss.resteasy.microprofile:*
       - dependency-name: org.jboss.resteasy.spring:*
+      - dependency-name: dev.resteasy.providers:*
       - dependency-name: org.apache.activemq:*
       - dependency-name: org.flywaydb:*
       - dependency-name: org.liquibase:*

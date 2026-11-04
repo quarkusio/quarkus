@@ -35,7 +35,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import com.google.cloud.tools.jib.api.CacheDirectoryCreationException;
@@ -97,6 +96,7 @@ import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.ResettableSystemProperties;
+import io.smallrye.config.Config;
 
 public class JibProcessor {
 
@@ -323,7 +323,7 @@ public class JibProcessor {
 
     private Path determineDockerExecutable(ContainerImageJibConfig jibConfig) {
         Optional<String> jibConfigExecutableName = jibConfig.dockerExecutableName();
-        Optional<String> dockerConfigExecutableName = ConfigProvider.getConfig()
+        Optional<String> dockerConfigExecutableName = Config.get()
                 .getOptionalValue("quarkus.docker.executable-name", String.class);
         if (jibConfigExecutableName.isPresent()) {
             return Paths.get(jibConfigExecutableName.get());

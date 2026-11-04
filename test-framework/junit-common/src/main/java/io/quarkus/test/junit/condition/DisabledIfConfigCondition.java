@@ -5,9 +5,10 @@ import static org.junit.jupiter.api.extension.ConditionEvaluationResult.enabled;
 
 import java.util.NoSuchElementException;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.platform.commons.util.Preconditions;
+
+import io.smallrye.config.Config;
 
 class DisabledIfConfigCondition extends RepeatableAnnotationCondition<DisabledIfConfig> {
     private static final ConditionEvaluationResult ENABLED = ConditionEvaluationResult.enabled(
@@ -25,7 +26,7 @@ class DisabledIfConfigCondition extends RepeatableAnnotationCondition<DisabledIf
         Preconditions.notBlank(regex, () -> "The 'matches' attribute must not be blank in " + annotation);
 
         try {
-            var actual = ConfigProvider.getConfig().getValue(name, String.class);
+            var actual = Config.getOrCreate().getValue(name, String.class);
 
             if (actual == null) {
                 return enabled("System property [%s] does not exist".formatted(name));

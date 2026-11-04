@@ -255,7 +255,7 @@ instance:
 
 [source,java]
 ----
-SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+Config config = Config.get();
 Server server = config.getConfigMapping(Server.class);
 ----
 
@@ -354,7 +354,7 @@ This API is mostly useful in situations where CDI injection is not available.
 
 [source,java]
 ----
-SmallRyeConfig config = org.eclipse.microprofile.config.ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+Config config = Config.get();
 String databaseName = config.getValue("database.name", String.class);
 Optional<String> maybeDatabaseName = config.getOptionalValue("database.name", String.class);
 ----
@@ -662,7 +662,7 @@ up within the block:
 
 [source,java]
 ----
-SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+Config config = Config.get();
 // returns "https://${remote.host}/" without expanding the expression
 String url = Expressions.withoutExpansion(() -> config.getValue("callable.url", String.class));
 ----
@@ -901,7 +901,7 @@ options taking into account `quarkus.config-tracking.*` configuration.
 [IMPORTANT]
 ====
 Unlike the build configuration options recorded during the `quarkus:build` goal, configuration options saved by `quarkus:track-config-changes` with `dumpCurrentWhenRecordedUnavailable` enabled will include all the build configuration
-options exposed by a `org.eclipse.microprofile.config.Config` instance. Which means this report may include some build configuration options that will not be used by the Quarkus application build process but also may be missing some
+options exposed by a `io.smallrye.config.Config` instance. Which means this report may include some build configuration options that will not be used by the Quarkus application build process but also may be missing some
 build configuration options since MicroProfile Config specification allows configuration sources not to expose all the property names they provide to users.
 ====
 

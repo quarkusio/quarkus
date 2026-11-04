@@ -3,14 +3,13 @@ package io.quarkus.oidc.runtime.dev.ui;
 import java.time.Duration;
 import java.util.Map;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
@@ -35,7 +34,7 @@ public final class OidcDevServicesUtils {
         WebClientOptions options = new WebClientOptions();
         options.setTrustAll(true);
         options.setVerifyHost(false);
-        var config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        var config = Config.get();
         var proxyConfig = OidcConfig.getDefaultTenant(config.getConfigMapping(OidcConfig.class)).proxy();
         var container = Arc.container();
         var proxyConfigurationRegistry = container != null ? container.select(ProxyConfigurationRegistry.class).orNull() : null;

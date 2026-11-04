@@ -9,10 +9,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.annotation.Priority;
 
-import org.eclipse.microprofile.config.Config;
-
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigValue;

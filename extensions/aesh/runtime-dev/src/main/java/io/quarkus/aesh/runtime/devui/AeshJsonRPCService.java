@@ -118,13 +118,13 @@ public class AeshJsonRPCService {
             JsonArray commandsArray = new JsonArray();
             for (AeshCommandMetadata cmd : ctx.getCommands()) {
                 JsonObject cmdJson = new JsonObject()
-                        .put("name", cmd.getCommandName())
-                        .put("description", cmd.getDescription() != null ? cmd.getDescription() : "")
-                        .put("className", cmd.getClassName())
-                        .put("groupCommand", cmd.isGroupCommand());
+                        .put("name", cmd.commandName())
+                        .put("description", cmd.description() != null ? cmd.description() : "")
+                        .put("className", cmd.className())
+                        .put("groupCommand", cmd.groupCommand());
 
-                if (!cmd.getSubCommandClassNames().isEmpty()) {
-                    cmdJson.put("subCommands", new JsonArray(cmd.getSubCommandClassNames()));
+                if (!cmd.subCommandClassNames().isEmpty()) {
+                    cmdJson.put("subCommands", new JsonArray(cmd.subCommandClassNames()));
                 }
 
                 commandsArray.add(cmdJson);

@@ -584,7 +584,7 @@ public class PersonResource {
 NOTE: Be careful to use the `@Transactional` annotation on the operations that modify the database,
 you can add the annotation at the class level for simplicity purpose.
 
-To make it easier to showcase some capabilities of Hibernate ORM with Panache on Quarkus with Dev mode, some test data should be inserted into the database by adding the following content to a new file named src/main/resources/import.sql:
+To make it easier to showcase some capabilities of Hibernate ORM with Panache on Quarkus with Dev mode, some test data should be inserted into the database by adding the following content to a new file named src/main/resources/data.sql:
 
 [source,sql]
 ----
@@ -592,7 +592,7 @@ INSERT INTO person (id, birth, name, status) VALUES (1, '1995-09-12', 'Emily Bro
 ALTER SEQUENCE person_seq RESTART WITH 2;
 ----
 
-NOTE: If you would like to initialize the DB when you start the Quarkus app in your demo ("production") environment, add `quarkus.hibernate-orm.schema-management.strategy=drop-and-create` to the Quarkus startup options in addition to `import.sql`.
+NOTE: If you would like to initialize the DB when you start the Quarkus app in your demo ("production") environment, add `quarkus.hibernate-orm.schema-management.strategy=drop-and-create` and `quarkus.hibernate-orm.data-management.strategy=create` to the Quarkus startup options in addition to `data.sql`.
 
 After that, you can see the people list and add new person as followings:
 

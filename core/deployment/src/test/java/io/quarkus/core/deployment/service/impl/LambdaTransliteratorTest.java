@@ -3,6 +3,7 @@ package io.quarkus.core.deployment.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.lang.constant.ClassDesc;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -42,7 +43,15 @@ import io.quarkus.core.service.impl.ServiceGraph;
 import io.quarkus.core.service.impl.ServiceNode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
+import io.smallrye.classfile.ClassFile;
 import io.smallrye.classfile.ClassHierarchyResolver;
+import io.smallrye.classfile.CodeElement;
+import io.smallrye.classfile.MethodModel;
+import io.smallrye.classfile.constantpool.ClassEntry;
+import io.smallrye.classfile.constantpool.ConstantDynamicEntry;
+import io.smallrye.classfile.constantpool.LoadableConstantEntry;
+import io.smallrye.classfile.constantpool.StringEntry;
+import io.smallrye.classfile.instruction.ConstantInstruction;
 
 /**
  * Tests for {@link LambdaTransliterator}.
@@ -1113,5 +1122,58 @@ class LambdaTransliteratorTest {
                 throw new ClassNotFoundException(name);
             }
         };
+    }
+
+    @Test
+    void publicClassCaptureIsEmittedAsClassConstant() throws Exception {
+        Class<?> captured = ArrayList.class;
+        Action1<Class<?>, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Class.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+        Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
+                CONSOLIDATED_CLASS_NAME, List.of(extracted), ClassHierarchyResolver.defaultResolver());
+
+        assertThat(ldcConstants(classes.get(CONSOLIDATED_CLASS_NAME)))
+                .anyMatch(constant -> constant instanceof ClassEntry classEntry
+                        && classEntry.asSymbol().equals(ClassDesc.of(ArrayList.class.getName())))
+                .noneMatch(ConstantDynamicEntry.class::isInstance);
+        assertThat(deployAndReturn(extracted).value()).isEqualTo(ArrayList.class);
+    }
+
+    @Test
+    void nonPublicClassCaptureIsLoadedDynamically() throws Exception {
+        Class<?> captured = Hidden.class;
+        Action1<Class<?>, StartContext> action = (StartContext ctx) -> captured;
+
+        TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
+                action, Class.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
+        Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
+                CONSOLIDATED_CLASS_NAME, List.of(extracted), ClassHierarchyResolver.defaultResolver());
+
+        assertThat(ldcConstants(classes.get(CONSOLIDATED_CLASS_NAME)))
+                .anyMatch(constant -> constant instanceof ConstantDynamicEntry condy
+                        && condy.bootstrap().bootstrapMethod().reference().owner().asInternalName()
+                                .equals("io/quarkus/core/Bootstraps")
+                        && condy.bootstrap().arguments().get(0) instanceof StringEntry descriptor
+                        && descriptor.stringValue().equals(Hidden.class.descriptorString()));
+        assertThat(deployAndReturn(extracted).value()).isEqualTo(Hidden.class);
+    }
+
+    static class Hidden {
+    }
+
+    private static List<LoadableConstantEntry> ldcConstants(byte[] bytecode) {
+        List<LoadableConstantEntry> constants = new ArrayList<>();
+        for (MethodModel method : ClassFile.of().parse(bytecode).methods()) {
+            method.code().ifPresent(code -> {
+                for (CodeElement element : code.elementList()) {
+                    if (element instanceof ConstantInstruction.LoadConstantInstruction ldc) {
+                        constants.add(ldc.constantEntry());
+                    }
+                }
+            });
+        }
+        return constants;
     }
 }

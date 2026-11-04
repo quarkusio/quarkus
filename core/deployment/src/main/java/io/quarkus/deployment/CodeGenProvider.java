@@ -5,10 +5,9 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 
-import org.eclipse.microprofile.config.Config;
-
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
+import io.smallrye.config.Config;
 
 /**
  * Service providers for this interface are triggered during generate-sources phase of build of Quarkus applications

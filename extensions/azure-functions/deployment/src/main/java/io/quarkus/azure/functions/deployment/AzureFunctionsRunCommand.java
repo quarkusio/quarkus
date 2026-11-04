@@ -11,8 +11,6 @@ import java.util.List;
 import java.util.OptionalInt;
 
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import com.microsoft.azure.toolkit.lib.common.exception.AzureExecutionException;
@@ -24,6 +22,7 @@ import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.cmd.RunCommandActionBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.smallrye.config.Config;
 
 public class AzureFunctionsRunCommand {
     private static final Logger log = Logger.getLogger(AzureFunctionsRunCommand.class);
@@ -80,8 +79,7 @@ public class AzureFunctionsRunCommand {
         if (azureConfig.funcPort().isPresent()) {
             funcPort = azureConfig.funcPort().get();
         } else {
-            Config config = ConfigProviderResolver.instance().getConfig();
-            funcPort = config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(8081);
+            funcPort = Config.get().getValue("quarkus.http.test-port", OptionalInt.class).orElse(8081);
         }
         final String enableDebug = System.getProperty("enableDebug");
         if (StringUtils.isNotEmpty(enableDebug) && enableDebug.equalsIgnoreCase("true")) {

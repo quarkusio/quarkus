@@ -1,5 +1,6 @@
 package io.quarkus.restclient.runtime;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.ws.rs.RuntimeType;
@@ -12,19 +13,15 @@ import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
 import org.jboss.resteasy.spi.InjectorFactory;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
-
-@Recorder
 public class RestClientRecorder {
 
     public static ResteasyProviderFactory providerFactory;
 
-    public void setRestClientBuilderResolver() {
+    public static void setRestClientBuilderResolver() {
         RestClientBuilderResolver.setInstance(new BuilderResolver());
     }
 
-    public void initializeResteasyProviderFactory(RuntimeValue<InjectorFactory> ifc, boolean useBuiltIn,
+    public static void initializeResteasyProviderFactory(InjectorFactory ifc, boolean useBuiltIn,
             Set<String> providersToRegister,
             Set<String> contributedProviders) {
         ResteasyProviderFactory clientProviderFactory = new ResteasyProviderFactoryImpl(RuntimeType.CLIENT,
@@ -36,7 +33,7 @@ public class RestClientRecorder {
 
             @Override
             public InjectorFactory getInjectorFactory() {
-                return ifc.getValue();
+                return ifc;
             }
         };
 
@@ -46,7 +43,7 @@ public class RestClientRecorder {
         providerFactory = clientProviderFactory;
     }
 
-    public void setResteasyProviderFactoryInstance() {
+    public static void setResteasyProviderFactoryInstance() {
         ResteasyProviderFactory.setInstance(providerFactory);
     }
 
@@ -56,8 +53,9 @@ public class RestClientRecorder {
         if (useBuiltIn) {
             RegisterBuiltin.register(providerFactory);
         } else {
-            providersToRegister.removeAll(contributedProviders);
-            registerProviders(providerFactory, providersToRegister, true);
+            Set<String> providers = new HashSet<>(providersToRegister);
+            providers.removeAll(contributedProviders);
+            registerProviders(providerFactory, providers, true);
         }
         registerProviders(providerFactory, contributedProviders, false);
     }

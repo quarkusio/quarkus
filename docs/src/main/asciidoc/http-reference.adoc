@@ -31,6 +31,30 @@ was chosen as it is the standard location for resources in `jar` files as define
 Quarkus can be used without Servlet, following this convention allows existing code that places its resources in this
 location to function correctly.
 
+For `GET` and `HEAD` requests, static resources take precedence over Jakarta REST endpoints: if a request path matches both a static resource and an endpoint, the static resource is served and the endpoint is not invoked.
+Therefore, the security annotations of the endpoint, such as `@RolesAllowed`, do not protect the static resource.
+To secure static resources, use xref:security-authorize-web-endpoints-reference.adoc#authorization-using-configuration[authorization using configuration].
+Quarkus logs a warning at startup about the shadowed endpoints that it detects.
+If the shadowing is intended, for example, when an endpoint is a fallback for the paths without a static resource, you can disable the warning by setting the level of its log category to `ERROR`.
+This disables the warning for all endpoints.
+
+If you use Quarkus REST, set the following configuration property:
+
+[source,properties]
+----
+quarkus.log.category."io.quarkus.resteasy.reactive.server.runtime.StaticResourceShadowingCheck".level=ERROR
+----
+
+If you use RESTEasy Classic, set the following configuration property:
+
+[source,properties]
+----
+quarkus.log.category."io.quarkus.resteasy.runtime.StaticResourceShadowingCheck".level=ERROR
+----
+
+NOTE: With Servlet support, which the `quarkus-undertow` extension provides, Jakarta REST endpoints take precedence over static resources, except for RESTEasy Classic endpoints when the RESTEasy Classic path is `/`, which is the default.
+You can change the RESTEasy Classic path with the `quarkus.resteasy.path` configuration property or the `@ApplicationPath` annotation.
+
 === From web dependencies like webjars or mvnpm
 
 Look at the xref:web-dependency-locator.adoc[Web dependency locator] guide for details on how to use https://www.webjars.org[WebJars], https://mvnpm.org[mvnpm] and https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap[importmaps]
@@ -141,14 +165,40 @@ quarkus.http.compression-level=6
 ==== Brotli compression
 
 Brotli compression is not available by default.
-Enable it by adding `br` to the compressors list:
+To enable it, add the Brotli4J dependency to your project:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>com.aayushatharva.brotli4j</groupId>
+    <artifactId>brotli4j</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("com.aayushatharva.brotli4j:brotli4j")
+----
+
+Then add `br` to the compressors list:
 
 [source,properties]
 ----
 quarkus.http.compressors=deflate,gzip,br
 ----
 
-TIP: Enabling Brotli adds approximately 1MB to native executable size because it requires bundling the Brotli4J native library.
+If `br` is configured without the dependency, the build fails.
+
+With Maven, the `brotli4j` dependency brings the native library matching the machine running the build.
+With Gradle, or when building a native executable in a container, also add the `native-<os>-<arch>` artifact matching the target platform.
+See xref:vertx-reference.adoc#brotli4j-and-cross-platform-support[Brotli4J and cross-platform support] for the list of artifacts.
+
+TIP: Adding the dependency adds approximately 1MB to native executable size because it requires bundling the Brotli4J native library, whether or not `br` is in the compressors list.
+
+NOTE: The dependency enables Brotli compression when `br` is in the compressors list, and Brotli decompression whenever decompression is enabled with `quarkus.http.enable-decompression`: the server then decodes request bodies sent with `Content-Encoding: br`.
+Without the dependency, such a request body is not decoded and reaches the application as is.
 
 ==== Per-endpoint control
 

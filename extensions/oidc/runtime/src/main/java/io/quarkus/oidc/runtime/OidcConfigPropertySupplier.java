@@ -6,13 +6,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Provider;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
+import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfig;
 
 public class OidcConfigPropertySupplier implements Supplier<String> {
@@ -49,7 +47,7 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
 
     @Override
     public String get() {
-        return get(ConfigProvider.getConfig());
+        return get(Config.get());
     }
 
     private String checkUrlProperty(Optional<String> value, OidcTenantConfig providerConfig, Config config) {

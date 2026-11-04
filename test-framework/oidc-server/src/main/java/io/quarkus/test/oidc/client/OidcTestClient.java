@@ -7,10 +7,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.smallrye.config.Config;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -164,12 +163,13 @@ public class OidcTestClient {
     }
 
     private String getPropertyValue(String prop) {
-        return ConfigProvider.getConfig().getValue(prop, String.class);
+        return Config.get().getValue(prop, String.class);
     }
 
     private String getOptionalPropertyValue(String prop, String defaultProp) {
-        return ConfigProvider.getConfig().getOptionalValue(prop, String.class)
-                .orElseGet(() -> ConfigProvider.getConfig().getValue(defaultProp, String.class));
+        Config config = Config.get();
+        return config.getOptionalValue(prop, String.class)
+                .orElseGet(() -> config.getValue(defaultProp, String.class));
     }
 
     public static Buffer encodeForm(MultiMap form) {

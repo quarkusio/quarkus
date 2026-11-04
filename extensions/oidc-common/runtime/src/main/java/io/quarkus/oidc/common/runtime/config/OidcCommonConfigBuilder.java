@@ -137,6 +137,20 @@ public abstract class OidcCommonConfigBuilder<T> {
     protected abstract T getBuilder();
 
     /**
+     * @return current {@link OidcCommonConfig#authServerUrl()}
+     */
+    protected Optional<String> getAuthServerUrl() {
+        return authServerUrl;
+    }
+
+    /**
+     * @return current {@link OidcCommonConfig#discoveryEnabled()}
+     */
+    protected Optional<Boolean> getDiscoveryEnabled() {
+        return discoveryEnabled;
+    }
+
+    /**
      * @param authServerUrl {@link OidcCommonConfig#authServerUrl()}
      * @return T builder
      */

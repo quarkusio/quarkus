@@ -4,7 +4,6 @@ import static io.quarkus.it.extension.ConfigManager.TEST_PROPERTY_NAME;
 import static io.quarkus.it.extension.ConfigManager.TEST_PROPERTY_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.config.Config;
 
 @QuarkusTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -35,7 +35,7 @@ public class QuarkusTestExtensionPerClassTest {
     }
 
     private String getPropertyValue() {
-        return ConfigProvider.getConfig()
+        return Config.get()
                 .getConfigValue(TEST_PROPERTY_NAME)
                 .getValue();
     }

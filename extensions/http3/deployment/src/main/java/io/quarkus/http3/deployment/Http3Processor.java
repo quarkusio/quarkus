@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -49,6 +48,7 @@ import io.smallrye.certs.CertificateGenerator;
 import io.smallrye.certs.CertificateRequest;
 import io.smallrye.certs.Format;
 import io.smallrye.common.os.OS;
+import io.smallrye.config.Config;
 
 class Http3Processor {
 
@@ -239,7 +239,7 @@ class Http3Processor {
     }
 
     private static boolean isTlsAlreadyConfigured() {
-        var config = ConfigProvider.getConfig();
+        Config config = Config.get();
 
         Optional<String> tlsConfigName = config.getOptionalValue("quarkus.http.tls-configuration-name", String.class);
         if (tlsConfigName.isPresent()) {

@@ -225,6 +225,8 @@ final class SpiffeClientImpl implements SpiffeClient {
         }
         JsonObject payload = new JsonObject(new String(Base64.getUrlDecoder().decode(parts[1])));
 
+        String iss = payload.getString("iss");
+
         String sub = payload.getString("sub");
         SpiffeValidator.validateSpiffeId(sub);
         if (!sub.equals(svid.getSpiffeId())) {
@@ -273,10 +275,10 @@ final class SpiffeClientImpl implements SpiffeClient {
             throw new SpiffeConnectionException("JWT-SVID from SPIRE agent is already expired");
         }
 
-        record WorkloadJsonWebTokenImpl(String token, String subject, Set<String> audience,
+        record WorkloadJsonWebTokenImpl(String token, String issuer, String subject, Set<String> audience,
                 Instant expiry) implements WorkloadJsonWebToken {
         }
-        return new WorkloadJsonWebTokenImpl(token, sub, Set.copyOf(audience), expiry);
+        return new WorkloadJsonWebTokenImpl(token, iss, sub, Set.copyOf(audience), expiry);
     }
 
     private static WorkloadCertificateDocument toWorkloadCertificate(X509SVIDResponse response)

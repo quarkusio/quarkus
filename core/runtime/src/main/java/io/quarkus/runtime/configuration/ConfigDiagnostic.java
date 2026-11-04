@@ -17,14 +17,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.ImageMode;
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigValue;
-import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.common.utils.StringUtil;
 
 /**
@@ -37,7 +35,7 @@ public final class ConfigDiagnostic {
     }
 
     public static void deprecatedProperties(Map<String, String> deprecatedProperties) {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         for (Map.Entry<String, String> entry : deprecatedProperties.entrySet()) {
             String propertyName = entry.getKey();
             ConfigValue configValue = config.getConfigValue(propertyName);
@@ -86,7 +84,7 @@ public final class ConfigDiagnostic {
         if (properties.isEmpty()) {
             return;
         }
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         Set<String> usedProperties = new HashSet<>();
         StringBuilder tmp = null;
         for (String property : config.getPropertyNames()) {
@@ -189,7 +187,7 @@ public final class ConfigDiagnostic {
     }
 
     public static Set<Path> configFilesFromLocations() throws Exception {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
 
         Set<Path> configFiles = new HashSet<>();
         configFiles.addAll(configFiles(Paths.get(System.getProperty("user.dir"), "config")));
@@ -215,7 +213,7 @@ public final class ConfigDiagnostic {
     }
 
     public static void unknownConfigFiles(final Set<Path> configFiles) throws Exception {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         Set<String> configNames = new HashSet<>();
         for (ConfigSource configSource : config.getConfigSources()) {
             if (configSource.getName() != null && configSource.getName().contains(APPLICATION)) {

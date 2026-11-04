@@ -3,9 +3,8 @@ package io.quarkus.amazon.lambda.runtime;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.config.Config;
 
 /**
  * Various constants and util methods used for communication with the AWS API.
@@ -86,11 +85,11 @@ public class AmazonLambdaApi {
     public static boolean isTestMode() {
         //need this config check for native tests
         return LaunchMode.current() == LaunchMode.TEST
-                || ConfigProvider.getConfig().getOptionalValue(QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, String.class).isPresent();
+                || Config.get().getOptionalValue(QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, String.class).isPresent();
     }
 
     private static String runtimeApi() {
-        var testApi = ConfigProvider.getConfig().getOptionalValue(QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, String.class);
+        var testApi = Config.get().getOptionalValue(QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, String.class);
         if (testApi.isPresent()) {
             return testApi.get();
         }

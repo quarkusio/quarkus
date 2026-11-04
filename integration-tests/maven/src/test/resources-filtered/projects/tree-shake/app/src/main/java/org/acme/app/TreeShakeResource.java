@@ -17,6 +17,8 @@ import org.acme.fieldtypes.FieldHolder;
 import org.acme.generics.GenericArg;
 import org.acme.generics.GenericContainer;
 import org.acme.inner.Outer;
+import org.acme.invokedyn.Identity;
+import org.acme.invokedyn.LambdaConstant;
 import org.acme.invokedyn.LambdaTarget;
 import org.acme.libb.ServiceB;
 import org.acme.libc.ServiceC;
@@ -28,10 +30,18 @@ import org.acme.throws_.ThrowingService;
 import org.acme.loadchain.ChainProvider;
 import org.acme.pkginfo.PkgInfoService;
 import org.acme.serialization.ResourceDeserializer;
+import org.acme.substitution.InnerHolder;
+import org.acme.substitution.UsedTarget;
 import org.acme.transform.TransformableClass;
 
 @Path("/tree-shake")
 public class TreeShakeResource {
+
+    @GET
+    @Path("/substitution")
+    public String substitution() {
+        return new UsedTarget().hello() + new InnerHolder.Used().hello();
+    }
 
     @GET
     @Path("/basic")
@@ -137,6 +147,18 @@ public class TreeShakeResource {
     public String invokedynamic() {
         Function<String, LambdaTarget> factory = LambdaTarget::new;
         return factory.apply("test").getValue();
+    }
+
+    @GET
+    @Path("/invokedynamic-call-site-type")
+    public String invokedynamicCallSiteType() {
+        return LambdaConstant.INSTANCE.value();
+    }
+
+    @GET
+    @Path("/invokedynamic-instantiated-method-type")
+    public String invokedynamicInstantiatedMethodType() {
+        return Identity.check();
     }
 
     @GET

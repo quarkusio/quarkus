@@ -462,10 +462,11 @@ public class QueryArgs implements RedisCommandExtraArguments {
             list.add(filter.getUpperBound());
         }
         for (GeoFilter filter : geoFilters) {
-            list.add(filter.toString());
+            list.addAll(filter.toArgs());
         }
 
         if (inKeys != null && inKeys.length > 0) {
+            list.add("INKEYS");
             list.add(Integer.toString(inKeys.length));
             list.addAll(Arrays.asList(inKeys));
         }
@@ -481,6 +482,7 @@ public class QueryArgs implements RedisCommandExtraArguments {
         }
 
         if (inFields != null && inFields.length > 0) {
+            list.add("INFIELDS");
             list.add(Integer.toString(inFields.length));
             Collections.addAll(list, inFields);
         }

@@ -6,8 +6,10 @@ import java.lang.reflect.Type;
 
 import jakarta.json.JsonValue;
 import jakarta.json.JsonWriter;
+import jakarta.json.stream.JsonParsingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonValueHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonpUtil;
@@ -42,6 +44,10 @@ public class ServerJsonValueHandler extends JsonValueHandler
     @Override
     public JsonValue readFrom(Class<JsonValue> type, Type genericType, MediaType mediaType,
             ServerRequestContext context) throws WebApplicationException, IOException {
-        return JsonpUtil.reader(context.getInputStream(), mediaType).readValue();
+        try {
+            return JsonpUtil.reader(context.getInputStream(), mediaType).readValue();
+        } catch (JsonParsingException e) {
+            throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
+        }
     }
 }

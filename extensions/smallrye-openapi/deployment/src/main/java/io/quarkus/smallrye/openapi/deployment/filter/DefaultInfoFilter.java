@@ -1,10 +1,11 @@
 package io.quarkus.smallrye.openapi.deployment.filter;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.eclipse.microprofile.openapi.models.info.Info;
+
+import io.smallrye.config.Config;
 
 public class DefaultInfoFilter implements OASFilter {
 

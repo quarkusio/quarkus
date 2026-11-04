@@ -24,7 +24,6 @@ import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.internal.ContextInternal;
 import io.vertx.mutiny.core.Context;
 import io.vertx.mutiny.core.Vertx;
 
@@ -78,8 +77,8 @@ public class MutinyStubInjectionTest {
                 context.runOnContext(() -> {
                     service.sayHello(HelloRequest.newBuilder().setName(s).build())
                             .map(HelloReply::getMessage)
-                            .invoke(() -> assertThat(Vertx.currentContext()).isNotNull().isEqualTo(context))
-                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate()).isInstanceOf(ContextInternal.class))
+                            .invoke(() -> assertThat(VertxContext.isDuplicatedContext(Vertx.currentContext().getDelegate()))
+                                    .isTrue())
                             .map(r -> r + " " + Thread.currentThread().getName())
                             .subscribe().with(e::complete, e::fail);
                 });

@@ -2,9 +2,8 @@ package io.quarkus.deployment;
 
 import java.nio.file.Path;
 
-import org.eclipse.microprofile.config.Config;
-
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.smallrye.config.Config;
 
 /**
  * Code generation context

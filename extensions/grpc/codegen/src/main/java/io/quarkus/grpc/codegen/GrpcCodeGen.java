@@ -27,7 +27,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -41,6 +40,7 @@ import io.quarkus.runtime.util.HashUtil;
 import io.smallrye.common.cpu.CPU;
 import io.smallrye.common.os.OS;
 import io.smallrye.common.process.ProcessBuilder;
+import io.smallrye.config.Config;
 
 /**
  * Code generation for gRPC. Generates java classes from proto files placed in either src/main/proto or src/test/proto

@@ -9,8 +9,12 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -65,7 +69,6 @@ import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Logout.ClearSiteData;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Roles;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Token;
-import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -76,6 +79,8 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
@@ -570,109 +575,13 @@ public final class OidcUtils {
         }
     }
 
-    /**
-     * Merge the current tenant and well-known OpenId Connect provider configurations.
-     * Initialized properties take priority over uninitialized properties.
-     *
-     * Initialized properties in the current tenant configuration take priority
-     * over the same initialized properties in the well-known OpenId Connect provider configuration.
-     *
-     * Tenant id property of the current tenant must be set before the merge operation.
-     *
-     * @param tenant current tenant configuration
-     * @param provider well-known OpenId Connect provider configuration
-     * @return merged configuration
-     */
-    static OidcTenantConfig mergeTenantConfig(OidcTenantConfig tenant, OidcTenantConfig provider) {
-        if (tenant.tenantId().isEmpty()) {
-            // OidcRecorder sets it before the merge operation
-            throw new IllegalStateException();
+    static OidcTenantConfig resolveUserInfoRequired(OidcTenantConfig oidcConfig, OidcConfigurationMetadata metadata,
+            boolean userInfoInjected) {
+        if (userInfoInjected && metadata != null && metadata.getUserInfoUri() != null
+                && oidcConfig.authentication().userInfoRequired().isEmpty()) {
+            return OidcTenantConfig.builder(oidcConfig).authentication().userInfoRequired().end().build();
         }
-        // root properties
-        if (tenant.authServerUrl().isEmpty()) {
-            tenant.authServerUrl = provider.authServerUrl();
-        }
-        if (tenant.applicationType().isEmpty()) {
-            tenant.applicationType = provider.applicationType;
-        }
-        if (tenant.discoveryEnabled().isEmpty()) {
-            tenant.discoveryEnabled = provider.discoveryEnabled();
-        }
-        if (tenant.authorizationPath().isEmpty()) {
-            tenant.authorizationPath = provider.authorizationPath();
-        }
-        if (tenant.jwksPath().isEmpty()) {
-            tenant.jwksPath = provider.jwksPath();
-        }
-        if (tenant.tokenPath().isEmpty()) {
-            tenant.tokenPath = provider.tokenPath();
-        }
-        if (tenant.userInfoPath().isEmpty()) {
-            tenant.userInfoPath = provider.userInfoPath();
-        }
-
-        // authentication
-        if (tenant.authentication().idTokenRequired().isEmpty()) {
-            tenant.authentication.idTokenRequired = provider.authentication().idTokenRequired();
-        }
-        if (tenant.authentication().userInfoRequired().isEmpty()) {
-            tenant.authentication.userInfoRequired = provider.authentication().userInfoRequired();
-        }
-        if (tenant.authentication().pkceRequired().isEmpty()) {
-            tenant.authentication.pkceRequired = provider.authentication().pkceRequired();
-        }
-        if (tenant.authentication().scopes().isEmpty()) {
-            tenant.authentication.scopes = provider.authentication().scopes();
-        }
-        if (tenant.authentication().scopeSeparator().isEmpty()) {
-            tenant.authentication.scopeSeparator = provider.authentication().scopeSeparator();
-        }
-        if (tenant.authentication().addOpenidScope().isEmpty()) {
-            tenant.authentication.addOpenidScope = provider.authentication().addOpenidScope();
-        }
-        if (tenant.authentication().forceRedirectHttpsScheme().isEmpty()) {
-            tenant.authentication.forceRedirectHttpsScheme = provider.authentication().forceRedirectHttpsScheme();
-        }
-        if (tenant.authentication().responseMode().isEmpty()) {
-            tenant.authentication.responseMode = provider.authentication.responseMode;
-        }
-        if (tenant.authentication().redirectPath().isEmpty()) {
-            tenant.authentication.redirectPath = provider.authentication().redirectPath();
-        }
-
-        // credentials
-        if (tenant.credentials().clientSecret().method().isEmpty()) {
-            tenant.credentials.clientSecret.method = provider.credentials.clientSecret.method;
-        }
-        if (tenant.credentials().jwt().audience().isEmpty()) {
-            tenant.credentials.jwt.audience = provider.credentials().jwt().audience();
-        }
-        if (tenant.credentials().jwt().signatureAlgorithm().isEmpty()) {
-            tenant.credentials.jwt.signatureAlgorithm = provider.credentials().jwt().signatureAlgorithm();
-        }
-
-        // token
-        if (tenant.token().issuer().isEmpty()) {
-            tenant.token.issuer = provider.token().issuer();
-        }
-        if (tenant.token().principalClaim().isEmpty()) {
-            tenant.token.principalClaim = provider.token().principalClaim();
-        }
-        if (tenant.token().verifyAccessTokenWithUserInfo().isEmpty()) {
-            tenant.token.verifyAccessTokenWithUserInfo = provider.token().verifyAccessTokenWithUserInfo();
-        }
-
-        return tenant;
-    }
-
-    static OidcTenantConfig resolveProviderConfig(OidcTenantConfig oidcTenantConfig) {
-        if (oidcTenantConfig != null && oidcTenantConfig.provider().isPresent()) {
-            return OidcUtils.mergeTenantConfig(oidcTenantConfig,
-                    KnownOidcProviders.provider(oidcTenantConfig.provider().get()));
-        } else {
-            return oidcTenantConfig;
-        }
-
+        return oidcConfig;
     }
 
     public static byte[] getSha256Digest(String value) throws NoSuchAlgorithmException {
@@ -1178,5 +1087,73 @@ public final class OidcUtils {
 
     public static String getUriAuthority(URI uri) {
         return uri.getScheme() + "://" + uri.getAuthority();
+    }
+
+    public static AttestationKeyRegistry.AttestationJwtContext initAttestationJwtContext(OidcTenantConfig oidcConfig,
+            AttestationKeyRegistry registry, boolean selfAttesting) {
+        if (oidcConfig.credentials().attestation().enabled()) {
+            try {
+                SignatureAlgorithm sigAlg = SignatureAlgorithm
+                        .fromAlgorithm(oidcConfig.credentials().attestation().signatureAlgorithm().name());
+                String ecCurve = resolveAttestationEcCurve(sigAlg);
+                KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
+                keyPairGenerator.initialize(new ECGenParameterSpec(ecCurve));
+                // The attestation key pair is only used to self-attest the client: sign the Client Attestation JWT
+                // and publish its public key at the attestation JWKS endpoint. Attesters that delegate to a remote
+                // attestation service sign the Client Attestation JWT with their own key, so no attestation key pair
+                // is generated for them.
+                KeyPair attestationKeyPair = selfAttesting ? keyPairGenerator.generateKeyPair() : null;
+                // The instance key pair is always required: Quarkus is the Client Instance which signs the
+                // proof-of-possession JWT with the instance private key, and its public key is passed to the attester
+                // to be embedded in the Client Attestation JWT 'cnf' claim.
+                KeyPair instanceKeyPair = keyPairGenerator.generateKeyPair();
+                return registry.register(oidcConfig.tenantId().get(), attestationKeyPair, instanceKeyPair,
+                        sigAlg, oidcConfig.credentials().jwt().lifespan());
+            } catch (Exception ex) {
+                throw new RuntimeException("Failed to generate attestation key pairs", ex);
+            }
+        }
+        return null;
+    }
+
+    static String resolveAttestationEcCurve(SignatureAlgorithm sigAlg) {
+        return switch (sigAlg) {
+            case ES256 -> "secp256r1";
+            case ES384 -> "secp384r1";
+            case ES512 -> "secp521r1";
+            default -> throw new RuntimeException(
+                    "Unsupported attestation signature algorithm: " + sigAlg
+                            + ". Only EC algorithms (ES256, ES384, ES512) are supported");
+        };
+    }
+
+    static String buildClientAttestationJwt(String clientId,
+            AttestationKeyRegistry.AttestationJwtContext ctx) {
+        JsonObject cnf = new JsonObject().put("jwk",
+                AttestationKeyRegistry.convertPublicKeyToJwk(ctx.instanceKeyPair().getPublic(),
+                        ctx.signatureAlgorithm()));
+        return Jwt.issuer(clientId)
+                .subject(clientId)
+                .claim(OidcConstants.CONFIRMATION_CLAIM, cnf.getMap())
+                .expiresIn(ctx.lifespan())
+                .jws()
+                .type(OidcConstants.CLIENT_ATTESTATION_JWT_TYPE)
+                .algorithm(ctx.signatureAlgorithm())
+                .keyId(ctx.kid())
+                .sign((PrivateKey) ctx.attestationKeyPair().getPrivate());
+    }
+
+    static String buildClientAttestationPopJwt(String clientId, String audience,
+            AttestationKeyRegistry.AttestationJwtContext ctx) {
+        return Jwt.issuer(clientId)
+                .audience(audience)
+                // A new PoP JWT is created for every request, so keep it short-lived
+                // irrespective of the attestation JWT lifespan.
+                // For self-attestation, attestation and PoP JWTs lifespans are equal.
+                .expiresIn(ctx.lifespan())
+                .jws()
+                .type(OidcConstants.CLIENT_ATTESTATION_POP_JWT_TYPE)
+                .algorithm(ctx.signatureAlgorithm())
+                .sign((PrivateKey) ctx.instanceKeyPair().getPrivate());
     }
 }

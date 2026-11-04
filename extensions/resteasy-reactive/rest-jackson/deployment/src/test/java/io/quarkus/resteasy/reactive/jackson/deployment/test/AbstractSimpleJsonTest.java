@@ -1312,6 +1312,62 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testNullForPrimitiveFieldIsRejected() {
+        // Reproducer for https://github.com/quarkusio/quarkus/issues/57765
+        // With FAIL_ON_NULL_FOR_PRIMITIVES enabled, a null for a primitive field must be rejected, not replaced by 0
+        RestAssured
+                .with()
+                .body("{\"title\": \"No pages\", \"pages\": null}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-field-pojo")
+                .then()
+                .statusCode(400)
+                .body("attributeName", is("pages"));
+    }
+
+    @Test
+    public void testNullForPrimitiveFieldIsAllowedWhenFeatureDisabled() {
+        // FAIL_ON_NULL_FOR_PRIMITIVES is disabled in this test's configuration, so null is replaced by 0
+        RestAssured
+                .with()
+                .body("{\"title\": \"No pages\", \"pages\": null}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-field-pojo-lenient")
+                .then()
+                .statusCode(200)
+                .body("title", is("No pages"))
+                .body("pages", is(0));
+    }
+
+    @Test
+    public void testNullForPrimitiveCreatorParameterIsRejected() {
+        // Reproducer for https://github.com/quarkusio/quarkus/issues/57765
+        // With FAIL_ON_NULL_FOR_PRIMITIVES enabled, a null for a primitive @JsonCreator parameter must be rejected,
+        // not replaced by 0
+        RestAssured
+                .with()
+                .body("{\"title\": \"No pages\", \"pages\": null}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-creator-pojo")
+                .then()
+                .statusCode(400)
+                .body("attributeName", is("pages"));
+    }
+
+    @Test
+    public void testMissingPrimitiveCreatorParameterIsRejected() {
+        // With FAIL_ON_NULL_FOR_PRIMITIVES enabled, Jackson also rejects a missing primitive @JsonCreator parameter
+        RestAssured
+                .with()
+                .body("{\"title\": \"No pages\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-creator-pojo")
+                .then()
+                .statusCode(400)
+                .body("attributeName", is("pages"));
+    }
+
+    @Test
     void testShouldDeserializePolymorphicItems() {
         RestAssured
                 .with()

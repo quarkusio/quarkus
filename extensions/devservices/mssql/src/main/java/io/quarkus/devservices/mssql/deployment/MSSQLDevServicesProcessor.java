@@ -63,7 +63,11 @@ public class MSSQLDevServicesProcessor {
                         containerConfig.getFixedExposedPort(),
                         composeProjectBuildItem.getDefaultNetworkId(),
                         !devServicesSharedNetworkBuildItem.isEmpty());
-                startupTimeout.ifPresent(container::withStartupTimeout);
+                startupTimeout.ifPresent(timeout -> {
+                    container.withStartupTimeout(timeout);
+                    // JdbcDatabaseContainer waits for a JDBC connection with its own timeout, not the wait strategy's
+                    container.withStartupTimeoutSeconds((int) timeout.toSeconds());
+                });
 
                 // Workaround for https://github.com/microsoft/mssql-docker/issues/954
                 // SQL Server 2025 crashes when the visible CPU count is not a power of 2.

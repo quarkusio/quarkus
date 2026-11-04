@@ -7,9 +7,8 @@ import java.util.function.Function;
 
 import jakarta.servlet.annotation.WebServlet;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
+import io.smallrye.config.Config;
 
 public class UndertowTestHttpProvider implements TestHttpEndpointProvider {
     @Override
@@ -41,7 +40,7 @@ public class UndertowTestHttpProvider implements TestHttpEndpointProvider {
                     value = value.substring(1);
                 }
                 String path = "/";
-                Optional<String> appPath = ConfigProvider.getConfig().getOptionalValue("quarkus.servlet.context-path",
+                Optional<String> appPath = Config.get().getOptionalValue("quarkus.servlet.context-path",
                         String.class);
                 if (appPath.isPresent()) {
                     path = appPath.get();

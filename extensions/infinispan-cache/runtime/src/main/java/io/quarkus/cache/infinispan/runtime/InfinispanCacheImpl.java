@@ -124,22 +124,43 @@ public class InfinispanCacheImpl extends AbstractCache implements Cache {
                         return Uni.createFrom().completionStage(new Supplier<CompletionStage<? extends V>>() {
                             @Override
                             public CompletionStage<? extends V> get() {
-                                return context.executeBlocking(new Callable<V>() {
+                                context.executeBlocking(new Callable<V>() {
                                     @Override
                                     public V call() throws Exception {
                                         return valueLoader.apply(key);
                                     }
                                 }, false).toCompletionStage()
-                                        .thenComposeAsync(newValue -> {
-                                            InfinispanCacheImpl.this.putIfAbsentInInfinispan(key, newValue, resultAsync,
-                                                    executor, itemLifespan);
-                                            return resultAsync;
+                                        .whenCompleteAsync(new BiConsumer<V, Throwable>() {
+                                            @Override
+                                            public void accept(V newValue, Throwable ex) {
+                                                if (ex != null) {
+                                                    // The value computation failed: fail the result and make sure the
+                                                    // in-flight computation is removed, otherwise subsequent lookups for
+                                                    // the same key would reuse this never-completed future and hang.
+                                                    resultAsync.completeExceptionally(ex);
+                                                    computationResults.remove(key);
+                                                } else {
+                                                    InfinispanCacheImpl.this.putIfAbsentInInfinispan(key, newValue,
+                                                            resultAsync, executor, itemLifespan);
+                                                }
+                                            }
                                         }, executor);
+                                return resultAsync;
                             }
                         });
                     }
 
-                    V newValue = valueLoader.apply(key);
+                    V newValue;
+                    try {
+                        newValue = valueLoader.apply(key);
+                    } catch (Throwable ex) {
+                        // The value computation failed: fail the result and make sure the in-flight computation is
+                        // removed, otherwise subsequent lookups for the same key would reuse this never-completed
+                        // future and hang.
+                        resultAsync.completeExceptionally(ex);
+                        computationResults.remove(key);
+                        return Uni.createFrom().completionStage(resultAsync).emitOn(executor);
+                    }
                     putIfAbsentInInfinispan(key, newValue, resultAsync, executor, itemLifespan);
                     return Uni.createFrom().completionStage(resultAsync).emitOn(executor);
                 });

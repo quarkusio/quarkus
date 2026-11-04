@@ -1,5 +1,6 @@
 package io.quarkus.netty.deployment;
 
+import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
@@ -38,10 +39,10 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedRuntimeSystemPropertyBuildItem;
@@ -75,12 +76,15 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.EmptyByteBufStub;
+import io.quarkus.netty.runtime.EventLoopGroupSupplier;
 import io.quarkus.netty.runtime.MachineIdGenerator;
 import io.quarkus.netty.runtime.NettyRecorder;
 import io.quarkus.netty.runtime.NettySharable;
-import io.quarkus.runtime.util.JavaVersionGreaterOrEqual25;
 
 class NettyProcessor {
+
+    private static final String BOSS_EVENT_LOOP_GROUP = "boss";
+    private static final String MAIN_EVENT_LOOP_GROUP = "main";
 
     private static final Logger log = Logger.getLogger(NettyProcessor.class);
 
@@ -114,8 +118,7 @@ class NettyProcessor {
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
         String maxOrder = calculateMaxOrder(config.allocatorMaxOrder(), minMaxOrderBuildItems, true);
 
-        //in native mode we limit the size of the epoll array
-        //if the array overflows the selector just moves the overflow to a map
+        // Set maxOrder for PooledByteBufAllocator (does not affect the default AdaptiveByteBufAllocator)
         return new SystemPropertyBuildItem("io.netty.allocator.maxOrder", maxOrder);
     }
 
@@ -130,6 +133,15 @@ class NettyProcessor {
     @BuildStep
     public SystemPropertyBuildItem disableFinalizers() {
         return new SystemPropertyBuildItem("io.netty.allocator.disableCacheFinalizersForFastThreadLocalThreads", "true");
+    }
+
+    @BuildStep
+    public SystemPropertyBuildItem disableNettyJfrEventRegistration() {
+        // Netty 4.2.20+ registers a JFR FlightRecorder listener that strongly references the classloader.
+        // Its prevents the classloader from being garbage collected and causes metaspace OOM in test suites and dev mode.
+        // Quarkus does not use Netty JFR buffer events anyway, so we disable these.
+        // See io.netty.buffer.JfrEventRegistration
+        return new SystemPropertyBuildItem("io.netty.jfr.enabled", "false");
     }
 
     @BuildStep
@@ -160,8 +172,8 @@ class NettyProcessor {
      * Unfortunately, "--sun-misc-unsafe-memory-access=allow" should also be set for Java runtime, but it can't be applied
      * automatically as the JAR Manifest format doesn't allow setting such an option.
      */
-    @BuildStep(onlyIf = JavaVersionGreaterOrEqual25.class)
-    NativeImageConfigBuildItem build25Specific(
+    @BuildStep
+    NativeImageConfigBuildItem configureUnsafeAccess(
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<ModuleOpenBuildItem> moduleOpenBuildItem) {
@@ -179,6 +191,9 @@ class NettyProcessor {
         // It's potentially problematic regarding build-time and run-time inited JDK parts.
         moduleOpenBuildItem.produce(
                 new ModuleOpenBuildItem("java.base", "io.netty.common", "java.nio", "jdk.internal.misc"));
+        // Enable io.netty.channel.nio.NioIoHandler to set sun.nio.ch.SelectorImpl.selectedKeys as accessible
+        moduleOpenBuildItem.produce(
+                new ModuleOpenBuildItem("java.base", "io.netty.transport", "sun.nio.ch"));
 
         final NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
                 .addNativeImageSystemProperty("io.netty.tryReflectionSetAccessible", "true")
@@ -224,14 +239,12 @@ class NettyProcessor {
         String maxOrder = calculateMaxOrder(config.allocatorMaxOrder(), minMaxOrderBuildItems, false);
 
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
-                // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)
-                // Since buffers are cached to threads, the malloc overhead is temporary anyway
+                // Set maxOrder for PooledByteBufAllocator (not used by the default AdaptiveByteBufAllocator)
                 .addNativeImageSystemProperty("io.netty.allocator.maxOrder", maxOrder)
                 // Spotted with Netty 4.1.135.Final
                 .addRuntimeInitializedClass("io.netty.internal.tcnative.SSL")
                 // Runtime initialize to respect io.netty.handler.ssl.conscrypt.useBufferAllocator
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
-                .addRuntimeInitializedClass("io.netty.util.internal.CleanerJava24Linker")
                 // Runtime initialize due to the use of tcnative in the static initializers?
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
                 // Runtime initialize to respect run-time provided values of the following properties:
@@ -250,6 +263,7 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslServerContext")
                 // .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslClientContext")
                 // Runtime initialize to prevent embedding SecureRandom instances in the native image
+                .addRuntimeInitializedClass("io.netty.handler.ssl.SslContext")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.util.ThreadLocalInsecureRandom")
                 // The default channel id uses the process id, it should not be cached in the native image. This way we
                 // also respect the run-time provided value of the io.netty.processId property, io.netty.machineId
@@ -273,12 +287,10 @@ class NettyProcessor {
                 builder.addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdOptions")
                         .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdConstants");
             }
-            // Brotli is an optional dependency, we should only runtime initialize BrotliOptions to avoid
-            // IllegalStateException when brotli (e.g. com.aayushatharva.brotli4j.Brotli4jLoader) is not available.
-            // This will result in a runtime ClassNotFoundException if the user tries to use Brotli.
-            // Due to https://github.com/quarkusio/quarkus/issues/43662 we cannot do this yet though so we always enable
-            // runtime initialization of BrotliOptions if the class is present
-            if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.compression.BrotliOptions")) {
+            // Brotli is an optional dependency, we should only runtime initialize BrotliOptions when it is available
+            // (e.g. com.aayushatharva.brotli4j.Brotli4jLoader is present): BrotliOptions references Brotli4j and its
+            // static initializer fails without it. It is cut from the native image otherwise.
+            if (QuarkusClassLoader.isClassPresentAtRuntime("com.aayushatharva.brotli4j.Brotli4jLoader")) {
                 builder.addRuntimeInitializedClass("io.netty.handler.codec.compression.BrotliOptions");
             }
         } else {
@@ -334,8 +346,9 @@ class NettyProcessor {
                     // Runtime initialize due to machine dependent native methods being called in static initializers
                     .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventArray")
                     .addRuntimeInitializedClass("io.netty.channel.kqueue.Native")
-                    // Runtime initialize due to dependency on Epoll and the use of AtomicIntegerFieldUpdater?
-                    .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventLoop");
+                    // Runtime initialize due to the use of AtomicIntegerFieldUpdater in the static initializer.
+                    // Replaces io.netty.channel.kqueue.KQueueEventLoop, which was removed in Netty 4.2
+                    .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueIoHandler");
         } else {
             log.debug("Not registering Netty native kqueue classes as they were not found");
         }
@@ -381,7 +394,13 @@ class NettyProcessor {
                 // Runtime initialize classes to allow netty to use the field offset for testing if unsafe is available or not
                 // See https://github.com/quarkusio/quarkus/issues/47903#issuecomment-2890924970
                 .addRuntimeInitializedClass("io.netty.util.AbstractReferenceCounted")
-                .addRuntimeInitializedClass("io.netty.buffer.AbstractReferenceCountedByteBuf");
+                .addRuntimeInitializedClass("io.netty.buffer.AbstractReferenceCountedByteBuf")
+                // Runtime initialize to respect the run-time number of processors, which it caches on first use
+                // (respecting the run-time provided value of the io.netty.availableProcessors property)
+                .addRuntimeInitializedClass("io.netty.util.NettyRuntime")
+                // Runtime initialize to respect the run-time number of processors and the run-time provided value of
+                // the io.netty.eventLoopThreads property, used by event loop groups created with nThreads == 0
+                .addRuntimeInitializedClass("io.netty.channel.MultithreadEventLoopGroup");
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.buffer.UnpooledByteBufAllocator")) {
             // Runtime initialize due to the use of the io.netty.util.internal.PlatformDependent class
@@ -408,6 +427,23 @@ class NettyProcessor {
                     // - io.netty.allocator.useCacheForAllThreads
                     // - io.netty.allocator.maxCachedByteBuffersPerChunk
                     .addRuntimeInitializedClass("io.netty.buffer.PooledByteBufAllocator")
+                    // Runtime initialize the default allocator of Netty 4.2: its static initializers size it from the
+                    // run-time max heap and number of processors and read the run-time provided value of the
+                    // following properties:
+                    // - io.netty.allocator.useCachedMagazinesForNonEventLoopThreads
+                    // - io.netty.allocator.lowMemory
+                    // - io.netty.allocator.disableThreadLocalMagazinesOnLowMemory
+                    // - io.netty.allocator.chunkReuseQueueCapacity
+                    // - io.netty.allocator.chunkPurgePollsThreadLocal
+                    // - io.netty.allocator.chunkPurgePollsShared
+                    // - io.netty.allocator.chunkPurgeThreshold
+                    // - io.netty.allocator.threadLocalChunkCacheMaxBytes
+                    // - io.netty.allocator.threadLocalChunkCacheMinBytes
+                    // - io.netty.allocator.magazineBufferQueueCapacity
+                    .addRuntimeInitializedClass("io.netty.buffer.AdaptiveByteBufAllocator")
+                    .addRuntimeInitializedClass("io.netty.buffer.AdaptivePoolingAllocator")
+                    // Runtime initialize due to its static initializer depending on AdaptivePoolingAllocator
+                    .addRuntimeInitializedClass("io.netty.buffer.AdaptivePoolingAllocator$SharedSizeClassedChunkCache")
                     // Runtime initialize due to the use of ByteBufUtil.DEFAULT_ALLOCATOR in the static initializers
                     .addRuntimeInitializedClass("io.netty.buffer.ByteBufAllocator")
                     // Runtime initialize due to the use of the io.netty.util.internal.PlatformDependent class in the
@@ -438,41 +474,45 @@ class NettyProcessor {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
     void registerEventLoopBeans(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             Optional<EventLoopSupplierBuildItem> loopSupplierBuildItem,
-            NettyRecorder recorder,
+            ServiceRegistrar serviceRegistrar,
             BuildProducer<EventLoopGroupBuildItem> eventLoopGroups) {
         Supplier<EventLoopGroup> boss;
         Supplier<EventLoopGroup> main;
-        if (loopSupplierBuildItem.isPresent()) {
-            boss = (Supplier) loopSupplierBuildItem.get().getBossSupplier();
-            main = (Supplier) loopSupplierBuildItem.get().getMainSupplier();
-        } else {
-            boss = recorder.createEventLoop(1);
-            main = recorder.createEventLoop(0);
-        }
-
         // IMPLEMENTATION NOTE:
         // We use Singleton scope for both beans. ApplicationScoped causes problems with EventLoopGroup.next()
         // which overrides the EventExecutorGroup.next() method but since Netty 4 is compiled with JDK6 the corresponding bridge method
         // is not generated and the invocation upon the client proxy results in an AbstractMethodError
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
-                .supplier(boss)
-                .scope(Singleton.class)
-                .addQualifier(BossEventLoopGroup.class)
-                .unremovable()
-                .setRuntimeInit()
-                .done());
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
-                .supplier(main)
-                .scope(Singleton.class)
-                .addQualifier(MainEventLoopGroup.class)
-                .unremovable()
-                .setRuntimeInit()
-                .done());
+        if (loopSupplierBuildItem.isPresent()) {
+            boss = (Supplier) loopSupplierBuildItem.get().getBossSupplier();
+            main = (Supplier) loopSupplierBuildItem.get().getMainSupplier();
+            syntheticBeans.produce(eventLoopGroupBean(BossEventLoopGroup.class).supplier(boss).done());
+            syntheticBeans.produce(eventLoopGroupBean(MainEventLoopGroup.class).supplier(main).done());
+        } else {
+            serviceRegistrar.forService(EventLoopGroup.class, BOSS_EVENT_LOOP_GROUP)
+                    .atPhase(Phase.INFRASTRUCTURE)
+                    .onStart(ctx -> NettyRecorder.createEventLoop(ctx, 1));
+            serviceRegistrar.forService(EventLoopGroup.class, MAIN_EVENT_LOOP_GROUP)
+                    .atPhase(Phase.INFRASTRUCTURE)
+                    .onStart(ctx -> NettyRecorder.createEventLoop(ctx, 0));
+            boss = new EventLoopGroupSupplier(serviceRegistrar.getRecorderProxy(EventLoopGroup.class, BOSS_EVENT_LOOP_GROUP));
+            main = new EventLoopGroupSupplier(serviceRegistrar.getRecorderProxy(EventLoopGroup.class, MAIN_EVENT_LOOP_GROUP));
+            syntheticBeans.produce(eventLoopGroupBean(BossEventLoopGroup.class)
+                    .serviceValue(EventLoopGroup.class, BOSS_EVENT_LOOP_GROUP).done());
+            syntheticBeans.produce(eventLoopGroupBean(MainEventLoopGroup.class)
+                    .serviceValue(EventLoopGroup.class, MAIN_EVENT_LOOP_GROUP).done());
+        }
 
         eventLoopGroups.produce(new EventLoopGroupBuildItem(boss, main));
+    }
+
+    private static SyntheticBeanBuildItem.ExtendedBeanConfigurator eventLoopGroupBean(Class<? extends Annotation> qualifier) {
+        return SyntheticBeanBuildItem.configure(EventLoopGroup.class)
+                .scope(Singleton.class)
+                .addQualifier(qualifier)
+                .unremovable()
+                .setRuntimeInit();
     }
 
     @BuildStep
@@ -725,7 +765,7 @@ class NettyProcessor {
                                     m.returnVoid();
                                 }
 
-                                // --- readBitsMaxDirectMemory() -> reads Bits.MAX_MEMORY via reflection ---
+                                // --- readBitsMaxDirectMemory() -> VM.maxDirectMemory(), or Bits.MAX_MEMORY via reflection ---
                                 generateReadBitsMaxDirectMemory(transformer, className);
 
                                 // --- Java 25+ specific transforms ---
@@ -898,662 +938,6 @@ class NettyProcessor {
                         .build());
     }
 
-    /**
-     * Rewrites {@code CleanerJava24Linker}'s static initializer and
-     * {@code CleanableDirectBufferImpl}'s constructor to avoid the expensive reflection-based
-     * FFM API lookups via {@code Class.forName} and {@code MethodHandles} chains. When building
-     * on Java 25+, the Foreign Function &amp; Memory API is stable and can be called directly,
-     * eliminating ~20 reflective lookups and MethodHandle chain constructions.
-     * <p>
-     * {@code INVOKE_MALLOC} and {@code INVOKE_FREE} must remain {@code MethodHandle}s because
-     * FFM's {@code Linker.downcallHandle()} always returns a {@code MethodHandle} to bridge
-     * Java to native code. But {@code INVOKE_CREATE_BYTEBUFFER} wraps plain Java methods
-     * ({@code MemorySegment.ofAddress/reinterpret/asByteBuffer}) and can be replaced with
-     * direct calls in the inner class constructor.
-     * <p>
-     * We replace the static initializer with:
-     *
-     * <pre>{@code
-     * static {
-     *     logger = InternalLoggerFactory.getInstance(CleanerJava24Linker.class);
-     *     MethodHandle mallocMethod = null;
-     *     MethodHandle freeMethod = null;
-     *     Throwable error = null;
-     *     try {
-     *         if (!CleanerJava24Linker.class.getModule().isNativeAccessEnabled()) {
-     *             throw new UnsupportedOperationException(
-     *                     "Native access (restricted methods) is not enabled for the io.netty.common module.");
-     *         }
-     *         if (ValueLayout.ADDRESS.byteSize() != Long.BYTES) {
-     *             throw new UnsupportedOperationException(
-     *                     "Linking to malloc and free is only supported on 64-bit platforms.");
-     *         }
-     *         Linker linker = Linker.nativeLinker();
-     *         SymbolLookup defaultLookup = linker.defaultLookup();
-     *         ValueLayout.OfLong javaLong = ValueLayout.JAVA_LONG;
-     *         MemoryLayout[] layouts = new MemoryLayout[] { javaLong };
-     *         Linker.Option[] emptyOptions = new Linker.Option[0];
-     *         MemorySegment mallocPtr = defaultLookup.findOrThrow("malloc");
-     *         mallocMethod = linker.downcallHandle(mallocPtr,
-     *                 FunctionDescriptor.of(javaLong, layouts), emptyOptions);
-     *         MemorySegment freePtr = defaultLookup.findOrThrow("free");
-     *         freeMethod = linker.downcallHandle(freePtr,
-     *                 FunctionDescriptor.ofVoid(layouts), emptyOptions);
-     *     } catch (Throwable throwable) {
-     *         mallocMethod = null;
-     *         freeMethod = null;
-     *         error = throwable;
-     *     }
-     *     if (error == null) {
-     *         logger.debug("java.nio.ByteBuffer.cleaner(): available");
-     *     } else {
-     *         logger.debug("java.nio.ByteBuffer.cleaner(): unavailable", error);
-     *     }
-     *     INVOKE_MALLOC = mallocMethod;
-     *     INVOKE_CREATE_BYTEBUFFER = null;
-     *     INVOKE_FREE = freeMethod;
-     * }
-     * }</pre>
-     *
-     * And we replace the {@code INVOKE_CREATE_BYTEBUFFER.invokeExact(addr, (long) capacity)}
-     * call in {@code CleanableDirectBufferImpl}'s constructor with:
-     *
-     * <pre>{@code
-     * buffer = MemorySegment.ofAddress(addr).reinterpret((long) capacity).asByteBuffer();
-     * }</pre>
-     */
-    @BuildStep
-    void transformCleanerJava24Linker(CompiledJavaVersionBuildItem compiledJavaVersion,
-            BuildProducer<BytecodeTransformerBuildItem> producer) {
-        if (compiledJavaVersion.getJavaVersion()
-                .isJava25OrHigher() != CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
-            return;
-        }
-
-        String className = "io.netty.util.internal.CleanerJava24Linker";
-        String innerClassName = className + "$CleanableDirectBufferImpl";
-
-        // Transform the clinit of CleanerJava24Linker
-        producer.produce(new BytecodeTransformerBuildItem.Builder()
-                .setClassToTransform(className)
-                .setCacheable(true)
-                .setVisitorFunction(new BiFunction<>() {
-                    @Override
-                    public ClassVisitor apply(String s, ClassVisitor classVisitor) {
-                        ClassVisitor updateBytecodeVersion = new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
-                            @Override
-                            public void visit(int version, int access, String name, String signature,
-                                    String superName, String[] interfaces) {
-                                super.visit(Math.max(version, 69), access, name, signature, superName, interfaces);
-                            }
-                        };
-
-                        ClassTransformer transformer = new ClassTransformer(className);
-
-                        MethodDescriptor clinitDescriptor = MethodDescriptor.ofMethod(
-                                className, "<clinit>", void.class);
-                        transformer.removeMethod(clinitDescriptor);
-
-                        MethodCreator clinit = transformer.addMethod(clinitDescriptor)
-                                .setModifiers(Modifier.STATIC);
-
-                        generateCleanerJava24LinkerClinit(clinit, className);
-
-                        return transformer.applyTo(updateBytecodeVersion);
-                    }
-                })
-                .build());
-
-        // Transform the constructor of CleanableDirectBufferImpl to replace
-        // INVOKE_CREATE_BYTEBUFFER.invokeExact(addr, (long) capacity)
-        // with MemorySegment.ofAddress(addr).reinterpret((long) capacity).asByteBuffer()
-        producer.produce(new BytecodeTransformerBuildItem.Builder()
-                .setClassToTransform(innerClassName)
-                .setCacheable(true)
-                .setVisitorFunction(new BiFunction<>() {
-                    @Override
-                    public ClassVisitor apply(String s, ClassVisitor classVisitor) {
-                        ClassVisitor updateBytecodeVersion = new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
-                            @Override
-                            public void visit(int version, int access, String name, String signature,
-                                    String superName, String[] interfaces) {
-                                super.visit(Math.max(version, 69), access, name, signature, superName, interfaces);
-                            }
-                        };
-
-                        ClassTransformer transformer = new ClassTransformer(innerClassName);
-
-                        MethodDescriptor ctorDescriptor = MethodDescriptor.ofConstructor(
-                                innerClassName, int.class);
-                        transformer.removeMethod(ctorDescriptor);
-
-                        MethodCreator ctor = transformer.addMethod(ctorDescriptor)
-                                .setModifiers(Modifier.PRIVATE);
-
-                        generateCleanableDirectBufferImplCtor(ctor, className, innerClassName);
-
-                        return transformer.applyTo(updateBytecodeVersion);
-                    }
-                })
-                .build());
-    }
-
-    private static void generateCleanerJava24LinkerClinit(MethodCreator clinit, String className) {
-        // Field descriptors for the static fields we need to initialize
-        FieldDescriptor loggerField = FieldDescriptor.of(className, "logger",
-                "io.netty.util.internal.logging.InternalLogger");
-        FieldDescriptor mallocField = FieldDescriptor.of(className, "INVOKE_MALLOC",
-                MethodHandle.class);
-        FieldDescriptor wrapField = FieldDescriptor.of(className, "INVOKE_CREATE_BYTEBUFFER",
-                MethodHandle.class);
-        FieldDescriptor freeField = FieldDescriptor.of(className, "INVOKE_FREE",
-                MethodHandle.class);
-
-        // logger = InternalLoggerFactory.getInstance(CleanerJava24Linker.class)
-        ResultHandle clazz = clinit.loadClassFromTCCL(className);
-        ResultHandle loggerValue = clinit.invokeStaticMethod(
-                MethodDescriptor.ofMethod("io.netty.util.internal.logging.InternalLoggerFactory",
-                        "getInstance", "io.netty.util.internal.logging.InternalLogger", Class.class),
-                clazz);
-        clinit.writeStaticField(loggerField, loggerValue);
-
-        // Local variables for the MethodHandle fields and error tracking
-        AssignableResultHandle mallocVar = clinit.createVariable(MethodHandle.class);
-        AssignableResultHandle freeVar = clinit.createVariable(MethodHandle.class);
-        AssignableResultHandle errorVar = clinit.createVariable(Throwable.class);
-        clinit.assign(mallocVar, clinit.loadNull());
-        clinit.assign(freeVar, clinit.loadNull());
-        clinit.assign(errorVar, clinit.loadNull());
-
-        TryBlock tryBlock = clinit.tryBlock();
-
-        // Check native access: CleanerJava24Linker.class.getModule().isNativeAccessEnabled()
-        ResultHandle classRef = tryBlock.loadClassFromTCCL(className);
-        ResultHandle module = tryBlock.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Class.class, "getModule", Module.class), classRef);
-        ResultHandle isNativeAccess = tryBlock.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Module.class, "isNativeAccessEnabled", boolean.class), module);
-
-        BranchResult nativeCheck = tryBlock.ifNonZero(isNativeAccess);
-
-        // No native access: throw UnsupportedOperationException
-        BytecodeCreator noNative = nativeCheck.falseBranch();
-        noNative.throwException(noNative.newInstance(
-                MethodDescriptor.ofConstructor(UnsupportedOperationException.class, String.class),
-                noNative.load(
-                        "Native access (restricted methods) is not enabled for the io.netty.common module.")));
-
-        // Has native access: check 64-bit platform
-        BytecodeCreator hasNative = nativeCheck.trueBranch();
-
-        // ValueLayout.ADDRESS.byteSize() != Long.BYTES
-        ResultHandle addressLayout = hasNative.readStaticField(
-                FieldDescriptor.of("java.lang.foreign.ValueLayout", "ADDRESS",
-                        "java.lang.foreign.AddressLayout"));
-        ResultHandle addressSize = hasNative.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.MemoryLayout", "byteSize", long.class),
-                addressLayout);
-        ResultHandle cmp = hasNative.invokeStaticMethod(
-                MethodDescriptor.ofMethod(Long.class, "compare", int.class, long.class, long.class),
-                addressSize, hasNative.load(8L));
-        BranchResult sizeCheck = hasNative.ifNonZero(cmp);
-
-        // Not 64-bit: throw
-        BytecodeCreator not64bit = sizeCheck.trueBranch();
-        not64bit.throwException(not64bit.newInstance(
-                MethodDescriptor.ofConstructor(UnsupportedOperationException.class, String.class),
-                not64bit.load("Linking to malloc and free is only supported on 64-bit platforms.")));
-
-        // 64-bit: create the downcall MethodHandles for malloc and free
-        BytecodeCreator bc = sizeCheck.falseBranch();
-
-        // Linker linker = Linker.nativeLinker()
-        ResultHandle linker = bc.invokeStaticInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.Linker", "nativeLinker",
-                        "java.lang.foreign.Linker"));
-
-        // SymbolLookup defaultLookup = linker.defaultLookup()
-        ResultHandle defaultLookup = bc.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.Linker", "defaultLookup",
-                        "java.lang.foreign.SymbolLookup"),
-                linker);
-
-        // ValueLayout.OfLong javaLong = ValueLayout.JAVA_LONG
-        ResultHandle javaLong = bc.readStaticField(
-                FieldDescriptor.of("java.lang.foreign.ValueLayout", "JAVA_LONG",
-                        "java.lang.foreign.ValueLayout$OfLong"));
-
-        // MemoryLayout[] layouts = new MemoryLayout[] { javaLong }
-        ResultHandle layoutArray = bc.newArray("java.lang.foreign.MemoryLayout", 1);
-        bc.writeArrayValue(layoutArray, 0, javaLong);
-
-        // Linker.Option[] emptyOptions = new Linker.Option[0]
-        ResultHandle emptyOptions = bc.newArray("java.lang.foreign.Linker$Option", 0);
-
-        // --- malloc ---
-        ResultHandle mallocPtr = bc.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.SymbolLookup", "findOrThrow",
-                        "java.lang.foreign.MemorySegment", String.class),
-                defaultLookup, bc.load("malloc"));
-        ResultHandle mallocDesc = bc.invokeStaticInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.FunctionDescriptor", "of",
-                        "java.lang.foreign.FunctionDescriptor",
-                        "java.lang.foreign.MemoryLayout", "[Ljava.lang.foreign.MemoryLayout;"),
-                javaLong, layoutArray);
-        ResultHandle mallocHandle = bc.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.Linker", "downcallHandle",
-                        MethodHandle.class,
-                        "java.lang.foreign.MemorySegment", "java.lang.foreign.FunctionDescriptor",
-                        "[Ljava.lang.foreign.Linker$Option;"),
-                linker, mallocPtr, mallocDesc, emptyOptions);
-        bc.assign(mallocVar, mallocHandle);
-
-        // --- free ---
-        ResultHandle freePtr = bc.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.SymbolLookup", "findOrThrow",
-                        "java.lang.foreign.MemorySegment", String.class),
-                defaultLookup, bc.load("free"));
-        ResultHandle freeDesc = bc.invokeStaticInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.FunctionDescriptor", "ofVoid",
-                        "java.lang.foreign.FunctionDescriptor",
-                        "[Ljava.lang.foreign.MemoryLayout;"),
-                layoutArray);
-        ResultHandle freeHandle = bc.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.Linker", "downcallHandle",
-                        MethodHandle.class,
-                        "java.lang.foreign.MemorySegment", "java.lang.foreign.FunctionDescriptor",
-                        "[Ljava.lang.foreign.Linker$Option;"),
-                linker, freePtr, freeDesc, emptyOptions);
-        bc.assign(freeVar, freeHandle);
-
-        // Catch block: null out everything and save error
-        CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-        catchBlock.assign(mallocVar, catchBlock.loadNull());
-        catchBlock.assign(freeVar, catchBlock.loadNull());
-        catchBlock.assign(errorVar, catchBlock.getCaughtException());
-
-        // After try-catch: log result and assign to static fields
-        ResultHandle loggerRef = clinit.readStaticField(loggerField);
-        BranchResult errorCheck = clinit.ifNull(errorVar);
-
-        // No error: logger.debug("java.nio.ByteBuffer.cleaner(): available")
-        BytecodeCreator noError = errorCheck.trueBranch();
-        noError.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("io.netty.util.internal.logging.InternalLogger",
-                        "debug", void.class, String.class),
-                loggerRef, noError.load("java.nio.ByteBuffer.cleaner(): available"));
-
-        // Has error: logger.debug("java.nio.ByteBuffer.cleaner(): unavailable", error)
-        BytecodeCreator hasError = errorCheck.falseBranch();
-        hasError.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("io.netty.util.internal.logging.InternalLogger",
-                        "debug", void.class, String.class, Throwable.class),
-                loggerRef, hasError.load("java.nio.ByteBuffer.cleaner(): unavailable"), errorVar);
-
-        // Assign to static final fields
-        clinit.writeStaticField(mallocField, mallocVar);
-        // INVOKE_CREATE_BYTEBUFFER is no longer used - direct calls in CleanableDirectBufferImpl
-        clinit.writeStaticField(wrapField, clinit.loadNull());
-        clinit.writeStaticField(freeField, freeVar);
-
-        clinit.returnVoid();
-    }
-
-    /**
-     * Generates the constructor for {@code CleanableDirectBufferImpl} that replaces
-     * {@code INVOKE_CREATE_BYTEBUFFER.invokeExact(addr, (long) capacity)} with direct
-     * FFM calls.
-     * <p>
-     * The original constructor:
-     *
-     * <pre>{@code
-     * private CleanableDirectBufferImpl(int capacity) {
-     *     PlatformDependent.incrementMemoryCounter(capacity);
-     *     long addr;
-     *     try {
-     *         addr = malloc(capacity);
-     *     } catch (Throwable e) {
-     *         PlatformDependent.decrementMemoryCounter(capacity);
-     *         throw e;
-     *     }
-     *     try {
-     *         memoryAddress = addr;
-     *         buffer = (ByteBuffer) INVOKE_CREATE_BYTEBUFFER.invokeExact(addr, (long) capacity);
-     *     } catch (Throwable throwable) {
-     *         PlatformDependent.decrementMemoryCounter(capacity);
-     *         Error error = new Error(throwable);
-     *         try {
-     *             free(addr);
-     *         } catch (Throwable e) {
-     *             error.addSuppressed(e);
-     *         }
-     *         throw error;
-     *     }
-     * }
-     * }</pre>
-     *
-     * We replace the buffer assignment with:
-     *
-     * <pre>{@code
-     * buffer = MemorySegment.ofAddress(addr).reinterpret((long) capacity).asByteBuffer();
-     * }</pre>
-     */
-    private static void generateCleanableDirectBufferImplCtor(MethodCreator ctor,
-            String outerClassName, String innerClassName) {
-        FieldDescriptor bufferField = FieldDescriptor.of(innerClassName, "buffer",
-                "java.nio.ByteBuffer");
-        FieldDescriptor memoryAddressField = FieldDescriptor.of(innerClassName, "memoryAddress",
-                long.class);
-
-        ResultHandle self = ctor.getThis();
-        ResultHandle capacity = ctor.getMethodParam(0);
-
-        // super()
-        ctor.invokeSpecialMethod(
-                MethodDescriptor.ofConstructor(Object.class), self);
-
-        // PlatformDependent.incrementMemoryCounter(capacity)
-        ctor.invokeStaticMethod(
-                MethodDescriptor.ofMethod("io.netty.util.internal.PlatformDependent",
-                        "incrementMemoryCounter", void.class, int.class),
-                capacity);
-
-        // First try: addr = malloc(capacity)
-        AssignableResultHandle addrVar = ctor.createVariable(long.class);
-        TryBlock tryMalloc = ctor.tryBlock();
-        ResultHandle addr = tryMalloc.invokeStaticMethod(
-                MethodDescriptor.ofMethod(outerClassName, "malloc", long.class, int.class),
-                capacity);
-        tryMalloc.assign(addrVar, addr);
-
-        CatchBlockCreator catchMalloc = tryMalloc.addCatch(Throwable.class);
-        catchMalloc.invokeStaticMethod(
-                MethodDescriptor.ofMethod("io.netty.util.internal.PlatformDependent",
-                        "decrementMemoryCounter", void.class, int.class),
-                capacity);
-        catchMalloc.throwException(catchMalloc.getCaughtException());
-
-        // Second try: set fields and create ByteBuffer
-        TryBlock tryWrap = ctor.tryBlock();
-
-        // memoryAddress = addr
-        tryWrap.writeInstanceField(memoryAddressField, self, addrVar);
-
-        // buffer = MemorySegment.ofAddress(addr).reinterpret((long) capacity).asByteBuffer()
-        ResultHandle segment = tryWrap.invokeStaticInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.MemorySegment", "ofAddress",
-                        "java.lang.foreign.MemorySegment", long.class),
-                addrVar);
-        ResultHandle capacityLong = tryWrap.convertPrimitive(capacity, long.class);
-        ResultHandle reinterpreted = tryWrap.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.MemorySegment", "reinterpret",
-                        "java.lang.foreign.MemorySegment", long.class),
-                segment, capacityLong);
-        ResultHandle byteBuffer = tryWrap.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.MemorySegment", "asByteBuffer",
-                        "java.nio.ByteBuffer"),
-                reinterpreted);
-        tryWrap.writeInstanceField(bufferField, self, byteBuffer);
-
-        // Catch block for the wrap try
-        CatchBlockCreator catchWrap = tryWrap.addCatch(Throwable.class);
-        catchWrap.invokeStaticMethod(
-                MethodDescriptor.ofMethod("io.netty.util.internal.PlatformDependent",
-                        "decrementMemoryCounter", void.class, int.class),
-                capacity);
-        ResultHandle error = catchWrap.newInstance(
-                MethodDescriptor.ofConstructor(Error.class, Throwable.class),
-                catchWrap.getCaughtException());
-
-        // Inner try: free(addr) with suppressed exception handling
-        TryBlock tryFree = catchWrap.tryBlock();
-        tryFree.invokeStaticMethod(
-                MethodDescriptor.ofMethod(outerClassName, "free", void.class, long.class),
-                addrVar);
-        CatchBlockCreator catchFree = tryFree.addCatch(Throwable.class);
-        catchFree.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Throwable.class, "addSuppressed", void.class, Throwable.class),
-                error, catchFree.getCaughtException());
-
-        catchWrap.throwException(error);
-
-        ctor.returnVoid();
-    }
-
-    /**
-     * Rewrites {@code CleanerJava25}'s static initializer and {@code allocate(int)} method
-     * to avoid the expensive reflection-based FFM API lookups via {@code Class.forName} and
-     * complex {@code MethodHandles} composition chains (~10 MethodHandle operations). When
-     * building on Java 25+, the Foreign Function &amp; Memory API is stable and can be called
-     * directly.
-     * <p>
-     * The original clinit constructs a single {@code INVOKE_ALLOCATOR} MethodHandle that
-     * chains Arena.ofShared(), allocate(), asByteBuffer(), address(), and the
-     * CleanableDirectBufferImpl constructor into one composite handle. We replace all of that
-     * with a simple Arena.ofShared() availability check.
-     * <p>
-     * We replace the static initializer with:
-     *
-     * <pre>{@code
-     * static {
-     *     logger = InternalLoggerFactory.getInstance(CleanerJava25.class);
-     *     MethodHandle method = null;
-     *     Throwable error = null;
-     *     try {
-     *         Arena arena = Arena.ofShared();
-     *         arena.close();
-     *         method = MethodHandles.identity(int.class);
-     *     } catch (Throwable throwable) {
-     *         error = throwable;
-     *     }
-     *     if (error == null) {
-     *         logger.debug("java.nio.ByteBuffer.cleaner(): available");
-     *     } else {
-     *         logger.debug("java.nio.ByteBuffer.cleaner(): unavailable", error);
-     *     }
-     *     INVOKE_ALLOCATOR = method;
-     * }
-     * }</pre>
-     *
-     * And we replace the {@code allocate(int)} method with direct FFM calls:
-     *
-     * <pre>{@code
-     * public CleanableDirectBuffer allocate(int capacity) {
-     *     PlatformDependent.incrementMemoryCounter(capacity);
-     *     try {
-     *         Arena arena = Arena.ofShared();
-     *         MemorySegment segment = arena.allocate((long) capacity);
-     *         return new CleanableDirectBufferImpl(
-     *                 (AutoCloseable) arena, segment.asByteBuffer(), segment.address());
-     *     } catch (RuntimeException e) {
-     *         PlatformDependent.decrementMemoryCounter(capacity);
-     *         throw e;
-     *     } catch (Throwable e) {
-     *         PlatformDependent.decrementMemoryCounter(capacity);
-     *         throw new IllegalStateException("Unexpected allocation exception", e);
-     *     }
-     * }
-     * }</pre>
-     */
-    @BuildStep
-    void transformCleanerJava25(CompiledJavaVersionBuildItem compiledJavaVersion,
-            BuildProducer<BytecodeTransformerBuildItem> producer) {
-        if (compiledJavaVersion.getJavaVersion()
-                .isJava25OrHigher() != CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
-            return;
-        }
-
-        String className = "io.netty.util.internal.CleanerJava25";
-        String innerClassName = className + "$CleanableDirectBufferImpl";
-
-        // Transform the clinit of CleanerJava25
-        producer.produce(new BytecodeTransformerBuildItem.Builder()
-                .setClassToTransform(className)
-                .setCacheable(true)
-                .setVisitorFunction(new BiFunction<>() {
-                    @Override
-                    public ClassVisitor apply(String s, ClassVisitor classVisitor) {
-                        ClassVisitor updateBytecodeVersion = new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
-                            @Override
-                            public void visit(int version, int access, String name, String signature,
-                                    String superName, String[] interfaces) {
-                                super.visit(Math.max(version, 69), access, name, signature, superName, interfaces);
-                            }
-                        };
-
-                        ClassTransformer transformer = new ClassTransformer(className);
-
-                        // Replace <clinit>
-                        MethodDescriptor clinitDescriptor = MethodDescriptor.ofMethod(
-                                className, "<clinit>", void.class);
-                        transformer.removeMethod(clinitDescriptor);
-                        MethodCreator clinit = transformer.addMethod(clinitDescriptor)
-                                .setModifiers(Modifier.STATIC);
-                        generateCleanerJava25Clinit(clinit, className);
-
-                        // Replace allocate(int)
-                        MethodDescriptor allocateDescriptor = MethodDescriptor.ofMethod(
-                                className, "allocate",
-                                "io.netty.util.internal.CleanableDirectBuffer", int.class);
-                        transformer.removeMethod(allocateDescriptor);
-                        MethodCreator allocate = transformer.addMethod(allocateDescriptor)
-                                .setModifiers(Modifier.PUBLIC);
-                        generateCleanerJava25Allocate(allocate, className, innerClassName);
-
-                        return transformer.applyTo(updateBytecodeVersion);
-                    }
-                })
-                .build());
-    }
-
-    private static void generateCleanerJava25Clinit(MethodCreator clinit, String className) {
-        FieldDescriptor loggerField = FieldDescriptor.of(className, "logger",
-                "io.netty.util.internal.logging.InternalLogger");
-        FieldDescriptor allocatorField = FieldDescriptor.of(className, "INVOKE_ALLOCATOR",
-                MethodHandle.class);
-
-        // logger = InternalLoggerFactory.getInstance(CleanerJava25.class)
-        ResultHandle clazz = clinit.loadClassFromTCCL(className);
-        ResultHandle loggerValue = clinit.invokeStaticMethod(
-                MethodDescriptor.ofMethod("io.netty.util.internal.logging.InternalLoggerFactory",
-                        "getInstance", "io.netty.util.internal.logging.InternalLogger", Class.class),
-                clazz);
-        clinit.writeStaticField(loggerField, loggerValue);
-
-        AssignableResultHandle methodVar = clinit.createVariable(MethodHandle.class);
-        AssignableResultHandle errorVar = clinit.createVariable(Throwable.class);
-        clinit.assign(methodVar, clinit.loadNull());
-        clinit.assign(errorVar, clinit.loadNull());
-
-        TryBlock tryBlock = clinit.tryBlock();
-
-        // Arena arena = Arena.ofShared()
-        ResultHandle arena = tryBlock.invokeStaticInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.Arena", "ofShared",
-                        "java.lang.foreign.Arena"));
-
-        // arena.close() - verify it works (can fail on GraalVM 25.0.0)
-        tryBlock.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.Arena", "close", void.class),
-                arena);
-
-        // Set to non-null marker for isSupported() check
-        // method = MethodHandles.identity(int.class)
-        ResultHandle intClass = tryBlock.readStaticField(
-                FieldDescriptor.of(Integer.class, "TYPE", Class.class));
-        ResultHandle marker = tryBlock.invokeStaticMethod(
-                MethodDescriptor.ofMethod("java.lang.invoke.MethodHandles", "identity",
-                        MethodHandle.class, Class.class),
-                intClass);
-        tryBlock.assign(methodVar, marker);
-
-        // Catch block
-        CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-        catchBlock.assign(errorVar, catchBlock.getCaughtException());
-
-        // Log result
-        ResultHandle loggerRef = clinit.readStaticField(loggerField);
-        BranchResult errorCheck = clinit.ifNull(errorVar);
-
-        BytecodeCreator noError = errorCheck.trueBranch();
-        noError.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("io.netty.util.internal.logging.InternalLogger",
-                        "debug", void.class, String.class),
-                loggerRef, noError.load("java.nio.ByteBuffer.cleaner(): available"));
-
-        BytecodeCreator hasError = errorCheck.falseBranch();
-        hasError.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("io.netty.util.internal.logging.InternalLogger",
-                        "debug", void.class, String.class, Throwable.class),
-                loggerRef, hasError.load("java.nio.ByteBuffer.cleaner(): unavailable"), errorVar);
-
-        clinit.writeStaticField(allocatorField, methodVar);
-        clinit.returnVoid();
-    }
-
-    private static void generateCleanerJava25Allocate(MethodCreator method,
-            String className, String innerClassName) {
-        ResultHandle capacity = method.getMethodParam(0);
-
-        // PlatformDependent.incrementMemoryCounter(capacity)
-        method.invokeStaticMethod(
-                MethodDescriptor.ofMethod("io.netty.util.internal.PlatformDependent",
-                        "incrementMemoryCounter", void.class, int.class),
-                capacity);
-
-        TryBlock tryBlock = method.tryBlock();
-
-        // Arena arena = Arena.ofShared()
-        ResultHandle arena = tryBlock.invokeStaticInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.Arena", "ofShared",
-                        "java.lang.foreign.Arena"));
-
-        // MemorySegment segment = arena.allocate((long) capacity)
-        ResultHandle capacityLong = tryBlock.convertPrimitive(capacity, long.class);
-        ResultHandle segment = tryBlock.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.Arena", "allocate",
-                        "java.lang.foreign.MemorySegment", long.class),
-                arena, capacityLong);
-
-        // segment.asByteBuffer()
-        ResultHandle byteBuffer = tryBlock.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.MemorySegment", "asByteBuffer",
-                        "java.nio.ByteBuffer"),
-                segment);
-
-        // segment.address()
-        ResultHandle address = tryBlock.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod("java.lang.foreign.MemorySegment", "address",
-                        long.class),
-                segment);
-
-        // return new CleanableDirectBufferImpl(arena, byteBuffer, address)
-        ResultHandle result = tryBlock.newInstance(
-                MethodDescriptor.ofConstructor(innerClassName,
-                        AutoCloseable.class, "java.nio.ByteBuffer", long.class),
-                arena, byteBuffer, address);
-        tryBlock.returnValue(result);
-
-        // catch (RuntimeException e) { decrementMemoryCounter(capacity); throw e; }
-        CatchBlockCreator catchRE = tryBlock.addCatch(RuntimeException.class);
-        catchRE.invokeStaticMethod(
-                MethodDescriptor.ofMethod("io.netty.util.internal.PlatformDependent",
-                        "decrementMemoryCounter", void.class, int.class),
-                capacity);
-        catchRE.throwException(catchRE.getCaughtException());
-
-        // catch (Throwable e) { decrementMemoryCounter(capacity); throw new IllegalStateException(..., e); }
-        CatchBlockCreator catchT = tryBlock.addCatch(Throwable.class);
-        catchT.invokeStaticMethod(
-                MethodDescriptor.ofMethod("io.netty.util.internal.PlatformDependent",
-                        "decrementMemoryCounter", void.class, int.class),
-                capacity);
-        ResultHandle ise = catchT.newInstance(
-                MethodDescriptor.ofConstructor(IllegalStateException.class, String.class, Throwable.class),
-                catchT.load("Unexpected allocation exception"), catchT.getCaughtException());
-        catchT.throwException(ise);
-    }
-
     @BuildStep
     void enableNativeAccess(BuildProducer<ModuleEnableNativeAccessBuildItem> nativeAccess) {
         // Netty 4.2 on JDK 24+ uses CleanerJava24Linker (FFM malloc/free) for direct buffer
@@ -1610,9 +994,7 @@ class NettyProcessor {
      * }</pre>
      */
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void transformIsSharable(CombinedIndexBuildItem indexBuildItem,
-            NettyRecorder recorder,
             BuildProducer<BytecodeTransformerBuildItem> producer) {
         IndexView index = indexBuildItem.getIndex();
 
@@ -1684,12 +1066,19 @@ class NettyProcessor {
     }
 
     /**
-     * Generates a private static helper method {@code readBitsMaxDirectMemory()} that reads
-     * {@code java.nio.Bits.MAX_MEMORY} via reflection. This is used by the clinit patcher to
-     * replace the {@code BITS_MAX_DIRECT_MEMORY = -1} assignment in the {@code unsafe == null}
-     * branch, so that the value is available even without Unsafe. This avoids the expensive
-     * {@code ManagementFactory.getRuntimeMXBean()} fallback in
-     * {@code PlatformDependent.estimateMaxDirectMemory()}.
+     * Generates a private static helper method {@code readBitsMaxDirectMemory()} that returns the value of
+     * {@code java.nio.Bits.MAX_MEMORY}. This is used by the clinit patcher to replace the
+     * {@code BITS_MAX_DIRECT_MEMORY = -1} assignment in the {@code unsafe == null} branch, so that the value is
+     * available even without Unsafe. This avoids the expensive {@code ManagementFactory.getRuntimeMXBean()} fallback
+     * in {@code PlatformDependent.estimateMaxDirectMemory()}.
+     * <p>
+     * {@code Bits.MAX_MEMORY} is initialized from {@code jdk.internal.misc.VM.maxDirectMemory()}, so the generated
+     * code calls that method directly: the {@code java.base/jdk.internal.misc} package is opened to the application by
+     * the {@code Add-Opens} manifest entry Quarkus generates, and an open package is also exported. The direct call
+     * avoids the reflective {@code Field.get()}, whose first use builds a method handle based field accessor, which
+     * was the most expensive part of the Netty pre-initialization thread. If the package is not accessible (for
+     * instance when the application is started without the manifest options), the method falls back to the reflective
+     * read.
      */
     private static void generateReadBitsMaxDirectMemory(ClassTransformer transformer, String className) {
         MethodDescriptor md = MethodDescriptor.ofMethod(className, "readBitsMaxDirectMemory", long.class);
@@ -1697,6 +1086,13 @@ class NettyProcessor {
 
         AssignableResultHandle result = m.createVariable(long.class);
         m.assign(result, m.load(-1L));
+
+        // try { return jdk.internal.misc.VM.maxDirectMemory(); } catch (Throwable ignored) { }
+        TryBlock directBlock = m.tryBlock();
+        ResultHandle maxDirectMemory = directBlock.invokeStaticMethod(
+                MethodDescriptor.ofMethod("jdk.internal.misc.VM", "maxDirectMemory", long.class));
+        directBlock.returnValue(maxDirectMemory);
+        directBlock.addCatch(Throwable.class);
 
         TryBlock tryBlock = m.tryBlock();
 

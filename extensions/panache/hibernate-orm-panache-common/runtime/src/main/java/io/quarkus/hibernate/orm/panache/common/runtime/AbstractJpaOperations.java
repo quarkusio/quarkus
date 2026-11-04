@@ -78,6 +78,16 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType extend
         return (Class<? extends Entity>) ret;
     }
 
+    @SuppressWarnings("unchecked")
+    public static <T> Class<? extends T> findRepositoryClass(Class<?> entityClass, Class<T> repositoryVariantType) {
+        for (Entry<Class<?>, Class<?>> entry : repositoryClassToEntityClass.entrySet()) {
+            if (entry.getValue().equals(entityClass) && repositoryVariantType.isAssignableFrom(entry.getKey())) {
+                return (Class<? extends T>) entry.getKey();
+            }
+        }
+        return null;
+    }
+
     //
     // Instance
 

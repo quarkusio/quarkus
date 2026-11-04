@@ -236,8 +236,10 @@ public final class TestUtil {
 
     public static boolean isShutdown(BatchSpanProcessor processor)
             throws NoSuchFieldException, IllegalAccessException {
-        Field isShutdownField = BatchSpanProcessor.class.getDeclaredField("isShutdown");
+        // Since SDK 1.67.0 the shutdown flag lives on the Worker, not on the BatchSpanProcessor itself
+        Object worker = getBatchSpanProcessorWorker(processor);
+        Field isShutdownField = worker.getClass().getDeclaredField("isShutdown");
         isShutdownField.setAccessible(true);
-        return ((AtomicBoolean) isShutdownField.get(processor)).get();
+        return ((AtomicBoolean) isShutdownField.get(worker)).get();
     }
 }

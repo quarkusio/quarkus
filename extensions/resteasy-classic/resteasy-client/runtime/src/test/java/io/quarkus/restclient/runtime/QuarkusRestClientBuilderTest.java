@@ -14,11 +14,11 @@ import java.util.Optional;
 
 import javax.net.ssl.SSLContext;
 
-import org.eclipse.microprofile.config.Config;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.restclient.NoopHostnameVerifier;
+import io.smallrye.config.Config;
 
 public class QuarkusRestClientBuilderTest {
 

@@ -4,6 +4,8 @@ import java.security.Security;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import javax.crypto.KEM;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -22,5 +24,12 @@ public class BouncyCastleJsseEndpoint {
         return "Identity: " + identity.getPrincipal().getName()
                 + ", providers:" + Arrays.asList(Security.getProviders()).stream()
                         .map(p -> p.getName()).collect(Collectors.joining(","));
+    }
+
+    @GET
+    @Path("checkMLKEM")
+    public String checkMLKEM() throws Exception {
+        KEM kem = KEM.getInstance("ML-KEM-768", "BC");
+        return kem.getAlgorithm();
     }
 }

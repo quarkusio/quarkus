@@ -47,8 +47,7 @@ To run the application, execute the launcher script in the image's `bin` directo
 ./target/jlink-output/image/bin/<launcher-name>
 ----
 
-The launcher name currently defaults to `my-app`.
-A future release will derive the default from `quarkus.package.output-name`.
+The launcher name defaults to the package output name (`quarkus.package.output-name`), which is the build's base name, for example `my-app-1.0.0-SNAPSHOT` with Maven.
 
 == Image layout
 

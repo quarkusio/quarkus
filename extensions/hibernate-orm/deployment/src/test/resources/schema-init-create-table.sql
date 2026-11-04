@@ -1,0 +1,2 @@
+CREATE TABLE MyExtraTable(id BIGINT PRIMARY KEY);
+INSERT INTO MyExtraTable(id) VALUES(1);

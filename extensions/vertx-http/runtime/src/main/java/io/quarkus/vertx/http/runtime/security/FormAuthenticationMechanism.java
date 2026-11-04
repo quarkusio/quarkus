@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 
 import jakarta.enterprise.event.Event;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -36,6 +35,7 @@ import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.FormAuthConfig;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.Handler;
@@ -110,7 +110,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.cookieSameSite = CookieSameSite.valueOf(runtimeForm.cookieSameSite().name());
         this.isFormAuthEventObserver = SecurityEventHelper.isEventObserved(createLoginEvent(null),
                 Arc.container().beanManager(),
-                ConfigProvider.getConfig().getValue("quarkus.security.events.enabled", Boolean.class));
+                Config.get().getValue("quarkus.security.events.enabled", Boolean.class));
         this.formAuthEvent = this.isFormAuthEventObserver
                 ? Arc.container().beanManager().getEvent().select(FormAuthenticationEvent.class)
                 : null;

@@ -17,6 +17,11 @@ public interface WorkloadJsonWebToken {
     String token();
 
     /**
+     * Returns the issuer ({@code iss} claim) of this JWT-SVID. May be null.
+     */
+    String issuer();
+
+    /**
      * Returns the subject ({@code sub} claim) of this JWT-SVID, which is the SPIFFE ID of the workload identity,
      * for example {@code spiffe://example.org/myservice}. Never null or empty.
      */

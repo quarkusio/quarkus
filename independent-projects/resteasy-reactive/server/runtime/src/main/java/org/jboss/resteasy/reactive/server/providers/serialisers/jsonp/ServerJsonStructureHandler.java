@@ -7,8 +7,10 @@ import java.lang.reflect.Type;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonStructure;
 import jakarta.json.JsonWriter;
+import jakarta.json.stream.JsonParsingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonStructureHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonpUtil;
@@ -43,6 +45,10 @@ public class ServerJsonStructureHandler extends JsonStructureHandler
     @Override
     public JsonStructure readFrom(Class<JsonStructure> type, Type genericType, MediaType mediaType,
             ServerRequestContext context) throws WebApplicationException, IOException {
-        return JsonpUtil.reader(context.getInputStream(), mediaType).read();
+        try {
+            return JsonpUtil.reader(context.getInputStream(), mediaType).read();
+        } catch (JsonParsingException e) {
+            throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
+        }
     }
 }

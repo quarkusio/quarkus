@@ -8,10 +8,9 @@ import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.Provider;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 
+import io.smallrye.config.Config;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
@@ -37,9 +36,12 @@ public class VertxRequestClientHeadersFactory implements ClientHeadersFactory {
     }
 
     private static Optional<Config> config() {
+        // Config.get() throws IllegalArgumentException when no config is registered for the current class
+        // loader, unlike the MP ConfigProvider.getConfig() which threw IllegalStateException
         try {
-            return Optional.ofNullable(ConfigProvider.getConfig());
-        } catch (NoClassDefFoundError | IllegalStateException | ExceptionInInitializerError var1) {
+            return Optional.ofNullable(Config.get());
+        } catch (NoClassDefFoundError | IllegalStateException | IllegalArgumentException
+                | ExceptionInInitializerError var1) {
             return Optional.empty();
         }
     }

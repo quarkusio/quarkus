@@ -48,7 +48,8 @@
         <!-- Enable APT by default for Eclipse -->
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>
 
-        <!-- These 2 properties are used in catalog-overrides.json -->
+        <!-- These 2 properties are used in catalog-overrides.json and in docs/src/main/asciidoc/_attributes.adoc,
+             where jdk-version-all lists every supported version by hand: update it when these change -->
         <minimum-java-version>${maven.compiler.release}</minimum-java-version>
         <recommended-java-version>25</recommended-java-version>
 
@@ -64,7 +65,7 @@
         <!-- Supported Gradle versions, interpreted as a version range -->
         <minimum-gradle-version>9.6</minimum-gradle-version>
         <supported-gradle-versions>[9.6,)</supported-gradle-versions>
-        <gradle-wrapper.version>9.7.0</gradle-wrapper.version>
+        <gradle-wrapper.version>9.8.0</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
@@ -133,7 +134,7 @@
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.7.4</keycloak.server.version>
+        <keycloak.server.version>26.8.1</keycloak.server.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
 
         <unboundid-ldap.version>7.0.5</unboundid-ldap.version>

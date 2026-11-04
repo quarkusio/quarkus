@@ -12,6 +12,8 @@ import java.util.stream.Collectors;
 import jakarta.data.repository.Query;
 import jakarta.data.repository.Repository;
 import jakarta.persistence.Entity;
+import jakarta.persistence.query.JakartaQuery;
+import jakarta.persistence.query.NativeQuery;
 
 import org.hibernate.annotations.processing.Find;
 import org.hibernate.annotations.processing.HQL;
@@ -58,7 +60,8 @@ class JakartaDataProcessorTest {
     void registersAnnotatedAndUnannotatedRepositoryInterfacesOnceInTheirPersistenceUnits() throws IOException {
         var indexer = new Indexer();
         for (Class<?> type : List.of(ExplicitOnly.class, AnnotatedWithQuery.class, Unannotated.class,
-                WithHql.class, WithSql.class, ParentWithQuery.class, ChildOfParent.class, EntityWithNestedRepository.class,
+                WithHql.class, WithSql.class, WithNativeQuery.class, WithJakartaQuery.class,
+                ParentWithQuery.class, ChildOfParent.class, EntityWithNestedRepository.class,
                 EntityWithNestedRepository.NestedRepository.class, NotARepository.class)) {
             indexer.indexClass(type);
         }
@@ -72,12 +75,14 @@ class JakartaDataProcessorTest {
         var persistenceUnitsByClass = contributions.stream().collect(Collectors.toMap(
                 AdditionalJpaModelBuildItem::getClassName, AdditionalJpaModelBuildItem::getPersistenceUnits));
         assertThat(persistenceUnitsByClass)
-                .hasSize(8)
+                .hasSize(10)
                 .containsEntry(ExplicitOnly.class.getName(), Set.of(DEFAULT_PERSISTENCE_UNIT_NAME))
                 .containsEntry(AnnotatedWithQuery.class.getName(), Set.of(DEFAULT_PERSISTENCE_UNIT_NAME))
                 .containsEntry(Unannotated.class.getName(), Set.of(DEFAULT_PERSISTENCE_UNIT_NAME))
                 .containsEntry(WithHql.class.getName(), Set.of(DEFAULT_PERSISTENCE_UNIT_NAME))
                 .containsEntry(WithSql.class.getName(), Set.of(DEFAULT_PERSISTENCE_UNIT_NAME))
+                .containsEntry(WithNativeQuery.class.getName(), Set.of(DEFAULT_PERSISTENCE_UNIT_NAME))
+                .containsEntry(WithJakartaQuery.class.getName(), Set.of(DEFAULT_PERSISTENCE_UNIT_NAME))
                 .containsEntry(ParentWithQuery.class.getName(), Set.of("other"))
                 .containsEntry(ChildOfParent.class.getName(), Set.of("other"))
                 .containsEntry(EntityWithNestedRepository.NestedRepository.class.getName(), Set.of())
@@ -106,6 +111,16 @@ class JakartaDataProcessorTest {
 
     interface WithSql {
         @SQL("select 1")
+        int count();
+    }
+
+    interface WithNativeQuery {
+        @NativeQuery("select 1")
+        int count();
+    }
+
+    interface WithJakartaQuery {
+        @JakartaQuery("select 1")
         int count();
     }
 

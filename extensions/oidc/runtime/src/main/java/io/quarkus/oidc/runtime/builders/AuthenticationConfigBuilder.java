@@ -400,7 +400,7 @@ public final class AuthenticationConfigBuilder {
      * @param stateCookieSameSite {@link Authentication#stateCookieSameSite()}
      * @return this builder
      */
-    public AuthenticationConfigBuilder stateCookieSameSite(CookieSameSite cookieSameSite) {
+    public AuthenticationConfigBuilder stateCookieSameSite(CookieSameSite stateCookieSameSite) {
         this.stateCookieSameSite = Objects.requireNonNull(stateCookieSameSite);
         return this;
     }

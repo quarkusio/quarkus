@@ -11,8 +11,6 @@ import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.Readiness;
 import org.eclipse.microprofile.health.Startup;
@@ -51,6 +49,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
+import io.quarkus.load.shedding.deployment.spi.LoadSheddingExemptPathBuildItem;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -74,6 +73,7 @@ import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.smallrye.config.Config;
 import io.smallrye.health.AsyncHealthCheckFactory;
 import io.smallrye.health.SmallRyeHealthReporter;
 import io.smallrye.health.api.HealthGroup;
@@ -144,7 +144,7 @@ class SmallRyeHealthProcessor {
             List<HealthBuildItem> healthBuildItems,
             SmallRyeHealthBuildTimeConfig smallryeHealthBuildTimeConfig) {
         boolean extensionsEnabled = smallryeHealthBuildTimeConfig.extensionsEnabled() &&
-                !ConfigProvider.getConfig().getOptionalValue("mp.health.disable-default-procedures", boolean.class)
+                !Config.get().getOptionalValue("mp.health.disable-default-procedures", boolean.class)
                         .orElse(false);
         if (extensionsEnabled) {
             for (HealthBuildItem buildItem : healthBuildItems) {
@@ -355,6 +355,26 @@ class SmallRyeHealthProcessor {
                                 healthConfig.startupPath())));
     }
 
+    // The health probes must always respond. An orchestrator that cannot reach them either
+    // restarts an application that is merely overloaded, or stops routing traffic to it and
+    // pushes the load onto the remaining replicas; both make the overload worse.
+    // The paths are resolved exactly as in `kubernetes()` above.
+    @BuildStep
+    void exemptHealthProbesFromLoadShedding(
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            SmallRyeHealthBuildTimeConfig healthConfig,
+            BuildProducer<LoadSheddingExemptPathBuildItem> exemptPaths) {
+        String reason = "the health probes must keep responding, or the orchestrator restarts"
+                + " an overloaded application or cuts it off and overloads the other replicas";
+
+        for (String probePath : List.of(healthConfig.livenessPath(), healthConfig.readinessPath(),
+                healthConfig.startupPath())) {
+            exemptPaths.produce(new LoadSheddingExemptPathBuildItem(
+                    nonApplicationRootPathBuildItem.resolveManagementNestedPath(healthConfig.rootPath(), probePath),
+                    reason));
+        }
+    }
+
     @BuildStep
     void shutdownHealthCheck(ShutdownBuildTimeConfig buildTimeConfig,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
@@ -479,7 +499,7 @@ class SmallRyeHealthProcessor {
      * If so, it will select the scheme HTTPS, otherwise HTTP.
      */
     private static String selectSchemeForManagement() {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         for (String sslProperty : MANAGEMENT_SSL_PROPERTIES) {
             Optional<List<String>> property = config.getOptionalValues(MANAGEMENT_SSL_PREFIX + sslProperty,
                     String.class);

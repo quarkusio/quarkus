@@ -1,6 +1,7 @@
 package io.quarkus.opentelemetry.runtime.exporter.otlp.sender;
 
 import static io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterUtil.getPort;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -11,6 +12,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -57,6 +59,7 @@ public final class VertxHttpSender implements HttpSender {
     private final String contentType;
     private final HttpClient client;
     private final String signalPath;
+    private final long timeoutMillis;
 
     public VertxHttpSender(
             URI baseUri,
@@ -72,8 +75,11 @@ public final class VertxHttpSender implements HttpSender {
         this.compressionEnabled = compressionEnabled;
         this.headers = headersMap;
         this.contentType = contentType;
+        // The timeout is a deadline for each request, see ClientRequestSuccessHandler, not a read idle timeout on the
+        // connection: that one counts from the last read on the connection, so it can close it while an export is in
+        // flight after the collector received it, and the retry sends it twice
+        this.timeoutMillis = timeout.toMillis();
         var httpClientOptions = new HttpClientOptions()
-                .setReadIdleTimeout((int) timeout.getSeconds())
                 .setDefaultHost(baseUri.getHost())
                 .setDefaultPort(getPort(baseUri))
                 .setTracingPolicy(TracingPolicy.IGNORE); // needed to avoid tracing the calls from this http client
@@ -123,7 +129,7 @@ public final class VertxHttpSender implements HttpSender {
         var clientRequestSuccessHandler = new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
                 contentType,
                 onHttpResponseRead,
-                onError, requestBodyWriter, 1, isShutdown::get);
+                onError, requestBodyWriter, 1, isShutdown::get, timeoutMillis);
         initiateSend(client, requestURI, MAX_ATTEMPTS, clientRequestSuccessHandler, new Consumer<>() {
             @Override
             public void accept(Throwable throwable) {
@@ -234,6 +240,7 @@ public final class VertxHttpSender implements HttpSender {
 
         private final int attemptNumber;
         private final Supplier<Boolean> isShutdown;
+        private final long timeoutMillis;
 
         public ClientRequestSuccessHandler(HttpClient client,
                 String requestURI, Map<String, String> headers,
@@ -243,7 +250,8 @@ public final class VertxHttpSender implements HttpSender {
                 Consumer<Throwable> onError,
                 MessageWriter requestBodyWriter,
                 int attemptNumber,
-                Supplier<Boolean> isShutdown) {
+                Supplier<Boolean> isShutdown,
+                long timeoutMillis) {
             this.client = client;
             this.requestURI = requestURI;
             this.headers = headers;
@@ -254,60 +262,57 @@ public final class VertxHttpSender implements HttpSender {
             this.requestBodyWriter = requestBodyWriter;
             this.attemptNumber = attemptNumber;
             this.isShutdown = isShutdown;
+            this.timeoutMillis = timeoutMillis;
         }
 
         @Override
         public void handle(HttpClientRequest request) {
+            // The timeout covers the response and its body, so a response that never completes times out even if
+            // data keeps arriving on the connection
+            Future<HttpClientResponse> responseRead = request.response().compose(new Function<>() {
+                @Override
+                public Future<HttpClientResponse> apply(HttpClientResponse clientResponse) {
+                    return clientResponse.body().map(clientResponse);
+                }
+            });
+            if (timeoutMillis > 0) {
+                responseRead = responseRead.timeout(timeoutMillis, MILLISECONDS);
+            }
 
-            request.response().onComplete(new Handler<>() {
+            responseRead.onComplete(new Handler<>() {
                 @Override
                 public void handle(AsyncResult<HttpClientResponse> callResult) {
                     if (callResult.succeeded()) {
                         HttpClientResponse clientResponse = callResult.result();
-                        clientResponse.body().onComplete(new Handler<>() {
+                        if (clientResponse.statusCode() >= 500) {
+                            if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
+                                // we should retry for 5xx error as they might be recoverable
+                                initiateSend(client, requestURI,
+                                        MAX_ATTEMPTS - attemptNumber,
+                                        newAttempt(),
+                                        onError);
+                                return;
+                            }
+                        }
+                        onHttpResponseRead.accept(new HttpResponse() {
                             @Override
-                            public void handle(AsyncResult<Buffer> bodyResult) {
-                                if (bodyResult.succeeded()) {
-                                    if (clientResponse.statusCode() >= 500) {
-                                        if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                                            // we should retry for 5xx error as they might be recoverable
-                                            initiateSend(client, requestURI,
-                                                    MAX_ATTEMPTS - attemptNumber,
-                                                    newAttempt(),
-                                                    onError);
-                                            return;
-                                        }
-                                    }
-                                    onHttpResponseRead.accept(new HttpResponse() {
-                                        @Override
-                                        public int getStatusCode() {
-                                            return clientResponse.statusCode();
-                                        }
+                            public int getStatusCode() {
+                                return clientResponse.statusCode();
+                            }
 
-                                        @Override
-                                        public String getStatusMessage() {
-                                            return clientResponse.statusMessage();
-                                        }
+                            @Override
+                            public String getStatusMessage() {
+                                return clientResponse.statusMessage();
+                            }
 
-                                        @Override
-                                        public byte[] getResponseBody() {
-                                            return bodyResult.result().getBytes();
-                                        }
-                                    });
-                                } else {
-                                    if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                                        // retry
-                                        initiateSend(client, requestURI,
-                                                MAX_ATTEMPTS - attemptNumber,
-                                                newAttempt(),
-                                                onError);
-                                    } else {
-                                        onError.accept(bodyResult.cause());
-                                    }
-                                }
+                            @Override
+                            public byte[] getResponseBody() {
+                                return clientResponse.body().result().getBytes();
                             }
                         });
                     } else {
+                        // Stops a request that timed out, does nothing to one that already failed
+                        request.cancel();
                         if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
                             // retry
                             initiateSend(client, requestURI,
@@ -351,7 +356,7 @@ public final class VertxHttpSender implements HttpSender {
         public ClientRequestSuccessHandler newAttempt() {
             return new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
                     contentType, onHttpResponseRead,
-                    onError, requestBodyWriter, attemptNumber + 1, isShutdown);
+                    onError, requestBodyWriter, attemptNumber + 1, isShutdown, timeoutMillis);
         }
     }
 }

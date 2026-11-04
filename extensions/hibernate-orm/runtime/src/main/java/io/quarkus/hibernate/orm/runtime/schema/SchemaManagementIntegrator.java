@@ -5,33 +5,33 @@ import static org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME;
 import java.io.StringWriter;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.BootstrapContext;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
-import org.hibernate.tool.schema.SourceType;
+import org.hibernate.tool.schema.Action;
 import org.hibernate.tool.schema.TargetType;
 import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToWriter;
 import org.hibernate.tool.schema.spi.CommandAcceptanceException;
 import org.hibernate.tool.schema.spi.ContributableMatcher;
 import org.hibernate.tool.schema.spi.ExceptionHandler;
 import org.hibernate.tool.schema.spi.ExecutionOptions;
-import org.hibernate.tool.schema.spi.SchemaDropper;
 import org.hibernate.tool.schema.spi.SchemaManagementException;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
+import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
 import org.hibernate.tool.schema.spi.SchemaMigrator;
 import org.hibernate.tool.schema.spi.SchemaValidator;
-import org.hibernate.tool.schema.spi.ScriptSourceInput;
 import org.hibernate.tool.schema.spi.ScriptTargetOutput;
-import org.hibernate.tool.schema.spi.SourceDescriptor;
 import org.hibernate.tool.schema.spi.TargetDescriptor;
 import org.jboss.logging.Logger;
 
@@ -100,21 +100,64 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         Holder holder = metadataMap.get(name);
 
         ServiceRegistry serviceRegistry = holder.sessionFactory.getServiceRegistry();
-        SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry);
-        Object schemaGenerationDatabaseAction = executionOptions.getConfigurationValues()
-                .get("jakarta.persistence.schema-generation.database.action");
-        if (schemaGenerationDatabaseAction != null && !(schemaGenerationDatabaseAction.toString().equals("none"))) {
-            //if this is none we assume another framework is doing this (e.g. flyway)
+        SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(withoutLoadScripts(settings(serviceRegistry)));
+        Action schemaGenerationDatabaseAction = databaseAction(executionOptions);
+        if (!Action.NONE.equals(schemaGenerationDatabaseAction) && !Action.POPULATE.equals(schemaGenerationDatabaseAction)) {
+            //if this is none (or populate, which doesn't touch the schema) we assume another framework is doing this (e.g. flyway)
             SchemaManagementTool schemaManagementTool = serviceRegistry
                     .getService(SchemaManagementTool.class);
-            SchemaDropper schemaDropper = schemaManagementTool.getSchemaDropper(executionOptions.getConfigurationValues());
-            schemaDropper.doDrop(holder.metadata, executionOptions, ContributableMatcher.ALL, new SimpleSourceDescriptor(),
-                    new SimpleTargetDescriptor());
-            schemaManagementTool.getSchemaCreator(executionOptions.getConfigurationValues())
-                    .doCreation(holder.metadata, executionOptions, ContributableMatcher.ALL, new SimpleSourceDescriptor(),
-                            new SimpleTargetDescriptor());
+            // Drop and create the schema exactly like on startup,
+            // so that the schema init script gets executed too
+            SchemaManagementToolCoordinator.performDatabaseAction(Action.CREATE, holder.metadata, schemaManagementTool,
+                    serviceRegistry, executionOptions, ContributableMatcher.ALL);
         }
         //we still clear caches though
+        evictCaches(holder);
+    }
+
+    /**
+     * Executes the data init script, whatever the data management strategy,
+     * since a reset is an explicit request for a fresh database.
+     * Must be called once the schema has been reset, by {@link #recreateDatabase(String)}
+     * or by another framework (e.g. Flyway).
+     */
+    public static void populatePersistenceUnit(String name) {
+        if (!LaunchMode.current().isDevOrTest()) {
+            throw new IllegalStateException("Can only be used in dev or test mode");
+        }
+        Holder holder = metadataMap.get(name);
+        holder.sessionFactory.getSchemaManager().populate();
+        evictCaches(holder);
+    }
+
+    private static Map<String, Object> settings(ServiceRegistry serviceRegistry) {
+        return serviceRegistry.getService(ConfigurationService.class).getSettings();
+    }
+
+    /**
+     * @return A copy of the given settings without the scripts that Hibernate ORM executes to load data
+     *         when it creates the schema: {@link #populatePersistenceUnit(String)} executes them instead.
+     */
+    @SuppressWarnings("deprecation")
+    private static Map<String, Object> withoutLoadScripts(Map<String, Object> settings) {
+        // Same settings as those Hibernate ORM's SchemaManager#truncateTable(String) overrides to skip the load scripts
+        Map<String, Object> copy = new HashMap<>(settings);
+        // The data init script
+        copy.remove(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE);
+        // Scripts that persistence units defined in a persistence.xml file may also use,
+        // including the import.sql file that Hibernate ORM picks up by default
+        copy.remove(AvailableSettings.HBM2DDL_LOAD_SCRIPT_SOURCE);
+        copy.remove(AvailableSettings.HBM2DDL_IMPORT_FILES);
+        copy.put(AvailableSettings.HBM2DDL_SKIP_DEFAULT_IMPORT_FILE, true);
+        return copy;
+    }
+
+    private static Action databaseAction(SimpleExecutionOptions executionOptions) {
+        return Action.interpretJpaSetting(executionOptions.getConfigurationValues()
+                .get(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION));
+    }
+
+    private static void evictCaches(Holder holder) {
         holder.sessionFactory.getCache().evictAll();
         holder.sessionFactory.getCache().evictQueries();
     }
@@ -134,7 +177,7 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
             ServiceRegistry serviceRegistry = val.sessionFactory.getServiceRegistry();
             SchemaManagementTool schemaManagementTool = serviceRegistry
                     .getService(SchemaManagementTool.class);
-            SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry);
+            SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(settings(serviceRegistry));
             SchemaValidator validator = schemaManagementTool.getSchemaValidator(executionOptions.getConfigurationValues());
             try {
                 validator.doValidation(val.metadata, executionOptions, ContributableMatcher.ALL);
@@ -183,6 +226,16 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         recreateDatabases();
     }
 
+    @Override
+    public void populateDatabase(String dbName) {
+        String name = datasourceToPuMap.get(dbName);
+        if (name == null) {
+            //not an hibernate DS
+            return;
+        }
+        populatePersistenceUnit(name);
+    }
+
     static class Holder {
         final Metadata metadata;
         final SessionFactoryImplementor sessionFactory;
@@ -198,8 +251,8 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
     private static class SimpleExecutionOptions implements ExecutionOptions {
         private final Map<String, Object> configurationValues;
 
-        public SimpleExecutionOptions(ServiceRegistry serviceRegistry) {
-            configurationValues = serviceRegistry.getService(ConfigurationService.class).getSettings();
+        public SimpleExecutionOptions(Map<String, Object> configurationValues) {
+            this.configurationValues = configurationValues;
         }
 
         @Override
@@ -223,27 +276,4 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         }
     }
 
-    private static class SimpleSourceDescriptor implements SourceDescriptor {
-        @Override
-        public SourceType getSourceType() {
-            return SourceType.METADATA;
-        }
-
-        @Override
-        public ScriptSourceInput getScriptSourceInput() {
-            return null;
-        }
-    }
-
-    private static class SimpleTargetDescriptor implements TargetDescriptor {
-        @Override
-        public EnumSet<TargetType> getTargetTypes() {
-            return EnumSet.of(TargetType.DATABASE);
-        }
-
-        @Override
-        public ScriptTargetOutput getScriptTargetOutput() {
-            return null;
-        }
-    }
 }

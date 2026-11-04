@@ -347,8 +347,14 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     @Override
     public <V> void put(Object key, CompletableFuture<V> valueFuture, Duration expiresAfter) {
         requirePerItemExpiration(expiresAfter);
-        cache.put(key, (CompletableFuture<CacheValue<Object>>) (CompletableFuture<?>) valueFuture
-                .thenApply(x -> new CacheValue<>(NullValueConverter.toCacheValue(x), expiresAfter)));
+        CompletableFuture<CacheValue<Object>> cacheValueFuture = (CompletableFuture<CacheValue<Object>>) (CompletableFuture<?>) valueFuture
+                .thenApply(x -> new CacheValue<>(NullValueConverter.toCacheValue(x), expiresAfter));
+        // Caffeine records a put as a load only while the value is still being computed
+        boolean available = cacheValueFuture.isDone() && !cacheValueFuture.isCompletedExceptionally();
+        cache.put(key, cacheValueFuture);
+        if (available) {
+            statsCounter.recordLoadSuccess(0L);
+        }
     }
 
     @Override

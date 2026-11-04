@@ -10,21 +10,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigValue;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 @Recorder
 public class ConfigRecorder {
     private static final Logger log = Logger.getLogger(ConfigRecorder.class);
 
     public void handleConfigChange(List<ConfigValue> buildTimeRuntimeValues) {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         // Disable the BuildTime RunTime Fixed (has the highest ordinal), because a lookup will get the expected value,
         // and we have no idea if the user tried to override it in another source.
         Optional<ConfigSource> builtTimeRunTimeFixedConfigSource = config.getConfigSource("BuildTime RunTime Fixed");
@@ -77,7 +77,7 @@ public class ConfigRecorder {
     }
 
     public void handleNativeProfileChange(List<String> buildProfiles) {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         List<String> runtimeProfiles = config.getProfiles();
 
         if (buildProfiles.size() != runtimeProfiles.size()) {
@@ -108,11 +108,16 @@ public class ConfigRecorder {
     }
 
     public void releaseConfig(ShutdownContext shutdownContext) {
+        // Releases the runtime configuration, registered for the runtime classloader, which is the context
+        // classloader when the shutdown task runs. It does not clear QuarkusConfigFactory#config, so the build
+        // time configuration, held by the QuarkusConfigFactory from the augmentation classloader, is untouched.
         // This is mostly useful to handle restarts in Dev/Test mode.
-        // While this may seem to duplicate code in IsolatedDevModeMain,
-        // it actually does not because it operates on a different instance
-        // of QuarkusConfigFactory from a different classloader.
-
-        shutdownContext.addLastShutdownTask(QuarkusConfigFactory::releaseTCCLConfig);
+        shutdownContext.addLastShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance())
+                        .releaseConfig(Thread.currentThread().getContextClassLoader());
+            }
+        });
     }
 }

@@ -59,6 +59,7 @@ endif::[]
 :hibernate-validator-version-major-minor: ${hibernate-validator.majorVersion}.${hibernate-validator.minorVersion}
 :jakarta-persistence-version-major-minor: ${jakarta-persistence.majorVersion}.${jakarta-persistence.minorVersion}
 :jakarta-data-version-major-minor: ${jakarta-data.majorVersion}.${jakarta-data.minorVersion}
+:smallrye-fault-tolerance-version: ${smallrye-fault-tolerance.version}
 // .
 :quarkus-home-url: ${quarkus-home-url}
 :quarkus-org-url: https://github.com/quarkusio

@@ -91,18 +91,22 @@ public class HttpRateLimitConfigValidatorTest {
     @Test
     void globalDefaultsApplyUnlessTheRuleSetsItsOwn() {
         RateLimitRuleConfig defaults = rule();
+        assertThat(defaults.store()).isEqualTo("local");
         assertThat(defaults.maxKeys()).isEqualTo(100_000);
 
         RateLimitRuleConfig global = rule(g("phase"), null, g("request-key"), null, P + "phase", "post-authentication",
-                P + "request-key", "principal", P + "max-keys", "7");
+                P + "request-key", "principal", P + "store", "shared", P + "max-keys", "7");
         assertThat(global.phase()).isEqualTo(RateLimitPhase.POST_AUTHENTICATION);
         assertThat(global.key()).isEqualTo("principal");
+        assertThat(global.store()).isEqualTo("shared");
         assertThat(global.maxKeys()).isEqualTo(7);
 
         RateLimitRuleConfig own = rule(P + "phase", "post-authentication", P + "request-key", "principal",
-                P + "max-keys", "7", g("max-keys"), "8");
+                P + "store", "shared", P + "max-keys", "7",
+                g("store"), "custom", g("max-keys"), "8");
         assertThat(own.phase()).isEqualTo(RateLimitPhase.PRE_AUTHENTICATION);
         assertThat(own.key()).isEqualTo("ip");
+        assertThat(own.store()).isEqualTo("custom");
         assertThat(own.maxKeys()).isEqualTo(8);
     }
 

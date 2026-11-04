@@ -12,12 +12,13 @@ import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitBuildTimeC
 import io.quarkus.http.ratelimit.runtime.internal.config.RateLimitRuleConfig;
 
 /**
- * Checks everything about {@link HttpRateLimitBuildTimeConfig} at build time: the paths, methods, phase and key of every
- * rule. It does not throw.
+ * Checks everything about {@link HttpRateLimitBuildTimeConfig} at build time: the paths, methods, phase, key and store of
+ * every rule. It does not throw.
  */
 public final class HttpRateLimitBuildConfigValidator {
 
     private static final String PREFIX = "quarkus.http.rate-limit.";
+    private static final String LOCAL_STORE = "local";
     // a key that KeyResolvers turns into a HeaderKeyResolver, not a bean
     private static final String HEADER_KEY_PREFIX = "header:";
     // a key that names a RateLimitKeyResolver bean of the application, by its @Identifier
@@ -30,10 +31,11 @@ public final class HttpRateLimitBuildConfigValidator {
     }
 
     /**
+     * @param stores the {@code @Identifier} of every {@code RateLimitStore} bean
      * @param keyResolvers the {@code @Identifier} of every {@code RateLimitKeyResolver} bean, built-in ones included
      * @return one message per violation; empty when the configuration is valid
      */
-    public static List<String> validate(HttpRateLimitBuildTimeConfig config, Set<String> keyResolvers) {
+    public static List<String> validate(HttpRateLimitBuildTimeConfig config, Set<String> stores, Set<String> keyResolvers) {
         List<String> errors = new ArrayList<>();
         for (Map.Entry<String, Rule> entry : config.rules().entrySet()) {
             String name = entry.getKey();
@@ -49,6 +51,11 @@ public final class HttpRateLimitBuildConfigValidator {
             }
             validateKey(name, prefix, RateLimitRuleConfig.phase(config, rule), RateLimitRuleConfig.key(config, rule),
                     keyResolvers, errors);
+            String store = RateLimitRuleConfig.store(config, rule);
+            if (!LOCAL_STORE.equals(store) && !stores.contains(store)) {
+                errors.add(prefix + "store '" + store + "' matches no RateLimitStore bean annotated @Identifier(\""
+                        + store + "\")");
+            }
         }
         return errors;
     }

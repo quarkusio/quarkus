@@ -3,7 +3,9 @@ package io.quarkus.http.ratelimit;
 import io.smallrye.mutiny.Uni;
 
 /**
- * Holds the rate limit state and makes admission decisions; the built-in in-memory store implements it.
+ * Holds the rate limit state and makes admission decisions. This is the store SPI: implement it as a CDI bean annotated
+ * {@code @Identifier("<name>")} and select it with {@code quarkus.http.rate-limit.store} or
+ * {@code quarkus.http.rate-limit."rule".store}. The name {@code local} is taken by the built-in store.
  * <p>
  * Implementations run on the event loop and must not block. The store may be called from several event loops
  * concurrently, so implementations must be thread-safe.

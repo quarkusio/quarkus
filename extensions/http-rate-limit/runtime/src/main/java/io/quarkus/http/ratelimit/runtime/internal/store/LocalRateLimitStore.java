@@ -30,6 +30,7 @@ import io.quarkus.http.ratelimit.runtime.internal.ThrottledLoggers;
 import io.quarkus.http.ratelimit.runtime.internal.config.DefaultRateLimitPolicy;
 import io.quarkus.http.ratelimit.runtime.internal.gcra.Gcra;
 import io.quarkus.http.ratelimit.runtime.internal.gcra.RateLimitClock;
+import io.smallrye.common.annotation.Identifier;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -44,6 +45,7 @@ import io.smallrye.mutiny.Uni;
  * {@link DefaultRateLimitPolicy#maxKeys() maxKeys} bounds each cache.
  */
 @Singleton
+@Identifier("local")
 public class LocalRateLimitStore implements RateLimitStore {
 
     private static final Logger LOG = Logger.getLogger(LocalRateLimitStore.class);

@@ -10,11 +10,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.http.ratelimit.RateLimitKeyResolver;
 import io.quarkus.http.ratelimit.RateLimitPhase;
@@ -33,6 +36,8 @@ import io.quarkus.runtime.configuration.ConfigurationException;
  */
 @Singleton
 public class RateLimitRules {
+
+    private static final Logger LOG = Logger.getLogger(RateLimitRules.class);
 
     /**
      * Evaluation order: window ascending, ties by rule name, so that the narrowest rule refuses a request before a
@@ -64,6 +69,8 @@ public class RateLimitRules {
             return;
         }
         List<RateLimitRuleConfig> ruleConfigs = validate(buildConfig, config);
+        // the summary first: building the evaluators logs the detail of each rule
+        logRules(ruleConfigs);
         List<RuleMembership> memberships = buildEvaluators(ruleConfigs, local, resolvers);
         this.phases = indexPhases(memberships);
     }
@@ -94,7 +101,8 @@ public class RateLimitRules {
         return RateLimitRuleConfig.all(buildConfig, config);
     }
 
-    private static List<RuleMembership> buildEvaluators(List<RateLimitRuleConfig> rules, LocalRateLimitStore local,
+    private static List<RuleMembership> buildEvaluators(List<RateLimitRuleConfig> rules,
+            LocalRateLimitStore local,
             Instance<RateLimitKeyResolver> resolvers) {
         List<RuleMembership> memberships = new ArrayList<>();
         for (RateLimitRuleConfig rule : rules) {
@@ -112,8 +120,26 @@ public class RateLimitRules {
                 methods = Set.copyOf(upperCase);
             }
             memberships.add(new RuleMembership(evaluator, rule.paths(), methods));
+            LOG.debugf(
+                    "Rate limit rule '%s': paths=%s methods=%s phase=%s request-key=%s permits=%d window=%s burst=%d"
+                            + " max-keys=%d",
+                    rule.name(), rule.paths(), rule.methods().orElse(Set.of()), rule.phase().configName(),
+                    rule.key(), rule.permits(), rule.window(), policy.burst(),
+                    rule.maxKeys());
         }
         return memberships;
+    }
+
+    private static void logRules(List<RateLimitRuleConfig> rules) {
+        if (rules.isEmpty()) {
+            return;
+        }
+        int count = rules.size();
+        Set<String> names = new TreeSet<>();
+        for (RateLimitRuleConfig rule : rules) {
+            names.add(rule.name());
+        }
+        LOG.infof("Rate limiting %d rule%s: %s", count, count == 1 ? "" : "s", String.join(", ", names));
     }
 
     private static Map<RateLimitPhase, PhaseIndex> indexPhases(List<RuleMembership> memberships) {

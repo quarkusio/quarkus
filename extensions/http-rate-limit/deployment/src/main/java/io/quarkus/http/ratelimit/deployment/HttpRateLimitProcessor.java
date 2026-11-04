@@ -25,6 +25,8 @@ import io.quarkus.http.ratelimit.runtime.internal.telemetry.DevModeRejectionLog;
 import io.quarkus.http.ratelimit.runtime.internal.telemetry.RateLimitOutcomeListener;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.smallrye.common.annotation.Identifier;
 
 public class HttpRateLimitProcessor {
@@ -35,6 +37,7 @@ public class HttpRateLimitProcessor {
 
     private static final DotName IDENTIFIER = DotName.createSimple(Identifier.class);
     private static final DotName RATE_LIMIT_KEY_RESOLVER = DotName.createSimple(RateLimitKeyResolver.class);
+    private static final DotName HTTP_AUTHENTICATION_MECHANISM = DotName.createSimple(HttpAuthenticationMechanism.class);
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -51,13 +54,18 @@ public class HttpRateLimitProcessor {
     }
 
     /**
-     * Fails the build when the rules are invalid or name a key resolver that does not exist.
+     * Fails the build when the rules are invalid, name a key resolver that does not exist, or have a
+     * path outside the root path; warns of rules that are valid but probably not what was intended.
      */
     @BuildStep
-    void validateConfig(HttpRateLimitBuildTimeConfig config, ValidationPhaseBuildItem validationPhase,
-            BuildProducer<ValidationErrorBuildItem> validationErrors) {
+    void validateConfig(HttpRateLimitBuildTimeConfig config, VertxHttpBuildTimeConfig httpConfig,
+            ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors) {
         Set<String> keyResolvers = new HashSet<>();
+        boolean mechanisms = false;
         for (BeanInfo bean : validationPhase.getContext().beans()) {
+            if (bean.hasType(HTTP_AUTHENTICATION_MECHANISM)) {
+                mechanisms = true;
+            }
             Optional<AnnotationInstance> identifier = bean.getQualifier(IDENTIFIER);
             if (identifier.isEmpty()) {
                 continue;
@@ -67,6 +75,12 @@ public class HttpRateLimitProcessor {
             }
         }
         List<String> errors = HttpRateLimitBuildConfigValidator.validate(config, keyResolvers);
+        errors.addAll(HttpRateLimitBuildConfigValidator.validateRootPath(config, httpConfig.rootPath(),
+                httpConfig.nonApplicationRootPath()));
+        for (String warning : HttpRateLimitBuildConfigValidator.warnings(config, httpConfig.auth().proactive(),
+                mechanisms)) {
+            LOG.warn(warning);
+        }
         if (!errors.isEmpty()) {
             validationErrors.produce(new ValidationErrorBuildItem(new ConfigurationException(String.join("\n", errors))));
         }

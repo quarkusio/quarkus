@@ -183,10 +183,22 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     @Override
     public OpenPathTree open() {
+        final ReadOnlyZipFileSystem fs;
         try {
-            return new OpenArchivePathTree(openFs());
+            fs = openFs();
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException("Failed to read " + archive, e);
+        }
+        try {
+            return new OpenArchivePathTree(fs);
+        } catch (RuntimeException | Error e) {
+            // the tree could not be created for the file system, make sure it is not leaked
+            try {
+                fs.close();
+            } catch (IOException suppressed) {
+                e.addSuppressed(suppressed);
+            }
+            throw e;
         }
     }
 

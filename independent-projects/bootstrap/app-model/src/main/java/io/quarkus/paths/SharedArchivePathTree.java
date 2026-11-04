@@ -1,6 +1,7 @@
 package io.quarkus.paths;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.nio.file.Path;
@@ -160,16 +161,38 @@ class SharedArchivePathTree extends ArchivePathTree {
             if (acquired != null) {
                 return acquired;
             }
-            final SharedOpenArchivePathTree newOpen;
-            try {
-                newOpen = new SharedOpenArchivePathTree(openFs());
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to read " + archive, e);
-            }
+            final SharedOpenArchivePathTree newOpen = openSharedTree();
             lastOpen.set(newOpen);
             return new CallerOpenPathTree(newOpen);
         } finally {
             openLock.unlock();
+        }
+    }
+
+    /**
+     * Opens a new file system for this archive and wraps it in an open archive tree.
+     * If the tree could not be created for the file system, the file system is closed before the
+     * error is propagated, so that a failed attempt does not leak it.
+     *
+     * @return a new open archive tree, never null
+     * @throws UncheckedIOException if the archive could not be read
+     */
+    private SharedOpenArchivePathTree openSharedTree() {
+        final ReadOnlyZipFileSystem fs;
+        try {
+            fs = openFs();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read " + archive, e);
+        }
+        try {
+            return new SharedOpenArchivePathTree(fs);
+        } catch (RuntimeException | Error e) {
+            try {
+                fs.close();
+            } catch (IOException suppressed) {
+                e.addSuppressed(suppressed);
+            }
+            throw e;
         }
     }
 

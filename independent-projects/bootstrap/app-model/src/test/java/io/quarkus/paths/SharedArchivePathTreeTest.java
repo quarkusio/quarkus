@@ -1,6 +1,7 @@
 package io.quarkus.paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -376,6 +377,17 @@ public class SharedArchivePathTreeTest {
             assertThat(thrown.get()).isNull();
             assertThat(outer.isOpen()).isTrue();
         }
+    }
+
+    @Test
+    void openingAnInvalidArchiveThrowsUncheckedIOException() throws Exception {
+        final Path notAJar = Path.of("target/not-a-jar-" + UUID.randomUUID() + ".jar");
+        Files.createDirectories(notAJar.getParent());
+        Files.writeString(notAJar, "this is not a zip archive");
+        final ArchivePathTree tree = new SharedArchivePathTree(notAJar);
+        assertThatThrownBy(tree::open)
+                .isInstanceOf(UncheckedIOException.class)
+                .hasMessageContaining(notAJar.toString());
     }
 
     private static Path newJarCopy() throws IOException {

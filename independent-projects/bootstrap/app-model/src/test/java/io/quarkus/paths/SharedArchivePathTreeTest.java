@@ -328,6 +328,56 @@ public class SharedArchivePathTreeTest {
         assertThat(replacement.contains("README.md")).isTrue();
     }
 
+    @Test
+    void closingLastHandleFromInsideOwnReadFails() throws Exception {
+        final Path jar = newJarCopy();
+        final ArchivePathTree tree = new SharedArchivePathTree(jar);
+        // Neither the handle nor the file system is auto-closed here. The handle is closed from
+        // inside the walk below, where it is expected to fail, which already marks it closed for
+        // its caller. The file system is owned by the tree, not by this test, and is released by
+        // the recovering handle at the end.
+        final OpenPathTree handle = tree.open();
+        final FileSystem fs = getFileSystem(handle);
+        final AtomicReference<Throwable> thrown = new AtomicReference<>();
+        handle.walk(visit -> {
+            if (thrown.get() == null) {
+                try {
+                    handle.close();
+                } catch (Throwable t) {
+                    thrown.set(t);
+                }
+            }
+        });
+        assertThat(thrown.get()).isInstanceOf(IllegalStateException.class);
+        // the tree stays open and recoverable: a later user gets the same file system
+        assertThat(fs.isOpen()).isTrue();
+        try (OpenPathTree next = tree.open()) {
+            assertThat(getFileSystem(next)).isSameAs(fs);
+        }
+        assertThat(fs.isOpen()).isFalse();
+    }
+
+    @Test
+    void nestedCloseInsideWalkIsAllowed() throws Exception {
+        final Path jar = newJarCopy();
+        final ArchivePathTree tree = new SharedArchivePathTree(jar);
+        final AtomicReference<Throwable> thrown = new AtomicReference<>();
+        try (OpenPathTree outer = tree.open()) {
+            outer.walk(visit -> {
+                if (thrown.get() == null) {
+                    // a second handle on the same archive, closed while the outer read is in progress
+                    try (OpenPathTree inner = tree.open()) {
+                        assertThat(inner.contains("README.md")).isTrue();
+                    } catch (Throwable t) {
+                        thrown.set(t);
+                    }
+                }
+            });
+            assertThat(thrown.get()).isNull();
+            assertThat(outer.isOpen()).isTrue();
+        }
+    }
+
     private static Path newJarCopy() throws IOException {
         final Path jar = Path.of("target/shared-" + UUID.randomUUID() + ".jar");
         Files.createDirectories(jar.getParent());

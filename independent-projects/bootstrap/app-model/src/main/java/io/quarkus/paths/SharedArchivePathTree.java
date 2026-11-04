@@ -215,11 +215,37 @@ class SharedArchivePathTree extends ArchivePathTree {
             return SharedArchivePathTree.this.open();
         }
 
+        /**
+         * {@inheritDoc}
+         * <p>
+         * If the calling thread is the last user and is itself reading this open tree, for example
+         * closing the handle from a visitor passed to {@link #walk(PathVisitor)}, the archive cannot
+         * be closed and an {@link IllegalStateException} is thrown. In that case the handle has
+         * already been marked closed and the user count has already been decremented, which leaves
+         * this open tree with no users but still open.
+         * <p>
+         * Such an archive is recovered only if something opens it again before the tree becomes
+         * unreachable: a later {@link #open()} acquires the very same archive and closes it properly
+         * once it is done. If instead the caller abandons the tree, nothing references it any longer,
+         * since the cache holds trees weakly, and it will be collected with its file system still
+         * open. The exception must not be ignored.
+         *
+         * @throws IllegalStateException if the last user closes this tree from inside its own read
+         */
         @Override
         public void close() throws IOException {
             // Fast path: if other users remain, no cleanup needed — avoid the write lock entirely.
             if (users.decrementAndGet() > 0) {
                 return;
+            }
+            // A thread holding the read lock can never acquire the write lock, so the loop below would
+            // spin out without closing anything and silently leak the archive. Checking after the
+            // decrement above is deliberate: the user count is the only way to tell that this thread
+            // is the last user, and a nested handle on the same archive leaves through the fast path.
+            if (readHoldCount() > 0) {
+                throw new IllegalStateException("Failed to close " + archive
+                        + " because the last open handle for it was closed by a thread that is currently reading it,"
+                        + " e.g. from a visitor walking the same handle");
             }
             // Slow path: we may be the last user. Try to acquire the write lock to perform cleanup.
             // Re-check under the lock because between our decrement and lock acquisition,
@@ -232,6 +258,13 @@ class SharedArchivePathTree extends ArchivePathTree {
             // needed a lock held by the caller of this method. If the write lock is not available, either
             // - another closer holds it, which re-checks the users after releasing the lock, or
             // - a thread in acquire() holds the read lock, which will become a user that will close its handle later.
+            //
+            // Never waiting for the write lock is also what keeps openLock and this lock free of a deadlock.
+            // Both orders exist: open() takes openLock and then the read lock in acquire(), while a nested
+            // open() from inside a visitor takes the read lock first and then openLock. That inversion is
+            // harmless only because no writer ever enters the queue of this lock, so a reader is never made
+            // to wait behind one. Replacing tryLock() with a blocking acquisition would reintroduce the
+            // deadlock, and no test would catch it.
             while (writeLock().tryLock()) {
                 try {
                     if (!isOpen()) {

@@ -262,6 +262,17 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
             return lock.writeLock();
         }
 
+        /**
+         * Returns the number of read locks held by the current thread on this open tree.
+         * A thread that holds a read lock can never acquire the write lock, since
+         * {@link ReentrantReadWriteLock} does not support lock upgrades.
+         *
+         * @return the number of read locks held by the current thread
+         */
+        protected int readHoldCount() {
+            return lock.getReadHoldCount();
+        }
+
         @Override
         protected void initManifest(Manifest m) {
             super.initManifest(m);

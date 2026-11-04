@@ -426,6 +426,22 @@ class VertxCoreProcessor {
             for (String classname : BLOCKED_THREAD_LOGGER_NAMES) {
                 logManager.getLogger(classname).setFilter(filter);
             }
+            // The loggers are global to the JVM, while the filter is an instance of a class loaded by this class
+            // loader: remove it when the class loader is closed, otherwise the logger retains the class loader.
+            ClassLoader cl = VertxCoreProcessor.class.getClassLoader();
+            if (cl instanceof QuarkusClassLoader qcl) {
+                qcl.addCloseTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        for (String classname : BLOCKED_THREAD_LOGGER_NAMES) {
+                            java.util.logging.Logger logger = logManager.getLogger(classname);
+                            if (logger != null && logger.getFilter() == filter) {
+                                logger.setFilter(null);
+                            }
+                        }
+                    }
+                });
+            }
         } catch (Throwable t) {
             log.debug("Failed to filter blocked thread checker", t);
         }

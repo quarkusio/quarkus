@@ -20,8 +20,8 @@ import io.quarkus.http.ratelimit.RateLimitPolicy;
  * @param rule the rule name
  * @param phase the phase this policy applies to
  * @param limit the validated quota; retained directly when selected by a resolver
- * @param maxKeys the maximum number of keys held in the memory of a replica for this policy: by the local store and
- *        the local fallback of a non-local store
+ * @param maxKeys the maximum number of keys held in the memory of a replica for this policy: by the local store, the
+ *        lease cache and the local fallback of a non-local store
  */
 public record DefaultRateLimitPolicy(String rule, RateLimitPhase phase, RateLimit limit,
         long maxKeys) implements RateLimitPolicy {

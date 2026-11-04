@@ -8,7 +8,7 @@ import java.time.Duration;
 public sealed interface RateLimitDecision {
 
     /**
-     * @param remaining the whole permits left after the call
+     * @param remaining the whole permits left after the call (an estimate for stores that serve from local chunks)
      * @return an {@link Allowed} decision
      * @throws IllegalArgumentException if remaining is negative
      */
@@ -32,7 +32,7 @@ public sealed interface RateLimitDecision {
     sealed interface Allowed extends RateLimitDecision permits AllowedDecision {
 
         /**
-         * @return the whole permits left after the call
+         * @return the whole permits left after the call (an estimate for stores that serve from local chunks)
          */
         long remaining();
     }

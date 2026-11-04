@@ -24,7 +24,7 @@ import io.quarkus.http.ratelimit.RateLimitPhase;
  */
 public record RateLimitRuleConfig(String name, List<String> paths, Optional<Set<String>> methods, RateLimitPhase phase,
         String key, String store, Optional<String> limitResolver, Optional<RateLimit> limit, Optional<RateLimit> fallback,
-        long maxKeys) {
+        long maxKeys, Optional<Long> leaseSize, long maxOverdraft) {
 
     /**
      * Only for configuration that passed {@link HttpRateLimitConfigValidator#validate}.
@@ -53,7 +53,7 @@ public record RateLimitRuleConfig(String name, List<String> paths, Optional<Set<
                 phase(buildConfig, build), key(buildConfig, build), store(buildConfig, build),
                 limitResolver(buildConfig, build, runtime), limit,
                 runtime.fallbackLimit().map(n -> named(runtimeConfig, n)),
-                runtime.maxKeys().orElse(runtimeConfig.maxKeys()));
+                runtime.maxKeys().orElse(runtimeConfig.maxKeys()), runtime.leaseSize(), runtime.maxOverdraft());
     }
 
     public static RateLimit named(HttpRateLimitRuntimeConfig config, String name) {

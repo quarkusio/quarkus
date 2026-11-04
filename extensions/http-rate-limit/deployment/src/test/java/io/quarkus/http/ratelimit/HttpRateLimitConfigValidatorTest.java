@@ -22,7 +22,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 /**
  * Runs the startup validator against configurations built with SmallRye Config, inside a Quarkus application so that the
  * runtime module needs no bytecode library to implement the {@code @ConfigMapping} in unit tests. The startup wiring of
- * the validator is covered by {@link RuleWithoutLimitFailsStartupTest}.
+ * the validator is covered by {@link LeaseWithLocalStoreFailsStartupTest}.
  */
 public class HttpRateLimitConfigValidatorTest {
 
@@ -67,6 +67,10 @@ public class HttpRateLimitConfigValidatorTest {
                 config.getConfigMapping(HttpRateLimitRuntimeConfig.class));
     }
 
+    private static List<String> warnings(String... overrides) {
+        return HttpRateLimitConfigValidator.warnings(List.of(rule(overrides)));
+    }
+
     private static String g(String key) {
         return P + "rules.api." + key;
     }
@@ -93,6 +97,8 @@ public class HttpRateLimitConfigValidatorTest {
         RateLimitRuleConfig defaults = rule();
         assertThat(defaults.store()).isEqualTo("local");
         assertThat(defaults.maxKeys()).isEqualTo(100_000);
+        assertThat(defaults.leaseSize()).isEmpty();
+        assertThat(defaults.maxOverdraft()).isZero();
 
         RateLimitRuleConfig global = rule(g("phase"), null, g("request-key"), null, P + "phase", "post-authentication",
                 P + "request-key", "principal", P + "store", "redis", P + "max-keys", "7");
@@ -103,11 +109,14 @@ public class HttpRateLimitConfigValidatorTest {
 
         RateLimitRuleConfig own = rule(P + "phase", "post-authentication", P + "request-key", "principal",
                 P + "store", "redis", P + "max-keys", "7",
-                g("store"), "custom", g("max-keys"), "8");
+                g("store"), "custom", g("max-keys"), "8",
+                g("lease-size"), "3", g("max-overdraft"), "0");
         assertThat(own.phase()).isEqualTo(RateLimitPhase.PRE_AUTHENTICATION);
         assertThat(own.key()).isEqualTo("ip");
         assertThat(own.store()).isEqualTo("custom");
         assertThat(own.maxKeys()).isEqualTo(8);
+        assertThat(own.leaseSize()).contains(3L);
+        assertThat(own.maxOverdraft()).isZero();
     }
 
     @Test
@@ -149,6 +158,46 @@ public class HttpRateLimitConfigValidatorTest {
         assertThat(validate(g("window"), "30d", g("permits"), "1",
                 g("burst"), "2")).containsExactly(
                         "Rate limit rule 'api' (window / permits) * burst must not exceed 30 days");
+    }
+
+    @Test
+    void leaseRequiresNonLocalStore() {
+        assertThat(validate(g("lease-size"), "2")).containsExactly(
+                "Rate limit rule 'api' lease-size requires a non-local store");
+        assertThat(validate(g("lease-size"), "2", g("store"), "redis")).isEmpty();
+        assertThat(validate(g("lease-size"), "2", P + "store", "redis")).isEmpty();
+    }
+
+    @Test
+    void maxOverdraftRequiresLeaseSize() {
+        assertThat(validate(g("max-overdraft"), "1", g("store"), "redis")).containsExactly(
+                "Rate limit rule 'api' max-overdraft requires lease-size");
+    }
+
+    @Test
+    void leaseSizeMustFitBurst() {
+        assertThat(validate(g("store"), "redis", g("lease-size"), "11"))
+                .containsExactly("Rate limit rule 'api' lease-size must be between 1 and the burst (10)");
+        assertThat(validate(g("store"), "redis", g("lease-size"), "0"))
+                .containsExactly("Rate limit rule 'api' lease-size must be between 1 and the burst (10)");
+        assertThat(validate(g("store"), "redis", g("lease-size"), "4", g("burst"), "3"))
+                .containsExactly("Rate limit rule 'api' lease-size must be between 1 and the burst (3)");
+    }
+
+    @Test
+    void maxOverdraftMustFitBurst() {
+        assertThat(validate(g("store"), "redis", g("lease-size"), "2", g("max-overdraft"), "11"))
+                .containsExactly("Rate limit rule 'api' max-overdraft must be between 0 and the burst (10)");
+        assertThat(validate(g("store"), "redis", g("lease-size"), "2", g("max-overdraft"), "-1"))
+                .containsExactly("Rate limit rule 'api' max-overdraft must be between 0 and the burst (10)");
+    }
+
+    @Test
+    void largeLeaseSizeWarns() {
+        assertThat(validate(g("store"), "redis", g("permits"), "100", g("lease-size"), "6")).isEmpty();
+        assertThat(warnings(g("store"), "redis", g("permits"), "100", g("lease-size"), "6")).containsExactly(
+                "Rate limit rule 'api' lease-size × replicas may strand a large share of permits (lease-size <= permits / 20 is recommended)");
+        assertThat(warnings(g("store"), "redis", g("permits"), "100", g("lease-size"), "5")).isEmpty();
     }
 
     @Test

@@ -162,7 +162,12 @@ public class RateLimitFilter {
         String routedPath = ctx.normalizedPath();
         String path = HttpSecurityUtils.normalizePath(routedPath);
         // the router keeps %2F and \ inside a segment, so /api/items/..%2F..%2Fpublic reaches /api/items/{id} although
-        // its canonical path is /public: like HTTP permissions, apply the rules of both paths
+        // its canonical path is /public: like HTTP permissions, apply the rules of both paths, and exempt a request
+        // only when both are exempt
+        if (rules.exemptPaths().contains(path) && rules.exemptPaths().contains(routedPath)) {
+            ctx.next();
+            return;
+        }
         String method = ctx.request().method().name();
         List<RuleEvaluator> evaluators = new ArrayList<>();
         for (RuleMembership membership : rules.matcher(phase).match(path, routedPath)) {

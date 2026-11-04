@@ -10,21 +10,26 @@ import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.http.ratelimit.RateLimitKeyResolver;
+import io.quarkus.http.ratelimit.runtime.internal.RateLimitBuildTimeInfo;
 import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitBuildTimeConfig;
 import io.quarkus.http.ratelimit.runtime.internal.telemetry.DevModeRejectionLog;
 import io.quarkus.http.ratelimit.runtime.internal.telemetry.RateLimitOutcomeListener;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.vertx.http.deployment.spi.ControlPlanePathBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.smallrye.common.annotation.Identifier;
@@ -90,5 +95,24 @@ public class HttpRateLimitProcessor {
     @BuildStep
     UnremovableBeanBuildItem unremovableBeans() {
         return UnremovableBeanBuildItem.beanTypes(RateLimitKeyResolver.class, RateLimitOutcomeListener.class);
+    }
+
+    @BuildStep
+    SyntheticBeanBuildItem buildTimeInfo(ServiceRegistrar serviceRegistrar,
+            List<ControlPlanePathBuildItem> controlPlanePathItems) {
+        Set<String> controlPlanePaths = new HashSet<>();
+        for (ControlPlanePathBuildItem item : controlPlanePathItems) {
+            LOG.debugf("Exempting %s from HTTP rate limiting: %s", item.getPath(), item.getReason());
+            controlPlanePaths.add(item.getPath());
+        }
+        RateLimitBuildTimeInfo info = new RateLimitBuildTimeInfo(Set.copyOf(controlPlanePaths));
+
+        serviceRegistrar.forService(RateLimitBuildTimeInfo.class)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> info);
+
+        return SyntheticBeanBuildItem.configure(RateLimitBuildTimeInfo.class)
+                .serviceValue(RateLimitBuildTimeInfo.class)
+                .done();
     }
 }

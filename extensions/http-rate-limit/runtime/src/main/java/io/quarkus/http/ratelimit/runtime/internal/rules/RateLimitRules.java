@@ -21,6 +21,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.http.ratelimit.RateLimitKeyResolver;
 import io.quarkus.http.ratelimit.RateLimitPhase;
+import io.quarkus.http.ratelimit.runtime.internal.RateLimitBuildTimeInfo;
 import io.quarkus.http.ratelimit.runtime.internal.config.DefaultRateLimitPolicy;
 import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitBuildTimeConfig;
 import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitConfigValidator;
@@ -57,18 +58,22 @@ public class RateLimitRules {
     };
 
     private final Map<RateLimitPhase, PhaseIndex> phases;
+    private final Set<String> exemptPaths;
 
     @Inject
     public RateLimitRules(HttpRateLimitBuildTimeConfig buildConfig,
             HttpRateLimitRuntimeConfig config,
+            RateLimitBuildTimeInfo info,
             LocalRateLimitStore local,
             @Any Instance<RateLimitKeyResolver> resolvers) {
         if (!config.enabled()) {
             // a disabled extension validates nothing and builds no evaluators
             this.phases = indexPhases(List.of());
+            this.exemptPaths = Set.of();
             return;
         }
         List<RateLimitRuleConfig> ruleConfigs = validate(buildConfig, config);
+        this.exemptPaths = Set.copyOf(info.controlPlanePaths());
         // the summary first: building the evaluators logs the detail of each rule
         logRules(ruleConfigs);
         List<RuleMembership> memberships = buildEvaluators(ruleConfigs, local, resolvers);
@@ -87,6 +92,14 @@ public class RateLimitRules {
      */
     public RateLimitPathMatcher<RuleMembership> matcher(RateLimitPhase phase) {
         return phases.get(phase).matcher();
+    }
+
+    /**
+     * @return exact paths that are never rate limited, compared with the canonical request path,
+     *         {@code HttpSecurityUtils.normalizePath(RoutingContext.normalizedPath())}
+     */
+    public Set<String> exemptPaths() {
+        return exemptPaths;
     }
 
     /**

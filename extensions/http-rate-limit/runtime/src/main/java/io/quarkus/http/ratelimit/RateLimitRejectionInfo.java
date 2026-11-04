@@ -3,7 +3,7 @@ package io.quarkus.http.ratelimit;
 import java.util.Optional;
 
 /**
- * The CDI event fired for every rejection.
+ * CDI event payload and rejection-writer input.
  * <p>
  * It is a snapshot taken when the request was rejected: it holds no reference to the request, so it is safe to keep
  * after the request has ended, for example in an {@code @ObservesAsync} observer.

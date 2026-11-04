@@ -8,11 +8,13 @@ import java.util.function.Function;
 import io.quarkus.http.ratelimit.RateLimitDecision;
 import io.quarkus.http.ratelimit.RateLimitKeyResolver;
 import io.quarkus.http.ratelimit.RateLimitPhase;
+import io.quarkus.http.ratelimit.RateLimitRejectionInfo.Reason;
 import io.quarkus.http.ratelimit.RateLimitResolver;
 import io.quarkus.http.ratelimit.RateLimitStore;
 import io.quarkus.http.ratelimit.runtime.internal.ThrottledLoggers;
 import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitRuntimeConfig;
 import io.quarkus.http.ratelimit.runtime.internal.config.RateLimitRuleConfig;
+import io.quarkus.http.ratelimit.runtime.internal.store.StoreUnavailableException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
@@ -101,6 +103,12 @@ public final class RuleEvaluator {
                     public Outcome apply(RateLimitDecision decision) {
                         return new Outcome(RuleEvaluator.this, resolved.key(), resolved.policy(), decision,
                                 Outcome.Kind.DECIDED);
+                    }
+                }).onFailure(StoreUnavailableException.class).recoverWithItem(new Function<>() {
+                    @Override
+                    public Outcome apply(StoreUnavailableException failure) {
+                        return Outcome.unavailable(RuleEvaluator.this, resolved.key(), resolved.policy(),
+                                Reason.STORE_UNAVAILABLE, failure.retryAfter());
                     }
                 });
     }

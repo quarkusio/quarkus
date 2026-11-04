@@ -74,7 +74,7 @@ public class RateLimitRules {
             @Any Instance<RateLimitResolver> limitResolvers,
             ThrottledLoggers loggers) {
         if (!config.enabled()) {
-            // a disabled extension validates nothing and builds no evaluators or stores
+            // a disabled extension validates nothing and builds no evaluators, stores or probes
             this.phases = indexPhases(List.of());
             this.exemptPaths = Set.of();
             return;

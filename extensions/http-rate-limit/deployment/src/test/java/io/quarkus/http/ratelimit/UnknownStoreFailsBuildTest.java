@@ -22,7 +22,8 @@ public class UnknownStoreFailsBuildTest {
             .overrideConfigKey(PREFIX + "store", "nope")
             .assertException(t -> assertThat(t).rootCause().isInstanceOf(ConfigurationException.class)
                     .hasMessageContaining("Rate limit rule 'api' store 'nope' matches no RateLimitStore bean annotated"
-                            + " @Identifier(\"nope\")"));
+                            + " @Identifier(\"nope\"); the built-in 'redis' store requires the quarkus-redis-client"
+                            + " extension"));
 
     @Test
     void buildFails() {

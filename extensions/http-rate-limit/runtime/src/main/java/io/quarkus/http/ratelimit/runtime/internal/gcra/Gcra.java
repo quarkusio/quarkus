@@ -7,7 +7,7 @@ import io.quarkus.http.ratelimit.RateLimitPolicy;
  * <p>
  * All values are nanoseconds on a monotonic clock whose origin is arbitrary (possibly negative, possibly close to the
  * signed wrap). The arithmetic therefore only ever compares elapsed values ({@code tat - now}), never absolute ones.
- * Every store must reproduce exactly this arithmetic.
+ * Every store (local and Redis) must reproduce exactly this arithmetic.
  */
 public final class Gcra {
 

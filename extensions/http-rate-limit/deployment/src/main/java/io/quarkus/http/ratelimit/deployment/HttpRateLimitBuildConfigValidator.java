@@ -57,7 +57,7 @@ public final class HttpRateLimitBuildConfigValidator {
             String store = RateLimitRuleConfig.store(config, rule);
             if (!LOCAL_STORE.equals(store) && !stores.contains(store)) {
                 errors.add(prefix + "store '" + store + "' matches no RateLimitStore bean annotated @Identifier(\""
-                        + store + "\")");
+                        + store + "\"); the built-in 'redis' store requires the quarkus-redis-client extension");
             }
             Optional<String> limitResolver = rule.limitResolver().or(() -> config.limitResolver());
             if (limitResolver.isPresent() && !limitResolvers.contains(limitResolver.get())) {

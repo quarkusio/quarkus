@@ -27,7 +27,8 @@ public class ComponentAlternativeTest {
             .overrideConfigKey(ROOT + "phase", "pre-authentication")
             .overrideConfigKey(ROOT + "request-key", "custom:tenant")
             .overrideConfigKey(ROOT + "limit-resolver", "plan")
-            .overrideConfigKey(ROOT + "store", "shared");
+            .overrideConfigKey(ROOT + "store", "shared")
+            .overrideRuntimeConfigKey(ROOT + "store-failure-mode", "closed");
 
     @Test
     void cdiAlternativesResolveOtherwiseAmbiguousSharedDefaults() {

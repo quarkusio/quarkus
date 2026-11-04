@@ -21,7 +21,7 @@ import io.smallrye.mutiny.Uni;
  * Answers a key that the store itself refused, locally, until the {@code Retry-After} of that refusal has passed: with GCRA, no
  * request of the key can be admitted before then, whichever replica sends it. A client over its limit therefore costs
  * no store call, and its flood can neither saturate the guard that every rule on the store shares nor open its circuit
- * breaker. Used for every rule of a non-local store.
+ * breaker. Used for the rules of a non-local store without {@code lease-size}; lease mode caches its refusals itself.
  * <p>
  * Only single permits are answered from the cache, and only under the policy that was refused, so that a limit resolver
  * that gives the key another limit is still answered by the store. One bounded cache per rule, of

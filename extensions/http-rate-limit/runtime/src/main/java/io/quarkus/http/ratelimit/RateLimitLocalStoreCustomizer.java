@@ -8,7 +8,9 @@ import io.smallrye.common.annotation.Experimental;
  * <p>
  * Every implementation is called in {@linkplain #priority() priority} order for every cache the extension builds for a
  * rule, after the extension has configured it and before it is built: the cache of the {@code local} store, which is
- * also the local fallback of {@code store-failure-mode=local}. The caches are built at startup.
+ * also the in-memory fallback of a store whose failure mode is {@code local}, and the lease cache of a rule with
+ * {@code lease-size}. A lease rule may therefore have two caches, and the customizer is called for each. The caches are
+ * built at startup.
  * <p>
  * A customizer changes only what {@link Settings} offers. The maximum size ({@code max-keys}), the expiry and the
  * eviction of the caches are part of the limit's correctness and of its memory bound, and stay the extension's; the

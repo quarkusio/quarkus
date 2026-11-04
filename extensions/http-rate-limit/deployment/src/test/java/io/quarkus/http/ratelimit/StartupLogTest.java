@@ -39,7 +39,7 @@ public class StartupLogTest {
                         .map(StartupLogTest::format)
                         .anySatisfy(m -> assertThat(m).isEqualTo(
                                 "Rate limit rule 'api': paths=[/api/*] methods=[] phase=pre-authentication request-key=ip"
-                                        + " limit=RateLimit[permits=5, window=PT1M, burst=5] limit-resolver=- store=local max-keys=100000"))
+                                        + " limit=RateLimit[permits=5, window=PT1M, burst=5] limit-resolver=- store=local lease-size=- max-keys=100000"))
                         .anySatisfy(m -> assertThat(m).startsWith("Rate limit rule 'admin': paths=[/admin/*]"));
             });
 

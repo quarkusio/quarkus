@@ -49,10 +49,10 @@ public class GlobalDefaultsTest {
                     .anySatisfy(m -> assertThat(m).isEqualTo(
                             "Rate limit rule 'api': paths=[/api/*] methods=[] phase=pre-authentication"
                                     + " request-key=header:X-Client limit=RateLimit[permits=50, window=PT1M, burst=50] limit-resolver=- store=switchable"
-                                    + " max-keys=500"))
+                                    + " lease-size=- max-keys=500"))
                     .anySatisfy(m -> assertThat(m).isEqualTo(
                             "Rate limit rule 'admin': paths=[/admin/*] methods=[] phase=post-authentication request-key=ip"
-                                    + " limit=RateLimit[permits=10, window=PT1M, burst=10] limit-resolver=- store=local max-keys=20")));
+                                    + " limit=RateLimit[permits=10, window=PT1M, burst=10] limit-resolver=- store=local lease-size=- max-keys=20")));
 
     private static String format(LogRecord r) {
         return r.getParameters() == null ? r.getMessage() : String.format(r.getMessage(), r.getParameters());

@@ -65,7 +65,10 @@ public interface HttpRateLimitRuntimeConfig {
     Duration warningInterval();
 
     /**
-     * The maximum number of keys a rule holds in the memory of a replica, unless it sets its own {@code max-keys}.
+     * The maximum number of keys a rule holds in the memory of a replica, unless it sets its own {@code max-keys}: in
+     * the {@code local} store, in the lease cache of a rule with {@code lease-size}, and in the in-memory fallback of a
+     * store whose failure mode is {@code local}. When it is reached, keys are evicted, and an evicted key starts again
+     * with a full burst. At least 1.
      */
     @WithDefault("100000")
     long maxKeys();
@@ -154,12 +157,37 @@ public interface HttpRateLimitRuntimeConfig {
         Optional<Long> burst();
 
         /**
-         * The maximum number of keys this rule holds in the memory of a replica: in the {@code local} store, and in
-         * the local fallback of {@code store-failure-mode=local}. Defaults to
-         * {@code quarkus.http.rate-limit.max-keys}.
+         * The maximum number of keys this rule holds in the memory of a replica: in the {@code local} store, in the
+         * lease cache of a rule with {@code lease-size}, and in the in-memory fallback of a store whose failure mode is
+         * {@code local}. When it is reached, keys are evicted, and an evicted key starts again with a full burst. At
+         * least 1. Defaults to {@code quarkus.http.rate-limit.max-keys}, itself {@code 100000} by default.
          */
         Optional<Long> maxKeys();
 
+        /**
+         * When set, the rule uses lease mode: it claims chunks of up to this many permits from the store and serves
+         * requests from the chunk, trading admission precision for fewer store calls. The actual chunk adapts to the
+         * demand of this replica, and a chunk may be served for {@code lease-size} emission intervals
+         * ({@code window / permits}). At least 1, and no more than a static limit's burst; for resolved limits each chunk is
+         * capped to the selected burst. At most {@code permits / 20} is recommended, because
+         * every replica may strand up to one chunk. Requires a store other than {@code local}. When absent, every
+         * request makes one store call.
+         */
+        Optional<Long> leaseSize();
+
+        /**
+         * The number of requests per key that a replica may admit without holding permits, per emission interval
+         * ({@code window / permits}), while it claims a chunk from the store. {@code 0} is strict: a request that finds
+         * no chunk waits for the claim, at most the store timeout ({@code quarkus.http.rate-limit.store-timeout}, or
+         * {@code quarkus.http.rate-limit.redis.timeout} for the {@code redis} store). Above {@code 0} is optimistic: up
+         * to this many requests per emission interval are admitted at once and settled with the claim; when they are
+         * used up, or for a while after the store refused a claim, requests wait as in strict mode. Admissions that the
+         * store then refuses got through over the limit; they are forgiven, and counted. Between 0 and a static limit's burst;
+         * capped to the selected burst for resolved limits. Only
+         * valid with {@code lease-size}.
+         */
+        @WithDefault("0")
+        long maxOverdraft();
     }
 
     /**

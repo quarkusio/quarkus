@@ -60,6 +60,20 @@ final class SwitchableStoreApp {
     }
 
     /**
+     * Adds the lease-mode rule of the lease tests: 8 permits per minute per IP, lease-size 4, on the switchable store.
+     */
+    static QuarkusExtensionTest leaseRule(QuarkusExtensionTest test) {
+        return test.overrideConfigKey(RULE + "paths", "/*")
+                .overrideConfigKey(RULE + "phase", "pre-authentication")
+                .overrideConfigKey(RULE + "request-key", "ip")
+                .overrideRuntimeConfigKey(RULE + "permits", "8")
+                .overrideRuntimeConfigKey(RULE + "burst", "8")
+                .overrideRuntimeConfigKey(RULE + "window", "1m")
+                .overrideConfigKey(RULE + "store", "switchable")
+                .overrideRuntimeConfigKey(RULE + "lease-size", "4");
+    }
+
+    /**
      * @return a client that can hold more than {@link #MAX_CONCURRENT_REQUESTS} requests in flight
      */
     static WebClient wideClient(Vertx vertx) {

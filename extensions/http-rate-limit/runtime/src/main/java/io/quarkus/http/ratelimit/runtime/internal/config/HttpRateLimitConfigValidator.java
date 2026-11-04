@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.quarkus.http.ratelimit.RateLimit;
 import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitRuntimeConfig.Rule;
 
 /**
@@ -13,6 +14,7 @@ import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitRuntimeCon
  */
 public final class HttpRateLimitConfigValidator {
 
+    private static final String LOCAL_STORE = "local";
     private static final String PREFIX = "quarkus.http.rate-limit.";
 
     private HttpRateLimitConfigValidator() {
@@ -77,6 +79,23 @@ public final class HttpRateLimitConfigValidator {
         return errors;
     }
 
+    /**
+     * @param rules the rules of a valid configuration
+     * @return one message per configuration that is accepted but probably not what was intended
+     */
+    public static List<String> warnings(List<RateLimitRuleConfig> rules) {
+        List<String> warnings = new ArrayList<>();
+        for (RateLimitRuleConfig rule : rules) {
+            if (rule.leaseSize().isPresent() && rule.limit().isPresent()
+                    && rule.leaseSize().get() > rule.limit().get().permits() / 20.0) {
+                warnings.add("Rate limit rule '" + rule.name()
+                        + "' lease-size × replicas may strand a large share of permits"
+                        + " (lease-size <= permits / 20 is recommended)");
+            }
+        }
+        return warnings;
+    }
+
     private static void validateStores(HttpRateLimitRuntimeConfig config, List<String> errors) {
         if (!isPositive(config.storeTimeout())) {
             errors.add(PREFIX + "store-timeout must be positive");
@@ -90,6 +109,43 @@ public final class HttpRateLimitConfigValidator {
         String prefix = "Rate limit rule '" + rule.name() + "' ";
         if (rule.maxKeys() < 1) {
             errors.add(prefix + "max-keys must be at least 1");
+        }
+        RateLimit policy = rule.limit().orElse(null);
+        validateLease(prefix, rule, policy, errors);
+    }
+
+    /**
+     * @param policy the rule's policy; {@code null} when the limit is invalid, which skips the checks against the burst
+     */
+    private static void validateLease(String prefix, RateLimitRuleConfig rule, RateLimit policy,
+            List<String> errors) {
+        if (rule.leaseSize().isEmpty()) {
+            if (rule.maxOverdraft() != 0) {
+                errors.add(prefix + "max-overdraft requires lease-size");
+            }
+            return;
+        }
+        if (LOCAL_STORE.equals(rule.store())) {
+            errors.add(prefix + "lease-size requires a non-local store");
+        }
+        if (policy == null) {
+            if (rule.leaseSize().get() < 1) {
+                errors.add(prefix + "lease-size must be at least 1");
+            }
+            if (rule.maxOverdraft() < 0) {
+                errors.add(prefix + "max-overdraft must not be negative");
+            }
+            // Dynamic bursts are known only per request; the lease store caps chunks and overdrafts to that burst.
+            return;
+        }
+        long burst = policy.burst();
+        long leaseSize = rule.leaseSize().get();
+        if (leaseSize < 1 || leaseSize > burst) {
+            errors.add(prefix + "lease-size must be between 1 and the burst (" + burst + ")");
+        }
+        long maxOverdraft = rule.maxOverdraft();
+        if (maxOverdraft < 0 || maxOverdraft > burst) {
+            errors.add(prefix + "max-overdraft must be between 0 and the burst (" + burst + ")");
         }
     }
 

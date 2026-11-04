@@ -2422,12 +2422,12 @@ public interface MyNonDefaultPURepository {
 ----
 <1> Pass the name of the non-default persistence unit to the repository annotation (`other` in this example).
 
-Review the https://jakarta.ee/specifications/data/1.0/apidocs/jakarta.data/jakarta/data/repository/repository#dataStore()[Javadoc of the `@Repository` annotation]
+Review the https://jakarta.ee/specifications/data/1.0/apidocs/jakarta.data/jakarta/data/repository/Repository.html#dataStore()[Javadoc of the `@Repository` annotation]
 to learn more about the `dataStore` attribute.
 ====
 
 Please refer to the corresponding https://hibernate.org/repositories/[Hibernate Data Repositories]
-and https://jakarta.ee/specifications/data/1.0/jakarta-data-1.0[Jakarta Data]
+and https://jakarta.ee/specifications/data/1.0/jakarta-data-1.0.html[Jakarta Data]
 guides to learn what else they have to offer.
 
 ==== Secure Jakarta Data repositories

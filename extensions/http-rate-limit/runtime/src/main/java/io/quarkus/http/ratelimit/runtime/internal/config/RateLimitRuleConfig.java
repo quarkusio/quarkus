@@ -19,10 +19,11 @@ import io.quarkus.http.ratelimit.RateLimitPhase;
  * @param key the request key; {@code null} when neither the rule nor {@code quarkus.http.rate-limit.request-key} sets
  *        one, which fails the build
  * @param store the store name
+ * @param override the {@code @Identifier} of the rule's {@code RateLimitOverride}; absent when the rule has none
  * @param burst the burst as configured; absent when it defaults to {@code permits}
  */
 public record RateLimitRuleConfig(String name, List<String> paths, Optional<Set<String>> methods, RateLimitPhase phase,
-        String key, String store, long permits, Duration window, Optional<Long> burst,
+        String key, String store, Optional<String> override, long permits, Duration window, Optional<Long> burst,
         long maxKeys) {
 
     /**
@@ -47,6 +48,7 @@ public record RateLimitRuleConfig(String name, List<String> paths, Optional<Set<
         HttpRateLimitRuntimeConfig.Rule runtime = runtimeConfig.rules().get(name);
         return new RateLimitRuleConfig(name, build.paths(), build.methods(),
                 phase(buildConfig, build), key(buildConfig, build), store(buildConfig, build),
+                override(buildConfig, build),
                 runtime.permits(), runtime.window(), runtime.burst(),
                 runtime.maxKeys().orElse(runtimeConfig.maxKeys()));
     }
@@ -63,6 +65,13 @@ public record RateLimitRuleConfig(String name, List<String> paths, Optional<Set<
      */
     public static String key(HttpRateLimitBuildTimeConfig config, HttpRateLimitBuildTimeConfig.Rule rule) {
         return rule.requestKey().orElse(config.requestKey().orElse(null));
+    }
+
+    /**
+     * @return the override of the rule, else {@code quarkus.http.rate-limit.override}; absent when neither is set
+     */
+    public static Optional<String> override(HttpRateLimitBuildTimeConfig config, HttpRateLimitBuildTimeConfig.Rule rule) {
+        return rule.override().isPresent() ? rule.override() : config.override();
     }
 
     /**

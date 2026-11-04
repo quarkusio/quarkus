@@ -36,8 +36,9 @@ import io.smallrye.mutiny.Uni;
 /**
  * The in-memory store: one bounded Caffeine cache of GCRA theoretical arrival times (TATs) per rule.
  * <p>
- * Caches are keyed by {@link RateLimitPolicy#id()}. An entry expires exactly when its TAT passes, since from then on
- * it is equivalent to no state.
+ * Caches are keyed by {@link RateLimitPolicy#id()}, never by the policy value, so that a per-key override (different
+ * permits, window or burst) finds the same cache and the same TAT, and counts toward the same {@code maxKeys}. An entry
+ * expires exactly when its TAT passes, since from then on it is equivalent to no state, whichever policy wrote it.
  * <p>
  * Decisions are made synchronously on the calling thread; the cache's maintenance also runs on it.
  * <p>

@@ -23,6 +23,7 @@ public class HttpRateLimitBuildConfigValidatorTest {
     private static final String P = "quarkus.http.rate-limit.";
     private static final Set<String> STORES = Set.of("custom");
     private static final Set<String> KEY_RESOLVERS = Set.of("ip", "path", "global", "principal", "tenant");
+    private static final Set<String> OVERRIDES = Set.of("plans");
 
     /** A valid pre-authentication rule named {@code api} with the given overrides applied on top. */
     private static HttpRateLimitBuildTimeConfig config(String... overrides) {
@@ -42,7 +43,7 @@ public class HttpRateLimitBuildConfigValidatorTest {
     }
 
     private static List<String> validate(String... overrides) {
-        return HttpRateLimitBuildConfigValidator.validate(config(overrides), STORES, KEY_RESOLVERS);
+        return HttpRateLimitBuildConfigValidator.validate(config(overrides), STORES, KEY_RESOLVERS, OVERRIDES);
     }
 
     private static String g(String key) {
@@ -115,6 +116,17 @@ public class HttpRateLimitBuildConfigValidatorTest {
                 "Rate limit rule 'api' request-key 'header:' is not a built-in key (ip, path, global, principal), header:<name> or custom:<identifier>");
         assertThat(validate(g("request-key"), "custom:")).containsExactly(
                 "Rate limit rule 'api' request-key 'custom:' is not a built-in key (ip, path, global, principal), header:<name> or custom:<identifier>");
+    }
+
+    @Test
+    void overrideMustExist() {
+        String unknown = "Rate limit rule 'api' override 'nope' matches no RateLimitOverride bean annotated @Identifier(\"nope\")";
+        assertThat(validate(g("override"), "nope")).containsExactly(unknown);
+        assertThat(validate(P + "override", "nope")).containsExactly(unknown);
+        assertThat(validate(g("override"), "plans")).isEmpty();
+        assertThat(validate(P + "override", "plans")).isEmpty();
+        // the rule override wins over the global one
+        assertThat(validate(P + "override", "nope", g("override"), "plans")).isEmpty();
     }
 
     @Test

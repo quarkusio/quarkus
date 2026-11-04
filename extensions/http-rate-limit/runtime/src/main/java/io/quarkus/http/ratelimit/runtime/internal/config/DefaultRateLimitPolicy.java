@@ -6,13 +6,13 @@ import io.quarkus.http.ratelimit.RateLimitPhase;
 import io.quarkus.http.ratelimit.RateLimitPolicy;
 
 /**
- * The limit of one rule, as resolved from configuration. Every policy the extension hands to a store is of this type;
- * {@link #maxKeys()} is internal and not part of {@link RateLimitPolicy}.
+ * The limit of one rule, as resolved from configuration (and possibly a per-key override). Every policy the extension
+ * hands to a store is of this type; {@link #maxKeys()} is internal and not part of {@link RateLimitPolicy}.
  * <p>
  * The canonical constructor rejects {@code permits < 1}, {@code burst < 1}, an {@linkplain #emissionIntervalMicros()
  * emission interval} below one microsecond, a {@linkplain #burstToleranceMicros() burst tolerance} above 30 days, and
- * any arithmetic overflow, with {@link IllegalArgumentException}. The configuration validator goes through it, so
- * every store sees the same domain.
+ * any arithmetic overflow, with {@link IllegalArgumentException}. Both the configuration validator and the override
+ * path go through it, so every store sees the same domain.
  *
  * @param rule the rule name
  * @param phase the phase this policy applies to

@@ -3,6 +3,7 @@ package io.quarkus.http.ratelimit.deployment;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -33,9 +34,11 @@ public final class HttpRateLimitBuildConfigValidator {
     /**
      * @param stores the {@code @Identifier} of every {@code RateLimitStore} bean
      * @param keyResolvers the {@code @Identifier} of every {@code RateLimitKeyResolver} bean, built-in ones included
+     * @param overrides the {@code @Identifier} of every {@code RateLimitOverride} bean
      * @return one message per violation; empty when the configuration is valid
      */
-    public static List<String> validate(HttpRateLimitBuildTimeConfig config, Set<String> stores, Set<String> keyResolvers) {
+    public static List<String> validate(HttpRateLimitBuildTimeConfig config, Set<String> stores, Set<String> keyResolvers,
+            Set<String> overrides) {
         List<String> errors = new ArrayList<>();
         for (Map.Entry<String, Rule> entry : config.rules().entrySet()) {
             String name = entry.getKey();
@@ -55,6 +58,11 @@ public final class HttpRateLimitBuildConfigValidator {
             if (!LOCAL_STORE.equals(store) && !stores.contains(store)) {
                 errors.add(prefix + "store '" + store + "' matches no RateLimitStore bean annotated @Identifier(\""
                         + store + "\")");
+            }
+            Optional<String> override = RateLimitRuleConfig.override(config, rule);
+            if (override.isPresent() && !overrides.contains(override.get())) {
+                errors.add(prefix + "override '" + override.get()
+                        + "' matches no RateLimitOverride bean annotated @Identifier(\"" + override.get() + "\")");
             }
         }
         return errors;

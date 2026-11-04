@@ -55,6 +55,13 @@ public interface HttpRateLimitBuildTimeConfig {
     Optional<RateLimitPhase> phase();
 
     /**
+     * The override of every rule that does not set its own {@code override}: the {@code @Identifier} of a user supplied
+     * {@code RateLimitOverride} bean, which gives some keys a limit other than the configured one, for example a higher
+     * limit for the API key of a client on a paid plan. When absent, every key has the configured limit.
+     */
+    Optional<String> override();
+
+    /**
      * The rate limit rules, keyed by rule name. What a rule applies to and where its state is kept is fixed at build
      * time.
      */
@@ -114,5 +121,13 @@ public interface HttpRateLimitBuildTimeConfig {
          * The store this rule uses. Defaults to {@code quarkus.http.rate-limit.store}.
          */
         Optional<String> store();
+
+        /**
+         * The {@code @Identifier} of a user supplied {@code RateLimitOverride} bean that gives some keys of this rule a
+         * limit other than the configured one, for example a higher limit for the API key of a client on a paid plan.
+         * Defaults to {@code quarkus.http.rate-limit.override}; when neither is set, every key has the configured
+         * limit.
+         */
+        Optional<String> override();
     }
 }

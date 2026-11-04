@@ -23,6 +23,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.http.ratelimit.RateLimitKeyResolver;
+import io.quarkus.http.ratelimit.RateLimitOverride;
 import io.quarkus.http.ratelimit.RateLimitRejectionWriter;
 import io.quarkus.http.ratelimit.RateLimitStore;
 import io.quarkus.http.ratelimit.runtime.internal.RateLimitBuildTimeInfo;
@@ -44,6 +45,7 @@ public class HttpRateLimitProcessor {
     private static final DotName IDENTIFIER = DotName.createSimple(Identifier.class);
     private static final DotName RATE_LIMIT_STORE = DotName.createSimple(RateLimitStore.class);
     private static final DotName RATE_LIMIT_KEY_RESOLVER = DotName.createSimple(RateLimitKeyResolver.class);
+    private static final DotName RATE_LIMIT_OVERRIDE = DotName.createSimple(RateLimitOverride.class);
     private static final DotName HTTP_AUTHENTICATION_MECHANISM = DotName.createSimple(HttpAuthenticationMechanism.class);
 
     @BuildStep
@@ -61,7 +63,7 @@ public class HttpRateLimitProcessor {
     }
 
     /**
-     * Fails the build when the rules are invalid, name a store or key resolver that does not exist, or have a
+     * Fails the build when the rules are invalid, name a store, key resolver or override that does not exist, or have a
      * path outside the root path; warns of rules that are valid but probably not what was intended.
      */
     @BuildStep
@@ -69,6 +71,7 @@ public class HttpRateLimitProcessor {
             ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors) {
         Set<String> stores = new HashSet<>();
         Set<String> keyResolvers = new HashSet<>();
+        Set<String> overrides = new HashSet<>();
         boolean mechanisms = false;
         for (BeanInfo bean : validationPhase.getContext().beans()) {
             if (bean.hasType(HTTP_AUTHENTICATION_MECHANISM)) {
@@ -84,8 +87,11 @@ public class HttpRateLimitProcessor {
             if (bean.hasType(RATE_LIMIT_KEY_RESOLVER)) {
                 keyResolvers.add(identifier.get().value().asString());
             }
+            if (bean.hasType(RATE_LIMIT_OVERRIDE)) {
+                overrides.add(identifier.get().value().asString());
+            }
         }
-        List<String> errors = HttpRateLimitBuildConfigValidator.validate(config, stores, keyResolvers);
+        List<String> errors = HttpRateLimitBuildConfigValidator.validate(config, stores, keyResolvers, overrides);
         errors.addAll(HttpRateLimitBuildConfigValidator.validateRootPath(config, httpConfig.rootPath(),
                 httpConfig.nonApplicationRootPath()));
         for (String warning : HttpRateLimitBuildConfigValidator.warnings(config, httpConfig.auth().proactive(),
@@ -97,11 +103,11 @@ public class HttpRateLimitProcessor {
         }
     }
 
-    // resolvers and stores are looked up programmatically, by the names in the configuration
+    // resolvers, stores and overrides are looked up programmatically, by the names in the configuration
     @BuildStep
     UnremovableBeanBuildItem unremovableBeans() {
         return UnremovableBeanBuildItem.beanTypes(RateLimitKeyResolver.class, RateLimitStore.class,
-                RateLimitRejectionWriter.class);
+                RateLimitOverride.class, RateLimitRejectionWriter.class);
     }
 
     @BuildStep

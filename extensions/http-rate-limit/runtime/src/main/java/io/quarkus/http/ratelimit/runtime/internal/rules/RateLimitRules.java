@@ -20,6 +20,7 @@ import jakarta.inject.Singleton;
 import org.jboss.logging.Logger;
 
 import io.quarkus.http.ratelimit.RateLimitKeyResolver;
+import io.quarkus.http.ratelimit.RateLimitOverride;
 import io.quarkus.http.ratelimit.RateLimitPhase;
 import io.quarkus.http.ratelimit.runtime.internal.RateLimitBuildTimeInfo;
 import io.quarkus.http.ratelimit.runtime.internal.ThrottledLoggers;
@@ -31,6 +32,7 @@ import io.quarkus.http.ratelimit.runtime.internal.config.RateLimitRuleConfig;
 import io.quarkus.http.ratelimit.runtime.internal.keys.KeyResolvers;
 import io.quarkus.http.ratelimit.runtime.internal.store.StoreRegistry;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.smallrye.common.annotation.Identifier;
 
 /**
  * Turns the configuration into one {@link RuleEvaluator} per configured rule. Fails startup on an
@@ -67,6 +69,7 @@ public class RateLimitRules {
             RateLimitBuildTimeInfo info,
             Instance<StoreRegistry> storeRegistry,
             @Any Instance<RateLimitKeyResolver> resolvers,
+            @Any Instance<RateLimitOverride> overrides,
             ThrottledLoggers loggers) {
         if (!config.enabled()) {
             // a disabled extension validates nothing and builds no evaluators or stores
@@ -80,7 +83,8 @@ public class RateLimitRules {
         this.exemptPaths = Set.copyOf(info.controlPlanePaths());
         // the summary first: building the evaluators logs the detail of each rule
         logRules(ruleConfigs);
-        List<RuleMembership> memberships = buildEvaluators(ruleConfigs, stores, resolvers, loggers);
+        List<RuleMembership> memberships = buildEvaluators(ruleConfigs, stores, resolvers, overrides,
+                loggers);
         this.phases = indexPhases(memberships);
     }
 
@@ -118,15 +122,26 @@ public class RateLimitRules {
         return RateLimitRuleConfig.all(buildConfig, config);
     }
 
+    /**
+     * @return the override the rule selects, or {@code null} when it selects none
+     */
+    private static RateLimitOverride override(RateLimitRuleConfig rule, Instance<RateLimitOverride> overrides) {
+        if (rule.override().isEmpty()) {
+            return null;
+        }
+        return overrides.select(Identifier.Literal.of(rule.override().get())).get();
+    }
+
     private static List<RuleMembership> buildEvaluators(List<RateLimitRuleConfig> rules,
             StoreRegistry stores,
             Instance<RateLimitKeyResolver> resolvers,
+            Instance<RateLimitOverride> overrides,
             ThrottledLoggers loggers) {
         List<RuleMembership> memberships = new ArrayList<>();
         for (RateLimitRuleConfig rule : rules) {
             DefaultRateLimitPolicy policy = DefaultRateLimitPolicy.of(rule);
             RuleEvaluator evaluator = new RuleEvaluator(policy,
-                    KeyResolvers.forKey(rule.key(), resolvers),
+                    KeyResolvers.forKey(rule.key(), resolvers), override(rule, overrides),
                     stores.forRule(policy, rule), rule.store(), loggers);
             Set<String> methods = Set.of();
             if (rule.methods().isPresent()) {

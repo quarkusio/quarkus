@@ -182,7 +182,8 @@ public class RateLimitFilter {
         }
 
         Context context = ctx.vertx().getOrCreateContext();
-        // resolvers and stores may complete on any thread: every evaluator, and the response, run on the request's context
+        // resolvers, overrides and stores may complete on any thread: every evaluator, and the response, run on the
+        // request's context
         Executor onContext = new Executor() {
             @Override
             public void execute(Runnable task) {
@@ -284,7 +285,7 @@ public class RateLimitFilter {
             return Uni.createFrom().item(outcomes);
         }
         RuleEvaluator evaluator = evaluators.get(index);
-        return evaluator.evaluate(ctx, identity).emitOn(onContext).onItem()
+        return evaluator.evaluate(ctx, identity, onContext).emitOn(onContext).onItem()
                 .transformToUni(new Function<>() {
                     @Override
                     public Uni<? extends List<Outcome>> apply(Outcome outcome) {

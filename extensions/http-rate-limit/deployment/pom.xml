@@ -142,7 +142,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- the integration module (redis) shares the test helpers of this module -->
+            <!-- the integration modules (redis, micrometer) share the test helpers of this module -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>

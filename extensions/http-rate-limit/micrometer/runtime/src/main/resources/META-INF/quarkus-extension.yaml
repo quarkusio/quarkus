@@ -1,0 +1,7 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "HTTP Rate Limit - Micrometer"
+description: "Micrometer metrics of the HTTP rate limiter; included automatically next to quarkus-http-rate-limit when quarkus-micrometer is present"
+metadata:
+  unlisted: true
+  status: "experimental"

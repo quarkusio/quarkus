@@ -95,6 +95,20 @@ public class RouteMethodParametersTest {
                 .post("/hello-body-pojo").then().statusCode(400);
     }
 
+    @Test
+    public void testJsonBodyOfWrongType() {
+        given().contentType("application/json").body("[\"foo\"]")
+                .post("/hello-body-json-object").then().statusCode(400);
+        given().contentType("application/json").body("1")
+                .post("/hello-body-json-object").then().statusCode(400);
+        given().contentType("application/json").body("{\"name\":\"foo\"}")
+                .post("/hello-body-json-array").then().statusCode(400);
+        given().contentType("application/json").body("[\"foo\"]")
+                .post("/hello-body-pojo").then().statusCode(400);
+        given().contentType("application/json").body("{\"id\":\"foo\"}")
+                .post("/hello-body-pojo").then().statusCode(400);
+    }
+
     static class SimpleBean {
 
         @Route(path = "/hello")

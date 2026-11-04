@@ -1413,7 +1413,7 @@ class ReactiveRoutesProcessor {
                         LocalVar result = b0.localVar("result", Const.ofDefault(Object.class));
                         b0.ifNotNull(bodyAsJson, b1 -> {
                             // TODO load `paramType` class from TCCL
-                            b1.set(result, b1.invokeVirtual(Methods.JSON_OBJECT_MAP_TO, bodyAsJson,
+                            b1.set(result, b1.invokeStatic(Methods.ROUTE_HANDLERS_BODY_MAP_TO, bodyAsJson,
                                     Const.of(classDescOf(paramType))));
                         });
                         return result;

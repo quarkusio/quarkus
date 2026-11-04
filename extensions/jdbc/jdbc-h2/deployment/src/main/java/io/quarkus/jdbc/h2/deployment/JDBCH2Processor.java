@@ -5,6 +5,8 @@ import java.util.Set;
 import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DatabaseVersionLoader;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
@@ -12,6 +14,7 @@ import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -21,6 +24,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageEnableModule;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.devservices.datasource.common.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.jdbc.h2.runtime.H2AgroalConnectionConfigurer;
+import io.quarkus.jdbc.h2.runtime.H2ExitDatabaseCloserInitializer;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 public class JDBCH2Processor {
@@ -35,6 +39,18 @@ public class JDBCH2Processor {
             SslNativeConfigBuildItem sslNativeConfigBuildItem) {
         jdbcDriver
                 .produce(new JdbcDriverBuildItem(DatabaseKind.H2, "org.h2.Driver", "org.h2.jdbcx.JdbcDataSource"));
+    }
+
+    /**
+     * In dev and test mode, make sure H2's shutdown hook thread does not retain an application class loader, see
+     * {@link H2ExitDatabaseCloserInitializer}.
+     */
+    @BuildStep(onlyIfNot = IsNormal.class)
+    void initExitDatabaseCloser(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar
+                .forService("io.quarkus.jdbc.h2.exit-database-closer")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> H2ExitDatabaseCloserInitializer.init());
     }
 
     @BuildStep

@@ -2,6 +2,7 @@ package io.quarkus.http.ratelimit.runtime.internal.store;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -38,10 +39,12 @@ import io.smallrye.faulttolerance.api.Guard;
  * Selects the store of each rule: the rule's {@code store}, else {@code quarkus.http.rate-limit.store}. A non-local
  * store is a {@link RateLimitStore} bean annotated {@code @Identifier("<name>")}, wrapped in a
  * {@link GuardedRateLimitStore} with the timeout and failure mode of the store; the guard and its {@link StoreProbe} are
- * created once per store and shared, and every rule gets a {@link RefusalCachingRateLimitStore} over it.
+ * created once per store and shared. A rule
+ * with {@code lease-size} gets a {@link LeasingRateLimitStore} over its guarded store, any other rule a
+ * {@link RefusalCachingRateLimitStore}.
  * <p>
- * The registry keeps every probe it creates and closes them in {@link #close()}, since CDI never calls lifecycle
- * methods on objects created with {@code new}.
+ * The registry keeps every probe and lease decorator it creates and closes them in {@link #close()}, since CDI never
+ * calls lifecycle methods on objects created with {@code new}.
  */
 @Singleton
 public class StoreRegistry {
@@ -64,6 +67,7 @@ public class StoreRegistry {
     private final List<RateLimitLocalStoreCustomizer> localCustomizers;
     private final Map<String, SharedGuard> guards = new HashMap<>();
     private final Map<String, StoreProbe> probes = new ConcurrentHashMap<>();
+    private final List<LeasingRateLimitStore> leases = new ArrayList<>();
 
     /**
      * @param breakerDelay the delay of the breaker, after the customizers
@@ -92,7 +96,8 @@ public class StoreRegistry {
      * {@link RateLimitLocalStoreCustomizer}s run at startup.
      *
      * @param policy the policy of the rule
-     * @return the local store, else the named store wrapped in its guard and in a refusal cache
+     * @return the local store, else the named store wrapped in its guard, and wrapped again in a lease store when the
+     *         rule sets {@code lease-size}, or in a refusal cache when it does not
      */
     public RateLimitStore forRule(DefaultRateLimitPolicy policy, RateLimitRuleConfig rule) {
         String name = rule.store();
@@ -102,7 +107,8 @@ public class StoreRegistry {
             return local;
         }
         FailureMode failureMode = failureMode(name);
-        if (failureMode == FailureMode.LOCAL) {
+        // the local bucket answers in failure mode local, and in lease mode for the requests past the waiter cap
+        if (failureMode == FailureMode.LOCAL || rule.leaseSize().isPresent()) {
             local.prepare(policy);
         }
         RateLimitStore delegate = stores.select(Identifier.Literal.of(name)).get();
@@ -123,6 +129,12 @@ public class StoreRegistry {
                 KeyCaches.customize(localCustomizers, policy.rule(), builder);
             }
         };
+        if (rule.leaseSize().isPresent()) {
+            LeasingRateLimitStore leasing = new LeasingRateLimitStore(guarded, rule.leaseSize().get(),
+                    rule.maxOverdraft(), rule.maxKeys(), timeout(name), clock, customizer);
+            leases.add(leasing);
+            return leasing;
+        }
         return new RefusalCachingRateLimitStore(guarded, policy, clock, customizer);
     }
 
@@ -130,6 +142,9 @@ public class StoreRegistry {
     void close() {
         for (StoreProbe probe : probes.values()) {
             probe.close();
+        }
+        for (LeasingRateLimitStore lease : leases) {
+            lease.close();
         }
     }
 

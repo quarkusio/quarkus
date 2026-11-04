@@ -10,6 +10,12 @@ import io.smallrye.mutiny.Uni;
  * <p>
  * Implementations run on the event loop and must not block. The store may be called from several event loops
  * concurrently, so implementations must be thread-safe.
+ * <p>
+ * The policy of a call can differ for the same key, when a {@link RateLimitOverride} replaces the limit: keep the state
+ * of a key per {@link RateLimitPolicy#id()} and key, not per policy value.
+ * <p>
+ * There is deliberately no unconditional debit. Leasing needs only the conditional operation, and a
+ * {@code cost} above one is what makes a lease a single call.
  */
 public interface RateLimitStore {
 
@@ -27,7 +33,9 @@ public interface RateLimitStore {
      * decorator relies on it for recovery. A {@code cost} above {@code policy.burst()} must fail with
      * {@link IllegalArgumentException}.
      * <p>
-     * {@link RateLimitDecision.Allowed#remaining()} is the store's view of the whole permits left after the call.
+     * {@link RateLimitDecision.Allowed#remaining()} is the store's view of the whole permits left after the call. A
+     * decorator that serves from local chunks returns its best estimate of the shared remaining (the last
+     * authoritative remaining plus the locally held permits); that value is an estimate.
      * {@link RateLimitDecision.Rejected#retryAfter()} is the wait until {@code cost} permits are available.
      * <p>
      * The decision is {@link RateLimitDecision.Allowed} or {@link RateLimitDecision.Rejected}. A store that cannot

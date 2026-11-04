@@ -24,7 +24,8 @@ import io.quarkus.http.ratelimit.RateLimitPhase;
  */
 public record RateLimitRuleConfig(String name, List<String> paths, Optional<Set<String>> methods, RateLimitPhase phase,
         String key, String store, Optional<String> override, long permits, Duration window, Optional<Long> burst,
-        long maxKeys) {
+        long maxKeys,
+        Optional<Long> leaseSize, long maxOverdraft) {
 
     /**
      * @return every rule, in the order of the build time configuration; only for a configuration without
@@ -50,7 +51,8 @@ public record RateLimitRuleConfig(String name, List<String> paths, Optional<Set<
                 phase(buildConfig, build), key(buildConfig, build), store(buildConfig, build),
                 override(buildConfig, build),
                 runtime.permits(), runtime.window(), runtime.burst(),
-                runtime.maxKeys().orElse(runtimeConfig.maxKeys()));
+                runtime.maxKeys().orElse(runtimeConfig.maxKeys()),
+                runtime.leaseSize(), runtime.maxOverdraft());
     }
 
     /**

@@ -158,6 +158,14 @@ final class GuardedRateLimitStore implements RateLimitStore {
     }
 
     /**
+     * The decision of the local bucket for one permit, whatever the failure mode: for requests the store cannot serve
+     * although it is healthy.
+     */
+    Uni<RateLimitDecision> localDecision(String key, RateLimitPolicy policy) {
+        return local.tryConsume(key, 1, policy);
+    }
+
+    /**
      * The {@code store-failure-mode} decision for {@code cost} permits, without calling the store: the local bucket
      * under {@code local}, admission under {@code open}, {@link RateLimitDecision.Unavailable} under {@code closed}.
      */

@@ -119,7 +119,11 @@ public class RateLimitRules {
         if (!errors.isEmpty()) {
             throw new ConfigurationException(String.join("\n", errors));
         }
-        return RateLimitRuleConfig.all(buildConfig, config);
+        List<RateLimitRuleConfig> rules = RateLimitRuleConfig.all(buildConfig, config);
+        for (String warning : HttpRateLimitConfigValidator.warnings(rules)) {
+            LOG.warn(warning);
+        }
+        return rules;
     }
 
     /**
@@ -154,11 +158,11 @@ public class RateLimitRules {
             memberships.add(new RuleMembership(evaluator, rule.paths(), methods));
             LOG.debugf(
                     "Rate limit rule '%s': paths=%s methods=%s phase=%s request-key=%s permits=%d window=%s burst=%d store=%s"
-                            + " max-keys=%d",
+                            + " lease-size=%s max-keys=%d",
                     rule.name(), rule.paths(), rule.methods().orElse(Set.of()), rule.phase().configName(),
                     rule.key(), rule.permits(), rule.window(), policy.burst(),
                     rule.store(),
-                    rule.maxKeys());
+                    rule.leaseSize().isPresent() ? String.valueOf(rule.leaseSize().get()) : "-", rule.maxKeys());
         }
         return memberships;
     }

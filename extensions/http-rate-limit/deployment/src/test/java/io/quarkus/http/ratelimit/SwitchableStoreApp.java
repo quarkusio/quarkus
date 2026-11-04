@@ -29,6 +29,7 @@ final class SwitchableStoreApp {
      * The fixed cap of the extension on the calls in flight to one store.
      */
     static final int MAX_CONCURRENT_REQUESTS = 256;
+    static final String RULE = "quarkus.http.rate-limit.api.";
 
     private SwitchableStoreApp() {
     }
@@ -56,6 +57,20 @@ final class SwitchableStoreApp {
             test.overrideConfigKey("quarkus.http.rate-limit." + name + ".store", store);
         }
         return test;
+    }
+
+    /**
+     * Adds the lease-mode rule of the lease tests: 8 permits per minute per IP, lease-size 4, on the switchable store.
+     */
+    static QuarkusExtensionTest leaseRule(QuarkusExtensionTest test) {
+        return test.overrideConfigKey(RULE + "paths", "/*")
+                .overrideConfigKey(RULE + "phase", "pre-authentication")
+                .overrideConfigKey(RULE + "request-key", "ip")
+                .overrideRuntimeConfigKey(RULE + "permits", "8")
+                .overrideRuntimeConfigKey(RULE + "burst", "8")
+                .overrideRuntimeConfigKey(RULE + "window", "1m")
+                .overrideConfigKey(RULE + "store", "switchable")
+                .overrideRuntimeConfigKey(RULE + "lease-size", "4");
     }
 
     /**

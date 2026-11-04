@@ -19,8 +19,8 @@ import io.quarkus.http.ratelimit.RateLimitPolicy;
  * @param permits the number of permits replenished per {@code window}
  * @param window the replenishment window
  * @param burst the maximum number of permits that can be consumed at once
- * @param maxKeys the maximum number of keys held in the memory of a replica for this policy: by the local store and
- *        the local fallback of a non-local store
+ * @param maxKeys the maximum number of keys held in the memory of a replica for this policy: by the local store, the
+ *        lease cache and the local fallback of a non-local store
  */
 public record DefaultRateLimitPolicy(String rule, RateLimitPhase phase, long permits, Duration window, long burst,
         long maxKeys) implements RateLimitPolicy {

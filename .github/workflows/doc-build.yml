@@ -215,8 +215,9 @@ jobs:
         id: link_scope
         run: |
           # Compare the built guides against what is currently on gh-pages.
-          # version/main/ is excluded: it is overwritten daily by the nightly
-          # sync and will almost always differ regardless of this PR's changes.
+          # Only version/main/ is considered: that's where this PR's synced
+          # docs land, and everything else would just add noise from drift
+          # unrelated to this PR.
           git fetch origin gh-pages --filter=blob:none 2>/dev/null || {
             echo "mode=full" >> $GITHUB_OUTPUT
             echo "Could not fetch gh-pages, running full link check"
@@ -240,13 +241,13 @@ jobs:
             exit 0
           }
 
-          CHANGED=$(echo "$RSYNC_OUT" | grep '\.html$' | grep -v '^version/main/' || true)
+          CHANGED=$(echo "$RSYNC_OUT" | grep '\.html$' | grep '^version/main/' || true)
 
           git worktree remove /tmp/gh-pages 2>/dev/null || true
 
           if [ -z "$CHANGED" ]; then
             echo "mode=skip" >> $GITHUB_OUTPUT
-            echo "No HTML files changed outside version/main/, skipping link crawl"
+            echo "No HTML files changed under version/main/, skipping link crawl"
             exit 0
           fi
 
@@ -277,6 +278,25 @@ jobs:
             $CHANGED_PATHS_ARG
         env:
           PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: 1
+
+      # Same changed-page detection as the link crawler uses, so the preview job can report on it:
+      # the first line is the scope (skip, full or partial), the second the comma separated pages
+      - name: Store changed pages
+        env:
+          SCOPE_MODE: ${{ steps.link_scope.outputs.mode }}
+          CHANGED_PATHS: ${{ steps.link_scope.outputs.paths }}
+        run: |
+          if [ -n "$SCOPE_MODE" ]; then
+            printf '%s\n%s\n' "$SCOPE_MODE" "$CHANGED_PATHS" > changed-pages.txt
+          fi
+
+      - name: Upload changed pages
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: changed-pages
+          path: changed-pages.txt
+          retention-days: 1
+          if-no-files-found: ignore
 
       - name: Upload build reports
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

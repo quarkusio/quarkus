@@ -2,10 +2,9 @@ package io.quarkus.oidc.runtime;
 
 import java.util.Optional;
 
-import org.jose4j.jwt.JwtClaims;
-
 import io.quarkus.security.credential.TokenCredential;
 import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
+import io.smallrye.jwt.common.JwtClaims;
 
 /**
  * An implementation of JWTCallerPrincipal

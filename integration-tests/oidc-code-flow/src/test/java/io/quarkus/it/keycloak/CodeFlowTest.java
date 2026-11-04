@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.security.PrivateKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -65,7 +66,7 @@ public class CodeFlowTest {
     KeycloakTestClient client = new KeycloakTestClient();
 
     @Test
-    public void testCodeFlowNoConsent() throws IOException {
+    public void testCodeFlowNoConsent() throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(false);
             WebResponse webResponse = webClient
@@ -112,14 +113,14 @@ public class CodeFlowTest {
                     .get("/web-app/configMetadataScopes")
                     .then().statusCode(200);
 
-            SecretKey secretKey = KeyUtils.createSecretKeyFromSecret(
-                    "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow");
+            // The token algorithm must be one the tenant accepts, otherwise it is rejected before the key id is resolved
+            PrivateKey privateKey = KeyUtils.generateKeyPair(2048).getPrivate();
 
             // Generate an already expired token with some random key id
             String expiredTokenWithRandomKid = Jwt.claims()
                     .issuedAt(Instant.now().minusSeconds(100))
                     .expiresAt(Instant.now().minusSeconds(50))
-                    .jws().keyId(UUID.randomUUID().toString()).sign(secretKey);
+                    .jws().keyId(UUID.randomUUID().toString()).sign(privateKey);
             String sessionCookie2 = expiredTokenWithRandomKid + "|" + expiredTokenWithRandomKid + "|||"
                     + expiredTokenWithRandomKid;
             // Redirect to re-authenticate is expected
@@ -131,7 +132,7 @@ public class CodeFlowTest {
             // Generate a valid token with some random key id
             String tokenWithRandomKid = Jwt.claims()
                     .issuedAt(Instant.now())
-                    .jws().keyId(UUID.randomUUID().toString()).sign(secretKey);
+                    .jws().keyId(UUID.randomUUID().toString()).sign(privateKey);
             String sessionCookie3 = tokenWithRandomKid + "|" + tokenWithRandomKid + "|||" + tokenWithRandomKid;
             // 401 is expected
             RestAssured.given().redirects().follow(false).header("Cookie", "q_session_Default_test=" + sessionCookie3)
@@ -563,14 +564,14 @@ public class CodeFlowTest {
                     .get("/tenant-nonce")
                     .then().statusCode(200);
 
-            SecretKey secretKey = KeyUtils.createSecretKeyFromSecret(
-                    "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow");
+            // The token algorithm must be one the tenant accepts, otherwise it is rejected before the key id is resolved
+            PrivateKey privateKey = KeyUtils.generateKeyPair(2048).getPrivate();
 
             // Generate an already expired token with some random key id
             String expiredTokenWithRandomKid = Jwt.claims()
                     .issuedAt(Instant.now().minusSeconds(100))
                     .expiresAt(Instant.now().minusSeconds(50))
-                    .jws().keyId(UUID.randomUUID().toString()).sign(secretKey);
+                    .jws().keyId(UUID.randomUUID().toString()).sign(privateKey);
             String sessionCookie2 = expiredTokenWithRandomKid + "|" + expiredTokenWithRandomKid + "|||"
                     + expiredTokenWithRandomKid;
             // 401 is expected because the redirect to re-authenticate is not allowed by default when the key id can not be resolved

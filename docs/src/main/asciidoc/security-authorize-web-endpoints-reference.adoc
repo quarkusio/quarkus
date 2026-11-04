@@ -17,6 +17,57 @@ Most authorization rules check the roles and permissions of the `SecurityIdentit
 The security identity provider supplies the roles.
 To customize them, create a `SecurityIdentityAugmentor`, as described in xref:security-customization.adoc#security-identity-customization[Security Identity Customization].
 
+[id="choose-how-to-authorize"]
+== Choose how to authorize
+
+{project-name} offers several ways to define authorization rules.
+To choose one, find the question that fits your case in the following table.
+Security annotations and HTTP permissions can often express the same rule, and each has its advantages:
+
+* A security annotation sits on the endpoint or method that it protects, so the rule needs no path pattern and stays with the method when its path changes.
+* An HTTP permission is defined for request paths, so it also covers paths that no endpoint method serves, and it restricts a path whatever the endpoint declares.
+When you define the permission in the `application.properties` file, you can change the rule without a change to the code.
+
+If you define both, {project-name} runs both checks.
+
+[cols="2,3a,3",options="header"]
+|===
+|Question |What to use |What happens at runtime
+
+|Which roles or permissions does a caller need to call an endpoint or a CDI bean method?
+|Use security annotations:
+
+* To require roles or authentication, use annotations such as `@RolesAllowed` and `@Authenticated`, as described in <<standard-security-annotations>>.
+* To require permissions, use the `@PermissionsAllowed` annotation, as described in <<permission-annotation>>.
+
+To protect endpoints and methods that have no annotation, set the following configuration properties, as described in <<configuration-properties-to-deny-access>>:
+
+* For Jakarta REST endpoints, `quarkus.security.jaxrs.deny-unannotated-endpoints` or `quarkus.security.jaxrs.default-roles-allowed`.
+* For CDI bean methods and Jakarta REST endpoints in classes that have no class-level security annotation but have other methods with security annotations, `quarkus.security.deny-unannotated-members`.
+|{project-name} checks the annotation before the method runs, and a method-level annotation overrides a class-level annotation.
+A <<permission-checker,permission checker>> can also decide based on the arguments of the method.
+
+|Which callers can access a request path, and which HTTP request methods can they use?
+|Define HTTP permissions in the `application.properties` file, as described in <<authorization-using-configuration>>.
+
+If the decision depends on the request itself, such as a header, add a <<custom-http-security-policy,custom HTTP security policy>>.
+|{project-name} checks the path and method of every request to the main HTTP server before the request reaches an endpoint, also for paths that no Jakarta REST endpoint serves.
+The exception is a permission that sets the `quarkus.http.auth.permission."permissions".applies-to=jaxrs` configuration property, which {project-name} checks only for requests that match a Jakarta REST endpoint.
+All HTTP permission checks, including those that set this property, run before the checks for security annotations, so `@PermitAll` cannot open a path that an HTTP permission restricts.
+
+|Which callers can access a Jakarta REST endpoint, when the check needs request-scoped beans such as `UriInfo`?
+|Use one of the following options, as described in <<policy-active-cdi-request-context>>:
+
+* The `@AuthorizationPolicy` annotation with a named custom `HttpSecurityPolicy`
+* The `quarkus.http.auth.permission."permissions".applies-to=jaxrs` configuration property
+* The `applyToJaxRs()` method of an HTTP permission that you define programmatically, for example, `httpSecurity.path("/secured/*").applyToJaxRs()`
+|{project-name} runs the policy after it matches the request with the endpoint, when the CDI request context is active.
+
+|Which callers can access a path, when the rule is easier to write in Java than in configuration, for example as a lambda?
+|Observe the `HttpSecurity` CDI event, as described in <<path-specific-authz-programmatic-set-up>>.
+|{project-name} fires the event at startup, when the runtime configuration is ready, and then applies the rules in the same way as HTTP permissions from `application.properties`.
+|===
+
 [id="authorization-using-configuration"]
 == Authorize requests in configuration
 

@@ -7,7 +7,7 @@ import io.quarkus.http.ratelimit.runtime.internal.rules.RuleEvaluator;
 /**
  * Logs every rejection with its key, so that a developer sees why a request got 429. The key is client input, so it
  * is {@linkplain LogText#escape escaped}. Registered in dev mode only:
- * elsewhere rejections are reported through metrics and the {@code RateLimitRejectionInfo} event. It therefore has no
+ * elsewhere rejections are reported through metrics, JFR and the {@code RateLimitRejectionInfo} event. It therefore has no
  * bean-defining annotation: the deployment module registers it as a singleton.
  */
 public class DevModeRejectionLog implements RateLimitOutcomeListener {

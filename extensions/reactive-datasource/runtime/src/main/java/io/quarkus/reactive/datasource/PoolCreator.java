@@ -1,7 +1,9 @@
 package io.quarkus.reactive.datasource;
 
 import java.util.List;
+import java.util.function.Supplier;
 
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
@@ -27,5 +29,7 @@ public interface PoolCreator {
         PoolOptions poolOptions();
 
         List<SqlConnectOptions> connectOptionsList();
+
+        Supplier<Future<SqlConnectOptions>> dynamicConnectOptionsList();
     }
 }

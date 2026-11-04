@@ -128,7 +128,7 @@ public class OraclePoolRecorder {
             SyntheticCreationalContext<Pool> context) {
         Instance<PoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL, qualifier(dataSourceName));
         if (instance.isResolvable()) {
-            OraclePoolCreator.Input input = new DefaultInput(vertx, poolOptions, oracleConnectOptions);
+            OraclePoolCreator.Input input = new DefaultInput(vertx, poolOptions, oracleConnectOptions, databases);
             return instance.get().create(input);
         }
 
@@ -141,11 +141,14 @@ public class OraclePoolRecorder {
         private final Vertx vertx;
         private final PoolOptions poolOptions;
         private final OracleConnectOptions connectOptions;
+        private final Supplier<Future<SqlConnectOptions>> databases;
 
-        public DefaultInput(Vertx vertx, PoolOptions poolOptions, OracleConnectOptions connectOptions) {
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, OracleConnectOptions connectOptions,
+                Supplier<Future<SqlConnectOptions>> databases) {
             this.vertx = vertx;
             this.poolOptions = poolOptions;
             this.connectOptions = connectOptions;
+            this.databases = databases;
         }
 
         @Override
@@ -166,6 +169,11 @@ public class OraclePoolRecorder {
         @Override
         public OracleConnectOptions oracleConnectOptions() {
             return connectOptions;
+        }
+
+        @Override
+        public Supplier<Future<SqlConnectOptions>> dynamicConnectOptionsList() {
+            return databases;
         }
     }
 }

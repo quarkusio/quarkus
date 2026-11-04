@@ -18,6 +18,7 @@ import jakarta.inject.Singleton;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.arc.All;
 import io.quarkus.arc.Arc;
 import io.quarkus.http.ratelimit.RateLimitDecision;
 import io.quarkus.http.ratelimit.RateLimitPhase;
@@ -28,6 +29,7 @@ import io.quarkus.http.ratelimit.runtime.internal.rules.Outcome;
 import io.quarkus.http.ratelimit.runtime.internal.rules.RateLimitRules;
 import io.quarkus.http.ratelimit.runtime.internal.rules.RateLimitRules.RuleMembership;
 import io.quarkus.http.ratelimit.runtime.internal.rules.RuleEvaluator;
+import io.quarkus.http.ratelimit.runtime.internal.telemetry.RateLimitOutcomeListener;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -49,7 +51,7 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * The HTTP filters that apply the rate limit rules: one per phase, before and after authentication. For each request,
  * a filter evaluates the rules whose paths and methods match, then passes the request on or refuses it. It fires a
- * {@link RateLimitRejectionInfo} event for every rejection.
+ * {@link RateLimitRejectionInfo} event for every rejection and tells the outcome listeners about every decision.
  * <p>
  * The rules that match a request are evaluated one after another, narrowest window first, and the first refusal
  * stops the chain, so a wider rule never spends a permit on a request a narrower rule refused. The reverse case (a
@@ -86,6 +88,7 @@ public class RateLimitFilter {
     private final Event<RateLimitRejectionInfo> events;
     private final boolean syncObservers;
     private final boolean asyncObservers;
+    private final List<RateLimitOutcomeListener> listeners;
     // quarkus.http.limits.max-body-size, -1 when unbounded
     private final long maxBodySize;
     private final ThrottledLogger warning;
@@ -95,14 +98,17 @@ public class RateLimitFilter {
             Instance<RateLimitRules> rules,
             DefaultRateLimitRejectionWriter writer,
             Event<RateLimitRejectionInfo> events,
+            @All List<RateLimitOutcomeListener> listeners,
             ThrottledLoggers loggers,
             VertxHttpConfig httpConfig) {
         this.enabled = config.enabled();
         this.maxBodySize = httpConfig.limits().maxBodySize().isPresent()
                 ? httpConfig.limits().maxBodySize().get().asLongValue()
                 : -1;
-        // when rate limiting is disabled, nothing is built: the rules validate the runtime configuration
+        // when rate limiting is disabled, nothing is built: the rules validate the runtime configuration, and a listener
+        // may read the rules
         this.rules = enabled ? rules.get() : null;
+        this.listeners = enabled ? listeners : List.of();
         this.writer = writer;
         this.events = events;
         List<? extends ObserverMethod<? super RateLimitRejectionInfo>> observers = Arc.container()
@@ -299,6 +305,21 @@ public class RateLimitFilter {
      * @param identity the identity known after authentication; empty before
      */
     private void respond(RoutingContext ctx, Optional<SecurityIdentity> identity, List<Outcome> outcomes) {
+        for (Outcome outcome : outcomes) {
+            if (outcome.kind() != Outcome.Kind.DECIDED) {
+                continue;
+            }
+            RuleEvaluator evaluator = outcome.evaluator();
+            if (outcome.decision() instanceof RateLimitDecision.Allowed allowed) {
+                notifyListeners(new Consumer<>() {
+                    @Override
+                    public void accept(RateLimitOutcomeListener listener) {
+                        listener.allowed(evaluator, allowed.remaining());
+                    }
+                });
+            }
+        }
+
         // the chain stops at the first refusal, so only the last outcome can refuse the request
         Outcome last = outcomes.getLast();
         if (!blocks(last)) {
@@ -396,6 +417,12 @@ public class RateLimitFilter {
             RateLimitDecision.Rejected rejected) {
         RuleEvaluator evaluator = outcome.evaluator();
         long retryAfterSeconds = RetryAfter.seconds(rejected.retryAfter());
+        notifyListeners(new Consumer<>() {
+            @Override
+            public void accept(RateLimitOutcomeListener listener) {
+                listener.rejected(evaluator, outcome.key(), retryAfterSeconds);
+            }
+        });
         ctx.response().putHeader(HttpHeaderNames.RETRY_AFTER, Long.toString(retryAfterSeconds));
         fire(rejection(ctx, identity, evaluator, outcome.key(), retryAfterSeconds));
         writer.write(ctx);
@@ -416,7 +443,7 @@ public class RateLimitFilter {
                 principal);
     }
 
-    // a failing observer must neither hang the request nor change its outcome
+    // a failing observer or listener must neither hang the request nor change its outcome
     private void fire(RateLimitRejectionInfo rejection) {
         if (syncObservers) {
             try {
@@ -439,6 +466,16 @@ public class RateLimitFilter {
             events.fireAsync(rejection);
         } catch (RuntimeException e) {
             warning.warn("Firing RateLimitRejectionInfo to @ObservesAsync observers failed; the request continues", e);
+        }
+    }
+
+    private void notifyListeners(Consumer<RateLimitOutcomeListener> call) {
+        for (RateLimitOutcomeListener listener : listeners) {
+            try {
+                call.accept(listener);
+            } catch (RuntimeException e) {
+                warning.warn("A RateLimitOutcomeListener failed; the request continues", e);
+            }
         }
     }
 }

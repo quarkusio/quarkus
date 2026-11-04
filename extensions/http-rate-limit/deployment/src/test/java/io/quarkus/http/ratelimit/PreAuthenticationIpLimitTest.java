@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import jakarta.enterprise.event.Observes;
@@ -19,6 +20,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.smallrye.common.annotation.Identifier;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpConnection;
@@ -37,7 +40,7 @@ public class PreAuthenticationIpLimitTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(TestHttp.class, TestHttp.Resource.class,
-                    TestRateLimitClock.class, ConnectionCounter.class))
+                    TestRateLimitClock.class, FailingResolver.class, ConnectionCounter.class))
             .overrideConfigKey("quarkus.vertx.event-loops-pool-size", "1")
             .overrideRuntimeConfigKey("quarkus.http.cors.enabled", "true")
             .overrideRuntimeConfigKey("quarkus.http.cors.origins", "https://app.example")
@@ -52,7 +55,12 @@ public class PreAuthenticationIpLimitTest {
             .overrideConfigKey(PREFIX + "client.phase", "pre-authentication")
             .overrideConfigKey(PREFIX + "client.request-key", "header:X-Client")
             .overrideRuntimeConfigKey(PREFIX + "client.permits", "1")
-            .overrideRuntimeConfigKey(PREFIX + "client.window", "1m");
+            .overrideRuntimeConfigKey(PREFIX + "client.window", "1m")
+            .overrideConfigKey(PREFIX + "failing.paths", "/failing/*")
+            .overrideConfigKey(PREFIX + "failing.phase", "pre-authentication")
+            .overrideConfigKey(PREFIX + "failing.request-key", "custom:failing")
+            .overrideRuntimeConfigKey(PREFIX + "failing.permits", "1")
+            .overrideRuntimeConfigKey(PREFIX + "failing.window", "1m");
 
     @Inject
     Vertx vertx;
@@ -95,6 +103,14 @@ public class PreAuthenticationIpLimitTest {
         assertThat(rejected.statusCode()).isEqualTo(429);
         assertThat(rejected.getHeader(HttpHeaders.RETRY_AFTER.toString())).isNotNull();
         assertThat(rejected.body() == null ? 0 : rejected.body().length()).isZero();
+    }
+
+    @Test
+    void throwingResolverKeysByTheClientAddress() {
+        assertThat(get("/failing/x", Map.of()).statusCode()).isEqualTo(200);
+        for (int i = 0; i < 10; i++) {
+            assertThat(get("/failing/x", Map.of()).statusCode()).isEqualTo(429);
+        }
     }
 
     @Test
@@ -147,6 +163,16 @@ public class PreAuthenticationIpLimitTest {
 
     private HttpResponse<Buffer> send(HttpMethod method, String path, Map<String, String> headers, Buffer body) {
         return TestHttp.send(vertx, client, url, method, path, headers, body);
+    }
+
+    @Singleton
+    @Identifier("failing")
+    public static class FailingResolver implements RateLimitKeyResolver {
+
+        @Override
+        public Uni<Optional<String>> resolve(RateLimitContext context) {
+            throw new IllegalStateException("resolver failure");
+        }
     }
 
     /**

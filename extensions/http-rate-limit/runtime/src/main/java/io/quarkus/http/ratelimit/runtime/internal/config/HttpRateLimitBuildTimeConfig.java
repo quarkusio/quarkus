@@ -33,6 +33,8 @@ public interface HttpRateLimitBuildTimeConfig {
      * client address, and every request that repeats it by one shared key</li>
      * <li>{@code path}: the canonical request path, so that every path a rule matches has its own limit</li>
      * <li>{@code global}: one key for every request a rule matches</li>
+     * <li>{@code custom:<name>}: the {@code RateLimitKeyResolver} bean of the application annotated
+     * {@code @Identifier("<name>")}</li>
      * </ul>
      */
     Optional<String> requestKey();
@@ -93,6 +95,8 @@ public interface HttpRateLimitBuildTimeConfig {
          * its client address, and every request that repeats it by one shared key</li>
          * <li>{@code path}: the canonical request path, so that every path the rule matches has its own limit</li>
          * <li>{@code global}: one key for every request the rule matches</li>
+         * <li>{@code custom:<name>}: the {@code RateLimitKeyResolver} bean of the application annotated
+         * {@code @Identifier("<name>")}</li>
          * </ul>
          * Defaults to {@code quarkus.http.rate-limit.request-key}; one of the two must be set.
          */

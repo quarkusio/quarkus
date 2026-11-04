@@ -8,6 +8,7 @@ import io.quarkus.http.ratelimit.RateLimitKeyResolver;
 import io.quarkus.http.ratelimit.RateLimitPhase;
 import io.quarkus.http.ratelimit.RateLimitPolicy;
 import io.quarkus.http.ratelimit.RateLimitStore;
+import io.quarkus.http.ratelimit.runtime.internal.ThrottledLoggers;
 import io.quarkus.http.ratelimit.runtime.internal.config.DefaultRateLimitPolicy;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
@@ -24,9 +25,10 @@ public final class RuleEvaluator {
     private final KeyResolution keyResolution;
     private final RateLimitStore store;
 
-    RuleEvaluator(DefaultRateLimitPolicy policy, RateLimitKeyResolver resolver, RateLimitStore store) {
+    RuleEvaluator(DefaultRateLimitPolicy policy, RateLimitKeyResolver resolver, RateLimitStore store,
+            ThrottledLoggers loggers) {
         this.policy = policy;
-        this.keyResolution = new KeyResolution(policy, resolver);
+        this.keyResolution = new KeyResolution(policy, resolver, loggers);
         this.store = store;
     }
 

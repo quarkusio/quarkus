@@ -21,7 +21,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 public class HttpRateLimitBuildConfigValidatorTest {
 
     private static final String P = "quarkus.http.rate-limit.";
-    private static final Set<String> KEY_RESOLVERS = Set.of("ip", "path", "global", "principal");
+    private static final Set<String> KEY_RESOLVERS = Set.of("ip", "path", "global", "principal", "tenant");
 
     /** A valid pre-authentication rule named {@code api} with the given overrides applied on top. */
     private static HttpRateLimitBuildTimeConfig config(String... overrides) {
@@ -101,11 +101,18 @@ public class HttpRateLimitBuildConfigValidatorTest {
     }
 
     @Test
-    void requestKeyMustBeABuiltInKey() {
-        assertThat(validate(g("request-key"), "unknown")).containsExactly(
-                "Rate limit rule 'api' request-key 'unknown' is not a built-in key: ip, principal, path, global or header:<name>");
+    void requestKeyMustMatchAResolver() {
+        assertThat(validate(g("request-key"), "custom:unknown")).containsExactly(
+                "Rate limit rule 'api' request-key 'custom:unknown' matches no RateLimitKeyResolver bean annotated @Identifier(\"unknown\")");
+        assertThat(validate(g("request-key"), "custom:tenant")).isEmpty();
         assertThat(validate(g("request-key"), "header:X-Client")).isEmpty();
+        // a bare name is a built-in key: an application's resolver has a namespace of its own, so that a later
+        // built-in key cannot take its place
+        assertThat(validate(g("request-key"), "tenant")).containsExactly(
+                "Rate limit rule 'api' request-key 'tenant' is not a built-in key (ip, path, global, principal), header:<name> or custom:<identifier>; for the RateLimitKeyResolver bean annotated @Identifier(\"tenant\"), use custom:tenant");
         assertThat(validate(g("request-key"), "header:")).containsExactly(
-                "Rate limit rule 'api' request-key 'header:' is not a built-in key: ip, principal, path, global or header:<name>");
+                "Rate limit rule 'api' request-key 'header:' is not a built-in key (ip, path, global, principal), header:<name> or custom:<identifier>");
+        assertThat(validate(g("request-key"), "custom:")).containsExactly(
+                "Rate limit rule 'api' request-key 'custom:' is not a built-in key (ip, path, global, principal), header:<name> or custom:<identifier>");
     }
 }

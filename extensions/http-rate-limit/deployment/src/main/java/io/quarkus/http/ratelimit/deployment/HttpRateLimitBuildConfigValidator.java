@@ -20,6 +20,9 @@ public final class HttpRateLimitBuildConfigValidator {
     private static final String PREFIX = "quarkus.http.rate-limit.";
     // a key that KeyResolvers turns into a HeaderKeyResolver, not a bean
     private static final String HEADER_KEY_PREFIX = "header:";
+    // a key that names a RateLimitKeyResolver bean of the application, by its @Identifier
+    private static final String CUSTOM_KEY_PREFIX = "custom:";
+    private static final Set<String> BUILT_IN_KEYS = Set.of("ip", "path", "global", "principal");
     // RFC 9110 token
     private static final Pattern TOKEN = Pattern.compile("[!#$%&'*+\\-.^_`|~0-9A-Za-z]+");
 
@@ -27,7 +30,7 @@ public final class HttpRateLimitBuildConfigValidator {
     }
 
     /**
-     * @param keyResolvers the {@code @Identifier} of every {@code RateLimitKeyResolver} bean, the built-in keys
+     * @param keyResolvers the {@code @Identifier} of every {@code RateLimitKeyResolver} bean, built-in ones included
      * @return one message per violation; empty when the configuration is valid
      */
     public static List<String> validate(HttpRateLimitBuildTimeConfig config, Set<String> keyResolvers) {
@@ -165,10 +168,23 @@ public final class HttpRateLimitBuildConfigValidator {
             errors.add(prefix
                     + "request-key 'principal' is not available before authentication; use phase=post-authentication");
         }
-        boolean header = key.startsWith(HEADER_KEY_PREFIX) && key.length() > HEADER_KEY_PREFIX.length();
-        if (!header && !keyResolvers.contains(key)) {
-            errors.add(prefix + "request-key '" + key + "' is not a built-in key: ip, principal, path, global or"
-                    + " header:<name>");
+        if (BUILT_IN_KEYS.contains(key)
+                || key.startsWith(HEADER_KEY_PREFIX) && key.length() > HEADER_KEY_PREFIX.length()) {
+            return;
         }
+        if (key.startsWith(CUSTOM_KEY_PREFIX) && key.length() > CUSTOM_KEY_PREFIX.length()) {
+            String identifier = key.substring(CUSTOM_KEY_PREFIX.length());
+            if (!keyResolvers.contains(identifier)) {
+                errors.add(prefix + "request-key '" + key
+                        + "' matches no RateLimitKeyResolver bean annotated @Identifier(\"" + identifier + "\")");
+            }
+            return;
+        }
+        String error = prefix + "request-key '" + key
+                + "' is not a built-in key (ip, path, global, principal), header:<name> or custom:<identifier>";
+        if (keyResolvers.contains(key)) {
+            error += "; for the RateLimitKeyResolver bean annotated @Identifier(\"" + key + "\"), use custom:" + key;
+        }
+        errors.add(error);
     }
 }

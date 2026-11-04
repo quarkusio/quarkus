@@ -5,14 +5,13 @@ import java.util.Optional;
 import jakarta.inject.Singleton;
 
 import io.quarkus.http.ratelimit.RateLimitContext;
-import io.quarkus.http.ratelimit.RateLimitKeyResolver;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.common.annotation.Identifier;
 import io.smallrye.mutiny.Uni;
 
 @Singleton
 @Identifier("path")
-public class PathKeyResolver implements RateLimitKeyResolver {
+public class PathKeyResolver implements ImmediateKeyResolver {
 
     @Override
     public Uni<Optional<String>> resolve(RateLimitContext context) {

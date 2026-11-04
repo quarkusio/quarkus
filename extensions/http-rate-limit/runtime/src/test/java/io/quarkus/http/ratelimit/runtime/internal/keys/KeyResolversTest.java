@@ -90,6 +90,15 @@ class KeyResolversTest {
         assertThat(resolve(new PrincipalKeyResolver(), context(request, null))).isEqualTo("ip:10.0.0.7");
     }
 
+    /**
+     * The built-in resolvers answer at once and never fail, so their key resolution runs without a timer.
+     */
+    @Test
+    void builtInResolversAreImmediate() {
+        assertThat(ImmediateKeyResolver.class).isAssignableFrom(IpKeyResolver.class, PathKeyResolver.class,
+                GlobalKeyResolver.class, PrincipalKeyResolver.class, HeaderKeyResolver.class);
+    }
+
     @Test
     void principalResolverReturnsName() {
         SecurityIdentity alice = QuarkusSecurityIdentity.builder()

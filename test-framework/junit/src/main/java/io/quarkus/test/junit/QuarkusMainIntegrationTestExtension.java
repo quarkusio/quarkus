@@ -120,9 +120,16 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
         quarkusArtifactProperties = readQuarkusArtifactProperties(extensionContext);
         Config config = Config.get();
         TestConfig testConfig = config.getConfigMapping(TestConfig.class);
+
+        // Read integration test profile from config first to support external config files loaded via QUARKUS_CONFIG_LOCATIONS.
+        // External config files are already loaded in Config.get(), but the TestConfig ConfigMapping may not pick them up
+        // when they override build-time properties, falling back to the @WithDefault value instead.
+        String integrationTestProfile = config.getOptionalValue("quarkus.test.integration-test-profile", String.class)
+                .orElseGet(testConfig::integrationTestProfile);
+
         String artifactType = getEffectiveArtifactType(testConfig, quarkusArtifactProperties);
         boolean isDockerLaunch = isContainer(artifactType)
-                || (isJar(artifactType) && "test-with-native-agent".equals(testConfig.integrationTestProfile()));
+                || (isJar(artifactType) && "test-with-native-agent".equals(integrationTestProfile));
 
         devServicesLaunchResult = handleDevServices(extensionContext, isDockerLaunch, testProfileAndProperties);
 
@@ -133,6 +140,12 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
     private ArtifactLauncher.LaunchResult doProcessStart(ExtensionContext context, String[] args) {
         Config config = Config.get();
         TestConfig testConfig = config.getConfigMapping(TestConfig.class);
+
+        // Read integration test profile from config first to support external config files loaded via QUARKUS_CONFIG_LOCATIONS.
+        // External config files are already loaded in Config.get(), but the TestConfig ConfigMapping may not pick them up
+        // when they override build-time properties, falling back to the @WithDefault value instead.
+        String integrationTestProfile = config.getOptionalValue("quarkus.test.integration-test-profile", String.class)
+                .orElseGet(testConfig::integrationTestProfile);
 
         try {
             Class<? extends QuarkusTestProfile> profile = IntegrationTestUtil.findProfile(context.getRequiredTestClass());
@@ -195,7 +208,7 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 ArtifactLauncher<?> launcher = null;
                 ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
                 for (ArtifactLauncherProvider launcherProvider : loader) {
-                    if (launcherProvider.supportsArtifactType(artifactType, testConfig.integrationTestProfile())) {
+                    if (launcherProvider.supportsArtifactType(artifactType, integrationTestProfile)) {
                         launcher = launcherProvider.create(
                                 new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context, requiredTestClass,
                                         profile,

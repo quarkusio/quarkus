@@ -635,6 +635,12 @@ quarkus.websockets-next.server.max-pending-messages=32
 quarkus.websockets-next.client.max-pending-messages=32
 ----
 
+This limit only bounds the _number_ of in-flight messages; it does not limit the size of an individual message.
+Because each pending message can be as large as `quarkus.websockets-next.server.max-message-size` allows (`262144` bytes, i.e. 256 KB, by default), the memory a single connection can retain for buffered messages is roughly `max-pending-messages` × `max-message-size`.
+To defend against a malicious client that sends very large messages, lower `quarkus.websockets-next.server.max-message-size` so that each message - and therefore the per-connection buffer - stays bounded.
+
+TIP: See <<limiting-number-of-connections>> for a consolidated overview of how to mitigate out-of-memory issues caused by malicious, possibly unauthenticated, clients.
+
 [WARNING]
 ====
 Pausing the read stream also pauses the delivery of ping/pong control frames for the affected connection.
@@ -1354,6 +1360,36 @@ public class ConnectionLimitCheck implements HttpUpgradeCheck {
 The check runs _before_ the HTTP upgrade completes, and a connection only appears in `OpenConnections` after it has been established.
 Therefore, the snapshot returned by `OpenConnections` may not account for connections that are being established concurrently, and the limit is not strictly enforced under high concurrency.
 If you need a strict cap, maintain your own counter (e.g. an `AtomicInteger` incremented in the check and decremented in an `@OnClose` callback).
+====
+
+Alternatively, you can cap the number of connections at the level of the shared HTTP server with the `quarkus.http.limits.max-connections` configuration property.
+Unlike the `HttpUpgradeCheck` shown above, this is a strict, built-in limit that is enforced before the connection is established.
+
+[source,properties]
+----
+quarkus.http.limits.max-connections=1000
+----
+
+NOTE: `quarkus.http.limits.max-connections` is not set by default, meaning the number of connections is unbounded. You must configure it explicitly to cap memory usage.
+
+However, keep the following in mind:
+
+* This limit is _global_: it applies to all connections accepted by the main HTTP server (regular HTTP requests and all WebSocket endpoints combined), not to a single endpoint. If you need a per-endpoint limit, use the `HttpUpgradeCheck` approach described above.
+* As noted in its documentation, it is recommended to also configure a short `quarkus.http.idle-timeout` so that idle connections are released and do not count against the limit indefinitely.
+
+[TIP]
+.Mitigating out-of-memory attacks from malicious clients
+====
+A malicious client - which may not even be authenticated yet - can attempt to exhaust the server memory by opening many connections and/or sending many large messages.
+The amount of memory the WebSocket messages can retain is bounded by the combination of three limits:
+
+* `quarkus.websockets-next.server.max-message-size` - the maximum size of a single message,
+* `<<max-pending-messages,quarkus.websockets-next.server.max-pending-messages>>` - the maximum number of in-flight messages per connection, and
+* `quarkus.http.limits.max-connections` (or a stateful `HttpUpgradeCheck`) - the maximum number of open connections.
+
+Roughly, the worst-case memory used for buffered messages is `max-connections` × `max-pending-messages` × `max-message-size`.
+Set all three to values appropriate for your application to keep this product bounded.
+Securing the <<secure-http-upgrade,HTTP upgrade>> so that unauthenticated clients are rejected early provides an additional layer of protection.
 ====
 
 === TLS

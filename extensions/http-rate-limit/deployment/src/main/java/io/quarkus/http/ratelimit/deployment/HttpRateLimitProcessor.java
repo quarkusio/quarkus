@@ -23,6 +23,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.http.ratelimit.RateLimitKeyResolver;
+import io.quarkus.http.ratelimit.RateLimitRejectionWriter;
 import io.quarkus.http.ratelimit.runtime.internal.RateLimitBuildTimeInfo;
 import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitBuildTimeConfig;
 import io.quarkus.http.ratelimit.runtime.internal.telemetry.DevModeRejectionLog;
@@ -94,7 +95,8 @@ public class HttpRateLimitProcessor {
     // resolvers are looked up programmatically, by the names in the configuration
     @BuildStep
     UnremovableBeanBuildItem unremovableBeans() {
-        return UnremovableBeanBuildItem.beanTypes(RateLimitKeyResolver.class, RateLimitOutcomeListener.class);
+        return UnremovableBeanBuildItem.beanTypes(RateLimitKeyResolver.class, RateLimitRejectionWriter.class,
+                RateLimitOutcomeListener.class);
     }
 
     @BuildStep

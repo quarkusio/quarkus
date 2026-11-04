@@ -23,6 +23,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.http.ratelimit.RateLimitDecision;
 import io.quarkus.http.ratelimit.RateLimitPhase;
 import io.quarkus.http.ratelimit.RateLimitRejectionInfo;
+import io.quarkus.http.ratelimit.RateLimitRejectionWriter;
 import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitRuntimeConfig;
 import io.quarkus.http.ratelimit.runtime.internal.keys.IpKeyResolver;
 import io.quarkus.http.ratelimit.runtime.internal.rules.Outcome;
@@ -84,7 +85,7 @@ public class RateLimitFilter {
      * {@code null} when rate limiting is disabled.
      */
     private final RateLimitRules rules;
-    private final DefaultRateLimitRejectionWriter writer;
+    private final RateLimitRejectionWriter writer;
     private final Event<RateLimitRejectionInfo> events;
     private final boolean syncObservers;
     private final boolean asyncObservers;
@@ -96,7 +97,7 @@ public class RateLimitFilter {
     @Inject
     RateLimitFilter(HttpRateLimitRuntimeConfig config,
             Instance<RateLimitRules> rules,
-            DefaultRateLimitRejectionWriter writer,
+            RateLimitRejectionWriter writer,
             Event<RateLimitRejectionInfo> events,
             @All List<RateLimitOutcomeListener> listeners,
             ThrottledLoggers loggers,
@@ -428,9 +429,19 @@ public class RateLimitFilter {
                 listener.rejected(evaluator, outcome.key(), retryAfterSeconds);
             }
         });
+        // set before the writer runs, so that a custom writer inherits a correct Retry-After
         ctx.response().putHeader(HttpHeaderNames.RETRY_AFTER, Long.toString(retryAfterSeconds));
-        fire(rejection(ctx, identity, evaluator, outcome.key(), retryAfterSeconds));
-        writer.write(ctx);
+        RateLimitRejectionInfo rejection = rejection(ctx, identity, evaluator, outcome.key(), retryAfterSeconds);
+        fire(rejection);
+        try {
+            writer.write(ctx, rejection);
+        } catch (RuntimeException e) {
+            if (ctx.response().ended()) {
+                warning.warn("The RateLimitRejectionWriter failed after ending the response", e);
+            } else {
+                ctx.fail(e);
+            }
+        }
     }
 
     /**

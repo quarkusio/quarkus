@@ -9,8 +9,8 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.registry.catalog.Extension;
 
 public class PluginManagerUtil {
@@ -35,13 +35,13 @@ public class PluginManagerUtil {
     /**
      * Create a {@link Plugin} from the specified location.
      *
-     * @param the location
+     * @param location the location
      * @return the {@link Plugin} that corresponds to the location.
      */
     public Plugin fromLocation(String location) {
         Optional<URL> url = PluginUtil.checkUrl(location);
         Optional<Path> path = PluginUtil.checkPath(location);
-        Optional<GACTV> gactv = PluginUtil.checkGACTV(location);
+        Optional<ArtifactCoords> gactv = PluginUtil.checkArtifactCoords(location);
         String name = getName(gactv, url, path);
         PluginType type = PluginUtil.getType(gactv, url, path);
         return new Plugin(name, type, Optional.of(location), Optional.empty());
@@ -73,7 +73,7 @@ public class PluginManagerUtil {
     public String getName(String location) {
         Optional<URL> url = PluginUtil.checkUrl(location);
         Optional<Path> path = PluginUtil.checkPath(location);
-        Optional<GACTV> gactv = PluginUtil.checkGACTV(location);
+        Optional<ArtifactCoords> gactv = PluginUtil.checkArtifactCoords(location);
         return getName(gactv, url, path);
     }
 
@@ -86,9 +86,9 @@ public class PluginManagerUtil {
      * @param gactv the gactv
      * @return the name.
      */
-    public String getName(Optional<GACTV> gactv, Optional<URL> url, Optional<Path> path) {
+    public String getName(Optional<ArtifactCoords> gactv, Optional<URL> url, Optional<Path> path) {
         String prefix = settings.getPluginPrefix();
-        return gactv.map(GACTV::getArtifactId)
+        return gactv.map(ArtifactCoords::getArtifactId)
                 .or(() -> url.map(URL::getPath).map(s -> s.substring(s.lastIndexOf("/") + 1))
                         .map(s -> s.replaceAll("\\.jar$", "").replaceAll("\\.java$", "")))
                 .or(() -> path.map(Path::getFileName).map(Path::toString)

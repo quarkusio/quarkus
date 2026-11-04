@@ -9,15 +9,21 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.http.ratelimit.RateLimitKeyResolver;
 import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitBuildTimeConfig;
+import io.quarkus.http.ratelimit.runtime.internal.telemetry.DevModeRejectionLog;
+import io.quarkus.http.ratelimit.runtime.internal.telemetry.RateLimitOutcomeListener;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.common.annotation.Identifier;
 
@@ -35,6 +41,18 @@ public class HttpRateLimitProcessor {
         return new FeatureBuildItem(FEATURE);
     }
 
+    @BuildStep
+    void devModeRejectionLog(LaunchModeBuildItem launchMode, BuildProducer<AdditionalBeanBuildItem> beans) {
+        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+            // it has no bean-defining annotation, so that the bean archive of the runtime module does not discover it
+            beans.produce(AdditionalBeanBuildItem.builder().addBeanClass(DevModeRejectionLog.class)
+                    .setDefaultScope(BuiltinScope.SINGLETON.getName()).build());
+        }
+    }
+
+    /**
+     * Fails the build when the rules are invalid or name a key resolver that does not exist.
+     */
     @BuildStep
     void validateConfig(HttpRateLimitBuildTimeConfig config, ValidationPhaseBuildItem validationPhase,
             BuildProducer<ValidationErrorBuildItem> validationErrors) {
@@ -57,6 +75,6 @@ public class HttpRateLimitProcessor {
     // resolvers are looked up programmatically, by the names in the configuration
     @BuildStep
     UnremovableBeanBuildItem unremovableBeans() {
-        return UnremovableBeanBuildItem.beanTypes(RateLimitKeyResolver.class);
+        return UnremovableBeanBuildItem.beanTypes(RateLimitKeyResolver.class, RateLimitOutcomeListener.class);
     }
 }

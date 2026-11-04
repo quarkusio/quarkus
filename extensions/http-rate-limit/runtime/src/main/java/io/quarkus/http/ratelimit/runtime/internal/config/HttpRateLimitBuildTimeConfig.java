@@ -61,7 +61,8 @@ public interface HttpRateLimitBuildTimeConfig {
         /**
          * The URI paths this rule applies to. A path starts with {@code /}; a wildcard must be a whole path segment,
          * either between two slashes or as a trailing {@code /*}. A path includes {@code quarkus.http.root-path}, and
-         * request paths are matched in the same way as for HTTP permissions.
+         * request paths are matched in the same way as for HTTP permissions. The probes of SmallRye Health and the
+         * Prometheus scrape endpoint are never limited.
          */
         List<String> paths();
 

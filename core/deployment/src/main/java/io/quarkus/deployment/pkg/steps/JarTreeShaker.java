@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -31,6 +32,12 @@ import io.quarkus.deployment.pkg.TreeShakeConfig;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.paths.OpenPathTree;
+import io.smallrye.classfile.Attributes;
+import io.smallrye.classfile.ClassFile;
+import io.smallrye.classfile.ClassModel;
+import io.smallrye.classfile.attribute.InnerClassInfo;
+import io.smallrye.classfile.attribute.InnerClassesAttribute;
+import io.smallrye.classfile.constantpool.ClassEntry;
 
 class JarTreeShaker {
 
@@ -81,6 +88,12 @@ class JarTreeShaker {
 
     private final Set<String> referencedJdkPackages = new HashSet<>();
 
+    /**
+     * Classes that must be loadable but whose code isn't traced, such as the declared classes {@code native-image}
+     * loads to resolve {@code innerClass} substitution targets. Kept together with their superclasses and interfaces.
+     */
+    private final Set<String> loadable = new HashSet<>();
+
     JarTreeShaker(JarTreeShakeInput input) {
         this.input = input;
     }
@@ -97,13 +110,13 @@ class JarTreeShaker {
         // Trace all reachable classes using bytecode analysis for full method-body coverage
         Set<String> visited = new HashSet<>();
         Set<String> reachable = traceReachableClasses(input.roots, visited);
+        for (String holder : input.declaredClassesHolders) {
+            keepDeclaredClassesLoadable(holder, reachable);
+        }
         if (debug) {
             log.debugf("BFS reachability: %d classes reached from %d roots, %d caller index entries",
                     reachable.size(), input.roots.size(), callerIndex.size());
         }
-
-        // Evaluate conditional roots to fixed point
-        reachable = evaluateConditionalRoots(reachable);
 
         // Analyze class-loading chains (fixed-point loop) — skip if no seed methods
         // (ClassLoader.loadClass, Class.forName, etc.) were called by any reachable code
@@ -119,8 +132,7 @@ class JarTreeShaker {
         // Classes reached so far have had their JDK references collected by the BFS.
         // Remember them, so the JDK references of classes added below can be collected too.
         final Set<String> bfsScanned = input.excludedArtifacts.isEmpty() && input.higherVersionBytecode.isEmpty()
-                ? null
-                : new HashSet<>(reachable);
+                && loadable.isEmpty() ? null : new HashSet<>(reachable);
 
         // Mark all classes from excluded artifacts as reachable (after analysis,
         // so they don't act as roots for transitive tracing). This preserves
@@ -139,6 +151,8 @@ class JarTreeShaker {
         if (!input.higherVersionBytecode.isEmpty()) {
             traceHigherVersionReferences(reachable);
         }
+
+        reachable.addAll(loadable);
 
         if (bfsScanned != null) {
             collectJdkPackagesOfUnscanned(reachable, bfsScanned);
@@ -276,7 +290,6 @@ class JarTreeShaker {
                     break;
                 }
                 traceReachableClasses(discovered, reachable);
-                evaluateConditionalRoots(reachable);
             }
         } catch (IOException | InterruptedException e) {
             log.warnf(e, "Failed to run class-loading chain analysis in forked JVM, skipping Phase 3");
@@ -312,6 +325,8 @@ class JarTreeShaker {
         while (!queue.isEmpty()) {
             String name = queue.poll();
 
+            enqueueConditionalRoots(name, visited, queue);
+            keepConditionalDeclaredClassesLoadable(name, visited);
             enqueueJBossLoggingCompanions(name, visited, queue);
             enqueueServiceProviders(name, visited, queue);
 
@@ -389,40 +404,19 @@ class JarTreeShaker {
     }
 
     /**
-     * Iterates conditional roots (from {@link io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem})
-     * to a fixed point: when a condition type becomes reachable, its associated class names are added as new roots
-     * and traced. Repeats until no new classes are discovered.
+     * Enqueues the conditional roots (from
+     * {@link io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem}
+     * and {@link io.quarkus.deployment.pkg.builditem.JarTreeShakeConditionalRootClassBuildItem}) whose condition
+     * is the given, just reached, class. Each condition is consumed once.
      */
-    private Set<String> evaluateConditionalRoots(Set<String> reachable) {
+    private void enqueueConditionalRoots(String name, Set<String> visited, Queue<String> queue) {
         if (input.conditionalRoots.isEmpty()) {
-            return reachable;
+            return;
         }
-        Map<String, Set<String>> remaining = new HashMap<>(input.conditionalRoots);
-        boolean changed = true;
-        int iteration = 0;
-        while (changed) {
-            changed = false;
-            iteration++;
-            Set<String> newRoots = new HashSet<>();
-            var it = remaining.entrySet().iterator();
-            while (it.hasNext()) {
-                var entry = it.next();
-                if (reachable.contains(entry.getKey())) {
-                    newRoots.addAll(entry.getValue());
-                    it.remove();
-                }
-            }
-            newRoots.removeAll(reachable);
-            if (!newRoots.isEmpty()) {
-                changed = true;
-                if (log.isDebugEnabled()) {
-                    log.debugf("Conditional roots iteration %d: %d new roots, %d conditions remaining",
-                            iteration, newRoots.size(), remaining.size());
-                }
-                traceReachableClasses(newRoots, reachable);
-            }
+        final Set<String> conditional = input.conditionalRoots.remove(name);
+        if (conditional != null) {
+            enqueueNotVisited(conditional, visited, queue);
         }
-        return reachable;
     }
 
     /**
@@ -470,6 +464,11 @@ class JarTreeShaker {
                     for (String ref : refs) {
                         if (ref != null && input.allKnownClasses.contains(ref) && reachable.add(ref)) {
                             changed = true;
+                            final Set<String> conditional = input.conditionalRoots.remove(ref);
+                            if (conditional != null) {
+                                traceReachableClasses(conditional, reachable);
+                            }
+                            keepConditionalDeclaredClassesLoadable(ref, reachable);
                         }
                     }
                 }
@@ -725,6 +724,88 @@ class JarTreeShaker {
     }
 
     /**
+     * Makes loadable the declared classes that are required once the given, just reached, class is reachable.
+     */
+    private void keepConditionalDeclaredClassesLoadable(String name, Set<String> visited) {
+        if (input.conditionalDeclaredClasses.isEmpty()) {
+            return;
+        }
+        final Set<String> holders = input.conditionalDeclaredClasses.remove(name);
+        if (holders != null) {
+            for (String holder : holders) {
+                keepDeclaredClassesLoadable(holder, visited);
+            }
+        }
+    }
+
+    /**
+     * Makes a class and its declared (member) classes, as returned by {@link Class#getDeclaredClasses()}, loadable.
+     */
+    private void keepDeclaredClassesLoadable(String holder, Set<String> visited) {
+        final ClassModel classModel = parseAnalyzedClass(holder);
+        if (classModel == null) {
+            return;
+        }
+        keepLoadable(holder, classModel, visited);
+        final Optional<InnerClassesAttribute> innerClasses = classModel.findAttribute(Attributes.innerClasses());
+        if (innerClasses.isEmpty()) {
+            return;
+        }
+        final String holderInternalName = classModel.thisClass().asInternalName();
+        for (InnerClassInfo info : innerClasses.get().classes()) {
+            final Optional<ClassEntry> outerClass = info.outerClass();
+            if (outerClass.isPresent() && outerClass.get().name().equalsString(holderInternalName)) {
+                keepLoadable(info.innerClass().asInternalName().replace('/', '.'), visited);
+            }
+        }
+    }
+
+    /**
+     * Makes a class loadable: keeps it with its superclasses and interfaces, without tracing its code.
+     */
+    private void keepLoadable(String name, Set<String> visited) {
+        if (visited.contains(name) || loadable.contains(name)) {
+            return;
+        }
+        final ClassModel classModel = parseAnalyzedClass(name);
+        if (classModel != null) {
+            keepLoadable(name, classModel, visited);
+        }
+    }
+
+    private void keepLoadable(String name, ClassModel classModel, Set<String> visited) {
+        // classes reached by the BFS have their superclasses and interfaces traced already
+        if (visited.contains(name) || !loadable.add(name)) {
+            return;
+        }
+        final Optional<ClassEntry> superclass = classModel.superclass();
+        if (superclass.isPresent()) {
+            keepLoadable(superclass.get().asInternalName().replace('/', '.'), visited);
+        }
+        for (ClassEntry itf : classModel.interfaces()) {
+            keepLoadable(itf.asInternalName().replace('/', '.'), visited);
+        }
+    }
+
+    /**
+     * Parses the bytecode of an analyzed (dependency, application or generated) class.
+     *
+     * @return the class model or {@code null} if the class isn't analyzed (e.g. a JDK class) or can't be parsed
+     */
+    private ClassModel parseAnalyzedClass(String name) {
+        final byte[] bytecode = input.readBytecode(name);
+        if (bytecode == null) {
+            return null;
+        }
+        try {
+            return ClassFile.of().parse(bytecode);
+        } catch (IllegalArgumentException e) {
+            log.debugf(e, "Failed to parse class %s", name);
+            return null;
+        }
+    }
+
+    /**
      * Adds all classes from the given set to the BFS queue, skipping those already visited.
      */
     private static void enqueueNotVisited(Set<String> classes, Set<String> visited, Queue<String> queue) {
@@ -735,7 +816,7 @@ class JarTreeShaker {
         }
     }
 
-    /**
+    /*
      * Bit flags used as a heuristic to detect dependencies that may deserialize objects from
      * bundled resources. When a dependency's classes both access resources
      * ({@link #FLAG_RESOURCE_ACCESS}) and use {@code ObjectInputStream}

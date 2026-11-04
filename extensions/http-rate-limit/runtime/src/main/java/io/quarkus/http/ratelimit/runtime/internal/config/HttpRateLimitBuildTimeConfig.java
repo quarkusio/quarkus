@@ -12,15 +12,23 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithParentName;
 
 /**
- * Configuration of the HTTP rate limiter that is fixed at build time: which rules exist and what they apply to. The
- * limits of the rules are in {@link HttpRateLimitRuntimeConfig}.
+ * Configuration of the HTTP rate limiter that is fixed at build time: which rules exist, what they apply to, and their
+ * stores. The limits of the rules are in {@link HttpRateLimitRuntimeConfig}.
  */
 @ConfigMapping(prefix = "quarkus.http.rate-limit")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public interface HttpRateLimitBuildTimeConfig {
+
+    /**
+     * The store of every rule that does not set its own {@code store}: {@code local}, or the
+     * {@code @Identifier} of a user supplied {@code RateLimitStore} bean.
+     */
+    @WithDefault("local")
+    String store();
 
     /**
      * What every rule that does not set its own {@code request-key} counts requests per: every distinct key gets its own
@@ -101,5 +109,10 @@ public interface HttpRateLimitBuildTimeConfig {
          * Defaults to {@code quarkus.http.rate-limit.request-key}; one of the two must be set.
          */
         Optional<String> requestKey();
+
+        /**
+         * The store this rule uses. Defaults to {@code quarkus.http.rate-limit.store}.
+         */
+        Optional<String> store();
     }
 }

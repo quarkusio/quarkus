@@ -21,6 +21,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 public class HttpRateLimitBuildConfigValidatorTest {
 
     private static final String P = "quarkus.http.rate-limit.";
+    private static final Set<String> STORES = Set.of("custom");
     private static final Set<String> KEY_RESOLVERS = Set.of("ip", "path", "global", "principal", "tenant");
 
     /** A valid pre-authentication rule named {@code api} with the given overrides applied on top. */
@@ -41,7 +42,7 @@ public class HttpRateLimitBuildConfigValidatorTest {
     }
 
     private static List<String> validate(String... overrides) {
-        return HttpRateLimitBuildConfigValidator.validate(config(overrides), KEY_RESOLVERS);
+        return HttpRateLimitBuildConfigValidator.validate(config(overrides), STORES, KEY_RESOLVERS);
     }
 
     private static String g(String key) {
@@ -114,5 +115,16 @@ public class HttpRateLimitBuildConfigValidatorTest {
                 "Rate limit rule 'api' request-key 'header:' is not a built-in key (ip, path, global, principal), header:<name> or custom:<identifier>");
         assertThat(validate(g("request-key"), "custom:")).containsExactly(
                 "Rate limit rule 'api' request-key 'custom:' is not a built-in key (ip, path, global, principal), header:<name> or custom:<identifier>");
+    }
+
+    @Test
+    void storeMustExist() {
+        String unknown = "Rate limit rule 'api' store 'nope' matches no RateLimitStore bean annotated @Identifier(\"nope\")";
+        assertThat(validate(g("store"), "nope")).containsExactly(unknown);
+        assertThat(validate(P + "store", "nope")).containsExactly(unknown);
+        assertThat(validate(g("store"), "custom")).isEmpty();
+        assertThat(validate(P + "store", "custom")).isEmpty();
+        // the rule store wins over the global one
+        assertThat(validate(P + "store", "nope", g("store"), "local")).isEmpty();
     }
 }

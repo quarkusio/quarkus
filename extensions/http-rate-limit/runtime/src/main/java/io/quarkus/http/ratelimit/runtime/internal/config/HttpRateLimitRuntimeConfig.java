@@ -71,6 +71,30 @@ public interface HttpRateLimitRuntimeConfig {
     long maxKeys();
 
     /**
+     * The time budget of one call to a store other than {@code local}: the built-in {@code redis} store, unless
+     * {@code quarkus.http.rate-limit.redis.timeout} is set, and every custom store. A call that takes longer fails, and
+     * {@code quarkus.http.rate-limit.store-failure-mode} decides the request.
+     */
+    @WithDefault("100ms")
+    Duration storeTimeout();
+
+    /**
+     * What happens to a request when a call to a store other than {@code local} fails, takes longer than
+     * {@code quarkus.http.rate-limit.store-timeout}, or is refused because the circuit breaker of the store is open or
+     * 256 calls are already in flight: {@code local} decides it with an in-memory bucket of this replica, {@code open}
+     * lets it through, {@code closed} answers {@code 503 Service Unavailable} with a {@code Retry-After} between one and
+     * two circuit breaker delays, chosen at random. Applies to the built-in {@code redis} store, unless
+     * {@code quarkus.http.rate-limit.redis.failure-mode} is set, and to every custom store.
+     */
+    @WithDefault("local")
+    FailureMode storeFailureMode();
+
+    /**
+     * Settings of the built-in {@code redis} store.
+     */
+    Redis redis();
+
+    /**
      * Limits and operational settings for the rules defined at build time. These values are read at application startup.
      */
     @ConfigDocMapKey("rule")
@@ -130,8 +154,9 @@ public interface HttpRateLimitRuntimeConfig {
         Optional<Long> burst();
 
         /**
-         * The maximum number of keys this rule holds in the memory of a replica: in the {@code local} store.
-         * Defaults to {@code quarkus.http.rate-limit.max-keys}.
+         * The maximum number of keys this rule holds in the memory of a replica: in the {@code local} store, and in
+         * the local fallback of {@code store-failure-mode=local}. Defaults to
+         * {@code quarkus.http.rate-limit.max-keys}.
          */
         Optional<Long> maxKeys();
 
@@ -164,5 +189,38 @@ public interface HttpRateLimitRuntimeConfig {
     enum KeyResolverFailure {
         IP,
         REJECT
+    }
+
+    /**
+     * Settings of the built-in {@code redis} store. Its client is selected at build time by
+     * {@code quarkus.http.rate-limit.redis.client-name}.
+     */
+    @ConfigGroup
+    interface Redis {
+
+        /**
+         * The prefix of every key the built-in Redis store writes. It isolates applications that share one database.
+         * A custom {@code RateLimitStore} bean receives the key without this prefix.
+         */
+        @WithDefault("quarkus:http-rate-limit:${quarkus.application.name:app}:")
+        String keyPrefix();
+
+        /**
+         * The time budget of one call to the built-in {@code redis} store. Defaults to
+         * {@code quarkus.http.rate-limit.store-timeout}, itself {@code 100ms} by default.
+         */
+        Optional<Duration> timeout();
+
+        /**
+         * What happens when the built-in {@code redis} store fails. Defaults to
+         * {@code quarkus.http.rate-limit.store-failure-mode}, itself {@code local} by default.
+         */
+        Optional<FailureMode> failureMode();
+    }
+
+    enum FailureMode {
+        LOCAL,
+        OPEN,
+        CLOSED
     }
 }

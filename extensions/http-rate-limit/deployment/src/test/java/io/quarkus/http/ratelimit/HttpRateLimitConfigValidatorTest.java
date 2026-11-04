@@ -95,14 +95,14 @@ public class HttpRateLimitConfigValidatorTest {
         assertThat(defaults.maxKeys()).isEqualTo(100_000);
 
         RateLimitRuleConfig global = rule(g("phase"), null, g("request-key"), null, P + "phase", "post-authentication",
-                P + "request-key", "principal", P + "store", "shared", P + "max-keys", "7");
+                P + "request-key", "principal", P + "store", "redis", P + "max-keys", "7");
         assertThat(global.phase()).isEqualTo(RateLimitPhase.POST_AUTHENTICATION);
         assertThat(global.key()).isEqualTo("principal");
-        assertThat(global.store()).isEqualTo("shared");
+        assertThat(global.store()).isEqualTo("redis");
         assertThat(global.maxKeys()).isEqualTo(7);
 
         RateLimitRuleConfig own = rule(P + "phase", "post-authentication", P + "request-key", "principal",
-                P + "store", "shared", P + "max-keys", "7",
+                P + "store", "redis", P + "max-keys", "7",
                 g("store"), "custom", g("max-keys"), "8");
         assertThat(own.phase()).isEqualTo(RateLimitPhase.PRE_AUTHENTICATION);
         assertThat(own.key()).isEqualTo("ip");
@@ -149,6 +149,15 @@ public class HttpRateLimitConfigValidatorTest {
         assertThat(validate(g("window"), "30d", g("permits"), "1",
                 g("burst"), "2")).containsExactly(
                         "Rate limit rule 'api' (window / permits) * burst must not exceed 30 days");
+    }
+
+    @Test
+    void storeSettings() {
+        assertThat(validate(P + "store-timeout", "0s")).containsExactly(
+                "quarkus.http.rate-limit.store-timeout must be positive");
+        assertThat(validate(P + "redis.timeout", "0s")).containsExactly(
+                "quarkus.http.rate-limit.redis.timeout must be positive");
+        assertThat(validate(P + "redis.timeout", "1s", P + "redis.failure-mode", "open")).isEmpty();
     }
 
     @Test

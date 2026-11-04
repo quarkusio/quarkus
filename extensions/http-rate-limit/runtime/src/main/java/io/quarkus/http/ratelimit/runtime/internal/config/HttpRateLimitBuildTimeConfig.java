@@ -24,7 +24,8 @@ import io.smallrye.config.WithDefault;
 public interface HttpRateLimitBuildTimeConfig {
 
     /**
-     * The store of every rule that does not set its own {@code store}: {@code local}, or the
+     * Where every rule that does not set its own {@code store} keeps its state: {@code local}, in the memory of each
+     * replica; {@code redis}, shared through Redis, which requires the {@code quarkus-redis-client} extension; or the
      * {@code @Identifier} of a user supplied {@code RateLimitStore} bean.
      */
     @WithDefault("local")
@@ -110,7 +111,10 @@ public interface HttpRateLimitBuildTimeConfig {
         Optional<String> requestKey();
 
         /**
-         * The store this rule uses. Defaults to {@code quarkus.http.rate-limit.store}.
+         * Where this rule keeps its state: {@code local}, in the memory of each replica; {@code redis}, shared through
+         * Redis, which requires the {@code quarkus-redis-client} extension; or the {@code @Identifier} of a user
+         * supplied {@code RateLimitStore} bean. Defaults to {@code quarkus.http.rate-limit.store}, itself {@code local} by
+         * default.
          */
         Optional<String> store();
 

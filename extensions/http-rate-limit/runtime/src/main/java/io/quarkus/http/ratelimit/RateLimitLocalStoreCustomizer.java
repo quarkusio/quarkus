@@ -7,8 +7,8 @@ import io.smallrye.common.annotation.Experimental;
  * the in-memory state of a rule, for example to record statistics.
  * <p>
  * Every implementation is called in {@linkplain #priority() priority} order for every cache the extension builds for a
- * rule, after the extension has configured it and before it is built: the cache of the {@code local} store. The caches
- * are built at startup.
+ * rule, after the extension has configured it and before it is built: the cache of the {@code local} store, which is
+ * also the local fallback of {@code store-failure-mode=local}. The caches are built at startup.
  * <p>
  * A customizer changes only what {@link Settings} offers. The maximum size ({@code max-keys}), the expiry and the
  * eviction of the caches are part of the limit's correctness and of its memory bound, and stay the extension's; the

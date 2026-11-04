@@ -18,6 +18,7 @@ import io.micrometer.core.instrument.Timer;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
+import io.quarkus.micrometer.runtime.binder.MeterCache;
 import io.quarkus.micrometer.runtime.binder.RequestMetricInfo;
 import io.vertx.core.http.HttpClientOptions;
 
@@ -35,15 +36,15 @@ public class RestClientMetricsFilter implements ResteasyReactiveClientRequestFil
 
     private final HttpBinderConfiguration httpMetricsConfig;
 
-    private final Meter.MeterProvider<Timer> timer;
+    private final MeterCache<Timer> timers;
 
     @Inject
     public RestClientMetricsFilter(final HttpBinderConfiguration httpMetricsConfig) {
         this.httpMetricsConfig = httpMetricsConfig;
 
-        timer = Timer.builder(httpMetricsConfig.getHttpClientRequestsName())
+        Meter.MeterProvider<Timer> timer = Timer.builder(httpMetricsConfig.getHttpClientRequestsName())
                 .withRegistry(registry);
-
+        timers = new MeterCache<>(timer);
     }
 
     @Override
@@ -75,15 +76,14 @@ public class RestClientMetricsFilter implements ResteasyReactiveClientRequestFil
                 Timer.Sample sample = requestMetric.getSample();
                 int statusCode = responseContext.getStatus();
 
-                sample.stop(timer
-                        .withTags(Tags.of(
-                                address(requestContext),
-                                HttpCommonTags.method(requestContext.getMethod()),
-                                HttpCommonTags.uri(requestPath, requestContext.getUri().getPath(), statusCode,
-                                        httpMetricsConfig.isClientSuppress4xxErrors()),
-                                HttpCommonTags.outcome(statusCode),
-                                HttpCommonTags.status(statusCode),
-                                clientName(requestContext))));
+                sample.stop(timers.get(new TimerKey(
+                        address(requestContext),
+                        HttpCommonTags.method(requestContext.getMethod()),
+                        HttpCommonTags.uri(requestPath, requestContext.getUri().getPath(), statusCode,
+                                httpMetricsConfig.isClientSuppress4xxErrors()),
+                        HttpCommonTags.outcome(statusCode),
+                        HttpCommonTags.status(statusCode),
+                        clientName(requestContext))));
             }
         }
     }
@@ -113,6 +113,16 @@ public class RestClientMetricsFilter implements ResteasyReactiveClientRequestFil
         }
 
         return Tag.of("clientName", host != null ? host : "none");
+    }
+
+    /**
+     * Key of the cached timers: holds exactly the tags of the timer.
+     */
+    record TimerKey(Tag address, Tag method, Tag uri, Tag outcome, Tag status, Tag clientName) implements MeterCache.Key {
+        @Override
+        public Tags tags() {
+            return Tags.of(address, method, uri, outcome, status, clientName);
+        }
     }
 
     static class RestClientMetricInfo extends RequestMetricInfo {

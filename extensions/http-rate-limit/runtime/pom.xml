@@ -61,6 +61,7 @@
                     <conditionalDependencies>
                         <artifact>${project.groupId}:quarkus-http-rate-limit-redis:${project.version}</artifact>
                         <artifact>${project.groupId}:quarkus-http-rate-limit-micrometer:${project.version}</artifact>
+                        <artifact>${project.groupId}:quarkus-http-rate-limit-jfr:${project.version}</artifact>
                     </conditionalDependencies>
                 </configuration>
             </plugin>

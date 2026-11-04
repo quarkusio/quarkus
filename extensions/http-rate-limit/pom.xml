@@ -18,6 +18,7 @@
 
     <modules>
         <module>deployment</module>
+        <module>jfr</module>
         <module>micrometer</module>
         <module>redis</module>
         <module>runtime</module>

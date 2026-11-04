@@ -22,7 +22,7 @@ public enum RateLimitPhase {
     }
 
     /**
-     * @return {@code "pre-authentication"} or {@code "post-authentication"}: the configuration value and the Redis key
+     * @return {@code "pre-authentication"} or {@code "post-authentication"}: the metrics tag value and Redis key
      *         segment.
      */
     public String configName() {

@@ -324,7 +324,7 @@ public class RateLimitFilter {
                 notifyListeners(new Consumer<>() {
                     @Override
                     public void accept(RateLimitOutcomeListener listener) {
-                        listener.allowed(evaluator, allowed.remaining());
+                        listener.allowed(evaluator, outcome.policy(), allowed.remaining());
                     }
                 });
             }
@@ -343,6 +343,12 @@ public class RateLimitFilter {
             drain(ctx);
         }
         if (last.kind() == Outcome.Kind.UNAVAILABLE) {
+            notifyListeners(new Consumer<>() {
+                @Override
+                public void accept(RateLimitOutcomeListener listener) {
+                    listener.unavailable(last.evaluator());
+                }
+            });
             writeRefusal(ctx, identity, last, RetryAfter.jitteredSeconds(last.retryAfter()), last.reason());
         } else if (last.decision() instanceof RateLimitDecision.Rejected rejected) {
             reject(ctx, identity, last, rejected);

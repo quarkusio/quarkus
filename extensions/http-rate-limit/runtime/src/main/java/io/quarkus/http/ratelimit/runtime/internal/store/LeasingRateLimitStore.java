@@ -47,7 +47,7 @@ import io.vertx.core.Vertx;
  * 2), because a synchronously completing {@link Uni} would otherwise re-enter the compute for the same key. Each
  * claim carries a unique token, and a reply only ever retires the claim it belongs to.
  * <p>
- * The counters are exposed as plain accessors, so that this class depends on no metrics library.
+ * The counters are exposed as plain accessors; the metrics bean reads them, so this class knows nothing of Micrometer.
  */
 public final class LeasingRateLimitStore implements RateLimitStore, AutoCloseable {
 

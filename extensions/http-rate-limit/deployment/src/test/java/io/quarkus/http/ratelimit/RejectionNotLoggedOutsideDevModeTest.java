@@ -11,7 +11,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
 /**
- * Outside dev mode rejections are reported through the CDI event, never logged one by one.
+ * Outside dev mode rejections are reported through metrics and the CDI event, never logged one by one.
  */
 public class RejectionNotLoggedOutsideDevModeTest {
 

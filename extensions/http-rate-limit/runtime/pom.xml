@@ -60,6 +60,7 @@
                     <!-- each integration is an extension of its own, included automatically when its library is present -->
                     <conditionalDependencies>
                         <artifact>${project.groupId}:quarkus-http-rate-limit-redis:${project.version}</artifact>
+                        <artifact>${project.groupId}:quarkus-http-rate-limit-micrometer:${project.version}</artifact>
                     </conditionalDependencies>
                 </configuration>
             </plugin>

@@ -66,6 +66,8 @@ public final class VertxGrpcSender implements GrpcSender {
     private final boolean compressionEnabled;
     private final Map<String, String> headers;
     private final String grpcEndpointPath;
+    // The type of the exported signal, "span", "metric" or "log", as in the messages of the OpenTelemetry SDK
+    private final String type;
     private final Duration exportTimeout;
 
     private final GrpcClient client;
@@ -79,6 +81,7 @@ public final class VertxGrpcSender implements GrpcSender {
             Consumer<HttpClientOptions> clientOptionsCustomizer,
             Vertx vertx) {
         this.grpcEndpointPath = grpcEndpointPath;
+        this.type = exportedType(grpcEndpointPath);
         this.server = SocketAddress.inetSocketAddress(OTelExporterUtil.getPort(grpcBaseUri), grpcBaseUri.getHost());
         this.compressionEnabled = compressionEnabled;
         this.headers = headersMap;
@@ -95,6 +98,19 @@ public final class VertxGrpcSender implements GrpcSender {
         this.client = GrpcClient.client(vertx, grpcClientOptions, httpClientOptions);
     }
 
+    private static String exportedType(String grpcServiceName) {
+        switch (grpcServiceName) {
+            case GRPC_TRACE_SERVICE_NAME:
+                return "span";
+            case GRPC_METRIC_SERVICE_NAME:
+                return "metric";
+            case GRPC_LOG_SERVICE_NAME:
+                return "log";
+            default:
+                throw new IllegalArgumentException("Unsupported OTLP gRPC service: " + grpcServiceName);
+        }
+    }
+
     @Override
     public void send(MessageWriter messageWriter,
             Consumer<GrpcResponse> onResponse,
@@ -108,16 +124,15 @@ public final class VertxGrpcSender implements GrpcSender {
             return;
         }
 
-        final String marshalerType = messageWriter.getClass().getSimpleName();
         var onSuccessHandler = new ClientRequestOnSuccessHandler(client, server, headers, compressionEnabled,
                 messageWriter,
-                loggedUnimplemented, logger, marshalerType, onResponse, onError, 1, grpcEndpointPath,
+                loggedUnimplemented, logger, type, onResponse, onError, 1, grpcEndpointPath,
                 isShutdown::get, exportTimeout);
 
         initiateSend(client, server, MAX_ATTEMPTS, onSuccessHandler, exportTimeout, new Consumer<>() {
             @Override
             public void accept(Throwable throwable) {
-                failOnClientRequest(marshalerType, throwable, onError);
+                failOnClientRequest(throwable, onError);
             }
         });
     }
@@ -205,10 +220,10 @@ public final class VertxGrpcSender implements GrpcSender {
     }
 
     @SuppressForbidden(reason = "The use of ThrottlingLogger mandates the use of java.util.logging")
-    private void failOnClientRequest(String type, Throwable t, Consumer<Throwable> onError) {
+    private void failOnClientRequest(Throwable t, Consumer<Throwable> onError) {
         String message = "Failed to export "
                 + type
-                + ". The request could not be executed. Full error message: "
+                + "s. The request could not be executed. Full error message: "
                 + (t.getMessage() == null ? t.getClass().getName() : t.getMessage());
         logger.log(Level.WARNING, message);
         onError.accept(t);

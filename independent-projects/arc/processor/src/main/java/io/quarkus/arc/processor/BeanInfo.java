@@ -406,9 +406,15 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     MethodInfo getDecoratedMethod(MethodInfo decoratorMethod, DecoratorInfo decorator) {
+        MethodSignatureKey decoratorMethodKey = decoratorMethod.signatureKey();
         for (Entry<MethodInfo, DecorationInfo> e : decoratedMethods.entrySet()) {
             for (DecoratorMethod dm : e.getValue().decoratorMethods) {
-                if (dm.decorator.equals(decorator) && dm.method.equals(decoratorMethod)) {
+                // Match by signature and ignore the declaring class: the method declaration remembered
+                // for this decorator and the delegate type method may come from different interfaces.
+                // The same method can be declared by more than one decorated interface, and only one
+                // declaration is remembered per decorator, so an identity-based match would additionally
+                // depend on which declaration that happens to be.
+                if (dm.decorator.equals(decorator) && dm.method.signatureKey().equals(decoratorMethodKey)) {
                     return e.getKey();
                 }
             }

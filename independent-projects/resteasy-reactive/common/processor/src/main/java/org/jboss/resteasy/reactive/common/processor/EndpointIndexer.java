@@ -220,6 +220,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Map<DotName, String> httpAnnotationToMethod;
     private final AdditionalWriters additionalWriters;
     private final BlockingDefault defaultBlocking;
+    private final boolean defaultRunOnVirtualThread;
     private final Map<DotName, Map<String, String>> classLevelExceptionMappers;
     private final Function<String, BeanFactory<Object>> factoryCreator;
     private final Consumer<ResourceMethodCallbackEntry> resourceMethodCallback;
@@ -250,6 +251,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.additionalWriters = builder.additionalWriters;
         this.hasRuntimeConverters = builder.hasRuntimeConverters;
         this.defaultBlocking = builder.defaultBlocking;
+        this.defaultRunOnVirtualThread = builder.defaultRunOnVirtualThread;
         this.classLevelExceptionMappers = builder.classLevelExceptionMappers;
         this.factoryCreator = builder.factoryCreator;
         this.resourceMethodCallback = builder.resourceMethodCallback;
@@ -907,8 +909,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         } else {
             if (blockingAnnotation != null) {
                 return false;
+            } else if (defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD) {
+                return true;
             } else {
-                return defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD;
+                // no annotation on the method or its class: honor the configured default,
+                // but only for methods that were determined to be blocking, so that
+                // non-blocking (e.g. reactive return type) methods stay on the event loop
+                return defaultRunOnVirtualThread && blocking;
             }
         }
     }
@@ -1820,6 +1827,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     public static abstract class Builder<T extends EndpointIndexer<T, ?, METHOD>, B extends Builder<T, B, METHOD>, METHOD extends ResourceMethod> {
         private Function<String, BeanFactory<Object>> factoryCreator;
         private BlockingDefault defaultBlocking = BlockingDefault.AUTOMATIC;
+        private boolean defaultRunOnVirtualThread = false;
         private IndexView index;
         private IndexView applicationIndex;
         private Map<String, String> existingConverters = new HashMap<>();
@@ -1865,6 +1873,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public B setDefaultBlocking(BlockingDefault defaultBlocking) {
             this.defaultBlocking = defaultBlocking;
+            return (B) this;
+        }
+
+        public B setDefaultRunOnVirtualThread(boolean defaultRunOnVirtualThread) {
+            this.defaultRunOnVirtualThread = defaultRunOnVirtualThread;
             return (B) this;
         }
 

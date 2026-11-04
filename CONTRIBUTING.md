@@ -435,6 +435,10 @@ When you contribute to an extension, after having applied your changes, run:
 * `./mvnw -f integration-tests/<your-extension-its> clean install -Dnative` to test the native build (for small changes,
   it might not be useful, use your own judgement)
 
+If you suspect a regression came from a dependency or extension update rather than from your own
+change, you can run the same ITs against released versions of the stream to bisect it — see
+[Running integration tests against a released Quarkus](#running-integration-tests-against-a-released-quarkus).
+
 **Contributing to a core artifact**
 
 Obviously, when you contribute to a core artifact of Quarkus, a change may impact any part of Quarkus. So the rule of
@@ -574,6 +578,20 @@ Note that this is a behaviour difference to what's [documented externally](https
 
 Why the different behaviour? Quarkus builds are _long_, and running every integration test twice would make them even longer.
 In most cases, coverage in the native build is sufficient.
+
+#### Running integration tests against a released Quarkus
+
+The integration tests can also be built against an already released Quarkus, or against an
+assembled Quarkus Platform BOM, without rebuilding Quarkus locally:
+
+```shell
+./mvnw verify -f integration-tests/rest-client-reactive -Dquarkus.version=4.0.0.Beta1
+```
+
+This is useful to validate a branch against a platform BOM, and to isolate a regression by
+running the same test against several released versions of a stream. Use a version from the
+same release stream. See [integration-tests/README.md](integration-tests/README.md) for the
+available properties and the limitations.
 
 #### Maven Invoker tests
 

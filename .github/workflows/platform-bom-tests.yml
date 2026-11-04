@@ -1,0 +1,87 @@
+name: "Platform BOM Tests"
+
+permissions:
+  contents: read
+
+# Runs a subset of the integration tests against an already released Quarkus, or against an
+# assembled Quarkus Platform BOM, instead of against the output of the local build.
+#
+# Deliberately standalone rather than a job in ci-actions-incremental.yml: every job there
+# depends on the initial build and consumes its .m2 content, which is exactly what this must
+# not do. Resolving everything from the repository is the point of the exercise.
+on:
+  workflow_dispatch:
+    inputs:
+      quarkus-version:
+        description: "Quarkus version to test against, e.g. 4.0.0.Beta1. Use a version from the same release stream as the checked out ref."
+        required: true
+        type: string
+      quarkus-ref:
+        description: "Branch, tag or commit to check the integration tests out from, e.g. 3.40. Must belong to the same release stream as the Quarkus version and already carry the quarkus.version support."
+        required: false
+        default: "main"
+        type: string
+      platform-group-id:
+        description: "Group id of the BOM to import. Use io.quarkus.platform for an assembled platform BOM."
+        required: false
+        default: "io.quarkus"
+        type: string
+      platform-version:
+        description: "Version of the BOM to import. Defaults to the Quarkus version above."
+        required: false
+        default: ""
+        type: string
+      modules:
+        description: "Comma separated integration test modules to run."
+        required: false
+        default: "rest-client-reactive,hibernate-orm-panache,hibernate-validator"
+        type: string
+
+jobs:
+  platform-bom-tests:
+    name: "Integration tests (${{ inputs.quarkus-ref }}) against ${{ inputs.platform-group-id }}:${{ inputs.quarkus-version }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The ref decides which stream's integration tests run: main's tests cannot run against
+          # a 3.x platform. This is an input rather than the dispatch ref because the workflow is
+          # dispatched from the branch this file lives on, which an older stream may not be yet.
+          ref: ${{ inputs.quarkus-ref }}
+      - name: Extract base JDK version from POM
+        id: base-jdk
+        run: |
+          BASE_JDK=$(grep -oP '<maven.compiler.release>\K[0-9]+' independent-projects/parent/pom.xml)
+          echo "base-jdk-version=${BASE_JDK}" >> $GITHUB_OUTPUT
+      - name: Setup Java JDK ${{ steps.base-jdk.outputs.base-jdk-version }}
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
+      - name: Build integration tests against the released Quarkus
+        run: |
+          PLATFORM_VERSION="${{ inputs.platform-version }}"
+          if [ -z "${PLATFORM_VERSION}" ]; then
+            PLATFORM_VERSION="${{ inputs.quarkus-version }}"
+          fi
+          # No local build and no build cache, so that a missing version override shows up as a
+          # resolution failure rather than being satisfied from something built earlier.
+          ./mvnw -e -B --settings .github/mvn-settings.xml --fail-at-end \
+            verify -f integration-tests -pl '${{ inputs.modules }}' -am \
+            -Dquarkus.version=${{ inputs.quarkus-version }} \
+            -Dquarkus.platform.group-id=${{ inputs.platform-group-id }} \
+            -Dquarkus.platform.version=${PLATFORM_VERSION} \
+            -Dno-build-cache \
+            -Dtest-containers -Dstart-containers
+      - name: Prepare failure archive
+        if: failure()
+        run: find . -name '*-reports' -type d -exec tar -czf reports.tgz {} +
+      - name: Upload failure archive
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: test-reports-platform-bom
+          path: 'reports.tgz'
+          retention-days: 7

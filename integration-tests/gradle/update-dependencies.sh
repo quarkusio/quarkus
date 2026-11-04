@@ -16,7 +16,7 @@ DEP_TEMPLATE='        <dependency>
 DEP_TEMPLATE_DEPLOYMENT='        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>XXX-deployment</artifactId>
-            <version>\${project.version}</version>
+            <version>\${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>

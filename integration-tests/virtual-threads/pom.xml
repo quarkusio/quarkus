@@ -165,7 +165,20 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bom-test</artifactId>
-                <version>${project.version}</version>
+                <version>${quarkus.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Imported after quarkus-bom-test so that today's precedence between the two is
+                 preserved. In the default configuration this resolves to the very same
+                 io.quarkus:quarkus-bom that quarkus-build-parent imports, so the effective
+                 dependency management is unchanged. Override the quarkus.platform.* properties
+                 to build the integration tests against an assembled platform BOM instead. -->
+            <dependency>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>${quarkus.platform.artifact-id}</artifactId>
+                <version>${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -187,7 +200,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bom-test</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>

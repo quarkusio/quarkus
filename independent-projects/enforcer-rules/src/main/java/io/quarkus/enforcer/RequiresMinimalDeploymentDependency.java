@@ -78,7 +78,10 @@ public class RequiresMinimalDeploymentDependency extends DeploymentDependencyRul
                     + "    " + missingDeploymentDeps.stream().collect(Collectors.joining("\n    "))
                     + "\n\nTo fix this issue, add the following dependencies to pom.xml:\n\n"
                     + "        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->\n"
-                    + requiredDeps);
+                    + requiredDeps
+                    + "\n\nNote: under integration-tests/, use ${quarkus.version} instead of ${project.version}\n"
+                    + "for artifacts that are not themselves built under integration-tests/, so that the\n"
+                    + "integration tests can also be built against an already released Quarkus.");
         }
         if (!existingUnmatchedDeploymentDeps.isEmpty()) {
             Set<String> nonSuperfluous = parseNonSuperfluosArtifactIdsFromProperty(project);

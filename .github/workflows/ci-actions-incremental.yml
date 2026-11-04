@@ -399,6 +399,8 @@ jobs:
         run: ./.github/verify-tests-json.sh oracle-test-pilot-jvm-tests.json integration-tests/
       - name: Verify oracle-test-pilot-native-tests.json
         run: ./.github/verify-tests-json.sh oracle-test-pilot-native-tests.json integration-tests/
+      - name: Verify integration test Quarkus versions
+        run: ./.github/check-integration-test-versions.py
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/setup-maven@f852d93dada312948b1ba533226c28e05d756866 # v2.4
         with:

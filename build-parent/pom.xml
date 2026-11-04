@@ -65,9 +65,17 @@
         <minimum-gradle-version>9.6</minimum-gradle-version>
         <supported-gradle-versions>[9.6,)</supported-gradle-versions>
         <gradle-wrapper.version>9.7.0</gradle-wrapper.version>
-        <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
-        <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
+        <quarkus-gradle-plugin.version>${quarkus.version}</quarkus-gradle-plugin.version>
+        <quarkus-maven-plugin.version>${quarkus.version}</quarkus-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
+
+        <!-- Coordinates of the Quarkus platform BOM the integration tests build against.
+             Only honoured by integration-tests/*. Defaults to the core BOM at ${quarkus.version}.
+             Override to run the integration tests against an assembled platform BOM, e.g.
+             -Dquarkus.platform.group-id=io.quarkus.platform. See integration-tests/README.md. -->
+        <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
+        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+        <quarkus.platform.version>${quarkus.version}</quarkus.platform.version>
 
         <!-- MicroProfile TCK versions used to be defined here but have moved to the concrete tck modules -->
 
@@ -221,7 +229,7 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bom</artifactId>
-                <version>${project.version}</version>
+                <version>${quarkus.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -230,7 +238,7 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devmode-test-utils</artifactId>
-                <version>${project.version}</version>
+                <version>${quarkus.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.freemarker</groupId>
@@ -269,33 +277,33 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-core</artifactId>
-                <version>${project.version}</version>
+                <version>${quarkus.version}</version>
                 <type>test-jar</type>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-reactive-datasource-deployment</artifactId>
-                <version>${project.version}</version>
+                <version>${quarkus.version}</version>
                 <scope>test</scope>
                 <type>test-jar</type>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-rest-deployment</artifactId>
-                <version>${project.version}</version>
+                <version>${quarkus.version}</version>
                 <scope>test</scope>
                 <type>test-jar</type>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-war-launcher-runner</artifactId>
-                <version>${project.version}</version>
+                <version>${quarkus.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-legacy-launcher</artifactId>
-                <version>${project.version}</version>
+                <version>${quarkus.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.unboundid</groupId>
@@ -320,23 +328,23 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-test-maven</artifactId>
-                <version>${project.version}</version>
+                <version>${quarkus.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-security-test-utils</artifactId>
-                <version>${project.version}</version>
+                <version>${quarkus.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-arc-test-supplement</artifactId>
-                <version>${project.version}</version>
+                <version>${quarkus.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-arc-test-supplement-decorator</artifactId>
-                <version>${project.version}</version>
+                <version>${quarkus.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.assertj</groupId>
@@ -451,7 +459,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bom</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -543,12 +551,12 @@
                 <plugin>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${project.version}</version>
+                    <version>${quarkus.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-extension-maven-plugin</artifactId>
-                    <version>${project.version}</version>
+                    <version>${quarkus.version}</version>
                     <executions>
                         <execution>
                             <id>generate-extension-descriptor</id>
@@ -570,7 +578,7 @@
                         <dependency>
                             <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-enforcer-rules</artifactId>
-                            <version>${project.version}</version>
+                            <version>${quarkus.version}</version>
                         </dependency>
                     </dependencies>
                     <executions>

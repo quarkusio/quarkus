@@ -2,10 +2,14 @@ package io.quarkus.http.ratelimit.runtime.internal;
 
 import java.util.List;
 
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Reserve;
 import jakarta.inject.Singleton;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.quarkus.http.ratelimit.RateLimitRejectionInfo;
+import io.quarkus.http.ratelimit.RateLimitRejectionWriter;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.MIMEHeader;
@@ -23,7 +27,9 @@ import io.vertx.ext.web.impl.ParsableMIMEValue;
  * called. The connection stays open.
  */
 @Singleton
-public class DefaultRateLimitRejectionWriter {
+@Reserve
+@Priority(0)
+public class DefaultRateLimitRejectionWriter implements RateLimitRejectionWriter {
 
     private static final String PROBLEM_JSON = "application/problem+json";
     private static final String APPLICATION_JSON = "application/json";
@@ -37,7 +43,8 @@ public class DefaultRateLimitRejectionWriter {
     private static final List<MIMEHeader> SUPPORTED = List.of(mime(TEXT_PLAIN), mime(PROBLEM_JSON),
             mime(APPLICATION_JSON), mime(TEXT_JSON));
 
-    public void write(RoutingContext context) {
+    @Override
+    public void write(RoutingContext context, RateLimitRejectionInfo rejection) {
         HttpServerResponse response = context.response();
         response.setStatusCode(HttpResponseStatus.TOO_MANY_REQUESTS.code());
         if (context.request().method() == HttpMethod.HEAD) {

@@ -47,6 +47,28 @@ final class Target_io_netty_handler_codec_compression_ZstdConstants {
     static final int DEFAULT_BLOCK_SIZE = 0;
 }
 
+@Substitute
+@TargetClass(className = "io.netty.handler.codec.compression.Brotli", onlyWith = IsBrotli4jAbsent.class)
+final class Target_io_netty_handler_codec_compression_Brotli {
+
+    // The original class references com.aayushatharva.brotli4j.Brotli4jLoader, so we cut links with that substitution.
+
+    @Substitute
+    public static boolean isAvailable() {
+        return false;
+    }
+
+    @Substitute
+    public static void ensureAvailability() throws Throwable {
+        throw cause();
+    }
+
+    @Substitute
+    public static Throwable cause() {
+        return new ClassNotFoundException("com.aayushatharva.brotli4j.Brotli4jLoader");
+    }
+}
+
 class IsZstdAbsent implements BooleanSupplier {
 
     private boolean zstdAbsent;
@@ -65,5 +87,24 @@ class IsZstdAbsent implements BooleanSupplier {
     @Override
     public boolean getAsBoolean() {
         return zstdAbsent;
+    }
+}
+
+class IsBrotli4jAbsent implements BooleanSupplier {
+
+    // WARNING: There are other copies of this class:
+    // - io.quarkus.vertx.http.runtime.graal.IsBrotli4jAbsent.
+    // - io.quarkus.elasticsearch.restclient.common.runtime.graal.IsBrotli4jAbsent.
+    // If you change this class, make sure to change the other ones as well.
+
+    @Override
+    public boolean getAsBoolean() {
+        try {
+            // Do not initialize the class: its static initializer loads the native library.
+            Class.forName("com.aayushatharva.brotli4j.Brotli4jLoader", false, IsBrotli4jAbsent.class.getClassLoader());
+            return false;
+        } catch (ClassNotFoundException e) {
+            return true;
+        }
     }
 }

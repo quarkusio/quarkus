@@ -41,8 +41,6 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
-import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
-import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -85,7 +83,6 @@ import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
-import io.quarkus.vertx.http.runtime.graal.Brotli4jFeature;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.smallrye.config.Config;
@@ -656,26 +653,5 @@ class VertxHttpProcessor {
         }
 
         return false;
-    }
-
-    @BuildStep
-    NativeImageFeatureBuildItem Brotli4jFeature(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
-        if (isBrotliEnabled(httpBuildTimeConfig)) {
-            return new NativeImageFeatureBuildItem(Brotli4jFeature.class.getName());
-        }
-        return null;
-    }
-
-    @BuildStep
-    ModuleEnableNativeAccessBuildItem brotli4jEnableNativeAccess(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
-        if (isBrotliEnabled(httpBuildTimeConfig)) {
-            return new ModuleEnableNativeAccessBuildItem("com.aayushatharva.brotli4j");
-        }
-        return null;
-    }
-
-    private static boolean isBrotliEnabled(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
-        return httpBuildTimeConfig.compressors().isPresent()
-                && httpBuildTimeConfig.compressors().get().stream().anyMatch(s -> s.equalsIgnoreCase("br"));
     }
 }

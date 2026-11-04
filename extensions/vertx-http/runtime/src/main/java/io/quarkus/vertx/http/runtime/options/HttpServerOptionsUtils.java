@@ -672,11 +672,7 @@ public class HttpServerOptionsUtils {
                         compression.addDeflate();
                     }
                 } else if ("br".equalsIgnoreCase(compressor)) {
-                    if (compressionLevel.isPresent()) {
-                        compression.addBrotli(compressionLevel.getAsInt());
-                    } else {
-                        compression.addBrotli();
-                    }
+                    BrotliCompressionSupport.addBrotli(compression, compressionLevel);
                 } else if ("snappy".equalsIgnoreCase(compressor)) {
                     compression.addSnappy();
                 } else {

@@ -24,7 +24,7 @@ public class Brotli4jFeature implements Feature {
 
     @Override
     public void beforeAnalysis(BeforeAnalysisAccess access) {
-        // We reuse Brotli4jLoader's code and logic instead of reinventing the wheel
+        // This is the Brotli4jLoader's code and logic.
         String customPath = System.getProperty("brotli4j.library.path");
         if (customPath != null && !customPath.isEmpty()) {
             RuntimeResourceAccess.addResource(Brotli4jFeature.class.getModule(), customPath);
@@ -35,7 +35,7 @@ public class Brotli4jFeature implements Feature {
             RuntimeResourceAccess.addResource(Brotli4jFeature.class.getModule(), libPath);
         }
 
-        // We do have Brotli4J on classpath thanks to Vert.X -> Netty dependencies.
+        // This feature is only registered when Brotli4J is on the classpath.
         RuntimeResourceAccess.addResource(Brotli4jFeature.class.getModule(),
                 "META-INF/services/com.aayushatharva.brotli4j.service.BrotliNativeProvider");
 

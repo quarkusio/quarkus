@@ -720,7 +720,7 @@ TIP: By default, the following list of media types is compressed: `text/html`, `
 
 NOTE: If the client does not support HTTP compression then the response body is not compressed.
 
-You can also set a minimum response body size (in bytes) for compression using `quarkus.http.compression-content-size-threshold`, control the compression level with `quarkus.http.compression-level`, and enable Brotli by adding `br` to `quarkus.http.compressors`.
+You can also set a minimum response body size (in bytes) for compression using `quarkus.http.compression-content-size-threshold`, control the compression level with `quarkus.http.compression-level`, and enable Brotli by adding the `com.aayushatharva.brotli4j:brotli4j` dependency and `br` to `quarkus.http.compressors`.
 
 TIP: See the xref:http-reference.adoc#http-compression[HTTP reference guide] for the full list of compression configuration options including minimum response size, compression level, Brotli, and request decompression.
 

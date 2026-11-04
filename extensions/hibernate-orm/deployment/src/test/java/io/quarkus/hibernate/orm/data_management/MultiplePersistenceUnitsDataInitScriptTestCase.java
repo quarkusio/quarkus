@@ -20,7 +20,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * A {@code data.sql} at the root of the classpath is the default data init script of every
- * persistence unit, as {@code import.sql} already is. When it inserts into an entity that a single
+ * persistence unit, as {@code schema.sql} is. When it inserts into an entity that a single
  * persistence unit maps, the other units execute it against a schema without that table: Hibernate
  * ORM reports the failing statement and the application still starts.
  */

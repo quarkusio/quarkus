@@ -12,13 +12,16 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 
-public class BothImportAndDataSqlTest {
+/**
+ * A "schema.sql" and a "data.sql" file, as Spring Boot applications commonly have, are both executed.
+ */
+public class BothSchemaAndDataSqlTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource("users1.sql", "data.sql")
-                    .addAsResource("users2.sql", "import.sql")
+                    .addAsResource("users2.sql", "schema.sql")
                     .addClasses(User.class, LoginEvent.class, UserRepository.class))
             .withConfigurationResource("application.properties");
 

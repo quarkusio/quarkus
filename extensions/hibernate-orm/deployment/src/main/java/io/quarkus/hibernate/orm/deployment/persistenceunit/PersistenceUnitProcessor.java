@@ -184,6 +184,7 @@ final class PersistenceUnitProcessor {
             JpaModelPerPersistenceUnitBuildItem jpaModel,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            LaunchModeBuildItem launchMode,
             CurateOutcomeBuildItem curateOutcome,
             Capabilities capabilities,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
@@ -203,7 +204,7 @@ final class PersistenceUnitProcessor {
             }
             buildBlockingPersistenceUnitFromConfig(
                     hibernateOrmConfig, puDefinition, model,
-                    jdbcDataSources, applicationArchivesBuildItem, applicationModule, capabilities,
+                    jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), applicationModule, capabilities,
                     additionalSqlLoadScriptDefaults,
                     nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     reflectiveMethods, dbKindMetadataBuildItems);
@@ -409,6 +410,7 @@ final class PersistenceUnitProcessor {
             JpaPersistenceUnitModel model,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            LaunchMode launchMode,
             WorkspaceModule applicationModule,
             Capabilities capabilities,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
@@ -471,7 +473,7 @@ final class PersistenceUnitProcessor {
         }
 
         if (additionalPuConfig.isEmpty()) {
-            configureInitScripts(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem,
+            configureInitScripts(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
                     applicationModule, additionalSqlLoadScriptDefaults,
                     nativeImageResources, hotDeploymentWatchedFiles, descriptor);
         }

@@ -63,11 +63,17 @@ public interface HibernateOrmConfigPersistenceUnit {
      * The files are retrieved from the classpath resources,
      * so they must be located in the resources directory (e.g. `src/main/resources`).
      *
-     * When set, this property replaces both `quarkus.hibernate-orm.schema-management.init-script`
-     * and `quarkus.hibernate-orm.data-management.init-script`, defaults included:
-     * `import.sql` and `data.sql` are not picked up, and the scripts are only executed
-     * when Hibernate ORM creates the schema, in every launch mode.
-     * It cannot be combined with those properties, nor with `quarkus.hibernate-orm.data-management.strategy`.
+     * When set to a script, this property replaces both `quarkus.hibernate-orm.schema-management.init-script`
+     * and `quarkus.hibernate-orm.data-management.init-script`,
+     * and the scripts are only executed when Hibernate ORM creates the schema, in every launch mode.
+     * It cannot be combined with those properties or their default files (`schema.sql`, `data.sql`),
+     * nor with `quarkus.hibernate-orm.data-management.strategy`.
+     * When set to `no-file`, those properties and their default files apply.
+     *
+     * In dev and test modes, an `import.sql` file in the classpath has the same effect as setting this property
+     * to `import.sql`.
+     * To stop using it, move its statements to `data.sql` if they load data and/or to `schema.sql`
+     * if they complete the schema, then delete it, or set this property to `no-file`.
      *
      * If you need different SQL statements between dev mode, test (`@QuarkusTest`) and in production, use Quarkus
      * https://quarkus.io/guides/config#configuration-profiles[configuration profiles facility].
@@ -97,6 +103,7 @@ public interface HibernateOrmConfigPersistenceUnit {
      */
     // @formatter:on
     @Deprecated(since = "4.0", forRemoval = true)
+    @ConfigDocDefault("import.sql in dev and test modes if it exists in the classpath; no-file otherwise")
     Optional<List<@WithConverter(TrimmedStringConverter.class) String>> sqlLoadScript();
 
     /**
@@ -810,10 +817,11 @@ public interface HibernateOrmConfigPersistenceUnit {
          * The files are retrieved from the classpath resources,
          * so they must be located in the resources directory (e.g. `src/main/resources`).
          *
-         * By default, an `import.sql` file in the root of your resources directory is picked up
+         * By default, a `schema.sql` file in the root of your resources directory is picked up
          * without having to set this property, in every launch mode:
          * whether the script is executed only depends on `quarkus.hibernate-orm.schema-management.strategy`.
          * Pass `no-file` to force Hibernate ORM to ignore the file.
+         * An `import.sql` file is not picked up: in dev and test modes, it enables a deprecated behavior instead.
          *
          * [NOTE]
          * ====
@@ -825,7 +833,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigDocDefault("`import.sql` if it exists in the classpath; `no-file` otherwise")
+        @ConfigDocDefault("`schema.sql` if it exists in the classpath; `no-file` otherwise")
         Optional<List<@WithConverter(TrimmedStringConverter.class) String>> initScript();
 
     }
@@ -850,9 +858,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          * without having to set this property, in every launch mode:
          * whether the script is executed only depends on `quarkus.hibernate-orm.data-management.strategy`.
          * Pass `no-file` to force Hibernate ORM to ignore the file.
-         * Make sure you don't name your data init script `import.sql`, as it would also be picked up
-         * by schema initialization (see `quarkus.hibernate-orm.schema-management.init-script`)
-         * and might end up being executed twice.
+         * Don't name your data init script `import.sql`: that file enables a deprecated behavior.
          *
          * If you need different SQL statements between dev mode, test (`@QuarkusTest`) and in production, use Quarkus
          * https://quarkus.io/guides/config#configuration-profiles[configuration profiles facility].

@@ -14,14 +14,14 @@ import io.quarkus.test.QuarkusExtensionTest;
 /**
  * With the "update" schema management strategy,
  * the data init script (data.sql) is executed once the schema has been updated,
- * while the schema init script (import.sql) is not, since Hibernate ORM did not create the schema.
+ * while the schema init script (schema.sql) is not, since Hibernate ORM did not create the schema.
  */
 public class DataInitScriptWithSchemaManagementUpdateTestCase {
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application.properties")
-                    .addAsResource("import.sql")
+                    .addAsResource("schema.sql")
                     .addAsResource("data.sql")
                     .addClasses(MyEntity.class))
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "update");

@@ -21,15 +21,15 @@ public class SchemaInitScriptHotReloadTestCase {
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, InitScriptTestResource.class)
                     .addAsResource("application.properties")
-                    .addAsResource("import.sql"));
+                    .addAsResource("schema.sql"));
 
     @Test
     public void testSchemaInitScriptHotReload() {
-        String expectedName = "import.sql load script entity";
+        String expectedName = "schema.sql schema init script entity";
         assertBodyIs(expectedName);
 
-        String hotReloadExpectedName = "modified import.sql load script entity";
-        TEST.modifyResourceFile("import.sql", new Function<String, String>() {
+        String hotReloadExpectedName = "modified schema.sql schema init script entity";
+        TEST.modifyResourceFile("schema.sql", new Function<String, String>() {
             @Override
             public String apply(String s) {
                 return s.replace(expectedName, hotReloadExpectedName);

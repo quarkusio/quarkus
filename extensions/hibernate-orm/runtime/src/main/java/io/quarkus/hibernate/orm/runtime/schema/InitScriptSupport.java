@@ -30,12 +30,24 @@ public final class InitScriptSupport {
     private static final Logger LOG = Logger.getLogger(InitScriptSupport.class);
 
     /**
-     * Persistence unit property set to {@code true} at build time when the deprecated
-     * {@code quarkus.hibernate-orm.sql-load-script} property is used.
+     * Persistence unit property set at build time when the deprecated behavior of
+     * {@code quarkus.hibernate-orm.sql-load-script} is used,
+     * to {@link #LEGACY_SQL_LOAD_SCRIPT_FROM_PROPERTY} or {@link #LEGACY_SQL_LOAD_SCRIPT_FROM_DEFAULT_FILE}.
      * Such scripts keep their historical behavior: they are only executed
      * when Hibernate ORM creates the schema, and the data management strategy does not apply to them.
      */
     public static final String LEGACY_SQL_LOAD_SCRIPT = "hibernate.quarkus.legacy_sql_load_script";
+
+    /**
+     * Value of {@link #LEGACY_SQL_LOAD_SCRIPT} when the deprecated property is set.
+     */
+    public static final String LEGACY_SQL_LOAD_SCRIPT_FROM_PROPERTY = "property";
+
+    /**
+     * Value of {@link #LEGACY_SQL_LOAD_SCRIPT} when the deprecated behavior is used
+     * because an {@code import.sql} file exists in the classpath.
+     */
+    public static final String LEGACY_SQL_LOAD_SCRIPT_FROM_DEFAULT_FILE = "import.sql";
 
     /**
      * Persistence unit property set to {@code false} when the data init script must not be executed
@@ -76,13 +88,22 @@ public final class InitScriptSupport {
             HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
             HibernateGenerationStrategy schemaManagementStrategy,
             RuntimeSettings.Builder runtimeSettingsBuilder) {
-        boolean legacy = Boolean.parseBoolean(String.valueOf(runtimeSettingsBuilder.get(LEGACY_SQL_LOAD_SCRIPT)));
+        Object legacy = runtimeSettingsBuilder.get(LEGACY_SQL_LOAD_SCRIPT);
         // Quarkus-only marker, not a Hibernate ORM setting
         runtimeSettingsBuilder.put(LEGACY_SQL_LOAD_SCRIPT, null);
         Optional<DataManagementStrategy> configuredStrategy = persistenceUnitConfig.dataManagement().strategy();
 
-        if (legacy) {
+        if (legacy != null) {
             if (configuredStrategy.isPresent()) {
+                if (LEGACY_SQL_LOAD_SCRIPT_FROM_DEFAULT_FILE.equals(String.valueOf(legacy))) {
+                    throw new ConfigurationException(String.format(Locale.ROOT,
+                            "The file 'import.sql' in the classpath enables the deprecated behavior of '%s',"
+                                    + " which cannot be used together with '%s'."
+                                    + " Move its statements to 'data.sql' if they load data and/or to 'schema.sql'"
+                                    + " if they complete the schema, then delete it.",
+                            HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SQL_LOAD_SCRIPT_PROPERTY),
+                            HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, DATA_MANAGEMENT_STRATEGY_PROPERTY)));
+                }
                 throw new ConfigurationException(String.format(Locale.ROOT,
                         "'%s' is deprecated and cannot be used together with '%s'."
                                 + " Remove it and split the script between '%s' and '%s' instead.",
@@ -91,8 +112,10 @@ public final class InitScriptSupport {
                         HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SCHEMA_INIT_SCRIPT_PROPERTY),
                         HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, DATA_INIT_SCRIPT_PROPERTY)));
             }
-            // Scripts set through the deprecated 'quarkus.hibernate-orm.sql-load-script' keep their historical behavior:
-            // Hibernate ORM executes them when it creates the schema, regardless of the launch mode.
+            // Scripts set through the deprecated 'quarkus.hibernate-orm.sql-load-script'
+            // (or a default 'import.sql', which is only picked up in dev and test modes)
+            // keep their historical behavior:
+            // Hibernate ORM executes them when it creates the schema, whatever the launch mode.
             return false;
         }
 

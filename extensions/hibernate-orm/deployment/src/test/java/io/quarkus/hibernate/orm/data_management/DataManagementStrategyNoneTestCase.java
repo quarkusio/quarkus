@@ -13,7 +13,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * With the "none" data management strategy while Hibernate ORM creates the schema (the default in tests),
- * the data init script (data.sql) is not executed on startup, although the schema init script (import.sql) is,
+ * the data init script (data.sql) is not executed on startup, although the schema init script (schema.sql) is,
  * but it stays available to explicit {@link org.hibernate.relational.SchemaManager} calls.
  */
 public class DataManagementStrategyNoneTestCase {
@@ -22,7 +22,7 @@ public class DataManagementStrategyNoneTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application.properties")
-                    .addAsResource("import.sql")
+                    .addAsResource("schema.sql")
                     .addAsResource("data.sql")
                     .addClasses(MyEntity.class))
             .overrideRuntimeConfigKey("quarkus.hibernate-orm.data-management.strategy", "none");
@@ -33,7 +33,7 @@ public class DataManagementStrategyNoneTestCase {
     @Test
     public void dataInitScriptNotExecutedOnStartupButAvailableToSchemaManager() {
         // The schema init script was executed as part of the schema creation, the data init script was not
-        assertThat(entityName(1)).isEqualTo("default sql load script entity");
+        assertThat(entityName(1)).isEqualTo("default schema init script entity");
         assertThat(entityName(10)).isNull();
 
         // populate() executes the data init script

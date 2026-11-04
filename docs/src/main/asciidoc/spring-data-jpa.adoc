@@ -154,6 +154,10 @@ Hibernate ORM will execute these queries on application startup.
 
 TIP: See xref:hibernate-orm.adoc#sql-init-scripts[SQL init scripts] for more options, for example to use files with other names.
 
+NOTE: Unlike in Spring Boot, a `schema.sql` file is executed right after Hibernate ORM has created the schema,
+to complete it with database objects Hibernate ORM cannot generate:
+if you bring one from a Spring Boot application, remove the statements creating the tables of your entities.
+
 == Define the repository
 
 It is now time to define the repository that will be used to access `Fruit`.

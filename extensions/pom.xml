@@ -64,6 +64,7 @@
         <module>observability-devservices</module>
         <module>jfr</module>
         <module>load-shedding</module>
+        <module>http-rate-limit</module>
 
         <!-- REST services -->
         <module>resteasy-classic</module>

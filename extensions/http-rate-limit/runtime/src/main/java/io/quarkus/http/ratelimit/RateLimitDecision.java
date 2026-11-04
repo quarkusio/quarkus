@@ -25,6 +25,15 @@ public sealed interface RateLimitDecision {
     }
 
     /**
+     * @param retryAfter the suggested wait before retrying
+     * @return an {@link Unavailable} decision
+     * @throws NullPointerException if {@code retryAfter} is {@code null}
+     */
+    static Unavailable unavailable(Duration retryAfter) {
+        return new UnavailableDecision(retryAfter);
+    }
+
+    /**
      * The request is admitted.
      */
     sealed interface Allowed extends RateLimitDecision permits AllowedDecision {
@@ -42,6 +51,19 @@ public sealed interface RateLimitDecision {
 
         /**
          * @return the wait until the requested number of permits is available
+         */
+        Duration retryAfter();
+    }
+
+    /**
+     * The store could not decide and its failure mode ({@code quarkus.http.rate-limit.store-failure-mode}, or
+     * {@code quarkus.http.rate-limit.redis.failure-mode} for the {@code redis} store) is {@code closed}. Rendered as
+     * 503.
+     */
+    sealed interface Unavailable extends RateLimitDecision permits UnavailableDecision {
+
+        /**
+         * @return the suggested wait before retrying
          */
         Duration retryAfter();
     }

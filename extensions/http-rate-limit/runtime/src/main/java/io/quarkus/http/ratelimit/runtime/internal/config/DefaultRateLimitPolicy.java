@@ -12,14 +12,15 @@ import io.quarkus.http.ratelimit.RateLimitPolicy;
  * The canonical constructor rejects {@code permits < 1}, {@code burst < 1}, an {@linkplain #emissionIntervalMicros()
  * emission interval} below one microsecond, a {@linkplain #burstToleranceMicros() burst tolerance} above 30 days, and
  * any arithmetic overflow, with {@link IllegalArgumentException}. Both the configuration validator and the override
- * path go through it, so every store sees the same domain.
+ * path go through it, so Java and Lua stores see the same domain.
  *
  * @param rule the rule name
  * @param phase the phase this policy applies to
  * @param permits the number of permits replenished per {@code window}
  * @param window the replenishment window
  * @param burst the maximum number of permits that can be consumed at once
- * @param maxKeys the maximum number of keys held in the memory of a replica for this policy: by the local store
+ * @param maxKeys the maximum number of keys held in the memory of a replica for this policy: by the local store and
+ *        the local fallback of a non-local store
  */
 public record DefaultRateLimitPolicy(String rule, RateLimitPhase phase, long permits, Duration window, long burst,
         long maxKeys) implements RateLimitPolicy {

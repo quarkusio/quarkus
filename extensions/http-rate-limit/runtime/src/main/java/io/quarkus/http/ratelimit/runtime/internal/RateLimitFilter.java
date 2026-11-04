@@ -18,6 +18,7 @@ import jakarta.inject.Singleton;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.All;
 import io.quarkus.arc.Arc;
 import io.quarkus.http.ratelimit.RateLimitDecision;
@@ -339,7 +340,11 @@ public class RateLimitFilter {
         if (!ctx.request().isEnded()) {
             drain(ctx);
         }
-        if (last.decision() instanceof RateLimitDecision.Rejected rejected) {
+        if (last.decision() instanceof RateLimitDecision.Unavailable unavailable) {
+            ctx.response().setStatusCode(HttpResponseStatus.SERVICE_UNAVAILABLE.code())
+                    .putHeader(HttpHeaderNames.RETRY_AFTER, Long.toString(RetryAfter.jitteredSeconds(unavailable.retryAfter())))
+                    .end();
+        } else if (last.decision() instanceof RateLimitDecision.Rejected rejected) {
             reject(ctx, identity, last, rejected);
         }
     }

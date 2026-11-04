@@ -31,7 +31,8 @@ final class KeyResolution {
 
     private static final Result SKIP = new Skip();
     /**
-     * The bound on key resolution, and separately on the override, for one request.
+     * The bound on key resolution, and separately on the override, for one request. The store stage is bounded by
+     * {@code store-timeout} and {@code store-failure-mode}, never by this.
      */
     static final Duration TIMEOUT = Duration.ofMillis(250);
 

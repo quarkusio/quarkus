@@ -24,6 +24,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-caffeine</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -52,6 +56,12 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <configuration>
+                    <!-- each integration is an extension of its own, included automatically when its library is present -->
+                    <conditionalDependencies>
+                        <artifact>${project.groupId}:quarkus-http-rate-limit-redis:${project.version}</artifact>
+                    </conditionalDependencies>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

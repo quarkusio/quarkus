@@ -131,7 +131,8 @@ public class HttpRateLimitBuildConfigValidatorTest {
 
     @Test
     void storeMustExist() {
-        String unknown = "Rate limit rule 'api' store 'nope' matches no RateLimitStore bean annotated @Identifier(\"nope\")";
+        String unknown = "Rate limit rule 'api' store 'nope' matches no RateLimitStore bean annotated @Identifier(\"nope\");"
+                + " the built-in 'redis' store requires the quarkus-redis-client extension";
         assertThat(validate(g("store"), "nope")).containsExactly(unknown);
         assertThat(validate(P + "store", "nope")).containsExactly(unknown);
         assertThat(validate(g("store"), "custom")).isEmpty();

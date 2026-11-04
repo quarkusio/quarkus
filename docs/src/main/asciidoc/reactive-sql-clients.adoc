@@ -899,6 +899,31 @@ For a named datasource, annotate the bean with `@ReactiveDataSource("datasource-
 
 TIP: `PoolCreator` is also the way to set Vert.x options that cannot be expressed as configuration properties, such as `SqlConnectOptions.setPreparedStatementCacheSqlFilter(Predicate<String>)`.
 
+When a xref:credentials-provider.adoc[credentials provider] is configured, or when multiple hosts are listed for round-robin load balancing, use `input.dynamicConnectOptionsList()` instead of `input.connectOptionsList()` to build the pool.
+`dynamicConnectOptionsList()` returns a `Supplier<Future<SqlConnectOptions>>` that re-fetches credentials on every connection attempt and rotates across hosts, so new connections automatically pick up rotated credentials:
+
+[source,java]
+----
+import jakarta.inject.Singleton;
+
+import io.quarkus.reactive.datasource.PoolCreator;
+import io.vertx.pgclient.PgBuilder;
+import io.vertx.sqlclient.Pool;
+
+@Singleton
+public class CustomPoolCreator implements PoolCreator {
+
+    @Override
+    public Pool create(Input input) {
+        return PgBuilder.pool()
+                .with(input.poolOptions())
+                .connectingTo(input.dynamicConnectOptionsList())
+                .using(input.vertx())
+                .build();
+    }
+}
+----
+
 == Pipelining
 
 The PostgreSQL and MariaDB/MySQL clients support pipelining of queries at the connection level.

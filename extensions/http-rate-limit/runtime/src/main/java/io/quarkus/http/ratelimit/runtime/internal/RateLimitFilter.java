@@ -322,7 +322,7 @@ public class RateLimitFilter {
                 notifyListeners(new Consumer<>() {
                     @Override
                     public void accept(RateLimitOutcomeListener listener) {
-                        listener.allowed(evaluator, allowed.remaining());
+                        listener.allowed(evaluator, outcome.policy(), allowed.remaining());
                     }
                 });
             }
@@ -341,6 +341,12 @@ public class RateLimitFilter {
             drain(ctx);
         }
         if (last.decision() instanceof RateLimitDecision.Unavailable unavailable) {
+            notifyListeners(new Consumer<>() {
+                @Override
+                public void accept(RateLimitOutcomeListener listener) {
+                    listener.unavailable(last.evaluator());
+                }
+            });
             ctx.response().setStatusCode(HttpResponseStatus.SERVICE_UNAVAILABLE.code())
                     .putHeader(HttpHeaderNames.RETRY_AFTER, Long.toString(RetryAfter.jitteredSeconds(unavailable.retryAfter())))
                     .end();

@@ -83,12 +83,12 @@ public final class RuleEvaluator {
                     public Uni<? extends Outcome> apply(KeyResolution.Result result) {
                         return switch (result) {
                             case KeyResolution.Skip skip -> Uni.createFrom()
-                                    .item(new Outcome(RuleEvaluator.this, null, null, Outcome.Kind.SKIPPED));
+                                    .item(new Outcome(RuleEvaluator.this, null, null, null, Outcome.Kind.SKIPPED));
                             case KeyResolution.Resolved resolved -> store.tryConsume(resolved.key(), 1, resolved.policy())
                                     .map(new Function<>() {
                                         @Override
                                         public Outcome apply(RateLimitDecision decision) {
-                                            return new Outcome(RuleEvaluator.this, resolved.key(), decision,
+                                            return new Outcome(RuleEvaluator.this, resolved.key(), resolved.policy(), decision,
                                                     Outcome.Kind.DECIDED);
                                         }
                                     });

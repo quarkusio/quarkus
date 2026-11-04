@@ -24,6 +24,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
+import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.junit.common.JdkUtil;
 import io.restassured.RestAssured;
@@ -36,14 +38,20 @@ public class JvmMetricsTest extends BaseJvmMetricsTest {
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
+                            .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class,
+                                    TestSpanExporter.class, TestSpanExporterProvider.class)
                             .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
+                            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+                            // A span exporter is required: since OTel SDK 1.67.0 a tracer provider with no span
+                            // processor hands out no-op tracers, so otel.sdk.span.* would never be recorded.
                             .add(new StringAsset(
-                                    "quarkus.otel.traces.exporter=none\n" +
+                                    "quarkus.otel.traces.exporter=test-span-exporter\n" +
                                             "quarkus.otel.logs.exporter=none\n" +
                                             "quarkus.otel.metrics.exporter=in-memory\n" +
                                             "quarkus.otel.metric.export.interval=300ms\n" +
+                                            "quarkus.otel.bsp.schedule.delay=50ms\n" +
                                             "quarkus.datasource.devservices.enabled=false\n"),
                                     "application.properties"));
 
@@ -87,7 +95,7 @@ public class JvmMetricsTest extends BaseJvmMetricsTest {
         }
         // SDK self-diagnostics metrics
         allMetrics.add(new MetricToAssert("otel.sdk.span.live",
-                "The number of created spans with recording=true for which the end operation has not been called yet.",
+                "The number of created spans with `recording=true` for which the end operation has not been called yet.",
                 "{span}", LONG_SUM));
         allMetrics.add(new MetricToAssert("otel.sdk.span.started",
                 "The number of created spans.",
@@ -95,6 +103,16 @@ public class JvmMetricsTest extends BaseJvmMetricsTest {
         allMetrics.add(new MetricToAssert("otel.sdk.metric_reader.collection.duration",
                 "The duration of the collect operation of the metric reader.",
                 "s", HISTOGRAM));
+        // Emitted by the BatchSpanProcessor once a span exporter is configured
+        allMetrics.add(new MetricToAssert("otel.sdk.processor.span.processed",
+                "The number of spans for which the processing has finished, either successful or failed.",
+                "{span}", LONG_SUM));
+        allMetrics.add(new MetricToAssert("otel.sdk.processor.span.queue.capacity",
+                "The maximum number of spans the queue of a given instance of an SDK span processor can hold.",
+                "{span}", LONG_SUM));
+        allMetrics.add(new MetricToAssert("otel.sdk.processor.span.queue.size",
+                "The number of spans in the queue of a given instance of an SDK span processor.",
+                "{span}", LONG_SUM));
 
         // Force GC to run
         System.gc();

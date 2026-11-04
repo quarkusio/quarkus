@@ -193,7 +193,7 @@ public class MySQLPoolRecorder {
             SyntheticCreationalContext<Pool> context) {
         Instance<PoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL, qualifier(dataSourceName));
         if (instance.isResolvable()) {
-            PoolCreator.Input input = new DefaultInput(vertx, poolOptions, mysqlConnectOptionsList);
+            PoolCreator.Input input = new DefaultInput(vertx, poolOptions, mysqlConnectOptionsList, databases);
             return instance.get().create(input);
         }
 
@@ -206,11 +206,14 @@ public class MySQLPoolRecorder {
         private final Vertx vertx;
         private final PoolOptions poolOptions;
         private final List<MySQLConnectOptions> connectOptionsList;
+        private final Supplier<Future<SqlConnectOptions>> databases;
 
-        public DefaultInput(Vertx vertx, PoolOptions poolOptions, List<MySQLConnectOptions> connectOptionsList) {
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, List<MySQLConnectOptions> connectOptionsList,
+                Supplier<Future<SqlConnectOptions>> databases) {
             this.vertx = vertx;
             this.poolOptions = poolOptions;
             this.connectOptionsList = connectOptionsList;
+            this.databases = databases;
         }
 
         @Override
@@ -232,6 +235,11 @@ public class MySQLPoolRecorder {
         @Override
         public List<MySQLConnectOptions> mySQLConnectOptionsList() {
             return connectOptionsList;
+        }
+
+        @Override
+        public Supplier<Future<SqlConnectOptions>> dynamicConnectOptionsList() {
+            return databases;
         }
     }
 }

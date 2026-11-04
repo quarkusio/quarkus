@@ -138,7 +138,7 @@ public class DB2PoolRecorder {
             SyntheticCreationalContext<Pool> context) {
         Instance<PoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL, qualifier(dataSourceName));
         if (instance.isResolvable()) {
-            DB2PoolCreator.Input input = new DefaultInput(vertx, poolOptions, db2ConnectOptions);
+            DB2PoolCreator.Input input = new DefaultInput(vertx, poolOptions, db2ConnectOptions, databases);
             return instance.get().create(input);
         }
         return DB2Builder.pool().with(poolOptions)
@@ -150,11 +150,14 @@ public class DB2PoolRecorder {
         private final Vertx vertx;
         private final PoolOptions poolOptions;
         private final DB2ConnectOptions connectOptions;
+        private final Supplier<Future<SqlConnectOptions>> databases;
 
-        public DefaultInput(Vertx vertx, PoolOptions poolOptions, DB2ConnectOptions connectOptions) {
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, DB2ConnectOptions connectOptions,
+                Supplier<Future<SqlConnectOptions>> databases) {
             this.vertx = vertx;
             this.poolOptions = poolOptions;
             this.connectOptions = connectOptions;
+            this.databases = databases;
         }
 
         @Override
@@ -175,6 +178,11 @@ public class DB2PoolRecorder {
         @Override
         public DB2ConnectOptions db2ConnectOptions() {
             return connectOptions;
+        }
+
+        @Override
+        public Supplier<Future<SqlConnectOptions>> dynamicConnectOptionsList() {
+            return databases;
         }
     }
 }

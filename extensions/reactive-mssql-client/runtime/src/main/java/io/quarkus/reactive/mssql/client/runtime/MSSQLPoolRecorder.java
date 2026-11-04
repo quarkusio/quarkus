@@ -142,7 +142,7 @@ public class MSSQLPoolRecorder {
             SyntheticCreationalContext<Pool> context) {
         Instance<PoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL, qualifier(dataSourceName));
         if (instance.isResolvable()) {
-            MSSQLPoolCreator.Input input = new DefaultInput(vertx, poolOptions, mssqlConnectOptions);
+            MSSQLPoolCreator.Input input = new DefaultInput(vertx, poolOptions, mssqlConnectOptions, databases);
             return instance.get().create(input);
         }
         return MSSQLBuilder.pool().with(poolOptions)
@@ -154,11 +154,14 @@ public class MSSQLPoolRecorder {
         private final Vertx vertx;
         private final PoolOptions poolOptions;
         private final MSSQLConnectOptions connectOptions;
+        private final Supplier<Future<SqlConnectOptions>> databases;
 
-        public DefaultInput(Vertx vertx, PoolOptions poolOptions, MSSQLConnectOptions connectOptions) {
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, MSSQLConnectOptions connectOptions,
+                Supplier<Future<SqlConnectOptions>> databases) {
             this.vertx = vertx;
             this.poolOptions = poolOptions;
             this.connectOptions = connectOptions;
+            this.databases = databases;
         }
 
         @Override
@@ -179,6 +182,11 @@ public class MSSQLPoolRecorder {
         @Override
         public MSSQLConnectOptions msSQLConnectOptions() {
             return connectOptions;
+        }
+
+        @Override
+        public Supplier<Future<SqlConnectOptions>> dynamicConnectOptionsList() {
+            return databases;
         }
     }
 }

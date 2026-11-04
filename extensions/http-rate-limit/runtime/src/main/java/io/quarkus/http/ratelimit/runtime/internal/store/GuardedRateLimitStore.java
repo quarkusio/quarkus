@@ -50,6 +50,19 @@ final class GuardedRateLimitStore implements RateLimitStore {
      */
     static final Class<ConnectionPoolTooBusyException> POOL_REFUSAL = ConnectionPoolTooBusyException.class;
 
+    /**
+     * Which authority produced a grant.
+     */
+    enum Source {
+        STORE,
+        LOCAL_FALLBACK,
+        OPEN_FALLBACK,
+        CLOSED_FALLBACK
+    }
+
+    record Granted(RateLimitDecision decision, Source source) {
+    }
+
     private final String name;
     private final Guard guard;
     private final AtomicReference<CircuitBreakerState> breakerState;
@@ -98,10 +111,28 @@ final class GuardedRateLimitStore implements RateLimitStore {
 
     @Override
     public Uni<RateLimitDecision> tryConsume(String key, long cost, RateLimitPolicy policy) {
-        return guarded(key, cost, policy)
+        return grant(key, cost, policy).map(new Function<>() {
+            @Override
+            public RateLimitDecision apply(Granted granted) {
+                return granted.decision();
+            }
+        });
+    }
+
+    /**
+     * {@link #tryConsume}, telling whether the store or the failure mode decided.
+     */
+    Uni<Granted> grant(String key, long cost, RateLimitPolicy policy) {
+        return attempt(key, cost, policy)
+                .map(new Function<RateLimitDecision, Granted>() {
+                    @Override
+                    public Granted apply(RateLimitDecision decision) {
+                        return new Granted(decision, Source.STORE);
+                    }
+                })
                 .onFailure().recoverWithUni(new Function<>() {
                     @Override
-                    public Uni<? extends RateLimitDecision> apply(Throwable failure) {
+                    public Uni<? extends Granted> apply(Throwable failure) {
                         LOG.debugf(failure, "Rate limit store '%s' call failed; store-failure-mode=%s applies", name,
                                 failureMode.name().toLowerCase(Locale.ROOT));
                         return fallback(key, cost, policy);
@@ -114,18 +145,35 @@ final class GuardedRateLimitStore implements RateLimitStore {
      * only purpose is to give the breaker a real outcome.
      */
     Uni<RateLimitDecision> probe(RateLimitPolicy policy) {
-        return guarded("probe", 0, policy);
+        return attempt("probe", 0, policy);
+    }
+
+    /**
+     * The guarded store call alone: a failure (timeout, concurrency limit, open breaker, store error) is propagated,
+     * for decorators that choose the cost of the {@linkplain #fallback failure-mode decision} only once the call has
+     * failed.
+     */
+    Uni<RateLimitDecision> attempt(String key, long cost, RateLimitPolicy policy) {
+        return guarded(key, cost, policy);
     }
 
     /**
      * The {@code store-failure-mode} decision for {@code cost} permits, without calling the store: the local bucket
      * under {@code local}, admission under {@code open}, {@link RateLimitDecision.Unavailable} under {@code closed}.
      */
-    private Uni<RateLimitDecision> fallback(String key, long cost, RateLimitPolicy policy) {
+    Uni<Granted> fallback(String key, long cost, RateLimitPolicy policy) {
         return switch (failureMode) {
-            case LOCAL -> local.tryConsume(key, cost, policy);
-            case OPEN -> Uni.createFrom().item(RateLimitDecision.allowed(policy.burst()));
-            case CLOSED -> Uni.createFrom().item(RateLimitDecision.unavailable(breakerDelay));
+            case LOCAL -> local.tryConsume(key, cost, policy)
+                    .map(new Function<>() {
+                        @Override
+                        public Granted apply(RateLimitDecision decision) {
+                            return new Granted(decision, Source.LOCAL_FALLBACK);
+                        }
+                    });
+            case OPEN -> Uni.createFrom().item(new Granted(
+                    RateLimitDecision.allowed(policy.burst()), Source.OPEN_FALLBACK));
+            case CLOSED -> Uni.createFrom().item(new Granted(
+                    RateLimitDecision.unavailable(breakerDelay), Source.CLOSED_FALLBACK));
         };
     }
 

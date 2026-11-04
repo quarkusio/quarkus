@@ -7141,6 +7141,8 @@
                                         </dependency>
                                         <dependency>
                                             <artifact>org.hibernate.accessor:hibernate-accessor</artifact>
+                                            <!-- Quarkus may use its own implementation of accessors, which might require upgrading beyond what Hibernate ORM requires -->
+                                            <allowNewer>true</allowNewer>
                                         </dependency>
                                     </dependencies>
                                 </dependencyAlignmentRule>

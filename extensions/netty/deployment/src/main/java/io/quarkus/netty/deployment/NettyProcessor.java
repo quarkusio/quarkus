@@ -80,7 +80,6 @@ import io.quarkus.netty.runtime.EventLoopGroupSupplier;
 import io.quarkus.netty.runtime.MachineIdGenerator;
 import io.quarkus.netty.runtime.NettyRecorder;
 import io.quarkus.netty.runtime.NettySharable;
-import io.quarkus.runtime.util.JavaVersionGreaterOrEqual25;
 
 class NettyProcessor {
 
@@ -164,8 +163,8 @@ class NettyProcessor {
      * Unfortunately, "--sun-misc-unsafe-memory-access=allow" should also be set for Java runtime, but it can't be applied
      * automatically as the JAR Manifest format doesn't allow setting such an option.
      */
-    @BuildStep(onlyIf = JavaVersionGreaterOrEqual25.class)
-    NativeImageConfigBuildItem build25Specific(
+    @BuildStep
+    NativeImageConfigBuildItem configureUnsafeAccess(
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<ModuleOpenBuildItem> moduleOpenBuildItem) {

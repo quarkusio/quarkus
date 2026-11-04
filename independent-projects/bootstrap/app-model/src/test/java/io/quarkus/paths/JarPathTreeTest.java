@@ -1,6 +1,7 @@
 package io.quarkus.paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -243,5 +244,16 @@ public class JarPathTreeTest {
         } finally {
             Thread.interrupted();
         }
+    }
+
+    @Test
+    public void doubleCloseIsNoOp() throws Exception {
+        // a non-shared tree, the kind returned when a PathFilter is set
+        // or quarkus.bootstrap.disable-jar-cache=true
+        final ArchivePathTree tree = new ArchivePathTree(root);
+        final OpenPathTree open = tree.open();
+        open.close();
+        assertThatNoException().isThrownBy(open::close);
+        assertThat(open.isOpen()).isFalse();
     }
 }

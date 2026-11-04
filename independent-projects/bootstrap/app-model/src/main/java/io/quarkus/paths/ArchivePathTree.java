@@ -414,16 +414,19 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         public void close() throws IOException {
             lock.writeLock().lock();
             try {
+                if (!open) {
+                    // Closeable.close() is required to be a no-op once the resource is closed
+                    return;
+                }
                 open = false;
                 rootPath = null;
-                fs.close();
-            } catch (IOException e) {
-                throw e;
-            } finally {
                 // even when we close the fs, everything is kept as is in the fs instance
                 // and typically the cen, which is quite large
                 // let's make sure the fs is nullified for it to be garbage collected
-                fs = null;
+                final ReadOnlyZipFileSystem fs = this.fs;
+                this.fs = null;
+                fs.close();
+            } finally {
                 lock.writeLock().unlock();
             }
         }

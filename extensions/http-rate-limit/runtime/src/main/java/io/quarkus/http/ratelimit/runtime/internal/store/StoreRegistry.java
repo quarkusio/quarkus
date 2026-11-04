@@ -19,6 +19,8 @@ import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+
 import io.quarkus.arc.All;
 import io.quarkus.http.ratelimit.RateLimit;
 import io.quarkus.http.ratelimit.RateLimitLocalStoreCustomizer;
@@ -37,7 +39,7 @@ import io.smallrye.faulttolerance.api.Guard;
  * Selects the store of each rule: the rule's {@code store}, else {@code quarkus.http.rate-limit.store}. A non-local
  * store is a {@link RateLimitStore} bean annotated {@code @Identifier("<name>")}, wrapped in a
  * {@link GuardedRateLimitStore} with the timeout and failure mode of the store; the guard and its {@link StoreProbe} are
- * created once per store and shared.
+ * created once per store and shared, and every rule gets a {@link RefusalCachingRateLimitStore} over it.
  * <p>
  * The registry keeps every probe it creates and closes them in {@link #close()}, since CDI never calls lifecycle
  * methods on objects created with {@code new}.
@@ -60,6 +62,7 @@ public class StoreRegistry {
     private final Instance<RateLimitStore> stores;
     private final RateLimitClock clock;
     private final List<RateLimitStoreGuardCustomizer> guardCustomizers;
+    private final List<RateLimitLocalStoreCustomizer> localCustomizers;
     private final Map<String, SharedGuard> guards = new HashMap<>();
     private final Map<String, StoreProbe> probes = new ConcurrentHashMap<>();
 
@@ -75,19 +78,22 @@ public class StoreRegistry {
             @Identifier(LOCAL) LocalRateLimitStore local,
             @Any Instance<RateLimitStore> stores,
             RateLimitClock clock,
-            @All List<RateLimitStoreGuardCustomizer> guardCustomizers) {
+            @All List<RateLimitStoreGuardCustomizer> guardCustomizers,
+            @All List<RateLimitLocalStoreCustomizer> localCustomizers) {
         this.config = config;
         this.local = local;
         this.stores = stores;
         this.clock = clock;
         this.guardCustomizers = guardCustomizers.stream().sorted().toList();
+        this.localCustomizers = localCustomizers.stream().sorted().toList();
     }
 
     /**
-     * Builds the in-memory caches of the rule now, so that the {@link RateLimitLocalStoreCustomizer}s run at startup.
+     * Selects the store of a rule. Builds the in-memory caches the rule uses now, so that the
+     * {@link RateLimitLocalStoreCustomizer}s run at startup.
      *
      * @param rule the rule whose caches and guard are prepared
-     * @return the local store, else the named store wrapped in its guard
+     * @return the local store, else the named store wrapped in its guard and in a refusal cache
      */
     public RateLimitStore forRule(RateLimitRuleConfig rule) {
         String name = rule.store();
@@ -116,7 +122,13 @@ public class StoreRegistry {
                     DefaultRateLimitPolicy.of(rule, rule.limit().orElseGet(() -> RateLimit.of(1, Duration.ofSeconds(1)))),
                     clock, shared.breakerDelay));
         }
-        return guarded;
+        Consumer<Caffeine<Object, Object>> customizer = new Consumer<>() {
+            @Override
+            public void accept(Caffeine<Object, Object> builder) {
+                KeyCaches.customize(localCustomizers, rule.name(), builder);
+            }
+        };
+        return new RefusalCachingRateLimitStore(guarded, rule.maxKeys(), clock, customizer);
     }
 
     @PreDestroy

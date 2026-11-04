@@ -24,12 +24,17 @@ public final class RuleEvaluator {
     private final RateLimitPolicy policy;
     private final KeyResolution keyResolution;
     private final RateLimitStore store;
+    private final String storeName;
 
-    RuleEvaluator(DefaultRateLimitPolicy policy, RateLimitKeyResolver resolver, RateLimitStore store,
-            ThrottledLoggers loggers) {
+    /**
+     * @param storeName the effective store name: the rule's {@code store}, else {@code quarkus.http.rate-limit.store}
+     */
+    RuleEvaluator(DefaultRateLimitPolicy policy, RateLimitKeyResolver resolver,
+            RateLimitStore store, String storeName, ThrottledLoggers loggers) {
         this.policy = policy;
         this.keyResolution = new KeyResolution(policy, resolver, loggers);
         this.store = store;
+        this.storeName = storeName;
     }
 
     public String rule() {
@@ -52,6 +57,13 @@ public final class RuleEvaluator {
      */
     public RateLimitStore store() {
         return store;
+    }
+
+    /**
+     * @return the effective store name: the rule's {@code store}, else {@code quarkus.http.rate-limit.store}
+     */
+    public String storeName() {
+        return storeName;
     }
 
     /**

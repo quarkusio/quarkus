@@ -18,10 +18,11 @@ import io.quarkus.http.ratelimit.RateLimitPhase;
  *        which fails the build
  * @param key the request key; {@code null} when neither the rule nor {@code quarkus.http.rate-limit.request-key} sets
  *        one, which fails the build
+ * @param store the store name
  * @param burst the burst as configured; absent when it defaults to {@code permits}
  */
 public record RateLimitRuleConfig(String name, List<String> paths, Optional<Set<String>> methods, RateLimitPhase phase,
-        String key, long permits, Duration window, Optional<Long> burst,
+        String key, String store, long permits, Duration window, Optional<Long> burst,
         long maxKeys) {
 
     /**
@@ -45,7 +46,7 @@ public record RateLimitRuleConfig(String name, List<String> paths, Optional<Set<
         HttpRateLimitBuildTimeConfig.Rule build = buildConfig.rules().get(name);
         HttpRateLimitRuntimeConfig.Rule runtime = runtimeConfig.rules().get(name);
         return new RateLimitRuleConfig(name, build.paths(), build.methods(),
-                phase(buildConfig, build), key(buildConfig, build),
+                phase(buildConfig, build), key(buildConfig, build), store(buildConfig, build),
                 runtime.permits(), runtime.window(), runtime.burst(),
                 runtime.maxKeys().orElse(runtimeConfig.maxKeys()));
     }
@@ -62,5 +63,12 @@ public record RateLimitRuleConfig(String name, List<String> paths, Optional<Set<
      */
     public static String key(HttpRateLimitBuildTimeConfig config, HttpRateLimitBuildTimeConfig.Rule rule) {
         return rule.requestKey().orElse(config.requestKey().orElse(null));
+    }
+
+    /**
+     * @return the store of the rule, else {@code quarkus.http.rate-limit.store}
+     */
+    public static String store(HttpRateLimitBuildTimeConfig config, HttpRateLimitBuildTimeConfig.Rule rule) {
+        return rule.store().orElse(config.store());
     }
 }

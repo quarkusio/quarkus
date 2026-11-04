@@ -345,14 +345,16 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                try {
-                    resetDefaultExitCodeHandler();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
             } finally {
                 Thread.currentThread().setContextClassLoader(old);
             }
+        }
+        // The exit code handler is set before the first start: reset it even if that start failed, otherwise
+        // ApplicationLifecycleManager retains it, and through it this class loader.
+        try {
+            resetDefaultExitCodeHandler();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         ConsoleCliManager.setCommands(List.of());
         MetadataProviderRegistry.reset();

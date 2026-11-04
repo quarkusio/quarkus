@@ -260,6 +260,81 @@ public class SharedArchivePathTreeTest {
         }
     }
 
+    @Test
+    void cachedInstanceSurvivesOpenCloseCycle() throws Exception {
+        final Path jar = newJarCopy();
+        final PathTree first = PathTree.ofArchive(jar);
+        first.open().close();
+        assertThat(PathTree.ofArchive(jar)).isSameAs(first);
+    }
+
+    @Test
+    void staleReferenceDoesNotOpenSecondFileSystem() throws Exception {
+        final Path jar = newJarCopy();
+        final PathTree first = PathTree.ofArchive(jar);
+        first.open().close();
+        final PathTree second = PathTree.ofArchive(jar);
+        try (OpenPathTree a = first.open(); OpenPathTree b = second.open()) {
+            assertThat(getFileSystem(b)).isSameAs(getFileSystem(a));
+        }
+    }
+
+    @Test
+    void concurrentForPathReturnsSameInstance() throws Exception {
+        final Path jar = newJarCopy();
+        final int threads = 16;
+        final CyclicBarrier barrier = new CyclicBarrier(threads);
+        try (ExecutorService executor = Executors.newFixedThreadPool(threads)) {
+            final List<Future<PathTree>> futures = new ArrayList<>(threads);
+            for (int i = 0; i < threads; i++) {
+                futures.add(executor.submit(() -> {
+                    barrier.await(30, TimeUnit.SECONDS);
+                    return PathTree.ofArchive(jar);
+                }));
+            }
+            final PathTree expected = futures.getFirst().get(30, TimeUnit.SECONDS);
+            for (Future<PathTree> future : futures) {
+                assertThat(future.get(30, TimeUnit.SECONDS)).isSameAs(expected);
+            }
+        }
+    }
+
+    @Test
+    void openHandleResolvesToCachedTree() throws Exception {
+        final Path jar = newJarCopy();
+        PathTree tree = PathTree.ofArchive(jar);
+        try (OpenPathTree handle = tree.open()) {
+            // the handle is the only remaining reference to the tree, and the chain
+            // CallerOpenPathTree -> SharedOpenArchivePathTree -> SharedArchivePathTree.this
+            // that keeps the cache entry reachable is the one getOriginalTree() walks back along
+            tree = null;
+            assertThat(PathTree.ofArchive(jar)).isSameAs(handle.getOriginalTree());
+        }
+    }
+
+    @Test
+    void clearedEntryIsReplaced() throws Exception {
+        final Path jar = newJarCopy();
+        final PathTree first = PathTree.ofArchive(jar);
+        // The seam clears the reference while first is still held, which production never does:
+        // there the tree is unreachable by the time the collector clears it. Only the clearing is
+        // simulated, everything asserted below is the path a genuinely collected entry takes.
+        assertThat(SharedArchivePathTree.clearCachedRef(jar)).isTrue();
+        final PathTree replacement = PathTree.ofArchive(jar);
+        assertThat(replacement).isNotSameAs(first);
+        // the dead entry was purged and the replacement took its place,
+        // rather than being recreated on every call
+        assertThat(PathTree.ofArchive(jar)).isSameAs(replacement);
+        assertThat(replacement.contains("README.md")).isTrue();
+    }
+
+    private static Path newJarCopy() throws IOException {
+        final Path jar = Path.of("target/shared-" + UUID.randomUUID() + ".jar");
+        Files.createDirectories(jar.getParent());
+        Files.copy(testJar, jar);
+        return jar;
+    }
+
     private static FileSystem getFileSystem(OpenPathTree openTree) {
         return openTree.getPath("README.md").getFileSystem();
     }

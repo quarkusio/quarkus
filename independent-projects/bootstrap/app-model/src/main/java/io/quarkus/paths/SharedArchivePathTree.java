@@ -1,6 +1,8 @@
 package io.quarkus.paths;
 
 import java.io.IOException;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
@@ -22,24 +24,91 @@ import io.quarkus.fs.util.rozip.ReadOnlyZipFileSystem;
  */
 class SharedArchivePathTree extends ArchivePathTree {
 
-    // It would probably be better to have a weak hash map based cache,
-    // however as the first iteration it'll already be more efficient than before
-    private static final Map<Path, SharedArchivePathTree> CACHE = new ConcurrentHashMap<>();
+    // Trees are cached by weak reference, so an entry lives exactly as long as someone could
+    // still reopen the tree. An open archive pins its tree strongly through
+    // CallerOpenPathTree -> SharedOpenArchivePathTree -> SharedArchivePathTree.this,
+    // which means an entry can never be dropped while the archive is open.
+    private static final Map<Path, CacheRef> CACHE = new ConcurrentHashMap<>();
+    private static final ReferenceQueue<SharedArchivePathTree> CLEARED_REFS = new ReferenceQueue<>();
+
+    /**
+     * A weak reference to a cached tree that remembers the key it was stored under, so that
+     * the entry can be removed from the cache once the reference has been cleared and enqueued.
+     */
+    private static final class CacheRef extends WeakReference<SharedArchivePathTree> {
+
+        private final Path key;
+
+        private CacheRef(Path key, SharedArchivePathTree tree) {
+            super(tree, CLEARED_REFS);
+            this.key = key;
+        }
+    }
 
     /**
      * Returns an instance of {@link ArchivePathTree} for the {@code path} either from a cache
      * or creates a new instance for it and puts it in the cache.
+     * <p>
+     * A cache entry remains valid for as long as the instance it refers to is reachable by its
+     * callers. Once the instance becomes unreachable, its entry is removed and a later call
+     * for the same {@code path} will create a new instance.
      *
      * @param path path to an archive
      * @return instance of {@link ArchivePathTree}, never null
      */
     static ArchivePathTree forPath(Path path) {
-        return CACHE.computeIfAbsent(path, SharedArchivePathTree::new);
+        purgeClearedEntries();
+        while (true) {
+            final SharedArchivePathTree cached = getCached(path);
+            if (cached != null) {
+                return cached;
+            }
+            final SharedArchivePathTree created = new SharedArchivePathTree(path);
+            final CacheRef previous = CACHE.putIfAbsent(path, new CacheRef(path, created));
+            if (previous == null) {
+                return created;
+            }
+            final SharedArchivePathTree winner = previous.get();
+            if (winner != null) {
+                return winner;
+            }
+            // the entry that won the race has already been cleared, drop it and try again
+            CACHE.remove(path, previous);
+        }
+    }
+
+    private static SharedArchivePathTree getCached(Path path) {
+        final CacheRef ref = CACHE.get(path);
+        if (ref == null) {
+            return null;
+        }
+        final SharedArchivePathTree tree = ref.get();
+        if (tree == null) {
+            CACHE.remove(path, ref);
+        }
+        return tree;
+    }
+
+    /**
+     * Removes the entries whose trees have been garbage collected.
+     * <p>
+     * {@link WeakReference} does not override {@link Object#equals(Object)}, so the two-argument
+     * {@link Map#remove(Object, Object)} compares {@link CacheRef} instances by identity and will
+     * never remove an entry that has already been replaced with a new one.
+     */
+    private static void purgeClearedEntries() {
+        CacheRef ref;
+        while ((ref = (CacheRef) CLEARED_REFS.poll()) != null) {
+            CACHE.remove(ref.key, ref);
+        }
     }
 
     /**
      * Removes an entry for {@code path} from the path tree cache. If the cache
      * does not contain an entry for the {@code path}, the method will return silently.
+     * <p>
+     * Entries are removed automatically once their trees become unreachable. This method exists
+     * to isolate tests that assert on caching behavior from each other.
      *
      * @param path path to remove from the cache
      */
@@ -47,7 +116,23 @@ class SharedArchivePathTree extends ArchivePathTree {
         CACHE.remove(path);
     }
 
-    private final AtomicInteger openCount = new AtomicInteger();
+    /**
+     * Testing seam that simulates the garbage collector clearing and enqueueing the reference
+     * cached for {@code path}, so that the handling of collected entries can be asserted
+     * without relying on an actual garbage collection.
+     * <p>
+     * Both halves come from {@link java.lang.ref.Reference#enqueue()}, which clears the referent
+     * in addition to enqueueing it as of Java 16. On earlier releases it only enqueued, so this
+     * method would not reproduce a collected entry there.
+     *
+     * @param path path whose cached reference should be cleared
+     * @return true, if an entry was found and its reference enqueued, otherwise - false
+     */
+    static boolean clearCachedRef(Path path) {
+        final CacheRef ref = CACHE.get(path);
+        return ref != null && ref.enqueue();
+    }
+
     private final AtomicReference<SharedOpenArchivePathTree> lastOpen = new AtomicReference<>();
     /**
      * Guards creation of new open archive trees. It is not a monitor, since a new archive file system is opened
@@ -99,7 +184,6 @@ class SharedArchivePathTree extends ArchivePathTree {
 
         protected SharedOpenArchivePathTree(ReadOnlyZipFileSystem fs) {
             super(fs);
-            openCount.incrementAndGet();
         }
 
         /**
@@ -156,9 +240,6 @@ class SharedArchivePathTree extends ArchivePathTree {
                     if (users.get() == 0) {
                         // clears lastOpen only if it still references this instance
                         lastOpen.compareAndSet(this, null);
-                        if (openCount.decrementAndGet() == 0) {
-                            removeFromCache(archive);
-                        }
                         super.close();
                         return;
                     }

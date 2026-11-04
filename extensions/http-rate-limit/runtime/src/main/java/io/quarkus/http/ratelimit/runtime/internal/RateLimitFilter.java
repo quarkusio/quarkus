@@ -31,6 +31,7 @@ import io.quarkus.http.ratelimit.runtime.internal.rules.Outcome;
 import io.quarkus.http.ratelimit.runtime.internal.rules.RateLimitRules;
 import io.quarkus.http.ratelimit.runtime.internal.rules.RateLimitRules.RuleMembership;
 import io.quarkus.http.ratelimit.runtime.internal.rules.RuleEvaluator;
+import io.quarkus.http.ratelimit.runtime.internal.telemetry.RateLimitFlightRecorder;
 import io.quarkus.http.ratelimit.runtime.internal.telemetry.RateLimitOutcomeListener;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
@@ -91,6 +92,7 @@ public class RateLimitFilter {
     private final boolean syncObservers;
     private final boolean asyncObservers;
     private final List<RateLimitOutcomeListener> listeners;
+    private final RateLimitFlightRecorder flightRecorder;
     // quarkus.http.limits.max-body-size, -1 when unbounded
     private final long maxBodySize;
     private final ThrottledLogger warning;
@@ -101,6 +103,7 @@ public class RateLimitFilter {
             RateLimitRejectionWriter writer,
             Event<RateLimitRejectionInfo> events,
             @All List<RateLimitOutcomeListener> listeners,
+            Instance<RateLimitFlightRecorder> flightRecorder,
             ThrottledLoggers loggers,
             VertxHttpConfig httpConfig) {
         this.enabled = config.enabled();
@@ -126,6 +129,8 @@ public class RateLimitFilter {
         }
         this.syncObservers = anySync;
         this.asyncObservers = anyAsync;
+        // a bean only when the JFR extension is present
+        this.flightRecorder = flightRecorder.isResolvable() ? flightRecorder.get() : RateLimitFlightRecorder.NONE;
         this.warning = loggers.logger(LOG);
     }
 
@@ -286,10 +291,12 @@ public class RateLimitFilter {
             return Uni.createFrom().item(outcomes);
         }
         RuleEvaluator evaluator = evaluators.get(index);
+        Object evaluation = flightRecorder.evaluationStarted();
         return evaluator.evaluate(ctx, identity, onContext).emitOn(onContext).onItem()
                 .transformToUni(new Function<>() {
                     @Override
                     public Uni<? extends List<Outcome>> apply(Outcome outcome) {
+                        flightRecorder.evaluated(evaluation, ctx, outcome);
                         outcomes.add(outcome);
                         if (blocks(outcome)) {
                             return Uni.createFrom().item(outcomes);
@@ -441,6 +448,7 @@ public class RateLimitFilter {
                 listener.rejected(evaluator, outcome.key(), retryAfterSeconds);
             }
         });
+        flightRecorder.rejected(ctx, evaluator, retryAfterSeconds);
         // set before the writer runs, so that a custom writer inherits a correct Retry-After
         ctx.response().putHeader(HttpHeaderNames.RETRY_AFTER, Long.toString(retryAfterSeconds));
         RateLimitRejectionInfo rejection = rejection(ctx, identity, evaluator, outcome.key(), retryAfterSeconds);

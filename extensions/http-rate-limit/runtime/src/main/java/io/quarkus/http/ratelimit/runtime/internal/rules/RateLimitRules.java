@@ -22,6 +22,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.http.ratelimit.RateLimitKeyResolver;
 import io.quarkus.http.ratelimit.RateLimitPhase;
 import io.quarkus.http.ratelimit.runtime.internal.RateLimitBuildTimeInfo;
+import io.quarkus.http.ratelimit.runtime.internal.ThrottledLoggers;
 import io.quarkus.http.ratelimit.runtime.internal.config.DefaultRateLimitPolicy;
 import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitBuildTimeConfig;
 import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitConfigValidator;
@@ -65,7 +66,8 @@ public class RateLimitRules {
             HttpRateLimitRuntimeConfig config,
             RateLimitBuildTimeInfo info,
             LocalRateLimitStore local,
-            @Any Instance<RateLimitKeyResolver> resolvers) {
+            @Any Instance<RateLimitKeyResolver> resolvers,
+            ThrottledLoggers loggers) {
         if (!config.enabled()) {
             // a disabled extension validates nothing and builds no evaluators
             this.phases = indexPhases(List.of());
@@ -76,7 +78,7 @@ public class RateLimitRules {
         this.exemptPaths = Set.copyOf(info.controlPlanePaths());
         // the summary first: building the evaluators logs the detail of each rule
         logRules(ruleConfigs);
-        List<RuleMembership> memberships = buildEvaluators(ruleConfigs, local, resolvers);
+        List<RuleMembership> memberships = buildEvaluators(ruleConfigs, local, resolvers, loggers);
         this.phases = indexPhases(memberships);
     }
 
@@ -116,14 +118,15 @@ public class RateLimitRules {
 
     private static List<RuleMembership> buildEvaluators(List<RateLimitRuleConfig> rules,
             LocalRateLimitStore local,
-            Instance<RateLimitKeyResolver> resolvers) {
+            Instance<RateLimitKeyResolver> resolvers,
+            ThrottledLoggers loggers) {
         List<RuleMembership> memberships = new ArrayList<>();
         for (RateLimitRuleConfig rule : rules) {
             DefaultRateLimitPolicy policy = DefaultRateLimitPolicy.of(rule);
             // builds the rule's cache now, so that the RateLimitLocalStoreCustomizers run at startup
             local.prepare(policy);
             RuleEvaluator evaluator = new RuleEvaluator(policy,
-                    KeyResolvers.forKey(rule.key(), resolvers), local);
+                    KeyResolvers.forKey(rule.key(), resolvers), local, loggers);
             Set<String> methods = Set.of();
             if (rule.methods().isPresent()) {
                 Set<String> upperCase = new HashSet<>();

@@ -5,7 +5,6 @@ import java.util.Optional;
 import jakarta.inject.Singleton;
 
 import io.quarkus.http.ratelimit.RateLimitContext;
-import io.quarkus.http.ratelimit.RateLimitKeyResolver;
 import io.smallrye.common.annotation.Identifier;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
@@ -13,7 +12,7 @@ import io.vertx.core.net.SocketAddress;
 
 @Singleton
 @Identifier("ip")
-public class IpKeyResolver implements RateLimitKeyResolver {
+public class IpKeyResolver implements ImmediateKeyResolver {
 
     @Override
     public Uni<Optional<String>> resolve(RateLimitContext context) {

@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.http.ratelimit.RateLimitContext;
-import io.quarkus.http.ratelimit.RateLimitKeyResolver;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
@@ -21,7 +20,7 @@ import io.vertx.core.http.HttpServerRequest;
  * reads the header may use another occurrence than the first, so a client could otherwise authenticate with one value
  * while each request got a fresh bucket from another.
  */
-public final class HeaderKeyResolver implements RateLimitKeyResolver {
+public final class HeaderKeyResolver implements ImmediateKeyResolver {
 
     static final String REPEATED = "header:repeated";
 

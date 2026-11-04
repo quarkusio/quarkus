@@ -47,7 +47,7 @@ public class JvmMetricsTest extends BaseJvmMetricsTest {
                             // A span exporter is required: since OTel SDK 1.67.0 a tracer provider with no span
                             // processor hands out no-op tracers, so otel.sdk.span.* would never be recorded.
                             .add(new StringAsset(
-                                            "quarkus.otel.metrics.enabled=true\n" +
+                                    "quarkus.otel.metrics.enabled=true\n" +
                                             "quarkus.otel.traces.exporter=test-span-exporter\n" +
                                             "quarkus.otel.logs.exporter=none\n" +
                                             "quarkus.otel.metrics.exporter=in-memory\n" +

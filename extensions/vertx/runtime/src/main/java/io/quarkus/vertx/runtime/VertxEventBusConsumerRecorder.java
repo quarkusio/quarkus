@@ -64,6 +64,8 @@ public class VertxEventBusConsumerRecorder {
                 @Override
                 public void run() {
                     unregisterMessageConsumers();
+                    // the Vert.x instance is set again on restart: do not retain the closed one in the meantime
+                    destroy();
                 }
             });
         } else {

@@ -1,0 +1,26 @@
+services:
+  kafka:
+    image: apache/kafka-native:4.2.0
+    ports:
+      - '9092'
+    labels:
+      io.quarkus.devservices.compose.exposed_ports: /etc/kafka/docker/ports
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /etc/kafka/docker/ports"]
+      interval: 1s
+      retries: 30
+
+  consumer:
+    image: example/consumer:1.0
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  analytics:
+    profiles:
+      - analytics
+    image: example/analytics:1.0
+    ports:
+      - '8081'
+    labels:
+      io.quarkus.devservices.compose.exposed_ports: /etc/analytics/ports

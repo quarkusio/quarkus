@@ -184,7 +184,7 @@ public class ConsoleJsonFormatterJsonProviderTest {
         JsonNode node = new ObjectMapper().readTree(
                 getJsonFormatter().format(new LogRecord(Level.INFO, "Array fields test")));
 
-        JsonNode maskingFields = node.get("datamaskingfields");
+        JsonNode maskingFields = node.get("maskedfields");
         assertThat(maskingFields.isArray()).isTrue();
         assertThat(maskingFields.size()).isEqualTo(2);
         assertThat(maskingFields.get(0).asText()).isEqualTo("email");
@@ -210,7 +210,7 @@ public class ConsoleJsonFormatterJsonProviderTest {
 
         @Override
         public void writeTo(JsonLogGenerator generator, ExtLogRecord record) throws Exception {
-            generator.startArray("datamaskingfields")
+            generator.startArray("maskedfields")
                     .add("email")
                     .add("phone")
                     .endArray();

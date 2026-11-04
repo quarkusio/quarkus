@@ -41,11 +41,11 @@ public class PostAuthenticationPrincipalTest {
                     Dependency.of("io.quarkus", "quarkus-elytron-security-properties-file-deployment", Version.getVersion())));
 
     private static QuarkusExtensionTest withRule(QuarkusExtensionTest test, String rule, String path) {
-        return test.overrideConfigKey(PREFIX + rule + ".paths", path)
-                .overrideConfigKey(PREFIX + rule + ".phase", "post-authentication")
-                .overrideConfigKey(PREFIX + rule + ".request-key", "principal")
-                .overrideRuntimeConfigKey(PREFIX + rule + ".permits", "2")
-                .overrideRuntimeConfigKey(PREFIX + rule + ".window", "1m");
+        return test.overrideConfigKey(PREFIX + "rules." + rule + ".paths", path)
+                .overrideConfigKey(PREFIX + "rules." + rule + ".phase", "post-authentication")
+                .overrideConfigKey(PREFIX + "rules." + rule + ".request-key", "principal")
+                .overrideRuntimeConfigKey(PREFIX + "rules." + rule + ".permits", "2")
+                .overrideRuntimeConfigKey(PREFIX + "rules." + rule + ".window", "1m");
     }
 
     @Inject

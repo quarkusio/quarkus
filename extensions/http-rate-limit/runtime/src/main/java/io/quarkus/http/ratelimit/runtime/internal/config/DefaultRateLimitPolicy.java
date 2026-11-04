@@ -1,64 +1,53 @@
 package io.quarkus.http.ratelimit.runtime.internal.config;
 
 import java.time.Duration;
+import java.util.Objects;
 
+import io.quarkus.http.ratelimit.RateLimit;
 import io.quarkus.http.ratelimit.RateLimitPhase;
 import io.quarkus.http.ratelimit.RateLimitPolicy;
 
 /**
- * The limit of one rule, as resolved from configuration. Every policy the extension hands to a store is of this type;
- * {@link #maxKeys()} is internal and not part of {@link RateLimitPolicy}.
+ * The limit of one rule, as resolved from configuration (and possibly a per-key resolved limit). Every policy the extension
+ * hands to a store is of this type; {@link #maxKeys()} is internal and not part of {@link RateLimitPolicy}.
  * <p>
- * The canonical constructor rejects {@code permits < 1}, {@code burst < 1}, an {@linkplain #emissionIntervalMicros()
+ * {@link RateLimit} rejects {@code permits < 1}, {@code burst < 1}, an
+ * {@linkplain #emissionIntervalMicros()
  * emission interval} below one microsecond, a {@linkplain #burstToleranceMicros() burst tolerance} above 30 days, and
- * any arithmetic overflow, with {@link IllegalArgumentException}. The configuration validator goes through it, so
+ * any arithmetic overflow, with {@link IllegalArgumentException}. Both configured and resolved quotas use that value type, so
  * every store sees the same domain.
  *
  * @param rule the rule name
  * @param phase the phase this policy applies to
- * @param permits the number of permits replenished per {@code window}
- * @param window the replenishment window
- * @param burst the maximum number of permits that can be consumed at once
+ * @param limit the validated quota; retained directly when selected by a resolver
  * @param maxKeys the maximum number of keys held in the memory of a replica for this policy: by the local store
  */
-public record DefaultRateLimitPolicy(String rule, RateLimitPhase phase, long permits, Duration window, long burst,
+public record DefaultRateLimitPolicy(String rule, RateLimitPhase phase, RateLimit limit,
         long maxKeys) implements RateLimitPolicy {
 
-    private static final long MAX_BURST_TOLERANCE_MICROS = Duration.ofDays(30).toNanos() / 1_000;
-
     public DefaultRateLimitPolicy {
-        String where = "Rate limit rule '" + rule + "' (" + phase.configName() + "): ";
-        if (permits < 1) {
-            throw new IllegalArgumentException(where + "permits must be at least 1");
-        }
-        if (burst < 1) {
-            throw new IllegalArgumentException(where + "burst must be at least 1");
-        }
-        if (window == null) {
-            throw new IllegalArgumentException(where + "window must be set");
-        }
-        long interval;
-        long tolerance;
-        try {
-            // checked on the exact ratio: rounded up, an interval below one microsecond would silently become one
-            if (window.toNanos() / 1_000 < permits) {
-                throw new IllegalArgumentException(where + "window / permits must be at least 1 microsecond");
-            }
-            interval = Math.ceilDiv(Math.ceilDiv(window.toNanos(), 1_000), permits);
-            tolerance = Math.multiplyExact(interval, burst);
-        } catch (ArithmeticException e) {
-            throw new IllegalArgumentException(where + "window, permits and burst overflow", e);
-        }
-        if (tolerance > MAX_BURST_TOLERANCE_MICROS) {
-            throw new IllegalArgumentException(where + "(window / permits) * burst must not exceed 30 days");
-        }
+        Objects.requireNonNull(limit, "limit");
+    }
+
+    @Override
+    public long permits() {
+        return limit.permits();
+    }
+
+    @Override
+    public Duration window() {
+        return limit.window();
+    }
+
+    @Override
+    public long burst() {
+        return limit.burst();
     }
 
     /**
-     * The policy of a configured rule; {@code burst} defaults to {@code permits}.
+     * Associates a selected limit with its rule, without making the limit name part of the counter identity.
      */
-    public static DefaultRateLimitPolicy of(RateLimitRuleConfig rule) {
-        return new DefaultRateLimitPolicy(rule.name(), rule.phase(), rule.permits(), rule.window(),
-                rule.burst().orElse(rule.permits()), rule.maxKeys());
+    public static DefaultRateLimitPolicy of(RateLimitRuleConfig rule, RateLimit limit) {
+        return new DefaultRateLimitPolicy(rule.name(), rule.phase(), limit, rule.maxKeys());
     }
 }

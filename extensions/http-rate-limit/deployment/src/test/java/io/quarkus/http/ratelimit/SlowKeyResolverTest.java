@@ -27,10 +27,11 @@ import io.vertx.core.Vertx;
  */
 public class SlowKeyResolverTest {
 
-    private static final String RULE = "quarkus.http.rate-limit.slow.";
+    private static final String RULE = "quarkus.http.rate-limit.rules.slow.";
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .overrideRuntimeConfigKey("quarkus.http.rate-limit.key-resolver-failure", "ip")
             .withApplicationRoot(jar -> jar.addClasses(TestHttp.class, TestClient.class, TestHttp.Resource.class,
                     TestRateLimitClock.class, NeverAnswers.class))
             .overrideConfigKey(RULE + "paths", "/slow/*")

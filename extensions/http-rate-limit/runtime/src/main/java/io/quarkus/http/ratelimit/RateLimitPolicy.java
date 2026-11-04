@@ -5,7 +5,7 @@ import static java.time.temporal.ChronoUnit.MICROS;
 import java.time.Duration;
 
 /**
- * The limit of one rule, as resolved from configuration.
+ * The limit of one rule, as resolved from configuration (and possibly a per-key resolved limit).
  * <p>
  * The limit is a GCRA bucket: {@code permits} are replenished evenly over {@code window}, and up to {@code burst}
  * permits can be consumed at once. {@code burst} defaults to {@code permits}.

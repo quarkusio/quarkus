@@ -11,7 +11,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
-import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithDefaults;
 
 /**
  * Runtime configuration of the HTTP rate limiter: the limits of the rules defined in {@link HttpRateLimitBuildTimeConfig},
@@ -28,6 +28,36 @@ public interface HttpRateLimitRuntimeConfig {
     boolean enabled();
 
     /**
+     * Maximum time a custom request key resolver may take. Must be positive.
+     */
+    @WithDefault("250ms")
+    Duration keyResolverTimeout();
+
+    /**
+     * Maximum time a limit resolver may take. Must be positive.
+     */
+    @WithDefault("250ms")
+    Duration limitResolverTimeout();
+
+    /**
+     * What happens when a custom request key resolver fails or times out: {@code reject} (the default) answers 503;
+     * {@code ip} explicitly opts into counting by client address instead of the intended request key. Returning an empty key
+     * deliberately skips the rule and is not a failure.
+     */
+    @WithDefault("reject")
+    KeyResolverFailure keyResolverFailure();
+
+    /**
+     * Optional named quotas containing permits, window, and burst. Defining a quota here does not limit any requests:
+     * select it with a rule's {@code limit}, or return it from a limit resolver using the injectable {@code RateLimits}
+     * registry. For a quota used by only one rule, set permits and window directly on that rule instead.
+     * Sharing a limit does not share counters: each rule and request key keeps its own allowance.
+     */
+    @ConfigDocMapKey("limit-name")
+    @ConfigDocSection
+    Map<String, NamedLimit> limits();
+
+    /**
      * How often a warning that can recur on every request, such as a rule that reaches its {@code max-keys}, is logged:
      * at most once per this interval for each kind of warning. At least 1 second.
      */
@@ -41,12 +71,11 @@ public interface HttpRateLimitRuntimeConfig {
     long maxKeys();
 
     /**
-     * The rate limit rules, keyed by rule name. Their limits can change at runtime; every rule defined at build time
-     * must have one, and every rule here must be defined at build time.
+     * Limits and operational settings for the rules defined at build time. These values are read at application startup.
      */
     @ConfigDocMapKey("rule")
     @ConfigDocSection
-    @WithParentName
+    @WithDefaults
     Map<String, Rule> rules();
 
     /**
@@ -59,20 +88,44 @@ public interface HttpRateLimitRuntimeConfig {
     interface Rule {
 
         /**
-         * The number of permits replenished per {@code quarkus.http.rate-limit."rule".window}, at least 1. The interval
-         * between two permits, {@code window / permits}, must be at least 1 microsecond.
+         * Whether this rule is enabled. Can be changed when starting the built application.
          */
-        long permits();
+        @WithDefault("true")
+        boolean enabled();
 
         /**
-         * The window over which {@code quarkus.http.rate-limit."rule".permits} are replenished, for example {@code 1m}.
+         * Name of a quota defined under {@code quarkus.http.rate-limit.limits}, for example {@code standard} to use
+         * {@code quarkus.http.rate-limit.limits.standard}. Applies that quota to every client of this rule, with a separate
+         * allowance for each request key. Requires no Java resolver. Select either this, inline permits and window,
+         * or a limit resolver; do not combine them. A static limit on a rule takes precedence over the globally inherited
+         * resolver.
+         */
+        Optional<String> limit();
+
+        /**
+         * Name of a quota under {@code quarkus.http.rate-limit.limits} to use if the limit resolver fails, times out or
+         * emits null. The resolver still chooses the normal quota for every request. Without a fallback the request
+         * receives 503 on lookup failure. Only valid for rules using a limit resolver.
+         */
+        Optional<String> fallbackLimit();
+
+        /**
+         * For an inline limit, the number of permits replenished per {@code quarkus.http.rate-limit.rules."rule".window}, at
+         * least 1. The interval
+         * between two permits, {@code window / permits}, must be at least 1 microsecond.
+         */
+        Optional<Long> permits();
+
+        /**
+         * For an inline limit, the window over which {@code quarkus.http.rate-limit.rules."rule".permits} are replenished, for
+         * example {@code 1m}.
          * Must be positive.
          */
-        Duration window();
+        Optional<Duration> window();
 
         /**
          * The most permits that can be consumed at once, at least 1. Defaults to
-         * {@code quarkus.http.rate-limit."rule".permits}. {@code (window / permits) * burst} must not exceed 30 days.
+         * {@code quarkus.http.rate-limit.rules."rule".permits}. {@code (window / permits) * burst} must not exceed 30 days.
          */
         Optional<Long> burst();
 
@@ -81,5 +134,35 @@ public interface HttpRateLimitRuntimeConfig {
          * Defaults to {@code quarkus.http.rate-limit.max-keys}.
          */
         Optional<Long> maxKeys();
+
+    }
+
+    /**
+     * A named limit, independent of any rule or counter key.
+     */
+    @ConfigGroup
+    interface NamedLimit {
+        /**
+         * Number of permits replenished per window for this named quota, at least one. The quota only takes effect when
+         * selected by a rule's {@code limit} or returned by a limit resolver. Each rule and request key keeps its own
+         * allowance, even when they select the same quota.
+         */
+        long permits();
+
+        /**
+         * Replenishment window for this named quota, for example {@code 1m}. Must be positive; the interval per permit
+         * must be at least one microsecond.
+         */
+        Duration window();
+
+        /**
+         * Maximum permits available at once. Defaults to permits. Refilling a burst must take at most 30 days.
+         */
+        Optional<Long> burst();
+    }
+
+    enum KeyResolverFailure {
+        IP,
+        REJECT
     }
 }

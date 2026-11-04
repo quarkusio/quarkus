@@ -9,10 +9,34 @@ import java.util.Optional;
  * after the request has ended, for example in an {@code @ObservesAsync} observer.
  * <p>
  * As a CDI event, synchronous observers run on the event loop and must not block; asynchronous observers run on a
- * worker thread. The event fires for every rejection, so under a flood observers should count and defer the real work.
+ * worker thread. The event fires for every 429 or 503 refusal, so under a flood observers should count and defer the real work.
  *
  */
 public interface RateLimitRejectionInfo {
+
+    /**
+     * Why the extension refused the request. Unavailable outcomes do not mean that the caller exceeded a quota.
+     */
+    enum Reason {
+        LIMIT_EXCEEDED,
+        KEY_RESOLUTION_FAILED,
+        LIMIT_RESOLUTION_FAILED,
+        STORE_UNAVAILABLE
+    }
+
+    Reason reason();
+
+    /**
+     * @return 429 for an exceeded limit, or 503 when the extension could not decide
+     */
+    default int statusCode() {
+        return reason() == Reason.LIMIT_EXCEEDED ? 429 : 503;
+    }
+
+    /**
+     * @return the quota selected for this request, empty if key or limit resolution failed
+     */
+    Optional<RateLimit> limit();
 
     /**
      * @return the rule that rejected the request
@@ -25,10 +49,10 @@ public interface RateLimitRejectionInfo {
     RateLimitPhase phase();
 
     /**
-     * @return the rate limit key; a key longer than 256 characters, or one that starts with
+     * @return the rate limit key, empty if key resolution failed; a key longer than 256 characters, or one that starts with
      *         {@code sha256:} or contains a brace, arrives as {@code sha256:} followed by the hex SHA-256 of the resolved key
      */
-    String key();
+    Optional<String> key();
 
     /**
      * @return the suggested wait, in seconds

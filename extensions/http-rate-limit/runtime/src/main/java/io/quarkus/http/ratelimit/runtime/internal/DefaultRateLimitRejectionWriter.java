@@ -17,12 +17,13 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.impl.ParsableMIMEValue;
 
 /**
- * Answers 429 with an RFC 9457 problem when the client accepts JSON ({@code application/problem+json},
+ * Answers 429 or 503 with an RFC 9457 problem when the client accepts JSON ({@code application/problem+json},
  * {@code application/json} or {@code text/json}, in the type it asks for), and with plain text in every other case,
  * including a request without an {@code Accept} header or one that accepts any type. A {@code HEAD} request gets no
  * body.
  * <p>
- * The body says only that the client sent too many requests: it never names the rule or the key, which are internal
+ * The body says only that the client sent too many requests or the service is unavailable: it never names the rule or the key,
+ * which are internal
  * configuration and may identify the client. {@code Retry-After} is already on the response when {@link #write} is
  * called. The connection stays open.
  */
@@ -38,6 +39,8 @@ public class DefaultRateLimitRejectionWriter implements RateLimitRejectionWriter
 
     private static final String JSON_BODY = "{\"type\":\"about:blank\",\"title\":\"Too Many Requests\",\"status\":429}";
     private static final String TEXT_BODY = "Too Many Requests";
+    private static final String UNAVAILABLE_JSON_BODY = "{\"type\":\"about:blank\",\"title\":\"Service Unavailable\",\"status\":503}";
+    private static final String UNAVAILABLE_TEXT_BODY = "Service Unavailable";
 
     // the order decides wildcards: */* and text/* pick text/plain, application/* picks the problem type
     private static final List<MIMEHeader> SUPPORTED = List.of(mime(TEXT_PLAIN), mime(PROBLEM_JSON),
@@ -46,7 +49,8 @@ public class DefaultRateLimitRejectionWriter implements RateLimitRejectionWriter
     @Override
     public void write(RoutingContext context, RateLimitRejectionInfo rejection) {
         HttpServerResponse response = context.response();
-        response.setStatusCode(HttpResponseStatus.TOO_MANY_REQUESTS.code());
+        response.setStatusCode(rejection.statusCode());
+        boolean unavailable = rejection.statusCode() == HttpResponseStatus.SERVICE_UNAVAILABLE.code();
         if (context.request().method() == HttpMethod.HEAD) {
             response.end();
             return;
@@ -54,10 +58,10 @@ public class DefaultRateLimitRejectionWriter implements RateLimitRejectionWriter
         String contentType = contentType(context);
         if (TEXT_PLAIN.equals(contentType)) {
             response.putHeader(HttpHeaderNames.CONTENT_TYPE, TEXT_PLAIN + "; charset=utf-8");
-            response.end(TEXT_BODY);
+            response.end(unavailable ? UNAVAILABLE_TEXT_BODY : TEXT_BODY);
         } else {
             response.putHeader(HttpHeaderNames.CONTENT_TYPE, contentType);
-            response.end(JSON_BODY);
+            response.end(unavailable ? UNAVAILABLE_JSON_BODY : JSON_BODY);
         }
     }
 

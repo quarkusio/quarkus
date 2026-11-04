@@ -10,7 +10,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 
 public class UnknownStoreFailsBuildTest {
 
-    private static final String PREFIX = "quarkus.http.rate-limit.api.";
+    private static final String PREFIX = "quarkus.http.rate-limit.rules.api.";
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()

@@ -13,7 +13,7 @@ import io.quarkus.test.QuarkusExtensionTest;
  */
 public class RuleNotDefinedAtBuildTimeFailsStartupTest {
 
-    private static final String PREFIX = "quarkus.http.rate-limit.api.";
+    private static final String PREFIX = "quarkus.http.rate-limit.rules.api.";
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
@@ -22,11 +22,12 @@ public class RuleNotDefinedAtBuildTimeFailsStartupTest {
             .overrideConfigKey(PREFIX + "request-key", "ip")
             .overrideRuntimeConfigKey(PREFIX + "permits", "1")
             .overrideRuntimeConfigKey(PREFIX + "window", "1m")
-            .overrideRuntimeConfigKey("quarkus.http.rate-limit.apj.permits", "1")
-            .overrideRuntimeConfigKey("quarkus.http.rate-limit.apj.window", "1m")
+            .overrideRuntimeConfigKey("quarkus.http.rate-limit.rules.apj.permits", "1")
+            .overrideRuntimeConfigKey("quarkus.http.rate-limit.rules.apj.window", "1m")
             .assertException(t -> assertThat(t).isInstanceOf(ConfigurationException.class)
-                    .hasMessageContaining("Rate limit rule 'apj' is not defined at build time: its paths"
-                            + " (quarkus.http.rate-limit.apj.paths) must be set when the application is built"));
+                    .hasMessageContaining(
+                            "Rate limit rule 'apj' is not defined at build time: its paths ("
+                                    + "quarkus.http.rate-limit.rules.apj.paths) must be set when the application is built"));
 
     @Test
     void startupFails() {

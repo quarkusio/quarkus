@@ -12,7 +12,7 @@ import io.quarkus.http.ratelimit.runtime.internal.config.DefaultRateLimitPolicy;
 class RateLimitPolicyTest {
 
     private static RateLimitPolicy policy(long permits, Duration window, long burst) {
-        return new DefaultRateLimitPolicy("api", RateLimitPhase.PRE_AUTHENTICATION, permits, window, burst, 1000);
+        return new DefaultRateLimitPolicy("api", RateLimitPhase.PRE_AUTHENTICATION, RateLimit.of(permits, window, burst), 1000);
     }
 
     @Test
@@ -38,8 +38,6 @@ class RateLimitPolicyTest {
     void rejectsInvalid() {
         assertThatThrownBy(() -> policy(0, Duration.ofMinutes(1), 1))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("api")
-                .hasMessageContaining("pre-authentication")
                 .hasMessageContaining("permits");
         assertThatThrownBy(() -> policy(5, Duration.ofMinutes(1), 0))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("burst");

@@ -23,7 +23,9 @@ import io.quarkus.arc.Arc;
 import io.quarkus.http.ratelimit.RateLimitDecision;
 import io.quarkus.http.ratelimit.RateLimitPhase;
 import io.quarkus.http.ratelimit.RateLimitRejectionInfo;
+import io.quarkus.http.ratelimit.RateLimitRejectionInfo.Reason;
 import io.quarkus.http.ratelimit.RateLimitRejectionWriter;
+import io.quarkus.http.ratelimit.runtime.internal.config.DefaultRateLimitPolicy;
 import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitRuntimeConfig;
 import io.quarkus.http.ratelimit.runtime.internal.keys.IpKeyResolver;
 import io.quarkus.http.ratelimit.runtime.internal.rules.Outcome;
@@ -182,7 +184,8 @@ public class RateLimitFilter {
         }
 
         Context context = ctx.vertx().getOrCreateContext();
-        // resolvers and stores may complete on any thread: every evaluator, and the response, run on the request's context
+        // resolvers, limit resolvers and stores may complete on any thread: every evaluator, and the response, run on the
+        // request's context
         Executor onContext = new Executor() {
             @Override
             public void execute(Runnable task) {
@@ -284,7 +287,7 @@ public class RateLimitFilter {
             return Uni.createFrom().item(outcomes);
         }
         RuleEvaluator evaluator = evaluators.get(index);
-        return evaluator.evaluate(ctx, identity).emitOn(onContext).onItem()
+        return evaluator.evaluate(ctx, identity, onContext).emitOn(onContext).onItem()
                 .transformToUni(new Function<>() {
                     @Override
                     public Uni<? extends List<Outcome>> apply(Outcome outcome) {
@@ -304,6 +307,7 @@ public class RateLimitFilter {
         return switch (outcome.kind()) {
             case DECIDED -> !(outcome.decision() instanceof RateLimitDecision.Allowed);
             case SKIPPED -> false;
+            case UNAVAILABLE -> true;
         };
     }
 
@@ -338,7 +342,9 @@ public class RateLimitFilter {
         if (!ctx.request().isEnded()) {
             drain(ctx);
         }
-        if (last.decision() instanceof RateLimitDecision.Rejected rejected) {
+        if (last.kind() == Outcome.Kind.UNAVAILABLE) {
+            writeRefusal(ctx, identity, last, RetryAfter.jitteredSeconds(last.retryAfter()), last.reason());
+        } else if (last.decision() instanceof RateLimitDecision.Rejected rejected) {
             reject(ctx, identity, last, rejected);
         }
     }
@@ -429,9 +435,14 @@ public class RateLimitFilter {
                 listener.rejected(evaluator, outcome.key(), retryAfterSeconds);
             }
         });
+        writeRefusal(ctx, identity, outcome, retryAfterSeconds, Reason.LIMIT_EXCEEDED);
+    }
+
+    private void writeRefusal(RoutingContext ctx, Optional<SecurityIdentity> identity, Outcome outcome,
+            long retryAfterSeconds, Reason reason) {
         // set before the writer runs, so that a custom writer inherits a correct Retry-After
         ctx.response().putHeader(HttpHeaderNames.RETRY_AFTER, Long.toString(retryAfterSeconds));
-        RateLimitRejectionInfo rejection = rejection(ctx, identity, evaluator, outcome.key(), retryAfterSeconds);
+        RateLimitRejectionInfo rejection = rejection(ctx, identity, outcome, retryAfterSeconds, reason);
         fire(rejection);
         try {
             writer.write(ctx, rejection);
@@ -448,15 +459,18 @@ public class RateLimitFilter {
      * @return a snapshot that holds no reference to the request, as async observers may run after it has ended
      */
     private static RateLimitRejectionInfo rejection(RoutingContext ctx, Optional<SecurityIdentity> identity,
-            RuleEvaluator evaluator, String key, long retryAfterSeconds) {
+            Outcome outcome, long retryAfterSeconds, Reason reason) {
+        RuleEvaluator evaluator = outcome.evaluator();
         Optional<String> principal = Optional.empty();
         if (identity.isPresent() && !identity.get().isAnonymous()) {
             principal = Optional.ofNullable(identity.get().getPrincipal().getName());
         }
-        return new DefaultRateLimitRejectionInfo(evaluator.rule(), evaluator.phase(), key, retryAfterSeconds,
+        return new DefaultRateLimitRejectionInfo(evaluator.rule(), evaluator.phase(), Optional.ofNullable(outcome.key()),
+                retryAfterSeconds,
                 ctx.request().method().name(), HttpSecurityUtils.normalizePath(ctx.normalizedPath()),
                 IpKeyResolver.clientAddress(ctx.request()),
-                principal);
+                principal, reason, Optional.ofNullable(outcome.policy())
+                        .map(DefaultRateLimitPolicy::limit));
     }
 
     // a failing observer or listener must neither hang the request nor change its outcome

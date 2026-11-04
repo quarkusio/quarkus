@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.http.ratelimit.RateLimit;
 import io.quarkus.http.ratelimit.RateLimitDecision;
 import io.quarkus.http.ratelimit.RateLimitLocalStoreCustomizer;
 import io.quarkus.http.ratelimit.RateLimitPhase;
@@ -31,7 +32,8 @@ class LocalRateLimitStoreTest {
     final LocalRateLimitStore store = new LocalRateLimitStore(clock);
 
     static RateLimitPolicy policy(long permits, Duration window, long burst, long maxKeys) {
-        return new DefaultRateLimitPolicy("g", RateLimitPhase.PRE_AUTHENTICATION, permits, window, burst, maxKeys);
+        return new DefaultRateLimitPolicy("g", RateLimitPhase.PRE_AUTHENTICATION, RateLimit.of(permits, window, burst),
+                maxKeys);
     }
 
     static RateLimitPolicy fivePerMinute() {
@@ -96,6 +98,21 @@ class LocalRateLimitStoreTest {
     }
 
     @Test
+    void overriddenKeyExpiresOnItsOwnWindow() {
+        RateLimitPolicy rule = fivePerMinute();
+        RateLimitPolicy override = policy(5, Duration.ofHours(1), 5, 100);
+        consume("a", 1, rule);
+        consume("b", 1, override);
+        assertThat(tracked(rule)).isEqualTo(2);
+        assertThat(store.trackedKeys(override)).isEqualTo(2);
+
+        clock.advance(Duration.ofMinutes(2));
+
+        assertThat(tracked(rule)).isEqualTo(1);
+        assertThat(store.cache(rule).asMap()).containsOnlyKeys("b");
+    }
+
+    @Test
     void sizeEvictionIsCountedAndLenient() {
         RateLimitPolicy policy = policy(5, Duration.ofMinutes(1), 5, 2);
         exhaust("a", policy);
@@ -106,6 +123,22 @@ class LocalRateLimitStoreTest {
         assertThat(tracked(policy)).isLessThanOrEqualTo(2);
         List<RateLimitDecision> again = List.of(consume("a", 1, policy), consume("b", 1, policy));
         assertThat(again).contains(RateLimitDecision.allowed(4));
+    }
+
+    @Test
+    void overrideChangesLimitMidStream() {
+        exhaust("k", fivePerMinute());
+        assertThat(consume("k", 1, fivePerMinute())).isInstanceOf(RateLimitDecision.Rejected.class);
+
+        // GCRA debt is time: 5 x 12s = 60s is a full bucket under 10/1m burst 10 too (tau = 60s), one 6s permit away
+        RateLimitPolicy tenPerMinute = policy(10, Duration.ofMinutes(1), 10, 100);
+        assertThat(consume("k", 1, tenPerMinute))
+                .isEqualTo(RateLimitDecision.rejected(Duration.ofSeconds(6)));
+
+        // 10 per 2m with burst 10 has the same T and twice the tau: the same TAT leaves 5 permits, so 4 after this one
+        RateLimitPolicy tenPerTwoMinutes = policy(10, Duration.ofMinutes(2), 10, 100);
+        assertThat(consume("k", 1, tenPerTwoMinutes))
+                .isEqualTo(RateLimitDecision.allowed(4));
     }
 
     @Test

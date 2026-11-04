@@ -30,7 +30,7 @@ import io.vertx.core.Vertx;
  */
 public class LongKeyTest {
 
-    private static final String PREFIX = "quarkus.http.rate-limit.api.";
+    private static final String PREFIX = "quarkus.http.rate-limit.rules.api.";
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
@@ -89,7 +89,7 @@ public class LongKeyTest {
         final List<String> keys = new CopyOnWriteArrayList<>();
 
         void observe(@Observes RateLimitRejectionInfo rejection) {
-            keys.add(rejection.key());
+            keys.add(rejection.key().orElseThrow());
         }
     }
 }

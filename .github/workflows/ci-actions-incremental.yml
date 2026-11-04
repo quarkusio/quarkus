@@ -117,7 +117,10 @@ env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
-  COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation"
+  # Scalpel is only run in the initial build (report mode, on the full reactor): the resulting list of impacted modules
+  # is passed to the test jobs as explicit -pl selections. Scalpel must not run again in these jobs: it would only see
+  # the reactor of the job and not the changes made to modules outside of it (e.g. core/ when building integration-tests/).
+  COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation -Dscalpel.enabled=false"
   NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=6g -Dnative -Dnative.surefire.skip -Dno-descriptor-tests clean install -DskipDocs"
   JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.test.hang-detection-timeout=300"
   # Important: keep these selectors in sync with the grep commands in the calc_run_flags job!
@@ -338,7 +341,6 @@ jobs:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
     outputs:
-      scalpel_args: ${{ steps.get-scalpel-config.outputs.scalpel_args }}
       scalpel_impacted: ${{ steps.get-scalpel-config.outputs.impacted_modules }}
       scalpel_impacted_gav: ${{ steps.get-scalpel-config.outputs.impacted_modules_gav }}
     steps:
@@ -425,7 +427,6 @@ jobs:
         run: |
           SCALPEL_IMPACTED_GAV='_all_'
           if [[ "$SCALPEL_DISABLED" == "true" ]] || [[ "$PUSH_BRANCH" =~ ^main|[0-9]+\.[0-9]+$ ]] || [[ "$PULL_REQUEST_HEAD" =~ ^.*backport.*$ ]]; then
-            SCALPEL_ARGS=''
             SCALPEL_IMPACTED='_all_'
           else
             # See also: https://github.com/maveniverse/scalpel#configuration
@@ -453,12 +454,9 @@ jobs:
               SCALPEL_IMPACTED=$(jq -r '.affectedModules[] | select(.category != "UPSTREAM") | .path' target/scalpel-report.json)
               if [ -z "$SCALPEL_IMPACTED" ]; then
                 SCALPEL_IMPACTED='_all_'
-                SCALPEL_ARGS=''
               fi
             else
               SCALPEL_IMPACTED='_all_'
-              # when we impact all modules, we do not need to run Scalpel in further jobs
-              SCALPEL_ARGS=''
             fi
 
             # Extract GAV-formatted impacted modules from the JSON report for quickstarts testing
@@ -469,10 +467,8 @@ jobs:
               fi
             fi
 
-            echo "SCALPEL_ARGS: $SCALPEL_ARGS"
           fi
 
-          echo "scalpel_args=${SCALPEL_ARGS}" >> $GITHUB_OUTPUT
           echo "SCALPEL_IMPACTED: ${SCALPEL_IMPACTED}"
           # three steps to retain linefeeds in output for other jobs
           # (see https://github.com/github/docs/issues/21529 and https://github.com/orgs/community/discussions/26288#discussioncomment-3876281)
@@ -529,10 +525,11 @@ jobs:
       otp_native_matrix: ${{ steps.calc-otp-native-matrix.outputs.matrix }}
       run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
       run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
-      run_maven: ${{ steps.calc-run-flags.outputs.run_maven }}
       run_kubernetes: ${{ steps.calc-run-flags.outputs.run_kubernetes }}
       run_quickstarts: ${{ steps.calc-run-flags.outputs.run_quickstarts }}
-      run_tcks: ${{ steps.calc-run-flags.outputs.run_tcks }}
+      # -pl selections for the Maven tests and TCKs jobs, an empty value means the job is skipped
+      maven_modules: ${{ steps.calc-run-flags.outputs.maven_modules }}
+      tcks_modules: ${{ steps.calc-run-flags.outputs.tcks_modules }}
     steps:
       - uses: runs-on/action@17b59092eb37ebfdbb034460892887c09100eaa3 # v2.5.0
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -573,28 +570,36 @@ jobs:
       - name: Calculate run flags
         id: calc-run-flags
         run: |
-          run_devtools=true; run_gradle=true; run_maven=true; run_kubernetes=true; run_quickstarts=true; run_tcks=true;
+          run_devtools=true; run_gradle=true; run_kubernetes=true; run_quickstarts=true;
+          # -pl selections for the jobs building a subset of the impacted modules, an empty value means the job is skipped
+          # Scalpel is not run in the jobs (it would not see the changes outside of the reactor of the job) so we need the exact list of modules
+          maven_modules="-pl integration-tests/maven -pl integration-tests/devmode"
+          tcks_modules="-pl tcks -amd"
           if [ -z "${SCALPEL_IMPACTED_MODULES}" ]
           then
-            run_devtools=false; run_gradle=false; run_maven=false; run_kubernetes=false; run_quickstarts=false; run_tcks=false
+            run_devtools=false; run_gradle=false; run_kubernetes=false; run_quickstarts=false
+            maven_modules=''; tcks_modules=''
           elif [ "${SCALPEL_IMPACTED_MODULES}" != '_all_' ]
           then
             # Important: keep -pl ... in actual jobs in sync with the following grep commands!
             # do not use grep -q as it can exit before echo has finished outputting and cause broken pipes
             if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep 'integration-tests/devtools' > /dev/null); then run_devtools=false; fi
             if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep 'integration-tests/gradle' > /dev/null); then run_gradle=false; fi
-            if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -P 'integration-tests/(maven|devmode)' > /dev/null); then run_maven=false; fi
             if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -P 'integration-tests/kubernetes/.*' > /dev/null); then run_kubernetes=false; fi
             if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -Pv '(docs|integration-tests|tcks)/.*' > /dev/null); then run_quickstarts=false; fi
-            if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep 'tcks/.*' > /dev/null); then run_tcks=false; fi
+            maven_modules=$(echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -P '^integration-tests/(maven|devmode)$' | paste -sd, || echo '')
+            if [ -n "${maven_modules}" ]; then maven_modules="-pl ${maven_modules}"; fi
+            tcks_modules=$(echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -P '^tcks(/.*)?$' | paste -sd, || echo '')
+            if [ -n "${tcks_modules}" ]; then tcks_modules="-pl ${tcks_modules}"; fi
           fi
-          echo "run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_kubernetes=${run_kubernetes}, run_quickstarts=${run_quickstarts}, run_tcks=${run_tcks}"
+          echo "run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_kubernetes=${run_kubernetes}, run_quickstarts=${run_quickstarts}"
+          echo "maven_modules=${maven_modules}, tcks_modules=${tcks_modules}"
           echo "run_devtools=${run_devtools}" >> $GITHUB_OUTPUT
           echo "run_gradle=${run_gradle}" >> $GITHUB_OUTPUT
-          echo "run_maven=${run_maven}" >> $GITHUB_OUTPUT
           echo "run_kubernetes=${run_kubernetes}" >> $GITHUB_OUTPUT
           echo "run_quickstarts=${run_quickstarts}" >> $GITHUB_OUTPUT
-          echo "run_tcks=${run_tcks}" >> $GITHUB_OUTPUT
+          echo "maven_modules=${maven_modules}" >> $GITHUB_OUTPUT
+          echo "tcks_modules=${tcks_modules}" >> $GITHUB_OUTPUT
 
   jvm-tests:
     name: ${{ matrix.java.name }}
@@ -626,11 +631,6 @@ jobs:
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # this is important for Scalpel to work
-          fetch-depth: 0
-      - name: Add quarkusio remote for Scalpel
-        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
 
       - name: apt clean
         if: ${{ !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos') }}
@@ -769,7 +769,7 @@ jobs:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.run_maven == 'true'
+    if: needs.calculate-test-jobs.outputs.maven_modules != ''
     timeout-minutes: 130
     strategy:
       fail-fast: false
@@ -801,11 +801,6 @@ jobs:
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # this is important for Scalpel to work
-          fetch-depth: 0
-      - name: Add quarkusio remote for Scalpel
-        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Restore Maven Repository
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
@@ -838,9 +833,8 @@ jobs:
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
-        # Important: keep -pl ... in sync with "Calculate run flags"!
-        # Despite the pre-calculated run_maven flag, Scalpel has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.initial-build.outputs.scalpel_args }}
+        # the -pl selection is computed in "Calculate run flags" from the impacted modules
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install ${{ needs.calculate-test-jobs.outputs.maven_modules }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
@@ -1466,7 +1460,7 @@ jobs:
     name: MicroProfile TCKs Tests
     needs: [configure, initial-build, calculate-test-jobs]
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.run_tcks == 'true'
+    if: needs.calculate-test-jobs.outputs.tcks_modules != ''
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn, 'microprofile-tcks') || 'ubuntu-latest' }}
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
@@ -1479,11 +1473,6 @@ jobs:
           echo "GE_TAGS=jdk-${{ needs.configure.outputs.base-jdk-version }}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=MicroProfile TCKs Tests" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # this is important for Scalpel to work
-          fetch-depth: 0
-      - name: Add quarkusio remote
-        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK ${{ needs.configure.outputs.base-jdk-version }}
@@ -1518,9 +1507,8 @@ jobs:
       - name: Verify
         env:
           CAPTURE_BUILD_SCAN: true
-        # Important: keep -pl ... in sync with "Calculate run flags"!
-        # Despite the pre-calculated run_tcks flag, Scalpel has to be re-run here to figure out the exact tcks submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -Dtcks -pl tcks -amd clean install ${{ needs.initial-build.outputs.scalpel_args }}
+        # the -pl selection is computed in "Calculate run flags" from the impacted modules
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -Dtcks ${{ needs.calculate-test-jobs.outputs.tcks_modules }} clean install
       - name: Verify resteasy-reative dependencies
         # note: ideally, this would be run _before_ mvnw but that would required building tcks/resteasy-reactive in two steps
         run: ./tcks/resteasy-reactive/update-dependencies.sh $COMMON_MAVEN_ARGS

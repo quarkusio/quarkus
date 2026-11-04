@@ -5,7 +5,6 @@ import java.util.Optional;
 import jakarta.inject.Singleton;
 
 import io.quarkus.http.ratelimit.RateLimitContext;
-import io.quarkus.http.ratelimit.RateLimitKeyResolver;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.common.annotation.Identifier;
 import io.smallrye.mutiny.Uni;
@@ -16,7 +15,7 @@ import io.smallrye.mutiny.Uni;
  */
 @Singleton
 @Identifier("principal")
-public class PrincipalKeyResolver implements RateLimitKeyResolver {
+public class PrincipalKeyResolver implements ImmediateKeyResolver {
 
     @Override
     public Uni<Optional<String>> resolve(RateLimitContext context) {

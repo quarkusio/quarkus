@@ -39,6 +39,12 @@ public final class ThrottledLogger {
         }
     }
 
+    public void warnf(Throwable failure, String format, Object param1) {
+        if (tryAcquire()) {
+            log.warnf(failure, format, param1);
+        }
+    }
+
     // a compare-and-set, so that of several concurrent callers only one logs
     private boolean tryAcquire() {
         long now = clock.nanoTime();

@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -18,28 +20,32 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.smallrye.common.annotation.Identifier;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.client.HttpResponse;
 
 /**
- * The built-in {@code principal} key falls back to the client address for a request without a non-anonymous identity.
+ * The built-in {@code principal} key falls back to the client address for a request without a non-anonymous identity;
+ * a custom post-authentication resolver sees such requests too and decides itself.
  */
 public class AnonymousFallbackTest {
 
     private static final String PREFIX = "quarkus.http.rate-limit.";
 
     @RegisterExtension
-    static final QuarkusExtensionTest config = withRule(withRule(
+    static final QuarkusExtensionTest config = withRule(withRule(withRule(
             TestHttp.withUsers(new QuarkusExtensionTest()
                     .withApplicationRoot(jar -> jar.addClasses(TestHttp.class, TestClient.class, TestHttp.Resource.class,
-                            Rejections.class)))
+                            RecordingResolver.class, Rejections.class)))
                     .overrideConfigKey("quarkus.vertx.event-loops-pool-size", "1")
                     .overrideConfigKey("quarkus.http.auth.permission.protected.paths", "/protected/*")
                     .overrideConfigKey("quarkus.http.auth.permission.protected.policy", "authenticated"),
-            "principal", "principal"), "protected", "principal")
+            "principal", "principal"), "protected", "principal"), "custom", "custom:recording")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-elytron-security-properties-file-deployment", Version.getVersion())));
 
@@ -53,6 +59,10 @@ public class AnonymousFallbackTest {
 
     @Inject
     Vertx vertx;
+
+    @Inject
+    @Identifier("recording")
+    RecordingResolver resolver;
 
     @Inject
     Rejections rejections;
@@ -98,8 +108,33 @@ public class AnonymousFallbackTest {
         assertThat(rejections.keys("protected")).allSatisfy(key -> assertThat(key).doesNotContain("bob"));
     }
 
+    @Test
+    void customResolverReceivesAnonymousRequest() {
+        HttpResponse<Buffer> response = get("/custom/x", Map.of());
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(resolver.anonymousCalls).hasPositiveValue();
+    }
+
     private HttpResponse<Buffer> get(String path, Map<String, String> headers) {
         return http.get(path, headers);
+    }
+
+    /**
+     * Counts the anonymous requests it is called for, and skips every request.
+     */
+    @Singleton
+    @Identifier("recording")
+    public static class RecordingResolver implements RateLimitKeyResolver {
+
+        final AtomicInteger anonymousCalls = new AtomicInteger();
+
+        @Override
+        public Uni<Optional<String>> resolve(RateLimitContext context) {
+            if (context.identity().map(SecurityIdentity::isAnonymous).orElse(true)) {
+                anonymousCalls.incrementAndGet();
+            }
+            return Uni.createFrom().item(Optional.empty());
+        }
     }
 
     @Singleton

@@ -57,16 +57,16 @@ First, make sure to have an App Engine environment initialized for your Google C
 
 Then, you will need to create a `src/main/appengine/app.yaml` file, let's keep it minimalistic with only the selected engine:
 
-[source, yaml]
+[source, yaml, subs=attributes+]
 ----
-runtime: java25
+runtime: java{jdk-version-latest}
 ----
 
 This will create a default service for your App Engine application.
 
 [NOTE]
 ====
-You can also use another Java runtime supported by App Engine, for example, for Java 21, use `runtime: java21` instead.
+You can also use another Java runtime supported by App Engine, for example, for Java {jdk-version-earliest}, use `runtime: java{jdk-version-earliest}` instead.
 ====
 
 App Engine Standard does not support the default Quarkus' specific packaging layout, therefore, you must set up your application to be packaged as an uber-jar via your `application.properties` file:

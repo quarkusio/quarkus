@@ -48,7 +48,8 @@
         <!-- Enable APT by default for Eclipse -->
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>
 
-        <!-- These 2 properties are used in catalog-overrides.json -->
+        <!-- These 2 properties are used in catalog-overrides.json and in docs/src/main/asciidoc/_attributes.adoc,
+             where jdk-version-all lists every supported version by hand: update it when these change -->
         <minimum-java-version>${maven.compiler.release}</minimum-java-version>
         <recommended-java-version>25</recommended-java-version>
 

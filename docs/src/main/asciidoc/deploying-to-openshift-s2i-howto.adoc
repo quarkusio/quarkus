@@ -67,12 +67,6 @@ JAVA_APP_JAR=/deployments/quarkus-run.jar
 +
 [source,shell,subs="attributes+",options="nowrap"]
 ----
-oc import-image {name-image-ubi9-open-jdk-17-short} --from={name-image-ubi9-open-jdk-17} --confirm
-----
-* Java {jdk-version-other}:
-+
-[source,shell,subs="attributes+",options="nowrap"]
-----
 oc import-image {name-image-ubi10-open-jdk-21-short} --from={name-image-ubi10-open-jdk-21} --confirm
 ----
 +
@@ -101,12 +95,6 @@ For information about this image, see link:https://catalog.redhat.com/en/softwar
 +
 [source,shell,subs="attributes+",options="nowrap"]
 ----
-oc new-app {name-image-ubi9-open-jdk-17}~<git_path> --name=<project_name>
-----
-* Java {jdk-version-other}:
-+
-[source,shell,subs="attributes+",options="nowrap"]
-----
 oc new-app {name-image-ubi10-open-jdk-21}~<git_path> --name=<project_name>
 ----
 +
@@ -119,7 +107,7 @@ oc new-app {name-image-ubi10-open-jdk-25}~<git_path> --name=<project_name>
 +
 .. Replace `<git_path>` with the path of the Git repository that hosts your Quarkus project.
 +
-For example, for Java {jdk-version-other}:
+For example, for Java {jdk-version-earliest}:
 +
 [source,shell,subs="attributes+",options="nowrap"]
 ----
@@ -133,7 +121,7 @@ If you do not have SSH keys configured for the Git repository, when specifying t
 +
 [NOTE]
 ====
-If you are deploying on IBM Z infrastructure, enter `oc new-app ubi10/openjdk-21~<git_path> --name=<project_name>` instead.
+If you are deploying on IBM Z infrastructure, enter `oc new-app {name-image-ubi10-open-jdk-21-short}~<git_path> --name=<project_name>` instead.
 ====
 
 . To deploy an updated version of the project, push changes to the Git repository, and then run:

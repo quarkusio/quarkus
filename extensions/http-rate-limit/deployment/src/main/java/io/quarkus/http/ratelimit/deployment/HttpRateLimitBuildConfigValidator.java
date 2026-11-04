@@ -50,6 +50,88 @@ public final class HttpRateLimitBuildConfigValidator {
         return errors;
     }
 
+    /**
+     * Rule paths include {@code quarkus.http.root-path}, so a path that can match nothing under it, nor under the
+     * non-application root path, would never apply.
+     *
+     * @param rootPath {@code quarkus.http.root-path}
+     * @param nonApplicationRootPath {@code quarkus.http.non-application-root-path}, absolute or relative to the root path
+     * @return one message per rule path outside both root paths
+     */
+    public static List<String> validateRootPath(HttpRateLimitBuildTimeConfig config, String rootPath,
+            String nonApplicationRootPath) {
+        List<String> errors = new ArrayList<>();
+        String root = directory(rootPath);
+        if (root.equals("/")) {
+            return errors;
+        }
+        String nonApplicationRoot = nonApplicationRootPath.startsWith("/")
+                ? directory(nonApplicationRootPath)
+                : root + directory(nonApplicationRootPath).substring(1);
+        for (Map.Entry<String, Rule> entry : config.rules().entrySet()) {
+            for (String path : entry.getValue().paths()) {
+                if (path.startsWith("/") && outside(path, root) && outside(path, nonApplicationRoot)) {
+                    errors.add("Rate limit rule '" + entry.getKey() + "' path '" + path
+                            + "' is outside quarkus.http.root-path '" + root
+                            + "', so it matches no request; write it under the root path");
+                }
+            }
+        }
+        return errors;
+    }
+
+    /**
+     * @param proactive {@code quarkus.http.auth.proactive}
+     * @param mechanisms whether there is an {@code HttpAuthenticationMechanism} bean
+     * @return one message per rule that is valid but probably not what was intended
+     */
+    public static List<String> warnings(HttpRateLimitBuildTimeConfig config, boolean proactive, boolean mechanisms) {
+        List<String> warnings = new ArrayList<>();
+        for (Map.Entry<String, Rule> entry : config.rules().entrySet()) {
+            Rule rule = entry.getValue();
+            if (RateLimitRuleConfig.phase(config, rule) != RateLimitPhase.POST_AUTHENTICATION) {
+                continue;
+            }
+            if (!proactive) {
+                // HttpAuthenticator.getPathSpecificMechanism reads routing context data that only the REST layer sets
+                warnings.add("Rate limit rule '" + entry.getKey()
+                        + "' runs after authentication but quarkus.http.auth.proactive=false:"
+                        + " authentication is now forced for every request to its paths, using the mechanisms selected"
+                        + " by path; mechanisms selected by REST annotations are not known at this point and are not"
+                        + " applied");
+            }
+            if ("principal".equals(RateLimitRuleConfig.key(config, rule)) && !mechanisms) {
+                warnings.add("Rate limit rule '" + entry.getKey()
+                        + "' uses request-key 'principal' but no HttpAuthenticationMechanism bean"
+                        + " is present; every request will be anonymous");
+            }
+        }
+        return warnings;
+    }
+
+    /**
+     * @return the path with a leading and a trailing slash
+     */
+    private static String directory(String path) {
+        String withLeading = path.startsWith("/") ? path : "/" + path;
+        return withLeading.endsWith("/") ? withLeading : withLeading + "/";
+    }
+
+    /**
+     * @param directory a path with a leading and a trailing slash
+     * @return whether no request path under the directory, nor the directory itself, can match the pattern: an exact
+     *         path matches only itself, so it must lie under the directory; for a pattern with a wildcard, the part
+     *         before its first wildcard is compared segment by segment, and may also be a parent of the directory
+     */
+    private static boolean outside(String pattern, String directory) {
+        int wildcard = pattern.indexOf('*');
+        if (wildcard < 0) {
+            return !directory(pattern).startsWith(directory);
+        }
+        String literal = pattern.substring(0, wildcard);
+        return !literal.startsWith(directory) && !directory.startsWith(literal);
+    }
+
     private static void validatePaths(String prefix, Rule rule, List<String> errors) {
         for (String path : rule.paths()) {
             if (!path.startsWith("/")) {

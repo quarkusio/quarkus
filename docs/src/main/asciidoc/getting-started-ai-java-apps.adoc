@@ -1,0 +1,277 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="getting-started-ai-java-apps"]
+= Creating your first AI Java application using LangChain4j
+include::_attributes.adoc[]
+:quickstart-includes: https://github.com/lauracowen/quarkus-quickstarts/getting-started-ai-java-apps/main
+:diataxis-type: tutorial
+:categories: getting-started, ai
+:extension-status: experimental
+:topics: getting-started, ai
+////
+The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
+////
+
+Create a simple RESTful Java application that asks an AI model to write a poem based on a topic provided by the user at an endpoint. The service responds to GET requests made to the `http://localhost:8080/poems/{topic}/{lines}` URL. The user enters the topic and length of the desired poem; for example `http://localhost:8080/poems/purple/5`, to generate a poem such as:
+
+----
+In twilight's embrace, a royal hue,
+Lavender whispers in the morning dew.
+Amethyst dreams weave through the night,
+A canvas of wonder, both bold and bright.
+Nature's soft secret, a majestic view.
+----
+
+You will create a Java class and a Java interface. The class represents a resource which defines the application's endpoint and calls the AI model by using the interface to implement an AI service. The AI service uses the parameter values passed in through the endpoint to compose a prompt, a natural language text request, and sends it to the AI model.
+
+The AI model (a large language model, or LLM) parses the prompt and returns a poem according to the topic and number of lines requested in the prompt. LLMs are AI models that are trained to generate output based on the natural language requests they receive. The input and output of LLMs are usually text, as in this application, but some LLMs specialise in other formats such as images or video.
+
+image::getting-started-ai-java-apps.png[alt=Architecture, align=center]
+
+
+Much of the work needed to compose the prompt and to connect to the LLM in order to send the request and get a response is handled for you by LangChain4j, an open source library that is available as an extension to Quarkus.
+
+
+
+// TODO: If this is a tutorial for an experimental or tech-preview extension, uncomment the following (otherwise delete)
+include::{includes}/extension-status.adoc[]
+
+
+.Prerequisites 
+
+:prerequisites-time: 15 minutes 
+:prerequisites-no-graalvm:
+include::{includes}/prerequisites.adoc[] 
+
+
+For the simple application in this guide, we can use a demo key for OpenAI.
+
+== Solution
+
+Follow the instructions in this guide to create the application from scratch.
+
+However, you can first run the completed example to see how it works:
+
+. Download an {quickstarts-archive-url}[archive] or clone the git repository:
++
+[source,bash,subs=attributes+]
+----
+git clone {quickstarts-clone-url}
+----
++
+. Run the application in dev mode:
++
+Quarkus CLI:
++
+[source,text]
+----
+cd getting-started-ai-java-apps
+quarkus dev
+----
++
+Maven:
++
+[source,text]
+----
+cd getting-started-ai-java-apps
+./mvnw quarkus:dev
+----
++
+. Try the application by visiting the endpoint; for example: `http://localhost:8080/poems/purple/5`.
+
+//The solution is located in the `getting-started-ai-java-apps` link:{quickstarts-tree-url}/getting-started-ai-java-apps[directory].
+
+In the terminal, press `q` to stop Quarkus before you continue with this guide.
+
+:sectnums:
+:sectnumlevels: 1
+== Creating the project
+
+The easiest way to create a new Quarkus project is to open a terminal and run the following command:
+
+:create-app-artifact-id: getting-started-ai-java-apps
+:create-app-extensions: rest
+:create-app-code:
+include::{includes}/devtools/create-app.adoc[]
+
+It generates the following items in `./getting-started-ai-java-apps`:
+
+* the Maven structure
+* an `org.acme.GreetingResource` resource exposed on `/hello`
+* an associated unit test
+* a landing page that is accessible on `http://localhost:8080` after starting the application
+* example `Dockerfile` files for both `native` and `jvm` modes in `src/main/docker`
+* the `application.properties` configuration file
+
+Start the application in dev mode by running the following commands:
+
+Quarkus CLI:
+[source,text]
+----
+cd getting-started-ai-java-apps
+quarkus dev
+----
+
+Maven:
+[source,text]
+----
+cd getting-started-ai-java-apps
+./mvnw quarkus:dev
+----
+
+To check that everything is working, visit `http://localhost:8080`. The Quarkus welcome page lists the endpoints available in the generated sample application (`/hello`).
+
+Stay in dev mode so that as you add files to the project, your changes are automatically compiled and deployed by Quarkus for easy testing.
+
+
+[[ai-service]]
+== Creating the AI service
+
+The AI service provides an abstraction layer to make it easier to write a Java application that interacts with an LLM.
+The AI service composes the prompts to send to the LLM and receives the responses from the LLM.
+The application needs only minimal configuration to connect to the LLM because the AI service handles the connection details.
+AI services can manage other information too, including chat memory and toolboxes, which will be explored in other guides.
+
+The AI service composes the prompt from two pieces of information in the class that implements the AI service:
+
+- the system message, which provides context to the request that the application sends to the LLM. For example, you can set the role or persona of the LLM and guide the LLM's behavior when responding.
+- the user message, which represents the user's latest input to send to the LLM. The user message is usually received, and processed, by the LLM after the system message.
+
+Create the `AiPoemService` interface at `src/main/java/org/acme/AiPoemService.java`:
+
+[source,java,linenums]
+----
+package org.acme;
+
+import dev.langchain4j.service.SystemMessage;
+import dev.langchain4j.service.UserMessage;
+import io.quarkiverse.langchain4j.RegisterAiService;
+
+@RegisterAiService( ) // <1>
+public interface AiPoemService {
+
+    @SystemMessage("You are a professional poet. Display the poem in well-formed HTML with line breaks (no markdown).") // <2>
+    @UserMessage("Write a poem about {poemTopic}. The poem should be {poemLines} lines long.") // <3>
+    String writeAPoem(String poemTopic, int poemLines); // <4>
+}
+
+----
+<1> Implements the interface as an AI service which can connect to the LLM that is configured in the `resources/application.properties` file.
+<2> Instructs the LLM to take the role of a professional poet and to display the generated poem in well-formed HTML with line breaks so that it renders neatly when viewed in a web browser.
+<3> Asks the LLM to generate a poem on the topic and of the length that the user has chosen.
+The user's choices are passed as parameters from the endpoint, `{topic}` and `{lines}`, to complete the templated user message placeholders, `{poemTopic}` and `{poemLines}`.
+<4> Starts an exchange between the application and the AI service.
+The AI service composes a prompt including the system message and the user message and sends it to the LLM.
+The `writeAPoem()` method is called by the `showMeAPoem()` method in the `Poems` class, passing in the user's chosen topic and length from the endpoint parameters.
+
+[[rest-resource]]
+== Creating the RESTful resource
+
+The RESTful resource defines the endpoint of your RESTful service. When a GET request is made to the endpoint, the `showMeAPoem()` method runs and calls the `writeAPoem()` method in the AI service to send a request to the LLM.
+
+In this application, the resource class defines the endpoint that receives the user's input (choice of topic and number of lines in the poem) and then passes it to the AI service to include in its request to the LLM.
+
+Create the `Poems` class at `src/main/java/org/acme/Poems.java`:
+
+[source,java,linenums]
+----
+package org.acme;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+@Path("/poems")
+public class Poems {
+
+    @Inject
+    AiPoemService aiPoemService;  // <1>
+
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    @Path("/{topic}/{lines}")  // <2>
+    public String showMeAPoem(@PathParam("topic") String userTopic, @PathParam("lines") int userLines) {  // <3>
+        return aiPoemService.writeAPoem(userTopic, userLines);  // <4>
+    }
+}
+----
+<1> Implements the `AiPoemService` interface as `aiPoemService`.
+<2> Defines the RESTful endpoint that takes the user's input as endpoint parameters, `{topic}` and `{lines}`.
+<3> Declares the `showMeAPoem()` method which takes two arguments, `userTopic` and `userLines` (because there is more than one argument, you must explicitly annotate each parameter).
+When a GET request is made to the `/poems/{topic}/{lines}` endpoint, the values of the `{topic}` and `{lines}` parameters are passed as the `writeAPoem()` method's `userTopic` and `userLines` arguments.
+<4> Calls the AI service's `writeAPoem()` method with the values received from the endpoint.
+Calling the `writeAPoem()` method causes these values to be added to the user message as part of the prompt that the AI service sends to the LLM.
+The response from the LLM is then displayed in HTML...hopefully.
+
+[[configure]]
+== Configuring the application
+
+Connecting to an LLM is greatly simplified by using LangChain4j.
+For this application, Quarkus uses the link:https://quarkus.io/extensions/io.quarkiverse.langchain4j/quarkus-langchain4j-openai/[Quarkus LangChain4j OpenAI extension], which is configured in the `pom.xml`.
+You then need only set the API key and the base URL properties for the LLM in `src/main/resources/application.properties`; in this case, you can use the value `demo` to get limited demo access to the LLM which is sufficient for this application:
+
+[source,linenums]
+----
+quarkus.langchain4j.openai.api-key=demo
+quarkus.langchain4j.openai.base-url=http://langchain4j.dev/demo/openai/v1
+----
+
+[[run]]
+== Running the application
+
+If dev mode is not already running, start the application in dev mode now:
+
+Quarkus CLI:
+[source,text]
+----
+quarkus dev
+----
+
+Maven:
+[source,text]
+----
+./mvnw quarkus:dev
+----
+
+Any changes you make to the application are automatically rebuilt and re-deployed while running in dev mode.
+
+To test the application, request the endpoint with the values you choose replacing the template placeholders.
+For example, request a poem of five lines about purple with the URI `http://localhost:8080/poems/purple/5`.
+The HTML request in the system message means that it should display neatly in a web browser.
+
+Alternatively, run the following curl command:
+
+----
+curl -w "\n" http://localhost:8080/poems/purple/5
+----
+
+Notice that there is a slight pause while the LLM responds, but then the application returns a short poem on the chosen topic and of the requested length.
+
+[[prompts]]
+== Try alternative prompts without modifying your code
+
+The Quarkus Dev UI (when running in dev mode) provides a chat interface where you can test alternative user messages without modifying your application code.
+To use the Dev UI chat interface:
+
+. From the running terminal, press `d` to open the Quarkus Dev UI Extensions page (`http://localhost:8080/q/dev-ui/extensions`) in a browser.
+The Extensions page lists all the extensions installed in your running instance of Quarkus.
+. In the **LangChain4j Core** tile, click **Chat** to open the Chat interface.
+. The **System message** field contains the system message from your application. You can modify the system message if you want to.
+. In the **Message** field, type a user message then press **Send**.
+
+The application runs and returns a response based on the system and user messages entered in the chat window.
+
+
+
+:sectnums!:
+== Where next?
+
+Congratulations! You have created your first AI Java application and run it on Quarkus with LangChain4j.
+
+Next, if you want to learn more about writing AI Java applications with Quarkus and LangChain4j, take a look at the link:https://redhat-developer-demos.github.io/quarkus-tutorial/quarkus-tutorial/17_ai_intro.html[Quarkus and AI tutorial].

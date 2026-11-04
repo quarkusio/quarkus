@@ -12,8 +12,8 @@ import io.quarkus.test.QuarkusExtensionTest;
 
 public class StartupLogTest {
 
-    private static final String PREFIX = "quarkus.http.rate-limit.api.";
-    private static final String ADMIN = "quarkus.http.rate-limit.admin.";
+    private static final String PREFIX = "quarkus.http.rate-limit.rules.api.";
+    private static final String ADMIN = "quarkus.http.rate-limit.rules.admin.";
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
@@ -39,7 +39,7 @@ public class StartupLogTest {
                         .map(StartupLogTest::format)
                         .anySatisfy(m -> assertThat(m).isEqualTo(
                                 "Rate limit rule 'api': paths=[/api/*] methods=[] phase=pre-authentication request-key=ip"
-                                        + " permits=5 window=PT1M burst=5 store=local max-keys=100000"))
+                                        + " limit=RateLimit[permits=5, window=PT1M, burst=5] limit-resolver=- store=local max-keys=100000"))
                         .anySatisfy(m -> assertThat(m).startsWith("Rate limit rule 'admin': paths=[/admin/*]"));
             });
 

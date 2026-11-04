@@ -31,8 +31,8 @@ import io.vertx.ext.web.client.HttpResponse;
  */
 public class BothPhasesTest {
 
-    private static final String PRE = "quarkus.http.rate-limit.pre.";
-    private static final String POST = "quarkus.http.rate-limit.post.";
+    private static final String PRE = "quarkus.http.rate-limit.rules.pre.";
+    private static final String POST = "quarkus.http.rate-limit.rules.post.";
 
     @RegisterExtension
     static final QuarkusExtensionTest config = TestHttp.withUsers(new QuarkusExtensionTest()

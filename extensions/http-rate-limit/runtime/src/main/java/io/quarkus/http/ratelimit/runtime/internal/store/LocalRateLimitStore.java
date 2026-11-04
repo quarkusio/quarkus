@@ -23,6 +23,7 @@ import com.github.benmanes.caffeine.cache.RemovalListener;
 import io.quarkus.arc.All;
 import io.quarkus.http.ratelimit.RateLimitDecision;
 import io.quarkus.http.ratelimit.RateLimitLocalStoreCustomizer;
+import io.quarkus.http.ratelimit.RateLimitPhase;
 import io.quarkus.http.ratelimit.RateLimitPolicy;
 import io.quarkus.http.ratelimit.RateLimitStore;
 import io.quarkus.http.ratelimit.runtime.internal.ThrottledLogger;
@@ -36,8 +37,9 @@ import io.smallrye.mutiny.Uni;
 /**
  * The in-memory store: one bounded Caffeine cache of GCRA theoretical arrival times (TATs) per rule.
  * <p>
- * Caches are keyed by {@link RateLimitPolicy#id()}. An entry expires exactly when its TAT passes, since from then on
- * it is equivalent to no state.
+ * Caches are keyed by {@link RateLimitPolicy#id()}, never by the policy value, so that a per-key resolved limit (different
+ * permits, window or burst) finds the same cache and the same TAT, and counts toward the same {@code maxKeys}. An entry
+ * expires exactly when its TAT passes, since from then on it is equivalent to no state, whichever policy wrote it.
  * <p>
  * Decisions are made synchronously on the calling thread; the cache's maintenance also runs on it.
  * <p>
@@ -75,7 +77,11 @@ public class LocalRateLimitStore implements RateLimitStore {
      * {@link RateLimitLocalStoreCustomizer}s at startup.
      */
     public void prepare(DefaultRateLimitPolicy policy) {
-        cacheOf(policy);
+        prepare(policy.rule(), policy.phase(), policy.maxKeys());
+    }
+
+    public void prepare(String rule, RateLimitPhase phase, long maxKeys) {
+        cacheOf(rule, phase, maxKeys);
     }
 
     @Override
@@ -104,7 +110,11 @@ public class LocalRateLimitStore implements RateLimitStore {
      *         since the cache otherwise only removes them during later activity
      */
     public long trackedKeys(RateLimitPolicy policy) {
-        PolicyCache pc = caches.get(policy.id());
+        return trackedKeys(policy.id());
+    }
+
+    public long trackedKeys(String id) {
+        PolicyCache pc = caches.get(id);
         if (pc == null) {
             return 0;
         }
@@ -121,10 +131,14 @@ public class LocalRateLimitStore implements RateLimitStore {
     }
 
     private Cache<String, Long> cacheOf(DefaultRateLimitPolicy policy) {
-        return caches.computeIfAbsent(policy.id(), new Function<>() {
+        return cacheOf(policy.rule(), policy.phase(), policy.maxKeys());
+    }
+
+    private Cache<String, Long> cacheOf(String rule, RateLimitPhase phase, long maxKeys) {
+        return caches.computeIfAbsent(rule + "/" + phase.configName(), new Function<>() {
             @Override
             public PolicyCache apply(String id) {
-                return new PolicyCache(policy);
+                return new PolicyCache(rule, id, maxKeys);
             }
         }).cache;
     }
@@ -140,9 +154,7 @@ public class LocalRateLimitStore implements RateLimitStore {
         final AtomicLong sizeEvictions = new AtomicLong();
         final ThrottledLogger warning = loggers.logger(LOG);
 
-        PolicyCache(DefaultRateLimitPolicy policy) {
-            String id = policy.id();
-            long maxKeys = policy.maxKeys();
+        PolicyCache(String rule, String id, long maxKeys) {
             this.cache = KeyCaches.build(maxKeys, new TatExpiry(), new RemovalListener<>() {
                 @Override
                 public void onRemoval(String key, Long tat, RemovalCause cause) {
@@ -154,7 +166,7 @@ public class LocalRateLimitStore implements RateLimitStore {
             }, clock, new Consumer<>() {
                 @Override
                 public void accept(Caffeine<Object, Object> builder) {
-                    KeyCaches.customize(customizers, policy.rule(), builder);
+                    KeyCaches.customize(customizers, rule, builder);
                 }
             });
         }

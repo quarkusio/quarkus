@@ -25,10 +25,11 @@ import io.vertx.core.Vertx;
  */
 public class NullKeyResolverTest {
 
-    private static final String RULE = "quarkus.http.rate-limit.lenient.";
+    private static final String RULE = "quarkus.http.rate-limit.rules.lenient.";
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .overrideRuntimeConfigKey("quarkus.http.rate-limit.key-resolver-failure", "ip")
             .withApplicationRoot(jar -> jar.addClasses(TestHttp.class, TestClient.class, TestHttp.Resource.class,
                     NullResolver.class))
             .overrideConfigKey(RULE + "paths", "/lenient/*")

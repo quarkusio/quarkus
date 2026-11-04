@@ -41,16 +41,16 @@ public class EvaluationContextTest {
                     TestRateLimitClock.class, ForeignThreadResolver.class, ContextCheckingResolver.class,
                     ContextRecorder.class))
             .overrideConfigKey("quarkus.vertx.event-loops-pool-size", "1")
-            .overrideConfigKey(PREFIX + "foreign.paths", "/*")
-            .overrideConfigKey(PREFIX + "foreign.phase", "pre-authentication")
-            .overrideConfigKey(PREFIX + "foreign.request-key", "custom:foreign-thread")
-            .overrideRuntimeConfigKey(PREFIX + "foreign.permits", "10")
-            .overrideRuntimeConfigKey(PREFIX + "foreign.window", "1m")
-            .overrideConfigKey(PREFIX + "checking.paths", "/*")
-            .overrideConfigKey(PREFIX + "checking.phase", "pre-authentication")
-            .overrideConfigKey(PREFIX + "checking.request-key", "custom:context-check")
-            .overrideRuntimeConfigKey(PREFIX + "checking.permits", "10")
-            .overrideRuntimeConfigKey(PREFIX + "checking.window", "1h");
+            .overrideConfigKey(PREFIX + "rules.foreign.paths", "/*")
+            .overrideConfigKey(PREFIX + "rules.foreign.phase", "pre-authentication")
+            .overrideConfigKey(PREFIX + "rules.foreign.request-key", "custom:foreign-thread")
+            .overrideRuntimeConfigKey(PREFIX + "rules.foreign.permits", "10")
+            .overrideRuntimeConfigKey(PREFIX + "rules.foreign.window", "1m")
+            .overrideConfigKey(PREFIX + "rules.checking.paths", "/*")
+            .overrideConfigKey(PREFIX + "rules.checking.phase", "pre-authentication")
+            .overrideConfigKey(PREFIX + "rules.checking.request-key", "custom:context-check")
+            .overrideRuntimeConfigKey(PREFIX + "rules.checking.permits", "10")
+            .overrideRuntimeConfigKey(PREFIX + "rules.checking.window", "1h");
 
     static final AtomicReference<Boolean> onRequestContext = new AtomicReference<>();
 

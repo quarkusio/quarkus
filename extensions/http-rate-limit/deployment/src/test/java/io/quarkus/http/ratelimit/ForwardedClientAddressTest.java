@@ -66,10 +66,10 @@ public class ForwardedClientAddressTest {
         assertThat(http.get("/api/x", b).statusCode()).isEqualTo(200);
 
         // the observer is shared by the test methods: look at this client's rejections only
-        assertThat(observer.received).filteredOn(r -> r.key().endsWith(".client.example")).singleElement()
+        assertThat(observer.received).filteredOn(r -> r.key().orElseThrow().endsWith(".client.example")).singleElement()
                 .satisfies(rejection -> {
                     assertThat(rejection.remoteAddress()).isEqualTo("a.client.example");
-                    assertThat(rejection.key()).isEqualTo("ip:" + rejection.remoteAddress());
+                    assertThat(rejection.key()).contains("ip:" + rejection.remoteAddress());
                 });
     }
 
@@ -82,7 +82,7 @@ public class ForwardedClientAddressTest {
 
         RateLimitRejectionInfo rejection = observer.received.stream()
                 .filter(r -> "203.0.113.7".equals(r.remoteAddress())).findFirst().orElseThrow();
-        assertThat(rejection.key()).isEqualTo("ip:203.0.113.7");
+        assertThat(rejection.key()).contains("ip:203.0.113.7");
     }
 
     @Singleton

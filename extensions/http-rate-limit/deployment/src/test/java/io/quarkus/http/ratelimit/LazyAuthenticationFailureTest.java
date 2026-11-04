@@ -32,7 +32,7 @@ import io.vertx.ext.web.client.HttpResponse;
  */
 public class LazyAuthenticationFailureTest {
 
-    private static final String PREFIX = "quarkus.http.rate-limit.api.";
+    private static final String PREFIX = "quarkus.http.rate-limit.rules.api.";
 
     @RegisterExtension
     static final QuarkusExtensionTest config = TestHttp.withUsers(new QuarkusExtensionTest()

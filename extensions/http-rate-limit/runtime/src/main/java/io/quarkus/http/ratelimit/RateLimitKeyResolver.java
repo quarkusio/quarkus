@@ -9,8 +9,11 @@ import io.smallrye.mutiny.Uni;
  * its own as a CDI bean annotated {@code @Identifier("<name>")}, selected with {@code request-key=custom:<name>}. Runs on the
  * event loop; must not block.
  * <p>
- * A user supplied resolver must answer within 250 ms. If it fails or does not answer in time, the request is keyed by
- * its client address, and a warning is logged at most once per warning interval per rule.
+ * A user supplied resolver must answer within {@code quarkus.http.rate-limit.key-resolver-timeout} (250 ms by
+ * default). On failure or timeout, {@code key-resolver-failure=reject} (the default) answers 503.
+ * Explicitly set {@code ip} to use the client address instead. A warning is logged at most once per warning interval per rule.
+ * Returning an empty key deliberately skips
+ * the rule and does not trigger this failure handling.
  */
 public interface RateLimitKeyResolver {
 

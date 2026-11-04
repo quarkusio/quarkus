@@ -22,7 +22,7 @@ import io.vertx.core.Vertx;
 
 public class LazyAuthenticationWarningTest {
 
-    private static final String PREFIX = "quarkus.http.rate-limit.api.";
+    private static final String PREFIX = "quarkus.http.rate-limit.rules.api.";
 
     @RegisterExtension
     static final QuarkusExtensionTest config = TestHttp.withUsers(new QuarkusExtensionTest()

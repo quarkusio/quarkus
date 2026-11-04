@@ -29,11 +29,11 @@ public class ThrowingObserverTest {
             .withApplicationRoot(jar -> jar.addClasses(TestHttp.class, TestClient.class, TestHttp.Resource.class,
                     TestRateLimitClock.class, ThrowingObserver.class))
             .overrideConfigKey("quarkus.vertx.event-loops-pool-size", "1")
-            .overrideConfigKey(PREFIX + "enforce.paths", "/enforce/*")
-            .overrideConfigKey(PREFIX + "enforce.phase", "pre-authentication")
-            .overrideConfigKey(PREFIX + "enforce.request-key", "ip")
-            .overrideRuntimeConfigKey(PREFIX + "enforce.permits", "1")
-            .overrideRuntimeConfigKey(PREFIX + "enforce.window", "1m");
+            .overrideConfigKey(PREFIX + "rules.enforce.paths", "/enforce/*")
+            .overrideConfigKey(PREFIX + "rules.enforce.phase", "pre-authentication")
+            .overrideConfigKey(PREFIX + "rules.enforce.request-key", "ip")
+            .overrideRuntimeConfigKey(PREFIX + "rules.enforce.permits", "1")
+            .overrideRuntimeConfigKey(PREFIX + "rules.enforce.window", "1m");
 
     @Inject
     Vertx vertx;

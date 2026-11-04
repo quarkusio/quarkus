@@ -92,7 +92,7 @@ final class TestHttp {
      */
     static QuarkusExtensionTest ipRule(QuarkusExtensionTest test, String rule, String paths, int permits,
             String window) {
-        String prefix = "quarkus.http.rate-limit." + rule + ".";
+        String prefix = "quarkus.http.rate-limit.rules." + rule + ".";
         return test.overrideConfigKey(prefix + "paths", paths)
                 .overrideConfigKey(prefix + "phase", "pre-authentication")
                 .overrideConfigKey(prefix + "request-key", "ip")

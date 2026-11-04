@@ -6,6 +6,7 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.http.ratelimit.RateLimit;
 import io.quarkus.http.ratelimit.RateLimitPhase;
 
 class DefaultRateLimitPolicyTest {
@@ -25,6 +26,6 @@ class DefaultRateLimitPolicyTest {
     }
 
     private static DefaultRateLimitPolicy policy(long permits, Duration window) {
-        return new DefaultRateLimitPolicy("r", RateLimitPhase.PRE_AUTHENTICATION, permits, window, 1, 10);
+        return new DefaultRateLimitPolicy("r", RateLimitPhase.PRE_AUTHENTICATION, RateLimit.of(permits, window, 1), 10);
     }
 }

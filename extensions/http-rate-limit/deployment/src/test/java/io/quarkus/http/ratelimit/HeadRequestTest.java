@@ -25,7 +25,7 @@ import io.vertx.core.http.HttpMethod;
  */
 public class HeadRequestTest {
 
-    private static final String PREFIX = "quarkus.http.rate-limit.search.";
+    private static final String PREFIX = "quarkus.http.rate-limit.rules.search.";
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()

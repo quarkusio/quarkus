@@ -28,7 +28,7 @@ import io.vertx.ext.web.client.HttpResponse;
 public class RejectionResponseTest {
 
     private static final String RULE = "internal-login-burst";
-    private static final String PREFIX = "quarkus.http.rate-limit." + RULE + ".";
+    private static final String PREFIX = "quarkus.http.rate-limit.rules." + RULE + ".";
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()

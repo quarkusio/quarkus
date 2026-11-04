@@ -34,16 +34,16 @@ public class DevModeRejectionLogTest {
             .withApplicationRoot(jar -> jar.addClasses(TestHttp.class, TestHttp.Resource.class, UnsafeKeyResolver.class)
                     .addAsResource(new StringAsset("""
                             quarkus.http.port=18089
-                            quarkus.http.rate-limit.api.paths=/api/*
-                            quarkus.http.rate-limit.api.phase=pre-authentication
-                            quarkus.http.rate-limit.api.request-key=header:X-Client
-                            quarkus.http.rate-limit.api.permits=1
-                            quarkus.http.rate-limit.api.window=1m
-                            quarkus.http.rate-limit.unsafe-key.paths=/unsafe-key/*
-                            quarkus.http.rate-limit.unsafe-key.phase=pre-authentication
-                            quarkus.http.rate-limit.unsafe-key.request-key=custom:unsafe-key
-                            quarkus.http.rate-limit.unsafe-key.permits=1
-                            quarkus.http.rate-limit.unsafe-key.window=1m
+                            quarkus.http.rate-limit.rules.api.paths=/api/*
+                            quarkus.http.rate-limit.rules.api.phase=pre-authentication
+                            quarkus.http.rate-limit.rules.api.request-key=header:X-Client
+                            quarkus.http.rate-limit.rules.api.permits=1
+                            quarkus.http.rate-limit.rules.api.window=1m
+                            quarkus.http.rate-limit.rules.unsafe-key.paths=/unsafe-key/*
+                            quarkus.http.rate-limit.rules.unsafe-key.phase=pre-authentication
+                            quarkus.http.rate-limit.rules.unsafe-key.request-key=custom:unsafe-key
+                            quarkus.http.rate-limit.rules.unsafe-key.permits=1
+                            quarkus.http.rate-limit.rules.unsafe-key.window=1m
                             """), "application.properties"))
             .setLogRecordPredicate(r -> r.getLoggerName().startsWith("io.quarkus.http.ratelimit"));
 

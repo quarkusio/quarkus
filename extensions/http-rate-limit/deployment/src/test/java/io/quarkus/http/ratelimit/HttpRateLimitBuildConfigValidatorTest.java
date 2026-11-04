@@ -23,13 +23,14 @@ public class HttpRateLimitBuildConfigValidatorTest {
     private static final String P = "quarkus.http.rate-limit.";
     private static final Set<String> STORES = Set.of("custom");
     private static final Set<String> KEY_RESOLVERS = Set.of("ip", "global", "principal", "tenant");
+    private static final Set<String> OVERRIDES = Set.of("plans");
 
     /** A valid pre-authentication rule named {@code api} with the given overrides applied on top. */
     private static HttpRateLimitBuildTimeConfig config(String... overrides) {
         Map<String, String> values = new HashMap<>();
-        values.put(P + "api.paths", "/api/*");
-        values.put(P + "api.phase", "pre-authentication");
-        values.put(P + "api.request-key", "ip");
+        values.put(P + "rules.api.paths", "/api/*");
+        values.put(P + "rules.api.phase", "pre-authentication");
+        values.put(P + "rules.api.request-key", "ip");
         for (int i = 0; i < overrides.length; i += 2) {
             if (overrides[i + 1] == null) {
                 values.remove(overrides[i]);
@@ -37,41 +38,21 @@ public class HttpRateLimitBuildConfigValidatorTest {
                 values.put(overrides[i], overrides[i + 1]);
             }
         }
-        return new SmallRyeConfigBuilder().withMapping(HttpRateLimitBuildTimeConfig.class)
+        return new SmallRyeConfigBuilder().addDefaultInterceptors().withMapping(HttpRateLimitBuildTimeConfig.class)
                 .withDefaultValues(values).build().getConfigMapping(HttpRateLimitBuildTimeConfig.class);
     }
 
     private static List<String> validate(String... overrides) {
-        return HttpRateLimitBuildConfigValidator.validate(config(overrides), STORES, KEY_RESOLVERS);
+        return HttpRateLimitBuildConfigValidator.validate(config(overrides), STORES, KEY_RESOLVERS, OVERRIDES);
     }
 
     private static String g(String key) {
-        return P + "api." + key;
+        return P + "rules.api." + key;
     }
 
     @Test
     void validConfigurationHasNoErrors() {
         assertThat(validate()).isEmpty();
-    }
-
-    @Test
-    void pathMustStartWithSlash() {
-        assertThat(validate(g("paths"), "api")).containsExactly(
-                "Rate limit rule 'api' path 'api' must start with '/'");
-    }
-
-    @Test
-    void wildcardMustBeWholeSegment() {
-        assertThat(validate(g("paths"), "/api/v*/x")).containsExactly(
-                "Rate limit rule 'api' path '/api/v*/x': a wildcard must be a whole path segment ('/a/*/b' or a trailing '/*'), not part of one");
-        assertThat(validate(g("paths"), "/a/*/b,/a/*")).isEmpty();
-    }
-
-    @Test
-    void methodMustBeToken() {
-        assertThat(validate(g("methods"), "POST,BAD METHOD")).containsExactly(
-                "Rate limit rule 'api' method 'BAD METHOD' is not an HTTP method token");
-        assertThat(validate(g("methods"), "post,PATCH")).isEmpty();
     }
 
     @Test
@@ -88,8 +69,8 @@ public class HttpRateLimitBuildConfigValidatorTest {
     @Test
     void phaseAndRequestKeyDefaultToTheGlobalOnes() {
         assertThat(validate(g("phase"), null, g("request-key"), null)).containsExactly(
-                "Rate limit rule 'api' has no phase: set quarkus.http.rate-limit.api.phase or quarkus.http.rate-limit.phase",
-                "Rate limit rule 'api' has no request-key: set quarkus.http.rate-limit.api.request-key or quarkus.http.rate-limit.request-key");
+                "Rate limit rule 'api' has no phase: set quarkus.http.rate-limit.rules.api.phase or quarkus.http.rate-limit.phase",
+                "Rate limit rule 'api' has no request-key: set quarkus.http.rate-limit.rules.api.request-key or quarkus.http.rate-limit.request-key");
         assertThat(
                 validate(g("phase"), null, g("request-key"), null, P + "phase", "pre-authentication", P + "request-key", "ip"))
                 .isEmpty();
@@ -118,6 +99,27 @@ public class HttpRateLimitBuildConfigValidatorTest {
     }
 
     @Test
+    void headerNameMustBeAnHttpToken() {
+        for (String name : List.of("X Tenant", "X:Tenant", "X/Tenant")) {
+            assertThat(validate(g("request-key"), "header:" + name))
+                    .containsExactly("quarkus.http.rate-limit.rules.api.request-key: header name '" + name
+                            + "' is not an HTTP field name; use header:<name>, for example header:X-Tenant");
+        }
+        assertThat(validate(g("request-key"), "header:x-tenant_id")).isEmpty();
+    }
+
+    @Test
+    void overrideMustExist() {
+        String unknown = "Rate limit rule 'api' limit-resolver 'nope' matches no RateLimitResolver bean annotated @Identifier(\"nope\")";
+        assertThat(validate(g("limit-resolver"), "nope")).containsExactly(unknown);
+        assertThat(validate(P + "limit-resolver", "nope")).containsExactly(unknown);
+        assertThat(validate(g("limit-resolver"), "plans")).isEmpty();
+        assertThat(validate(P + "limit-resolver", "plans")).isEmpty();
+        // the rule override wins over the global one
+        assertThat(validate(P + "limit-resolver", "nope", g("limit-resolver"), "plans")).isEmpty();
+    }
+
+    @Test
     void storeMustExist() {
         String unknown = "Rate limit rule 'api' store 'nope' matches no RateLimitStore bean annotated @Identifier(\"nope\")";
         assertThat(validate(g("store"), "nope")).containsExactly(unknown);
@@ -127,4 +129,19 @@ public class HttpRateLimitBuildConfigValidatorTest {
         // the rule store wins over the global one
         assertThat(validate(P + "store", "nope", g("store"), "local")).isEmpty();
     }
+
+    @Test
+    void wildcardMustBeWholeSegment() {
+        assertThat(validate(g("paths"), "/api/v*/x")).containsExactly(
+                "Rate limit rule 'api' path '/api/v*/x': a wildcard must be a whole path segment ('/a/*/b' or a trailing '/*'), not part of one");
+        assertThat(validate(g("paths"), "/a/*/b,/a/*")).isEmpty();
+    }
+
+    @Test
+    void methodMustBeToken() {
+        assertThat(validate(g("methods"), "POST,BAD METHOD")).containsExactly(
+                "Rate limit rule 'api' method 'BAD METHOD' is not an HTTP method token");
+        assertThat(validate(g("methods"), "post,PATCH")).isEmpty();
+    }
+
 }

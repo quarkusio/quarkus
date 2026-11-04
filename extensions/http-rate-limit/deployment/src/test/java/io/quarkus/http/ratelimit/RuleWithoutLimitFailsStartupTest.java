@@ -13,7 +13,7 @@ import io.quarkus.test.QuarkusExtensionTest;
  */
 public class RuleWithoutLimitFailsStartupTest {
 
-    private static final String PREFIX = "quarkus.http.rate-limit.api.";
+    private static final String PREFIX = "quarkus.http.rate-limit.rules.api.";
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
@@ -21,8 +21,9 @@ public class RuleWithoutLimitFailsStartupTest {
             .overrideConfigKey(PREFIX + "phase", "pre-authentication")
             .overrideConfigKey(PREFIX + "request-key", "ip")
             .assertException(t -> assertThat(t).isInstanceOf(ConfigurationException.class)
-                    .hasMessageContaining("Rate limit rule 'api' has no limit: set quarkus.http.rate-limit.api.permits"
-                            + " and quarkus.http.rate-limit.api.window"));
+                    .hasMessageContaining(
+                            "Rate limit rule 'api' has no complete limit: set quarkus.http.rate-limit.rules.api.permits"
+                                    + " and window, limit, or limit-resolver"));
 
     @Test
     void startupFails() {

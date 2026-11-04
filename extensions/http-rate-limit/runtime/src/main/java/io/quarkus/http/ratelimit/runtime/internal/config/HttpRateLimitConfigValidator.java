@@ -4,6 +4,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitRuntimeConfig.Rule;
+
 /**
  * Checks everything about {@link HttpRateLimitRuntimeConfig} that can be decided from the configuration alone, against
  * the rules of {@link HttpRateLimitBuildTimeConfig}. It does not throw and does not look up beans. What is fixed at build
@@ -24,18 +26,51 @@ public final class HttpRateLimitConfigValidator {
         if (runtimeConfig.warningInterval().compareTo(Duration.ofSeconds(1)) < 0) {
             errors.add(PREFIX + "warning-interval must be at least 1 second");
         }
+        if (!isPositive(runtimeConfig.keyResolverTimeout())) {
+            errors.add(PREFIX + "key-resolver-timeout must be positive");
+        }
+        if (!isPositive(runtimeConfig.limitResolverTimeout())) {
+            errors.add(PREFIX + "limit-resolver-timeout must be positive");
+        }
+        for (String name : runtimeConfig.limits().keySet()) {
+            try {
+                RateLimitRuleConfig.named(runtimeConfig, name);
+            } catch (IllegalArgumentException e) {
+                errors.add(PREFIX + "limits." + name + ": " + e.getMessage());
+            }
+        }
         for (String name : buildConfig.rules().keySet()) {
-            if (runtimeConfig.rules().containsKey(name)) {
+            Rule runtime = runtimeConfig.rules().get(name);
+            if (!runtime.enabled()) {
+                continue;
+            }
+            String prefix = "Rate limit rule '" + name + "' ";
+            boolean dynamic = RateLimitRuleConfig.limitResolver(buildConfig, buildConfig.rules().get(name), runtime)
+                    .isPresent();
+            boolean inline = runtime.permits().isPresent() || runtime.window().isPresent() || runtime.burst().isPresent();
+            if ((dynamic && (inline || runtime.limit().isPresent())) || (inline && runtime.limit().isPresent())) {
+                errors.add(prefix + "select exactly one of inline permits/window, limit, or limit-resolver");
+                continue;
+            }
+            if (!dynamic && runtime.limit().isEmpty() && (runtime.permits().isEmpty() || runtime.window().isEmpty())) {
+                errors.add(prefix + "has no complete limit: set " + PREFIX + "rules." + name
+                        + ".permits and window, limit, or limit-resolver");
+                continue;
+            }
+            if (runtime.fallbackLimit().isPresent() && !dynamic) {
+                errors.add(prefix + "fallback-limit requires a limit-resolver");
+                continue;
+            }
+            try {
                 validateRule(RateLimitRuleConfig.of(name, buildConfig, runtimeConfig), errors);
-            } else {
-                errors.add("Rate limit rule '" + name + "' has no limit: set " + PREFIX + name + ".permits and "
-                        + PREFIX + name + ".window");
+            } catch (IllegalArgumentException e) {
+                errors.add(prefix + e.getMessage());
             }
         }
         for (String name : runtimeConfig.rules().keySet()) {
             if (!buildConfig.rules().containsKey(name)) {
                 errors.add("Rate limit rule '" + name + "' is not defined at build time: its paths ("
-                        + PREFIX + name + ".paths) must be set when the application is built");
+                        + PREFIX + "rules." + name + ".paths) must be set when the application is built");
             }
         }
         return errors;
@@ -46,34 +81,10 @@ public final class HttpRateLimitConfigValidator {
         if (rule.maxKeys() < 1) {
             errors.add(prefix + "max-keys must be at least 1");
         }
-        validateLimit(prefix, rule, errors);
-    }
-
-    private static void validateLimit(String prefix, RateLimitRuleConfig rule, List<String> errors) {
-        boolean valid = true;
-        if (rule.permits() < 1) {
-            errors.add(prefix + "permits must be at least 1");
-            valid = false;
-        }
-        if (!isPositive(rule.window())) {
-            errors.add(prefix + "window must be positive");
-            valid = false;
-        }
-        if (rule.burst().isPresent() && rule.burst().get() < 1) {
-            errors.add(prefix + "burst must be at least 1");
-            valid = false;
-        }
-        if (!valid) {
-            return;
-        }
-        try {
-            DefaultRateLimitPolicy.of(rule);
-        } catch (IllegalArgumentException e) {
-            errors.add(e.getMessage());
-        }
     }
 
     private static boolean isPositive(Duration duration) {
         return !duration.isNegative() && !duration.isZero();
     }
+
 }

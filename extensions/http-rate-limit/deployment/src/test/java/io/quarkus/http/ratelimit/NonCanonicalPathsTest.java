@@ -34,11 +34,11 @@ public class NonCanonicalPathsTest {
             TestHttp.ipRule(new QuarkusExtensionTest(), "login", "/login", 1, "1h"), "api", "/api/*", 1, "1h")
             .withApplicationRoot(jar -> jar.addClasses(TestHttp.class, TestClient.class, Login.class, Api.class,
                     SharedPaths.class, RejectionObserver.class))
-            .overrideConfigKey("quarkus.http.rate-limit.shared-paths.paths", "/shared-paths/*")
-            .overrideConfigKey("quarkus.http.rate-limit.shared-paths.phase", "pre-authentication")
-            .overrideConfigKey("quarkus.http.rate-limit.shared-paths.request-key", "global")
-            .overrideRuntimeConfigKey("quarkus.http.rate-limit.shared-paths.permits", "1")
-            .overrideRuntimeConfigKey("quarkus.http.rate-limit.shared-paths.window", "1h");
+            .overrideConfigKey("quarkus.http.rate-limit.rules.shared-paths.paths", "/shared-paths/*")
+            .overrideConfigKey("quarkus.http.rate-limit.rules.shared-paths.phase", "pre-authentication")
+            .overrideConfigKey("quarkus.http.rate-limit.rules.shared-paths.request-key", "global")
+            .overrideRuntimeConfigKey("quarkus.http.rate-limit.rules.shared-paths.permits", "1")
+            .overrideRuntimeConfigKey("quarkus.http.rate-limit.rules.shared-paths.window", "1h");
 
     @Inject
     Vertx vertx;

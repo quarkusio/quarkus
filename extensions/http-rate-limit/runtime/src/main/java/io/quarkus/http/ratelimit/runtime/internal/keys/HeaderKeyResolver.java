@@ -36,7 +36,7 @@ public final class HeaderKeyResolver implements ImmediateKeyResolver {
         // the Vert.x header lookup is case-insensitive
         List<String> values = request.headers().getAll(headerName);
         if (values.size() > 1) {
-            // the code that reads the header, an authentication mechanism or an override, may pick another occurrence
+            // the code that reads the header, an authentication mechanism or a limit resolver, may pick another occurrence
             // than the first: every request that repeats it shares one bucket, so repeating it never earns a fresh one
             return Uni.createFrom().item(Optional.of(REPEATED));
         }

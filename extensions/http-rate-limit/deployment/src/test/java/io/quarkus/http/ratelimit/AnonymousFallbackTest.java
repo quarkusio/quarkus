@@ -50,11 +50,11 @@ public class AnonymousFallbackTest {
                     Dependency.of("io.quarkus", "quarkus-elytron-security-properties-file-deployment", Version.getVersion())));
 
     private static QuarkusExtensionTest withRule(QuarkusExtensionTest test, String rule, String key) {
-        return test.overrideConfigKey(PREFIX + rule + ".paths", "/" + rule + "/*")
-                .overrideConfigKey(PREFIX + rule + ".phase", "post-authentication")
-                .overrideConfigKey(PREFIX + rule + ".request-key", key)
-                .overrideRuntimeConfigKey(PREFIX + rule + ".permits", "1")
-                .overrideRuntimeConfigKey(PREFIX + rule + ".window", "1m");
+        return test.overrideConfigKey(PREFIX + "rules." + rule + ".paths", "/" + rule + "/*")
+                .overrideConfigKey(PREFIX + "rules." + rule + ".phase", "post-authentication")
+                .overrideConfigKey(PREFIX + "rules." + rule + ".request-key", key)
+                .overrideRuntimeConfigKey(PREFIX + "rules." + rule + ".permits", "1")
+                .overrideRuntimeConfigKey(PREFIX + "rules." + rule + ".window", "1m");
     }
 
     @Inject
@@ -147,7 +147,7 @@ public class AnonymousFallbackTest {
         }
 
         List<String> keys(String rule) {
-            return rejections.stream().filter(r -> r.rule().equals(rule)).map(RateLimitRejectionInfo::key).toList();
+            return rejections.stream().filter(r -> r.rule().equals(rule)).map(info -> info.key().orElseThrow()).toList();
         }
     }
 }

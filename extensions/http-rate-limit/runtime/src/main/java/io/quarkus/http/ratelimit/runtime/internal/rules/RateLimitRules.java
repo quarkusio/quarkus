@@ -19,11 +19,12 @@ import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.http.ratelimit.RateLimit;
 import io.quarkus.http.ratelimit.RateLimitKeyResolver;
 import io.quarkus.http.ratelimit.RateLimitPhase;
+import io.quarkus.http.ratelimit.RateLimitResolver;
 import io.quarkus.http.ratelimit.runtime.internal.RateLimitBuildTimeInfo;
 import io.quarkus.http.ratelimit.runtime.internal.ThrottledLoggers;
-import io.quarkus.http.ratelimit.runtime.internal.config.DefaultRateLimitPolicy;
 import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitBuildTimeConfig;
 import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitConfigValidator;
 import io.quarkus.http.ratelimit.runtime.internal.config.HttpRateLimitRuntimeConfig;
@@ -31,6 +32,8 @@ import io.quarkus.http.ratelimit.runtime.internal.config.RateLimitRuleConfig;
 import io.quarkus.http.ratelimit.runtime.internal.keys.KeyResolvers;
 import io.quarkus.http.ratelimit.runtime.internal.store.StoreRegistry;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.smallrye.common.annotation.Identifier;
 
 /**
  * Turns the configuration into one {@link RuleEvaluator} per configured rule. Fails startup on an
@@ -42,15 +45,16 @@ public class RateLimitRules {
     private static final Logger LOG = Logger.getLogger(RateLimitRules.class);
 
     /**
-     * Evaluation order: window ascending, ties by rule name, so that the narrowest rule refuses a request before a
+     * Evaluation order: static windows ascending, then dynamic rules, ties by rule name, so that the narrowest rule refuses a
+     * request before a
      * wider one spends a permit on it.
      */
     private static final Comparator<RuleMembership> EVALUATION_ORDER = new Comparator<>() {
         @Override
         public int compare(RuleMembership a, RuleMembership b) {
-            Duration windowA = a.evaluator().policy().window();
-            Duration windowB = b.evaluator().policy().window();
-            int byWindow = windowA.compareTo(windowB);
+            Duration windowA = a.evaluator().configuration().limit().map(RateLimit::window).orElse(null);
+            Duration windowB = b.evaluator().configuration().limit().map(RateLimit::window).orElse(null);
+            int byWindow = Comparator.nullsLast(Comparator.<Duration> naturalOrder()).compare(windowA, windowB);
             if (byWindow != 0) {
                 return byWindow;
             }
@@ -64,9 +68,10 @@ public class RateLimitRules {
     @Inject
     public RateLimitRules(HttpRateLimitBuildTimeConfig buildConfig,
             HttpRateLimitRuntimeConfig config,
-            RateLimitBuildTimeInfo info,
+            RateLimitBuildTimeInfo info, VertxHttpBuildTimeConfig httpConfig,
             Instance<StoreRegistry> storeRegistry,
             @Any Instance<RateLimitKeyResolver> resolvers,
+            @Any Instance<RateLimitResolver> limitResolvers,
             ThrottledLoggers loggers) {
         if (!config.enabled()) {
             // a disabled extension validates nothing and builds no evaluators or stores
@@ -80,7 +85,8 @@ public class RateLimitRules {
         this.exemptPaths = Set.copyOf(info.controlPlanePaths());
         // the summary first: building the evaluators logs the detail of each rule
         logRules(ruleConfigs);
-        List<RuleMembership> memberships = buildEvaluators(ruleConfigs, stores, resolvers, loggers);
+        List<RuleMembership> memberships = buildEvaluators(ruleConfigs, stores, resolvers, limitResolvers,
+                config, httpConfig.rootPath(), loggers);
         this.phases = indexPhases(memberships);
     }
 
@@ -118,16 +124,26 @@ public class RateLimitRules {
         return RateLimitRuleConfig.all(buildConfig, config);
     }
 
+    /**
+     * @return the limit resolver the rule selects, or {@code null} when it selects none
+     */
+    private static RateLimitResolver limitResolver(RateLimitRuleConfig rule, Instance<RateLimitResolver> limitResolvers) {
+        if (rule.limitResolver().isEmpty()) {
+            return null;
+        }
+        return limitResolvers.select(Identifier.Literal.of(rule.limitResolver().get())).get();
+    }
+
     private static List<RuleMembership> buildEvaluators(List<RateLimitRuleConfig> rules,
             StoreRegistry stores,
             Instance<RateLimitKeyResolver> resolvers,
-            ThrottledLoggers loggers) {
+            Instance<RateLimitResolver> limitResolvers,
+            HttpRateLimitRuntimeConfig config, String rootPath, ThrottledLoggers loggers) {
         List<RuleMembership> memberships = new ArrayList<>();
         for (RateLimitRuleConfig rule : rules) {
-            DefaultRateLimitPolicy policy = DefaultRateLimitPolicy.of(rule);
-            RuleEvaluator evaluator = new RuleEvaluator(policy,
-                    KeyResolvers.forKey(rule.key(), resolvers),
-                    stores.forRule(policy, rule), rule.store(), loggers);
+            RuleEvaluator evaluator = new RuleEvaluator(rule,
+                    KeyResolvers.forKey(rule.key(), resolvers), limitResolver(rule, limitResolvers),
+                    stores.forRule(rule), rule.store(), config, loggers);
             Set<String> methods = Set.of();
             if (rule.methods().isPresent()) {
                 Set<String> upperCase = new HashSet<>();
@@ -136,13 +152,15 @@ public class RateLimitRules {
                 }
                 methods = Set.copyOf(upperCase);
             }
-            memberships.add(new RuleMembership(evaluator, rule.paths(), methods));
-            LOG.debugf(
-                    "Rate limit rule '%s': paths=%s methods=%s phase=%s request-key=%s permits=%d window=%s burst=%d store=%s"
-                            + " max-keys=%d",
-                    rule.name(), rule.paths(), rule.methods().orElse(Set.of()), rule.phase().configName(),
-                    rule.key(), rule.permits(), rule.window(), policy.burst(),
-                    rule.store(),
+            List<String> paths = new ArrayList<>();
+            for (String path : rule.paths()) {
+                paths.add(path.startsWith("/") ? path : (rootPath.endsWith("/") ? rootPath : rootPath + "/") + path);
+            }
+            memberships.add(new RuleMembership(evaluator, paths, methods));
+            LOG.debugf("Rate limit rule '%s': paths=%s methods=%s phase=%s request-key=%s limit=%s limit-resolver=%s store=%s"
+                    + " max-keys=%d", rule.name(), paths, rule.methods().orElse(Set.of()),
+                    rule.phase().configName(), rule.key(), rule.limit().map(Object::toString).orElse("-"),
+                    rule.limitResolver().orElse("-"), rule.store(),
                     rule.maxKeys());
         }
         return memberships;

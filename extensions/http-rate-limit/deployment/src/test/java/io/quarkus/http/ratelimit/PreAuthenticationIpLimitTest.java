@@ -39,28 +39,29 @@ public class PreAuthenticationIpLimitTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .overrideRuntimeConfigKey("quarkus.http.rate-limit.key-resolver-failure", "ip")
             .withApplicationRoot(jar -> jar.addClasses(TestHttp.class, TestHttp.Resource.class,
                     TestRateLimitClock.class, FailingResolver.class, ConnectionCounter.class))
             .overrideConfigKey("quarkus.vertx.event-loops-pool-size", "1")
             .overrideRuntimeConfigKey("quarkus.http.cors.enabled", "true")
             .overrideRuntimeConfigKey("quarkus.http.cors.origins", "https://app.example")
             // the only ip-keyed rule: every test shares the loopback address
-            .overrideConfigKey(PREFIX + "api.paths", "/api/*")
-            .overrideConfigKey(PREFIX + "api.phase", "pre-authentication")
-            .overrideConfigKey(PREFIX + "api.request-key", "ip")
-            .overrideRuntimeConfigKey(PREFIX + "api.permits", "5")
-            .overrideRuntimeConfigKey(PREFIX + "api.window", "1m")
+            .overrideConfigKey(PREFIX + "rules.api.paths", "/api/*")
+            .overrideConfigKey(PREFIX + "rules.api.phase", "pre-authentication")
+            .overrideConfigKey(PREFIX + "rules.api.request-key", "ip")
+            .overrideRuntimeConfigKey(PREFIX + "rules.api.permits", "5")
+            .overrideRuntimeConfigKey(PREFIX + "rules.api.window", "1m")
             // the other rules are keyed by a header, with a unique value per test method
-            .overrideConfigKey(PREFIX + "client.paths", "/client/*")
-            .overrideConfigKey(PREFIX + "client.phase", "pre-authentication")
-            .overrideConfigKey(PREFIX + "client.request-key", "header:X-Client")
-            .overrideRuntimeConfigKey(PREFIX + "client.permits", "1")
-            .overrideRuntimeConfigKey(PREFIX + "client.window", "1m")
-            .overrideConfigKey(PREFIX + "failing.paths", "/failing/*")
-            .overrideConfigKey(PREFIX + "failing.phase", "pre-authentication")
-            .overrideConfigKey(PREFIX + "failing.request-key", "custom:failing")
-            .overrideRuntimeConfigKey(PREFIX + "failing.permits", "1")
-            .overrideRuntimeConfigKey(PREFIX + "failing.window", "1m");
+            .overrideConfigKey(PREFIX + "rules.client.paths", "/client/*")
+            .overrideConfigKey(PREFIX + "rules.client.phase", "pre-authentication")
+            .overrideConfigKey(PREFIX + "rules.client.request-key", "header:X-Client")
+            .overrideRuntimeConfigKey(PREFIX + "rules.client.permits", "1")
+            .overrideRuntimeConfigKey(PREFIX + "rules.client.window", "1m")
+            .overrideConfigKey(PREFIX + "rules.failing.paths", "/failing/*")
+            .overrideConfigKey(PREFIX + "rules.failing.phase", "pre-authentication")
+            .overrideConfigKey(PREFIX + "rules.failing.request-key", "custom:failing")
+            .overrideRuntimeConfigKey(PREFIX + "rules.failing.permits", "1")
+            .overrideRuntimeConfigKey(PREFIX + "rules.failing.window", "1m");
 
     @Inject
     Vertx vertx;

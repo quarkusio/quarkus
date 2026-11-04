@@ -6,7 +6,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * What a {@link RateLimitKeyResolver} can see about the request being evaluated.
+ * What a {@link RateLimitKeyResolver} or {@link RateLimitResolver} can see about the request being evaluated.
  */
 public interface RateLimitContext {
 

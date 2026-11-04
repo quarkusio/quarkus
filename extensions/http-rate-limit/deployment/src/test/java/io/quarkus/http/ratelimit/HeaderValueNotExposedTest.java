@@ -26,7 +26,7 @@ import io.vertx.core.Vertx;
  */
 public class HeaderValueNotExposedTest {
 
-    private static final String PREFIX = "quarkus.http.rate-limit.api.";
+    private static final String PREFIX = "quarkus.http.rate-limit.rules.api.";
     private static final String SECRET = "s3cr3t-api-key";
 
     @RegisterExtension
@@ -67,7 +67,7 @@ public class HeaderValueNotExposedTest {
         assertThat(http.get("/api/x", headers).statusCode()).isEqualTo(429);
 
         assertThat(observer.received).singleElement().satisfies(
-                rejection -> assertThat(rejection.key()).startsWith("header:sha256:").doesNotContain(SECRET));
+                rejection -> assertThat(rejection.key().orElseThrow()).startsWith("header:sha256:").doesNotContain(SECRET));
     }
 
     @Singleton

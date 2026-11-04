@@ -37,11 +37,11 @@ public class HttpRateLimitConfigValidatorTest {
      */
     private static SmallRyeConfig config(String... overrides) {
         Map<String, String> values = new HashMap<>();
-        values.put(P + "api.paths", "/api/*");
-        values.put(P + "api.phase", "pre-authentication");
-        values.put(P + "api.request-key", "ip");
-        values.put(P + "api.permits", "10");
-        values.put(P + "api.window", "1m");
+        values.put(P + "rules.api.paths", "/api/*");
+        values.put(P + "rules.api.phase", "pre-authentication");
+        values.put(P + "rules.api.request-key", "ip");
+        values.put(P + "rules.api.permits", "10");
+        values.put(P + "rules.api.window", "1m");
         for (int i = 0; i < overrides.length; i += 2) {
             if (overrides[i + 1] == null) {
                 values.remove(overrides[i]);
@@ -49,7 +49,7 @@ public class HttpRateLimitConfigValidatorTest {
                 values.put(overrides[i], overrides[i + 1]);
             }
         }
-        return new SmallRyeConfigBuilder().withConverter(Duration.class, 100, new DurationConverter())
+        return new SmallRyeConfigBuilder().addDefaultInterceptors().withConverter(Duration.class, 100, new DurationConverter())
                 .withMapping(HttpRateLimitBuildTimeConfig.class)
                 .withMapping(HttpRateLimitRuntimeConfig.class)
                 .withDefaultValues(values).build();
@@ -68,7 +68,7 @@ public class HttpRateLimitConfigValidatorTest {
     }
 
     private static String g(String key) {
-        return P + "api." + key;
+        return P + "rules.api." + key;
     }
 
     @Test
@@ -79,13 +79,13 @@ public class HttpRateLimitConfigValidatorTest {
     @Test
     void ruleWithoutLimit() {
         assertThat(validate(g("permits"), null, g("window"), null)).containsExactly(
-                "Rate limit rule 'api' has no limit: set quarkus.http.rate-limit.api.permits and quarkus.http.rate-limit.api.window");
+                "Rate limit rule 'api' has no complete limit: set quarkus.http.rate-limit.rules.api.permits and window, limit, or limit-resolver");
     }
 
     @Test
     void ruleNotDefinedAtBuildTime() {
-        assertThat(validate(P + "typo.permits", "5", P + "typo.window", "1m")).containsExactly(
-                "Rate limit rule 'typo' is not defined at build time: its paths (quarkus.http.rate-limit.typo.paths) must be set when the application is built");
+        assertThat(validate(P + "rules.typo.permits", "5", P + "rules.typo.window", "1m")).containsExactly(
+                "Rate limit rule 'typo' is not defined at build time: its paths (quarkus.http.rate-limit.rules.typo.paths) must be set when the application is built");
     }
 
     @Test
@@ -141,14 +141,14 @@ public class HttpRateLimitConfigValidatorTest {
     void windowPerPermitBelowOneMicrosecond() {
         assertThat(validate(g("permits"), "2000000", g("window"), "1s"))
                 .containsExactly(
-                        "Rate limit rule 'api' (pre-authentication): window / permits must be at least 1 microsecond");
+                        "Rate limit rule 'api' window / permits must be at least 1 microsecond");
     }
 
     @Test
     void policyOverflowMessageIsSurfacedVerbatim() {
         assertThat(validate(g("window"), "30d", g("permits"), "1",
                 g("burst"), "2")).containsExactly(
-                        "Rate limit rule 'api' (pre-authentication): (window / permits) * burst must not exceed 30 days");
+                        "Rate limit rule 'api' (window / permits) * burst must not exceed 30 days");
     }
 
     @Test
@@ -156,5 +156,40 @@ public class HttpRateLimitConfigValidatorTest {
         assertThat(validate("quarkus.http.rate-limit.warning-interval", "500ms"))
                 .containsExactly("quarkus.http.rate-limit.warning-interval must be at least 1 second");
         assertThat(validate("quarkus.http.rate-limit.warning-interval", "1s")).isEmpty();
+    }
+
+    @Test
+    void namedLimitsAndConflictingSources() {
+        assertThat(validate(g("permits"), null, g("window"), null, g("limit"), "free",
+                P + "limits.free.permits", "3", P + "limits.free.window", "1m")).isEmpty();
+        assertThat(validate(g("limit"), "free")).anyMatch(m -> m.contains("select exactly one"));
+        assertThat(validate(g("limit-resolver"), "plans")).anyMatch(m -> m.contains("select exactly one"));
+        assertThat(validate(g("permits"), null, g("window"), null, g("limit"), "missing"))
+                .anyMatch(m -> m.contains("Unknown rate limit 'missing'"));
+        assertThat(validate(g("fallback-limit"), "safe")).anyMatch(m -> m.contains("fallback-limit requires"));
+        assertThat(validate(P + "limits.bad.permits", "0", P + "limits.bad.window", "1m"))
+                .anyMatch(m -> m.contains("limits.bad") && m.contains("permits must be at least 1"));
+    }
+
+    @Test
+    void resolverDoesNotRequireAStaticLimit() {
+        assertThat(validate(g("permits"), null, g("window"), null, g("limit-resolver"), "plans")).isEmpty();
+        assertThat(validate(g("permits"), null, g("window"), null, g("limit-resolver"), "plans",
+                g("fallback-limit"), "missing")).anyMatch(m -> m.contains("Unknown rate limit 'missing'"));
+        // An inline limit opts out of the globally inherited resolver.
+        assertThat(rule(P + "limit-resolver", "plans").limitResolver()).isEmpty();
+    }
+
+    @Test
+    void disabledRulesNeedNoLimit() {
+        assertThat(validate(g("enabled"), "false", g("permits"), null, g("window"), null)).isEmpty();
+    }
+
+    @Test
+    void resolverTimeoutsMustBePositive() {
+        assertThat(validate(P + "key-resolver-timeout", "0s"))
+                .containsExactly(P + "key-resolver-timeout must be positive");
+        assertThat(validate(P + "limit-resolver-timeout", "-1s"))
+                .containsExactly(P + "limit-resolver-timeout must be positive");
     }
 }

@@ -7,7 +7,6 @@ import jakarta.inject.Singleton;
 
 import io.quarkus.http.ratelimit.RateLimitLocalStoreCustomizer;
 import io.quarkus.http.ratelimit.RateLimitStore;
-import io.quarkus.http.ratelimit.runtime.internal.config.DefaultRateLimitPolicy;
 import io.quarkus.http.ratelimit.runtime.internal.config.RateLimitRuleConfig;
 import io.smallrye.common.annotation.Identifier;
 
@@ -32,12 +31,13 @@ public class StoreRegistry {
     /**
      * Builds the in-memory caches of the rule now, so that the {@link RateLimitLocalStoreCustomizer}s run at startup.
      *
-     * @param policy the policy of the rule
+     * @param rule the rule whose caches and guard are prepared
+     * @return the local store, else the named store
      */
-    public RateLimitStore forRule(DefaultRateLimitPolicy policy, RateLimitRuleConfig rule) {
+    public RateLimitStore forRule(RateLimitRuleConfig rule) {
         String name = rule.store();
         if (LOCAL.equals(name)) {
-            local.prepare(policy);
+            local.prepare(rule.name(), rule.phase(), rule.maxKeys());
             return local;
         }
         return stores.select(Identifier.Literal.of(name)).get();

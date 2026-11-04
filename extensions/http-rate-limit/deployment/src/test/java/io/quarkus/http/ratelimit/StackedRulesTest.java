@@ -47,15 +47,15 @@ public class StackedRulesTest {
             "minute", "/api/*", "header:X-Client", 2, "1m"),
             "hour", "/api/*", "header:X-Client", 3, "1h"),
             "login", "/login", "header:X-Client", 1, "1m")
-            .overrideConfigKey(PREFIX + "login.methods", "POST");
+            .overrideConfigKey(PREFIX + "rules.login.methods", "POST");
 
     private static QuarkusExtensionTest withRule(QuarkusExtensionTest test, String rule, String path, String key,
             int permits, String window) {
-        return test.overrideConfigKey(PREFIX + rule + ".paths", path)
-                .overrideConfigKey(PREFIX + rule + ".phase", "pre-authentication")
-                .overrideConfigKey(PREFIX + rule + ".request-key", key)
-                .overrideRuntimeConfigKey(PREFIX + rule + ".permits", "" + permits)
-                .overrideRuntimeConfigKey(PREFIX + rule + ".window", window);
+        return test.overrideConfigKey(PREFIX + "rules." + rule + ".paths", path)
+                .overrideConfigKey(PREFIX + "rules." + rule + ".phase", "pre-authentication")
+                .overrideConfigKey(PREFIX + "rules." + rule + ".request-key", key)
+                .overrideRuntimeConfigKey(PREFIX + "rules." + rule + ".permits", "" + permits)
+                .overrideRuntimeConfigKey(PREFIX + "rules." + rule + ".window", window);
     }
 
     @Inject

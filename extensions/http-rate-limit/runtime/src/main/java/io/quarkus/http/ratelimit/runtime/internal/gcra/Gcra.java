@@ -32,7 +32,7 @@ public final class Gcra {
      * permits available before the call.
      * <p>
      * The debt is capped at the burst tolerance. A larger debt cannot come from this policy: it was written under a
-     * larger one, before an override or a configuration change, or by a clock that jumped forward. Uncapped, it would
+     * larger one, before a limit resolver or a configuration change, or by a clock that jumped forward. Uncapped, it would
      * lock the key out for the leftover debt, up to 30 days; capped, it costs the key at most one emission interval.
      */
     public static Outcome tryConsume(long tat, long now, long cost, long emissionIntervalNanos, long burstToleranceNanos) {

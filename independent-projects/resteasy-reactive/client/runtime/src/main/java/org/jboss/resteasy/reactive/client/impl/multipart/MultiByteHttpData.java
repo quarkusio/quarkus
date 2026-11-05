@@ -50,7 +50,7 @@ import io.vertx.core.impl.buffer.VertxByteBufAllocator;
  * Then, when the requested amount of bytes is ready, or the underlying Multi is completed, `resumption` is executed.
  *
  */
-public class MultiByteHttpData extends AbstractHttpData implements FileUpload {
+public class MultiByteHttpData extends AbstractHttpData implements FileUpload, PausableHttpData {
     private static final Logger log = Logger.getLogger(MultiByteHttpData.class);
 
     public static final int DEFAULT_BUFFER_SIZE = 16384;
@@ -132,7 +132,8 @@ public class MultiByteHttpData extends AbstractHttpData implements FileUpload {
                 });
     }
 
-    void suspend(int awaitedBytes) {
+    @Override
+    public void suspend(int awaitedBytes) {
         this.awaitedBytes = awaitedBytes;
         this.paused = true;
     }

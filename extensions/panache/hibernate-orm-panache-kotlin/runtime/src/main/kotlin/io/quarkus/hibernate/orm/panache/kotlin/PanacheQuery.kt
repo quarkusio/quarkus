@@ -4,6 +4,7 @@ import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
 import jakarta.persistence.LockModeType
 import jakarta.persistence.NonUniqueResultException
+import jakarta.persistence.criteria.JoinType
 import java.util.stream.Stream
 import org.hibernate.Session
 import org.hibernate.annotations.Filter
@@ -28,6 +29,22 @@ interface PanacheQuery<Entity : Any> {
      *   hints, ...).
      */
     fun <NewEntity : Any> project(type: Class<NewEntity>): PanacheQuery<NewEntity>
+
+    /**
+     * Defines a projection class, choosing how associations navigated by the projection are joined.
+     *
+     * By default (and with [JoinType.INNER]) navigating an association uses an implicit inner join,
+     * so entities whose association is null are filtered out. Passing [JoinType.LEFT] generates
+     * explicit left joins for the single-valued associations navigated by the projection, so those
+     * entities are returned with a null value instead. [JoinType.RIGHT] is not supported.
+     *
+     * @return a new query with the same state as the previous one (params, page, range, lockMode,
+     *   hints, ...).
+     */
+    fun <NewEntity : Any> project(
+        type: Class<NewEntity>,
+        joinType: JoinType,
+    ): PanacheQuery<NewEntity>
 
     /**
      * Sets the current page.

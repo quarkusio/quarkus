@@ -1,8 +1,11 @@
 package io.quarkus.maven.components;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -12,10 +15,12 @@ import org.apache.maven.MavenExecutionException;
 import org.apache.maven.SessionScoped;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginExecution;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
+import io.quarkus.deployment.dev.AnnotationProcessorConfig;
 import io.quarkus.maven.BuildAnalyticsProvider;
 import io.quarkus.maven.QuarkusBootstrapProvider;
 
@@ -61,6 +66,9 @@ public class BootstrapSessionListener extends AbstractMavenLifecycleParticipant 
         // bear in mind that this is just a convenience: we can't rely on Maven
         // extensions to be enabled - but when they are, we can make it more useful.
         injectSurefireTuning(session);
+
+        // Discover and inject annotation processors from extensions
+        discoverAndInjectAnnotationProcessors(session);
     }
 
     private void injectSurefireTuning(MavenSession session) {
@@ -178,6 +186,140 @@ public class BootstrapSessionListener extends AbstractMavenLifecycleParticipant 
             }
         }
         return false;
+    }
+
+    private void discoverAndInjectAnnotationProcessors(MavenSession session) {
+        for (MavenProject project : session.getProjects()) {
+            // Only process Quarkus projects
+            if (!isQuarkusPluginConfigured(project)) {
+                continue;
+            }
+
+            try {
+                // Check each runtime dependency against the hard-coded mappings
+                Set<String> processors = new LinkedHashSet<>();
+                for (org.apache.maven.model.Dependency dep : project.getDependencies()) {
+                    // Only check runtime-scoped dependencies
+                    if ("test".equals(dep.getScope())) {
+                        continue;
+                    }
+
+                    List<String> requiredProcessors = AnnotationProcessorConfig.getProcessorsFor(
+                            dep.getGroupId(), dep.getArtifactId());
+
+                    if (!requiredProcessors.isEmpty()) {
+                        processors.addAll(requiredProcessors);
+                        logger.info("Extension " + dep.getGroupId() + ":" + dep.getArtifactId() +
+                                " requires processors: " + requiredProcessors);
+                    }
+                }
+
+                if (!processors.isEmpty()) {
+                    injectAnnotationProcessorsIntoCompiler(project, processors);
+                }
+
+            } catch (Exception e) {
+                logger.warn("Failed to discover annotation processors for " +
+                        project.getArtifactId() + ": " + e.getMessage(), e);
+            }
+        }
+    }
+
+    private void injectAnnotationProcessorsIntoCompiler(MavenProject project, Set<String> processors) {
+        Plugin compilerPlugin = findPlugin(project, "maven-compiler-plugin");
+        if (compilerPlugin == null) {
+            logger.debug("No maven-compiler-plugin configured for " + project.getArtifactId() +
+                    ", skipping annotation processor injection");
+            return;
+        }
+
+        // Set on plugin-level configuration
+        addProcessorsToConfiguration(compilerPlugin, processors, project);
+
+        // Also set on all executions
+        for (PluginExecution execution : compilerPlugin.getExecutions()) {
+            addProcessorsToConfiguration(execution, processors, project);
+        }
+    }
+
+    private void addProcessorsToConfiguration(Object configHolder, Set<String> processors, MavenProject project) {
+        Xpp3Dom configuration;
+        if (configHolder instanceof Plugin) {
+            configuration = (Xpp3Dom) ((Plugin) configHolder).getConfiguration();
+            if (configuration == null) {
+                configuration = new Xpp3Dom("configuration");
+                ((Plugin) configHolder).setConfiguration(configuration);
+            }
+        } else if (configHolder instanceof PluginExecution) {
+            configuration = (Xpp3Dom) ((PluginExecution) configHolder).getConfiguration();
+            if (configuration == null) {
+                configuration = new Xpp3Dom("configuration");
+                ((PluginExecution) configHolder).setConfiguration(configuration);
+            }
+        } else {
+            return;
+        }
+
+        // Get or create annotationProcessorPaths
+        Xpp3Dom processorPaths = configuration.getChild("annotationProcessorPaths");
+        if (processorPaths == null) {
+            processorPaths = new Xpp3Dom("annotationProcessorPaths");
+            configuration.addChild(processorPaths);
+        }
+
+        // Collect already configured processors to avoid duplicates
+        Set<String> existing = new HashSet<>();
+        for (Xpp3Dom path : processorPaths.getChildren("path")) {
+            Xpp3Dom groupId = path.getChild("groupId");
+            Xpp3Dom artifactId = path.getChild("artifactId");
+            if (groupId != null && artifactId != null) {
+                existing.add(groupId.getValue() + ":" + artifactId.getValue());
+            }
+        }
+
+        // Add new processors
+        for (String processor : processors) {
+            String[] parts = processor.split(":");
+            if (parts.length >= 2) {
+                String coord = parts[0] + ":" + parts[1];
+
+                if (!existing.contains(coord)) {
+                    Xpp3Dom path = new Xpp3Dom("path");
+                    Xpp3Dom groupId = new Xpp3Dom("groupId");
+                    groupId.setValue(parts[0]);
+                    Xpp3Dom artifactId = new Xpp3Dom("artifactId");
+                    artifactId.setValue(parts[1]);
+                    path.addChild(groupId);
+                    path.addChild(artifactId);
+
+                    // Optional version (if provided)
+                    if (parts.length >= 3) {
+                        Xpp3Dom version = new Xpp3Dom("version");
+                        version.setValue(parts[2]);
+                        path.addChild(version);
+                    }
+
+                    processorPaths.addChild(path);
+                    logger.info("Auto-configured annotation processor: " + processor +
+                            " for " + project.getArtifactId());
+                }
+            }
+        }
+
+        // Enable dependency management for processor versions
+        Xpp3Dom useDepMgmt = configuration.getChild("annotationProcessorPathsUseDepMgmt");
+        if (useDepMgmt == null) {
+            useDepMgmt = new Xpp3Dom("annotationProcessorPathsUseDepMgmt");
+            useDepMgmt.setValue("true");
+            configuration.addChild(useDepMgmt);
+        }
+
+        // Ensure annotation processing is NOT disabled (proc should be "only" or not set)
+        Xpp3Dom proc = configuration.getChild("proc");
+        if (proc != null && "none".equals(proc.getValue())) {
+            logger.warn("Annotation processing is disabled (proc=none) for " + project.getArtifactId() +
+                    ", cannot auto-configure processors");
+        }
     }
 
     public boolean isEnabled() {

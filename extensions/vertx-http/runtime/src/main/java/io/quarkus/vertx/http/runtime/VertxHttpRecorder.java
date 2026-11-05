@@ -102,6 +102,7 @@ import io.quarkus.vertx.http.runtime.filters.QuarkusRequestWrapper;
 import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogHandler;
 import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogReceiver;
 import io.quarkus.vertx.http.runtime.filters.accesslog.DefaultAccessLogReceiver;
+import io.quarkus.vertx.http.runtime.filters.accesslog.InvalidRequestAccessLogHandler;
 import io.quarkus.vertx.http.runtime.filters.accesslog.JBossLoggingAccessLogReceiver;
 import io.quarkus.vertx.http.runtime.management.ManagementConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
@@ -171,6 +172,16 @@ public class VertxHttpRecorder {
     private static volatile Runnable closeTask;
 
     static volatile Handler<HttpServerRequest> rootHandler;
+
+    private static volatile InvalidRequestAccessLogConfig invalidRequestAccessLogConfig;
+
+    private record InvalidRequestAccessLogConfig(AccessLogReceiver receiver, String pattern,
+            Optional<String> excludePattern) {
+        Handler<HttpServerRequest> createHandler() {
+            return new InvalidRequestAccessLogHandler(receiver, pattern, VertxHttpRecorder.class.getClassLoader(),
+                    excludePattern);
+        }
+    }
 
     private static volatile Handler<RoutingContext> nonApplicationRedirectHandler;
 
@@ -280,6 +291,7 @@ public class VertxHttpRecorder {
             closeTask = null;
         }
         rootHandler = null;
+        invalidRequestAccessLogConfig = null;
         hotReplacementHandler = null;
         hotReplacementContext = null;
     }
@@ -531,6 +543,7 @@ public class VertxHttpRecorder {
         }
 
         AccessLogConfig accessLog = httpConfig.accessLog();
+        InvalidRequestAccessLogConfig invalidAccessLogConfig = null;
         if (accessLog.enabled()) {
             AccessLogReceiver receiver;
             if (accessLog.logToFile()) {
@@ -540,6 +553,8 @@ public class VertxHttpRecorder {
             } else {
                 receiver = new JBossLoggingAccessLogReceiver(accessLog.category());
             }
+            invalidAccessLogConfig = new InvalidRequestAccessLogConfig(receiver, accessLog.pattern(),
+                    accessLog.excludePattern());
             setupAccessLogHandler(mainRouterRuntimeValue, httpRouterRuntimeValue, frameworkRouter, receiver, rootPath,
                     nonRootPath, accessLog.pattern(), accessLog.consolidateReroutedRequests(), accessLog.excludePattern());
             quarkusWrapperNeeded = true;
@@ -556,11 +571,19 @@ public class VertxHttpRecorder {
                 }
             };
 
+            Optional<String> devUiExcludePattern = accessLog.excludePattern()
+                    .or(() -> Optional.of("^" + nonRootPath + ".*"));
+            if (invalidAccessLogConfig == null) {
+                invalidAccessLogConfig = new InvalidRequestAccessLogConfig(receiver, accessLog.pattern(),
+                        devUiExcludePattern);
+            }
             setupAccessLogHandler(mainRouterRuntimeValue, httpRouterRuntimeValue, frameworkRouter, receiver, rootPath,
                     nonRootPath, accessLog.pattern(), accessLog.consolidateReroutedRequests(),
-                    accessLog.excludePattern().or(() -> Optional.of("^" + nonRootPath + ".*")));
+                    devUiExcludePattern);
             quarkusWrapperNeeded = true;
         }
+
+        invalidRequestAccessLogConfig = invalidAccessLogConfig;
 
         BiConsumer<Cookie, HttpServerRequest> cookieFunction = null;
         if (!httpConfig.sameSiteCookie().isEmpty()) {
@@ -660,6 +683,34 @@ public class VertxHttpRecorder {
                 }
             }
         }
+    }
+
+    private static void configureHttpServer(HttpServer httpServer, Handler<HttpServerRequest> requestHandler) {
+        httpServer.requestHandler(requestHandler);
+        httpServer.invalidRequestHandler(createInvalidRequestHandler());
+    }
+
+    private static Handler<HttpServerRequest> createInvalidRequestHandler() {
+        return new Handler<HttpServerRequest>() {
+            private InvalidRequestAccessLogConfig currentConfig;
+            private Handler<HttpServerRequest> currentHandler;
+
+            @Override
+            public void handle(HttpServerRequest request) {
+                InvalidRequestAccessLogConfig config = invalidRequestAccessLogConfig;
+                if (config == null) {
+                    currentConfig = null;
+                    currentHandler = null;
+                    HttpServerRequest.DEFAULT_INVALID_REQUEST_HANDLER.handle(request);
+                    return;
+                }
+                if (config != currentConfig || currentHandler == null) {
+                    currentConfig = config;
+                    currentHandler = config.createHandler();
+                }
+                currentHandler.handle(request);
+            }
+        };
     }
 
     private void setupAccessLogHandler(Optional<RuntimeValue<Router>> mainRouterRuntimeValue,
@@ -1376,9 +1427,9 @@ public class VertxHttpRecorder {
             if (httpServerEnabled) {
                 httpServer = vertx.createHttpServer(httpConfig_server, null);
                 if (insecureRequests == InsecureRequests.ENABLED) {
-                    httpServer.requestHandler(ACTUAL_ROOT);
+                    configureHttpServer(httpServer, ACTUAL_ROOT);
                 } else {
-                    httpServer.requestHandler(new Handler<HttpServerRequest>() {
+                    configureHttpServer(httpServer, new Handler<HttpServerRequest>() {
                         @Override
                         public void handle(HttpServerRequest req) {
                             try {
@@ -1409,14 +1460,14 @@ public class VertxHttpRecorder {
 
             if (domainSocketConfig_server != null) {
                 domainSocketServer = vertx.createHttpServer(domainSocketConfig_server, null);
-                domainSocketServer.requestHandler(ACTUAL_ROOT);
+                configureHttpServer(domainSocketServer, ACTUAL_ROOT);
                 setupUnixDomainSocketHttpServer(domainSocketServer, domainSocketConfig_server, startFuture, remainingCount,
                         container, notifyStartObservers);
             }
 
             if (httpsConfig_server != null) {
                 httpsServer = createHttpServer(vertx, httpsConfig_server, sslOptions, sslEngineOptions);
-                httpsServer.requestHandler(ACTUAL_ROOT);
+                configureHttpServer(httpsServer, ACTUAL_ROOT);
                 setupTcpHttpServer(httpsServer, httpsConfig_server, true, sslOptions, startFuture, remainingCount,
                         connectionCount, container, notifyStartObservers);
             }
@@ -1727,6 +1778,7 @@ public class VertxHttpRecorder {
                                     null,
                                     null);
                             conn.handler(ACTUAL_ROOT);
+                            conn.invalidRequestHandler(createInvalidRequestHandler());
                             return conn;
                         });
 

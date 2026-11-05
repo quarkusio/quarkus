@@ -135,6 +135,90 @@ class JarTreeShakerReachabilityTest {
     }
 
     @Test
+    void memberClassesOfReachableClassAreKept() {
+        JarTreeShakeInput input = TreeShakeInputFixture.builder()
+                .application(classReferencing("app.App", "lib.Outer"))
+                .dependency(LIB,
+                        classWithMembers("lib.Outer", "lib.Outer$Member"),
+                        classReferencing("lib.Outer$Member", "lib.MemberOnly"),
+                        classReferencing("lib.MemberOnly"),
+                        classReferencing("lib.Other"))
+                .build();
+
+        // reflective enumeration of member classes cannot be traced to a receiver, so a reachable class
+        // keeps the member classes it declares; they are only made loadable, so lib.MemberOnly is not kept
+        assertThat(keptDependencyClasses(input)).containsExactlyInAnyOrder("lib.Outer", "lib.Outer$Member");
+    }
+
+    @Test
+    void memberClassesOfUnreachableClassAreRemoved() {
+        JarTreeShakeInput input = TreeShakeInputFixture.builder()
+                .application(classReferencing("app.App"))
+                .dependency(LIB,
+                        classWithMembers("lib.Outer", "lib.Outer$Member"),
+                        classReferencing("lib.Outer$Member"))
+                .build();
+
+        assertThat(keptDependencyClasses(input)).isEmpty();
+    }
+
+    @Test
+    void enclosingClassOfReachableMemberClassIsKept() {
+        JarTreeShakeInput input = TreeShakeInputFixture.builder()
+                .application(classReferencing("app.App", "lib.Outer$Inner"))
+                .dependency(LIB,
+                        TreeShakeInputFixture.nestedClass("lib.Outer$Inner", "lib.Outer"),
+                        classReferencing("lib.Outer"),
+                        classReferencing("lib.Other"))
+                .build();
+
+        // Outer$Inner.getSimpleName()/getEnclosingClass() load lib.Outer
+        assertThat(keptDependencyClasses(input)).containsExactlyInAnyOrder("lib.Outer$Inner", "lib.Outer");
+    }
+
+    @Test
+    void enclosingClassOfReachableAnonymousClassIsKept() {
+        JarTreeShakeInput input = TreeShakeInputFixture.builder()
+                .application(classReferencing("app.App", "lib.Outer$1"))
+                .dependency(LIB,
+                        TreeShakeInputFixture.anonymousClass("lib.Outer$1", "lib.Outer", "run"),
+                        classReferencing("lib.Outer"),
+                        classReferencing("lib.Other"))
+                .build();
+
+        assertThat(keptDependencyClasses(input)).containsExactlyInAnyOrder("lib.Outer$1", "lib.Outer");
+    }
+
+    @Test
+    void enclosingClassOfReachableMemberClassIsTraced() {
+        JarTreeShakeInput input = TreeShakeInputFixture.builder()
+                .application(classReferencing("app.App", "lib.Outer$Inner"))
+                .dependency(LIB,
+                        TreeShakeInputFixture.nestedClass("lib.Outer$Inner", "lib.Outer"),
+                        classReferencing("lib.Outer", "lib.OuterOnly"),
+                        classReferencing("lib.OuterOnly"))
+                .build();
+
+        // the enclosing class is traced, not just made loadable: native-image builds pass --link-at-build-time,
+        // which verifies every method of a kept class and resolves the classes its bodies reference
+        assertThat(keptDependencyClasses(input))
+                .containsExactlyInAnyOrder("lib.Outer$Inner", "lib.Outer", "lib.OuterOnly");
+    }
+
+    @Test
+    void topLevelClassWithDollarInNameDoesNotKeepTheNamePrefix() {
+        JarTreeShakeInput input = TreeShakeInputFixture.builder()
+                .application(classReferencing("app.App", "lib.Weird$Name"))
+                .dependency(LIB,
+                        classReferencing("lib.Weird$Name"),
+                        classReferencing("lib.Weird"))
+                .build();
+
+        // lib.Weird$Name is a top-level class, lib.Weird is unrelated to it
+        assertThat(keptDependencyClasses(input)).containsExactly("lib.Weird$Name");
+    }
+
+    @Test
     void declaredClassesOfInnerClassSubstitutionHolderAreLoadable() {
         JarTreeShakeInput input = innerClassSubstitutionInput(classReferencing("app.App", "lib.Outer$Used"));
 

@@ -29,6 +29,7 @@ import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDepen
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.PlatformImports;
@@ -169,6 +170,7 @@ public class ApplicationDeploymentClasspathBuilder {
     private final String platformConfigurationName;
     private final String deploymentConfigurationName;
     private final String compileOnlyConfigurationName;
+    private Provider<List<Dependency>> directDeploymentDeps;
 
     /**
      * The platform configuration updates the PlatformImports, but since the PlatformImports don't
@@ -295,15 +297,16 @@ public class ApplicationDeploymentClasspathBuilder {
         if (!project.getConfigurations().getNames().contains(this.runtimeConfigurationName)) {
             final String baseConfig;
             final boolean disableComponentVariants = isDisableComponentVariants(project);
-            final QuarkusComponentVariants componentVariants;
+            final QuarkusComponentVariants.VariantsConfigurator componentVariants;
             if (disableComponentVariants) {
                 baseConfig = ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode);
                 componentVariants = null;
             } else {
                 Property<PlatformSpec> platformSpecProperty = project.getObjects()
                         .property(PlatformSpec.class);
-                componentVariants = QuarkusComponentVariants.create(project, mode,
+                componentVariants = QuarkusComponentVariants.configureVariants(project, mode,
                         platformSpecProperty.value(project.provider(this::resolvePlatformSpec)));
+                this.directDeploymentDeps = componentVariants.getDirectDeploymentDepsProvider();
                 baseConfig = QuarkusComponentVariants.getConditionalConfigurationName(mode);
             }
             project.getConfigurations().register(this.runtimeConfigurationName, configuration -> {
@@ -364,7 +367,16 @@ public class ApplicationDeploymentClasspathBuilder {
                     })));
                 });
             } else {
-                DeploymentConfigurationResolver.registerDeploymentConfiguration(project, mode, deploymentConfigurationName);
+                if (directDeploymentDeps == null) {
+                    // the provider is initialized when the runtime configuration is registered, which is expected
+                    // to happen before the deployment configuration is set up
+                    throw new IllegalStateException(
+                            "Direct deployment dependencies have not been initialized by configuration "
+                                    + runtimeConfigurationName + " that is required to register configuration "
+                                    + deploymentConfigurationName);
+                }
+                DeploymentConfigurationResolver.registerDeploymentConfiguration(project, mode, deploymentConfigurationName,
+                        directDeploymentDeps);
             }
         }
     }

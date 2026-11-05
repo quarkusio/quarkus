@@ -50,6 +50,13 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     private static final long SESSION_TIMEOUT_MILLIS = 60000;
     private static final ReentrantLock SESSION_OPERATION_LOCK = new ReentrantLock(true);
 
+    private static final int MAX_DEPTH = 100;
+    private static final int MAX_REFERENCES = 1_000_000;
+    private static final int MAX_ARRAY_LENGTH = 1_000_000;
+    private static final String REMOTE_DEV_STATE_CLASS_NAME = "io.quarkus.dev.spi.RemoteDevState";
+    private static final Set<String> ALLOWED_DESERIALIZATION_PACKAGES = Set.of("java.lang", "java.io", "java.util",
+            "java.math");
+
     final String password;
     final Handler<HttpServerRequest> next;
     final HotReplacementContext hotReplacementContext;
@@ -439,22 +446,43 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
      * <li>{@code java.util.*}: HashMap, ArrayList (suppressed exceptions list)</li>
      * <li>{@code java.math.*}: referenced by serialization internals</li>
      * </ul>
-     * The trailing {@code !*} rejects everything else.
+     * Everything else is rejected.
      */
     private static ObjectInputStream createFilteredObjectInputStream(InputStream data, long maxBytes) throws IOException {
         ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(data));
-        ois.setObjectInputFilter(ObjectInputFilter.Config.createFilter(
-                "maxdepth=100;"
-                        + "maxrefs=1000000;"
-                        + "maxarray=1000000;"
-                        + "maxbytes=" + maxBytes + ";"
-                        + "io.quarkus.dev.spi.RemoteDevState;"
-                        + "java.lang.*;"
-                        + "java.io.*;"
-                        + "java.util.*;"
-                        + "java.math.*;"
-                        + "!*"));
+        ois.setObjectInputFilter(remoteDevFilter(maxBytes));
         return ois;
+    }
+
+    /**
+     * The filter is implemented in code instead of with {@link ObjectInputFilter.Config#createFilter(String)}:
+     * GraalVM registers the classes of a constant filter pattern for serialization, which changes the reflection
+     * metadata of {@code Throwable} in native applications even though remote dev mode never runs there.
+     */
+    static ObjectInputFilter remoteDevFilter(long maxBytes) {
+        return info -> {
+            if (info.depth() > MAX_DEPTH
+                    || info.references() > MAX_REFERENCES
+                    || info.arrayLength() > MAX_ARRAY_LENGTH
+                    || info.streamBytes() > maxBytes) {
+                return ObjectInputFilter.Status.REJECTED;
+            }
+            Class<?> clazz = info.serialClass();
+            if (clazz == null) {
+                return ObjectInputFilter.Status.UNDECIDED;
+            }
+            while (clazz.isArray()) {
+                clazz = clazz.getComponentType();
+            }
+            if (clazz.isPrimitive()) {
+                return ObjectInputFilter.Status.UNDECIDED;
+            }
+            if (REMOTE_DEV_STATE_CLASS_NAME.equals(clazz.getName())
+                    || ALLOWED_DESERIALIZATION_PACKAGES.contains(clazz.getPackageName())) {
+                return ObjectInputFilter.Status.ALLOWED;
+            }
+            return ObjectInputFilter.Status.REJECTED;
+        };
     }
 
     private RemoteDevState readRemoteDevState(RemoteDevBodyCollector.CompletedBody body)

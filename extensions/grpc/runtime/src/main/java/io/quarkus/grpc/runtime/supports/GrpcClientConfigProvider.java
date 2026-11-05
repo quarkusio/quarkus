@@ -1,8 +1,6 @@
 package io.quarkus.grpc.runtime.supports;
 
-import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -43,8 +41,7 @@ public class GrpcClientConfigProvider {
                 stub = stub.withCompression(clientConfig.compression().get());
             }
             if (clientConfig.deadline().isPresent()) {
-                Duration deadline = clientConfig.deadline().get();
-                stub = stub.withDeadlineAfter(deadline.toMillis(), TimeUnit.MILLISECONDS);
+                stub = stub.withInterceptors(new DeadlineClientInterceptor(clientConfig.deadline().get()));
             }
         }
         return stub;

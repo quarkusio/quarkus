@@ -245,7 +245,8 @@ public class PublisherResponseHandler implements ServerRestHandler {
             // in truth we can only send an exception if we haven't sent the headers yet, otherwise
             // it will appear to be an SSE value, which is incorrect, so we should only log it and close the connection
             if (requestContext.serverResponse().headWritten()) {
-                log.error("Exception in SSE server handling, impossible to send it to client", t);
+                log.error("Exception while streaming the response after its headers were sent, impossible to send it"
+                        + " to the client; the response is reset so that the client can detect the failure", t);
                 // HTTP chunked encoding sends an indeterminate number of chunks, but it has to end with an end chunk of zero size to indicate successful transmission.
                 // reset() will cause this last chunk to not be sent, even though every other chunk was sent, and so clients can detect the error
                 requestContext.serverResponse().reset();

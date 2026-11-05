@@ -302,6 +302,27 @@ See the parameter Javadoc for more details.
 
 This annotation cannot be used on a method returning `void`.
 
+Some results are not worth caching, for example an empty list or a negative lookup.
+The `unless` parameter references a `CacheResultPredicate` implementation that receives the result once the method has been invoked; when it returns `true`, the result is returned to the caller but removed from the cache, so the next invocation with the same key invokes the method again:
+
+[source,java]
+----
+@CacheResult(cacheName = "orders", unless = EmptyResult.class)
+public List<Order> findOrders(String customer) {
+    // ...
+}
+
+public class EmptyResult implements CacheResultPredicate {
+
+    @Override
+    public boolean test(Object result) {
+        return result instanceof List<?> list && list.isEmpty();
+    }
+}
+----
+
+The predicate class can be a CDI bean, in which case it is resolved from the container, or a plain class with a public no-arg constructor.
+
 [NOTE]
 ====
 Quarkus is able to also cache `null` values unlike the underlying Caffeine provider.

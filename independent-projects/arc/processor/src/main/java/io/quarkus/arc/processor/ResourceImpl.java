@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 
@@ -17,8 +18,12 @@ class ResourceImpl implements ResourceOutput.Resource {
     private final boolean applicationClass;
 
     static Resource javaClass(String name, byte[] data, SpecialType specialType, boolean applicationClass, String source) {
-        return new ResourceImpl(applicationClass, name, data, Type.JAVA_CLASS, specialType, source);
+        return javaClass(name, data, specialType, applicationClass, source, List.of());
+    }
 
+    static Resource javaClass(String name, byte[] data, SpecialType specialType, boolean applicationClass, String source,
+            List<BootstrapMethod> bootstrapMethods) {
+        return new ResourceImpl(applicationClass, name, data, Type.JAVA_CLASS, specialType, source, bootstrapMethods);
     }
 
     static Resource serviceProvider(String name, byte[] data) {
@@ -26,7 +31,7 @@ class ResourceImpl implements ResourceOutput.Resource {
     }
 
     static Resource serviceProvider(String name, byte[] data, SpecialType specialType) {
-        return new ResourceImpl(true, name, data, Type.SERVICE_PROVIDER, specialType, null);
+        return new ResourceImpl(true, name, data, Type.SERVICE_PROVIDER, specialType, null, List.of());
     }
 
     private final String name;
@@ -34,15 +39,17 @@ class ResourceImpl implements ResourceOutput.Resource {
     private final String source;
     private final Type type;
     private final SpecialType specialType;
+    private final List<BootstrapMethod> bootstrapMethods;
 
     private ResourceImpl(boolean applicationClass, String name, byte[] data, Type type, SpecialType specialType,
-            String source) {
+            String source, List<BootstrapMethod> bootstrapMethods) {
         this.applicationClass = applicationClass;
         this.name = name;
         this.data = data;
         this.type = type;
         this.specialType = specialType;
         this.source = source;
+        this.bootstrapMethods = List.copyOf(bootstrapMethods);
     }
 
     @Override
@@ -85,6 +92,11 @@ class ResourceImpl implements ResourceOutput.Resource {
     @Override
     public SpecialType getSpecialType() {
         return specialType;
+    }
+
+    @Override
+    public List<BootstrapMethod> getBootstrapMethods() {
+        return bootstrapMethods;
     }
 
     @Override

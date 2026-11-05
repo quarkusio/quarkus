@@ -45,22 +45,18 @@ import org.jboss.resteasy.reactive.server.util.MethodId;
 import com.fasterxml.jackson.annotation.JsonView;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Consume;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames;
@@ -74,6 +70,7 @@ import io.quarkus.resteasy.reactive.jackson.SecureField;
 import io.quarkus.resteasy.reactive.jackson.common.deployment.processor.ResteasyReactiveJacksonProviderDefinedBuildItem;
 import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJacksonRecorder;
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.NativeInvalidDefinitionExceptionMapper;
+import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigExpConsumer;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigExpStorage;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.SecurityCustomSerialization;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.BasicServerJacksonMessageBodyWriter;
@@ -247,14 +244,13 @@ public class ResteasyReactiveJacksonProcessor {
         producer.produce(ReflectiveClassBuildItem.builder(Cookie.class).reason(getClass().getName()).methods().build());
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void handleJsonAnnotations(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             CombinedIndexBuildItem index,
             List<ResourceMethodCustomSerializationBuildItem> resourceMethodCustomSerializationBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
             BuildProducer<JacksonFeatureBuildItem> jacksonFeaturesProducer,
-            ResteasyReactiveServerJacksonRecorder recorder, ShutdownContextBuildItem shutdown) {
+            ServiceRegistrar serviceRegistrar) {
         if (resourceScanningResultBuildItem.isEmpty()) {
             return;
         }
@@ -265,6 +261,9 @@ public class ResteasyReactiveJacksonProcessor {
         allResourceClasses.addAll(resourceScanningResultBuildItem.get().getResult().getPossibleSubResources().values());
 
         Set<JacksonFeatureBuildItem.Feature> jacksonFeatures = new HashSet<>();
+        Map<String, String> jsonViews = new HashMap<>();
+        Map<String, String> customSerializations = new HashMap<>();
+        Map<String, String> customDeserializations = new HashMap<>();
         for (ClassInfo resourceClass : allResourceClasses) {
             if (resourceClass.annotationsMap().containsKey(JSON_VIEW)) {
                 jacksonFeatures.add(JacksonFeatureBuildItem.Feature.JSON_VIEW);
@@ -273,66 +272,22 @@ public class ResteasyReactiveJacksonProcessor {
                     if (annotationValue == null) {
                         continue;
                     }
-                    Type[] jsonViews = annotationValue.asClassArray();
-                    if ((jsonViews == null) || (jsonViews.length == 0)) {
+                    Type[] jsonViewTypes = annotationValue.asClassArray();
+                    if ((jsonViewTypes == null) || (jsonViewTypes.length == 0)) {
                         continue;
                     }
-                    recorder.recordJsonView(getTargetId(instance), jsonViews[0].name().toString());
+                    jsonViews.put(getTargetId(instance), jsonViewTypes[0].name().toString());
                 }
             }
             if (resourceClass.annotationsMap().containsKey(CUSTOM_SERIALIZATION)) {
                 jacksonFeatures.add(JacksonFeatureBuildItem.Feature.CUSTOM_SERIALIZATION);
-                for (AnnotationInstance instance : resourceClass.annotationsMap().get(CUSTOM_SERIALIZATION)) {
-                    AnnotationValue annotationValue = instance.value();
-                    if (annotationValue == null) {
-                        continue;
-                    }
-                    Type biFunctionType = annotationValue.asClass();
-                    if (biFunctionType == null) {
-                        continue;
-                    }
-                    ClassInfo biFunctionClassInfo = index.getIndex().getClassByName(biFunctionType.name());
-                    if (biFunctionClassInfo == null) {
-                        // be lenient
-                    } else {
-                        if (!biFunctionClassInfo.hasNoArgsConstructor()) {
-                            throw new IllegalArgumentException(
-                                    "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
-                        }
-                    }
-                    reflectiveClassProducer.produce(
-                            ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
-                                    .reason(getClass().getName())
-                                    .build());
-                    recorder.recordCustomSerialization(getTargetId(instance), biFunctionType.name().toString());
-                }
+                collectCustomSerializationTargets(resourceClass, CUSTOM_SERIALIZATION, index, reflectiveClassProducer,
+                        customSerializations);
             }
             if (resourceClass.annotationsMap().containsKey(CUSTOM_DESERIALIZATION)) {
                 jacksonFeatures.add(JacksonFeatureBuildItem.Feature.CUSTOM_DESERIALIZATION);
-                for (AnnotationInstance instance : resourceClass.annotationsMap().get(CUSTOM_DESERIALIZATION)) {
-                    AnnotationValue annotationValue = instance.value();
-                    if (annotationValue == null) {
-                        continue;
-                    }
-                    Type biFunctionType = annotationValue.asClass();
-                    if (biFunctionType == null) {
-                        continue;
-                    }
-                    ClassInfo biFunctionClassInfo = index.getIndex().getClassByName(biFunctionType.name());
-                    if (biFunctionClassInfo == null) {
-                        // be lenient
-                    } else {
-                        if (!biFunctionClassInfo.hasNoArgsConstructor()) {
-                            throw new IllegalArgumentException(
-                                    "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
-                        }
-                    }
-                    reflectiveClassProducer.produce(
-                            ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
-                                    .reason(getClass().getName())
-                                    .build());
-                    recorder.recordCustomDeserialization(getTargetId(instance), biFunctionType.name().toString());
-                }
+                collectCustomSerializationTargets(resourceClass, CUSTOM_DESERIALIZATION, index, reflectiveClassProducer,
+                        customDeserializations);
             }
         }
 
@@ -343,38 +298,68 @@ public class ResteasyReactiveJacksonProcessor {
                     ReflectiveClassBuildItem.builder(className)
                             .reason(getClass().getName())
                             .build());
-            recorder.recordCustomSerialization(getMethodId(bi.getMethodInfo(), bi.getDeclaringClassInfo()), className);
+            customSerializations.put(getMethodId(bi.getMethodInfo(), bi.getDeclaringClassInfo()), className);
         }
 
         if (!jacksonFeatures.isEmpty()) {
             for (JacksonFeatureBuildItem.Feature jacksonFeature : jacksonFeatures) {
                 jacksonFeaturesProducer.produce(new JacksonFeatureBuildItem(jacksonFeature));
             }
-            recorder.configureShutdown(shutdown);
+            Map<String, String> capturedJsonViews = Map.copyOf(jsonViews);
+            Map<String, String> capturedCustomSerializations = Map.copyOf(customSerializations);
+            Map<String, String> capturedCustomDeserializations = Map.copyOf(customDeserializations);
+            serviceRegistrar.forService("io.quarkus.resteasy.reactive.jackson.json-annotations")
+                    .atPhase(Phase.STATIC_INIT)
+                    .onStart(ctx -> {
+                        ResteasyReactiveServerJacksonRecorder.registerJsonAnnotations(capturedJsonViews,
+                                capturedCustomSerializations, capturedCustomDeserializations);
+                        ctx.onStop(ResteasyReactiveServerJacksonRecorder::clearJsonAnnotations);
+                    });
         }
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
+    private void collectCustomSerializationTargets(ClassInfo resourceClass, DotName annotationName,
+            CombinedIndexBuildItem index,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer, Map<String, String> targetIdToClassName) {
+        for (AnnotationInstance instance : resourceClass.annotationsMap().get(annotationName)) {
+            AnnotationValue annotationValue = instance.value();
+            if (annotationValue == null) {
+                continue;
+            }
+            Type biFunctionType = annotationValue.asClass();
+            if (biFunctionType == null) {
+                continue;
+            }
+            ClassInfo biFunctionClassInfo = index.getIndex().getClassByName(biFunctionType.name());
+            if (biFunctionClassInfo == null) {
+                // be lenient
+            } else {
+                if (!biFunctionClassInfo.hasNoArgsConstructor()) {
+                    throw new IllegalArgumentException(
+                            "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
+                }
+            }
+            reflectiveClassProducer.produce(
+                    ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
+                            .reason(getClass().getName())
+                            .build());
+            targetIdToClassName.put(getTargetId(instance), biFunctionType.name().toString());
+        }
+    }
+
     @BuildStep
     public void resolveRolesAllowedConfigExpressions(BuildProducer<RolesAllowedConfigExpResolverBuildItem> resolverProducer,
-            Capabilities capabilities, ResteasyReactiveServerJacksonRecorder recorder, CombinedIndexBuildItem indexBuildItem,
+            Capabilities capabilities, CombinedIndexBuildItem indexBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
-            BuildProducer<InitAndValidateRolesAllowedConfigExp> initAndValidateItemProducer) {
+            ServiceRegistrar serviceRegistrar) {
         if (capabilities.isPresent(Capability.SECURITY)) {
             BiConsumer<String, Supplier<String[]>> configValRecorder = null;
             for (AnnotationInstance instance : indexBuildItem.getIndex().getAnnotations(SECURE_FIELD)) {
                 for (String role : instance.value("rolesAllowed").asStringArray()) {
                     if (isSecurityConfigExpressionCandidate(role)) {
                         if (configValRecorder == null) {
-                            var storage = recorder.createConfigExpToAllowedRoles();
-                            configValRecorder = recorder.recordRolesAllowedConfigExpression(storage);
-                            syntheticBeanProducer.produce(SyntheticBeanBuildItem
-                                    .configure(RolesAllowedConfigExpStorage.class)
-                                    .scope(Singleton.class)
-                                    .supplier(recorder.createRolesAllowedConfigExpStorage(storage))
-                                    .unremovable()
-                                    .done());
-                            initAndValidateItemProducer.produce(new InitAndValidateRolesAllowedConfigExp());
+                            configValRecorder = registerRolesAllowedConfigExpServices(serviceRegistrar,
+                                    syntheticBeanProducer);
                         }
                         resolverProducer.produce(new RolesAllowedConfigExpResolverBuildItem(role, configValRecorder));
                     }
@@ -383,22 +368,34 @@ public class ResteasyReactiveJacksonProcessor {
         }
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep
-    @Consume(SynthesisFinishedBuildItem.class)
-    public void initializeRolesAllowedConfigExp(ResteasyReactiveServerJacksonRecorder recorder,
-            Optional<InitAndValidateRolesAllowedConfigExp> initAndValidateItem) {
-        if (initAndValidateItem.isPresent()) {
-            recorder.initAndValidateRolesAllowedConfigExp();
-        }
+    private static RolesAllowedConfigExpConsumer registerRolesAllowedConfigExpServices(ServiceRegistrar serviceRegistrar,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer) {
+        serviceRegistrar.forService(RolesAllowedConfigExpStorage.class)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> new RolesAllowedConfigExpStorage());
+        serviceRegistrar.forService(RolesAllowedConfigExpConsumer.class)
+                .atPhase(Phase.STATIC_INIT)
+                .require(RolesAllowedConfigExpStorage.class)
+                .onStart((ctx, storage) -> storage);
+        syntheticBeanProducer.produce(SyntheticBeanBuildItem
+                .configure(RolesAllowedConfigExpStorage.class)
+                .scope(Singleton.class)
+                .serviceValue(RolesAllowedConfigExpStorage.class)
+                .unremovable()
+                .done());
+        // resolves the expressions once the runtime configuration is ready
+        serviceRegistrar.forService("io.quarkus.resteasy.reactive.jackson.roles-allowed-config-exp")
+                .require(RolesAllowedConfigExpStorage.class)
+                .onStart((ctx, storage) -> storage.resolveRolesAllowedConfigExp());
+
+        return serviceRegistrar.getRecorderProxy(RolesAllowedConfigExpConsumer.class);
     }
 
     @BuildStep(onlyIf = JacksonOptimizationConfig.IsReflectionFreeSerializersEnabled.class)
-    @Record(ExecutionTime.STATIC_INIT)
     public void handleEndpointParams(ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntries,
             JaxRsResourceIndexBuildItem jaxRsIndex, CombinedIndexBuildItem index,
             List<ResponseTypeUnwrapperBuildItem> responseTypeUnwrappers,
-            ResteasyReactiveServerJacksonRecorder recorder,
+            ServiceRegistrar serviceRegistrar,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
 
         IndexView indexView = jaxRsIndex.getIndexView();
@@ -434,18 +431,18 @@ public class ResteasyReactiveJacksonProcessor {
             }
         }
 
-        if (!serializedTypes.isEmpty()) {
-            JacksonSerializerFactory factory = new JacksonSerializerFactory(generatedClassBuildItemBuildProducer,
-                    index.getComputingIndex());
-            factory.createFromTypes(serializedTypes.values())
-                    .forEach(recorder::recordGeneratedSerializer);
-        }
+        List<String> generatedSerializers = serializedTypes.isEmpty() ? List.of()
+                : List.copyOf(new JacksonSerializerFactory(generatedClassBuildItemBuildProducer, index.getComputingIndex())
+                        .createFromTypes(serializedTypes.values()));
+        List<String> generatedDeserializers = deserializedTypes.isEmpty() ? List.of()
+                : List.copyOf(new JacksonDeserializerFactory(generatedClassBuildItemBuildProducer, index.getComputingIndex())
+                        .createFromTypes(deserializedTypes.values()));
 
-        if (!deserializedTypes.isEmpty()) {
-            JacksonDeserializerFactory factory = new JacksonDeserializerFactory(generatedClassBuildItemBuildProducer,
-                    index.getComputingIndex());
-            factory.createFromTypes(deserializedTypes.values())
-                    .forEach(recorder::recordGeneratedDeserializer);
+        if (!generatedSerializers.isEmpty() || !generatedDeserializers.isEmpty()) {
+            serviceRegistrar.forService("io.quarkus.resteasy.reactive.jackson.generated-serializers")
+                    .atPhase(Phase.STATIC_INIT)
+                    .onStart(ctx -> ResteasyReactiveServerJacksonRecorder.registerGeneratedSerializers(generatedSerializers,
+                            generatedDeserializers));
         }
     }
 
@@ -567,7 +564,7 @@ public class ResteasyReactiveJacksonProcessor {
                 return null;
             }
 
-            effectiveReturnType = type.asParameterizedType().arguments().get(0);
+            effectiveReturnType = type.asParameterizedType().arguments().getFirst();
         }
         if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.SET) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.COLLECTION) ||
@@ -575,7 +572,7 @@ public class ResteasyReactiveJacksonProcessor {
             if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
                 return null;
             }
-            effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(0);
+            effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().getFirst();
         } else if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.MAP)) {
             if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
                 return null;
@@ -739,14 +736,5 @@ public class ResteasyReactiveJacksonProcessor {
         }
         return MethodId.get(methodInfo.name(), declaringClassInfo.name().toString(),
                 parameterClassNames.toArray(EMPTY_STRING_ARRAY));
-    }
-
-    /**
-     * Purely marker build item so that we know at least one allowed role with configuration
-     * expressions has been detected.
-     */
-    public static final class InitAndValidateRolesAllowedConfigExp extends SimpleBuildItem {
-        private InitAndValidateRolesAllowedConfigExp() {
-        }
     }
 }

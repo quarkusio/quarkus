@@ -6,6 +6,7 @@ import java.util.OptionalInt;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
+import io.vertx.pgclient.ChannelBinding;
 import io.vertx.pgclient.SslMode;
 import io.vertx.pgclient.SslNegotiation;
 
@@ -39,6 +40,22 @@ public interface DataSourceReactivePostgreSQLConfig {
      * When not set, the Vert.x client default applies ({@link SslNegotiation#POSTGRES}).
      */
     Optional<SslNegotiation> sslNegotiation();
+
+    /**
+     * Channel binding mode used during SCRAM authentication.
+     * <p>
+     * Channel binding is a method for the server to authenticate itself to the client.
+     * It is only supported over SSL connections with PostgreSQL 11 or later servers using the SCRAM authentication method.
+     * <ul>
+     * <li>{@code disable} — prevents the use of channel binding.</li>
+     * <li>{@code prefer} — the client chooses channel binding if available.</li>
+     * <li>{@code require} — the connection must employ channel binding.</li>
+     * </ul>
+     * See <a href="https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-CHANNEL-BINDING">libpq
+     * channel_binding</a>.
+     */
+    @ConfigDocDefault("prefer")
+    Optional<ChannelBinding> channelBinding();
 
     /**
      * Level 7 proxies can load balance queries on several connections to the actual database.

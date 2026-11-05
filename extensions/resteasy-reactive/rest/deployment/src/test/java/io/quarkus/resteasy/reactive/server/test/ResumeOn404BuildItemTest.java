@@ -11,7 +11,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -30,7 +32,7 @@ public class ResumeOn404BuildItemTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, CustomRoute.class);
+                            .addClasses(Resource.class, CustomRoute.class, ThrowableExceptionMapper.class);
                 }
             })
             .addBuildChainCustomizer(buildCustomizer());
@@ -63,6 +65,16 @@ public class ResumeOn404BuildItemTest {
                 .statusCode(200);
     }
 
+    /**
+     * A route with a lower priority than the REST routes, such as the welcome page in dev mode.
+     */
+    @Test
+    public void matchingFromLateCustomRoute() {
+        get("/late")
+                .then()
+                .statusCode(200);
+    }
+
     @Test
     public void missing() {
         get("/dummy")
@@ -85,6 +97,18 @@ public class ResumeOn404BuildItemTest {
 
         public void initMain(@Observes Router router) {
             router.get("/main").handler(rc -> rc.response().end("main"));
+            router.get("/late").order(Integer.MAX_VALUE).handler(rc -> rc.response().end("late"));
+        }
+    }
+
+    /**
+     * A global mapper that also matches {@code NotFoundException} must not prevent the resume.
+     */
+    public static class ThrowableExceptionMapper {
+
+        @ServerExceptionMapper
+        public Response handleThrowable(Throwable t) {
+            return Response.status(418).build();
         }
     }
 }

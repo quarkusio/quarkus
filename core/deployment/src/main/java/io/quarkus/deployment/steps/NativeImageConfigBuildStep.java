@@ -18,8 +18,10 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.ssl.SslContextConfiguration;
 
 //TODO: this should go away, once we decide on which one of the API's we want
@@ -77,6 +79,33 @@ class NativeImageConfigBuildStep {
         if (!nativeImageEnableAllCharsetsBuildItems.isEmpty()) {
             nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-charsets", "true"));
         }
+    }
+
+    /**
+     * Makes the JDK {@code http} and {@code https} URL protocol handlers available in the native executable, so that
+     * {@code java.net.URL} can be used with these protocols.
+     * <p>
+     * Since GraalVM 25.0.4, URL protocol handlers are enabled through reachability metadata: the
+     * {@code sun.net.www.protocol.<protocol>.Handler} class and its no-arg constructor must be registered for reflection.
+     * This replaces the deprecated {@code --enable-url-protocols} option.
+     */
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void registerUrlProtocolHandlers(NativeConfig nativeConfig,
+            SslNativeConfigBuildItem sslNativeConfig,
+            List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
+        if (nativeConfig.enableHttpUrlHandler()) {
+            registerUrlProtocolHandler("http", reflectiveMethods);
+        }
+        if (nativeConfig.enableHttpsUrlHandler() || isSslNativeEnabled(sslNativeConfig, extensionSslNativeSupport)) {
+            registerUrlProtocolHandler("https", reflectiveMethods);
+        }
+    }
+
+    private static void registerUrlProtocolHandler(String protocol,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
+        reflectiveMethods.produce(new ReflectiveMethodBuildItem("Enable the " + protocol + " URL protocol handler",
+                "sun.net.www.protocol." + protocol + ".Handler", "<init>"));
     }
 
     @BuildStep

@@ -908,13 +908,13 @@ public class NativeImageBuildStep {
             @SuppressWarnings("deprecation")
             public NativeImageInvokerInfo build() {
                 List<String> nativeImageArgs = new ArrayList<>();
-                boolean enableSslNative = false;
                 boolean addAllCharsets = nativeConfig.addAllCharsets();
-                boolean enableHttpsUrlHandler = nativeConfig.enableHttpsUrlHandler();
                 for (NativeImageSystemPropertyBuildItem prop : nativeImageProperties) {
                     //todo: this should be specific build items
-                    if (prop.getKey().equals("quarkus.ssl.native") && prop.getValue() != null) {
-                        enableSslNative = Boolean.parseBoolean(prop.getValue());
+                    if (prop.getKey().equals("quarkus.ssl.native")) {
+                        // not passed to the native-image builder: the URL protocol handlers it controls are
+                        // registered through reachability metadata, see NativeImageConfigBuildStep
+                        continue;
                     } else if (prop.getKey().equals("quarkus.native.enable-all-charsets") && prop.getValue() != null) {
                         addAllCharsets |= Boolean.parseBoolean(prop.getValue());
                     } else {
@@ -940,10 +940,6 @@ public class NativeImageBuildStep {
 
                 nativeImageArgs.add("--enable-native-access=ALL-UNNAMED");//Avoid such warnings, as we're working to resolve them in JVM mode first.
                 nativeImageArgs.add("-J-Dfile.encoding=" + nativeConfig.fileEncoding());
-
-                if (enableSslNative) {
-                    enableHttpsUrlHandler = true;
-                }
 
                 if (nativeImageFeatures == null || nativeImageFeatures.isEmpty()) {
                     throw new IllegalStateException("GraalVM features can't be empty, quarkus core is using some.");
@@ -1087,20 +1083,10 @@ public class NativeImageBuildStep {
                 if (nativeConfig.nativeImageXmx().isPresent()) {
                     nativeImageArgs.add("-J-Xmx" + nativeConfig.nativeImageXmx().get());
                 }
-                List<String> protocols = new ArrayList<>(2);
-                if (nativeConfig.enableHttpUrlHandler()) {
-                    protocols.add("http");
-                }
-                if (enableHttpsUrlHandler) {
-                    protocols.add("https");
-                }
                 if (addAllCharsets) {
                     nativeImageArgs.add("-H:+AddAllCharsets");
                 } else {
                     nativeImageArgs.add("-H:-AddAllCharsets");
-                }
-                if (!protocols.isEmpty()) {
-                    nativeImageArgs.add("--enable-url-protocols=" + String.join(",", protocols));
                 }
                 if (!pie.isEmpty()) {
                     nativeImageArgs.add("-H:NativeLinkerOption=" + pie);

@@ -296,8 +296,7 @@ public class RestClientBase {
         try {
             builder.baseUrl(new URL(baseUrl));
         } catch (MalformedURLException e) {
-            if (e.getMessage().contains(
-                    "It must be enabled by adding the --enable-url-protocols=https option to the native-image command")) {
+            if (e.getMessage() != null && e.getMessage().contains("URL protocol https is supported but not enabled")) {
                 throw new IllegalArgumentException(baseUrl
                         + " requires SSL support but it is disabled. You probably have set quarkus.ssl.native to false.");
             }

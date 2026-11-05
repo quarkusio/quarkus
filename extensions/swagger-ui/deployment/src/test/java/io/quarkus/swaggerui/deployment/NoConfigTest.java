@@ -1,5 +1,6 @@
 package io.quarkus.swaggerui.deployment;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,5 +41,12 @@ public class NoConfigTest {
         Matcher matcher = pattern.matcher(indexHtml);
         assertTrue(matcher.find());
         assertEquals(expectedPath, URI.create(pageUrl).resolve(matcher.group(1)).getPath());
+    }
+
+    @Test
+    public void shouldRedirectToRelativePath() {
+        RestAssured.given().redirects().follow(false)
+                .when().get("/q/swagger-ui")
+                .then().statusCode(302).header("Location", equalTo("swagger-ui/"));
     }
 }

@@ -1042,6 +1042,13 @@ quarkus.vertx.cache-directory=/tmp/vertx
 ----
 
 
+== DNS resolution
+
+By default, Quarkus uses the blocking DNS resolver.
+To enable the Vert.x asynchronous DNS resolver, set `quarkus.vertx.use-async-dns=true` **at build time**.
+This setting is fixed at build time for both JVM applications and native executables; changing it requires rebuilding the application.
+When asynchronous DNS is disabled, native executables omit the asynchronous resolver code to reduce their size.
+
 [[customizing-the-vert-x-configuration]]
 == Customize the Vert.x configuration
 

@@ -118,7 +118,7 @@ class VertxCoreProcessor {
 
     @BuildStep
     NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources) {
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources, VertxBuildTimeConfig config) {
         reflectiveClass.produce(
                 ReflectiveClassBuildItem.builder(VertxLogDelegateFactory.class.getName()).methods().build());
         reflectiveClass.produce(
@@ -131,7 +131,7 @@ class VertxCoreProcessor {
                 .addRuntimeInitializedClass("io.vertx.core.impl.buffer.VertxByteBufAllocator")
                 .addRuntimeInitializedClass("io.vertx.core.http.impl.tcp.VertxHttp2ClientUpgradeCodec")
                 .addRuntimeInitializedClass("io.vertx.core.file.FileSystemOptions")
-                .addNativeImageSystemProperty(SysProps.DISABLE_DNS_RESOLVER.name, "true")
+                .addNativeImageSystemProperty(SysProps.DISABLE_DNS_RESOLVER.name, Boolean.toString(!config.useAsyncDNS()))
                 .addNativeImageSystemProperty("vertx.logger-delegate-factory-class-name",
                         VertxLogDelegateFactory.class.getName())
                 .build();

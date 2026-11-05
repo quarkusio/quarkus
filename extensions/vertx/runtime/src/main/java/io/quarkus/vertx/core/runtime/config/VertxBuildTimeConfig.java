@@ -10,6 +10,13 @@ import io.smallrye.config.WithDefault;
 public interface VertxBuildTimeConfig {
 
     /**
+     * Enables the async DNS resolver. This must be configured at build time.
+     * When disabled, native executables exclude the async DNS resolver to reduce their size.
+     */
+    @WithDefault("false")
+    boolean useAsyncDNS();
+
+    /**
      * Whether and how strictly native transport should be used.
      * <p>
      * Supported values:

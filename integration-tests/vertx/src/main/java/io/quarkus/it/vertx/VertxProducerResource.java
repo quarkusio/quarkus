@@ -10,7 +10,11 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import io.quarkus.vertx.core.runtime.config.VertxBuildTimeConfig;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.dns.AddressResolverOptions;
+import io.vertx.core.dns.impl.DefaultAddressResolverProvider;
+import io.vertx.core.spi.dns.AddressResolverProvider;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.eventbus.Message;
@@ -24,6 +28,21 @@ public class VertxProducerResource {
 
     @Inject
     EventBus eventBus;
+
+    @Inject
+    VertxBuildTimeConfig buildTimeConfig;
+
+    @GET
+    @Path("/dns")
+    @Produces(MediaType.TEXT_PLAIN)
+    public boolean dns() {
+        AddressResolverProvider provider = AddressResolverProvider.factory(vertx.getDelegate(), new AddressResolverOptions());
+        try {
+            return (provider instanceof DefaultAddressResolverProvider) != buildTimeConfig.useAsyncDNS();
+        } finally {
+            provider.close();
+        }
+    }
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)

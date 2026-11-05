@@ -29,7 +29,7 @@ public class RouteTest {
 
         RestAssured.get("/netty-version").then()
                 .statusCode(200)
-                .body(is("true;true;true"));
+                .body(is("true;true;true;true"));
     }
 
 }

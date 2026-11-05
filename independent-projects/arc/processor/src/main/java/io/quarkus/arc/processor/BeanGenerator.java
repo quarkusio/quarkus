@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -78,6 +79,7 @@ import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.Reflection2Gizmo;
+import io.quarkus.gizmo2.StaticFieldVar;
 import io.quarkus.gizmo2.Var;
 import io.quarkus.gizmo2.creator.BlockCreator;
 import io.quarkus.gizmo2.creator.ClassCreator;
@@ -102,6 +104,11 @@ public class BeanGenerator extends AbstractGenerator {
     protected static final String FIELD_NAME_QUALIFIERS = "qualifiers";
     protected static final String FIELD_NAME_STEREOTYPES = "stereotypes";
     protected static final String FIELD_NAME_PROXY = "proxy";
+    private static final String FIELD_NAME_PROXY_UPDATER = "PROXY_UPDATER";
+    private static final MethodDesc NEW_UPDATER = MethodDesc.of(AtomicReferenceFieldUpdater.class, "newUpdater",
+            AtomicReferenceFieldUpdater.class, Class.class, Class.class, String.class);
+    private static final MethodDesc UPDATER_CAS = MethodDesc.of(AtomicReferenceFieldUpdater.class, "compareAndSet",
+            boolean.class, Object.class, Object.class, Object.class);
 
     protected final AnnotationLiteralProcessor annotationLiterals;
     protected final Predicate<DotName> applicationClassPredicate;
@@ -337,6 +344,33 @@ public class BeanGenerator extends AbstractGenerator {
         });
     }
 
+    /**
+     * Generates the lazy creation of the client proxy of a normal-scoped bean. The generated code looks like this:
+     *
+     * <pre>
+     * private static final AtomicReferenceFieldUpdater PROXY_UPDATER = AtomicReferenceFieldUpdater
+     *         .newUpdater(Foo_Bean.class, Foo_ClientProxy.class, "proxy");
+     *
+     * private volatile Foo_ClientProxy proxy;
+     *
+     * private Foo_ClientProxy proxy() {
+     *     Foo_ClientProxy proxy = this.proxy;
+     *     if (proxy == null) {
+     *         Foo_ClientProxy newProxy = new Foo_ClientProxy(beanIdentifier);
+     *         if (PROXY_UPDATER.compareAndSet(this, null, newProxy)) {
+     *             return newProxy;
+     *         }
+     *         proxy = this.proxy;
+     *     }
+     *     return proxy;
+     * }
+     * </pre>
+     *
+     * A bean must have exactly one client proxy. Otherwise, a mock installed with {@code QuarkusMock} only reaches the
+     * proxy that is cached in the {@code proxy} field, and a bean that holds a different proxy still calls the real bean.
+     * That is why the proxy is published with a compare-and-set. A thread that loses the race discards its instance and
+     * uses the winner's.
+     */
     private void generateProxy(ClassCreator cc, BeanInfo bean, String baseName) {
         if (bean.getDeployment().hasRuntimeDeferredUnproxyableError(bean)) {
             return;
@@ -349,16 +383,26 @@ public class BeanGenerator extends AbstractGenerator {
             fc.volatile_();
             fc.setType(proxyType);
         });
+        StaticFieldVar proxyUpdater = cc.staticField(FIELD_NAME_PROXY_UPDATER, fc -> {
+            fc.private_();
+            fc.final_();
+            fc.setType(AtomicReferenceFieldUpdater.class);
+            fc.setInitializer(bc -> {
+                bc.yield(bc.invokeStatic(NEW_UPDATER, Const.of(cc.type()), Const.of(proxyType),
+                        Const.of(FIELD_NAME_PROXY)));
+            });
+        });
 
         cc.method(FIELD_NAME_PROXY, mc -> {
             mc.private_();
             mc.returning(proxyType);
             mc.body(b0 -> {
                 LocalVar proxy = b0.localVar("proxy", cc.this_().field(proxyField));
-                // Create a new proxy instance, atomicity does not really matter here
                 b0.ifNull(proxy, b1 -> {
-                    b1.set(proxy, b1.new_(proxyType, Const.of(bean.getIdentifier())));
-                    b1.set(cc.this_().field(proxyField), proxy);
+                    LocalVar newProxy = b1.localVar("newProxy", b1.new_(proxyType, Const.of(bean.getIdentifier())));
+                    b1.if_(b1.invokeVirtual(UPDATER_CAS, proxyUpdater, cc.this_(), Const.ofNull(proxyType), newProxy),
+                            b2 -> b2.return_(newProxy));
+                    b1.set(proxy, cc.this_().field(proxyField));
                 });
                 b0.return_(proxy);
             });

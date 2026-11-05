@@ -161,12 +161,13 @@ With those requirements in place, the jar can be deployed on the target, along w
 
 [NOTE]
 ====
-By default, the Ansible collection for Quarkus will install and use the OpenJDK 17 available in the Yum repositories of the target host (or the controller). If you want to use a different version of OpenJDK, define the following variable:
+By default, the Ansible collection for Quarkus installs and uses the OpenJDK 21 available in the Yum repositories of the target host (or the controller).
+To use a different version of OpenJDK, set the `quarkus_java_version` variable, which sets both the package that the collection installs and `quarkus_java_home`:
 
 [source,bash]
 ----
 $ ansible-playbook -i inventory ...
-    -e quarkus_java_package_version: java-17-openjdk
+    -e quarkus_java_version=25
 ----
 ====
 

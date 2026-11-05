@@ -195,8 +195,8 @@ public class Author {
 }
 ----
 <1> First, let's mark the `Author` type as an link:{hibernate-search-docs-url}#concepts-entity[entity type].
-In short, this implies the `Author` type it has its own, distinct lifecycle (not tied to another type),
-and that every `BookAuthor instance carries an immutable, unique identifier.
+In short, this implies the `Author` type has its own, distinct lifecycle (not tied to another type),
+and that every `Author` instance carries an immutable, unique identifier.
 <2> Then, let's use the `@Indexed` annotation to register our `Author` entity as part of the full text index.
 <3> And let's end the mandatory configuration by defining a document identifier.
 <4> The `@FullTextField` annotation declares a field in the index specifically tailored for full text search.

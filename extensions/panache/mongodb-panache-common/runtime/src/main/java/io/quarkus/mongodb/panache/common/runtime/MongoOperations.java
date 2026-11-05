@@ -461,7 +461,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
      * As update document needs an update operator, we add <code>$set</code> if none is provided.
      */
     Bson bindUpdate(Class<?> clazz, String query, Object[] params) {
-        Bson bindUpdate = bindQuery(clazz, query, params);
+        Bson bindUpdate = bindUpdateQuery(clazz, query, params);
         if (!containsUpdateOperator(query)) {
             bindUpdate = new Document("$set", bindUpdate);
         }
@@ -475,7 +475,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
      * As update document needs an update operator, we add <code>$set</code> if none is provided.
      */
     Bson bindUpdate(Class<?> clazz, String query, Map<String, Object> params) {
-        Bson bindUpdate = bindQuery(clazz, query, params);
+        Bson bindUpdate = bindUpdateQuery(clazz, query, params);
         if (!containsUpdateOperator(query)) {
             bindUpdate = new Document("$set", bindUpdate);
         }
@@ -511,6 +511,28 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         } else {
             //this is a PanacheQL query
             return PanacheQlQueryBinder.bindQuery(clazz, query, params);
+        }
+    }
+
+    private Bson bindUpdateQuery(Class<?> clazz, String update, Object[] params) {
+        //determine the type of the update
+        if (update.charAt(0) == '{') {
+            //this is a native update
+            return NativeQueryBinder.bindQuery(update, params);
+        } else {
+            //this is a PanacheQL update
+            return PanacheQlQueryBinder.bindUpdate(clazz, update, params);
+        }
+    }
+
+    private Bson bindUpdateQuery(Class<?> clazz, String update, Map<String, Object> params) {
+        //determine the type of the update
+        if (update.charAt(0) == '{') {
+            //this is a native update
+            return NativeQueryBinder.bindQuery(update, params);
+        } else {
+            //this is a PanacheQL update
+            return PanacheQlQueryBinder.bindUpdate(clazz, update, params);
         }
     }
 

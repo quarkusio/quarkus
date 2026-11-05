@@ -265,6 +265,7 @@ export const templates = {
     'endpoints-context-handler': 'Context Handler',
     'endpoints-failure-handler': 'Failure Handler',
     'endpoints-unknown': 'Unknown (could not detect)',
+    'endpoints-routes-failed': 'Could not load the routes. See the log file for details',
     
     // Continuous Testing (Menu)
     'continuoustesting-title': 'Continuous Testing',

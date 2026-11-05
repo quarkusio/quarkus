@@ -253,7 +253,7 @@ mp.messaging.incoming.movies-from-kafka.auto.offset.reset=earliest
 ====
 Again, unlike with Avro, we have to define the `value.deserializer`.
 
-If you use Confluent Schema Registry, you must configure `value.deserializer` as well with the value ´io.confluent.kafka.serializers.json.KafkaJsonSchemaDeserializer´.
+If you use Confluent Schema Registry, you must configure `value.deserializer` as well with the value `io.confluent.kafka.serializers.json.KafkaJsonSchemaDeserializer`.
 They are both detected automatically.
 ====
 

@@ -621,6 +621,9 @@ The limit is controlled by the following configuration property:
 * `quarkus.websockets-next.server.max-pending-messages` for server endpoints, and
 * `quarkus.websockets-next.client.max-pending-messages` for client endpoints.
 
+The limit counts complete text and binary messages, including messages received in multiple frames.
+Individual fragments do not count as separate pending messages.
+
 When the limit is reached, the underlying WebSocket read stream is paused and no more messages are received until the pending messages are processed.
 
 The default value is `256`.

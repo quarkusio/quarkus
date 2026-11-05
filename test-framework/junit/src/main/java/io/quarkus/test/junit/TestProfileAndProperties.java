@@ -58,6 +58,9 @@ public final class TestProfileAndProperties {
                     })
                     .map(Class::getName).collect(Collectors.joining(",")));
         }
+        if (profileInstance.disableApplicationLifecycleObservers()) {
+            properties.put("quarkus.arc.test.disable-application-lifecycle-observers", "true");
+        }
         String configProfile = profileInstance.getConfigProfile();
         if (configProfile != null) {
             properties.put(launchMode.getProfileKey(), configProfile);

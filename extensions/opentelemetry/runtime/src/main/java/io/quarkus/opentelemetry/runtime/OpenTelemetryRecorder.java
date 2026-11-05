@@ -99,6 +99,7 @@ public class OpenTelemetryRecorder {
     @RuntimeInit
     public Function<SyntheticCreationalContext<OpenTelemetry>, OpenTelemetry> opentelemetryBean() {
         return new Function<>() {
+            @SuppressWarnings("removal")
             @Override
             public OpenTelemetry apply(SyntheticCreationalContext<OpenTelemetry> context) {
                 Instance<AutoConfiguredOpenTelemetrySdkBuilderCustomizer> builderCustomizers = context

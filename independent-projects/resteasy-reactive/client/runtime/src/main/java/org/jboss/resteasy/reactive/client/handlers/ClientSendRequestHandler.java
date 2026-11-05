@@ -595,8 +595,10 @@ public class ClientSendRequestHandler implements ClientRestHandler {
 
         return requestOptions.onItem()
                 .transform(r -> {
+                    // an empty path must be sent as "/" (RFC 9112, section 3.2.1)
+                    String rawPath = uri.getRawPath() == null || uri.getRawPath().isEmpty() ? "/" : uri.getRawPath();
                     r.setMethod(HttpMethod.valueOf(state.getHttpMethod()))
-                            .setURI(uri.getRawPath() + (uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery()))
+                            .setURI(rawPath + (uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery()))
                             .setFollowRedirects(followRedirects);
                     String pathTemplate = (String) state.getClientFilterProperties().get("UrlPathTemplate");
                     if (pathTemplate != null && pathTemplate.length() > 1) {

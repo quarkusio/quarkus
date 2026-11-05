@@ -156,8 +156,7 @@ public class OpenTelemetryProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     SyntheticBeanBuildItem setupDelayedAttribute(OpenTelemetryRecorder recorder, ApplicationInfoBuildItem appInfo) {
         return SyntheticBeanBuildItem.configure(DelayedAttributes.class).types(Attributes.class)
-                .supplier(recorder.delayedAttributes(Version.getVersion(),
-                        appInfo.getName(), appInfo.getVersion()))
+                .supplier(recorder.delayedAttributes(Version.getVersion(), appInfo.getVersion()))
                 .scope(Singleton.class)
                 .setRuntimeInit()
                 .done();

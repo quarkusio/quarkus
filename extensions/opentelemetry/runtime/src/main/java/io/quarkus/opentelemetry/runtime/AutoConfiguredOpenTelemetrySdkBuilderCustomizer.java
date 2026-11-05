@@ -50,7 +50,6 @@ import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
 import io.quarkus.opentelemetry.runtime.tracing.SimpleSpanProcessorWithBatchShutdown;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.TracerUtil;
-import io.quarkus.runtime.ApplicationConfig;
 import io.smallrye.common.net.HostName;
 
 public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
@@ -101,16 +100,13 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     @Singleton
     final class ResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
-        private final ApplicationConfig appConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final Instance<DelayedAttributes> delayedAttributes;
         private final List<Resource> resources;
 
-        public ResourceCustomizer(ApplicationConfig appConfig,
-                OTelRuntimeConfig oTelRuntimeConfig,
+        public ResourceCustomizer(OTelRuntimeConfig oTelRuntimeConfig,
                 @Any Instance<DelayedAttributes> delayedAttributes,
                 @All List<Resource> resources) {
-            this.appConfig = appConfig;
             this.oTelRuntimeConfig = oTelRuntimeConfig;
             this.delayedAttributes = delayedAttributes;
             this.resources = resources;
@@ -121,20 +117,11 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             builder.addResourceCustomizer(new BiFunction<>() {
                 @Override
                 public Resource apply(Resource existingResource, ConfigProperties configProperties) {
+                    // The service name is resolved before the SDK builds the resource, in
+                    // ResourceConfigReconciler. Writing it again here would drop the service resource
+                    // entity.
                     Resource consolidatedResource = existingResource.merge(
                             Resource.create(delayedAttributes.get()));
-
-                    // if user explicitly set 'otel.service.name', make sure we don't override it with defaults
-                    // inside resource customizer
-                    String serviceName = oTelRuntimeConfig
-                            .serviceName()
-                            .filter(new Predicate<String>() {
-                                @Override
-                                public boolean test(String sn) {
-                                    return !sn.equals(appConfig.name().orElse("unset"));
-                                }
-                            })
-                            .orElse(null);
 
                     String hostname = HostName.getHostName();
 
@@ -143,7 +130,6 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             .reduce(Resource.empty(), Resource::merge)
                             .merge(TracerUtil.mapResourceAttributes(
                                     oTelRuntimeConfig.resourceAttributes().orElse(emptyList()),
-                                    serviceName, // from properties
                                     hostname));
                     return consolidatedResource.merge(resource);
                 }

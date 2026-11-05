@@ -398,9 +398,19 @@ Supported captures:
   aliased recorder return type (see "Aliased recorder return types must
   be proxyable" below).
 
+Capture one `List<SomeRecord>` rather than several parallel lists of its
+fields. When the runtime carrier is a mutable class, turn it into a `record`
+(or make it `Constable`) instead of splitting it into parallel lists in the
+build step and rebuilding it in the service; parallel lists are harder to read
+and drift apart (#57806, #57536).
+
 **Not capturable:**
 - Mutable collections — use `Set.copyOf()` / `List.copyOf()` first
   (`Stream#toList()` is already unmodifiable — don't wrap it again)
+- Collections that contain `null`. `Stream#toList()` accepts a `null`
+  element, but the captured list is re-created with `List.of()` at runtime,
+  which throws `NullPointerException` on startup. Filter the `null` out, or
+  capture a `record` whose component may be `null` (#57806)
 - `BUILD_TIME` config objects — extract values into locals
 - `RUN_TIME` config objects — use `require()` instead
 - Arbitrary runtime objects — use `require()` instead

@@ -3,6 +3,7 @@ package io.quarkus.vertx.http;
 import java.net.URI;
 import java.util.Optional;
 
+import io.quarkus.runtime.Address;
 import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.value.registry.ValueRegistry.RuntimeInfo;
 import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
@@ -19,6 +20,11 @@ public interface HttpServer {
     RuntimeKey<Integer> MANAGEMENT_TEST_PORT = RuntimeKey.intKey("quarkus.management.test-port");
     RuntimeKey<URI> LOCAL_BASE_URI = RuntimeKey.key("quarkus.http.local-base-uri");
     RuntimeKey<URI> LOCAL_MANAGEMENT_BASE_URI = RuntimeKey.key("quarkus.management.local-base-uri");
+
+    String VERTX_HTTP = "vertx-http";
+    String VERTX_MANAGEMENT = "vertx-management";
+    RuntimeKey<Address> ADDRESS_VERTX_HTTP = Address.key(VERTX_HTTP);
+    RuntimeKey<Address> ADDRESS_VERTX_MANAGEMENT = Address.key(VERTX_MANAGEMENT);
 
     RuntimeKey<HttpServer> HTTP_SERVER = RuntimeKey.key(HttpServer.class);
 
@@ -57,6 +63,28 @@ public interface HttpServer {
      *         management interface is not enabled.
      */
     Optional<URI> getManagementBaseUri();
+
+    /**
+     * The {@link Address} of the main HTTP listener. It is {@link #getLocalBaseUri()}, so it follows the same rule as
+     * {@code test.url}: HTTPS when TLS is on and insecure requests are not enabled, HTTP otherwise.
+     *
+     * @return the address, or empty when the server is not listening on a TCP socket (for instance, virtual only)
+     */
+    default Optional<Address> getAddress() {
+        if (getPort() <= 0 && getSecurePort() <= 0) {
+            return Optional.empty();
+        }
+        return Optional.of(Address.of(getLocalBaseUri()));
+    }
+
+    /**
+     * The {@link Address} of the management interface listener.
+     *
+     * @return the address, or empty when the management interface is not enabled
+     */
+    default Optional<Address> getManagementAddress() {
+        return getManagementBaseUri().map(Address::of);
+    }
 
     /**
      * The {@link RuntimeInfo} implementation for {@link HttpServer}. Construct instances of {@link HttpServer} with

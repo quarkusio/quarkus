@@ -9,22 +9,28 @@ import org.junit.jupiter.api.Test;
 class SyslogAppNameTest {
 
     @Test
-    void validNameIsUnchanged() {
+    void plainNameIsUnchanged() {
         assertThat(LoggingSetup.toSyslogAppName("java")).isEqualTo("java");
-        assertThat(LoggingSetup.toSyslogAppName("/usr/lib/jvm/java-21/bin/java"))
-                .isEqualTo("/usr/lib/jvm/java-21/bin/java");
     }
 
     @Test
-    void windowsExecutablePathIsReducedToBaseName() {
+    void leadingPathIsRemoved() {
+        assertThat(LoggingSetup.toSyslogAppName("/usr/lib/jvm/java-21/bin/java")).isEqualTo("java");
+        assertThat(LoggingSetup.toSyslogAppName("/opt/app/bin/my-app")).isEqualTo("my-app");
+    }
+
+    @Test
+    void windowsExecutableIsReducedToNameWithoutExe() {
         assertThat(LoggingSetup.toSyslogAppName("C:\\Program Files\\Microsoft\\jdk-21.0.5.11-hotspot\\bin\\java.exe"))
-                .isEqualTo("java.exe");
+                .isEqualTo("java");
+        assertThat(LoggingSetup.toSyslogAppName("C:\\apps\\MyApp.EXE")).isEqualTo("MyApp");
+        assertThat(LoggingSetup.toSyslogAppName("my.exe.tool")).isEqualTo("my.exe.tool");
     }
 
     @Test
     void remainingInvalidCharactersAreReplaced() {
         assertThat(LoggingSetup.toSyslogAppName("/opt/my app/bin/my app")).isEqualTo("my_app");
-        assertThat(LoggingSetup.toSyslogAppName("C:\\apps\\café.exe")).isEqualTo("caf_.exe");
+        assertThat(LoggingSetup.toSyslogAppName("C:\\apps\\café.exe")).isEqualTo("caf_");
     }
 
     @Test
@@ -32,6 +38,7 @@ class SyslogAppNameTest {
         assertThat(LoggingSetup.toSyslogAppName(null)).isEqualTo("java");
         assertThat(LoggingSetup.toSyslogAppName("")).isEqualTo("java");
         assertThat(LoggingSetup.toSyslogAppName("C:\\Program Files\\")).isEqualTo("java");
+        assertThat(LoggingSetup.toSyslogAppName("C:\\bin\\.exe")).isEqualTo("java");
     }
 
     @Test

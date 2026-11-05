@@ -445,10 +445,9 @@ public final class LoggingSetup {
      * Convert a process name into a value accepted as a syslog app name, which must consist of printable
      * ASCII characters with no spaces.
      * <p>
-     * A name that is already valid is returned unchanged. Otherwise only the last path segment is kept (on
-     * Windows the process name is the full path of the executable, such as
-     * {@code C:\Program Files\...\bin\java.exe}), and any remaining invalid character is replaced with
-     * {@code _}. If nothing is left, {@code java} is returned.
+     * Only the last path segment is kept (the process name is usually the full path of the executable, such as
+     * {@code C:\Program Files\...\bin\java.exe} on Windows), a trailing {@code .exe} is removed, and any
+     * remaining invalid character is replaced with {@code _}. If nothing is left, {@code java} is returned.
      *
      * @param processName the process name, may be {@code null}
      * @return a valid syslog app name (not {@code null})
@@ -457,13 +456,13 @@ public final class LoggingSetup {
         if (processName == null) {
             return "java";
         }
-        if (isSyslogPrintable(processName)) {
-            return processName;
-        }
         String name = processName;
         int lastSeparator = Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\'));
         if (lastSeparator >= 0) {
             name = name.substring(lastSeparator + 1);
+        }
+        if (name.regionMatches(true, name.length() - 4, ".exe", 0, 4)) {
+            name = name.substring(0, name.length() - 4);
         }
         StringBuilder sb = new StringBuilder(name.length());
         for (int i = 0; i < name.length(); i++) {
@@ -471,19 +470,6 @@ public final class LoggingSetup {
             sb.append(c > ' ' && c < 0x7f ? c : '_');
         }
         return sb.isEmpty() ? "java" : sb.toString();
-    }
-
-    private static boolean isSyslogPrintable(final String value) {
-        if (value.isEmpty()) {
-            return false;
-        }
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            if (c <= ' ' || c >= 0x7f) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /**

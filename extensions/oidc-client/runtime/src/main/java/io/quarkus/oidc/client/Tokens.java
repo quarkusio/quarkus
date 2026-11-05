@@ -15,13 +15,26 @@ public class Tokens {
     final private String accessToken;
     final private Long accessTokenExpiresAt;
     final private Long refreshTokenTimeSkew;
+    final private Long minRemainingAccessTokenLifespan;
     final private String refreshToken;
     final Long refreshTokenExpiresAt;
     final private JsonObject grantResponse;
     final private String clientId;
 
+    /**
+     * @deprecated Use {@link #Tokens(String, Long, Duration, String, Long, JsonObject, String, Duration)} instead.
+     *             Tokens created with this constructor are never reused while they are being refreshed.
+     */
+    @Deprecated(since = "4.0", forRemoval = true)
     public Tokens(String accessToken, Long accessTokenExpiresAt, Duration refreshTokenTimeSkewDuration, String refreshToken,
             Long refreshTokenExpiresAt, JsonObject grantResponse, String clientId) {
+        this(accessToken, accessTokenExpiresAt, refreshTokenTimeSkewDuration, refreshToken, refreshTokenExpiresAt,
+                grantResponse, clientId, null);
+    }
+
+    public Tokens(String accessToken, Long accessTokenExpiresAt, Duration refreshTokenTimeSkewDuration, String refreshToken,
+            Long refreshTokenExpiresAt, JsonObject grantResponse, String clientId,
+            Duration minRemainingAccessTokenLifespanDuration) {
         this.accessToken = accessToken;
         this.accessTokenExpiresAt = accessTokenExpiresAt;
         this.refreshTokenTimeSkew = refreshTokenTimeSkewDuration == null ? null : refreshTokenTimeSkewDuration.getSeconds();
@@ -29,6 +42,8 @@ public class Tokens {
         this.refreshTokenExpiresAt = refreshTokenExpiresAt;
         this.grantResponse = grantResponse;
         this.clientId = clientId;
+        this.minRemainingAccessTokenLifespan = minRemainingAccessTokenLifespanDuration == null ? null
+                : minRemainingAccessTokenLifespanDuration.getSeconds();
     }
 
     public String getClientId() {
@@ -55,6 +70,22 @@ public class Tokens {
         return refreshTokenTimeSkew;
     }
 
+    public Long getMinRemainingAccessTokenLifespan() {
+        return minRemainingAccessTokenLifespan;
+    }
+
+    /**
+     * Whether this access token has enough of its lifespan left to still be worth sending while it is
+     * being refreshed, so that it does not expire in transit or while the target service is processing
+     * the request.
+     */
+    public boolean hasMinRemainingAccessTokenLifespan() {
+        if (minRemainingAccessTokenLifespan == null || accessTokenExpiresAt == null) {
+            return false;
+        }
+        return accessTokenExpiresAt - now() >= minRemainingAccessTokenLifespan;
+    }
+
     public boolean isAccessTokenExpired() {
         return isExpired(accessTokenExpiresAt, true);
     }
@@ -67,7 +98,7 @@ public class Tokens {
         if (accessTokenExpiresAt == null || refreshTokenTimeSkew == null) {
             return false;
         }
-        final long nowSecs = System.currentTimeMillis() / 1000;
+        final long nowSecs = now();
         final boolean proactiveRefresh = nowSecs + refreshTokenTimeSkew > accessTokenExpiresAt;
 
         if (proactiveRefresh) {
@@ -84,7 +115,7 @@ public class Tokens {
         if (expiresAt == null) {
             return false;
         }
-        final long nowSecs = System.currentTimeMillis() / 1000;
+        final long nowSecs = now();
         final boolean expired = nowSecs > expiresAt;
 
         if (expired) {
@@ -103,5 +134,9 @@ public class Tokens {
         }
 
         return expired;
+    }
+
+    private static long now() {
+        return System.currentTimeMillis() / 1000;
     }
 }

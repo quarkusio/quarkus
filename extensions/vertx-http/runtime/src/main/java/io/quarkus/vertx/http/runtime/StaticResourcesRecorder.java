@@ -12,6 +12,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
@@ -110,6 +111,9 @@ public class StaticResourcesRecorder {
                     if (knownPaths.contains(rel) || (rel.endsWith("/") && knownPaths.contains(rel.concat(indexPage)))) {
                         compressIfNeeded(httpBuildTimeConfig, compressMediaTypes, ctx, rel);
                         staticHandler.handle(ctx);
+                    } else if (isDirectoryWithIndexPage(rel, knownPaths, indexPage)
+                            && (ctx.request().method() == HttpMethod.GET || ctx.request().method() == HttpMethod.HEAD)) {
+                        redirectToDirectory(ctx);
                     } else {
                         // make sure we don't lose the correct TCCL to Vert.x...
                         Thread.currentThread().setContextClassLoader(currentCl);
@@ -133,6 +137,27 @@ public class StaticResourcesRecorder {
                 }
             }
         };
+    }
+
+    /**
+     * A directory requested without the trailing slash, including the bare mount point of the application router
+     * (an empty relative path), is served through its index page once the slash is added, which is what the
+     * {@link StaticHandler} does in dev mode.
+     */
+    private static boolean isDirectoryWithIndexPage(String rel, Set<String> knownPaths, String indexPage) {
+        return !rel.endsWith("/") && knownPaths.contains(rel + "/" + indexPage);
+    }
+
+    private static void redirectToDirectory(RoutingContext ctx) {
+        String location = ctx.normalizedPath() + "/";
+        String query = ctx.request().query();
+        if (query != null && !query.isEmpty()) {
+            location = location + "?" + query;
+        }
+        ctx.response()
+                .setStatusCode(HttpResponseStatus.MOVED_PERMANENTLY.code())
+                .putHeader(HttpHeaders.LOCATION, location)
+                .end();
     }
 
 }

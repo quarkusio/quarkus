@@ -38,4 +38,21 @@ public class QuarkusGradleModelFactory {
         }
     }
 
+    public static QuarkusToolingModelResult createPairedForTasks(File projectDir, String... tasks) {
+        return createPaired(projectDir, "DEVELOPMENT", List.of(), tasks);
+    }
+
+    public static QuarkusToolingModelResult createPaired(File projectDir, String mode, List<String> jvmArgs,
+            String... tasks) {
+        try (ProjectConnection connection = GradleConnector.newConnector()
+                .forProjectDirectory(projectDir)
+                .useGradleUserHomeDir(GradleUserHomeLookup.gradleUserHome())
+                .connect()) {
+            return connection.action(new QuarkusToolingModelBuildAction(mode))
+                    .forTasks(tasks)
+                    .addJvmArguments(jvmArgs)
+                    .run();
+        }
+    }
+
 }

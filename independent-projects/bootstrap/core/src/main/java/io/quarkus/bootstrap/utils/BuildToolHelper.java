@@ -1,5 +1,6 @@
 package io.quarkus.bootstrap.utils;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +12,7 @@ import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
+import io.quarkus.bootstrap.resolver.QuarkusToolingModelResult;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
@@ -23,6 +25,7 @@ public class BuildToolHelper {
 
     private final static String[] DEVMODE_REQUIRED_TASKS = new String[] { "classes" };
     private final static String[] TEST_REQUIRED_TASKS = new String[] { "classes", "testClasses", "integrationTestClasses" };
+    private final static String[] STANDALONE_TEST_REQUIRED_TASKS = new String[] { "classes", "testClasses" };
     private final static List<String> ENABLE_JAR_PACKAGING = List.of("-Dorg.gradle.java.compile-classpath-packaging=true");
 
     public enum BuildTool {
@@ -133,8 +136,28 @@ public class BuildToolHelper {
 
     public static ApplicationModel enableGradleAppModelForTest(Path projectRoot)
             throws IOException, AppModelResolverException {
-        // We enable jar packaging since we want test-fixtures as jars
-        return enableGradleAppModel(projectRoot, "TEST", ENABLE_JAR_PACKAGING, TEST_REQUIRED_TASKS);
+        if (!isGradleProject(projectRoot)) {
+            return null;
+        }
+
+        final File projectDir = getBuildFile(projectRoot, BuildTool.GRADLE).toFile();
+        log.infof("Loading Quarkus Gradle test application model for %s", projectRoot);
+        // Probe provider ownership without prerequisites. Legacy test launch keeps its integration-test source-set
+        // behavior, while the standalone plugin requests only the standard source sets it owns.
+        final QuarkusToolingModelResult probe = QuarkusGradleModelFactory.createPaired(
+                projectDir, "TEST", ENABLE_JAR_PACKAGING);
+        final ApplicationModel model;
+        if (probe.getProviderKind() == QuarkusToolingModelResult.ProviderKind.STANDALONE_APPLICATION) {
+            model = QuarkusGradleModelFactory.createPaired(
+                    projectDir, "TEST", ENABLE_JAR_PACKAGING, STANDALONE_TEST_REQUIRED_TASKS)
+                    .getApplicationModel();
+        } else {
+            // We enable jar packaging since legacy test-fixtures are consumed as jars.
+            model = QuarkusGradleModelFactory.create(
+                    projectDir, "TEST", ENABLE_JAR_PACKAGING, TEST_REQUIRED_TASKS);
+        }
+        ApplicationModelSerializer.exportGradleModel(model, true);
+        return model;
     }
 
     public static ApplicationModel enableGradleAppModelForProdMode(Path projectRoot)

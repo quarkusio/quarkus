@@ -134,7 +134,8 @@ public class SseParserTest {
         // BOM
         testParserWithBytes(
                 Collections.singletonList(
-                        new byte[] { (byte) 0xFE, (byte) 0xFF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n', '\n' }),
+                        new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n',
+                                '\n' }),
                 Collections.singletonList(new InboundSseEventImpl(null, null)
                         .setData("foo")));
 
@@ -143,8 +144,8 @@ public class SseParserTest {
                 .assertThrows(IllegalStateException.class,
                         () -> testParserWithBytes(
                                 Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n', '\n' },
-                                        new byte[] { (byte) 0xFE, (byte) 0xFF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n',
-                                                '\n' }),
+                                        new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o',
+                                                '\n', '\n' }),
                                 Collections.singletonList(new InboundSseEventImpl(null, null)
                                         .setData("foo"))));
         // invalid UTF-8

@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -149,12 +149,20 @@ public class RestClientTestCase {
                 .body(containsString("2020-02-13"));
     }
 
+    /**
+     * Native SSL support is disabled in this application: native executables are built without the https URL
+     * protocol handler. In JVM mode, it is always available.
+     */
     @Test
-    @Disabled("Disabled by default as it establishes external connections, uncomment when you want to test SSL support")
+    @EnabledIfSystemProperty(named = "native.image.path", matches = ".+")
     public void testDegradedSslSupport() {
         RestAssured.when().get("/ssl").then()
-                .statusCode(500)
-                .body(containsString("SSL support"), containsString("disabled"));
+                .statusCode(200)
+                .body(containsString("https://localhost:1/ requires SSL support, which is disabled in this native"
+                        + " executable. Make sure the quarkus.ssl.native property is set to true, then rebuild the native"
+                        + " executable."),
+                        // the GraalVM exception, which the hint relies on
+                        containsString("The URL protocol https is supported but not enabled by default."));
     }
 
     @Test

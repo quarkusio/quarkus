@@ -47,6 +47,10 @@ public class FrontendResource {
     SpiffeAuthenticationOidcClient spiffeAuthenticationOidcClient;
 
     @Inject
+    @RestClient
+    JwtBearerGrantFileOidcClient jwtBearerGrantFileOidcClient;
+
+    @Inject
     @NamedOidcClient("non-standard-response")
     Tokens tokens;
 
@@ -61,6 +65,10 @@ public class FrontendResource {
     @Inject
     @NamedOidcClient("jwtbearer-grant")
     OidcClient jwtBearerGrantClient;
+
+    @Inject
+    @NamedOidcClient("spiffe-grant")
+    OidcClient spiffeGrantClient;
 
     @Inject
     @NamedOidcClient("exchange-grant")
@@ -102,6 +110,18 @@ public class FrontendResource {
     @Path("echoTokenJwtBearerGrant")
     public String echoTokenJwtBearerGrant() {
         return jwtBearerGrantClient.getTokens().await().indefinitely().getAccessToken();
+    }
+
+    @GET
+    @Path("echoTokenJwtBearerGrantFromFile")
+    public String echoTokenJwtBearerGrantFromFile() {
+        return jwtBearerGrantFileOidcClient.echoToken();
+    }
+
+    @GET
+    @Path("echoTokensSpiffeGrant")
+    public String echoTokensSpiffeGrant() {
+        return spiffeGrantClient.getTokens().await().indefinitely().getAccessToken();
     }
 
     @GET

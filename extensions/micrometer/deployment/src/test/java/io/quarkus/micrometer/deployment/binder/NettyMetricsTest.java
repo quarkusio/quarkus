@@ -71,15 +71,9 @@ public class NettyMetricsTest {
     @Inject
     Vertx vertx;
 
-    private static final Set<Tag> NAM_PBBA_TAGS = Tags.of(
-            "name", NettyMetricsProvider.NETTY_DEFAULT_POOLED_ALLOCATOR_NAME,
-            "allocator.type", "PooledByteBufAllocator")
-            .stream()
-            .collect(Collectors.toSet());
-
-    private static final Set<Tag> NAM_UNPBBA_TAGS = Tags.of(
-            "name", NettyMetricsProvider.NETTY_DEFAULT_UNPOOLED_ALLOCATOR_NAME,
-            "allocator.type", "UnpooledByteBufAllocator")
+    private static final Set<Tag> NAM_DEFAULT_TAGS = Tags.of(
+            "name", NettyMetricsProvider.NETTY_DEFAULT_ALLOCATOR_NAME,
+            "allocator.type", "AdaptiveByteBufAllocator")
             .stream()
             .collect(Collectors.toSet());
 
@@ -149,7 +143,7 @@ public class NettyMetricsTest {
 
     @Test
     public void testNettyAllocatorMetrics() {
-        testNettyMetrics(5L, NettyAllocatorMetrics.class);
+        testNettyMetrics(4L, NettyAllocatorMetrics.class);
     }
 
     @Test
@@ -159,8 +153,7 @@ public class NettyMetricsTest {
 
     @Test
     public void testAllocatorMetricsValues() {
-        testAllocatorMetricsValues(NAM_PBBA_TAGS);
-        testAllocatorMetricsValues(NAM_UNPBBA_TAGS);
+        testAllocatorMetricsValues(NAM_DEFAULT_TAGS);
         testAllocatorMetricsValues(VX_NAM_PBBA_TAGS);
         testAllocatorMetricsValues(VX_NAM_UNPBBA_TAGS);
     }

@@ -4,26 +4,26 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
 import io.micrometer.core.instrument.binder.MeterBinder;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufAllocatorMetricProvider;
 
 @Singleton
 public class NettyMetricsProvider {
 
-    public static final String NETTY_DEFAULT_POOLED_ALLOCATOR_NAME = "pooled";
+    public static final String NETTY_DEFAULT_ALLOCATOR_NAME = "default";
 
-    public static final String NETTY_DEFAULT_UNPOOLED_ALLOCATOR_NAME = "unpooled";
-
+    /**
+     * {@code ByteBufAllocator.DEFAULT} is the allocator Netty channels actually use unless told otherwise, not
+     * merely an unused fallback: it resolves at classload, depending on the {@code io.netty.allocator.type}
+     * system property, to {@code PooledByteBufAllocator}, {@code UnpooledByteBufAllocator} or (since Netty 4.2,
+     * the common case here) {@code AdaptiveByteBufAllocator}; all three implement
+     * {@link ByteBufAllocatorMetricProvider}.
+     */
     @Produces
     @Singleton
-    public MeterBinder pooledByteBufAllocatorMetrics() {
-        return new NettyAllocatorMetrics(NETTY_DEFAULT_POOLED_ALLOCATOR_NAME, PooledByteBufAllocator.DEFAULT);
-    }
-
-    @Produces
-    @Singleton
-    public MeterBinder unpooledByteBufAllocatorMetrics() {
-        return new NettyAllocatorMetrics(NETTY_DEFAULT_UNPOOLED_ALLOCATOR_NAME, UnpooledByteBufAllocator.DEFAULT);
+    public MeterBinder defaultByteBufAllocatorMetrics() {
+        return new NettyAllocatorMetrics(NETTY_DEFAULT_ALLOCATOR_NAME,
+                (ByteBufAllocatorMetricProvider) ByteBufAllocator.DEFAULT);
     }
 
 }

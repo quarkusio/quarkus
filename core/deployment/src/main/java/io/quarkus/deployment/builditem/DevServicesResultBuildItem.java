@@ -76,7 +76,6 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
      */
     private final Function<Startable, Map<String, String>> applicationConfigProvider;
 
-    private final Set<String> highPriorityConfig;
     private final Set<DevServiceConfigDependency<? extends Startable>> dependencies;
     private final Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies;
 
@@ -84,7 +83,6 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             String serviceName, Object serviceConfig,
             Map<String, String> config, Supplier<Startable> startableSupplier, Consumer<Startable> postStartAction,
             Function<Startable, Map<String, String>> applicationConfigProvider,
-            Set<String> highPriorityConfig,
             Set<DevServiceConfigDependency<? extends Startable>> dependencies,
             Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies) {
         this.name = name;
@@ -96,7 +94,6 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         this.startableSupplier = startableSupplier;
         this.postStartAction = postStartAction;
         this.applicationConfigProvider = applicationConfigProvider;
-        this.highPriorityConfig = highPriorityConfig;
         this.dependencies = dependencies;
         this.optionalDependencies = optionalDependencies;
     }
@@ -162,25 +159,6 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         return map;
     }
 
-    /**
-     * @deprecated Subject to changes due to <a href="https://github.com/quarkusio/quarkus/pull/51209">#51209</a>
-     */
-    @Deprecated(since = "3.27", forRemoval = true)
-    public Map<String, String> getOverrideConfig(Startable startable) {
-        Map<String, String> map = new HashMap<>();
-
-        if (highPriorityConfig != null && applicationConfigProvider != null) {
-            Map<String, String> resolvedConfig = applicationConfigProvider.apply(startable);
-            for (String key : highPriorityConfig) {
-                String value = resolvedConfig.get(key);
-                if (value != null) {
-                    map.put(key, value);
-                }
-            }
-        }
-        return map;
-    }
-
     public boolean hasDependencies() {
         return (dependencies != null && !dependencies.isEmpty())
                 || (optionalDependencies != null && !optionalDependencies.isEmpty());
@@ -239,8 +217,8 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             if (name == null) {
                 throw new IllegalStateException("name cannot be null");
             }
-            return new DevServicesResultBuildItem(name, description, containerId,
-                    null, null, config, null, null, null, null, null, null);
+            return new DevServicesResultBuildItem(name, description, containerId, null, null, config, null, null, null, null,
+                    null);
         }
     }
 
@@ -253,7 +231,6 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         private Supplier<? extends Startable> startableSupplier;
         private Consumer<? extends Startable> postStartAction;
         private Function<Startable, Map<String, String>> applicationConfigProvider;
-        private Set<String> highPriorityConfig;
         private final Set<DevServiceConfigDependency<? extends Startable>> dependencies = new HashSet<>();
         private final Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies = new HashSet<>();
 
@@ -412,15 +389,6 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         }
 
         /**
-         * @deprecated Subject to changes due to <a href="https://github.com/quarkusio/quarkus/pull/51209">#51209</a>
-         */
-        @Deprecated(forRemoval = true)
-        public OwnedServiceBuilder<T> highPriorityConfig(Set<String> highPriorityConfig) {
-            this.highPriorityConfig = highPriorityConfig;
-            return this;
-        }
-
-        /**
          * Provides config to inject into the config system. If you've got values that don't change, use {@link #config(Map)},
          * and if you've
          * got values that you'll only know after starting the container, use configProvider() and provide a map of
@@ -479,12 +447,11 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
                     serviceName, serviceConfig, config,
                     (Supplier<Startable>) startableSupplier,
                     (Consumer<Startable>) postStartAction,
-                    applicationConfigProvider,
-                    highPriorityConfig, dependencies, optionalDependencies);
+                    applicationConfigProvider, dependencies, optionalDependencies);
         }
     }
 
-    record DevServiceConfigDependency<T extends Startable>(String requiredConfigKey,
+    public record DevServiceConfigDependency<T extends Startable>(String requiredConfigKey,
             BiConsumer<T, String> valueInjector) {
     }
 

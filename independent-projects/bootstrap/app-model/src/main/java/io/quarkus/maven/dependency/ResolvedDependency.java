@@ -94,6 +94,15 @@ public interface ResolvedDependency extends Dependency {
         return new MultiRootPathTree(trees);
     }
 
+    /**
+     * Determines the module name of the given dependency from its module descriptor or its
+     * {@code Automatic-Module-Name} manifest attribute, falling back to a name computed from the
+     * artifact coordinates. The fallback is logged as a warning, except for workspace modules,
+     * which are built from their output directory and so never carry a manifest at this point.
+     *
+     * @param dep the resolved dependency
+     * @return the module name (not {@code null})
+     */
     static String computeModuleName(ResolvedDependency dep) {
         // first, see if there is a descriptor
         PathTree contentTree = dep.getContentTree();
@@ -178,12 +187,14 @@ public interface ResolvedDependency extends Dependency {
             }
             moduleName = finalNameBuilder.toString();
         }
-        if (classifier != null && !classifier.isEmpty()) {
-            LogHolder.log.warnf("Artifact %s:%s:%s does not have a defined module name; using computed name %s", groupId,
-                    artifactId, classifier, moduleName);
+        String coords = classifier != null && !classifier.isEmpty() ? groupId + ":" + artifactId + ":" + classifier
+                : groupId + ":" + artifactId;
+        if (dep.isWorkspaceModule()) {
+            LogHolder.log.debugf("Artifact %s does not have a defined module name; using computed name %s", coords,
+                    moduleName);
         } else {
-            LogHolder.log.warnf("Artifact %s:%s does not have a defined module name; using computed name %s", groupId,
-                    artifactId, moduleName);
+            LogHolder.log.warnf("Artifact %s does not have a defined module name; using computed name %s", coords,
+                    moduleName);
         }
         return moduleName;
     }

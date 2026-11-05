@@ -39,7 +39,8 @@ public class ConfigPropertiesTest {
             .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".mapping.duration.preferred-jdbc-type", "INTERVAL_SECOND")
             .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".mapping.instant.preferred-jdbc-type", "INSTANT")
             .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".mapping.boolean.preferred-jdbc-type", "BIT")
-            .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".mapping.uuid.preferred-jdbc-type", "CHAR");
+            .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".mapping.uuid.preferred-jdbc-type", "CHAR")
+            .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".mapping.java-time.use-direct-jdbc", "true");
 
     @Inject
     Session sessionForDefaultPU;
@@ -103,5 +104,19 @@ public class ConfigPropertiesTest {
         assertThat(instantPreferredJdbcType).isEqualTo("INSTANT");
         assertThat(booleanPreferredJdbcType).isEqualTo("BIT");
         assertThat(UUIDPreferredJdbcType).isEqualTo("CHAR");
+    }
+
+    @Test
+    @Transactional
+    void shouldMapJavaTimeUseDirectJdbcProperty() {
+        var defaultPuValue = sessionForDefaultPU.getSessionFactory()
+                .getProperties()
+                .get(AvailableSettings.JAVA_TIME_USE_DIRECT_JDBC);
+        var overridesPuValue = sessionForOverridesPU.getSessionFactory()
+                .getProperties()
+                .get(AvailableSettings.JAVA_TIME_USE_DIRECT_JDBC);
+
+        assertThat(defaultPuValue).isEqualTo("false");
+        assertThat(overridesPuValue).isEqualTo("true");
     }
 }

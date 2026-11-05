@@ -291,6 +291,11 @@ public interface HibernateOrmConfigPersistenceUnit {
         Duration duration();
 
         /**
+         * Java time configuration.
+         */
+        JavaTime javaTime();
+
+        /**
          * The preferred JDBC type to use for storing {@link java.time.Instant} values.
          * <p>
          * Can be overridden locally using `@JdbcType`, `@JdbcTypeCode`, and similar annotations.
@@ -398,6 +403,38 @@ public interface HibernateOrmConfigPersistenceUnit {
             @WithName("preferred-jdbc-type")
             @ConfigDocDefault("INTERVAL_SECOND")
             Optional<@WithConverter(TrimmedStringConverter.class) String> durationPreferredJdbcType();
+        }
+
+        @ConfigGroup
+        interface JavaTime {
+
+            /**
+             * Whether to use direct JDBC for `java.time` type handling.
+             * <p>
+             * When enabled, `java.time` types are passed directly to the JDBC driver
+             * via `PreparedStatement.setObject()` / `ResultSet.getObject()`,
+             * bypassing conversion to legacy `java.sql` types
+             * such as `java.sql.Timestamp`.
+             * <p>
+             * When disabled (the default), Hibernate converts `java.time` values
+             * through `java.sql`/`java.util` types before passing them
+             * to the JDBC driver, matching the behavior of Hibernate ORM 7.4 and earlier.
+             * <p>
+             * *WARNING*: Direct JDBC mode is experimental in Quarkus.
+             * Known limitations:
+             * * On Oracle, `LocalTime` may shift values on a write/read cycle
+             * depending on the JVM timezone.</li>
+             * * The `quarkus.hibernate-orm.jdbc.timezone` setting may be ignored
+             * for some `java.time` types.</li>
+             * * The `quarkus.hibernate-orm.mapping.timezone.default-storage` setting
+             * may be ignored for some `java.time` types.</li>
+             * </ul>
+             *
+             * @asciidoclet
+             */
+            @WithName("use-direct-jdbc")
+            @WithDefault("false")
+            boolean useDirectJdbc();
         }
 
     }

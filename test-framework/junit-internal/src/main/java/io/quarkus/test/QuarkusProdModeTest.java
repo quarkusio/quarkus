@@ -80,12 +80,20 @@ public class QuarkusProdModeTest
 
     public static String BUILD_CONTEXT_CUSTOM_SOURCES_PATH_KEY = "customSourcesDir";
 
+    private static final boolean HTTP_PRESENT;
     private static final Logger rootLogger;
     private Handler[] originalHandlers;
 
     static {
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
         rootLogger = (Logger) LogManager.getLogManager().getLogger("");
+        boolean http = true;
+        try {
+            Class.forName("io.quarkus.vertx.http.runtime.VertxHttpRecorder");
+        } catch (ClassNotFoundException e) {
+            http = false;
+        }
+        HTTP_PRESENT = http;
     }
 
     private Path outputDir;
@@ -577,7 +585,9 @@ public class QuarkusProdModeTest
             // copy the use supplied properties since it might be an immutable map
             runtimeProperties = new HashMap<>(runtimeProperties);
         }
-        runtimeProperties.putIfAbsent(QUARKUS_HTTP_PORT_PROPERTY, DEFAULT_HTTP_PORT);
+        if (HTTP_PRESENT) {
+            runtimeProperties.putIfAbsent(QUARKUS_HTTP_PORT_PROPERTY, DEFAULT_HTTP_PORT);
+        }
         if (logFileName != null) {
             logfilePath = builtResultArtifactParent.resolve(logFileName);
             runtimeProperties.put("quarkus.log.file.path", logfilePath.toAbsolutePath().toString());
@@ -615,7 +625,7 @@ public class QuarkusProdModeTest
                     .directory(builtResultArtifactParent.toFile())
                     .start();
             ensureApplicationStartupOrFailure();
-            if (!expectExit) { // no point in setting an URL for an app that exits right away
+            if (HTTP_PRESENT && !expectExit) { // no point in setting an URL for an app that exits right away
                 setupRestAssured();
                 clearRestAssuredURL = true;
             }

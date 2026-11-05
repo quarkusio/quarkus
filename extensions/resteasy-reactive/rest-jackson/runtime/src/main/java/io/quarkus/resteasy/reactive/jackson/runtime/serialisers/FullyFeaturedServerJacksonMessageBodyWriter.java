@@ -24,6 +24,7 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.ContextResolver;
 import jakarta.ws.rs.ext.Providers;
 
+import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
@@ -75,41 +76,45 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
             stream.write(((String) o).getBytes(StandardCharsets.UTF_8));
         } else {
-            ObjectMapper effectiveMapper = getEffectiveMapper(o, context);
-            ObjectWriter effectiveWriter = getEffectiveWriter(effectiveMapper);
-            ResteasyReactiveResourceInfo resourceInfo = context.getResteasyReactiveResourceInfo();
-            if (resourceInfo != null) {
-                ObjectWriter writerFromAnnotation = getObjectWriterFromAnnotations(resourceInfo, genericType, effectiveMapper);
-                if (writerFromAnnotation != null) {
-                    effectiveWriter = writerFromAnnotation;
-                }
-
-                Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(resourceInfo.getMethodId());
-                if (jsonViewValue != null) {
-                    effectiveWriter = effectiveWriter.withView(jsonViewValue);
-                } else {
-                    jsonViewValue = ResteasyReactiveServerJacksonRecorder
-                            .jsonViewForClass(resourceInfo.getResourceClass());
-                    if (jsonViewValue != null) {
-                        effectiveWriter = effectiveWriter.withView(jsonViewValue);
-                    }
-
-                }
-            }
-            // make sure we properly handle polymorphism in generic collections
-            if (genericType != null && o != null) {
-                JavaType rootType = JacksonMapperUtil.getGenericRootType(genericType, effectiveWriter);
-                // Check that the determined root type is really assignable from the given entity.
-                // A mismatch can happen, if a ServerResponseFilter replaces the response entity with another object
-                // that does not match the original signature of the method (see HalServerResponseFilter for an example)
-                if (rootType != null && rootType.isTypeOrSuperTypeOf(o.getClass())) {
-                    effectiveWriter = effectiveWriter.forType(rootType);
-                }
-            }
-            effectiveWriter.writeValue(stream, o);
+            effectiveWriter(o, genericType, context).writeValue(stream, o);
         }
         // we don't use try-with-resources because that results in writing to the http output without the exception mapping coming into play
         stream.close();
+    }
+
+    private ObjectWriter effectiveWriter(Object o, Type genericType, ServerRequestContext context) {
+        ObjectMapper effectiveMapper = getEffectiveMapper(o, context);
+        ObjectWriter effectiveWriter = getEffectiveWriter(effectiveMapper);
+        ResteasyReactiveResourceInfo resourceInfo = context.getResteasyReactiveResourceInfo();
+        if (resourceInfo != null) {
+            ObjectWriter writerFromAnnotation = getObjectWriterFromAnnotations(resourceInfo, genericType, effectiveMapper);
+            if (writerFromAnnotation != null) {
+                effectiveWriter = writerFromAnnotation;
+            }
+
+            Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(resourceInfo.getMethodId());
+            if (jsonViewValue != null) {
+                effectiveWriter = effectiveWriter.withView(jsonViewValue);
+            } else {
+                jsonViewValue = ResteasyReactiveServerJacksonRecorder
+                        .jsonViewForClass(resourceInfo.getResourceClass());
+                if (jsonViewValue != null) {
+                    effectiveWriter = effectiveWriter.withView(jsonViewValue);
+                }
+
+            }
+        }
+        // make sure we properly handle polymorphism in generic collections
+        if (genericType != null && o != null) {
+            JavaType rootType = JacksonMapperUtil.getGenericRootType(genericType, effectiveWriter);
+            // Check that the determined root type is really assignable from the given entity.
+            // A mismatch can happen, if a ServerResponseFilter replaces the response entity with another object
+            // that does not match the original signature of the method (see HalServerResponseFilter for an example)
+            if (rootType != null && rootType.isTypeOrSuperTypeOf(o.getClass())) {
+                effectiveWriter = effectiveWriter.forType(rootType);
+            }
+        }
+        return effectiveWriter;
     }
 
     private ObjectWriter getObjectWriterFromAnnotations(ResteasyReactiveResourceInfo resourceInfo, Type type,
@@ -193,7 +198,9 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-        doLegacyWrite(o, annotations, httpHeaders, entityStream, defaultWriter.get());
+        ServerRequestContext context = CurrentRequestManager.get();
+        ObjectWriter writer = context == null ? defaultWriter.get() : effectiveWriter(o, genericType, context);
+        doLegacyWrite(o, annotations, httpHeaders, entityStream, writer);
     }
 
     private static class MethodObjectWriterFunction implements Function<String, ObjectWriter> {

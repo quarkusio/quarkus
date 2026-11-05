@@ -124,6 +124,14 @@ public class SseParserTest {
         testParser(Arrays.asList("data:foo\n", "data:bar\n", "\n"),
                 Collections.singletonList(new InboundSseEventImpl(null, null)
                         .setData("foo\nbar")));
+        testParser(Arrays.asList("data:foo\r\n\r", "\n"),
+                Collections.singletonList(new InboundSseEventImpl(null, null)
+                        .setData("foo")));
+        testParser(Arrays.asList("data:foo\r\n\r", "\ndata:bar\r\n\r\n"),
+                Arrays.asList(new InboundSseEventImpl(null, null)
+                        .setData("foo"),
+                        new InboundSseEventImpl(null, null)
+                                .setData("bar")));
         // one event in two buffers within a UTF-8 char
         testParserWithBytes(
                 Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', (byte) 0b11000010 },

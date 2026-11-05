@@ -16,7 +16,8 @@
     <packaging>jar</packaging>
     <properties>
         <!-- The Graal version we suggest using in documentation - as that's
-           what we work with by self downloading it: -->
+           what we work with by self downloading it. NativeDocumentationPropertiesTest
+           checks these four values against ContainerImages and GraalVM.Version.CURRENT: -->
         <graal-community.version-for-documentation>for JDK 25</graal-community.version-for-documentation>
         <graal-community.tag-for-documentation>jdk25</graal-community.tag-for-documentation>
         <graal-community.image-tag-for-documentation>jdk-25</graal-community.image-tag-for-documentation>
@@ -101,6 +102,13 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- For ContainerImages in NativeDocumentationPropertiesTest; the pom-typed entry further down
+           only orders the build and puts nothing on the classpath -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <!-- Minimal test dependencies for consistent build order -->

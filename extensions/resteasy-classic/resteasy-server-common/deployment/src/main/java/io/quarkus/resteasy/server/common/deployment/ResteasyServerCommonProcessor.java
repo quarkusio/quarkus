@@ -9,6 +9,7 @@ import static io.quarkus.resteasy.common.spi.ResteasyDotNames.PATH_PARAM;
 import static io.quarkus.resteasy.common.spi.ResteasyDotNames.QUERY_PARAM;
 import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_TIME;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.ext.Providers;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -74,6 +76,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
+import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
@@ -710,7 +713,7 @@ public class ResteasyServerCommonProcessor {
             Map<String, String> resteasyInitParameters,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem, IndexView index) {
+            JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem, IndexView index) throws IOException {
 
         if (jaxrsProvidersToRegisterBuildItem.useBuiltIn()) {
             // if we find a wildcard media type, we just use the built-in providers
@@ -723,11 +726,22 @@ public class ResteasyServerCommonProcessor {
                         String.join(",", jaxrsProvidersToRegisterBuildItem.getContributedProviders()));
             }
         } else {
-            deployment.setRegisterBuiltin(false);
-            deployment.getProviderClasses().addAll(jaxrsProvidersToRegisterBuildItem.getProviders());
-            resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_USE_BUILTIN_PROVIDERS, "false");
-            resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_PROVIDERS,
-                    String.join(",", jaxrsProvidersToRegisterBuildItem.getProviders()));
+            // register the selected built-in providers as built-ins, so that application providers take precedence
+            // over them as they do when all the built-in providers are used, and disable the other built-in providers
+            Set<String> builtinProviders = new HashSet<>(ServiceUtil.classNamesNamedIn(
+                    ResteasyServerCommonProcessor.class.getClassLoader(), "META-INF/services/" + Providers.class.getName()));
+            Set<String> disabledProviders = new HashSet<>(builtinProviders);
+            disabledProviders.removeAll(jaxrsProvidersToRegisterBuildItem.getProviders());
+            Set<String> otherProviders = new HashSet<>(jaxrsProvidersToRegisterBuildItem.getProviders());
+            otherProviders.removeAll(builtinProviders);
+
+            deployment.setRegisterBuiltin(true);
+            deployment.addDisabledProviderClasses(disabledProviders);
+            deployment.getProviderClasses().addAll(otherProviders);
+            resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_USE_BUILTIN_PROVIDERS, "true");
+            resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_DISABLE_PROVIDERS,
+                    String.join(",", disabledProviders));
+            resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_PROVIDERS, String.join(",", otherProviders));
         }
 
         // register the providers for reflection

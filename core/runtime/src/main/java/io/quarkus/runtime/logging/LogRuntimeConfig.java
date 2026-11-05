@@ -328,7 +328,12 @@ public interface LogRuntimeConfig {
         InetSocketAddress endpoint();
 
         /**
-         * The app name used when formatting the message in RFC5424 format
+         * The app name used when formatting the message in RFC5424 format.
+         * <p>
+         * If not set, the name of the current process is used. If that name is not a valid syslog app name
+         * (printable ASCII characters with no spaces), for example the full path of the {@code java.exe}
+         * executable on Windows, only its file name is used and any remaining invalid characters are replaced
+         * with {@code _}.
          */
         Optional<String> appName();
 

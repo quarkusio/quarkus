@@ -130,6 +130,11 @@
                 <!-- Can't exclude them yet as the migration needs to be done in downstream
                      quarkiverse extensions first: should not be a problem as there are relocations in place -->
                 <!-- exclude>org.apache.activemq:artemis-*</exclude -->
+                <!-- io.vertx:vertx-web-templ-handlebars:shaded embeds handlebars classes without relocating them,
+                     so handlebars.version in the BOM does not apply to them. It is not forbidden as such: an extension
+                     may use it, but whoever adds it must first make sure the handlebars version shaded into it is not
+                     affected by known CVEs, then remove this exclude. -->
+                <exclude>io.vertx:vertx-web-templ-handlebars:*:jar:*:shaded</exclude>
             </excludes>
             <includes>
                 <!-- this is for REST Assured -->

@@ -27,7 +27,6 @@ import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
@@ -41,7 +40,6 @@ import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.spi.runtime.MethodDescription;
-import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.cors.CORSConfig;
@@ -153,44 +151,11 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public Supplier<Map<String, Object>> createAdditionalSecEventPropsSupplier() {
-        return new Supplier<Map<String, Object>>() {
-            @Override
-            public Map<String, Object> get() {
-                if (Arc.container().requestContext().isActive()) {
-
-                    // if present, add RoutingContext from CDI request to the SecurityEvents produced in Security extension
-                    // it's done this way as Security extension is not Vert.x based, but users find RoutingContext useful
-                    var event = Arc.container().instance(CurrentVertxRequest.class).get().getCurrent();
-                    if (event != null) {
-
-                        if (event.user() instanceof QuarkusHttpUser user) {
-                            return Map.of(RoutingContext.class.getName(), event, SecurityIdentity.class.getName(),
-                                    user.getSecurityIdentity());
-                        }
-
-                        return Map.of(RoutingContext.class.getName(), event);
-                    }
-                }
-                return Map.of();
-            }
-        };
-    }
-
     public RuntimeValue<CORSConfig> prepareHttpSecurityConfiguration(ShutdownContext shutdownContext) {
         // this is done so that we prepare and validate HTTP Security config before the first incoming request
         var config = HttpSecurityConfiguration.get(httpConfig.getValue(), httpBuildTimeConfig);
         shutdownContext.addShutdownTask(HttpSecurityConfiguration::clear);
         return new RuntimeValue<>(config.getCorsConfig());
-    }
-
-    /**
-     * Get the form authentication mechanism instance.
-     *
-     * @return the form authentication mechanism
-     */
-    public static FormAuthenticationMechanism getFormAuthMechanism() {
-        return HttpSecurityConfiguration.get().getFormAuthenticationMechanism();
     }
 
     public static abstract class DefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {

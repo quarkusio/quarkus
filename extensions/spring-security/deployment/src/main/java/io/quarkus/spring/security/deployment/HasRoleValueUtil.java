@@ -3,7 +3,6 @@ package io.quarkus.spring.security.deployment;
 import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,7 +12,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
-import io.quarkus.spring.security.runtime.interceptor.SpringSecurityRecorder;
+import io.quarkus.spring.security.runtime.interceptor.check.SpringSecurityCheckSpec;
 
 final class HasRoleValueUtil {
 
@@ -23,14 +22,13 @@ final class HasRoleValueUtil {
     private HasRoleValueUtil() {
     }
 
-    static Supplier<String[]> getHasRoleValueProducer(String hasRoleValue, MethodInfo methodInfo,
+    static SpringSecurityCheckSpec.RoleSupplier getHasRoleValueProducer(String hasRoleValue, MethodInfo methodInfo,
             IndexView index,
             Map<String, DotName> springBeansNameToDotName,
             Map<String, ClassInfo> springBeansNameToClassInfo,
-            Set<String> beansReferencedInPreAuthorized,
-            SpringSecurityRecorder recorder) {
+            Set<String> beansReferencedInPreAuthorized) {
         if (hasRoleValue.startsWith("'") && hasRoleValue.endsWith("'")) {
-            return recorder.staticHasRole(hasRoleValue.replace("'", ""));
+            return new SpringSecurityCheckSpec.StaticRole(hasRoleValue.replace("'", ""));
         } else if (hasRoleValue.startsWith("@")) {
             Matcher beanFieldMatcher = BEAN_FIELD_PATTERN.matcher(hasRoleValue);
             if (!beanFieldMatcher.find()) {
@@ -54,7 +52,7 @@ final class HasRoleValueUtil {
 
             beansReferencedInPreAuthorized.add(fieldInfo.declaringClass().name().toString());
 
-            return recorder.fromBeanField(fieldInfo.declaringClass().name().toString(), fieldName);
+            return new SpringSecurityCheckSpec.BeanFieldRole(fieldInfo.declaringClass().name().toString(), fieldName);
         } else {
             throw SpringSecurityProcessorUtil.createGenericMalformedException(methodInfo, hasRoleValue);
         }

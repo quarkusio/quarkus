@@ -9,7 +9,6 @@ import static io.quarkus.security.deployment.DotNames.PERMISSIONS_ALLOWED;
 import static io.quarkus.security.deployment.SecurityProcessor.isPublicNonStaticNonConstructor;
 
 import java.lang.constant.ClassDesc;
-import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Modifier;
 import java.security.Permission;
 import java.util.ArrayList;
@@ -54,18 +53,18 @@ import io.quarkus.gizmo2.creator.BlockCreator;
 import io.quarkus.gizmo2.desc.ClassMethodDesc;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.FieldDesc;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.PermissionChecker;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusPermission;
-import io.quarkus.security.runtime.SecurityCheckRecorder;
+import io.quarkus.security.runtime.SecurityCheckFactory;
 import io.quarkus.security.runtime.interceptor.PermissionsAllowedInterceptor;
+import io.quarkus.security.runtime.interceptor.check.SecurityCheckSpec;
+import io.quarkus.security.runtime.interceptor.check.SecurityCheckSpec.PermissionSpec;
 import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
 import io.quarkus.security.spi.SecurityTransformer;
 import io.quarkus.security.spi.runtime.PermissionToActionUtil;
-import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.smallrye.common.annotation.Blocking;
 
 interface PermissionSecurityChecks {
@@ -73,9 +72,9 @@ interface PermissionSecurityChecks {
     DotName PERMISSION_CHECKER_NAME = DotName.createSimple(PermissionChecker.class);
     DotName BLOCKING = DotName.createSimple(Blocking.class);
 
-    Map<MethodInfo, SecurityCheck> getMethodSecurityChecks();
+    Map<MethodInfo, SecurityCheckSpec> getMethodSecurityChecks();
 
-    Map<DotName, SecurityCheck> getClassNameSecurityChecks();
+    Map<DotName, SecurityCheckSpec> getClassNameSecurityChecks();
 
     Set<String> permissionClasses();
 
@@ -98,7 +97,6 @@ interface PermissionSecurityChecks {
         private final IndexView index;
         private final List<AnnotationInstance> permissionInstances;
         private final Map<String, PermissionCheckerMetadata> permissionNameToChecker;
-        private volatile SecurityCheckRecorder recorder;
         private volatile PermissionConverterGenerator paramConverterGenerator;
 
         PermissionSecurityChecksBuilder(IndexView index, PermissionsAllowedMetaAnnotationBuildItem metaAnnotationItem,
@@ -246,25 +244,23 @@ interface PermissionSecurityChecks {
             return !permissionInstances.isEmpty();
         }
 
-        PermissionSecurityChecksBuilder prepareParamConverterGenerator(SecurityCheckRecorder recorder,
+        PermissionSecurityChecksBuilder prepareParamConverterGenerator(
                 BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
                 BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer,
                 BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProvidersProducer,
                 BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer) {
-            this.recorder = recorder;
             this.paramConverterGenerator = new PermissionConverterGenerator(generatedClassesProducer,
-                    generatedResourcesProducer, generatedServiceProvidersProducer, reflectiveClassesProducer,
-                    recorder, index);
+                    generatedResourcesProducer, generatedServiceProvidersProducer, reflectiveClassesProducer, index);
             return this;
         }
 
         PermissionSecurityChecks build() {
             paramConverterGenerator.close();
-            final Map<LogicalAndPermissionPredicate, SecurityCheck> cache = new HashMap<>();
-            final Map<MethodInfo, SecurityCheck> methodToCheck = new HashMap<>();
-            final Map<DotName, SecurityCheck> classNameToCheck = new HashMap<>();
+            final Map<LogicalAndPermissionPredicate, SecurityCheckSpec> cache = new HashMap<>();
+            final Map<MethodInfo, SecurityCheckSpec> methodToCheck = new HashMap<>();
+            final Map<DotName, SecurityCheckSpec> classNameToCheck = new HashMap<>();
             for (var targetToPredicate : targetToPredicate.entrySet()) {
-                SecurityCheck check = cache.computeIfAbsent(targetToPredicate.getValue(), this::createSecurityCheck);
+                SecurityCheckSpec check = cache.computeIfAbsent(targetToPredicate.getValue(), this::createSecurityCheck);
 
                 var annotationTarget = targetToPredicate.getKey();
                 if (annotationTarget.kind() == AnnotationTarget.Kind.CLASS) {
@@ -278,12 +274,12 @@ interface PermissionSecurityChecks {
 
             return new PermissionSecurityChecks() {
                 @Override
-                public Map<MethodInfo, SecurityCheck> getMethodSecurityChecks() {
+                public Map<MethodInfo, SecurityCheckSpec> getMethodSecurityChecks() {
                     return Map.copyOf(methodToCheck);
                 }
 
                 @Override
-                public Map<DotName, SecurityCheck> getClassNameSecurityChecks() {
+                public Map<DotName, SecurityCheckSpec> getClassNameSecurityChecks() {
                     return Map.copyOf(classNameToCheck);
                 }
 
@@ -314,7 +310,7 @@ interface PermissionSecurityChecks {
          * @return PermissionSecurityChecksBuilder
          */
         PermissionSecurityChecksBuilder createPermissionPredicates() {
-            Map<PermissionCacheKey, PermissionWrapper> permissionCache = new HashMap<>();
+            Map<PermissionCacheKey, PermissionSpec> permissionCache = new HashMap<>();
             for (var entry : targetToPermissionKeys.entrySet()) {
                 final AnnotationTarget securedTarget = entry.getKey();
                 final LogicalAndPermissionPredicate predicate = new LogicalAndPermissionPredicate();
@@ -330,7 +326,7 @@ interface PermissionSecurityChecks {
 
                         for (PermissionKey permissionKey : permissionKeys) {
                             var permission = createPermission(permissionKey, securedTarget, permissionCache);
-                            if (permission.isComputed()) {
+                            if (permission.computed()) {
                                 predicate.markAsComputed();
                             }
 
@@ -345,7 +341,7 @@ interface PermissionSecurityChecks {
 
                         for (PermissionKey permissionKey : permissionKeys) {
                             var permission = createPermission(permissionKey, securedTarget, permissionCache);
-                            if (permission.isComputed()) {
+                            if (permission.computed()) {
                                 predicate.markAsComputed();
                             }
                             orPredicate.or(permission);
@@ -999,122 +995,75 @@ interface PermissionSecurityChecks {
             return annotationTarget.asClass().name().toString();
         }
 
-        private SecurityCheck createSecurityCheck(LogicalAndPermissionPredicate andPredicate) {
-            final SecurityCheck securityCheck;
-            final boolean isSinglePermissionGroup = andPredicate.operands.size() == 1;
-            if (isSinglePermissionGroup) {
-
-                final LogicalOrPermissionPredicate orPredicate = andPredicate.operands.iterator().next();
-                final boolean isSinglePermission = orPredicate.operands.size() == 1;
-                if (isSinglePermission) {
-
-                    // single permission
-                    final PermissionWrapper permissionWrapper = orPredicate.operands.iterator().next();
-                    securityCheck = recorder.permissionsAllowed(permissionWrapper.computedPermission,
-                            permissionWrapper.permission);
-                } else {
-
-                    // multiple OR operands (permission OR permission OR ...)
-                    if (andPredicate.atLeastOnePermissionIsComputed) {
-                        securityCheck = recorder.permissionsAllowed(orPredicate.asComputedPermissions(recorder), null);
-                    } else {
-                        securityCheck = recorder.permissionsAllowed(null, orPredicate.asPermissions());
-                    }
-                }
-            } else {
-
-                // permission group AND permission group AND permission group AND ...
-                // permission group = (permission OR permission OR permission OR ...)
-                if (andPredicate.atLeastOnePermissionIsComputed) {
-                    final List<List<Function<Object[], Permission>>> computedPermissionGroups = new ArrayList<>();
-                    for (LogicalOrPermissionPredicate permissionGroup : andPredicate.operands) {
-                        computedPermissionGroups.add(permissionGroup.asComputedPermissions(recorder));
-                    }
-                    securityCheck = recorder.permissionsAllowedGroups(computedPermissionGroups, null);
-                } else {
-                    final List<List<RuntimeValue<Permission>>> permissionGroups = new ArrayList<>();
-                    for (LogicalOrPermissionPredicate permissionGroup : andPredicate.operands) {
-                        permissionGroups.add(permissionGroup.asPermissions());
-                    }
-                    securityCheck = recorder.permissionsAllowedGroups(null, permissionGroups);
-                }
+        private SecurityCheckSpec createSecurityCheck(LogicalAndPermissionPredicate andPredicate) {
+            // permission group AND permission group AND permission group AND ...
+            // permission group = (permission OR permission OR permission OR ...)
+            final List<List<PermissionSpec>> permissionGroups = new ArrayList<>(andPredicate.operands.size());
+            for (LogicalOrPermissionPredicate permissionGroup : andPredicate.operands) {
+                permissionGroups.add(List.copyOf(permissionGroup.operands));
             }
-
-            return securityCheck;
+            return new SecurityCheckSpec.PermissionsAllowed(permissionGroups, andPredicate.atLeastOnePermissionIsComputed);
         }
 
-        private PermissionWrapper createPermission(PermissionKey permissionKey, AnnotationTarget securedTarget,
-                Map<PermissionCacheKey, PermissionWrapper> cache) {
+        private PermissionSpec createPermission(PermissionKey permissionKey, AnnotationTarget securedTarget,
+                Map<PermissionCacheKey, PermissionSpec> cache) {
             var constructor = classSignatureToConstructor.get(permissionKey.classSignature());
             return cache.computeIfAbsent(
                     new PermissionCacheKey(permissionKey, securedTarget, constructor, paramConverterGenerator),
-                    new Function<PermissionCacheKey, PermissionWrapper>() {
+                    new Function<PermissionCacheKey, PermissionSpec>() {
                         @Override
-                        public PermissionWrapper apply(PermissionCacheKey permissionCacheKey) {
+                        public PermissionSpec apply(PermissionCacheKey permissionCacheKey) {
                             if (permissionCacheKey.computed) {
-                                return new PermissionWrapper(createComputedPermission(permissionCacheKey), null);
+                                return createComputedPermission(permissionCacheKey);
+                            } else if (permissionCacheKey.isStringPermission()) {
+                                return createStringPermission(permissionCacheKey.permissionKey);
                             } else {
-                                final RuntimeValue<Permission> permission;
-                                if (permissionCacheKey.isStringPermission()) {
-                                    permission = createStringPermission(permissionCacheKey.permissionKey);
-                                } else {
-                                    permission = createCustomPermission(permissionCacheKey);
-                                }
-                                return new PermissionWrapper(null, permission);
+                                return createCustomPermission(permissionCacheKey);
                             }
                         }
                     });
         }
 
-        private Function<Object[], Permission> createComputedPermission(PermissionCacheKey permissionCacheKey) {
-            return recorder.createComputedPermission(permissionCacheKey.permissionKey.name,
-                    permissionCacheKey.permissionKey.classSignature(), permissionCacheKey.permissionKey.actions(),
-                    permissionCacheKey.passActionsToConstructor, permissionCacheKey.methodParamIndexes(),
-                    permissionCacheKey.methodParamConverters, paramConverterGenerator.getConverterNameToMethodHandle());
+        private static PermissionSpec createComputedPermission(PermissionCacheKey permissionCacheKey) {
+            final int[] methodParamIndexes = permissionCacheKey.methodParamIndexes();
+            final List<Integer> formalParamIndexes = new ArrayList<>(methodParamIndexes.length);
+            final List<String> formalParamConverters = new ArrayList<>(methodParamIndexes.length);
+            for (int i = 0; i < methodParamIndexes.length; i++) {
+                formalParamIndexes.add(methodParamIndexes[i]);
+                final String converter = permissionCacheKey.methodParamConverters == null ? null
+                        : permissionCacheKey.methodParamConverters[i];
+                formalParamConverters.add(converter == null ? "" : converter);
+            }
+            return new PermissionSpec(permissionCacheKey.permissionKey.name,
+                    permissionCacheKey.permissionKey.classSignature(), actions(permissionCacheKey.permissionKey),
+                    permissionCacheKey.passActionsToConstructor, true, formalParamIndexes, formalParamConverters);
         }
 
-        private RuntimeValue<Permission> createCustomPermission(PermissionCacheKey permissionCacheKey) {
-            return recorder.createPermission(permissionCacheKey.permissionKey.name,
-                    permissionCacheKey.permissionKey.classSignature(), permissionCacheKey.permissionKey.actions(),
+        private static PermissionSpec createCustomPermission(PermissionCacheKey permissionCacheKey) {
+            return PermissionSpec.plain(permissionCacheKey.permissionKey.name,
+                    permissionCacheKey.permissionKey.classSignature(), actions(permissionCacheKey.permissionKey),
                     permissionCacheKey.passActionsToConstructor);
         }
 
-        private RuntimeValue<Permission> createStringPermission(PermissionKey permissionKey) {
+        private static PermissionSpec createStringPermission(PermissionKey permissionKey) {
             if (permissionKey.notAutodetectParams()) {
                 // validate - no point to specify params as string permission only accept name and actions
                 throw new IllegalArgumentException(String.format("'%s' must have autodetected params", STRING_PERMISSION));
             }
-            return recorder.createStringPermission(permissionKey.name, permissionKey.actions());
+            return PermissionSpec.plain(permissionKey.name, StringPermission.class.getName(), actions(permissionKey), true);
+        }
+
+        private static List<String> actions(PermissionKey permissionKey) {
+            final String[] actions = permissionKey.actions();
+            return actions == null ? null : List.of(actions);
         }
 
         private static final class LogicalOrPermissionPredicate {
-            private final Set<PermissionWrapper> operands = new LinkedHashSet<>();
+            private final Set<PermissionSpec> operands = new LinkedHashSet<>();
 
-            private LogicalOrPermissionPredicate or(PermissionWrapper permission) {
+            private LogicalOrPermissionPredicate or(PermissionSpec permission) {
                 operands.add(permission);
                 return this;
-            }
-
-            private List<Function<Object[], Permission>> asComputedPermissions(SecurityCheckRecorder recorder) {
-                final List<Function<Object[], Permission>> computedPermissions = new ArrayList<>();
-                for (PermissionWrapper wrapper : operands) {
-                    if (wrapper.isComputed()) {
-                        computedPermissions.add(wrapper.computedPermission);
-                    } else {
-                        // make permission computed for we can't combine computed and plain permissions (to keep things simple)
-                        computedPermissions.add(recorder.toComputedPermission(wrapper.permission));
-                    }
-                }
-                return List.copyOf(computedPermissions);
-            }
-
-            private List<RuntimeValue<Permission>> asPermissions() {
-                final List<RuntimeValue<Permission>> permissions = new ArrayList<>();
-                for (PermissionWrapper wrapper : operands) {
-                    Objects.requireNonNull(wrapper.permission);
-                    permissions.add(wrapper.permission);
-                }
-                return List.copyOf(permissions);
             }
 
             @Override
@@ -1160,21 +1109,6 @@ interface PermissionSecurityChecks {
             @Override
             public int hashCode() {
                 return Objects.hash(operands);
-            }
-        }
-
-        private static final class PermissionWrapper {
-
-            private final Function<Object[], Permission> computedPermission;
-            private final RuntimeValue<Permission> permission;
-
-            private PermissionWrapper(Function<Object[], Permission> computedPermission, RuntimeValue<Permission> permission) {
-                this.computedPermission = computedPermission;
-                this.permission = permission;
-            }
-
-            private boolean isComputed() {
-                return permission == null;
             }
         }
 
@@ -1604,37 +1538,25 @@ interface PermissionSecurityChecks {
     }
 
     final class PermissionConverterGenerator {
-        private static final String GENERATED_CLASS_NAME = "io.quarkus.security.runtime.PermissionMethodConverter";
+        private static final String GENERATED_CLASS_NAME = SecurityCheckFactory.PERMISSION_METHOD_CONVERTER_CLASS;
         private final BuildProducer<GeneratedClassBuildItem> generatedClassesProducer;
         private final BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer;
         private final BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProvidersProducer;
         private final BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer;
-        private final SecurityCheckRecorder recorder;
-        private final Map<String, RuntimeValue<MethodHandle>> converterNameToMethodHandle = new HashMap<>();
         private final IndexView index;
         // Collected converter generation tasks to be executed in close()
         private final List<ConverterTask> converterTasks = new ArrayList<>();
-        private RuntimeValue<Class<?>> clazz;
+        private final Set<String> converterNames = new HashSet<>();
 
         private PermissionConverterGenerator(BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
                 BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer,
                 BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProvidersProducer,
-                BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer, SecurityCheckRecorder recorder,
-                IndexView index) {
+                BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer, IndexView index) {
             this.generatedClassesProducer = generatedClassesProducer;
             this.generatedResourcesProducer = generatedResourcesProducer;
             this.generatedServiceProvidersProducer = generatedServiceProvidersProducer;
             this.reflectiveClassesProducer = reflectiveClassesProducer;
-            this.recorder = recorder;
             this.index = index;
-            this.clazz = null;
-        }
-
-        private RuntimeValue<Class<?>> getClazz() {
-            if (clazz == null) {
-                clazz = recorder.loadClassRuntimeVal(GENERATED_CLASS_NAME);
-            }
-            return clazz;
         }
 
         private void close() {
@@ -1661,10 +1583,6 @@ interface PermissionSecurityChecks {
             }
         }
 
-        private Map<String, RuntimeValue<MethodHandle>> getConverterNameToMethodHandle() {
-            return converterNameToMethodHandle.isEmpty() ? null : Map.copyOf(converterNameToMethodHandle);
-        }
-
         private String createConverter(String paramRemainder, MethodInfo securedMethod, int methodParamIdx) {
             String[] nestedParams = paramRemainder.split("\\.");
             var converterName = createConverterName(securedMethod);
@@ -1674,9 +1592,7 @@ interface PermissionSecurityChecks {
             validateNestedParams(nestedParams, 0, paramType, securedMethod, methodParamIdx);
 
             converterTasks.add(new ConverterTask(converterName, nestedParams, paramType));
-
-            var methodHandleRuntimeVal = recorder.createPermissionMethodConverter(converterName, getClazz());
-            converterNameToMethodHandle.put(converterName, methodHandleRuntimeVal);
+            converterNames.add(converterName);
             return converterName;
         }
 
@@ -1782,7 +1698,7 @@ interface PermissionSecurityChecks {
         private String createConverterName(MethodInfo securedMethod, int idx) {
             // postfix enumeration is required because same secured method may require multiple converters
             var converterName = hashCodeToString(securedMethod.hashCode()) + "_" + idx;
-            if (converterNameToMethodHandle.containsKey(converterName)) {
+            if (converterNames.contains(converterName)) {
                 return createConverterName(securedMethod, idx + 1);
             }
             return converterName;

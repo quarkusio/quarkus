@@ -3,22 +3,17 @@ package io.quarkus.tls.runtime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.tls.runtime.config.KeyStoreConfig;
-import io.quarkus.tls.runtime.config.PqcEnforcementPolicy;
 import io.quarkus.tls.runtime.config.SslEngineType;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfig;
-import io.quarkus.tls.runtime.config.TrustStoreConfig;
 
 /**
  * The OpenSSL engine (netty-tcnative) is disabled by the Quarkus GraalVM substitutions, so a TLS bucket that requests
@@ -33,14 +28,14 @@ class CertificateRegistryImplNativeImageTest {
     @Test
     void jvmModeNeverRejects() {
         assertThatCode(() -> CertificateRegistryImpl.verifySslEngineSupportedInNativeImage(
-                bucket(Optional.of(SslEngineType.OPENSSL), PqcEnforcementPolicy.STRICT), "foo", JVM))
+                bucket(Optional.of(SslEngineType.OPENSSL)), "foo", JVM))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void nativeModeWithJdkEngineIsAccepted() {
         assertThatCode(() -> CertificateRegistryImpl.verifySslEngineSupportedInNativeImage(
-                bucket(Optional.of(SslEngineType.JDKSSL), PqcEnforcementPolicy.STRICT), "foo", NATIVE))
+                bucket(Optional.of(SslEngineType.JDKSSL)), "foo", NATIVE))
                 .doesNotThrowAnyException();
     }
 
@@ -48,14 +43,14 @@ class CertificateRegistryImplNativeImageTest {
     void nativeModeWithEngineUnsetIsAccepted() {
         // the engine Vert.x selects for the policy, and whether it supports it, is validated by Vert.x itself
         assertThatCode(() -> CertificateRegistryImpl.verifySslEngineSupportedInNativeImage(
-                bucket(Optional.empty(), PqcEnforcementPolicy.STRICT), "foo", NATIVE))
+                bucket(Optional.empty()), "foo", NATIVE))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void nativeModeWithOpenSslEngineIsRejectedNamingTheProperty() {
         assertThatThrownBy(() -> CertificateRegistryImpl.verifySslEngineSupportedInNativeImage(
-                bucket(Optional.of(SslEngineType.OPENSSL), PqcEnforcementPolicy.RELAXED), "foo", NATIVE))
+                bucket(Optional.of(SslEngineType.OPENSSL)), "foo", NATIVE))
                 .isInstanceOf(ConfigurationException.class)
                 .hasMessageContaining("quarkus.tls.foo.ssl-engine")
                 .hasMessageContaining("native");
@@ -64,79 +59,16 @@ class CertificateRegistryImplNativeImageTest {
     @Test
     void nativeModeWithOpenSslEngineOnDefaultBucketNamesTheUnnamedProperty() {
         assertThatThrownBy(() -> CertificateRegistryImpl.verifySslEngineSupportedInNativeImage(
-                bucket(Optional.of(SslEngineType.OPENSSL), PqcEnforcementPolicy.RELAXED), TlsConfig.DEFAULT_NAME,
+                bucket(Optional.of(SslEngineType.OPENSSL)), TlsConfig.DEFAULT_NAME,
                 NATIVE))
                 .isInstanceOf(ConfigurationException.class)
                 .hasMessageContaining("quarkus.tls.ssl-engine")
                 .satisfies(e -> assertThat(e.getMessage()).doesNotContain("quarkus.tls.<default>"));
     }
 
-    private static TlsBucketConfig bucket(Optional<SslEngineType> engine, PqcEnforcementPolicy policy) {
-        return new TlsBucketConfig() {
-            @Override
-            public Optional<KeyStoreConfig> keyStore() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<TrustStoreConfig> trustStore() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<List<String>> cipherSuites() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Set<String> protocols() {
-                return Set.of();
-            }
-
-            @Override
-            public Duration handshakeTimeout() {
-                return Duration.ofSeconds(10);
-            }
-
-            @Override
-            public boolean alpn() {
-                return false;
-            }
-
-            @Override
-            public PqcEnforcementPolicy pqcEnforcementPolicy() {
-                return policy;
-            }
-
-            @Override
-            public Optional<List<String>> keyExchangeGroups() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<SslEngineType> sslEngine() {
-                return engine;
-            }
-
-            @Override
-            public Optional<List<Path>> certificateRevocationList() {
-                return Optional.empty();
-            }
-
-            @Override
-            public boolean trustAll() {
-                return false;
-            }
-
-            @Override
-            public Optional<String> hostnameVerificationAlgorithm() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Duration> reloadPeriod() {
-                return Optional.empty();
-            }
-        };
+    private static TlsBucketConfig bucket(Optional<SslEngineType> engine) {
+        TlsBucketConfig config = mock(TlsBucketConfig.class);
+        when(config.sslEngine()).thenReturn(engine);
+        return config;
     }
 }

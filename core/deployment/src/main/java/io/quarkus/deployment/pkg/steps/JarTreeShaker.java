@@ -30,6 +30,7 @@ import org.objectweb.asm.signature.SignatureVisitor;
 
 import io.quarkus.deployment.pkg.TreeShakeConfig;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeDeclaredClassesBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.paths.OpenPathTree;
 import io.smallrye.classfile.Attributes;
@@ -93,6 +94,8 @@ class JarTreeShaker {
      * loads to resolve {@code innerClass} substitution targets. Kept together with their superclasses and interfaces.
      */
     private final Set<String> loadable = new HashSet<>();
+    /** Member classes declared by the classes reached by the BFS */
+    private final Set<String> memberClasses = new HashSet<>();
 
     JarTreeShaker(JarTreeShakeInput input) {
         this.input = input;
@@ -352,6 +355,9 @@ class JarTreeShaker {
                 }
             }
 
+            // These classes only have to be loadable, their code isn't traced, so they aren't enqueued
+            memberClasses.addAll(scan.memberClasses);
+
             // Process ServiceLoader calls
             if (!scan.serviceLoaderServices.isEmpty()) {
                 input.serviceLoaderCalls.put(name, scan.serviceLoaderServices);
@@ -400,6 +406,13 @@ class JarTreeShaker {
                 }
             }
         }
+
+        // Classes that only have to be loadable are handled once the queue is drained, so that the classes
+        // reached by this pass are known. Every pass handles the ones its own scans discovered.
+        for (String member : memberClasses) {
+            keepLoadable(member, visited);
+        }
+        memberClasses.clear();
         return visited;
     }
 
@@ -520,6 +533,8 @@ class JarTreeShaker {
         final Set<String> jdkPackages = new HashSet<>();
         /** Service interfaces loaded via {@code ServiceLoader.load(SomeClass.class)} patterns */
         final Set<String> serviceLoaderServices = new HashSet<>();
+        /** Member classes declared by the scanned class, which have to be loadable but aren't traced */
+        final Set<String> memberClasses = new HashSet<>();
         /** Whether both sisu named resource string and getResources() call were detected */
         boolean sisuDetected;
         /** Flags for resource access and ObjectInputStream usage detection */
@@ -530,6 +545,7 @@ class JarTreeShaker {
             refs.clear();
             jdkPackages.clear();
             serviceLoaderServices.clear();
+            memberClasses.clear();
             sisuDetected = false;
             deserializationFlags = 0;
         }
@@ -549,6 +565,11 @@ class JarTreeShaker {
             // Sisu detection state (class-level, across methods)
             boolean hasSisuString;
             boolean hasGetResources;
+
+            @Override
+            void addMemberClassRef(String internalName) {
+                result.memberClasses.add(internalName.replace('/', '.'));
+            }
 
             @Override
             public MethodVisitor visitMethod(int access, String name, String descriptor,
@@ -740,6 +761,8 @@ class JarTreeShaker {
 
     /**
      * Makes a class and its declared (member) classes, as returned by {@link Class#getDeclaredClasses()}, loadable.
+     * Required by {@link JarTreeShakeDeclaredClassesBuildItem} for a holder that isn't reachable on its own;
+     * a reachable class keeps its member classes anyway.
      */
     private void keepDeclaredClassesLoadable(String holder, Set<String> visited) {
         final ClassModel classModel = parseAnalyzedClass(holder);
@@ -747,6 +770,15 @@ class JarTreeShaker {
             return;
         }
         keepLoadable(holder, classModel, visited);
+        keepMemberClassesLoadable(classModel, visited);
+    }
+
+    /**
+     * Makes the member classes declared by the given class loadable, whatever their access. Do not filter them
+     * on {@code ACC_PUBLIC} for {@link Class#getClasses()}: it returns only the public ones, but it loads all of
+     * them to compute that, so filtering removes member classes it still needs.
+     */
+    private void keepMemberClassesLoadable(ClassModel classModel, Set<String> visited) {
         final Optional<InnerClassesAttribute> innerClasses = classModel.findAttribute(Attributes.innerClasses());
         if (innerClasses.isEmpty()) {
             return;
@@ -778,6 +810,8 @@ class JarTreeShaker {
         if (visited.contains(name) || !loadable.add(name)) {
             return;
         }
+        // a loadable class keeps its own member classes too, so nested levels reach a fixed point
+        keepMemberClassesLoadable(classModel, visited);
         final Optional<ClassEntry> superclass = classModel.superclass();
         if (superclass.isPresent()) {
             keepLoadable(superclass.get().asInternalName().replace('/', '.'), visited);
@@ -1026,6 +1060,8 @@ class JarTreeShaker {
     private static class RefCollectingClassVisitor extends ClassVisitor {
         final Set<String> refs;
         final Set<String> jdkPkgs;
+        /** Internal name of the visited class, set before any other visit method is called */
+        String thisClass;
 
         RefCollectingClassVisitor(Set<String> refs, Set<String> jdkPkgs) {
             super(Opcodes.ASM9);
@@ -1036,6 +1072,7 @@ class JarTreeShaker {
         @Override
         public void visit(int version, int access, String name, String signature,
                 String superName, String[] interfaces) {
+            thisClass = name;
             if (superName != null) {
                 addClassRef(superName, refs, jdkPkgs);
             }
@@ -1045,10 +1082,49 @@ class JarTreeShaker {
                 }
             }
             addSignatureTypes(signature, refs, jdkPkgs);
-            int dollar = name.lastIndexOf('$');
-            if (dollar > 0) {
-                addClassRef(name.substring(0, dollar), refs, jdkPkgs);
+        }
+
+        /**
+         * Reports the enclosing class of a member class, which {@link Class#getSimpleName()},
+         * {@link Class#getEnclosingClass()} and {@link Class#getDeclaringClass()} load.
+         */
+        @Override
+        public void visitInnerClass(String name, String outerName, String innerName, int access) {
+            if (outerName == null) {
+                return;
             }
+            if (name.equals(thisClass)) {
+                addEnclosingClassRef(outerName);
+            } else if (outerName.equals(thisClass)) {
+                addMemberClassRef(name);
+            }
+        }
+
+        /**
+         * Reports a member class declared by the visited class. Reflective enumeration
+         * ({@link Class#getDeclaredClasses()}, and the class queries {@code native-image} performs for every
+         * registered type) loads all of them, and cannot be traced to a specific receiver, so a reachable
+         * class keeps the member classes it declares.
+         */
+        void addMemberClassRef(String internalName) {
+        }
+
+        /**
+         * Reports the enclosing class of a local or anonymous class, which has no outer class in its
+         * {@code InnerClasses} attribute.
+         */
+        @Override
+        public void visitOuterClass(String owner, String name, String descriptor) {
+            addEnclosingClassRef(owner);
+        }
+
+        /**
+         * Records the enclosing class of the visited class as a plain reference, so its code is traced.
+         * Making it merely loadable is not enough: native image builds pass {@code --link-at-build-time},
+         * which verifies every method of a kept class and resolves the classes its bodies reference.
+         */
+        private void addEnclosingClassRef(String internalName) {
+            addClassRef(internalName, refs, jdkPkgs);
         }
 
         @Override

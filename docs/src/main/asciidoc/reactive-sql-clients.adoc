@@ -815,6 +815,33 @@ NOTE: The default pool cleaner period is 1 second.
 quarkus.datasource.reactive.pool-cleaner-period=5S
 ----
 
+== TCP keep-alive
+
+When the database host disappears without closing its connections, for example after a network failure or when a firewall silently drops the connections, the client may wait for a response that never comes.
+Enabling TCP keep-alive lets the operating system probe connections that carry no traffic and close them when the database host does not answer:
+
+[source,properties]
+----
+quarkus.datasource.reactive.tcp-keep-alive=true
+----
+
+By default, the probes follow the operating system settings (on Linux, the `net.ipv4.tcp_keepalive_*` kernel parameters, where the first probe is sent after two hours by default).
+You can set them per datasource:
+
+[source,properties]
+----
+quarkus.datasource.reactive.tcp-keep-alive=true
+quarkus.datasource.reactive.tcp-keep-alive-idle=60S
+quarkus.datasource.reactive.tcp-keep-alive-interval=10S
+quarkus.datasource.reactive.tcp-keep-alive-count=3
+----
+
+IMPORTANT: `tcp-keep-alive-idle`, `tcp-keep-alive-interval` and `tcp-keep-alive-count` are only effective with a native transport (epoll or io_uring, see xref:vertx-reference.adoc#native-transport[Native transports]).
+With the default NIO transport, they are ignored and the operating system settings apply.
+
+NOTE: TCP keep-alive is disabled by default.
+It is not supported by the Oracle client, which does not use the Vert.x network stack; configure the Oracle JDBC driver through `additional-properties` instead.
+
 == TLS configuration
 
 All reactive SQL clients support TLS configuration through the Quarkus TLS registry.
@@ -923,6 +950,9 @@ public class CustomPoolCreator implements PoolCreator {
     }
 }
 ----
+
+NOTE: `Pool.pool(...)` does not apply the `tcp-keep-alive*` settings.
+To keep them, pass `input.netClientOptions()` to the client builder, for example `PgBuilder.pool().with(input.poolOptions()).with(input.netClientOptions())`.
 
 == Pipelining
 

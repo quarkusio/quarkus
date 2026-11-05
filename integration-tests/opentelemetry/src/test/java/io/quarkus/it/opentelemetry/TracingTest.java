@@ -798,7 +798,9 @@ public class TracingTest {
     }
 
     private void verifyResource(Map<String, Object> spanData) {
-        assertEquals("opentelemetry-integration-test", spanData.get("resource_service.name"));
+        // the configured resource attribute wins over the application name
+        assertEquals("opentelemetry-integration-service", spanData.get("resource_service.name"));
+        assertEquals("42", spanData.get("resource_service.instance.id"));
         assertEquals("999-SNAPSHOT", spanData.get("resource_service.version"));
         assertEquals("java", spanData.get("resource_telemetry.sdk.language"));
         assertEquals("opentelemetry", spanData.get("resource_telemetry.sdk.name"));

@@ -9,7 +9,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -177,10 +176,10 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
                 .deferred(() -> {
                     if (services.isEmpty()) {
                         return service.getInstances()
-                                .invoke(l -> l.forEach(s -> services.put(s.getId(), s)));
+                                .invoke(l -> l.forEach(s -> services.put(s.getId(), s)))
+                                .invoke(l -> StorkServiceObservationSupport.recordResolvedInstances(service, l));
                     } else {
-                        List<ServiceInstance> list = new ArrayList<>(services.values());
-                        return Uni.createFrom().item(list);
+                        return Uni.createFrom().item(new ArrayList<>(services.values()));
                     }
                 })
                 .map(ArrayList::new) // make it mutable

@@ -137,6 +137,19 @@ public interface Expression {
             throw new IllegalStateException("Not a virtual method: " + toString() + " [typeInfo: " + getTypeInfo() + "]");
         }
 
+        /**
+         * The position is only available for the parts of an output expression and of a parameter declaration default
+         * value, i.e. when the origin of the expression identifies the expression itself; it is relative to the line of
+         * the origin of the expression.
+         *
+         * @return the 1-based index of the first character of the part on the line of the origin of the expression, or
+         *         {@code -1} if not available
+         * @see Origin#getLineCharacterStart()
+         */
+        default int getLineCharacterStart() {
+            return -1;
+        }
+
     }
 
     /**

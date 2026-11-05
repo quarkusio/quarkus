@@ -218,6 +218,12 @@ public class JacocoProcessor {
                     }
                 }
             } else {
+                // Include the application module when it was explicitly selected for instrumentation.
+                // It is not part of the runtime dependency list below.
+                if (appModel.getApplicationModule() != null
+                        && instrumented.contains(appModel.getAppArtifact().getKey())) {
+                    addDependency(appModel.getAppArtifact(), config, projectRoot, info, includes, excludes, dataFilePath);
+                }
                 // For instrumented artifacts we always use the current data file when processing a dependency
                 for (ResolvedDependency d : appModel.getRuntimeDependencies()) {
                     if (d.getWorkspaceModule() != null

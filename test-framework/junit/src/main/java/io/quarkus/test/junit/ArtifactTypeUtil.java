@@ -16,4 +16,8 @@ public final class ArtifactTypeUtil {
     public static boolean isJar(String artifactType) {
         return "jar".equals(artifactType);
     }
+
+    public static boolean isJLink(String artifactType) {
+        return "jlink".equals(artifactType);
+    }
 }

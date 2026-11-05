@@ -399,6 +399,8 @@ public interface LogRuntimeConfig {
          * <p>
          * If not set, the default value is {@code 2048} when {@code sys-log-type} is {@code rfc5424} (which is the default)
          * and {@code 1024} when {@code sys-log-type} is {@code rfc3164}
+         * <p>
+         * The minimum value is {@code 128} bytes. A smaller value is replaced by {@code 128}.
          */
         Optional<MemorySize> maxLength();
 

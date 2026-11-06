@@ -38,6 +38,7 @@ import io.quarkus.bootstrap.model.JvmOptions;
 import io.quarkus.bootstrap.model.JvmOptionsBuilder;
 import io.quarkus.deployment.util.CommandLineUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.smallrye.common.os.OS;
 import io.smallrye.common.process.ProcessUtil;
 
 public class DevModeCommandLineBuilder {
@@ -408,8 +409,9 @@ public class DevModeCommandLineBuilder {
         args.add("--add-exports=java.base/jdk.internal.module=ALL-UNNAMED");
         // aesh, used by the dev mode console, calls restricted java.lang.foreign methods
         // to set up the native terminal on Windows; unless native access is enabled for
-        // code on the class path, the JVM logs restricted method warnings on every launch
-        if (!jvmOptionsBuilder.contains("enable-native-access")) {
+        // code on the class path, the JVM logs restricted method warnings on every launch.
+        // Only the Windows console loads the native terminal, so the flag is only needed there.
+        if (OS.WINDOWS.isCurrent() && !jvmOptionsBuilder.contains("enable-native-access")) {
             args.add("--enable-native-access=ALL-UNNAMED");
         }
 

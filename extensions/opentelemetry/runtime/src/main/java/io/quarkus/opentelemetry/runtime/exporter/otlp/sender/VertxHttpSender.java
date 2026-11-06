@@ -59,6 +59,8 @@ public final class VertxHttpSender implements HttpSender {
     private final String contentType;
     private final HttpClient client;
     private final String signalPath;
+    // What is exported, "spans", "metrics" or "logs", as in the messages of the OpenTelemetry SDK
+    private final String exportedSignals;
     private final long timeoutMillis;
 
     public VertxHttpSender(
@@ -72,6 +74,7 @@ public final class VertxHttpSender implements HttpSender {
             Vertx vertx) {
         this.basePath = determineBasePath(baseUri);
         this.signalPath = signalPath;
+        this.exportedSignals = exportedSignals(signalPath);
         this.compressionEnabled = compressionEnabled;
         this.headers = headersMap;
         this.contentType = contentType;
@@ -111,6 +114,20 @@ public final class VertxHttpSender implements HttpSender {
         return path;
     }
 
+    private static String exportedSignals(String signalPath) {
+        // Other extensions can use their own path, e.g. a vendor endpoint ending with /v1/traces
+        if (signalPath.endsWith(TRACES_PATH)) {
+            return "spans";
+        }
+        if (signalPath.endsWith(METRICS_PATH)) {
+            return "metrics";
+        }
+        if (signalPath.endsWith(LOGS_PATH)) {
+            return "logs";
+        }
+        return "telemetry data";
+    }
+
     @Override
     public void send(MessageWriter requestBodyWriter,
             Consumer<HttpResponse> onHttpResponseRead,
@@ -124,7 +141,6 @@ public final class VertxHttpSender implements HttpSender {
             return;
         }
 
-        String writerType = requestBodyWriter.getClass().getSimpleName();
         String requestURI = basePath + signalPath;
         var clientRequestSuccessHandler = new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
                 contentType,
@@ -133,15 +149,15 @@ public final class VertxHttpSender implements HttpSender {
         initiateSend(client, requestURI, MAX_ATTEMPTS, clientRequestSuccessHandler, new Consumer<>() {
             @Override
             public void accept(Throwable throwable) {
-                failOnClientRequest(writerType, throwable, onError);
+                failOnClientRequest(throwable, onError);
             }
         });
     }
 
     @SuppressForbidden(reason = "The use of ThrottlingLogger mandates the use of java.util.logging")
-    private void failOnClientRequest(String type, Throwable t, Consumer<Throwable> onError) {
+    private void failOnClientRequest(Throwable t, Consumer<Throwable> onError) {
         String message = "Failed to export "
-                + type
+                + exportedSignals
                 + ". The request could not be executed. Full error message: "
                 + (t.getMessage() == null ? t.getClass().getName() : t.getMessage());
         throttlingLogger.log(Level.WARNING, message);

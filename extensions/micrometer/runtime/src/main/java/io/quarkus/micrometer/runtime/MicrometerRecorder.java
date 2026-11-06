@@ -35,6 +35,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
 import io.quarkus.micrometer.runtime.binder.JVMInfoBinder;
+import io.quarkus.micrometer.runtime.binder.MeterCache;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
@@ -121,6 +122,10 @@ public class MicrometerRecorder {
                 Metrics.globalRegistry.add(registry);
             }
         }
+
+        // Meters cached before the filters were (re)applied, e.g. while the HTTP server keeps running across a dev mode
+        // restart, may not reflect them: drop them
+        MeterCache.invalidateAll();
 
         List<AutoCloseable> autoCloseables = new ArrayList<>();
 

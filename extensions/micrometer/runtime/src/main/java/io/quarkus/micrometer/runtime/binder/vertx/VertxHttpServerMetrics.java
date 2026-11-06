@@ -12,6 +12,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.http.Outcome;
@@ -20,6 +21,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
+import io.quarkus.micrometer.runtime.binder.MeterCache;
 import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrapper;
 import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.smallrye.common.vertx.VertxContext;
@@ -49,7 +51,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
 
     final LongAdder activeRequests;
 
-    final MeterProvider<Timer> requestsTimer;
+    final MeterCache<Timer> requestsTimer;
     final MeterProvider<LongTaskTimer> websocketConnectionTimer;
     final MeterProvider<Counter> pushCounter;
 
@@ -58,7 +60,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     VertxHttpServerMetrics(MeterRegistry registry,
             HttpBinderConfiguration config,
             OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper, HttpServerConfig httpServerConfig,
-            Gauges<LongAdder> gauges) {
+            Gauges<LongAdder> gauges, MeterCache<Timer> requestsTimer) {
         super(registry, "http.server", commonTags(httpServerConfig), gauges);
         this.config = config;
         this.openTelemetryContextUnwrapper = openTelemetryContextUnwrapper;
@@ -73,9 +75,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         httpServerMetricsTagsContributors = resolveHttpServerMetricsTagsContributors();
 
         // not dev-mode changeable -----
-        requestsTimer = Timer.builder(config.getHttpServerRequestsName())
-                .description("HTTP server request processing time")
-                .withRegistry(registry);
+        this.requestsTimer = requestsTimer;
 
         websocketConnectionTimer = LongTaskTimer.builder(config.getHttpServerWebSocketConnectionsName())
                 .description("Server web socket connection time")
@@ -85,6 +85,15 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 .description("HTTP server response push counter")
                 .withRegistry(registry);
         // not dev-mode changeable -----ˆ
+    }
+
+    /**
+     * @return a cache of the request timers, to share between the {@link VertxHttpServerMetrics} instances
+     */
+    static MeterCache<Timer> requestsTimerCache(MeterRegistry registry, HttpBinderConfiguration config) {
+        return new MeterCache<>(Timer.builder(config.getHttpServerRequestsName())
+                .description("HTTP server request processing time")
+                .withRegistry(registry));
     }
 
     private static Tags commonTags(HttpServerConfig httpServerConfig) {
@@ -207,20 +216,32 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         if (path != null) {
             Timer.Sample sample = requestMetric.getSample();
 
-            Tags originalTags = Tags.of(
+            MeterCache.Key timerKey = timerKey(requestMetric, Optional.empty(),
                     VertxMetricsTags.method(requestMetric.request().method()),
                     HttpCommonTags.uri(path, requestMetric.getInitialPath(), 0, false),
                     Outcome.CLIENT_ERROR.asTag(),
                     HttpCommonTags.STATUS_RESET);
-            Tags effectiveTags = effectiveTags(requestMetric, Optional.empty(), originalTags);
 
             io.vertx.core.Context ctx = requestMetric.request() != null ? requestMetric.request().context() : null;
             openTelemetryContextUnwrapper.executeInContext(
                     sample::stop,
-                    requestsTimer.withTags(effectiveTags),
+                    requestsTimer.get(timerKey),
                     ctx);
         }
         requestMetric.requestEnded();
+    }
+
+    /**
+     * @return the key of the request timer having the given standard tags, plus the contributed tags if any
+     */
+    private MeterCache.Key timerKey(HttpRequestMetric requestMetric, Optional<HttpResponse> httpResponse,
+            Tag method, Tag uri, Tag outcome, Tag status) {
+        if (httpServerMetricsTagsContributors.isEmpty()) {
+            return new RequestTimerKey(method, uri, outcome, status);
+        }
+        // Contributed tags can override the standard ones (e.g. the uri): key on the final tags,
+        // so there is never more than one cache entry per timer
+        return new EffectiveTagsKey(effectiveTags(requestMetric, httpResponse, Tags.of(method, uri, outcome, status)));
     }
 
     private Tags effectiveTags(HttpRequestMetric requestMetric, Optional<HttpResponse> httpResponse, Tags originalTags) {
@@ -257,17 +278,16 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 config.getServerIgnorePatterns());
         if (path != null) {
             Timer.Sample sample = requestMetric.getSample();
-            Tags originalTags = Tags.of(
+            MeterCache.Key timerKey = timerKey(requestMetric, Optional.of(response),
                     VertxMetricsTags.method(requestMetric.httpRequest().method()),
                     HttpCommonTags.uri(path, requestMetric.getInitialPath(), response.statusCode(),
                             config.isServerSuppress4xxErrors()),
                     VertxMetricsTags.outcome(response),
                     HttpCommonTags.status(response.statusCode()));
-            Tags effectiveTags = effectiveTags(requestMetric, Optional.of(response), originalTags);
             io.vertx.core.Context ctx = requestMetric.request() != null ? requestMetric.request().context() : null;
             openTelemetryContextUnwrapper.executeInContext(
                     sample::stop,
-                    requestsTimer.withTags(effectiveTags),
+                    requestsTimer.get(timerKey),
                     ctx);
         }
         requestMetric.requestEnded();
@@ -304,6 +324,23 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         if (websocketMetric != null) {
             websocketMetric.stop();
         }
+    }
+
+    /**
+     * Key of a cached request timer, when there is no {@link HttpServerMetricsTagsContributor}: holds exactly the tags of
+     * the timer.
+     */
+    record RequestTimerKey(Tag method, Tag uri, Tag outcome, Tag status) implements MeterCache.Key {
+        @Override
+        public Tags tags() {
+            return Tags.of(method, uri, outcome, status);
+        }
+    }
+
+    /**
+     * Key of a cached request timer, when there are {@link HttpServerMetricsTagsContributor}s: the final tags of the timer.
+     */
+    record EffectiveTagsKey(Tags tags) implements MeterCache.Key {
     }
 
     private record DefaultContext(HttpRequest httpRequest,

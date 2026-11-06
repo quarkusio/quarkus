@@ -1,10 +1,10 @@
 package io.quarkus.micrometer.runtime.binder;
 
 import java.net.URI;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.jboss.logging.Logger;
 
@@ -15,20 +15,35 @@ public class HttpCommonTags {
     private static final Logger log = Logger.getLogger(HttpCommonTags.class);
     private static final int MAX_HTTP_METHODS = 32;
 
-    // Standard RFC 9110/5789/9512 methods
-    private static final Set<String> allowedHttpMethods = new HashSet<>(10);
+    // Standard RFC 9110/5789/9512 methods, mapped to their pre-built tag to avoid creating a tag per request
+    private static final Map<String, Tag> allowedHttpMethods = new HashMap<>(16);
 
     static {
-        allowedHttpMethods.add("GET");
-        allowedHttpMethods.add("HEAD");
-        allowedHttpMethods.add("POST");
-        allowedHttpMethods.add("PUT");
-        allowedHttpMethods.add("DELETE");
-        allowedHttpMethods.add("CONNECT");
-        allowedHttpMethods.add("OPTIONS");
-        allowedHttpMethods.add("TRACE");
-        allowedHttpMethods.add("PATCH");
-        allowedHttpMethods.add("QUERY");
+        addAllowedHttpMethod("GET");
+        addAllowedHttpMethod("HEAD");
+        addAllowedHttpMethod("POST");
+        addAllowedHttpMethod("PUT");
+        addAllowedHttpMethod("DELETE");
+        addAllowedHttpMethod("CONNECT");
+        addAllowedHttpMethod("OPTIONS");
+        addAllowedHttpMethod("TRACE");
+        addAllowedHttpMethod("PATCH");
+        addAllowedHttpMethod("QUERY");
+    }
+
+    // Pre-built status tags for the standard status code range, to avoid creating a tag per request
+    private static final int MIN_CACHED_STATUS = 100;
+    private static final int MAX_CACHED_STATUS = 599;
+    private static final Tag[] STATUS_TAGS = new Tag[MAX_CACHED_STATUS - MIN_CACHED_STATUS + 1];
+
+    static {
+        for (int i = 0; i < STATUS_TAGS.length; i++) {
+            STATUS_TAGS[i] = Tag.of("status", Integer.toString(MIN_CACHED_STATUS + i));
+        }
+    }
+
+    private static void addAllowedHttpMethod(String method) {
+        allowedHttpMethods.put(method, Tag.of("method", method));
     }
 
     public static void setAdditionalHttpMethods(List<String> additionalMethods) {
@@ -39,7 +54,7 @@ public class HttpCommonTags {
                             MAX_HTTP_METHODS);
                     break;
                 }
-                allowedHttpMethods.add(method.toUpperCase());
+                addAllowedHttpMethod(method.toUpperCase());
             }
         }
     }
@@ -61,10 +76,11 @@ public class HttpCommonTags {
      * @return the method tag
      */
     public static Tag method(String method) {
-        if (method == null || !allowedHttpMethods.contains(method)) {
+        if (method == null) {
             return METHOD_UNKNOWN;
         }
-        return Tag.of("method", method);
+        Tag tag = allowedHttpMethods.get(method);
+        return tag != null ? tag : METHOD_UNKNOWN;
     }
 
     /**
@@ -74,6 +90,9 @@ public class HttpCommonTags {
      * @return the status tag derived from the status of the response
      */
     public static Tag status(int statusCode) {
+        if (statusCode >= MIN_CACHED_STATUS && statusCode <= MAX_CACHED_STATUS) {
+            return STATUS_TAGS[statusCode - MIN_CACHED_STATUS];
+        }
         return (statusCode > 0) ? Tag.of("status", Integer.toString(statusCode)) : STATUS_UNKNOWN;
     }
 

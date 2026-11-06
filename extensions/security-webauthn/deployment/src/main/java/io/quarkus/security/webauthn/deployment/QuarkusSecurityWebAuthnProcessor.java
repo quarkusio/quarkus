@@ -107,9 +107,10 @@ class QuarkusSecurityWebAuthnProcessor {
             WebAuthnRecorder recorder,
             VertxWebRouterBuildItem vertxWebRouterBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            WebAuthnBuildTimeConfig config) {
         recorder.setupRoutes(beanContainerBuildItem.getValue(), vertxWebRouterBuildItem.getHttpRouter(),
-                nonApplicationRootPathBuildItem.getNonApplicationRootPath());
+                nonApplicationRootPathBuildItem.resolvePath(config.rootPath()));
     }
 
     @BuildStep

@@ -15,18 +15,20 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.deployment.index.IndexWrapper;
 import io.quarkus.deployment.index.LazyIndexer;
 import io.quarkus.deployment.index.PersistentClassIndex;
+import io.quarkus.runtime.LaunchMode;
 
 public class CombinedIndexBuildStep {
 
     @BuildStep
     CombinedIndexBuildItem build(ApplicationArchivesBuildItem archives,
             List<AdditionalIndexedClassesBuildItem> additionalIndexedClassesItems,
-            LiveReloadBuildItem liveReloadBuildItem) {
+            LiveReloadBuildItem liveReloadBuildItem, LaunchModeBuildItem launchMode) {
         List<IndexView> archiveIndexes = new ArrayList<>();
 
         for (ApplicationArchive i : archives.getAllArchives()) {
@@ -53,7 +55,10 @@ public class CombinedIndexBuildStep {
         }
 
         CompositeIndex compositeIndex = CompositeIndex.create(archivesIndex, result.index());
-        RuntimeUpdatesProcessor.setLastStartIndex(compositeIndex);
+        // Ordinary tests do not use instrumentation reload, but their augmentation loaders remain alive during discovery.
+        if (launchMode.getLaunchMode() != LaunchMode.TEST || launchMode.isAuxiliaryApplication()) {
+            RuntimeUpdatesProcessor.setLastStartIndex(compositeIndex);
+        }
         return new CombinedIndexBuildItem(compositeIndex,
                 new IndexWrapper(compositeIndex, Thread.currentThread().getContextClassLoader(), index));
     }

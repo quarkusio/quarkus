@@ -29,6 +29,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
+import org.objectweb.asm.LimitExceededException;
 
 import com.fasterxml.jackson.annotation.JacksonAnnotation;
 import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
@@ -183,6 +184,12 @@ public abstract class JacksonCodeGenerator {
             createConstructor(classCreator, beanClassName);
             boolean valid = createSerializationMethod(classInfo, classCreator, beanClassName, entry.typeBindings());
             return valid ? Optional.of(generatedClassName) : Optional.empty();
+        } catch (LimitExceededException e) {
+            // ASM 9.11+ caps the work done computing frames for a single class: types with a very large number
+            // of properties can exceed it, so fall back to the reflection-based (de)serialization for them
+            log.warnf("Skipping generation of reflection-free Jackson code for class %s because it is too large: %s",
+                    beanClassName, e.getMessage());
+            return Optional.empty();
         }
     }
 

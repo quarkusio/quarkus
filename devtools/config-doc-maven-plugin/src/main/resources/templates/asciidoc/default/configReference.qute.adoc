@@ -1,5 +1,6 @@
 [.configuration-legend]
-icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime
+icon:lock[title=Fixed at build time] Configuration property fixed at build time - All other configuration properties are overridable at runtime +
+icon:key[title=Secret] Secret configuration property - Its value is masked and cannot be looked up by name with the `Config` API
 [.configuration-reference{#if searchable}.searchable{/if}, cols="80,.^10,.^10"]
 |===
 

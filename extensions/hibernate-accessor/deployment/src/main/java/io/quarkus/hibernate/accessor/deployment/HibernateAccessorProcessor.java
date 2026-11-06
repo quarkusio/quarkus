@@ -8,6 +8,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
+import org.hibernate.accessor.AccessorFactory;
 import org.hibernate.accessor.asm.aot.AotConstructorMetadata;
 import org.hibernate.accessor.asm.aot.AotFieldMetadata;
 import org.hibernate.accessor.asm.aot.AotMemberMetadata;
@@ -15,11 +16,11 @@ import org.hibernate.accessor.asm.aot.AotMethodMetadata;
 import org.hibernate.accessor.asm.aot.AotTypeMetadata;
 import org.hibernate.accessor.asm.aot.GenerationUtil;
 
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -27,10 +28,9 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
-import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.accessor.runtime.AccessorFactoryBootstrap;
 import io.quarkus.hibernate.accessor.runtime.HibernateAccessorBuildTimeConfig;
-import io.quarkus.hibernate.accessor.runtime.HibernateAccessorRecorder;
+import io.quarkus.hibernate.accessor.runtime.HibernateAccessorFactory;
 import io.quarkus.hibernate.accessor.runtime.HibernateAccessorStrategy;
 
 /**
@@ -161,10 +161,9 @@ import io.quarkus.hibernate.accessor.runtime.HibernateAccessorStrategy;
  *
  * An application-loaded bootstrap implements the runtime-visible
  * {@link AccessorFactoryBootstrap} interface and directly calls the
- * generated factory's strategy-specific {@code create} overload. Recorded startup bytecode constructs
- * the bootstrap through its public no-argument constructor. The recorder invokes its interface at static
- * initialization and publishes the factory through {@link HibernateAccessorFactoryBuildItem}, without
- * runtime class discovery or reflective invocation. The reflection strategy generates neither a bootstrap
+ * generated factory's strategy-specific {@code create} overload. The static-init service constructs
+ * the bootstrap through a captured constructor constant, invokes its interface and publishes
+ * the factory through {@link HibernateAccessorFactoryBuildItem}. The reflection strategy generates neither a bootstrap
  * nor a factory and continues to use the configured reflection access context.
  */
 class HibernateAccessorProcessor {
@@ -245,26 +244,20 @@ class HibernateAccessorProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     HibernateAccessorFactoryBuildItem accessFactory(
             HibernateAccessorBuildTimeConfig config,
-            HibernateAccessorRecorder recorder,
-            RecorderContext recorderContext) {
-        switch (config.strategy()) {
-            case REFLECTION -> {
-                return new HibernateAccessorFactoryBuildItem(recorder.createReflectionFactory());
-            }
-            case GENERATED_WITH_FALLBACK -> {
-                return new HibernateAccessorFactoryBuildItem(
-                        recorder.createAccessorFactoryWithFallback(
-                                recorderContext.newInstance(HibernateAccessorGenerator.GENERATED_BOOTSTRAP)));
-            }
-            default -> {
-                return new HibernateAccessorFactoryBuildItem(
-                        recorder.createAccessorFactory(
-                                recorderContext.newInstance(HibernateAccessorGenerator.GENERATED_BOOTSTRAP)));
-            }
+            ServiceRegistrar services) {
+        if (config.strategy() == HibernateAccessorStrategy.REFLECTION) {
+            services.forService(AccessorFactory.class).atPhase(Phase.STATIC_INIT)
+                    .onStart(ctx -> HibernateAccessorFactory.createReflectionFactory());
+        } else {
+            boolean withFallback = config.strategy() == HibernateAccessorStrategy.GENERATED_WITH_FALLBACK;
+            AccessorFactoryBootstrap bootstrap = new HibernateAccessorBootstrapReference();
+            services.forService(AccessorFactory.class).atPhase(Phase.STATIC_INIT)
+                    .onStart(ctx -> bootstrap.create(withFallback ? HibernateAccessorFactory.createReflectionFactory() : null));
         }
+        // TODO: Remove once Hibernate extensions are migrated to use services and have no need in this build item.
+        return new HibernateAccessorFactoryBuildItem(services.staticInitServiceAsRuntimeValue(AccessorFactory.class));
     }
 
     static List<ProcessedHostData> mergeRegistrations(List<HibernateAccessorRegistrationBuildItem> registrations) {

@@ -1,0 +1,108 @@
+[[hibernate-accessor]]
+== Accessing model members with Hibernate Accessor
+
+Accessing model objects may involve reading fields, invoking methods, and calling constructors.
+By default, Quarkus discovers the model members that need to be accessed at build time and
+generates bytecode accessors for them. You can configure how these members are accessed and
+register additional members when needed.
+
+=== Choosing an accessor strategy
+
+Set `quarkus.hibernate-accessor.strategy` to choose how members are accessed.
+This configuration is fixed at build time and controls access throughout the application.
+
+include::{generated-dir}/config/quarkus-hibernate-accessor.adoc[opts=optional, leveloffset=+2]
+
+For example, to require generated accessors:
+
+[source,properties]
+----
+quarkus.hibernate-accessor.strategy=generated
+----
+
+=== Registering additional members
+
+Most applications can rely on automatic registration. Use the annotations in `io.quarkus.hibernate.accessor`
+when a member needed by Hibernate ORM, Hibernate Search, or Hibernate Validator is not discovered at build time,
+for example when using programmatic mappings. This is particularly useful with the `generated` strategy, where
+there is no reflection fallback, or to avoid reflection fallback for additional members with `generated-with-fallback`.
+These annotations only register accessors; they do not define persistence mappings, search mappings, or validation constraints.
+
+To register individual members, use:
+
+* `@GeneratedFieldAccessor` on an instance field.
+  Its `access` attribute accepts `FieldAccess.READ` (the default), `FieldAccess.WRITE`, or `FieldAccess.READ_WRITE`.
+* `@GeneratedMethodAccessor` on an instance method.
+  A reader must have no parameters and a non-void return type.
+  A writer must have exactly one parameter; its return value is ignored.
+* `@GeneratedConstructorAccessor` on a constructor of a concrete, non-enum class.
+
+For example, register only the constructor and field reader required for a model class:
+
+[source,java]
+----
+import io.quarkus.hibernate.accessor.GeneratedConstructorAccessor;
+import io.quarkus.hibernate.accessor.GeneratedFieldAccessor;
+
+public class Book {
+    @GeneratedFieldAccessor
+    private final String title;
+
+    @GeneratedConstructorAccessor
+    public Book(String title) {
+        this.title = title;
+    }
+}
+----
+
+To register a type's declared members together, use `@GeneratedAccessor`.
+By default, it registers instance fields for reading, methods matching the
+reader or writer signatures above, and constructors of concrete, non-enum
+classes. It does not register inherited members; annotate their declaring
+types or members separately.
+
+You can configure each member category and override those settings on individual members:
+
+[source,java]
+----
+import io.quarkus.hibernate.accessor.FieldAccess;
+import io.quarkus.hibernate.accessor.GeneratedAccessor;
+import io.quarkus.hibernate.accessor.GeneratedConstructorAccessor;
+import io.quarkus.hibernate.accessor.GeneratedFieldAccessor;
+import io.quarkus.hibernate.accessor.GeneratedMethodAccessor;
+
+@GeneratedAccessor(
+        fields = @GeneratedFieldAccessor(access = FieldAccess.READ_WRITE),
+        methods = @GeneratedMethodAccessor(enabled = false),
+        constructors = @GeneratedConstructorAccessor(enabled = false))
+public class Book {
+    private String title;
+
+    @GeneratedFieldAccessor(enabled = false)
+    private String internalNotes;
+
+    @GeneratedMethodAccessor
+    public String title() {
+        return title;
+    }
+}
+----
+
+Here, `title` has both a field reader and a field writer, `internalNotes` is excluded
+from annotation-based registration, and `title()` is registered despite methods being
+disabled at the type level. Member annotations override the type-level settings for
+that member. Setting `enabled = false` does not cancel registrations requested independently
+by Hibernate ORM, Hibernate Search, or Hibernate Validator extensions.
+
+The configured strategy still determines how annotated members are accessed.
+With `reflection`, the annotations register members for reflection instead of
+generating bytecode accessors.
+
+[IMPORTANT]
+====
+Generated field writers remove `final` from ordinary instance fields; the `reflection`
+strategy leaves field modifiers unchanged. Requesting write access to a record field
+fails the build with every strategy. Explicitly enabling a member annotation on a static
+field, a static method, a method with an unsupported signature, or a constructor of an
+abstract class or enum also fails the build.
+====

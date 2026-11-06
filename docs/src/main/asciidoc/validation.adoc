@@ -606,6 +606,8 @@ To support some external libraries that are creating a `ValidatorFactory` using 
 Quarkus returns the `ValidatorFactory` managed by Quarkus when `Validation.buildDefaultValidatorFactory()`
 is called.
 
+include::{includes}/hibernate-accessor.adoc[]
+
 [[configuration-reference]]
 == Hibernate Validator Configuration Reference
 

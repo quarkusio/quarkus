@@ -5,12 +5,35 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Apache Camel on Quarkus
 include::_attributes.adoc[]
-:summary: This guide covers the systems integration with Apache Camel
+:summary: Integrate Apache Camel routes into a Quarkus application
 :topics: camel,integration
+:diataxis-type: concept
 
-https://camel.apache.org/[Apache Camel] is the Swiss knife of integrating heterogeneous systems with more than a decade
-of history and a lively community of users and developers.
+https://camel.apache.org/[Apache Camel] is the Swiss knife of integrating heterogeneous systems with more than a decade of history and a lively community of users and developers.
 
-The support for Apache Camel on top of Quarkus is provided by the
-https://github.com/apache/camel-quarkus[Apache Camel Quarkus project]. Please refer to
-https://camel.apache.org/camel-quarkus/[their documentation] for more information.
+Camel Quarkus turns Camel components into Quarkus extensions, so routes are wired at build time and live-reloaded in dev mode.
+
+The https://camel.apache.org/camel-quarkus/[Apache Camel Quarkus documentation] covers getting started, the list of supported extensions, configuration, observability, testing and native mode.
+
+== Defining a route
+
+Generate a project with the `camel-quarkus-timer` and `camel-quarkus-log` extensions from https://code.quarkus.io/?e=org.apache.camel.quarkus:camel-quarkus-timer&e=org.apache.camel.quarkus:camel-quarkus-log[code.quarkus.io], then declare the route as a CDI bean:
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import org.apache.camel.builder.RouteBuilder;
+
+@ApplicationScoped
+public class MyRoute extends RouteBuilder {
+
+    @Override
+    public void configure() {
+        from("timer:hello?period=5000")
+                .setBody().constant("Hello from Camel on Quarkus")
+                .to("log:hello");
+    }
+}
+----
+
+Run `./mvnw quarkus:dev` and the route logs a message every five seconds; changes take effect on save.

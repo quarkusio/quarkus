@@ -1248,6 +1248,12 @@ We don't have plans to support the Lucene backend in Quarkus for now,
 though there is an issue tracking progress on such an implementation in the Quarkiverse:
 https://github.com/quarkiverse/quarkus-hibernate-search-extras/issues/179[quarkiverse/quarkus-hibernate-search-extras#179].
 
+include::{includes}/hibernate-accessor.adoc[]
+
+// Keep this include in the parent guide: generated-dir can be relative or absolute.
+// Inside _includes/hibernate-accessor.adoc, relative paths would resolve from the wrong directory.
+include::{generated-dir}/config/quarkus-hibernate-accessor.adoc[opts=optional, leveloffset=+2]
+
 [[configuration-reference]]
 == Configuration Reference for Hibernate Search with Hibernate ORM
 

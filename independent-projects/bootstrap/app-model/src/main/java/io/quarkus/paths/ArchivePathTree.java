@@ -183,10 +183,22 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     @Override
     public OpenPathTree open() {
+        final ReadOnlyZipFileSystem fs;
         try {
-            return new OpenArchivePathTree(openFs());
+            fs = openFs();
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new UncheckedIOException("Failed to read " + archive, e);
+        }
+        try {
+            return new OpenArchivePathTree(fs);
+        } catch (RuntimeException | Error e) {
+            // the tree could not be created for the file system, make sure it is not leaked
+            try {
+                fs.close();
+            } catch (IOException suppressed) {
+                e.addSuppressed(suppressed);
+            }
+            throw e;
         }
     }
 
@@ -260,6 +272,17 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
         protected ReentrantReadWriteLock.WriteLock writeLock() {
             return lock.writeLock();
+        }
+
+        /**
+         * Returns the number of read locks held by the current thread on this open tree.
+         * A thread that holds a read lock can never acquire the write lock, since
+         * {@link ReentrantReadWriteLock} does not support lock upgrades.
+         *
+         * @return the number of read locks held by the current thread
+         */
+        protected int readHoldCount() {
+            return lock.getReadHoldCount();
         }
 
         @Override
@@ -414,16 +437,19 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         public void close() throws IOException {
             lock.writeLock().lock();
             try {
+                if (!open) {
+                    // Closeable.close() is required to be a no-op once the resource is closed
+                    return;
+                }
                 open = false;
                 rootPath = null;
-                fs.close();
-            } catch (IOException e) {
-                throw e;
-            } finally {
                 // even when we close the fs, everything is kept as is in the fs instance
                 // and typically the cen, which is quite large
                 // let's make sure the fs is nullified for it to be garbage collected
-                fs = null;
+                final ReadOnlyZipFileSystem fs = this.fs;
+                this.fs = null;
+                fs.close();
+            } finally {
                 lock.writeLock().unlock();
             }
         }

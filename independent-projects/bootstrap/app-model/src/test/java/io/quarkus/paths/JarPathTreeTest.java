@@ -1,6 +1,7 @@
 package io.quarkus.paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -243,5 +244,29 @@ public class JarPathTreeTest {
         } finally {
             Thread.interrupted();
         }
+    }
+
+    @Test
+    public void openingAnInvalidArchiveReportsTheArchive() throws Exception {
+        final Path notAJar = Path.of("target/not-a-jar-" + java.util.UUID.randomUUID() + ".jar");
+        Files.createDirectories(notAJar.getParent());
+        Files.writeString(notAJar, "this is not a zip archive");
+        // a non-shared tree, the kind returned when a PathFilter is set
+        // or quarkus.bootstrap.disable-jar-cache=true
+        final ArchivePathTree tree = new ArchivePathTree(notAJar);
+        assertThatThrownBy(tree::open)
+                .isInstanceOf(UncheckedIOException.class)
+                .hasMessageContaining(notAJar.toString());
+    }
+
+    @Test
+    public void doubleCloseIsNoOp() throws Exception {
+        // a non-shared tree, the kind returned when a PathFilter is set
+        // or quarkus.bootstrap.disable-jar-cache=true
+        final ArchivePathTree tree = new ArchivePathTree(root);
+        final OpenPathTree open = tree.open();
+        open.close();
+        assertThatNoException().isThrownBy(open::close);
+        assertThat(open.isOpen()).isFalse();
     }
 }

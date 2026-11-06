@@ -1,6 +1,7 @@
 package io.quarkus.paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -258,6 +259,142 @@ public class SharedArchivePathTreeTest {
         } finally {
             executor.shutdownNow();
         }
+    }
+
+    @Test
+    void cachedInstanceSurvivesOpenCloseCycle() throws Exception {
+        final Path jar = newJarCopy();
+        final PathTree first = PathTree.ofArchive(jar);
+        first.open().close();
+        assertThat(PathTree.ofArchive(jar)).isSameAs(first);
+    }
+
+    @Test
+    void staleReferenceDoesNotOpenSecondFileSystem() throws Exception {
+        final Path jar = newJarCopy();
+        final PathTree first = PathTree.ofArchive(jar);
+        first.open().close();
+        final PathTree second = PathTree.ofArchive(jar);
+        try (OpenPathTree a = first.open(); OpenPathTree b = second.open()) {
+            assertThat(getFileSystem(b)).isSameAs(getFileSystem(a));
+        }
+    }
+
+    @Test
+    void concurrentForPathReturnsSameInstance() throws Exception {
+        final Path jar = newJarCopy();
+        final int threads = 16;
+        final CyclicBarrier barrier = new CyclicBarrier(threads);
+        try (ExecutorService executor = Executors.newFixedThreadPool(threads)) {
+            final List<Future<PathTree>> futures = new ArrayList<>(threads);
+            for (int i = 0; i < threads; i++) {
+                futures.add(executor.submit(() -> {
+                    barrier.await(30, TimeUnit.SECONDS);
+                    return PathTree.ofArchive(jar);
+                }));
+            }
+            final PathTree expected = futures.getFirst().get(30, TimeUnit.SECONDS);
+            for (Future<PathTree> future : futures) {
+                assertThat(future.get(30, TimeUnit.SECONDS)).isSameAs(expected);
+            }
+        }
+    }
+
+    @Test
+    void openHandleResolvesToCachedTree() throws Exception {
+        final Path jar = newJarCopy();
+        PathTree tree = PathTree.ofArchive(jar);
+        try (OpenPathTree handle = tree.open()) {
+            // the handle is the only remaining reference to the tree, and the chain
+            // CallerOpenPathTree -> SharedOpenArchivePathTree -> SharedArchivePathTree.this
+            // that keeps the cache entry reachable is the one getOriginalTree() walks back along
+            tree = null;
+            assertThat(PathTree.ofArchive(jar)).isSameAs(handle.getOriginalTree());
+        }
+    }
+
+    @Test
+    void clearedEntryIsReplaced() throws Exception {
+        final Path jar = newJarCopy();
+        final PathTree first = PathTree.ofArchive(jar);
+        // The seam clears the reference while first is still held, which production never does:
+        // there the tree is unreachable by the time the collector clears it. Only the clearing is
+        // simulated, everything asserted below is the path a genuinely collected entry takes.
+        assertThat(SharedArchivePathTree.clearCachedRef(jar)).isTrue();
+        final PathTree replacement = PathTree.ofArchive(jar);
+        assertThat(replacement).isNotSameAs(first);
+        // the dead entry was purged and the replacement took its place,
+        // rather than being recreated on every call
+        assertThat(PathTree.ofArchive(jar)).isSameAs(replacement);
+        assertThat(replacement.contains("README.md")).isTrue();
+    }
+
+    @Test
+    void closingLastHandleFromInsideOwnReadFails() throws Exception {
+        final Path jar = newJarCopy();
+        final ArchivePathTree tree = new SharedArchivePathTree(jar);
+        // Neither the handle nor the file system is auto-closed here. The handle is closed from
+        // inside the walk below, where it is expected to fail, which already marks it closed for
+        // its caller. The file system is owned by the tree, not by this test, and is released by
+        // the recovering handle at the end.
+        final OpenPathTree handle = tree.open();
+        final FileSystem fs = getFileSystem(handle);
+        final AtomicReference<Throwable> thrown = new AtomicReference<>();
+        handle.walk(visit -> {
+            if (thrown.get() == null) {
+                try {
+                    handle.close();
+                } catch (Throwable t) {
+                    thrown.set(t);
+                }
+            }
+        });
+        assertThat(thrown.get()).isInstanceOf(IllegalStateException.class);
+        // the tree stays open and recoverable: a later user gets the same file system
+        assertThat(fs.isOpen()).isTrue();
+        try (OpenPathTree next = tree.open()) {
+            assertThat(getFileSystem(next)).isSameAs(fs);
+        }
+        assertThat(fs.isOpen()).isFalse();
+    }
+
+    @Test
+    void nestedCloseInsideWalkIsAllowed() throws Exception {
+        final Path jar = newJarCopy();
+        final ArchivePathTree tree = new SharedArchivePathTree(jar);
+        final AtomicReference<Throwable> thrown = new AtomicReference<>();
+        try (OpenPathTree outer = tree.open()) {
+            outer.walk(visit -> {
+                if (thrown.get() == null) {
+                    // a second handle on the same archive, closed while the outer read is in progress
+                    try (OpenPathTree inner = tree.open()) {
+                        assertThat(inner.contains("README.md")).isTrue();
+                    } catch (Throwable t) {
+                        thrown.set(t);
+                    }
+                }
+            });
+            assertThat(thrown.get()).isNull();
+            assertThat(outer.isOpen()).isTrue();
+        }
+    }
+
+    @Test
+    void openingAnInvalidArchiveThrowsUncheckedIOException() throws Exception {
+        final Path notAJar = Path.of("target/not-a-jar-" + UUID.randomUUID() + ".jar");
+        Files.createDirectories(notAJar.getParent());
+        Files.writeString(notAJar, "this is not a zip archive");
+        final ArchivePathTree tree = new SharedArchivePathTree(notAJar);
+        assertThatThrownBy(tree::open)
+                .isInstanceOf(UncheckedIOException.class)
+                .hasMessageContaining(notAJar.toString());
+    }
+
+    private static Path newJarCopy() throws IOException {
+        final Path jar = Path.of("target/shared-" + UUID.randomUUID() + ".jar");
+        Files.createDirectories(jar.getParent());
+        Files.copy(testJar, jar);
+        return jar;
     }
 
     private static FileSystem getFileSystem(OpenPathTree openTree) {

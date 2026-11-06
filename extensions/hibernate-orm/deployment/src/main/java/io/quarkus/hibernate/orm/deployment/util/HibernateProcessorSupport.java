@@ -316,6 +316,10 @@ public final class HibernateProcessorSupport {
                         AvailableSettings.PREFERRED_UUID_JDBC_TYPE,
                         uuid));
 
+        // Java time direct JDBC access
+        desc.getProperties().setProperty(AvailableSettings.JAVA_TIME_USE_DIRECT_JDBC,
+                String.valueOf(config.mapping().javaTime().useDirectJdbc()));
+
         //charset
         desc.getProperties()
                 .setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME, config.database().charset().name());

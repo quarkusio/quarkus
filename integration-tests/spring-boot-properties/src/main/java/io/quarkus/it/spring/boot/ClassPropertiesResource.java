@@ -21,10 +21,4 @@ public class ClassPropertiesResource {
     public boolean isAnotherClassValue() {
         return properties.getAnotherClass().isValue();
     }
-
-    @Path("/interface")
-    @GET
-    public boolean getUrlFromClassWithInterface() {
-        return properties.getAnInterface() == null;
-    }
 }

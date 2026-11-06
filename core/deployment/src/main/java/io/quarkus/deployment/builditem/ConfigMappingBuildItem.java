@@ -13,7 +13,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.configuration.DotNames;
 
 /**
- * Discovered application classes annotated with {@link io.smallrye.config.ConfigMapping}.
+ * Discovered application interfaces annotated with {@link io.smallrye.config.ConfigMapping}.
  * <p>
  * This does not include extension {@link io.smallrye.config.ConfigMapping} classes annotated with
  * {@link io.quarkus.runtime.annotations.ConfigRoot}, which are handled separately by the core configuration

@@ -300,6 +300,12 @@ public class ConfigGenerationBuildStep {
             }
 
             ClassInfo configClass = target.asClass();
+            // Only interfaces are @ConfigMapping roots. A class may also carry the annotation, for instance to set
+            // the naming strategy of a Spring @ConfigurationProperties class or of one of its nested classes, but
+            // such classes are registered by the extension that owns the mapping handler for them.
+            if (!configClass.isInterface()) {
+                continue;
+            }
             // Ignore scanned classes from the quarkus-processor.
             // Usually they are not available in Jandex, but there are cases where extensions have jandex to their
             // own classes, or user applications adding @ConfigRoot to generate documentation.

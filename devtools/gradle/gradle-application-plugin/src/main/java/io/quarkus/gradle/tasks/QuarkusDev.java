@@ -5,7 +5,6 @@ import static io.quarkus.analytics.dto.segment.TrackEventType.DEV_MODE;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -18,7 +17,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Scanner;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -60,6 +58,7 @@ import org.gradle.process.ExecOperations;
 import org.gradle.util.GradleVersion;
 import org.gradle.work.DisableCachingByDefault;
 
+import io.quarkus.analytics.util.InterruptibleLineReader;
 import io.quarkus.analytics.AnalyticsService;
 import io.quarkus.analytics.config.FileLocationsImpl;
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -354,13 +353,10 @@ public abstract class QuarkusDev extends QuarkusTask {
                 new GradleMessageWriter(getLogger()));
         analyticsService.buildAnalyticsUserInput((String prompt) -> {
             System.out.print(prompt);
-            try (Scanner scanner = new Scanner(new FilterInputStream(System.in) {
-                @Override
-                public void close() throws IOException {
-                    //don't close System.in!
-                }
-            })) {
-                return scanner.nextLine();
+            try {
+                // the System.in forwarded by Gradle reports nothing as available, but its reads react to
+                // interrupts: the read must stop when the prompt times out, so the dev mode console gets the input
+                return InterruptibleLineReader.readLineInterruptibly(System.in);
             } catch (Exception e) {
                 getLogger().debug("Failed to collect user input for analytics", e);
                 return "";

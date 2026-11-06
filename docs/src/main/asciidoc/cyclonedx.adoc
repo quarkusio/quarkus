@@ -326,7 +326,7 @@ As in the case of an Uber JAR, runtime components in an SBOM generated for a nat
 
 ==== Embedded SBOM in native executables
 
-When <<embedded-dependency-sboms,SBOM embedding>> is enabled, the SBOM is also embedded directly into the native executable as global symbols (`sbom` and `sbom_length`), following the https://www.graalvm.org/jdk25/security-guide/native-image/sbom/[GraalVM SBOM specification]. This allows tools such as `syft` to extract the SBOM from the binary:
+When <<embedded-dependency-sboms,SBOM embedding>> is enabled, the SBOM is also embedded directly into the native executable as global symbols (`sbom` and `sbom_length`), following the https://www.graalvm.org/{graalvm-docs-version}/security-guide/native-image/sbom/[GraalVM SBOM specification]. This allows tools such as `syft` to extract the SBOM from the binary:
 
 [source,bash]
 ----

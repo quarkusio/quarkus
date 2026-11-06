@@ -9,9 +9,9 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 
 /**
- * Extracts an {@link Order} (multiple sort criteria) from repeating HTTP query parameter {@code sort}.
+ * Extracts an {@link Order} (multiple sort criteria) from repeating HTTP query parameter.
  * <ul>
- * <li>{@code sort} — property name to sort by; prefix with {@code -} for descending.
+ * <li>Query parameter — property name to sort by; prefix with {@code -} for descending.
  * Repeat for multiple criteria. (default: empty {@code Order})</li>
  * </ul>
  * Example: {@code ?sort=name&sort=-salary} produces
@@ -19,10 +19,16 @@ import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
  */
 public class OrderParamExtractor implements ParameterExtractor {
 
+    public final String parameterName;
+
+    public OrderParamExtractor(String parameterName) {
+        this.parameterName = parameterName;
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
-        List<String> values = (List<String>) context.getQueryParameter("sort", false, false);
+        List<String> values = (List<String>) context.getQueryParameter(parameterName, false, false);
         if (values == null || values.isEmpty()) {
             return Order.by();
         }

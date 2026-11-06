@@ -8,18 +8,37 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 
 /**
- * Extracts a {@link Direction} from the HTTP query parameter {@code direction}.
+ * Extracts a {@link Direction} from an HTTP query parameter.
+ * <p>
+ * <b>Parameter naming:</b>
  * <ul>
- * <li>{@code direction} — sort direction, either {@code ASC} or {@code DESC}, case-insensitive
- * (default: {@code null})</li>
+ * <li><b>Default name:</b> {@code "direction"} when not annotated or using bare {@code @RestQuery}</li>
+ * <li><b>Custom name:</b> Uses the value specified in {@code @RestQuery("customName")}</li>
+ * <li><b>Inferred name:</b> Uses the Java parameter name when {@code @RestQuery} or
+ * {@code @RestQuery("")} is used</li>
  * </ul>
- * Example: {@code ?direction=desc} produces {@code Direction.DESC}.
+ * <p>
+ * Query parameter value: {@code ASC} or {@code DESC}, case-insensitive (default: {@code null})
+ * <p>
+ * <b>Examples:</b>
+ *
+ * <pre>
+ * {@code Direction direction}  →  ?direction=DESC
+ * {@code @RestQuery("sortOrder") Direction sortOrder}  →  ?sortOrder=ASC
+ * {@code @RestQuery Direction sortDir}  →  ?sortDir=DESC
+ * </pre>
  */
 public class DirectionParamExtractor implements ParameterExtractor {
 
+    public final String parameterName;
+
+    public DirectionParamExtractor(String parameterName) {
+        this.parameterName = parameterName;
+    }
+
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
-        String value = (String) context.getQueryParameter("direction", true, false);
+        String value = (String) context.getQueryParameter(parameterName, true, false);
         if (value == null) {
             return null;
         }

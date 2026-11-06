@@ -95,7 +95,7 @@ public class KotlinCoroutineIntegrationProcessor {
 
             @Override
             public ParameterExtractor handleCustomParameter(Type paramType, Map<DotName, AnnotationInstance> annotations,
-                    boolean field, Map<String, Object> methodContext) {
+                    boolean field, String sourceName, Map<String, Object> methodContext) {
                 //look for methods that take a Continuation, these are suspendable and need to be handled differently
                 if (paramType.name().equals(CONTINUATION)) {
                     methodContext.put(NAME, true);

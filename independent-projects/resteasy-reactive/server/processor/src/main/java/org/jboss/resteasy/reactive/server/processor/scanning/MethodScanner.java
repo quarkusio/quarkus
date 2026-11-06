@@ -22,7 +22,7 @@ public interface MethodScanner {
      *
      * @param method The method
      * @param actualEndpointClass
-     * @param methodContext Any context discovered by {@link #handleCustomParameter(Type, Map, boolean, Map)}
+     * @param methodContext Any context discovered by {@link #handleCustomParameter(Type, Map, boolean, String, Map)}
      * @return
      */
     default List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
@@ -36,11 +36,12 @@ public interface MethodScanner {
      * @param paramType The parameter type
      * @param annotations The annotations
      * @param field If this is field injection
+     * @param sourceName The Java parameter name (may be null if compiled without -parameters)
      * @param methodContext Context that can be used to pass information into {@link #scan(MethodInfo, ClassInfo, Map)}
      * @return
      */
     default ParameterExtractor handleCustomParameter(Type paramType, Map<DotName, AnnotationInstance> annotations,
-            boolean field, Map<String, Object> methodContext) {
+            boolean field, String sourceName, Map<String, Object> methodContext) {
         return null;
     }
 

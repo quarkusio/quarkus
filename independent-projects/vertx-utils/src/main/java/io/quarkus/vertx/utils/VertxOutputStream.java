@@ -208,7 +208,13 @@ public class VertxOutputStream extends OutputStream {
             } else {
                 final Optional<String> contentLength = context.getContentLength();
                 if (contentLength.isEmpty()) {
-                    response.setChunked(true);
+                    // The response may already carry a Content-Length header even though the context
+                    // does not report one (e.g. when a WriterInterceptor committed the headers early).
+                    // Do not enable chunked encoding in that case: RFC 9112 forbids sending both
+                    // Content-Length and Transfer-Encoding.
+                    if (!response.headers().contains(HttpHeaderNames.CONTENT_LENGTH)) {
+                        response.setChunked(true);
+                    }
                 } else {
                     /* Pass the content length value from the framework writing into this stream */
                     response.headers().set(HttpHeaderNames.CONTENT_LENGTH, contentLength.get());

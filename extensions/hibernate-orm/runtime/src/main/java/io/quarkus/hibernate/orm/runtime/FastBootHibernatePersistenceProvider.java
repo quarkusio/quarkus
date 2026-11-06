@@ -374,8 +374,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
     public static boolean isPostgresOrDB2(BuildTimeSettings buildTimeSettings) {
         Optional<String> dbKind = buildTimeSettings.getSource().getSupportedDBkind();
-        return dbKind.isPresent() && DatabaseKind.isPostgreSQL(dbKind.toString())
-                || DatabaseKind.isDB2(dbKind.toString());
+        return dbKind.isPresent() && (DatabaseKind.isPostgreSQL(dbKind.get())
+                || DatabaseKind.isDB2(dbKind.get()));
     }
 
     private List<SchemaToolingUtil.PreparedImportScripts> unzipZipFilesAndReplaceZipsInImportFiles(

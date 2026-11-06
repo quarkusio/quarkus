@@ -133,7 +133,7 @@ Available options are as follows: +
 Available options: +
 * https://github.com/lz4/lz4[LZ4] +
 * https://zlib.net/[ZLIB] +
-* https://facebook.github.io/zstd/[ZSTD] +
+* https://meta.github.io/zstd/[ZSTD] +
 * https://google.github.io/snappy/[SNAPPY]
 |CompressionType
 |true

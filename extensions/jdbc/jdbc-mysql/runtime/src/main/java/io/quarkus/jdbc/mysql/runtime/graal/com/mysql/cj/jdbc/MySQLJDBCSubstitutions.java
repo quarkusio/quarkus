@@ -1,8 +1,14 @@
 package io.quarkus.jdbc.mysql.runtime.graal.com.mysql.cj.jdbc;
 
 import java.sql.SQLException;
+import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 
+import com.mysql.cj.Messages;
 import com.mysql.cj.exceptions.ExceptionFactory;
+import com.mysql.cj.telemetry.TelemetryHandler;
+import com.mysql.cj.telemetry.TelemetrySpan;
+import com.mysql.cj.telemetry.TelemetrySpanName;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
@@ -65,6 +71,49 @@ final class ReplicationConnectionGroupManager {
         throw new IllegalStateException("Not Implemented in native mode");
     }
 
+}
+
+@TargetClass(className = "com.mysql.cj.otel.OpenTelemetryHandler", onlyWith = OpenTelemetryUnavailable.class)
+final class OpenTelemetryHandler implements TelemetryHandler {
+
+    @Substitute
+    public OpenTelemetryHandler() {
+        throw ExceptionFactory.createException(Messages.getString("Connection.OtelApiNotFound"));
+    }
+
+    @Override
+    @Substitute
+    public TelemetrySpan startSpan(TelemetrySpanName telemetrySpanName, Object... objects) {
+        return null;
+    }
+
+    @Override
+    @Substitute
+    public void addLinkTarget(TelemetrySpan span) {
+    }
+
+    @Override
+    @Substitute
+    public void removeLinkTarget(TelemetrySpan span) {
+    }
+
+    @Override
+    @Substitute
+    public void propagateContext(BiConsumer<String, String> traceparentConsumer) {
+    }
+}
+
+final class OpenTelemetryUnavailable implements BooleanSupplier {
+
+    @Override
+    public boolean getAsBoolean() {
+        try {
+            Class.forName("io.opentelemetry.api.GlobalOpenTelemetry");
+            return false;
+        } catch (ClassNotFoundException e) {
+            return true;
+        }
+    }
 }
 
 class MySQLJDBCSubstitutions {

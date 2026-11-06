@@ -519,6 +519,48 @@ public class PathMatcherTest {
         assertNotMatched(matcher, "/1/one/two");
     }
 
+    @Test
+    public void testRootPathLinkedWithRelativePath() {
+        final ImmutablePathMatcher<Object> matcher = ImmutablePathMatcher.builder().rootPath("/root")
+                .addPath("service", HANDLER).build();
+        assertMatched(matcher, "/root/service");
+        assertNotMatched(matcher, "/rootservice");
+        assertNotMatched(matcher, "/service");
+    }
+
+    @Test
+    public void testRootPathNotLinkedWithAbsolutePath() {
+        // the path that starts with a path separator is used as-is
+        final ImmutablePathMatcher<Object> matcher = ImmutablePathMatcher.builder().rootPath("/root")
+                .addPath("/service", HANDLER).build();
+        assertMatched(matcher, "/service");
+        assertNotMatched(matcher, "/root/service");
+    }
+
+    @Test
+    public void testRootPathWithTrailingSlash() {
+        final ImmutablePathMatcher<Object> matcher = ImmutablePathMatcher.builder().rootPath("/root/")
+                .addPath("service", HANDLER).build();
+        assertMatched(matcher, "/root/service");
+        assertNotMatched(matcher, "/root//service");
+    }
+
+    @Test
+    public void testRootPathLinkedWithRelativeWildcardPath() {
+        final ImmutablePathMatcher<Object> matcher = ImmutablePathMatcher.builder().rootPath("/root")
+                .addPath("service/*", HANDLER).build();
+        assertMatched(matcher, "/root/service");
+        assertMatched(matcher, "/root/service/sub");
+        assertNotMatched(matcher, "/rootservice");
+        assertNotMatched(matcher, "/service");
+    }
+
+    @Test
+    public void testRelativePathWithoutRootPath() {
+        var builder = ImmutablePathMatcher.builder();
+        assertThrows(IllegalArgumentException.class, () -> builder.addPath("service", HANDLER));
+    }
+
     private static void assertMatched(ImmutablePathMatcher<Object> matcher, String path, Object handler) {
         var match = matcher.match(path);
         assertEquals(handler, match.getValue());

@@ -71,6 +71,12 @@ description: >
 - Use JBoss Logging (`org.jboss.logging.Logger`) as the logging API
 - Do NOT use `System.out.println` or `System.err.println`
 - Do NOT use SLF4J, java.util.logging, or Log4j directly in Quarkus core/extension code
+- Log a message once, for example at startup or in the constructor.
+  Do not log it on each request, poll or live reload.
+- Use `WARN` only for a problem that the user must act on, and make sure that
+  a correct configuration never triggers it. A `DEBUG` message is not a
+  replacement for a warning, because nobody sees it.
+- Keep the existing log lines that your change does not make wrong.
 
 ## Extension Descriptions
 

@@ -94,6 +94,16 @@ as CDI beans.
 - Config interfaces: `<Feature>Config.java`, or split as
   `<Feature>BuildTimeConfig.java` / `<Feature>RuntimeConfig.java`
 - Config prefix: `quarkus.<extension-name>`
+- Before you add a key, read the keys next to it and use the same form.
+- Name the thing that the key configures, in full words:
+  `index-directories`, not `dir-mode`. An enum value carries the action:
+  `quarkus.http.insecure-requests=enabled|redirect|disabled`.
+- Use a `-mode` suffix only when the key copies a term of an external
+  system, such as the OIDC `response_mode`.
+- When the key maps to a term of a tool that users know, such as Docker or
+  Hibernate ORM, use that term and that default value.
+- The method name gives the key: `indexDirectories()` becomes
+  `index-directories`. A rename changes the method, the docs and the tests.
 
 ## Annotation Processor (`quarkus-extension-processor`)
 
@@ -136,6 +146,10 @@ metadata, verify the annotation processor is present in its `pom.xml`.
 - Use `RUN_TIME` phase unless the config genuinely affects build-time behavior
 - Do NOT access `RUN_TIME` config during build steps — it is not available yet
 - `BUILD_TIME` config changes require a rebuild
+- When the code cannot apply a configured value, fail at startup with a
+  message that names the property, or log one warning. Never ignore the
+  value without a message. Examples: a TLS option that the client does not
+  support, a runtime value that a reload does not apply.
 - When adding new `quarkus.*` properties, always register them in a
   `@ConfigMapping` interface. Reading them programmatically via
   `Config.get().getOptionalValue(...)` is fine, but the

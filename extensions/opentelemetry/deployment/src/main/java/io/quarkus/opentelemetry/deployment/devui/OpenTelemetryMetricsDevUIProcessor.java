@@ -16,6 +16,7 @@ import io.quarkus.devui.spi.observability.MetricsBackendBuildItem;
 import io.quarkus.opentelemetry.deployment.OpenTelemetryEnabled;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.exporter.OtlpExporterBuildConfig;
+import io.quarkus.opentelemetry.runtime.devui.DevUiMetricsReaderProducer;
 import io.quarkus.opentelemetry.runtime.devui.DevUiMetricsSdkBuilderCustomizer;
 
 /**
@@ -36,8 +37,10 @@ public class OpenTelemetryMetricsDevUIProcessor {
         if (!oTelBuildConfig.metrics().enabled().orElse(Boolean.TRUE)) {
             return;
         }
+        // One bean per SDK initialization engine: the reader producer for the declarative path, the internal
+        // SDK builder customizer for the legacy path.
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClasses(DevUiMetricsSdkBuilderCustomizer.class)
+                .addBeanClasses(DevUiMetricsReaderProducer.class, DevUiMetricsSdkBuilderCustomizer.class)
                 .setDefaultScope(DotNames.SINGLETON)
                 .setUnremovable()
                 .build());

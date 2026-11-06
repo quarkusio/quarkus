@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.trace.data.LinkData;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.sdk.trace.samplers.SamplingResult;
@@ -77,6 +78,12 @@ public class DropTargetsSampler implements Sampler {
 
     private boolean containsExactly(String target) {
         return dropTargetsExact.contains(target);
+    }
+
+    @Override
+    public CompletableResultCode shutdown() {
+        // The wrapped sampler may hold resources (Sampler.shutdown() exists since OpenTelemetry 1.65).
+        return sampler.shutdown();
     }
 
     @Override

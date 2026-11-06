@@ -18,7 +18,7 @@ public enum SamplerType {
         return value;
     }
 
-    static class Constants {
+    public static class Constants {
         public static final String ALWAYS_ON = "always_on";
         public static final String ALWAYS_OFF = "always_off";
         public static final String TRACE_ID_RATIO = "traceidratio";

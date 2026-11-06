@@ -91,6 +91,44 @@ implementation("io.quarkus:quarkus-opentelemetry")
 :opentelemetry-config:
 include::{includes}/opentelemetry-config.adoc[]
 
+=== How the SDK is initialized
+
+Quarkus initializes the OpenTelemetry SDK from the
+https://opentelemetry.io/docs/languages/java/configuration/#declarative-configuration[OpenTelemetry declarative configuration]
+model. The model is built in memory from the resolved `quarkus.otel.*` configuration: no configuration file is
+read, and the `otel.config.file` / `OTEL_CONFIG_FILE` file-based configuration is not supported.
+
+The SDK can be customized through CDI beans of the OpenTelemetry component types, which replace or extend what the
+configuration describes:
+
+* `io.opentelemetry.sdk.trace.samplers.Sampler` (replaces the configured sampler)
+* `io.opentelemetry.sdk.trace.IdGenerator`
+* `io.opentelemetry.sdk.trace.SpanProcessor` (added after the configured processors)
+* `io.opentelemetry.sdk.metrics.export.MetricReader` (added after the configured readers)
+* `io.opentelemetry.sdk.resources.Resource` (merged into the SDK resource)
+* `io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer`
+* `SpanExporter`, `MetricExporter` and `LogRecordExporter` beans, used by the default `cdi` exporter
+
+For compatibility with MicroProfile Telemetry, the OpenTelemetry autoconfigure ServiceLoader SPIs (such as
+`ResourceProvider` and the `Configurable*Provider` interfaces) also remain honored, in JVM and native mode. Prefer
+the CDI beans above for new code.
+
+Applications that still provide a bean implementing the deprecated
+`io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer` interface keep working: while
+such a bean is present, the SDK is initialized through the legacy `AutoConfiguredOpenTelemetrySdk` path instead of
+the declarative configuration model, and the build logs a deprecation warning naming the implementations. Migrate
+them to the CDI beans above; the interface and the legacy initialization path are scheduled for removal.
+
+=== MicroProfile Telemetry property names
+
+Configuration property names follow the
+https://opentelemetry.io/docs/languages/java/configuration/[OpenTelemetry SDK Autoconfigure] names with the
+`quarkus.` prefix. The bare `otel.*` names required by MicroProfile Telemetry are honored when
+`quarkus.otel.mp.compatibility=true` is set, in which case an `otel.*` value from the application's configuration
+overrides its `quarkus.otel.*` counterpart; without that property, the `quarkus.otel.*` value wins. Independently
+of that setting, bare `otel.*` system properties and `OTEL_*` environment variables always take precedence (system
+properties over environment variables), as they do for a standalone OpenTelemetry SDK.
+
 === Disable all or parts of the OpenTelemetry extension
 
 Once you add the dependency, the extension will generate tracing, metrics and logging data by default. To disable the OpenTelemetry extension globally or partially these are the properties to use (they are extracted from the config reference below):

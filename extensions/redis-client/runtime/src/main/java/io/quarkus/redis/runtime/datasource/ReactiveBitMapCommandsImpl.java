@@ -3,7 +3,6 @@ package io.quarkus.redis.runtime.datasource;
 import java.lang.reflect.Type;
 import java.util.List;
 
-import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.bitmap.BitFieldArgs;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
@@ -11,7 +10,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.redis.client.Response;
 
 public class ReactiveBitMapCommandsImpl<K> extends AbstractBitMapCommands<K>
-        implements ReactiveBitMapCommands<K>, ReactiveRedisCommands {
+        implements ReactiveBitMapCommands<K> {
 
     private final ReactiveRedisDataSource reactive;
 

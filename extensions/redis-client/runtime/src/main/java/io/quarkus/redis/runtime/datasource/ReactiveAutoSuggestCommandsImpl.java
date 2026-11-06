@@ -4,7 +4,6 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.autosuggest.GetArgs;
 import io.quarkus.redis.datasource.autosuggest.ReactiveAutoSuggestCommands;
@@ -13,7 +12,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.redis.client.Response;
 
 public class ReactiveAutoSuggestCommandsImpl<K> extends AbstractAutoSuggestCommands<K>
-        implements ReactiveAutoSuggestCommands<K>, ReactiveRedisCommands {
+        implements ReactiveAutoSuggestCommands<K> {
 
     private final ReactiveRedisDataSource reactive;
 

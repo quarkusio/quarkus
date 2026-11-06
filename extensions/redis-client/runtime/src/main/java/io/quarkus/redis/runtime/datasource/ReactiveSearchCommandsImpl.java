@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.search.AggregateArgs;
 import io.quarkus.redis.datasource.search.AggregateDocument;
@@ -28,7 +27,7 @@ import io.vertx.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
 
 public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>
-        implements ReactiveSearchCommands<K>, ReactiveRedisCommands {
+        implements ReactiveSearchCommands<K> {
 
     private final ReactiveRedisDataSource reactive;
     protected final Type keyType;

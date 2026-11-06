@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.stream.ClaimedMessages;
 import io.quarkus.redis.datasource.stream.PendingMessage;
@@ -28,7 +27,7 @@ import io.vertx.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
 
 public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<K, F, V>
-        implements ReactiveStreamCommands<K, F, V>, ReactiveRedisCommands {
+        implements ReactiveStreamCommands<K, F, V> {
 
     private final ReactiveRedisDataSource reactive;
     private final Type typeOfValue;

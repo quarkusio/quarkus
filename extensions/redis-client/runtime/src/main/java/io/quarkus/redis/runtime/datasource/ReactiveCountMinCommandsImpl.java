@@ -6,14 +6,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.countmin.ReactiveCountMinCommands;
 import io.smallrye.mutiny.Uni;
 import io.vertx.redis.client.Response;
 
 public class ReactiveCountMinCommandsImpl<K, V> extends AbstractCountMinCommands<K, V>
-        implements ReactiveCountMinCommands<K, V>, ReactiveRedisCommands {
+        implements ReactiveCountMinCommands<K, V> {
 
     private final ReactiveRedisDataSource reactive;
 

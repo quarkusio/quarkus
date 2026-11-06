@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.timeseries.AddArgs;
 import io.quarkus.redis.datasource.timeseries.Aggregation;
@@ -29,7 +28,7 @@ import io.vertx.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
 
 public class ReactiveTimeSeriesCommandsImpl<K> extends AbstractTimeSeriesCommands<K>
-        implements ReactiveTimeSeriesCommands<K>, ReactiveRedisCommands {
+        implements ReactiveTimeSeriesCommands<K> {
 
     private final ReactiveRedisDataSource reactive;
     protected final Type keyType;

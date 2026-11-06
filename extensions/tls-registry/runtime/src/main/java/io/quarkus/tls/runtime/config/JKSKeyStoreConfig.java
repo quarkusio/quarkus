@@ -10,8 +10,18 @@ public interface JKSKeyStoreConfig {
 
     /**
      * Path to the keystore file (JKS format).
+     * <p>
+     * Either this property or {@code value} must be set.
      */
-    Path path();
+    Optional<Path> path();
+
+    /**
+     * Content of the keystore (JKS format), encoded in base64.
+     * Use it to pass the keystore inline (for example, from an environment variable) instead of reading it from a file.
+     * <p>
+     * Either this property or {@code path} must be set.
+     */
+    Optional<String> value();
 
     /**
      * Password of the key store.

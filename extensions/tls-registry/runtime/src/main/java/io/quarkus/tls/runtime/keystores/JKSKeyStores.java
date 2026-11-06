@@ -1,8 +1,7 @@
 package io.quarkus.tls.runtime.keystores;
 
-import static io.quarkus.tls.runtime.config.TlsConfigUtils.read;
+import static io.quarkus.tls.runtime.config.TlsConfigUtils.readStore;
 
-import java.io.UncheckedIOException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -55,8 +54,8 @@ public class JKSKeyStores {
     private static JksOptions toOptions(JKSKeyStoreConfig config,
             KeyStoreCredentialProviderConfig keyStoreCredentialProviderConfig, String name) {
         JksOptions options = new JksOptions();
+        options.setValue(Buffer.buffer(readStore(config.path(), config.value(), "JKS key store", name)));
         try {
-            options.setValue(Buffer.buffer(read(config.path())));
             String p = CredentialProviders.getKeyStorePassword(config.password(), keyStoreCredentialProviderConfig)
                     .orElse(null);
             if (p == null) {
@@ -71,9 +70,6 @@ public class JKSKeyStores {
                     .orElse(null);
             options.setAliasPassword(ap);
             return options;
-        } catch (UncheckedIOException e) {
-            throw new IllegalStateException("Invalid JKS key store configuration for certificate '" + name
-                    + "' - cannot read the key store file '" + config.path() + "'", e);
         } catch (Exception e) {
             throw new IllegalStateException("Invalid JKS key store configuration for certificate '" + name + "'", e);
         }
@@ -82,8 +78,8 @@ public class JKSKeyStores {
     private static JksOptions toOptions(JKSTrustStoreConfig config,
             TrustStoreCredentialProviderConfig trustStoreCredentialProviderConfig, String name) {
         JksOptions options = new JksOptions();
+        options.setValue(Buffer.buffer(readStore(config.path(), config.value(), "JKS trust store", name)));
         try {
-            options.setValue(Buffer.buffer(read(config.path())));
             String password = CredentialProviders.getTrustStorePassword(config.password(), trustStoreCredentialProviderConfig)
                     .orElse(null);
             if (password == null) {
@@ -94,9 +90,6 @@ public class JKSKeyStores {
             if (config.alias().isPresent()) {
                 options.setAlias(config.alias().get());
             }
-        } catch (UncheckedIOException e) {
-            throw new IllegalStateException("Invalid JKS trust store configuration for certificate '" + name
-                    + "' - cannot read the trust store file '" + config.path() + "'", e);
         } catch (Exception e) {
             throw new IllegalStateException("Invalid JKS trust store configuration for certificate '" + name + "'", e);
         }

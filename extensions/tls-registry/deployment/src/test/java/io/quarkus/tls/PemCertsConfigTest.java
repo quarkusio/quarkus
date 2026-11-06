@@ -28,6 +28,11 @@ class PemCertsConfigTest {
     private static final String TEMP_CERT_PREFIX = "PemCertsConfigTest";
 
     private record PemCertsConfigImpl(Optional<List<Path>> certs, Optional<List<Path>> certDirs) implements PemCertsConfig {
+
+        @Override
+        public Optional<List<String>> certValues() {
+            return Optional.empty();
+        }
     }
 
     @Test

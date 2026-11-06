@@ -10,8 +10,18 @@ public interface P12TrustStoreConfig {
 
     /**
      * Path to the trust store file (P12 / PFX format).
+     * <p>
+     * Either this property or {@code value} must be set.
      */
-    Path path();
+    Optional<Path> path();
+
+    /**
+     * Content of the trust store (P12 / PFX format), encoded in base64.
+     * Use it to pass the trust store inline (for example, from an environment variable) instead of reading it from a file.
+     * <p>
+     * Either this property or {@code path} must be set.
+     */
+    Optional<String> value();
 
     /**
      * Password of the trust store.

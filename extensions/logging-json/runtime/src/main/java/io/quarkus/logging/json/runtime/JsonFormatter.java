@@ -7,6 +7,8 @@ import static io.quarkus.logging.json.runtime.JsonLogConfig.AdditionalFieldConfi
 import static java.util.Optional.ofNullable;
 
 import java.io.Writer;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,6 +19,10 @@ import java.util.Map;
 import java.util.Set;
 
 import jakarta.enterprise.inject.spi.CDI;
+import jakarta.json.Json;
+import jakarta.json.JsonValue;
+import jakarta.json.stream.JsonGenerator;
+import jakarta.json.stream.JsonGeneratorFactory;
 
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.ExtLogRecord;
@@ -43,6 +49,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
     private boolean structuredAccessLog = false;
     private List<JsonProvider> discoveredProviders = Collections.emptyList();
     private volatile List<JsonProvider> jsonProviders;
+    private volatile JsonGeneratorFactory jsonGeneratorFactory;
 
     public enum AdditionalKey {
         ECS_VERSION("ecs.version"),
@@ -162,8 +169,35 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
     }
 
     @Override
+    public void setPrettyPrint(final boolean prettyPrint) {
+        super.setPrettyPrint(prettyPrint);
+        // recreated lazily in createGenerator(), see getJsonGeneratorFactory()
+        this.jsonGeneratorFactory = null;
+    }
+
+    /**
+     * Returns the factory used to create the underlying {@link JsonGenerator}.
+     * <p>
+     * Unlike jboss-logmanager, the generator is created from a factory owned by this class:
+     * the jboss-logmanager {@code Generator} only exposes keyed writes, while jakarta.json
+     * rejects a key inside a JSON array. Owning the generator allows {@link JsonLogGenerator}
+     * to write keyless array elements.
+     */
+    private JsonGeneratorFactory getJsonGeneratorFactory() {
+        JsonGeneratorFactory factory = this.jsonGeneratorFactory;
+        if (factory == null) {
+            final Map<String, Object> config = new HashMap<>();
+            if (isPrettyPrint()) {
+                config.put(JsonGenerator.PRETTY_PRINTING, true);
+            }
+            factory = Json.createGeneratorFactory(config);
+            this.jsonGeneratorFactory = factory;
+        }
+        return factory;
+    }
+
+    @Override
     protected Generator createGenerator(final Writer writer) {
-        Generator superGenerator = super.createGenerator(writer);
         // In ECS mode, pass the resolved stack trace key so the generator can strip
         // the leading ": " that jboss's StackTraceFormatter unconditionally prepends
         // to the rendered stack trace string.
@@ -171,8 +205,8 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         // from the full JVM path (e.g. /usr/lib/jvm/.../bin/java → java).
         String stackTraceKeyToTrim = logFormat.equals(LogFormat.ECS) ? getKey(Key.STACK_TRACE) : null;
         String processNameKey = logFormat.equals(LogFormat.ECS) ? getKey(Key.PROCESS_NAME) : null;
-        return new FormatterJsonGenerator(superGenerator, this.excludedKeys, stackTraceKeyToTrim, processNameKey, this.flatMdc,
-                this.mdcKeyOverrides, this.structuredAccessLog);
+        return new FormatterJsonGenerator(getJsonGeneratorFactory().createGenerator(writer), this.excludedKeys,
+                stackTraceKeyToTrim, processNameKey, this.flatMdc, this.mdcKeyOverrides, this.structuredAccessLog);
     }
 
     @Override
@@ -375,6 +409,10 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
      * A JSON generator for use with {@link JsonProvider}.
      * Writes JSON fields for the current log record, respecting any keys configured via
      * {@code quarkus.log.*.json.excluded-keys}.
+     * <p>
+     * Inside an array started with {@link #startArray(String)}, elements are written with the
+     * keyless {@code add(...)} overloads, e.g. {@code generator.add(value)}, since JSON array
+     * elements carry no key.
      */
     public static final class JsonLogGenerator {
 
@@ -389,6 +427,87 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
         private boolean isExcluded(final String key) {
             return key != null && excludedKeys.contains(key);
+        }
+
+        /**
+         * Returns the generator created by {@link JsonFormatter}, which — unlike the
+         * jboss-logmanager {@code Generator} — supports keyless writes.
+         */
+        private FormatterJsonGenerator keylessDelegate() {
+            if (delegate instanceof FormatterJsonGenerator formatterGenerator) {
+                return formatterGenerator;
+            }
+            throw new IllegalStateException("Keyless array elements require the generator created by JsonFormatter");
+        }
+
+        /**
+         * Writes a keyless boolean array element. Must be called inside an array started
+         * with {@link #startArray(String)}.
+         */
+        public JsonLogGenerator add(final boolean value) throws Exception {
+            if (skippedDepth == 0) {
+                keylessDelegate().add(value);
+            }
+            return this;
+        }
+
+        /**
+         * Writes a keyless int array element. Must be called inside an array started
+         * with {@link #startArray(String)}.
+         */
+        public JsonLogGenerator add(final int value) throws Exception {
+            if (skippedDepth == 0) {
+                keylessDelegate().add(value);
+            }
+            return this;
+        }
+
+        /**
+         * Writes a keyless long array element. Must be called inside an array started
+         * with {@link #startArray(String)}.
+         */
+        public JsonLogGenerator add(final long value) throws Exception {
+            if (skippedDepth == 0) {
+                keylessDelegate().add(value);
+            }
+            return this;
+        }
+
+        /**
+         * Writes a keyless string array element. Must be called inside an array started
+         * with {@link #startArray(String)}.
+         */
+        public JsonLogGenerator add(final String value) throws Exception {
+            if (skippedDepth == 0) {
+                keylessDelegate().add(value);
+            }
+            return this;
+        }
+
+        /**
+         * Starts a keyless object; must be called inside an array started with
+         * {@link #startArray(String)}.
+         */
+        public JsonLogGenerator startObject() throws Exception {
+            if (skippedDepth > 0) {
+                skippedDepth++;
+            } else {
+                delegate.startObject(null);
+            }
+            return this;
+        }
+
+        /**
+         * Starts a keyless array; must be called inside an array started with
+         * {@link #startArray(String)}.
+         */
+        public JsonLogGenerator startArray() throws Exception {
+            if (skippedDepth > 0) {
+                skippedDepth++;
+            } else {
+                delegate.startArray(null);
+            }
+            return this;
         }
 
         public JsonLogGenerator add(final String key, final boolean value) throws Exception {
@@ -465,7 +584,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
     private static final class FormatterJsonGenerator implements Generator {
 
-        private final Generator delegate;
+        private final JsonGenerator generator;
         private final Set<String> excludedKeys;
         /**
          * When non-null, values written under this key will have a leading {@code ": "} stripped.
@@ -485,10 +604,10 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         private final boolean structuredAccessLog;
         private int skippedDepth = 0;
 
-        private FormatterJsonGenerator(final Generator delegate, final Set<String> excludedKeys,
+        private FormatterJsonGenerator(final JsonGenerator generator, final Set<String> excludedKeys,
                 final String stackTraceKeyToTrim, final String processNameKey, final boolean flatMdc,
                 final Map<String, String> mdcKeyOverrides, final boolean structuredAccessLog) {
-            this.delegate = delegate;
+            this.generator = generator;
             this.excludedKeys = excludedKeys;
             this.stackTraceKeyToTrim = stackTraceKeyToTrim;
             this.processNameKey = processNameKey;
@@ -505,16 +624,60 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
             return key != null && excludedKeys.contains(key);
         }
 
+        /**
+         * Writes a keyless boolean array element. jakarta.json requires keyless writes
+         * inside JSON arrays.
+         */
+        public Generator add(final boolean value) throws Exception {
+            if (skippedDepth == 0) {
+                generator.write(value);
+            }
+            return this;
+        }
+
+        /**
+         * Writes a keyless int array element. jakarta.json requires keyless writes
+         * inside JSON arrays.
+         */
+        public Generator add(final int value) throws Exception {
+            if (skippedDepth == 0) {
+                generator.write(value);
+            }
+            return this;
+        }
+
+        /**
+         * Writes a keyless long array element. jakarta.json requires keyless writes
+         * inside JSON arrays.
+         */
+        public Generator add(final long value) throws Exception {
+            if (skippedDepth == 0) {
+                generator.write(value);
+            }
+            return this;
+        }
+
+        /**
+         * Writes a keyless string array element. jakarta.json requires keyless writes
+         * inside JSON arrays.
+         */
+        public Generator add(final String value) throws Exception {
+            if (skippedDepth == 0) {
+                generator.write(value);
+            }
+            return this;
+        }
+
         @Override
         public Generator begin() throws Exception {
-            delegate.begin();
+            generator.writeStartObject();
             return this;
         }
 
         @Override
         public Generator add(final String key, final int value) throws Exception {
             if (skippedDepth == 0 && !isExcluded(key)) {
-                delegate.add(key, value);
+                generator.write(key, value);
             }
             return this;
         }
@@ -522,7 +685,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         @Override
         public Generator add(final String key, final long value) throws Exception {
             if (skippedDepth == 0 && !isExcluded(key)) {
-                delegate.add(key, value);
+                generator.write(key, value);
             }
             return this;
         }
@@ -540,7 +703,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
                         }
                         Object v = entry.getValue();
                         if (v != null) {
-                            delegate.add(mdcKey(entry.getKey()), v.toString());
+                            generator.write(mdcKey(entry.getKey()), v.toString());
                         }
                     }
                 } else if (!flatMdc) {
@@ -554,10 +717,10 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
                             }
                         }
                         if (!rewritten.isEmpty()) {
-                            delegate.add(key, rewritten);
+                            writeObjectMap(key, rewritten);
                         }
                     } else {
-                        delegate.add(key, value);
+                        writeObjectMap(key, value);
                     }
                 }
             }
@@ -579,7 +742,11 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
                         && value != null && value.contains("/")) {
                     actual = value.substring(value.lastIndexOf('/') + 1);
                 }
-                delegate.add(key, actual);
+                if (actual == null) {
+                    generator.writeNull(key);
+                } else {
+                    generator.write(key, actual);
+                }
             }
             return this;
         }
@@ -588,8 +755,10 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         public Generator startObject(final String key) throws Exception {
             if (skippedDepth > 0 || isExcluded(key)) {
                 skippedDepth++;
+            } else if (key == null) {
+                generator.writeStartObject();
             } else {
-                delegate.startObject(key);
+                generator.writeStartObject(key);
             }
             return this;
         }
@@ -599,7 +768,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
             if (skippedDepth > 0) {
                 skippedDepth--;
             } else {
-                delegate.endObject();
+                generator.writeEnd();
             }
             return this;
         }
@@ -608,8 +777,10 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         public Generator startArray(final String key) throws Exception {
             if (skippedDepth > 0 || isExcluded(key)) {
                 skippedDepth++;
+            } else if (key == null) {
+                generator.writeStartArray();
             } else {
-                delegate.startArray(key);
+                generator.writeStartArray(key);
             }
             return this;
         }
@@ -619,15 +790,61 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
             if (skippedDepth > 0) {
                 skippedDepth--;
             } else {
-                delegate.endArray();
+                generator.writeEnd();
             }
             return this;
         }
 
         @Override
         public Generator end() throws Exception {
-            delegate.end();
+            generator.writeEnd(); // end record
+            generator.flush();
+            generator.close();
             return this;
+        }
+
+        /**
+         * Writes the given map as an object, mirroring jboss-logmanager's handling of
+         * {@code add(key, map)}.
+         */
+        private void writeObjectMap(final String key, final Map<String, ?> value) throws Exception {
+            generator.writeStartObject(key);
+            if (value != null) {
+                for (Map.Entry<String, ?> entry : value.entrySet()) {
+                    writeObject(entry.getKey(), entry.getValue());
+                }
+            }
+            generator.writeEnd();
+        }
+
+        private void writeObject(final String key, final Object obj) throws Exception {
+            switch (obj) {
+                case Boolean value when key == null -> generator.write(value);
+                case Boolean value -> generator.write(key, value);
+                case Integer value when key == null -> generator.write(value);
+                case Integer value -> generator.write(key, value);
+                case Long value when key == null -> generator.write(value);
+                case Long value -> generator.write(key, value);
+                case Double value when key == null -> generator.write(value);
+                case Double value -> generator.write(key, value);
+                case BigInteger value when key == null -> generator.write(value);
+                case BigInteger value -> generator.write(key, value);
+                case BigDecimal value when key == null -> generator.write(value);
+                case BigDecimal value -> generator.write(key, value);
+                case String value when key == null -> generator.write(value);
+                case String value -> generator.write(key, value);
+                case JsonValue value when key == null -> generator.write(value);
+                case JsonValue value -> generator.write(key, value);
+                case Object value when key == null -> generator.write(String.valueOf(value));
+                case Object value -> generator.write(key, String.valueOf(value));
+                case null -> {
+                    if (key == null) {
+                        generator.writeNull();
+                    } else {
+                        generator.writeNull(key);
+                    }
+                }
+            }
         }
     }
 }

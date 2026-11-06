@@ -117,10 +117,12 @@ public class ConsoleJsonFormatterJsonProviderExcludedKeyTest {
 
         @Override
         public void writeTo(JsonLogGenerator generator, ExtLogRecord record) throws Exception {
-            // "tags" is in excluded-keys — the entire array should be filtered
+            // "tags" is in excluded-keys — the entire array should be filtered,
+            // including keyless elements
             generator.startArray("tags")
                     .add("env", "production")
                     .add("region", "us-east-1")
+                    .add("secret-tag")
                     .endArray();
             generator.add("customfield", "present");
         }

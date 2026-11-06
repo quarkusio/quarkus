@@ -1,6 +1,5 @@
 package io.quarkus.mailer.runtime;
 
-import java.util.Optional;
 import java.util.concurrent.CompletionException;
 
 import javax.net.ssl.SSLHandshakeException;
@@ -14,12 +13,8 @@ public class MailerTruststoreTest extends FakeSmtpTestBase {
 
     @Test
     public void sendMailWithGlobalTrustAll() {
-        MailersRuntimeConfig mailersConfig = new DefaultMailersRuntimeConfig(new DefaultMailerRuntimeConfig() {
-            @Override
-            public Optional<Boolean> tls() {
-                return Optional.of(true);
-            }
-        });
+        MailersRuntimeConfig mailersConfig = mailersRuntimeConfig(defaultMailerRuntimeConfig()
+                .withOptional(MailerRuntimeConfig::tls, true));
         ReactiveMailer mailer = getMailer(mailersConfig, true);
         startServer(SERVER_JKS);
         mailer.send(getMail()).await().indefinitely();
@@ -27,12 +22,8 @@ public class MailerTruststoreTest extends FakeSmtpTestBase {
 
     @Test
     public void sendMailWithoutTrustStore() {
-        MailersRuntimeConfig mailersConfig = new DefaultMailersRuntimeConfig(new DefaultMailerRuntimeConfig() {
-            @Override
-            public Optional<Boolean> tls() {
-                return Optional.of(true);
-            }
-        });
+        MailersRuntimeConfig mailersConfig = mailersRuntimeConfig(defaultMailerRuntimeConfig()
+                .withOptional(MailerRuntimeConfig::tls, true));
 
         startServer(SERVER_JKS);
         ReactiveMailer mailer = getMailer(mailersConfig);

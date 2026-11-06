@@ -2,6 +2,8 @@ package io.quarkus.vertx.http.runtime.security;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
@@ -11,8 +13,10 @@ import javax.security.auth.x500.X500Principal;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
-import io.quarkus.vertx.http.runtime.DefaultAuthConfig;
-import io.smallrye.config.Config;
+import io.quarkus.vertx.http.runtime.AuthRuntimeConfig;
+import io.quarkus.vertx.http.runtime.FormAuthConfig;
+import io.quarkus.vertx.http.runtime.cors.CORSConfig;
+import io.smallrye.config.ConfigInstanceBuilder;
 import io.vertx.core.internal.net.RFC3986;
 import io.vertx.ext.web.RoutingContext;
 
@@ -221,7 +225,25 @@ public final class HttpSecurityUtils {
         return null;
     }
 
-    public static DefaultAuthConfig getDefaultAuthConfig() {
-        return Config.get().getConfigMapping(DefaultAuthConfig.class);
+    /**
+     * @return {@link AuthRuntimeConfig} with the default values, ignoring any user configuration.
+     */
+    public static AuthRuntimeConfig getDefaultAuthConfig() {
+        // ConfigInstanceBuilder does not expand expressions in default values. The default of these properties is
+        // an expression that resolves to empty when 'quarkus.http.auth.form.login-page-query-params' is not set.
+        FormAuthConfig form = ConfigInstanceBuilder.forInterface(FormAuthConfig.class)
+                .with(FormAuthConfig::errorPageQueryParams, Optional.<Set<String>> empty())
+                .with(FormAuthConfig::landingPageQueryParams, Optional.<Set<String>> empty())
+                .build();
+        return ConfigInstanceBuilder.forInterface(AuthRuntimeConfig.class)
+                .with(AuthRuntimeConfig::form, form)
+                .build();
+    }
+
+    /**
+     * @return {@link CORSConfig} with the default values, ignoring any user configuration.
+     */
+    public static CORSConfig getDefaultCorsConfig() {
+        return ConfigInstanceBuilder.forInterface(CORSConfig.class).build();
     }
 }

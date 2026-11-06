@@ -19,6 +19,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.Config;
+import io.smallrye.config.ConfigInstanceBuilder;
 import io.smallrye.stork.api.config.ServiceConfig;
 import io.smallrye.stork.spi.config.SimpleServiceConfig;
 
@@ -84,22 +85,10 @@ public class StorkConfigUtil {
         }
         StorkServiceRegistrarConfiguration registrar = buildServiceRegistrarConfiguration(serviceRegistrarType, true,
                 parameters);
-        return new ServiceConfiguration() {
-            @Override
-            public Optional<StorkServiceDiscoveryConfiguration> serviceDiscovery() {
-                return Optional.empty();
-            }
-
-            @Override
-            public StorkLoadBalancerConfiguration loadBalancer() {
-                return null;
-            }
-
-            @Override
-            public Optional<StorkServiceRegistrarConfiguration> serviceRegistrar() {
-                return Optional.of(registrar);
-            }
-        };
+        return ConfigInstanceBuilder.forInterface(ServiceConfiguration.class)
+                .with(ServiceConfiguration::serviceDiscovery, Optional.<StorkServiceDiscoveryConfiguration> empty())
+                .withOptional(ServiceConfiguration::serviceRegistrar, registrar)
+                .build();
     }
 
     /**
@@ -130,42 +119,22 @@ public class StorkConfigUtil {
         boolean enabled = storkServiceRegistrarConfiguration.map(StorkServiceRegistrarConfiguration::enabled).orElse(true);
         StorkServiceRegistrarConfiguration registrar = buildServiceRegistrarConfiguration(serviceRegistrarType, enabled,
                 parameters);
-        return new ServiceConfiguration() {
-            @Override
-            public Optional<StorkServiceDiscoveryConfiguration> serviceDiscovery() {
-                return serviceConfiguration.serviceDiscovery();
-            }
-
-            @Override
-            public StorkLoadBalancerConfiguration loadBalancer() {
-                return serviceConfiguration.loadBalancer();
-            }
-
-            @Override
-            public Optional<StorkServiceRegistrarConfiguration> serviceRegistrar() {
-                return Optional.of(registrar);
-            }
-        };
+        ConfigInstanceBuilder<ServiceConfiguration> updated = ConfigInstanceBuilder.forInterface(ServiceConfiguration.class)
+                .with(ServiceConfiguration::serviceDiscovery, serviceConfiguration.serviceDiscovery())
+                .withOptional(ServiceConfiguration::serviceRegistrar, registrar);
+        if (serviceConfiguration.loadBalancer() != null) {
+            updated.with(ServiceConfiguration::loadBalancer, serviceConfiguration.loadBalancer());
+        }
+        return updated.build();
     }
 
     private static StorkServiceRegistrarConfiguration buildServiceRegistrarConfiguration(String type, boolean enabled,
             Map<String, String> parameters) {
-        return new StorkServiceRegistrarConfiguration() {
-            @Override
-            public boolean enabled() {
-                return enabled;
-            }
-
-            @Override
-            public Optional<String> type() {
-                return Optional.of(type);
-            }
-
-            @Override
-            public Map<String, String> parameters() {
-                return parameters;
-            }
-        };
+        return ConfigInstanceBuilder.forInterface(StorkServiceRegistrarConfiguration.class)
+                .with(StorkServiceRegistrarConfiguration::enabled, enabled)
+                .withOptional(StorkServiceRegistrarConfiguration::type, type)
+                .with(StorkServiceRegistrarConfiguration::parameters, parameters)
+                .build();
     }
 
     /**

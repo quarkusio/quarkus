@@ -6,6 +6,7 @@ import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.vertx.http.security.CSRF;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
@@ -14,7 +15,7 @@ import io.smallrye.config.WithDefault;
  */
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 @ConfigMapping(prefix = "quarkus.rest-csrf")
-public interface RestCsrfConfig {
+public interface RestCsrfConfig extends CSRF {
     /**
      * Form field name which keeps a CSRF token.
      */

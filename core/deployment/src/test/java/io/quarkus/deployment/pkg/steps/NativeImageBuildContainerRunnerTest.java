@@ -19,7 +19,7 @@ class NativeImageBuildContainerRunnerTest {
     void testBuilderImageBeingPickedUp() {
         ContainerRuntimeUtil.ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime(true);
 
-        NativeConfig nativeConfig = new TestNativeConfig("graalvm");
+        NativeConfig nativeConfig = TestNativeConfig.of("graalvm");
         boolean found;
         NativeImageBuildLocalContainerRunner localRunner;
         String[] command;
@@ -36,7 +36,7 @@ class NativeImageBuildContainerRunnerTest {
         }
         assertThat(found).isTrue();
 
-        nativeConfig = new TestNativeConfig("mandrel");
+        nativeConfig = TestNativeConfig.of("mandrel");
         localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig);
         command = localRunner.buildCommand(containerRuntime.getExecutableName(), Collections.emptyList(),
                 Collections.emptyList());
@@ -49,7 +49,7 @@ class NativeImageBuildContainerRunnerTest {
         }
         assertThat(found).isTrue();
 
-        nativeConfig = new TestNativeConfig("RandomString");
+        nativeConfig = TestNativeConfig.of("RandomString");
         localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig);
         command = localRunner.buildCommand(containerRuntime.getExecutableName(), Collections.emptyList(),
                 Collections.emptyList());

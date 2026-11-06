@@ -1,13 +1,8 @@
 package io.quarkus.mailer.runtime;
 
-import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +16,7 @@ import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
+import io.smallrye.config.ConfigInstanceBuilder;
 import io.vertx.mutiny.core.Vertx;
 
 @Certificates(baseDir = "target/certs", certificates = {
@@ -121,177 +117,20 @@ public class FakeSmtpTestBase {
         return mailers.reactiveMailerFromName(Mailers.DEFAULT_MAILER_NAME);
     }
 
-    static class DefaultMailersRuntimeConfig implements MailersRuntimeConfig {
-
-        private DefaultMailerRuntimeConfig defaultMailerRuntimeConfig;
-
-        DefaultMailersRuntimeConfig() {
-            this(new DefaultMailerRuntimeConfig());
-        }
-
-        DefaultMailersRuntimeConfig(DefaultMailerRuntimeConfig defaultMailerRuntimeConfig) {
-            this.defaultMailerRuntimeConfig = defaultMailerRuntimeConfig;
-        }
-
-        @Override
-        public Map<String, MailerRuntimeConfig> mailers() {
-            return Map.of(Mailers.DEFAULT_MAILER_NAME, defaultMailerRuntimeConfig);
-        }
-
+    static MailersRuntimeConfig mailersRuntimeConfig(ConfigInstanceBuilder<MailerRuntimeConfig> mailerRuntimeConfig) {
+        return ConfigInstanceBuilder.forInterface(MailersRuntimeConfig.class)
+                .with(MailersRuntimeConfig::mailers, Map.of(Mailers.DEFAULT_MAILER_NAME, mailerRuntimeConfig.build()))
+                .build();
     }
 
-    static class DefaultMailerRuntimeConfig implements MailerRuntimeConfig {
-
-        @Override
-        public Optional<String> from() {
-            return Optional.of(FROM);
-        }
-
-        @Override
-        public Optional<Boolean> mock() {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<String> bounceAddress() {
-            return Optional.empty();
-        }
-
-        @Override
-        public String host() {
-            return "localhost";
-        }
-
-        @Override
-        public OptionalInt port() {
-            return OptionalInt.of(FAKE_SMTP_PORT);
-        }
-
-        @Override
-        public Optional<String> username() {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<String> password() {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<String> tlsConfigurationName() {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<Boolean> tls() {
-            return Optional.empty();
-        }
-
-        @Override
-        public int maxPoolSize() {
-            return 10;
-        }
-
-        @Override
-        public Optional<String> ownHostName() {
-            return Optional.empty();
-        }
-
-        @Override
-        public boolean keepAlive() {
-            return false;
-        }
-
-        @Override
-        public boolean disableEsmtp() {
-            return false;
-        }
-
-        @Override
-        public String startTLS() {
-            return "DISABLED";
-        }
-
-        @Override
-        public DkimSignOptionsConfig dkim() {
-            return null;
-        }
-
-        @Override
-        public String login() {
-            return "DISABLED";
-        }
-
-        @Override
-        public Optional<String> authMethods() {
-            return Optional.empty();
-        }
-
-        @Override
-        public boolean multiPartOnly() {
-            // TODO Auto-generated method stub
-            return false;
-        }
-
-        @Override
-        public boolean allowRcptErrors() {
-            return false;
-        }
-
-        @Override
-        public boolean pipelining() {
-            return false;
-        }
-
-        @Override
-        public Duration poolCleanerPeriod() {
-            return Duration.ofSeconds(1);
-        }
-
-        @Override
-        public Duration keepAliveTimeout() {
-            return Duration.ofMinutes(5);
-        }
-
-        @Override
-        public NtlmConfig ntlm() {
-            return null;
-        }
-
-        @Override
-        public Optional<List<Pattern>> approvedRecipients() {
-            return Optional.empty();
-        }
-
-        @Override
-        public boolean logRejectedRecipients() {
-            return false;
-        }
-
-        @Override
-        public boolean logInvalidRecipients() {
-            return false;
-        }
-
-        @Override
-        public Duration timeout() {
-            return Duration.ofSeconds(60);
-        }
-
-        @Override
-        public OptionalLong maxMailsPerConnection() {
-            return OptionalLong.empty();
-        }
-
-        @Override
-        public Optional<String> credentialsProvider() {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<String> credentialsProviderName() {
-            return Optional.empty();
-        }
+    static ConfigInstanceBuilder<MailerRuntimeConfig> defaultMailerRuntimeConfig() {
+        return ConfigInstanceBuilder.forInterface(MailerRuntimeConfig.class)
+                .withOptional(MailerRuntimeConfig::from, FROM)
+                .withOptional(MailerRuntimeConfig::port, FAKE_SMTP_PORT)
+                .with(MailerRuntimeConfig::keepAlive, false)
+                .with(MailerRuntimeConfig::startTLS, "DISABLED")
+                .with(MailerRuntimeConfig::login, "DISABLED")
+                .with(MailerRuntimeConfig::pipelining, false);
     }
 
 }

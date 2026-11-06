@@ -11,119 +11,31 @@ import java.util.Optional;
 
 import io.quarkus.oidc.client.runtime.OidcClientConfig;
 import io.quarkus.oidc.client.runtime.OidcClientConfig.Grant;
-import io.quarkus.oidc.client.runtime.OidcClientsConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfigBuilder;
-import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.ConfigInstanceBuilder;
 
 /**
  * Builder for the {@link io.quarkus.oidc.client.runtime.OidcClientConfig}. This builder is not thread-safe.
  */
 public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder<OidcClientConfigBuilder> {
 
-    private static class OidcClientConfigImpl extends OidcClientCommonConfigImpl implements OidcClientConfig {
-
-        private final Map<String, String> headers;
-        private final boolean earlyTokensAcquisition;
-        private final Map<String, Map<String, String>> grantOptions;
-        private final Grant grant;
-        private final boolean absoluteExpiresIn;
-        private final Optional<Duration> accessTokenExpiresIn;
-        private final Optional<Duration> accessTokenExpirySkew;
-        private final Optional<Duration> refreshTokenTimeSkew;
-        private final Optional<List<String>> scopes;
-        private final Optional<List<String>> audience;
-        private final boolean clientEnabled;
-        private final Optional<String> id;
-        private final Optional<Duration> refreshInterval;;
-        private final int tokenCacheMaxSize;
-
-        private OidcClientConfigImpl(OidcClientConfigBuilder builder) {
-            super(builder);
-            this.headers = Map.copyOf(builder.headers);
-            this.earlyTokensAcquisition = builder.earlyTokensAcquisition;
-            this.grantOptions = Map.copyOf(builder.grantOptions);
-            this.grant = builder.grant;
-            this.absoluteExpiresIn = builder.absoluteExpiresIn;
-            this.accessTokenExpiresIn = builder.accessTokenExpiresIn;
-            this.accessTokenExpirySkew = builder.accessTokenExpirySkew;
-            this.refreshTokenTimeSkew = builder.refreshTokenTimeSkew;
-            this.scopes = builder.scopes.isEmpty() ? Optional.empty() : Optional.of(List.copyOf(builder.scopes));
-            this.audience = builder.audience.isEmpty() ? Optional.empty() : Optional.of(List.copyOf(builder.audience));
-            this.clientEnabled = builder.clientEnabled;
-            this.id = builder.id;
-            this.refreshInterval = builder.refreshInterval;
-            this.tokenCacheMaxSize = builder.tokenCacheMaxSize;
-        }
-
-        @Override
-        public Optional<String> id() {
-            return id;
-        }
-
-        @Override
-        public boolean clientEnabled() {
-            return clientEnabled;
-        }
-
-        @Override
-        public Optional<List<String>> scopes() {
-            return scopes;
-        }
-
-        @Override
-        public Optional<List<String>> audience() {
-            return audience;
-        }
-
-        @Override
-        public Optional<Duration> refreshTokenTimeSkew() {
-            return refreshTokenTimeSkew;
-        }
-
-        @Override
-        public Optional<Duration> accessTokenExpiresIn() {
-            return accessTokenExpiresIn;
-        }
-
-        @Override
-        public Optional<Duration> accessTokenExpirySkew() {
-            return accessTokenExpirySkew;
-        }
-
-        @Override
-        public boolean absoluteExpiresIn() {
-            return absoluteExpiresIn;
-        }
-
-        @Override
-        public Grant grant() {
-            return grant;
-        }
-
-        @Override
-        public Map<String, Map<String, String>> grantOptions() {
-            return grantOptions;
-        }
-
-        @Override
-        public boolean earlyTokensAcquisition() {
-            return earlyTokensAcquisition;
-        }
-
-        @Override
-        public Map<String, String> headers() {
-            return headers;
-        }
-
-        @Override
-        public Optional<Duration> refreshInterval() {
-            return refreshInterval;
-        }
-
-        @Override
-        public int tokenCacheMaxSize() {
-            return tokenCacheMaxSize;
-        }
+    private static OidcClientConfig create(OidcClientConfigBuilder builder) {
+        return clientCommonConfig(OidcClientConfig.class, builder)
+                .with(OidcClientConfig::headers, Map.copyOf(builder.headers))
+                .with(OidcClientConfig::earlyTokensAcquisition, builder.earlyTokensAcquisition)
+                .with(OidcClientConfig::grantOptions, Map.copyOf(builder.grantOptions))
+                .with(OidcClientConfig::grant, builder.grant)
+                .with(OidcClientConfig::absoluteExpiresIn, builder.absoluteExpiresIn)
+                .with(OidcClientConfig::accessTokenExpiresIn, builder.accessTokenExpiresIn)
+                .with(OidcClientConfig::accessTokenExpirySkew, builder.accessTokenExpirySkew)
+                .with(OidcClientConfig::refreshTokenTimeSkew, builder.refreshTokenTimeSkew)
+                .with(OidcClientConfig::scopes, optionalListOf(builder.scopes))
+                .with(OidcClientConfig::audience, optionalListOf(builder.audience))
+                .with(OidcClientConfig::clientEnabled, builder.clientEnabled)
+                .with(OidcClientConfig::id, builder.id)
+                .with(OidcClientConfig::refreshInterval, builder.refreshInterval)
+                .with(OidcClientConfig::tokenCacheMaxSize, builder.tokenCacheMaxSize)
+                .build();
     }
 
     /**
@@ -404,7 +316,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         if (id.isEmpty()) {
             throw new IllegalArgumentException("Client ID cannot be empty");
         }
-        return new OidcClientConfigImpl(this);
+        return create(this);
     }
 
     public static final class GrantBuilder {
@@ -491,12 +403,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
 
     private static OidcClientConfig getConfigWithDefaults() {
         if (configWithDefaults == null) {
-            final OidcClientsConfig clientsConfig = new SmallRyeConfigBuilder()
-                    .addDiscoveredConverters()
-                    .withMapping(OidcClientsConfig.class)
-                    .build()
-                    .getConfigMapping(OidcClientsConfig.class);
-            configWithDefaults = OidcClientsConfig.getDefaultClient(clientsConfig);
+            configWithDefaults = ConfigInstanceBuilder.forInterface(OidcClientConfig.class).build();
         }
         return configWithDefaults;
     }

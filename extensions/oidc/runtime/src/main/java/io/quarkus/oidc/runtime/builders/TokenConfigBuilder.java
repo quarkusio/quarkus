@@ -17,24 +17,12 @@ import io.quarkus.oidc.OidcTenantConfigBuilder;
 import io.quarkus.oidc.runtime.OidcTenantConfig;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Binding;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Token.DecryptionAlgorithm;
+import io.smallrye.config.ConfigInstanceBuilder;
 
 /**
  * Builder for the {@link OidcTenantConfig.Token}.
  */
 public final class TokenConfigBuilder {
-
-    private record TokenImpl(Optional<String> issuer, Optional<List<String>> audience, boolean subjectRequired,
-            Map<String, Set<String>> requiredClaims, Optional<String> tokenType, OptionalInt lifespanGrace,
-            Optional<Duration> age, boolean issuedAtRequired, Optional<String> principalClaim, boolean refreshExpired,
-            Optional<Duration> refreshTokenTimeSkew, Duration refreshTokenCacheTimeToLive,
-            Duration forcedJwkRefreshInterval, Optional<String> header,
-            String authorizationScheme, Optional<OidcTenantConfig.SignatureAlgorithm> signatureAlgorithm,
-            Optional<String> decryptionKeyLocation, Optional<Boolean> decryptIdToken, boolean decryptAccessToken,
-            Optional<DecryptionAlgorithm> decryptionAlgorithm,
-            boolean allowJwtIntrospection, boolean requireJwtIntrospectionOnly,
-            boolean allowOpaqueTokenIntrospection, Optional<String> customizerName,
-            Optional<Boolean> verifyAccessTokenWithUserInfo, Binding binding) implements OidcTenantConfig.Token {
-    }
 
     private final OidcTenantConfigBuilder builder;
     private final Map<String, Set<String>> requiredClaims = new HashMap<>();
@@ -510,24 +498,40 @@ public final class TokenConfigBuilder {
     public OidcTenantConfig.Token build() {
         Optional<List<String>> optionalAudience = audience.isEmpty() ? Optional.empty()
                 : Optional.of(List.copyOf(audience));
-        return new TokenImpl(issuer, optionalAudience, subjectRequired, Map.copyOf(requiredClaims), tokenType,
-                lifespanGrace, age, issuedAtRequired, principalClaim, refreshExpired, refreshTokenTimeSkew,
-                refreshTokenCacheTimeToLive,
-                forcedJwkRefreshInterval, header, authorizationScheme, signatureAlgorithm, decryptionKeyLocation,
-                decryptIdToken,
-                decryptAccessToken, decryptionAlgorithm, allowJwtIntrospection, requireJwtIntrospectionOnly,
-                allowOpaqueTokenIntrospection,
-                customizerName,
-                verifyAccessTokenWithUserInfo, binding);
+        return ConfigInstanceBuilder.forInterface(OidcTenantConfig.Token.class)
+                .with(OidcTenantConfig.Token::issuer, issuer)
+                .with(OidcTenantConfig.Token::audience, optionalAudience)
+                .with(OidcTenantConfig.Token::subjectRequired, subjectRequired)
+                .with(OidcTenantConfig.Token::requiredClaims, Map.copyOf(requiredClaims))
+                .with(OidcTenantConfig.Token::tokenType, tokenType)
+                .with(OidcTenantConfig.Token::lifespanGrace, lifespanGrace)
+                .with(OidcTenantConfig.Token::age, age)
+                .with(OidcTenantConfig.Token::issuedAtRequired, issuedAtRequired)
+                .with(OidcTenantConfig.Token::principalClaim, principalClaim)
+                .with(OidcTenantConfig.Token::refreshExpired, refreshExpired)
+                .with(OidcTenantConfig.Token::refreshTokenTimeSkew, refreshTokenTimeSkew)
+                .with(OidcTenantConfig.Token::refreshTokenCacheTimeToLive, refreshTokenCacheTimeToLive)
+                .with(OidcTenantConfig.Token::forcedJwkRefreshInterval, forcedJwkRefreshInterval)
+                .with(OidcTenantConfig.Token::header, header)
+                .with(OidcTenantConfig.Token::authorizationScheme, authorizationScheme)
+                .with(OidcTenantConfig.Token::signatureAlgorithm, signatureAlgorithm)
+                .with(OidcTenantConfig.Token::decryptionKeyLocation, decryptionKeyLocation)
+                .with(OidcTenantConfig.Token::decryptIdToken, decryptIdToken)
+                .with(OidcTenantConfig.Token::decryptAccessToken, decryptAccessToken)
+                .with(OidcTenantConfig.Token::decryptionAlgorithm, decryptionAlgorithm)
+                .with(OidcTenantConfig.Token::allowJwtIntrospection, allowJwtIntrospection)
+                .with(OidcTenantConfig.Token::requireJwtIntrospectionOnly, requireJwtIntrospectionOnly)
+                .with(OidcTenantConfig.Token::allowOpaqueTokenIntrospection, allowOpaqueTokenIntrospection)
+                .with(OidcTenantConfig.Token::customizerName, customizerName)
+                .with(OidcTenantConfig.Token::verifyAccessTokenWithUserInfo, verifyAccessTokenWithUserInfo)
+                .with(OidcTenantConfig.Token::binding, binding)
+                .build();
     }
 
     /**
      * Builder for the {@link OidcTenantConfig.Token}.
      */
     public static final class BindingConfigBuilder {
-
-        private record BindingImpl(boolean certificate) implements OidcTenantConfig.Binding {
-        }
 
         private final TokenConfigBuilder builder;
         private boolean certificate;
@@ -571,7 +575,9 @@ public final class TokenConfigBuilder {
          * @return built {@link OidcTenantConfig.Token}
          */
         public OidcTenantConfig.Binding build() {
-            return new BindingImpl(certificate);
+            return ConfigInstanceBuilder.forInterface(OidcTenantConfig.Binding.class)
+                    .with(OidcTenantConfig.Binding::certificate, certificate)
+                    .build();
         }
 
     }

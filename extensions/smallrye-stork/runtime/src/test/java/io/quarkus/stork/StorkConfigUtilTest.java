@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.junit.jupiter.api.AfterEach;
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.smallrye.config.Config;
+import io.smallrye.config.ConfigInstanceBuilder;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.common.MapBackedConfigSource;
 import io.smallrye.stork.api.config.ServiceConfig;
@@ -96,22 +96,7 @@ public class StorkConfigUtilTest {
     @Test
     public void shouldAddRegistrarTypeGivenAnEmptyConfig() {
         // Given an empty registration config
-        ServiceConfiguration original = new ServiceConfiguration() {
-            @Override
-            public Optional<StorkServiceDiscoveryConfiguration> serviceDiscovery() {
-                return Optional.empty();
-            }
-
-            @Override
-            public StorkLoadBalancerConfiguration loadBalancer() {
-                return null;
-            }
-
-            @Override
-            public Optional<StorkServiceRegistrarConfiguration> serviceRegistrar() {
-                return Optional.empty();
-            }
-        };
+        ServiceConfiguration original = buildServiceConfig(null, null, null);
 
         ServiceConfiguration updated = StorkConfigUtil.addRegistrarTypeIfAbsent("consul", original, "/custom");
 
@@ -146,22 +131,7 @@ public class StorkConfigUtilTest {
     @Test
     public void shouldFailWhenAddingEmptyRegistrarTypeGivenAnEmptyConfig() {
         // Given an empty registration config
-        ServiceConfiguration original = new ServiceConfiguration() {
-            @Override
-            public Optional<StorkServiceDiscoveryConfiguration> serviceDiscovery() {
-                return Optional.empty();
-            }
-
-            @Override
-            public StorkLoadBalancerConfiguration loadBalancer() {
-                return null;
-            }
-
-            @Override
-            public Optional<StorkServiceRegistrarConfiguration> serviceRegistrar() {
-                return Optional.empty();
-            }
-        };
+        ServiceConfiguration original = buildServiceConfig(null, null, null);
 
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
             StorkConfigUtil.addRegistrarTypeIfAbsent("", original, "/custom");
@@ -332,69 +302,40 @@ public class StorkConfigUtilTest {
     private static ServiceConfiguration buildServiceConfig(StorkServiceDiscoveryConfiguration discovery,
             StorkLoadBalancerConfiguration loadBalancer,
             StorkServiceRegistrarConfiguration registrar) {
-        return new ServiceConfiguration() {
-            @Override
-            public Optional<StorkServiceDiscoveryConfiguration> serviceDiscovery() {
-                return Optional.ofNullable(discovery);
-            }
-
-            @Override
-            public StorkLoadBalancerConfiguration loadBalancer() {
-                return loadBalancer;
-            }
-
-            @Override
-            public Optional<StorkServiceRegistrarConfiguration> serviceRegistrar() {
-                return Optional.ofNullable(registrar);
-            }
-        };
+        ConfigInstanceBuilder<ServiceConfiguration> config = ConfigInstanceBuilder.forInterface(ServiceConfiguration.class);
+        if (discovery != null) {
+            config.withOptional(ServiceConfiguration::serviceDiscovery, discovery);
+        }
+        if (loadBalancer != null) {
+            config.with(ServiceConfiguration::loadBalancer, loadBalancer);
+        }
+        if (registrar != null) {
+            config.withOptional(ServiceConfiguration::serviceRegistrar, registrar);
+        }
+        return config.build();
     }
 
     private static StorkServiceDiscoveryConfiguration buildDiscoveryConfig(String type, Map<String, String> params) {
-        return new StorkServiceDiscoveryConfiguration() {
-            @Override
-            public String type() {
-                return type;
-            }
-
-            @Override
-            public Map<String, String> params() {
-                return params;
-            }
-        };
+        return ConfigInstanceBuilder.forInterface(StorkServiceDiscoveryConfiguration.class)
+                .with(StorkServiceDiscoveryConfiguration::type, type)
+                .with(StorkServiceDiscoveryConfiguration::params, params)
+                .build();
     }
 
     private static StorkLoadBalancerConfiguration buildLoadBalancerConfig(String type, Map<String, String> parameters) {
-        return new StorkLoadBalancerConfiguration() {
-            @Override
-            public String type() {
-                return type;
-            }
-
-            @Override
-            public Map<String, String> parameters() {
-                return parameters;
-            }
-        };
+        return ConfigInstanceBuilder.forInterface(StorkLoadBalancerConfiguration.class)
+                .with(StorkLoadBalancerConfiguration::type, type)
+                .with(StorkLoadBalancerConfiguration::parameters, parameters)
+                .build();
     }
 
     private static StorkServiceRegistrarConfiguration buildRegistrarConfig(String type, Map<String, String> parameters) {
-        return new StorkServiceRegistrarConfiguration() {
-            @Override
-            public boolean enabled() {
-                return true;
-            }
-
-            @Override
-            public Optional<String> type() {
-                return Optional.of(type);
-            }
-
-            @Override
-            public Map<String, String> parameters() {
-                return new HashMap<>(parameters);
-            }
-        };
+        Map<String, String> mutableParameters = new HashMap<>(parameters);
+        return ConfigInstanceBuilder.forInterface(StorkServiceRegistrarConfiguration.class)
+                .with(StorkServiceRegistrarConfiguration::enabled, true)
+                .withOptional(StorkServiceRegistrarConfiguration::type, type)
+                .with(StorkServiceRegistrarConfiguration::parameters, mutableParameters)
+                .build();
     }
 
     private static ServiceConfig findByName(List<ServiceConfig> configs, String name) {

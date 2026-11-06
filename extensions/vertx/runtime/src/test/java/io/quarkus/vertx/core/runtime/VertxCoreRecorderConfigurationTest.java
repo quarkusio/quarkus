@@ -2,7 +2,6 @@ package io.quarkus.vertx.core.runtime;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.OptionalInt;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -14,10 +13,13 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder.VertxCustomizer;
 import io.quarkus.vertx.core.runtime.config.NativeTransportMode;
 import io.quarkus.vertx.core.runtime.config.NativeTransportType;
 import io.quarkus.vertx.core.runtime.config.VertxBuildTimeConfig;
+import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
+import io.smallrye.config.ConfigInstanceBuilder;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.internal.VertxBootstrap;
 
@@ -35,8 +37,8 @@ public class VertxCoreRecorderConfigurationTest {
         recorder.destroy();
     }
 
-    private VertxOptions initializeAndCapture(VertxCoreProducerTest.DefaultVertxConfiguration config,
-            VertxCoreProducerTest.DefaultThreadPoolConfig threadPoolConfig) {
+    private VertxOptions initializeAndCapture(VertxConfiguration config,
+            ThreadPoolConfig threadPoolConfig) {
         AtomicReference<VertxOptions> captured = new AtomicReference<>();
         VertxCustomizer customizer = new VertxCustomizer(List.of(), List.of(captured::set));
         VertxCoreRecorder.initialize(config, customizer, threadPoolConfig, null, LaunchMode.TEST,
@@ -44,82 +46,54 @@ public class VertxCoreRecorderConfigurationTest {
         return captured.get();
     }
 
-    private VertxOptions initializeAndCapture(VertxCoreProducerTest.DefaultVertxConfiguration config) {
-        return initializeAndCapture(config, new VertxCoreProducerTest.DefaultThreadPoolConfig());
+    private VertxOptions initializeAndCapture(VertxConfiguration config) {
+        return initializeAndCapture(config, VertxCoreProducerTest.threadPoolConfig().build());
     }
 
     @Test
     public void shouldConfigureEventLoopPoolSize() {
-        VertxOptions opts = initializeAndCapture(new VertxCoreProducerTest.DefaultVertxConfiguration() {
-            @Override
-            public OptionalInt eventLoopsPoolSize() {
-                return OptionalInt.of(4);
-            }
-        });
+        VertxOptions opts = initializeAndCapture(
+                VertxCoreProducerTest.vertxConfiguration().withOptional(VertxConfiguration::eventLoopsPoolSize, 4).build());
         Assertions.assertEquals(4, opts.getEventLoopPoolSize());
     }
 
     @Test
     public void shouldConfigureWorkerPoolSizeFromThreadPoolConfig() {
         VertxOptions opts = initializeAndCapture(
-                new VertxCoreProducerTest.DefaultVertxConfiguration(),
-                new VertxCoreProducerTest.DefaultThreadPoolConfig() {
-                    @Override
-                    public OptionalInt maxThreads() {
-                        return OptionalInt.of(42);
-                    }
-                });
+                VertxCoreProducerTest.vertxConfiguration().build(),
+                VertxCoreProducerTest.threadPoolConfig().withOptional(ThreadPoolConfig::maxThreads, 42).build());
         Assertions.assertEquals(42, opts.getWorkerPoolSize());
     }
 
     @Test
     public void shouldConfigureMaxEventLoopExecuteTime() {
-        VertxOptions opts = initializeAndCapture(new VertxCoreProducerTest.DefaultVertxConfiguration() {
-            @Override
-            public Duration maxEventLoopExecuteTime() {
-                return Duration.ofSeconds(5);
-            }
-        });
+        VertxOptions opts = initializeAndCapture(VertxCoreProducerTest.vertxConfiguration()
+                .with(VertxConfiguration::maxEventLoopExecuteTime, Duration.ofSeconds(5)).build());
         Assertions.assertEquals(Duration.ofSeconds(5).toMillis(), opts.getMaxEventLoopExecuteTime());
     }
 
     @Test
     public void shouldConfigureMaxWorkerExecuteTime() {
-        VertxOptions opts = initializeAndCapture(new VertxCoreProducerTest.DefaultVertxConfiguration() {
-            @Override
-            public Duration maxWorkerExecuteTime() {
-                return Duration.ofSeconds(120);
-            }
-        });
+        VertxOptions opts = initializeAndCapture(VertxCoreProducerTest.vertxConfiguration()
+                .with(VertxConfiguration::maxWorkerExecuteTime, Duration.ofSeconds(120)).build());
         Assertions.assertEquals(Duration.ofSeconds(120).toMillis(), opts.getMaxWorkerExecuteTime());
     }
 
     @Test
     public void shouldConfigureWarningExceptionTime() {
-        VertxOptions opts = initializeAndCapture(new VertxCoreProducerTest.DefaultVertxConfiguration() {
-            @Override
-            public Duration warningExceptionTime() {
-                return Duration.ofSeconds(10);
-            }
-        });
+        VertxOptions opts = initializeAndCapture(VertxCoreProducerTest.vertxConfiguration()
+                .with(VertxConfiguration::warningExceptionTime, Duration.ofSeconds(10)).build());
         Assertions.assertEquals(Duration.ofSeconds(10).toNanos(), opts.getWarningExceptionTime());
     }
 
     @Test
     public void shouldConfigurePreferNativeTransport() {
-        VertxCoreRecorder.buildTimeConfig = new VertxBuildTimeConfig() {
-            @Override
-            public NativeTransportMode nativeTransport() {
-                return NativeTransportMode.IF_AVAILABLE;
-            }
-
-            @Override
-            public NativeTransportType nativeTransportType() {
-                return NativeTransportType.AUTO;
-            }
-        };
+        VertxCoreRecorder.buildTimeConfig = ConfigInstanceBuilder.forInterface(VertxBuildTimeConfig.class)
+                .with(VertxBuildTimeConfig::nativeTransport, NativeTransportMode.IF_AVAILABLE)
+                .with(VertxBuildTimeConfig::nativeTransportType, NativeTransportType.AUTO)
+                .build();
         try {
-            VertxOptions opts = initializeAndCapture(new VertxCoreProducerTest.DefaultVertxConfiguration());
+            VertxOptions opts = initializeAndCapture(VertxCoreProducerTest.vertxConfiguration().build());
             Assertions.assertTrue(opts.getPreferNativeTransport());
         } finally {
             VertxCoreRecorder.buildTimeConfig = null;
@@ -128,31 +102,23 @@ public class VertxCoreRecorderConfigurationTest {
 
     @Test
     public void shouldDisableCaching() {
-        VertxOptions opts = initializeAndCapture(new VertxCoreProducerTest.DefaultVertxConfiguration() {
-            @Override
-            public boolean caching() {
-                return false;
-            }
-        });
+        VertxOptions opts = initializeAndCapture(
+                VertxCoreProducerTest.vertxConfiguration().with(VertxConfiguration::caching, false).build());
         Assertions.assertNotNull(opts.getFileSystemOptions());
         Assertions.assertFalse(opts.getFileSystemOptions().isFileCachingEnabled());
     }
 
     @Test
     public void shouldDisableClasspathResolving() {
-        VertxOptions opts = initializeAndCapture(new VertxCoreProducerTest.DefaultVertxConfiguration() {
-            @Override
-            public boolean classpathResolving() {
-                return false;
-            }
-        });
+        VertxOptions opts = initializeAndCapture(
+                VertxCoreProducerTest.vertxConfiguration().with(VertxConfiguration::classpathResolving, false).build());
         Assertions.assertNotNull(opts.getFileSystemOptions());
         Assertions.assertFalse(opts.getFileSystemOptions().isClassPathResolvingEnabled());
     }
 
     @Test
     public void defaultEventLoopPoolSizeIsNotExplicitlySet() {
-        VertxOptions opts = initializeAndCapture(new VertxCoreProducerTest.DefaultVertxConfiguration());
+        VertxOptions opts = initializeAndCapture(VertxCoreProducerTest.vertxConfiguration().build());
         Assertions.assertTrue(opts.getEventLoopPoolSize() > 0);
     }
 
@@ -167,8 +133,8 @@ public class VertxCoreRecorderConfigurationTest {
         AtomicReference<VertxOptions> captured = new AtomicReference<>();
         VertxCustomizer customizer = new VertxCustomizer(
                 List.of(bootstrapConsumer), List.of(captured::set));
-        VertxCoreRecorder.initialize(new VertxCoreProducerTest.DefaultVertxConfiguration(),
-                customizer, new VertxCoreProducerTest.DefaultThreadPoolConfig(), null,
+        VertxCoreRecorder.initialize(VertxCoreProducerTest.vertxConfiguration().build(),
+                customizer, VertxCoreProducerTest.threadPoolConfig().build(), null,
                 LaunchMode.TEST, List.of(), List.of());
 
         Assertions.assertTrue(bootstrapCustomized.get());

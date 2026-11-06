@@ -23,7 +23,7 @@ public class SessionExpiredOidcRedirectFilter implements OidcRedirectFilter {
     @Override
     public void filter(OidcRedirectContext context) {
 
-        if (!"tenant-refresh".equals(context.oidcTenantConfig().tenantId.get())) {
+        if (!"tenant-refresh".equals(context.oidcTenantConfig().tenantId().get())) {
             throw new RuntimeException("Invalid tenant id");
         }
 
@@ -34,9 +34,9 @@ public class SessionExpiredOidcRedirectFilter implements OidcRedirectFilter {
         AuthorizationCodeTokens tokens = context.routingContext().get(AuthorizationCodeTokens.class.getName());
         String userName = OidcCommonUtils.decodeJwtContent(tokens.getIdToken()).getString(Claims.preferred_username.name());
         String jwe = Jwt.preferredUserName(userName).jwe()
-                .encryptWithSecret(context.oidcTenantConfig().credentials.secret.get());
+                .encryptWithSecret(context.oidcTenantConfig().credentials().secret().get());
         OidcUtils.createCookie(context.routingContext(), context.oidcTenantConfig(), "session_expired",
-                jwe + "|" + context.oidcTenantConfig().tenantId.get(), 10);
+                jwe + "|" + context.oidcTenantConfig().tenantId().get(), 10);
 
         context.additionalQueryParams().add("session-expired", "true");
     }

@@ -51,7 +51,7 @@ public sealed interface CORS permits CORS.Builder.CORSImpl {
         private boolean varyOrigin;
 
         public Builder() {
-            this(HttpSecurityUtils.getDefaultAuthConfig().cors());
+            this(HttpSecurityUtils.getDefaultCorsConfig());
         }
 
         public Builder(CORSConfig corsConfig) {

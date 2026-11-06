@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
@@ -31,7 +30,7 @@ import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.restclient.NoopHostnameVerifier;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public class RestClientBase {
 
@@ -48,7 +47,7 @@ public class RestClientBase {
 
     public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String configKey, Class<?>[] clientProviders) {
         this(proxyType, baseUriFromAnnotation, configKey, clientProviders,
-                ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(RestClientsConfig.class));
+                Config.get().getConfigMapping(RestClientsConfig.class));
     }
 
     RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String configKey, Class<?>[] clientProviders,

@@ -22,33 +22,9 @@ import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.Keyclo
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.PathCacheConfig;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.PathConfig;
 import io.quarkus.runtime.util.StringUtil;
+import io.smallrye.config.ConfigInstanceBuilder;
 
 public final class KeycloakPolicyEnforcerTenantConfigBuilder {
-    private record KeycloakPolicyEnforcerTenantConfigImpl(int connectionPoolSize,
-            KeycloakConfigPolicyEnforcer policyEnforcer) implements KeycloakPolicyEnforcerTenantConfig {
-    }
-
-    private record KeycloakConfigPolicyEnforcerImpl(Map<String, PathConfig> paths, EnforcementMode enforcementMode,
-            boolean lazyLoadPaths, boolean httpMethodAsScope, ClaimInformationPointConfig claimInformationPoint,
-            PathCacheConfig pathCache) implements KeycloakConfigPolicyEnforcer {
-    }
-
-    private record PathCacheConfigImpl(long lifespan, int maxEntries) implements PathCacheConfig {
-    }
-
-    private record ClaimInformationPointConfigImpl(Map<String, Map<String, String>> simpleConfig,
-            Map<String, Map<String, Map<String, String>>> complexConfig) implements ClaimInformationPointConfig {
-    }
-
-    private record MethodConfigImpl(String method, List<String> scopes,
-            ScopeEnforcementMode scopesEnforcementMode) implements MethodConfig {
-    }
-
-    private record PathConfigImpl(Optional<String> name, Optional<String> path, Optional<List<String>> paths,
-            Map<String, MethodConfig> methods, EnforcementMode enforcementMode,
-            ClaimInformationPointConfig claimInformationPoint) implements PathConfig {
-    }
-
     private final Map<String, PathConfigBuilderImpl> paths = new HashMap<>();
     private int connectionPoolSize;
     private EnforcementMode enforcementMode;
@@ -84,14 +60,28 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         paths.forEach(new BiConsumer<String, PathConfigBuilderImpl>() {
             @Override
             public void accept(String name, PathConfigBuilderImpl pathConfigBuilder) {
-                var pathConfig = new PathConfigImpl(Optional.ofNullable(pathConfigBuilder.name), Optional.empty(),
-                        Optional.of(List.copyOf(pathConfigBuilder.paths)), Map.copyOf(pathConfigBuilder.methods),
-                        pathConfigBuilder.enforcementMode, pathConfigBuilder.claimInformationPointConfig);
+                var pathConfig = ConfigInstanceBuilder.forInterface(PathConfig.class)
+                        .with(PathConfig::name, Optional.ofNullable(pathConfigBuilder.name))
+                        .with(PathConfig::paths, Optional.of(List.copyOf(pathConfigBuilder.paths)))
+                        .with(PathConfig::methods, Map.copyOf(pathConfigBuilder.methods))
+                        .with(PathConfig::enforcementMode, pathConfigBuilder.enforcementMode)
+                        .with(PathConfig::claimInformationPoint, pathConfigBuilder.claimInformationPointConfig)
+                        .build();
                 pathConfigs.put(name, pathConfig);
             }
         });
-        return new KeycloakPolicyEnforcerTenantConfigImpl(connectionPoolSize, new KeycloakConfigPolicyEnforcerImpl(
-                Map.copyOf(pathConfigs), enforcementMode, lazyLoadPaths, httpMethodAsScope, claimInformationPoint, pathCache));
+        var policyEnforcerConfig = ConfigInstanceBuilder.forInterface(KeycloakConfigPolicyEnforcer.class)
+                .with(KeycloakConfigPolicyEnforcer::paths, Map.copyOf(pathConfigs))
+                .with(KeycloakConfigPolicyEnforcer::enforcementMode, enforcementMode)
+                .with(KeycloakConfigPolicyEnforcer::lazyLoadPaths, lazyLoadPaths)
+                .with(KeycloakConfigPolicyEnforcer::httpMethodAsScope, httpMethodAsScope)
+                .with(KeycloakConfigPolicyEnforcer::claimInformationPoint, claimInformationPoint)
+                .with(KeycloakConfigPolicyEnforcer::pathCache, pathCache)
+                .build();
+        return ConfigInstanceBuilder.forInterface(KeycloakPolicyEnforcerTenantConfig.class)
+                .with(KeycloakPolicyEnforcerTenantConfig::connectionPoolSize, connectionPoolSize)
+                .with(KeycloakPolicyEnforcerTenantConfig::policyEnforcer, policyEnforcerConfig)
+                .build();
     }
 
     public KeycloakPolicyEnforcerTenantConfigBuilder connectionPoolSize(int connectionPoolSize) {
@@ -116,17 +106,17 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
     }
 
     public KeycloakPolicyEnforcerTenantConfigBuilder pathCache(long lifespan) {
-        pathCache = new PathCacheConfigImpl(lifespan, pathCache == null ? 0 : pathCache.maxEntries());
+        pathCache = pathCacheConfig(lifespan, pathCache == null ? 0 : pathCache.maxEntries());
         return this;
     }
 
     public KeycloakPolicyEnforcerTenantConfigBuilder pathCache(int maxEntries) {
-        pathCache = new PathCacheConfigImpl(pathCache == null ? 0L : pathCache.lifespan(), maxEntries);
+        pathCache = pathCacheConfig(pathCache == null ? 0L : pathCache.lifespan(), maxEntries);
         return this;
     }
 
     public KeycloakPolicyEnforcerTenantConfigBuilder pathCache(int maxEntries, long lifespan) {
-        pathCache = new PathCacheConfigImpl(lifespan, maxEntries);
+        pathCache = pathCacheConfig(lifespan, maxEntries);
         return this;
     }
 
@@ -135,14 +125,14 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
     }
 
     public KeycloakPolicyEnforcerTenantConfigBuilder claimInformationPoint(Map<String, Map<String, String>> simpleConfig) {
-        claimInformationPoint = new ClaimInformationPointConfigImpl(simpleConfig == null ? Map.of() : Map.copyOf(simpleConfig),
+        claimInformationPoint = claimInformationPointConfig(simpleConfig == null ? Map.of() : Map.copyOf(simpleConfig),
                 claimInformationPoint == null ? Map.of() : claimInformationPoint.complexConfig());
         return this;
     }
 
     public KeycloakPolicyEnforcerTenantConfigBuilder claimInformationPoint(Map<String, Map<String, String>> simpleConfig,
             Map<String, Map<String, Map<String, String>>> complexConfig) {
-        claimInformationPoint = new ClaimInformationPointConfigImpl(simpleConfig == null ? Map.of() : Map.copyOf(simpleConfig),
+        claimInformationPoint = claimInformationPointConfig(simpleConfig == null ? Map.of() : Map.copyOf(simpleConfig),
                 complexConfig == null ? Map.of() : Map.copyOf(complexConfig));
         return this;
     }
@@ -373,7 +363,7 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         private final KeycloakPolicyEnforcerTenantConfigBuilder builder;
         private final Map<String, MethodConfig> methods = new HashMap<>();
         private final Set<String> paths = new HashSet<>();
-        private ClaimInformationPointConfig claimInformationPointConfig = new ClaimInformationPointConfigImpl(Map.of(),
+        private ClaimInformationPointConfig claimInformationPointConfig = claimInformationPointConfig(Map.of(),
                 Map.of());
         private EnforcementMode enforcementMode = ENFORCING;
         private String name = null;
@@ -391,7 +381,7 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         @Override
         public KeycloakPolicyEnforcerTenantConfigBuilder claimInformationPoint(
                 Map<String, Map<String, String>> simpleConfig) {
-            claimInformationPointConfig = new ClaimInformationPointConfigImpl(
+            claimInformationPointConfig = claimInformationPointConfig(
                     simpleConfig == null ? Map.of() : Map.copyOf(simpleConfig),
                     claimInformationPointConfig == null ? Map.of() : claimInformationPointConfig.complexConfig());
             return builder;
@@ -400,7 +390,7 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         @Override
         public KeycloakPolicyEnforcerTenantConfigBuilder claimInformationPoint(Map<String, Map<String, String>> simpleConfig,
                 Map<String, Map<String, Map<String, String>>> complexConfig) {
-            claimInformationPointConfig = new ClaimInformationPointConfigImpl(
+            claimInformationPointConfig = claimInformationPointConfig(
                     simpleConfig == null ? Map.of() : Map.copyOf(simpleConfig),
                     complexConfig == null ? Map.of() : Map.copyOf(complexConfig));
             return builder;
@@ -491,7 +481,7 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
                 // default enforcement scope is ALL
                 scopeEnforcementMode = ScopeEnforcementMode.ALL;
             }
-            methods.put(method.toLowerCase(), new MethodConfigImpl(method, List.of(scopes), scopeEnforcementMode));
+            methods.put(method.toLowerCase(), methodConfig(method, List.of(scopes), scopeEnforcementMode));
             return builder;
         }
 
@@ -590,5 +580,28 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
             builder.method(method, scopesEnforcementMode, scopes == null ? new String[] {} : scopes);
             return builder;
         }
+    }
+
+    private static PathCacheConfig pathCacheConfig(long lifespan, int maxEntries) {
+        return ConfigInstanceBuilder.forInterface(PathCacheConfig.class)
+                .with(PathCacheConfig::lifespan, lifespan)
+                .with(PathCacheConfig::maxEntries, maxEntries)
+                .build();
+    }
+
+    private static ClaimInformationPointConfig claimInformationPointConfig(Map<String, Map<String, String>> simpleConfig,
+            Map<String, Map<String, Map<String, String>>> complexConfig) {
+        return ConfigInstanceBuilder.forInterface(ClaimInformationPointConfig.class)
+                .with(ClaimInformationPointConfig::simpleConfig, simpleConfig)
+                .with(ClaimInformationPointConfig::complexConfig, complexConfig)
+                .build();
+    }
+
+    private static MethodConfig methodConfig(String method, List<String> scopes, ScopeEnforcementMode scopesEnforcementMode) {
+        return ConfigInstanceBuilder.forInterface(MethodConfig.class)
+                .with(MethodConfig::method, method)
+                .with(MethodConfig::scopes, scopes)
+                .with(MethodConfig::scopesEnforcementMode, scopesEnforcementMode)
+                .build();
     }
 }

@@ -5,7 +5,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import org.eclipse.microprofile.config.ConfigProvider;
+import io.smallrye.config.Config;
 
 @Path("/config")
 public class ConfigEndpoint {
@@ -13,6 +13,6 @@ public class ConfigEndpoint {
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/grafana")
     public String grafana() {
-        return ConfigProvider.getConfig().getValue("grafana.endpoint", String.class);
+        return Config.get().getValue("grafana.endpoint", String.class);
     }
 }

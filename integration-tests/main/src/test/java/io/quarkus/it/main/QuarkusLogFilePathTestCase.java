@@ -8,13 +8,12 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.TestLog;
 import io.quarkus.test.junit.QuarkusTest;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 @QuarkusTest
 public class QuarkusLogFilePathTestCase {
@@ -32,7 +31,7 @@ public class QuarkusLogFilePathTestCase {
     public void shouldReadQuarkusLogFilePath() {
         Path expectedQuarkusLogPath = Path.of("target" + File.separator + "quarkus.log");
 
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         Path quarkusLogFilePath = config.getValue("quarkus.log.file.path", Path.class);
         LOGGER.infof("Config [quarkus.log.file.path]: %s", quarkusLogFilePath);
 

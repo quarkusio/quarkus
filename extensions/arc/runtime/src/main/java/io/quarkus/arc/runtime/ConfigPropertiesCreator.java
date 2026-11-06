@@ -5,12 +5,11 @@ import java.lang.annotation.Annotation;
 import jakarta.enterprise.inject.spi.Annotated;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.SyntheticCreationalContext;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public class ConfigPropertiesCreator implements BeanCreator<Object> {
     @Override
@@ -23,8 +22,7 @@ public class ConfigPropertiesCreator implements BeanCreator<Object> {
         Class<?> interfaceType = (Class<?>) context.getParams().get("type");
         String prefix = (String) context.getParams().get("prefix");
 
-        SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
-        return config.getConfigMapping(interfaceType, getPrefixFromInjectionPoint(injectionPoint, prefix));
+        return Config.get().getConfigMapping(interfaceType, getPrefixFromInjectionPoint(injectionPoint, prefix));
     }
 
     private static String getPrefixFromInjectionPoint(final InjectionPoint injectionPoint, final String prefix) {

@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.faulttolerance.Asynchronous;
 import org.eclipse.microprofile.faulttolerance.Bulkhead;
 import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
@@ -29,6 +28,7 @@ import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo2.ClassOutput;
+import io.smallrye.config.Config;
 import io.smallrye.faulttolerance.api.ApplyGuard;
 import io.smallrye.faulttolerance.api.AsynchronousNonBlocking;
 import io.smallrye.faulttolerance.api.BeforeRetry;
@@ -249,7 +249,7 @@ final class FaultToleranceScanner {
     private String getMethodNameFromConfig(MethodInfo method, Set<Class<? extends Annotation>> annotationsPresentDirectly,
             Class<? extends Annotation> ftAnnotation, String memberName) {
         String result;
-        org.eclipse.microprofile.config.Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         if (annotationsPresentDirectly.contains(ftAnnotation)) {
             // smallrye.faulttolerance."<classname>/<methodname>".<annotation>.<member>
             String newKey = ConfigUtilJandex.newKey(ftAnnotation, memberName, method);

@@ -11,7 +11,6 @@ import java.util.zip.GZIPOutputStream;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Marshaller;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.it.rest.TestResource;
@@ -21,6 +20,7 @@ import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
+import io.smallrye.config.Config;
 
 @QuarkusTest
 public class JaxRSTestCase {
@@ -39,7 +39,7 @@ public class JaxRSTestCase {
     @Test
     @DisabledOnIntegrationTest //the native image tests will bind to 0.0.0.0 as the image is a production image, but the test datasource in the JVM will want to use localhost
     public void testConfigInjectionOfPort() {
-        String host = ConfigProvider.getConfig().getOptionalValue("quarkus.http.host", String.class).orElse("0.0.0.0");
+        String host = Config.get().getOptionalValue("quarkus.http.host", String.class).orElse("0.0.0.0");
         RestAssured.when().get("/test/config/host").then().body(is(host));
     }
 

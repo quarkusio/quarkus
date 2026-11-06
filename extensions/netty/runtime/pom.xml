@@ -20,7 +20,12 @@
           -->
         <dependency>
             <groupId>io.netty</groupId>
-            <artifactId>netty-codec</artifactId>
+            <artifactId>netty-codec-base</artifactId>
+        </dependency>
+        <!-- Declared explicitly: the GraalVM substitutions reference io.netty.handler.codec.compression classes -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-compression</artifactId>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>

@@ -30,6 +30,7 @@ public interface RedisClientConfig {
      * 1 element.
      * <p>
      * The URI provided uses the following schema `redis://[username:password@][host][:port][/database]`
+     * (or `rediss://...`, `valkey://...`, `valkeys://...`, `unix://...`).
      * Use `quarkus.redis.hosts-provider-name` to provide the hosts programmatically.
      * <p>
      *

@@ -130,6 +130,27 @@ public class MavenModelBuilder implements ModelBuilder {
         request.getActiveProfileIds().addAll(cliOptions.getActiveProfileIds());
         request.getInactiveProfileIds().addAll(cliOptions.getInactiveProfileIds());
         request.setUserProperties(System.getProperties());
+        enableProjectLevelInterpolation(request);
+    }
+
+    /**
+     * Maven's artifact descriptor reader builds models at {@link ModelBuildingRequest#VALIDATION_LEVEL_MINIMAL},
+     * which, starting from Maven 3.10, also disables interpolation of user and system properties, since
+     * models built at that level are expected to be external dependency, parent and imported BOM POMs that
+     * should not be affected by the properties of the build they happen to be resolved in.
+     * <p>
+     * Models of projects belonging to the current workspace, however, are not external models. They are the
+     * models Maven itself would interpolate against the complete set of properties, including the ones
+     * passed in on the command line. Raising the validation level to
+     * {@link ModelBuildingRequest#VALIDATION_LEVEL_MAVEN_2_0} keeps them interpolated that way while staying
+     * below the validation level Maven applies to the projects it builds.
+     *
+     * @param request model building request for a project from the current workspace
+     */
+    private static void enableProjectLevelInterpolation(ModelBuildingRequest request) {
+        if (request.getValidationLevel() < ModelBuildingRequest.VALIDATION_LEVEL_MAVEN_2_0) {
+            request.setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MAVEN_2_0);
+        }
     }
 
     @Override

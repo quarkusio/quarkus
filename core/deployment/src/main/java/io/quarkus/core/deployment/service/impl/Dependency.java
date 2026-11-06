@@ -2,6 +2,7 @@ package io.quarkus.core.deployment.service.impl;
 
 import java.util.List;
 
+import io.quarkus.core.service.impl.ServiceNode;
 import io.quarkus.runtime.StartupContext;
 import io.smallrye.common.constraint.Assert;
 
@@ -33,8 +34,8 @@ public record Dependency(Class<?> type, List<String> nameParts, int flags) {
         Assert.checkNotNullParam("type", type);
         nameParts = List.copyOf(Assert.checkNotNullParam("nameParts", nameParts));
         for (String namePart : nameParts) {
-            if (namePart.indexOf('/') != -1) {
-                throw new IllegalArgumentException("Name part must not contain '/'");
+            if (namePart.indexOf('\0') != -1) {
+                throw new IllegalArgumentException("Name part must not contain the null character");
             }
         }
     }
@@ -79,12 +80,41 @@ public record Dependency(Class<?> type, List<String> nameParts, int flags) {
 
     /**
      * Get the key prefix for matching services in a {@code consumeAll} dependency.
-     * For a type {@code Foo.class} with no name parts, this returns {@code "com.example.Foo:"}.
-     * A service key matches if it starts with this prefix.
+     * The prefix includes a trailing {@code '\0'} delimiter so that
+     * {@link #consumeAllMatches(String)} can verify exactly one additional name level.
      *
      * @return the key prefix string
      */
     public String keyPrefix() {
-        return type.getName() + ":";
+        StringBuilder sb = new StringBuilder(type.getName());
+        for (String part : nameParts) {
+            sb.append('\0').append(part);
+        }
+        sb.append('\0');
+        return sb.toString();
+    }
+
+    /**
+     * Get a human-readable display form of this dependency's key.
+     *
+     * @return the display key string
+     */
+    public String displayKey() {
+        return ServiceNode.displayKey(key());
+    }
+
+    /**
+     * Test whether the given service key matches this {@code consumeAll} dependency.
+     * A key matches if it starts with this dependency's {@linkplain #keyPrefix() prefix}
+     * and contains exactly one additional name part (no further {@code '\0'} delimiters).
+     *
+     * @param candidateKey the service key to test
+     * @return {@code true} if the key matches
+     */
+    public boolean consumeAllMatches(String candidateKey) {
+        String prefix = keyPrefix();
+        return candidateKey.startsWith(prefix)
+                && candidateKey.length() > prefix.length()
+                && candidateKey.indexOf('\0', prefix.length()) == -1;
     }
 }

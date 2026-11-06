@@ -36,7 +36,6 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -52,6 +51,7 @@ import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeClient;
+import io.smallrye.config.Config;
 
 /**
  * Tests tests in the quarkus:dev mojo.
@@ -1721,7 +1721,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Set up the main project that uses the external dependency
         this.testDir = initProject(rootProjectPath);
 
-        String localRepository = ConfigProvider.getConfig().getOptionalValue("maven.repo.local", String.class)
+        String localRepository = Config.get().getOptionalValue("maven.repo.local", String.class)
                 .orElseThrow(() -> new AssertionError("maven.repo.local is not set"));
 
         // Run quarkus:dev process

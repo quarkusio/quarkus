@@ -4,16 +4,15 @@ import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExpor
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
-import java.util.OptionalInt;
 
 import org.junit.jupiter.api.Test;
 
-import io.opentelemetry.sdk.common.export.MemoryMode;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.*;
+import io.smallrye.config.ConfigInstanceBuilder;
 
 class OtlpExporterProviderTest {
+
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
 
     @Test
     public void resolveTraceEndpoint_newWins() {
@@ -136,288 +135,34 @@ class OtlpExporterProviderTest {
     }
 
     private OtlpExporterRuntimeConfig createOtlpExporterRuntimeConfig(String exporterGlobal, String newTrace) {
-        return new OtlpExporterRuntimeConfig() {
-            @Override
-            public Optional<String> endpoint() {
-                return Optional.ofNullable(exporterGlobal);
-            }
+        ConfigInstanceBuilder<OtlpExporterRuntimeConfig> config = ConfigInstanceBuilder
+                .forInterface(OtlpExporterRuntimeConfig.class)
+                .with(OtlpExporterConfig::timeout, DEFAULT_TIMEOUT)
+                .with(OtlpExporterConfig::proxyOptions, disabledProxy())
+                .with(OtlpExporterRuntimeConfig::traces,
+                        withEndpoint(ConfigInstanceBuilder.forInterface(OtlpExporterTracesConfig.class), newTrace))
+                .with(OtlpExporterRuntimeConfig::metrics,
+                        withEndpoint(ConfigInstanceBuilder.forInterface(OtlpExporterMetricsConfig.class), newTrace))
+                .with(OtlpExporterRuntimeConfig::logs,
+                        withEndpoint(ConfigInstanceBuilder.forInterface(OtlpExporterLogsConfig.class), newTrace));
+        if (exporterGlobal != null) {
+            config.withOptional(OtlpExporterConfig::endpoint, exporterGlobal);
+        }
+        return config.build();
+    }
 
-            @Override
-            public Optional<List<String>> headers() {
-                return Optional.empty();
-            }
+    private static <T extends OtlpExporterConfig> T withEndpoint(ConfigInstanceBuilder<T> config, String endpoint) {
+        config.with(OtlpExporterConfig::timeout, DEFAULT_TIMEOUT)
+                .with(OtlpExporterConfig::proxyOptions, disabledProxy());
+        if (endpoint != null) {
+            config.withOptional(OtlpExporterConfig::endpoint, endpoint);
+        }
+        return config.build();
+    }
 
-            @Override
-            public Optional<CompressionType> compression() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Duration timeout() {
-                return null;
-            }
-
-            @Override
-            public Optional<String> protocol() {
-                return Optional.empty();
-            }
-
-            @Override
-            public KeyCert keyCert() {
-                return null;
-            }
-
-            @Override
-            public TrustCert trustCert() {
-                return null;
-            }
-
-            @Override
-            public Optional<String> tlsConfigurationName() {
-                return Optional.empty();
-            }
-
-            @Override
-            public ProxyConfig proxyOptions() {
-                return null;
-            }
-
-            @Override
-            public MemoryMode memoryMode() {
-                return MemoryMode.IMMUTABLE_DATA;
-            }
-
-            @Override
-            public OtlpExporterTracesConfig traces() {
-                return new OtlpExporterTracesConfig() {
-                    @Override
-                    public Optional<String> endpoint() {
-                        return Optional.ofNullable(newTrace);
-                    }
-
-                    @Override
-                    public Optional<List<String>> headers() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<CompressionType> compression() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Duration timeout() {
-                        return null;
-                    }
-
-                    @Override
-                    public Optional<String> protocol() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public KeyCert keyCert() {
-                        return new KeyCert() {
-                            @Override
-                            public Optional<List<String>> keys() {
-                                return Optional.empty();
-                            }
-
-                            @Override
-                            public Optional<List<String>> certs() {
-                                return Optional.empty();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public TrustCert trustCert() {
-                        return new TrustCert() {
-                            @Override
-                            public Optional<List<String>> certs() {
-                                return Optional.empty();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public Optional<String> tlsConfigurationName() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public ProxyConfig proxyOptions() {
-                        return new ProxyConfig() {
-                            @Override
-                            public boolean enabled() {
-                                return false;
-                            }
-
-                            @Override
-                            public Optional<String> username() {
-                                return Optional.empty();
-                            }
-
-                            @Override
-                            public Optional<String> password() {
-                                return Optional.empty();
-                            }
-
-                            @Override
-                            public OptionalInt port() {
-                                return OptionalInt.empty();
-                            }
-
-                            @Override
-                            public Optional<String> host() {
-                                return Optional.empty();
-                            }
-                        };
-                    }
-                };
-            }
-
-            @Override
-            public OtlpExporterMetricsConfig metrics() {
-                return new OtlpExporterMetricsConfig() {
-                    @Override
-                    public Optional<String> temporalityPreference() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<String> defaultHistogramAggregation() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<String> endpoint() {
-                        return Optional.ofNullable(newTrace);
-                    }
-
-                    @Override
-                    public Optional<List<String>> headers() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<CompressionType> compression() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Duration timeout() {
-                        return null;
-                    }
-
-                    @Override
-                    public Optional<String> protocol() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public KeyCert keyCert() {
-                        return new KeyCert() {
-                            @Override
-                            public Optional<List<String>> keys() {
-                                return Optional.empty();
-                            }
-
-                            @Override
-                            public Optional<List<String>> certs() {
-                                return Optional.empty();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public TrustCert trustCert() {
-                        return new TrustCert() {
-                            @Override
-                            public Optional<List<String>> certs() {
-                                return Optional.empty();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public Optional<String> tlsConfigurationName() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public ProxyConfig proxyOptions() {
-                        return null;
-                    }
-                };
-
-            }
-
-            @Override
-            public OtlpExporterLogsConfig logs() {
-                return new OtlpExporterLogsConfig() {
-                    @Override
-                    public Optional<String> endpoint() {
-                        return Optional.ofNullable(newTrace);
-                    }
-
-                    @Override
-                    public Optional<List<String>> headers() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<CompressionType> compression() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Duration timeout() {
-                        return null;
-                    }
-
-                    @Override
-                    public Optional<String> protocol() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public KeyCert keyCert() {
-                        return new KeyCert() {
-                            @Override
-                            public Optional<List<String>> keys() {
-                                return Optional.empty();
-                            }
-
-                            @Override
-                            public Optional<List<String>> certs() {
-                                return Optional.empty();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public TrustCert trustCert() {
-                        return new TrustCert() {
-                            @Override
-                            public Optional<List<String>> certs() {
-                                return Optional.empty();
-                            }
-                        };
-                    }
-
-                    @Override
-                    public Optional<String> tlsConfigurationName() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public ProxyConfig proxyOptions() {
-                        return null;
-                    }
-                };
-
-            }
-        };
+    private static OtlpExporterConfig.ProxyConfig disabledProxy() {
+        return ConfigInstanceBuilder.forInterface(OtlpExporterConfig.ProxyConfig.class)
+                .with(OtlpExporterConfig.ProxyConfig::enabled, false)
+                .build();
     }
 }

@@ -15,6 +15,7 @@ import jakarta.enterprise.inject.Default;
 import jakarta.inject.Singleton;
 import jakarta.persistence.AttributeConverter;
 import jakarta.transaction.TransactionManager;
+import jakarta.transaction.TransactionSynchronizationRegistry;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -77,7 +78,6 @@ import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
 import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
-import io.quarkus.hibernate.orm.runtime.TransactionSessions;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
@@ -124,13 +124,17 @@ public class HibernateOrmCdiProcessor {
                 FieldInfo field = transformationContext.getTarget().asField();
 
                 DotName fieldTypeName = field.type().name();
-                if (!SESSION_EXPOSED_TYPES.contains(fieldTypeName)
+                boolean persistenceAgentInjection = STATELESS_SESSION_EXPOSED_TYPES.contains(fieldTypeName)
+                        && field.hasAnnotation(ClassNames.JPA_PERSISTENCE_AGENT);
+                if (!persistenceAgentInjection && !SESSION_EXPOSED_TYPES.contains(fieldTypeName)
                         && !SESSION_FACTORY_EXPOSED_TYPES.contains(fieldTypeName)) {
                     return;
                 }
 
                 DotName jpaAnnotation;
-                if (field.hasAnnotation(ClassNames.JPA_PERSISTENCE_UNIT)) {
+                if (persistenceAgentInjection) {
+                    jpaAnnotation = ClassNames.JPA_PERSISTENCE_AGENT;
+                } else if (field.hasAnnotation(ClassNames.JPA_PERSISTENCE_UNIT)) {
                     jpaAnnotation = ClassNames.JPA_PERSISTENCE_UNIT;
                 } else if (field.hasAnnotation(ClassNames.JPA_PERSISTENCE_CONTEXT)) {
                     jpaAnnotation = ClassNames.JPA_PERSISTENCE_CONTEXT;
@@ -258,7 +262,6 @@ public class HibernateOrmCdiProcessor {
         // and is definitely not using Hibernate ORM.
         if (capabilities.isPresent(Capability.TRANSACTIONS)) {
             unremovableClasses.add(TransactionManager.class);
-            unremovableClasses.add(TransactionSessions.class);
             unremovableClasses.add(RequestScopedSessionHolder.class);
             unremovableClasses.add(RequestScopedStatelessSessionHolder.class);
         }
@@ -423,14 +426,20 @@ public class HibernateOrmCdiProcessor {
         producer.produce(createSyntheticBean(puRef,
                 Session.class, SESSION_EXPOSED_TYPES, false)
                 .createWith(recorder.sessionSupplier(puRef.persistenceUnitName))
-                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionSessions.class)))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionManager.class)))
+                .addInjectionPoint(
+                        ClassType.create(DotName.createSimple(TransactionSynchronizationRegistry.class)))
                 .done());
 
         // Create StatelessSession bean
         producer.produce(createSyntheticBean(puRef,
                 StatelessSession.class, STATELESS_SESSION_EXPOSED_TYPES, false)
                 .createWith(recorder.statelessSessionSupplier(puRef.persistenceUnitName))
-                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionSessions.class)))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionManager.class)))
+                .addInjectionPoint(
+                        ClassType.create(DotName.createSimple(TransactionSynchronizationRegistry.class)))
                 .done());
     }
 

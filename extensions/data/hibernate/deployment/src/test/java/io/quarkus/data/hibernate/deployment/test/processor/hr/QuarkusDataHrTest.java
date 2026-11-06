@@ -1,7 +1,3 @@
-/*
- * SPDX-License-Identifier: Apache-2.0
- * Copyright Red Hat Inc. and Hibernate Authors
- */
 package io.quarkus.data.hibernate.deployment.test.processor.hr;
 
 import java.lang.reflect.Constructor;
@@ -36,12 +32,13 @@ public class QuarkusDataHrTest {
         method = entityClass.getDeclaredMethod("managedReactive");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(entityClass.getName() + "$PanacheManagedReactiveRepository_", method.getReturnType().getName());
+        Assertions.assertEquals(entityClass.getName() + "$QuarkusDataManagedReactiveRepository_",
+                method.getReturnType().getName());
 
-        method = entityClass.getDeclaredMethod("statelessReactive");
+        method = entityClass.getDeclaredMethod("recordReactive");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
-        Assertions.assertEquals(entityClass.getName() + "$PanacheStatelessReactiveRepository_",
+        Assertions.assertEquals(entityClass.getName() + "$QuarkusDataRecordReactiveRepository_",
                 method.getReturnType().getName());
     }
 
@@ -69,7 +66,7 @@ public class QuarkusDataHrTest {
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
         Assertions.assertEquals(QuarkusDataBookCustomId.ManagedQueries.class, method.getReturnType());
 
-        method = entityClass.getDeclaredMethod("statelessReactive");
+        method = entityClass.getDeclaredMethod("recordReactive");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
         Assertions.assertEquals(QuarkusDataBookCustomId.StatelessQueries.class, method.getReturnType());

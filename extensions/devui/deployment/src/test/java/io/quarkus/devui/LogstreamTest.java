@@ -62,6 +62,31 @@ public class LogstreamTest extends DevUIJsonRPCTest {
 
     }
 
+    @Test
+    public void testUpdateRootLogger() throws Exception {
+        // Get the root level before
+        JsonNode getRootLoggerResponse = super.executeJsonRPCMethod("getLogger", Map.of("loggerName", ""));
+        Assertions.assertNotNull(getRootLoggerResponse);
+        Assertions.assertEquals("INFO", getRootLoggerResponse.get("effectiveLevel").asText());
+
+        // Update the root level
+        JsonNode updateLogLevelResponse = super.executeJsonRPCMethod("updateLogLevel",
+                Map.of("loggerName", "", "levelValue", "DEBUG"));
+        Assertions.assertNotNull(updateLogLevelResponse);
+        Assertions.assertEquals("DEBUG", updateLogLevelResponse.get("effectiveLevel").asText());
+
+        // A logger without a configured level inherits the root level
+        JsonNode getLoggerResponse = super.executeJsonRPCMethod("getLogger",
+                Map.of("loggerName", "io.quarkus.devui.test.inherits.root"));
+        Assertions.assertEquals("DEBUG", getLoggerResponse.get("effectiveLevel").asText());
+
+        // Restore the root level
+        JsonNode restoreLogLevelResponse = super.executeJsonRPCMethod("updateLogLevel",
+                Map.of("loggerName", "", "levelValue", "INFO"));
+        Assertions.assertNotNull(restoreLogLevelResponse);
+        Assertions.assertEquals("INFO", restoreLogLevelResponse.get("effectiveLevel").asText());
+    }
+
     private boolean hasStartedLine(Iterator<JsonNode> elements) {
         while (elements.hasNext()) {
             JsonNode next = elements.next();

@@ -41,7 +41,7 @@ class NativeImageReflectConfigStepTest {
         NativeImageReflectConfigStep step = new NativeImageReflectConfigStep();
         List<GeneratedResourceBuildItem> produced = new ArrayList<>();
 
-        step.generateReflectConfig(produced::add, new TestNativeConfig("mandrel"),
+        step.generateReflectConfig(produced::add, TestNativeConfig.of("mandrel"),
                 List.of(), List.of(),
                 reflectiveClassBuildItems,
                 List.of(), List.of(), List.of());

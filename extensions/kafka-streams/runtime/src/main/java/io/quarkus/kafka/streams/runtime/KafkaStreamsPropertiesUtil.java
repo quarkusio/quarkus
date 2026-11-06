@@ -5,10 +5,9 @@ import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.StreamsConfig;
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.config.Config;
 
 public class KafkaStreamsPropertiesUtil {
 
@@ -41,7 +40,7 @@ public class KafkaStreamsPropertiesUtil {
 
     private static Properties kafkaStreamsProperties(String prefix) {
         Properties kafkaStreamsProperties = new Properties();
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         for (String property : config.getPropertyNames()) {
             if (isKafkaStreamsProperty(prefix, property)) {
                 includeKafkaStreamsProperty(config, kafkaStreamsProperties, prefix, property);

@@ -9,9 +9,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.jar.Manifest;
@@ -31,9 +28,13 @@ public abstract class PathTreeWithManifest implements PathTree {
     public static final int JAVA_VERSION = Runtime.version().feature();
 
     protected boolean manifestEnabled;
-    private final ReentrantReadWriteLock manifestInfoLock = new ReentrantReadWriteLock();
-    private transient ManifestAttributes manifestAttributes;
-    protected transient boolean manifestInitialized;
+    /**
+     * Manifest info is published without locking, since locks held while reading the manifest
+     * could deadlock with locks held by open trees that share their manifest info with the tree they were opened from.
+     * Concurrent callers may end up reading the manifest more than once, which is harmless, since they all read the same
+     * content.
+     */
+    private transient volatile ManifestInfo manifestInfo;
     protected volatile Map<String, String> multiReleaseMapping;
 
     protected PathTreeWithManifest() {
@@ -43,20 +44,14 @@ public abstract class PathTreeWithManifest implements PathTree {
     protected PathTreeWithManifest(boolean manifestEnabled) {
         this.manifestEnabled = manifestEnabled;
         if (!manifestEnabled) {
-            manifestInitialized = true;
+            manifestInfo = ManifestInfo.NONE;
             multiReleaseMapping = Collections.emptyMap();
         }
     }
 
     protected PathTreeWithManifest(PathTreeWithManifest pathTreeWithManifest) {
-        pathTreeWithManifest.manifestReadLock().lock();
-        try {
-            this.manifestAttributes = pathTreeWithManifest.manifestAttributes;
-            this.manifestInitialized = pathTreeWithManifest.manifestInitialized;
-            this.multiReleaseMapping = pathTreeWithManifest.multiReleaseMapping;
-        } finally {
-            pathTreeWithManifest.manifestReadLock().unlock();
-        }
+        this.manifestInfo = pathTreeWithManifest.manifestInfo;
+        this.multiReleaseMapping = pathTreeWithManifest.multiReleaseMapping;
         this.manifestEnabled = pathTreeWithManifest.manifestEnabled;
     }
 
@@ -69,42 +64,20 @@ public abstract class PathTreeWithManifest implements PathTree {
 
     @Override
     public ManifestAttributes getManifestAttributes() {
-        // Optimistically try with a lock that allows concurrent access first, for performance.
-        manifestReadLock().lock();
-        try {
-            if (manifestInitialized) {
-                return manifestAttributes;
-            }
-        } finally {
-            manifestReadLock().unlock();
+        var manifestInfo = this.manifestInfo;
+        if (manifestInfo == null) {
+            initManifest(apply("META-INF/MANIFEST.MF", ManifestReader.INSTANCE, false));
+            manifestInfo = this.manifestInfo;
         }
-        // Failing that, try with a lock that does not allow concurrent access, to initialize the manifest.
-        manifestWriteLock().lock();
-        try {
-            if (manifestInitialized) {
-                // Someone else got here between our call to manifestReadLock().unlock()
-                // and our call to manifestWriteLock().lock(); it can happen.
-                return manifestAttributes;
-            }
-            final Manifest m = apply("META-INF/MANIFEST.MF", ManifestReader.INSTANCE, false);
-            initManifest(m);
-        } finally {
-            manifestWriteLock().unlock();
-        }
-        return manifestAttributes;
+        return manifestInfo.attributes();
+    }
+
+    protected boolean isManifestInitialized() {
+        return manifestInfo != null;
     }
 
     protected void initManifest(Manifest m) {
-        manifestAttributes = ManifestAttributes.of(m);
-        manifestInitialized = true;
-    }
-
-    protected WriteLock manifestWriteLock() {
-        return manifestInfoLock.writeLock();
-    }
-
-    protected ReadLock manifestReadLock() {
-        return manifestInfoLock.readLock();
+        manifestInfo = new ManifestInfo(ManifestAttributes.of(m));
     }
 
     public boolean isMultiReleaseJar() {
@@ -224,6 +197,15 @@ public abstract class PathTreeWithManifest implements PathTree {
             }
             return sb.toString();
         }
+    }
+
+    /**
+     * Manifest attributes of a tree once its manifest has been read.
+     *
+     * @param attributes manifest attributes or {@code null}, if the tree does not include a manifest
+     */
+    private record ManifestInfo(ManifestAttributes attributes) {
+        private static final ManifestInfo NONE = new ManifestInfo(null);
     }
 
     private static class ManifestReader implements Function<PathVisit, Manifest> {

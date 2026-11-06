@@ -17,7 +17,6 @@ import java.util.function.Supplier;
 
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -26,6 +25,7 @@ import org.testcontainers.containers.GenericContainer;
 import io.quarkus.cache.redis.runtime.RedisCacheImpl;
 import io.quarkus.cache.redis.runtime.RedisCacheInfo;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.json.Json;
@@ -107,7 +107,7 @@ class RedisCacheImplTest {
 
     @Test
     public void testExhaustConnectionPool() {
-        String redisUrl = ConfigProvider.getConfig().getValue("quarkus.redis.hosts", String.class);
+        String redisUrl = Config.get().getValue("quarkus.redis.hosts", String.class);
 
         String k = UUID.randomUUID().toString();
         RedisCacheInfo info = new RedisCacheInfo();

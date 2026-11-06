@@ -18,7 +18,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.workspace.ArtifactSources;
@@ -30,6 +29,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.smallrye.config.Config;
 import io.smallrye.jwt.util.KeyUtils;
 
 public class SmallryeJwtDevModeProcessor {
@@ -219,7 +219,7 @@ public class SmallryeJwtDevModeProcessor {
     }
 
     private boolean isConfigPresent(String property) {
-        return ConfigProvider.getConfig().getOptionalValue(property, String.class)
+        return Config.get().getOptionalValue(property, String.class)
                 .isPresent();
     }
 

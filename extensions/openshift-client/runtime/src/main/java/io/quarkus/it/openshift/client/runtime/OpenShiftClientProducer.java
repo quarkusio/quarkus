@@ -25,9 +25,7 @@ public class OpenShiftClientProducer {
     @Produces
     public OpenShiftClient openShiftClient(KubernetesSerialization kubernetesSerialization,
             Config config) {
-        // TODO - Temporary fix for https://github.com/fabric8io/kubernetes-client/pull/3347 + WithOpenShiftTestServer
         final OpenShiftConfig openShiftConfig = new OpenShiftConfig(config);
-        openShiftConfig.setHttp2Disable(config.isHttp2Disable());
 
         client = new KubernetesClientBuilder()
                 .withConfig(openShiftConfig)

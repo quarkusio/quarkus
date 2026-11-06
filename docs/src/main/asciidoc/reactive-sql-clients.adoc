@@ -852,6 +852,28 @@ The `ssl-negotiation` property accepts two values:
 * `postgres` (default) — traditional negotiation, compatible with all PostgreSQL versions.
 * `direct` — direct SSL, requires PostgreSQL 17 or later.
 
+=== Channel binding (PostgreSQL 11+)
+
+Channel binding is a method for the server to authenticate itself to the client.
+It is only supported over SSL connections, with PostgreSQL 11 or later servers using the SCRAM authentication method.
+
+Configure it with the `channel-binding` property:
+
+[source,properties]
+----
+quarkus.datasource.reactive.postgresql.ssl-mode=require
+quarkus.datasource.reactive.postgresql.channel-binding=require
+----
+
+The `channel-binding` property accepts three values:
+
+* `disable` — prevents the use of channel binding.
+* `prefer` (default) — the client uses channel binding if available.
+* `require` — the connection must employ channel binding. If it cannot, for example because SSL is not enabled, the connection fails.
+
+Channel binding can also be configured with the `channel_binding` parameter of the reactive datasource URL, for example `postgresql://localhost/mydb?sslmode=require&channel_binding=require`.
+When the `channel-binding` property is set, it takes precedence over the URL parameter.
+
 === TDS 8.0 (Microsoft SQL Server 2022+)
 
 Microsoft SQL Server 2022 and later support TDS 8.0, which performs the TLS handshake before any TDS protocol exchange.
@@ -898,6 +920,31 @@ public class CustomPoolCreator implements PoolCreator {
 For a named datasource, annotate the bean with `@ReactiveDataSource("datasource-name")`.
 
 TIP: `PoolCreator` is also the way to set Vert.x options that cannot be expressed as configuration properties, such as `SqlConnectOptions.setPreparedStatementCacheSqlFilter(Predicate<String>)`.
+
+When a xref:credentials-provider.adoc[credentials provider] is configured, or when multiple hosts are listed for round-robin load balancing, use `input.dynamicConnectOptionsList()` instead of `input.connectOptionsList()` to build the pool.
+`dynamicConnectOptionsList()` returns a `Supplier<Future<SqlConnectOptions>>` that re-fetches credentials on every connection attempt and rotates across hosts, so new connections automatically pick up rotated credentials:
+
+[source,java]
+----
+import jakarta.inject.Singleton;
+
+import io.quarkus.reactive.datasource.PoolCreator;
+import io.vertx.pgclient.PgBuilder;
+import io.vertx.sqlclient.Pool;
+
+@Singleton
+public class CustomPoolCreator implements PoolCreator {
+
+    @Override
+    public Pool create(Input input) {
+        return PgBuilder.pool()
+                .with(input.poolOptions())
+                .connectingTo(input.dynamicConnectOptionsList())
+                .using(input.vertx())
+                .build();
+    }
+}
+----
 
 == Pipelining
 

@@ -3,12 +3,11 @@ package io.quarkus.stork;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.config.Config;
 import io.smallrye.stork.api.config.ServiceConfig;
 
 @Recorder
@@ -51,7 +50,7 @@ public class StorkRegistrarConfigRecorder {
      */
     public void setupServiceRegistrarConfig(String serviceRegistrarType, String healthCheckUrl) {
         StorkConfigUtil.requireRegistrarTypeNotBlank(serviceRegistrarType);
-        Config quarkusConfig = ConfigProvider.getConfig();
+        Config quarkusConfig = Config.get();
         List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(runtimeConfig.getValue());
         List<ServiceConfig> registrationConfigs = serviceConfigs.stream()
                 .filter(serviceConfig -> serviceConfig.serviceRegistrar() != null).toList();

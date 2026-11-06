@@ -113,6 +113,22 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- Build-order-only dependency: the classic Panache conflict test forces this deployment artifact onto its
+             classpath, so it must be built before this module in the reactor. Transitive dependencies are excluded so
+             the artifact is not added to the module-wide test classpath (that would break every other test). -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-panache-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>

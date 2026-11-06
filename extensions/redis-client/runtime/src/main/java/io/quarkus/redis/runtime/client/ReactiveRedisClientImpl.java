@@ -10,7 +10,7 @@ import io.vertx.redis.client.Command;
 import io.vertx.redis.client.Request;
 import io.vertx.redis.client.Response;
 
-class ReactiveRedisClientImpl implements ReactiveRedisClient {
+public class ReactiveRedisClientImpl implements ReactiveRedisClient {
     private final RedisAPI redisAPI;
     private final Redis redis;
 

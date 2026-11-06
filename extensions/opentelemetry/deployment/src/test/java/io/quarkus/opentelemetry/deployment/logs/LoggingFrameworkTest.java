@@ -3,8 +3,6 @@ package io.quarkus.opentelemetry.deployment.logs;
 import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.List;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -16,7 +14,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporterProvider;
 import io.quarkus.test.QuarkusExtensionTest;
@@ -61,10 +58,8 @@ public class LoggingFrameworkTest {
     public void testJBossLogging() {
         final String message = "JBoss Logging message";
         assertEquals("hello", jBossLoggingBean.hello(message));
-        List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
-        LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
 
-        assertThat(last)
+        assertThat(logRecordExporter.getFinishedLogRecordItemWithBody(message))
                 .hasBody(message)
                 .hasAttributesSatisfying(
                         attributes -> assertThat(attributes)
@@ -75,10 +70,8 @@ public class LoggingFrameworkTest {
     public void testSLF4JLogging() {
         final String message = "SLF4J Logging message";
         assertEquals("hello", slf4jBean.hello(message));
-        List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
-        LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
 
-        assertThat(last)
+        assertThat(logRecordExporter.getFinishedLogRecordItemWithBody(message))
                 .hasBody(message)
                 .hasAttributesSatisfying(
                         attributes -> assertThat(attributes)
@@ -89,10 +82,8 @@ public class LoggingFrameworkTest {
     public void testLog4jLogging() {
         final String message = "Log4j Logging message";
         assertEquals("hello", log4j2Bean.hello(message));
-        List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
-        LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
 
-        assertThat(last)
+        assertThat(logRecordExporter.getFinishedLogRecordItemWithBody(message))
                 .hasBody(message)
                 .hasAttributesSatisfying(
                         attributes -> assertThat(attributes)
@@ -103,10 +94,8 @@ public class LoggingFrameworkTest {
     public void testJulLogging() {
         final String message = "JUL Logging message";
         assertEquals("hello", julBean.hello(message));
-        List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
-        LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
 
-        assertThat(last)
+        assertThat(logRecordExporter.getFinishedLogRecordItemWithBody(message))
                 .hasBody(message)
                 .hasAttributesSatisfying(
                         attributes -> assertThat(attributes)

@@ -13,8 +13,6 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -50,10 +48,10 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.spi.IgnorableNonIndexedClasses;
 import io.quarkus.hibernate.orm.deployment.spi.JpaModelPersistenceUnitMappingBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.panache.deployment.EntityToPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.panache.deployment.JavaJpaTypeBundle;
 import io.quarkus.spring.data.deployment.generate.SpringDataRepositoryCreator;
+import io.smallrye.config.Config;
 
 public class SpringDataJPAProcessor {
 
@@ -72,7 +70,7 @@ public class SpringDataJPAProcessor {
     public static final String QUARKUS_HIBERNATE_ORM_SCHEMA_MANAGEMENT_STRATEGY = "quarkus.hibernate-orm.schema-management.strategy";
     public static final String QUARKUS_HIBERNATE_ORM_PHYSICAL_NAMING_STRATEGY = "quarkus.hibernate-orm.physical-naming-strategy";
     public static final String QUARKUS_HIBERNATE_ORM_IMPLICIT_NAMING_STRATEGY = "quarkus.hibernate-orm.implicit-naming-strategy";
-    private static final String QUARKUS_HIBERNATE_ORM_SQL_LOAD_SCRIPT = "quarkus.hibernate-orm.sql-load-script";
+    private static final String QUARKUS_HIBERNATE_ORM_DATA_INIT_SCRIPT = "quarkus.hibernate-orm.data-management.init-script";
 
     @BuildStep
     FeatureBuildItem registerFeature() {
@@ -113,11 +111,6 @@ public class SpringDataJPAProcessor {
                 "org.springframework.data.domain.PageRequest",
                 "org.springframework.data.domain.AbstractPageRequest",
                 "org.springframework.data.util.Streamable").methods().build());
-    }
-
-    @BuildStep
-    SqlLoadScriptDefaultBuildItem registerDataSql() {
-        return new SqlLoadScriptDefaultBuildItem("data.sql");
     }
 
     @BuildStep
@@ -182,7 +175,7 @@ public class SpringDataJPAProcessor {
     }
 
     private void detectAndLogSpecificSpringPropertiesIfExist() {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
 
         Iterable<String> iterablePropertyNames = config.getPropertyNames();
         List<String> propertyNames = new ArrayList<String>();
@@ -213,7 +206,7 @@ public class SpringDataJPAProcessor {
                         notSupportedProperties + "\t- " + SPRING_JPA_HIBERNATE_NAMING_IMPLICIT_STRATEGY
                                 + " should be replaced by " + QUARKUS_HIBERNATE_ORM_IMPLICIT_NAMING_STRATEGY + "\n";
                     case SPRING_DATASOURCE_DATA ->
-                        notSupportedProperties + "\t- " + QUARKUS_HIBERNATE_ORM_SQL_LOAD_SCRIPT
+                        notSupportedProperties + "\t- " + QUARKUS_HIBERNATE_ORM_DATA_INIT_SCRIPT
                                 + " could be used to load data instead of " + SPRING_DATASOURCE_DATA
                                 + " but it does not support ant-style patterns as "
                                 + SPRING_DATASOURCE_DATA

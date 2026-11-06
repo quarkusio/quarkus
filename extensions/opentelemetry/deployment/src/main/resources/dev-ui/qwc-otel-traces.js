@@ -11,7 +11,8 @@ import { dialogRenderer } from '@vaadin/dialog/lit.js';
 /**
  * Dev UI Traces view: spans grouped by trace, rendered as an expandable tree with a
  * timing waterfall bar per span. Seeds from getSnapshot(), then live-updates via
- * streamSpans(). Extends ObservabilityCardBase for the shared CSV export.
+ * streamSpans(). Extends ObservabilityCardBase for the shared CSV export; when embedded in the
+ * dashboard, its single Export button takes over from the one in this toolbar.
  */
 export class QwcOtelTraces extends ObservabilityCardBase {
 
@@ -86,18 +87,20 @@ export class QwcOtelTraces extends ObservabilityCardBase {
         // Build a tree data structure for vaadin-grid: root nodes = traces, children = spans.
         // Spans within a trace are ordered oldest-first (by start time) so the waterfall reads
         // top-to-bottom chronologically; the grouped snapshot delivers them in completion order
-        // (children finish before their parents).
+        // (children finish before their parents). Every row gets a stable id: each new span rebuilds
+        // these objects, and the grid (see itemIdPath) would otherwise forget which rows were expanded.
         this._flatRows = traces.map(t => {
             const spans = [...t.spans].sort(this._byStartAsc);
             const root = spans.find(s => this._isRoot(s, spans)) ?? spans[0];
             return {
+                id: 'trace:' + t.traceId,
                 traceId: t.traceId,
                 time: this._formatTime(t.windowStart),
                 shortId: t.traceId.substring(0, 8),
                 traceName: root && root.name ? root.name : '(unnamed)',
                 windowStart: t.windowStart,
                 windowEnd: t.windowEnd,
-                children: spans.map(s => ({ ...s, _window: [t.windowStart, t.windowEnd] })),
+                children: spans.map(s => ({ ...s, id: 'span:' + s.spanId, _window: [t.windowStart, t.windowEnd] })),
             };
         });
     }
@@ -125,19 +128,23 @@ export class QwcOtelTraces extends ObservabilityCardBase {
         return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     }
 
-    updated() {
-        // The tree grid caches dataProvider results; invalidate so live updates appear.
-        this.renderRoot.querySelector('vaadin-grid')?.clearCache();
+    updated(changedProperties) {
+        // The tree grid caches dataProvider results; invalidate so live updates appear. Only when
+        // the rows changed though: opening the span detail dialog is no reason to redraw the tree.
+        if (changedProperties.has('_flatRows')) {
+            this.renderRoot.querySelector('vaadin-grid')?.clearCache();
+        }
     }
 
     render() {
         return html`
             <div class="toolbar">
                 <vaadin-button theme="small" @click=${this._clear}>Clear</vaadin-button>
-                <vaadin-button theme="small" @click=${this._export}>Export CSV</vaadin-button>
+                ${this.embedded ? '' : html`
+                    <vaadin-button theme="small" @click=${this._export}>Export CSV</vaadin-button>`}
                 <span>${this._traces.length} traces</span>
             </div>
-            <vaadin-grid .itemHasChildrenPath=${'children'}
+            <vaadin-grid .itemHasChildrenPath=${'children'} .itemIdPath=${'id'}
                          .dataProvider=${this._dataProvider} theme="compact no-border">
                 <vaadin-grid-column header="Name" auto-width flex-grow="3"
                     ${columnBodyRenderer((item, model) => this._nameRenderer(item, model), [])}>
@@ -164,6 +171,9 @@ export class QwcOtelTraces extends ObservabilityCardBase {
     };
 
     _nameRenderer(item, model) {
+        // The grid recycles these toggles for other rows as the list shifts. Lit applies bindings in
+        // the order written, so the listener has to be rebound to the new item before .expanded is
+        // set: the other way round, the expanded-changed that setting fires collapses the old row.
         // Trace (root) rows carry children: show "hh:mm:ss - <short trace id> - <span name (bold)>".
         // Child span rows show "<short span id> - <span name (bold, click for details)>".
         const content = item.children
@@ -175,8 +185,8 @@ export class QwcOtelTraces extends ObservabilityCardBase {
             <vaadin-grid-tree-toggle
                 .leaf=${!item.children}
                 .level=${model.level ?? 0}
-                .expanded=${model.expanded}
-                @expanded-changed=${(e) => this._onExpandedChanged(e, item)}>
+                @expanded-changed=${(e) => this._onExpandedChanged(e, item)}
+                .expanded=${model.expanded}>
                 ${content}
             </vaadin-grid-tree-toggle>`;
     }
@@ -245,13 +255,18 @@ export class QwcOtelTraces extends ObservabilityCardBase {
     }
 
     _export() {
+        const data = this.exportData();
+        this.exportCsv(data.rows, data.filename);
+    }
+
+    exportData() {
         // Flatten every span across every trace for CSV, spans oldest-first as displayed.
         const rows = this._flatRows.flatMap(t => t.children.map(s => ({
             traceId: s.traceId, spanId: s.spanId, parentSpanId: s.parentSpanId,
             name: s.name, kind: s.kind, durationNanos: s.durationNanos,
             statusCode: s.statusCode,
         })));
-        this.exportCsv(rows, 'traces.csv');
+        return { rows, filename: 'traces.csv' };
     }
 }
 customElements.define('qwc-otel-traces', QwcOtelTraces);

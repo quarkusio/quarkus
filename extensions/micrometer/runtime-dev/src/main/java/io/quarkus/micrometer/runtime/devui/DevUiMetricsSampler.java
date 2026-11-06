@@ -1,6 +1,7 @@
 package io.quarkus.micrometer.runtime.devui;
 
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -97,8 +98,10 @@ public class DevUiMetricsSampler {
                         summaryDistribution(summary.takeSnapshot())),
                 longTaskTimer -> new MetricSample(name, tags, "LONG_TASK_TIMER", false,
                         longTaskTimer.activeTasks(), now, "micrometer", "tasks", null),
+                // value() is in the gauge's base time unit, and the id carries no unit of its own; name it
+                // so that the reading, and the exported Prometheus name, both say which unit it is in.
                 timeGauge -> new MetricSample(name, tags, "GAUGE", false, timeGauge.value(), now, "micrometer",
-                        unit, null),
+                        unit == null ? timeGauge.baseTimeUnit().name().toLowerCase(Locale.ROOT) : unit, null),
                 functionCounter -> new MetricSample(name, tags, "COUNTER", true,
                         functionCounter.count(), now, "micrometer", unit, null),
                 // A FunctionTimer tracks totals only: no max, no percentiles, no histogram.

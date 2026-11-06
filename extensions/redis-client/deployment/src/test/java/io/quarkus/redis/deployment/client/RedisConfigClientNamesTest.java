@@ -4,16 +4,14 @@ import static io.quarkus.redis.runtime.client.config.RedisConfig.DEFAULT_CLIENT_
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import io.smallrye.config.ConfigInstanceBuilder;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.common.MapBackedConfigSource;
@@ -105,75 +103,37 @@ public class RedisConfigClientNamesTest {
         assertThat(names).containsOnly("my-redis", "my-redis-2");
     }
 
+    @Test
+    void testWithDisabledDefaultDevServiceWithValkeyHostsConfig() {
+        createConfig(Map.of("quarkus.redis.hosts", "valkey://localhost:1234",
+                "quarkus.redis.valkey-client.hosts", "valkeys://localhost:5678"));
+
+        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(
+                Map.of(DEFAULT_CLIENT_NAME, createDevServiceConfiguration(false)));
+
+        Set<String> names = RedisClientProcessor.configuredClientNames(redisBuildTimeConfig, config);
+        assertThat(names).containsOnly("<default>", "valkey-client");
+    }
+
     private static RedisBuildTimeConfig createRedisBuildTimeConfig(Map<String, DevServicesConfig> devServices) {
-        return new RedisBuildTimeConfig() {
-            @Override
-            public Map<String, RedisClientBuildTimeConfig> clients() {
-                Map<String, RedisClientBuildTimeConfig> clients = new HashMap<>();
-                for (String name : devServices.keySet()) {
-                    clients.put(name, new RedisClientBuildTimeConfig() {
-                        @Override
-                        public Optional<List<String>> loadScript() {
-                            return Optional.empty();
-                        }
-
-                        @Override
-                        public boolean flushBeforeLoad() {
-                            return false;
-                        }
-
-                        @Override
-                        public boolean loadOnlyIfEmpty() {
-                            return false;
-                        }
-
-                        @Override
-                        public DevServicesConfig devservices() {
-                            return devServices.get(name);
-                        }
-                    });
-                }
-                return clients;
-            }
-
-            @Override
-            public boolean healthEnabled() {
-                return false;
-            }
-        };
+        Map<String, RedisClientBuildTimeConfig> clients = new HashMap<>();
+        for (String name : devServices.keySet()) {
+            clients.put(name, ConfigInstanceBuilder.forInterface(RedisClientBuildTimeConfig.class)
+                    .with(RedisClientBuildTimeConfig::flushBeforeLoad, false)
+                    .with(RedisClientBuildTimeConfig::loadOnlyIfEmpty, false)
+                    .with(RedisClientBuildTimeConfig::devservices, devServices.get(name))
+                    .build());
+        }
+        return ConfigInstanceBuilder.forInterface(RedisBuildTimeConfig.class)
+                .with(RedisBuildTimeConfig::clients, clients)
+                .with(RedisBuildTimeConfig::healthEnabled, false)
+                .build();
     }
 
     private static DevServicesConfig createDevServiceConfiguration(boolean enabled) {
-        return new DevServicesConfig() {
-            @Override
-            public boolean enabled() {
-                return enabled;
-            }
-
-            @Override
-            public Optional<String> imageName() {
-                return Optional.empty();
-            }
-
-            @Override
-            public OptionalInt port() {
-                return OptionalInt.empty();
-            }
-
-            @Override
-            public boolean shared() {
-                return false;
-            }
-
-            @Override
-            public String serviceName() {
-                return null;
-            }
-
-            @Override
-            public Map<String, String> containerEnv() {
-                return Map.of();
-            }
-        };
+        return ConfigInstanceBuilder.forInterface(DevServicesConfig.class)
+                .with(DevServicesConfig::enabled, enabled)
+                .with(DevServicesConfig::shared, false)
+                .build();
     }
 }

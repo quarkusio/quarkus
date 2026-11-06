@@ -1,12 +1,12 @@
 package io.quarkus.oidc.runtime;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import io.vertx.core.Handler;
@@ -16,7 +16,8 @@ public class MemoryCache<T> {
     private volatile Long timerId = null;
 
     private final Map<String, CacheEntry<T>> cacheMap = new ConcurrentHashMap<>();
-    private final AtomicInteger size = new AtomicInteger();
+    private final ConcurrentSkipListMap<Long, String> insertionOrder = new ConcurrentSkipListMap<>();
+    private final AtomicLong sequence = new AtomicLong();
     private final Duration cacheTimeToLive;
     private final int cacheSize;
     private final Runnable startTimer;
@@ -49,10 +50,13 @@ public class MemoryCache<T> {
     public void add(String key, T result) {
         if (cacheSize > 0) {
             startTimerIfNotRunning();
-            if (!prepareSpaceForNewCacheEntry()) {
-                clearCache();
+            CacheEntry<T> entry = new CacheEntry<>(result, now(), nextSequence());
+            CacheEntry<T> previous = cacheMap.put(key, entry);
+            if (previous != null) {
+                insertionOrder.remove(previous.sequence());
             }
-            cacheMap.put(key, new CacheEntry<>(result, now()));
+            indexEntry(key, entry);
+            evictIfFull();
         }
     }
 
@@ -63,13 +67,17 @@ public class MemoryCache<T> {
     }
 
     public T remove(String key) {
-        CacheEntry<T> entry = removeCacheEntry(key);
-        return entry == null ? null : entry.result;
+        CacheEntry<T> entry = cacheMap.remove(key);
+        if (entry == null) {
+            return null;
+        }
+        insertionOrder.remove(entry.sequence());
+        return entry.result();
     }
 
     public T get(String key) {
         CacheEntry<T> entry = cacheMap.get(key);
-        return entry == null ? null : entry.result;
+        return entry == null ? null : entry.result();
     }
 
     public boolean containsKey(String key) {
@@ -93,57 +101,35 @@ public class MemoryCache<T> {
 
     private void removeCacheEntry(String key, CacheEntry<T> entry) {
         if (cacheMap.remove(key, entry)) {
-            size.decrementAndGet();
+            insertionOrder.remove(entry.sequence());
         }
     }
 
-    private void evictEldest() {
-        int overflow = cacheMap.size() - cacheSize;
-        if (overflow <= 0) {
-            return;
+    private void indexEntry(String key, CacheEntry<T> entry) {
+        insertionOrder.put(entry.sequence(), key);
+        // A concurrent removal or replacement of the entry could not see its position in the insertion order yet,
+        // the position must not be left behind in such a case
+        CacheEntry<T> current = cacheMap.get(key);
+        if (current == null || current.sequence() != entry.sequence()) {
+            insertionOrder.remove(entry.sequence());
         }
-        long[] times = new long[overflow];
-        var entries = new ArrayList<Map.Entry<String, CacheEntry<T>>>(overflow);
-        int found = 0;
-        for (var next : cacheMap.entrySet()) {
-            long createdTime = next.getValue().createdTime();
-            if (found < overflow) {
-                times[found] = createdTime;
-                entries.add(next);
-                found++;
-            } else {
-                int youngest = 0;
-                for (int i = 1; i < overflow; i++) {
-                    if (times[i] > times[youngest]) {
-                        youngest = i;
-                    }
-                }
-                if (createdTime < times[youngest]) {
-                    times[youngest] = createdTime;
-                    entries.set(youngest, next);
-                }
+    }
+
+    private void evictIfFull() {
+        while (cacheMap.size() > cacheSize) {
+            Map.Entry<Long, String> eldest = insertionOrder.pollFirstEntry();
+            if (eldest == null) {
+                return;
             }
+            // a stale position is skipped and the next eldest entry is evicted instead
+            evict(eldest.getValue(), eldest.getKey());
         }
-        entries.forEach(e -> removeCacheEntry(e.getKey(), e.getValue()));
     }
 
-    private boolean prepareSpaceForNewCacheEntry() {
-        int currentSize;
-        do {
-            currentSize = size.get();
-            if (currentSize == cacheSize) {
-                return false;
-            }
-        } while (!size.compareAndSet(currentSize, currentSize + 1));
-        return true;
-    }
-
-    private CacheEntry<T> removeCacheEntry(String token) {
-        CacheEntry<T> entry = cacheMap.remove(token);
-        if (entry != null) {
-            size.decrementAndGet();
-        }
-        return entry;
+    private void evict(String key, long sequence) {
+        // The entry is removed only if it still has the polled sequence. It is done atomically because the entry
+        // can be replaced with a new one having the same sequence when its caching period is restarted.
+        cacheMap.computeIfPresent(key, (k, entry) -> entry.sequence() == sequence ? null : entry);
     }
 
     private boolean isEntryExpired(CacheEntry<T> entry, long now) {
@@ -154,13 +140,19 @@ public class MemoryCache<T> {
         return System.currentTimeMillis();
     }
 
+    private long nextSequence() {
+        return sequence.incrementAndGet();
+    }
+
     public int getCacheSize() {
         return cacheMap.size();
     }
 
     public void clearCache() {
-        cacheMap.clear();
-        size.set(0);
+        // the entries are removed one by one to keep the insertion order in sync with the cache map
+        for (String key : cacheMap.keySet()) {
+            remove(key);
+        }
     }
 
     public void stopTimer(Vertx vertx) {
@@ -173,7 +165,7 @@ public class MemoryCache<T> {
         return timerId != null;
     }
 
-    private record CacheEntry<S>(S result, long createdTime) {
+    private record CacheEntry<S>(S result, long createdTime, long sequence) {
 
     }
 
@@ -195,9 +187,6 @@ public class MemoryCache<T> {
                 return valueFactory.apply(this);
             }
             if (cacheEntry == null) {
-                if (cacheMap.size() >= cacheSize) {
-                    removeInvalidEntries();
-                }
                 var createIfAbsent = new Function<String, CacheEntry<T>>() {
 
                     private boolean applied = false;
@@ -206,16 +195,15 @@ public class MemoryCache<T> {
                     public CacheEntry<T> apply(String k) {
                         applied = true;
                         long entryCreated = now() + GRACE_PERIOD_MILLIS;
-                        return new CacheEntry<>(valueFactory.apply(DeferredCacheValue.this), entryCreated);
+                        return new CacheEntry<>(valueFactory.apply(DeferredCacheValue.this), entryCreated,
+                                nextSequence());
                     }
                 };
                 cacheEntry = cacheMap.computeIfAbsent(key, createIfAbsent);
                 if (createIfAbsent.applied) {
+                    indexEntry(key, cacheEntry);
                     startTimerIfNotRunning();
-                    size.incrementAndGet();
-                    if (cacheMap.size() > cacheSize) {
-                        evictEldest();
-                    }
+                    evictIfFull();
                 }
             }
             return cacheEntry.result();
@@ -234,7 +222,8 @@ public class MemoryCache<T> {
         public void startCachingPeriod() {
             var oldEntry = cacheEntry;
             if (oldEntry != null) {
-                var newEntry = cacheEntry = new CacheEntry<>(oldEntry.result(), now());
+                // the sequence is kept so that the position in the insertion order does not change
+                var newEntry = cacheEntry = new CacheEntry<>(oldEntry.result(), now(), oldEntry.sequence());
                 cacheMap.replace(key, oldEntry, newEntry);
             }
         }

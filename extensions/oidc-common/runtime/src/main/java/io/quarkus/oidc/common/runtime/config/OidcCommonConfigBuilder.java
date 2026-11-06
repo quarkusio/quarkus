@@ -1,18 +1,46 @@
 package io.quarkus.oidc.common.runtime.config;
 
 import java.time.Duration;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.smallrye.config.ConfigInstanceBuilder;
+
 public abstract class OidcCommonConfigBuilder<T> {
 
-    private record TlsImpl(Optional<String> tlsConfigurationName) implements OidcCommonConfig.Tls {
-        private TlsImpl(String tlsConfigurationName) {
-            this(Optional.ofNullable(tlsConfigurationName));
-        }
+    private static OidcCommonConfig.Tls tlsConfig(String tlsConfigurationName) {
+        return ConfigInstanceBuilder.forInterface(OidcCommonConfig.Tls.class)
+                .with(OidcCommonConfig.Tls::tlsConfigurationName, Optional.ofNullable(tlsConfigurationName))
+                .build();
     }
 
-    private record ProxyImpl(Optional<String> proxyConfigurationName) implements OidcCommonConfig.Proxy {
+    private static OidcCommonConfig.Proxy proxyConfig(Optional<String> proxyConfigurationName) {
+        return ConfigInstanceBuilder.forInterface(OidcCommonConfig.Proxy.class)
+                .with(OidcCommonConfig.Proxy::proxyConfigurationName, proxyConfigurationName)
+                .build();
+    }
+
+    protected static <E> Optional<List<E>> optionalListOf(Collection<E> values) {
+        return values.isEmpty() ? Optional.empty() : Optional.of(List.copyOf(values));
+    }
+
+    protected static <I extends OidcCommonConfig> ConfigInstanceBuilder<I> commonConfig(Class<I> type,
+            OidcCommonConfigBuilder<?> builder) {
+        return ConfigInstanceBuilder.forInterface(type)
+                .with(OidcCommonConfig::authServerUrl, builder.authServerUrl)
+                .with(OidcCommonConfig::discoveryPath, builder.discoveryPath)
+                .with(OidcCommonConfig::discoveryEnabled, builder.discoveryEnabled)
+                .with(OidcCommonConfig::registrationPath, builder.registrationPath)
+                .with(OidcCommonConfig::connectionDelay, builder.connectionDelay)
+                .with(OidcCommonConfig::connectionRetryCount, builder.connectionRetryCount)
+                .with(OidcCommonConfig::connectionTimeout, builder.connectionTimeout)
+                .with(OidcCommonConfig::useBlockingDnsLookup, builder.useBlockingDnsLookup)
+                .with(OidcCommonConfig::maxPoolSize, builder.maxPoolSize)
+                .with(OidcCommonConfig::followRedirects, builder.followRedirects)
+                .with(OidcCommonConfig::proxy, proxyConfig(builder.proxyConfigurationName))
+                .with(OidcCommonConfig::tls, builder.tls);
     }
 
     protected static class OidcCommonConfigImpl implements OidcCommonConfig {
@@ -41,7 +69,7 @@ public abstract class OidcCommonConfigBuilder<T> {
             this.useBlockingDnsLookup = builder.useBlockingDnsLookup;
             this.maxPoolSize = builder.maxPoolSize;
             this.followRedirects = builder.followRedirects;
-            this.proxy = new ProxyImpl(builder.proxyConfigurationName);
+            this.proxy = proxyConfig(builder.proxyConfigurationName);
             this.tls = builder.tls;
         }
 
@@ -135,6 +163,20 @@ public abstract class OidcCommonConfigBuilder<T> {
     }
 
     protected abstract T getBuilder();
+
+    /**
+     * @return current {@link OidcCommonConfig#authServerUrl()}
+     */
+    protected Optional<String> getAuthServerUrl() {
+        return authServerUrl;
+    }
+
+    /**
+     * @return current {@link OidcCommonConfig#discoveryEnabled()}
+     */
+    protected Optional<Boolean> getDiscoveryEnabled() {
+        return discoveryEnabled;
+    }
 
     /**
      * @param authServerUrl {@link OidcCommonConfig#authServerUrl()}
@@ -231,7 +273,7 @@ public abstract class OidcCommonConfigBuilder<T> {
      * @return T builder
      */
     public T tlsConfigurationName(String tlsConfigurationName) {
-        this.tls = new TlsImpl(tlsConfigurationName);
+        this.tls = tlsConfig(tlsConfigurationName);
         return getBuilder();
     }
 

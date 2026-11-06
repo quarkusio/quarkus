@@ -10,7 +10,8 @@ import org.jboss.logging.Logger;
  *
  * Tasks are executed in the reverse order that they are added.
  *
- * @deprecated Use the {@code ActionBuilder} service model and register stop handlers via {@code ctx.onStop(Runnable)} instead.
+ * @deprecated Use the {@code ServiceRegistrar} service model and register stop handlers via {@code ctx.onStop(Runnable)}
+ *             instead.
  */
 @Deprecated(since = "4.0")
 public interface ShutdownContext {
@@ -27,7 +28,7 @@ public interface ShutdownContext {
      * task runs, and the task may run before all other shutdown activity has
      * completed.
      * <p>
-     * New code should use the {@code ActionBuilder} service model to express
+     * New code should use the {@code ServiceRegistrar} service model to express
      * shutdown ordering via explicit dependency edges, rather than relying on
      * this method's weak ordering semantics.
      *

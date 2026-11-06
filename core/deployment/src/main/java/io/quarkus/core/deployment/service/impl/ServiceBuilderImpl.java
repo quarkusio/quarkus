@@ -147,6 +147,12 @@ final class ServiceBuilderImpl<T> {
         checkServiceType(type);
         ConfigRoot configRoot = ConfigMappingDetector.findConfigRoot(type);
         if (configRoot != null) {
+            if (!name.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Configuration mapping " + type.getName()
+                                + " cannot have a service name: "
+                                + "config mappings are identified by type alone.");
+            }
             ConfigPhase phase = configRoot.phase();
             if (phase == ConfigPhase.BUILD_TIME) {
                 throw new IllegalArgumentException(
@@ -159,6 +165,12 @@ final class ServiceBuilderImpl<T> {
                         "Runtime configuration " + type.getName()
                                 + " cannot be required by a static-init service action: "
                                 + "it is not available during static initialization.");
+            }
+            if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
+                throw new IllegalArgumentException(
+                        "Build-and-run-time-fixed configuration " + type.getName()
+                                + " cannot be required by a service action: "
+                                + "capture it in the lambda instead.");
             }
             // config-direct: resolved from SmallRye Config, not the service values map
             dependencies.add(new Dependency(type, name, (injected ? Dependency.FL_INJECTED : 0) | Dependency.FL_CONFIG_DIRECT));
@@ -206,7 +218,8 @@ final class ServiceBuilderImpl<T> {
 
     /**
      * Consume all services of the given type as a {@code Map<String, T>}.
-     * The map keys are the service names; unnamed services use empty string.
+     * The map keys are the immediate child service names under the type;
+     * services with no name or with deeper name hierarchies are not matched.
      * Zero matches produces an empty map (always optional).
      *
      * @param type the service type to match (must not be {@code null})
@@ -216,6 +229,41 @@ final class ServiceBuilderImpl<T> {
         checkServiceType(type);
         dependencies.add(
                 new Dependency(type, List.of(), Dependency.FL_INJECTED | Dependency.FL_OPTIONAL | Dependency.FL_CONSUME_ALL));
+    }
+
+    /**
+     * Consume all services of the given type and name as a {@code Map<String, T>}.
+     * The map keys are the immediate child service names under the given name prefix;
+     * services at the exact name or with deeper hierarchies are not matched.
+     * Zero matches produces an empty map (always optional).
+     *
+     * @param type the service type to match (must not be {@code null})
+     * @param name the service name prefix (must not be {@code null})
+     */
+    public void consumeAll(Class<?> type, String name) {
+        Assert.checkNotNullParam("type", type);
+        Assert.checkNotNullParam("name", name);
+        checkServiceType(type);
+        dependencies.add(
+                new Dependency(type, List.of(name),
+                        Dependency.FL_INJECTED | Dependency.FL_OPTIONAL | Dependency.FL_CONSUME_ALL));
+    }
+
+    /**
+     * Consume all services of the given type and name parts as a {@code Map<String, T>}.
+     * The map keys are the immediate child service names under the given name prefix;
+     * services at the exact name or with deeper hierarchies are not matched.
+     * Zero matches produces an empty map (always optional).
+     *
+     * @param type the service type to match (must not be {@code null})
+     * @param nameParts the service name parts prefix (must not be {@code null})
+     */
+    public void consumeAll(Class<?> type, List<String> nameParts) {
+        Assert.checkNotNullParam("type", type);
+        Assert.checkNotNullParam("nameParts", nameParts);
+        checkServiceType(type);
+        dependencies.add(
+                new Dependency(type, nameParts, Dependency.FL_INJECTED | Dependency.FL_OPTIONAL | Dependency.FL_CONSUME_ALL));
     }
 
     // ── after() — optional ordering-only dependencies ──
@@ -468,6 +516,12 @@ final class ServiceBuilderImpl<T> {
     }
 
     private static void checkServiceType(Class<?> type) {
+        if (type.isPrimitive()) {
+            throw new IllegalArgumentException("Primitive types cannot be used as service types: " + type.getName());
+        }
+        if (type.isArray()) {
+            throw new IllegalArgumentException("Array types cannot be used as service types: " + type.getName());
+        }
         if (type.getTypeParameters().length > 0) {
             throw new IllegalArgumentException("Generic types cannot be used as service types: " + type.getName());
         }

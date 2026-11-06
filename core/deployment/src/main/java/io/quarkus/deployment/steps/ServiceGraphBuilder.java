@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import io.quarkus.core.deployment.service.impl.TransliteratedAction;
+import io.quarkus.core.service.impl.ServiceNode;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
@@ -212,8 +213,7 @@ final class ServiceGraphBuilder {
                         String prefix = dep.keyPrefix();
                         List<MutableNode> matches = new ArrayList<>();
                         for (var entry : serviceKeyToNode.entrySet()) {
-                            String key = entry.getKey();
-                            if (key.startsWith(prefix) && key.length() > prefix.length()) {
+                            if (dep.consumeAllMatches(entry.getKey())) {
                                 matches.add(entry.getValue());
                             }
                         }
@@ -254,7 +254,8 @@ final class ServiceGraphBuilder {
                             node.actionDeps.add(proxy);
                         } else {
                             throw new IllegalStateException(
-                                    "Service '" + node.name + "' requires '" + dep.key()
+                                    "Service '" + ServiceNode.displayKey(node.name)
+                                            + "' requires '" + dep.displayKey()
                                             + "' but no service with that key exists in the "
                                             + "graph. Check that the producing extension is present "
                                             + "and the service key matches.");
@@ -478,9 +479,9 @@ final class ServiceGraphBuilder {
                 if (node.inDegree > 0) {
                     List<String> depNames = node.allDeps().stream()
                             .filter(d -> d.inDegree > 0)
-                            .map(d -> d.name)
+                            .map(d -> ServiceNode.displayKey(d.name))
                             .toList();
-                    cycleNodes.add(node.name + " → " + depNames);
+                    cycleNodes.add(ServiceNode.displayKey(node.name) + " → " + depNames);
                 }
             }
             throw new IllegalStateException(

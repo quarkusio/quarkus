@@ -3,23 +3,23 @@ package io.quarkus.elytron.security.oauth2.runtime.auth;
 import java.util.List;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.elytron.security.oauth2.runtime.OAuth2BuildTimeConfig;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.smallrye.mutiny.Uni;
 
+@ApplicationScoped
 public class OAuth2Augmentor implements SecurityIdentityAugmentor {
 
     private final String roleClaim;
 
-    public OAuth2Augmentor(String roleClaim) {
-        this.roleClaim = roleClaim;
-    }
-
-    @Override
-    public int priority() {
-        return 0;
+    OAuth2Augmentor(OAuth2BuildTimeConfig buildTimeConfig) {
+        // TODO: this is clearly a runtime config option
+        this.roleClaim = buildTimeConfig.roleClaim();
     }
 
     @Override

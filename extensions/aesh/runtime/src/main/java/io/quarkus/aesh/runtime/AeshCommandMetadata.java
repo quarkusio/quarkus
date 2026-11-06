@@ -3,62 +3,18 @@ package io.quarkus.aesh.runtime;
 import java.util.List;
 
 /**
- * Mutable metadata describing a discovered aesh command.
- * <p>
- * This class is mutable so that it can be serialized by the Quarkus recorder mechanism.
- * At runtime, the recorder creates an immutable copy of the metadata list.
+ * Build-time metadata about a discovered CLI command, available at runtime through {@link AeshContext}.
  *
- * @see AeshRecorder
- * @see AeshContext
+ * @param className the fully qualified command class name
+ * @param commandName the command name
+ * @param description the command description, or {@code null}
+ * @param groupCommand whether the command is a group command
+ * @param subCommandClassNames the class names of the sub-commands of a group command
  */
-public class AeshCommandMetadata {
+public record AeshCommandMetadata(String className, String commandName, String description, boolean groupCommand,
+        List<String> subCommandClassNames) {
 
-    private String className;
-    private String commandName;
-    private String description;
-    private boolean groupCommand;
-    private List<String> subCommandClassNames = List.of();
-
-    public AeshCommandMetadata() {
-    }
-
-    public String getClassName() {
-        return className;
-    }
-
-    public void setClassName(String className) {
-        this.className = className;
-    }
-
-    public String getCommandName() {
-        return commandName;
-    }
-
-    public void setCommandName(String commandName) {
-        this.commandName = commandName;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public boolean isGroupCommand() {
-        return groupCommand;
-    }
-
-    public void setGroupCommand(boolean groupCommand) {
-        this.groupCommand = groupCommand;
-    }
-
-    public List<String> getSubCommandClassNames() {
-        return subCommandClassNames;
-    }
-
-    public void setSubCommandClassNames(List<String> subCommandClassNames) {
-        this.subCommandClassNames = subCommandClassNames;
+    public AeshCommandMetadata {
+        subCommandClassNames = List.copyOf(subCommandClassNames);
     }
 }

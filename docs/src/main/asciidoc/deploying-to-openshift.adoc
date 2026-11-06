@@ -201,7 +201,7 @@ For example:
 
 [source,properties]
 ----
-quarkus.openshift.base-jvm-image=image-registry.openshift-image-registry.svc:5000/some-project/openjdk-17:17.1.16
+quarkus.openshift.base-jvm-image=image-registry.openshift-image-registry.svc:5000/some-project/openjdk-25:1.24
 ----
 
 [NOTE]

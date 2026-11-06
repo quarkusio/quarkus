@@ -94,10 +94,10 @@ import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -105,7 +105,10 @@ import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBui
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeExcludedArtifactBuildItem;
+import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
+import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
+import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
@@ -267,6 +270,8 @@ public class SecurityProcessor {
                     "org.bouncycastle.jcajce.provider.asymmetric.EC$Mappings",
                     "org.bouncycastle.jcajce.provider.asymmetric.RSA",
                     "org.bouncycastle.jcajce.provider.asymmetric.RSA$Mappings",
+                    "org.bouncycastle.jcajce.provider.asymmetric.MLKEM",
+                    "org.bouncycastle.jcajce.provider.asymmetric.MLKEM$Mappings",
                     "org.bouncycastle.jcajce.provider.drbg.DRBG",
                     "org.bouncycastle.jcajce.provider.drbg.DRBG$Mappings").methods().fields()
                     .build());
@@ -343,6 +348,59 @@ public class SecurityProcessor {
                 }
             }
         }
+    }
+
+    @BuildStep
+    void registerBouncyCastleMlKemReflection(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            NativeConfig nativeConfig, Optional<NativeImageRunnerBuildItem> nativeImageRunner,
+            List<BouncyCastleProviderBuildItem> providers, List<BouncyCastleJsseProviderBuildItem> jsseProviders,
+            BuildProducer<ReflectiveClassBuildItem> reflection) {
+        if (providers.isEmpty() && jsseProviders.isEmpty()) {
+            return;
+        }
+        Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(jsseProviders);
+        boolean isInFipsMode;
+
+        if (bouncyCastleJsseProvider.isPresent()) {
+            isInFipsMode = bouncyCastleJsseProvider.get().isInFipsMode();
+        } else {
+            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(providers);
+            isInFipsMode = bouncyCastleProvider.isPresent() && bouncyCastleProvider.get().isInFipsMode();
+        }
+        if (isInFipsMode || curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().noneMatch(
+                d -> d.getGroupId().equals("org.bouncycastle") && d.getArtifactId().startsWith("bcprov-"))) {
+            return;
+        }
+        // Native sources may be compiled later with a different builder. Keep the fallback metadata.
+        // Reusing an executable must not require an available builder. If the executable is missing, retain
+        // the fallback metadata for the normal native build instead of querying the builder here.
+        if (!nativeConfig.sourcesOnly() && !nativeConfig.reuseExisting()
+                && nativeImageRunner.isPresent()
+                && !(nativeImageRunner.get().getBuildRunner() instanceof NoopNativeImageBuildRunner)
+                && !needsBouncyCastleMlKemReflection(nativeImageRunner.get().getBuildRunner().getGraalVMVersion())) {
+            return;
+        }
+        reflection.produce(ReflectiveClassBuildItem.builder(
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM512",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM768",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyFactorySpi$MLKEM1024",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM512",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM768",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMKeyPairGeneratorSpi$MLKEM1024",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM512",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM768",
+                "org.bouncycastle.jcajce.provider.asymmetric.mlkem.MLKEMSpi$MLKEM1024").methods().fields().build());
+    }
+
+    static boolean needsBouncyCastleMlKemReflection(GraalVM.Version version) {
+        // Mandrel 25.0.5 adds KEM to SecurityServicesFeature. BC is installed in afterRegistration,
+        // so its KEM services are discovered automatically when KEM.getInstance becomes reachable.
+        // All 25.0.5 builds contain the fix, including development and pre-release builds.
+        return version.compareTo(new int[] { 25, 0, 5 }) < 0;
     }
 
     private static void prepareBouncyCastleProvider(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -603,7 +661,7 @@ public class SecurityProcessor {
 
     // Work around https://github.com/quarkusio/quarkus/issues/21374
     @BuildStep
-    void addBouncyCastleExportsToNativeImage(BuildProducer<JPMSExportBuildItem> jpmsExports,
+    void addBouncyCastleExportsToNativeImage(BuildProducer<ModuleExportBuildItem> moduleExports,
             List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
             List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
         boolean isInFipsMode;
@@ -617,8 +675,10 @@ public class SecurityProcessor {
         }
 
         if (isInFipsMode) {
-            jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.internal.spec"));
-            jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.provider"));
+            moduleExports.produce(
+                    new ModuleExportBuildItem("java.base", "org.bouncycastle.fips.core", "sun.security.internal.spec"));
+            moduleExports
+                    .produce(new ModuleExportBuildItem("java.base", "org.bouncycastle.fips.core", "sun.security.provider"));
         }
     }
 

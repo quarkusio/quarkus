@@ -97,7 +97,7 @@ quarkus.infinispan-client.devservices.mcast-port=46666 <2>
 ====
 Learn more about Cross Site Replication in the Infinispan Cross Site Replication link:https://infinispan.org/docs/stable/titles/xsite/xsite.html[documentation guide]
 and in the Infinispan Cross Site Replication
-link:https://infinispan.org/tutorials/simple/simple_tutorials.html#cross-site-replication_remote-cache-tutorials[simple code tutorial].
+link:https://infinispan.org/tutorials/remote-cross-site-replication/[simple code tutorial].
 ====
 
 == Multiple Dev Services for named connections

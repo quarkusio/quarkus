@@ -12,7 +12,12 @@ import io.quarkus.restclient.config.RegisteredRestClient;
 /**
  * Contains information about the REST Clients that have been discovered via
  * {@link org.eclipse.microprofile.rest.client.inject.RegisterRestClient}
+ *
+ * @deprecated use {@link io.quarkus.rest.client.reactive.spi.RegisteredRestClientBuildItem} from the
+ *             {@code io.quarkus:quarkus-rest-client-spi-deployment} artifact instead. This will be
+ *             removed in a future version.
  */
+@Deprecated(forRemoval = true, since = "4.0")
 public final class RegisteredRestClientBuildItem extends MultiBuildItem {
 
     private final ClassInfo classInfo;
@@ -37,6 +42,10 @@ public final class RegisteredRestClientBuildItem extends MultiBuildItem {
         return defaultBaseUri;
     }
 
+    /**
+     * @deprecated there is no replacement, {@link RegisteredRestClient} is an internal type
+     */
+    @Deprecated(forRemoval = true, since = "4.0")
     public static List<RegisteredRestClient> toRegisteredRestClients(List<RegisteredRestClientBuildItem> restClients) {
         return restClients.stream()
                 .map(rc -> new RegisteredRestClient(

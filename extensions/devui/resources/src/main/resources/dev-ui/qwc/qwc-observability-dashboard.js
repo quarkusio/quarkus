@@ -1,17 +1,19 @@
 import { html, css } from 'lit';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { observabilitySignals } from 'devui-data';
+import { observabilitySignals, prometheusNaming } from 'devui-data';
 import { devuiState } from 'devui-state';
 import { JsonRpc } from 'jsonrpc';
 import { StorageController } from 'storage-controller';
 import { RouterController } from 'router-controller';
 import { ObservabilityCardBase } from 'observability-card-base';
+import { notifier } from 'notifier';
 import 'echarts-line';
 import 'echarts-histogram';
 import 'echarts-gauge';
 import '@vaadin/button';
 import '@vaadin/icon';
+import '@vaadin/menu-bar';
 import '@vaadin/tabs';
 import '@vaadin/grid';
 
@@ -74,6 +76,10 @@ const RATIO_METRICS = new Set([
     'system.cpu.usage', 'process.cpu.usage', 'jvm.gc.overhead', 'jvm.memory.usage.after.gc',
 ]);
 const RATIO_UNIT = 'ratio';
+
+// Meters whose primary value is a recording count, with the amounts recorded riding along. Their
+// catalog entry says cumulative, so without captured samples _plotFor draws them as a rate.
+const DISTRIBUTION_TYPES = new Set(['TIMER', 'SUMMARY', 'HISTOGRAM']);
 
 // Micrometer and OpenTelemetry spell the same units differently (OTel follows UCUM), and
 // neither is what you want on an axis. Map both onto the family the formatter understands.
@@ -344,6 +350,19 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
             this._tags.set(name, unsafeStatic(name));
         }
         return this._tags.get(name);
+    }
+
+    /**
+     * Whether a Grafana dashboard can be made of what is on this one. The export is answered by the metrics
+     * JSON-RPC service, which only exists when a metrics backend registered it, so an application with only
+     * traces has nothing to ask - and metric cards additionally need an export naming this build knows.
+     */
+    _exportableToGrafana(cards) {
+        if (!this._metricsAvailable) {
+            return false;
+        }
+        return cards.some(id => id.startsWith(SIGNAL_PREFIX)
+                || (prometheusNaming && id.startsWith(METRIC_PREFIX)));
     }
 
     _selectedMetricNames() {
@@ -992,7 +1011,7 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
      * was actually measured. Every row carries the same columns, blank where the meter has no
      * distribution, because the CSV header is taken from the first row.
      */
-    _export() {
+    _metricsExportData() {
         const rows = [];
         const carded = new Set(this._selectedMetricNames());
         Object.entries(this._sections).filter(([name]) => carded.has(name)).forEach(([name, byKey]) => {
@@ -1012,7 +1031,127 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
                 });
             });
         });
-        this.exportCsv(rows, 'metrics.csv');
+        return { rows, filename: 'metrics.csv' };
+    }
+
+    /**
+     * What the Export button offers: metrics while any metric has a card, and every signal card
+     * on screen, plus "All" once there is more than one. Labelled by the signal's title, so the
+     * developer picks the telemetry rather than getting every file at once.
+     */
+    _exportMenu(shown) {
+        const items = [];
+        if (this._metricsAvailable && this._selectedMetricNames().length > 0) {
+            items.push({ text: 'Metrics', exportKey: METRICS_SIGNAL });
+        }
+        shown.filter(id => id.startsWith(SIGNAL_PREFIX))
+            .forEach(id => items.push({ text: this._signalFor(id).title, exportKey: id }));
+        if (items.length > 1) {
+            items.push({ component: 'hr' });
+            items.push({ text: 'All', exportKey: items.filter(i => i.exportKey).map(i => i.exportKey) });
+        }
+        if (items.length === 0) {
+            return null;
+        }
+        // Memoized: the dashboard re-renders on every sample, and handing the menu bar new items
+        // each time would rebuild it, closing the list while the developer is choosing from it.
+        const signature = JSON.stringify(items);
+        if (this._exportMenuSignature !== signature) {
+            this._exportMenuSignature = signature;
+            this._exportMenuItems = [{ text: 'Export CSV', children: items }];
+        }
+        return this._exportMenuItems;
+    }
+
+    _onExportSelected(e) {
+        const key = e.detail.value.exportKey;
+        if (key === undefined) {
+            return; // the top-level "Export CSV" item, which only opens the list
+        }
+        (Array.isArray(key) ? key : [key]).forEach(k => {
+            const data = k === METRICS_SIGNAL ? this._metricsExportData() : this._signalExportData(k);
+            this.exportCsv(data?.rows, data?.filename);
+        });
+    }
+
+    /** Asks the component embedded in a signal card for its rows; see ObservabilityCardBase. */
+    _signalExportData(id) {
+        const widget = this.renderRoot.querySelector(`.card[data-card="${CSS.escape(id)}"] .card-body > *`);
+        return widget?.exportData?.() ?? null;
+    }
+
+    /**
+     * The dashboard as a Grafana dashboard, for the Grafana that holds the same telemetry - the one the
+     * LGTM Dev Service starts, or any other reading the same Prometheus and Tempo.
+     *
+     * The cards are sent as they are shown, each with the plot this page chose for it, so the exported
+     * panels draw the same statistic as the cards. The queries have to use the names the metrics carry
+     * once exported, which depends on how this application exports them: prometheusNaming says which,
+     * and is null when the export is not one whose naming is known, in which case only signal cards
+     * (traces, which are in Tempo under the application's service name) are exported.
+     */
+    _exportGrafana() {
+        const cards = [];
+        // The cards as shown: the stored list follows the developer between applications, so it can name
+        // meters this one never registered.
+        for (const id of this._visibleCards()) {
+            if (id.startsWith(SIGNAL_PREFIX)) {
+                const key = id.substring(SIGNAL_PREFIX.length);
+                const signal = this._signals.find(s => s.key === key);
+                cards.push({ kind: 'signal', id: key, title: signal?.title ?? key });
+            } else if (id.startsWith(METRIC_PREFIX) && prometheusNaming) {
+                const name = id.substring(METRIC_PREFIX.length);
+                const plot = this._plotFor(name);
+                const series = Object.values(this._sections[name] ?? {});
+                const meta = this._metricMeta(name);
+                // The meter type decides the names of a few series, e.g. a long task timer is published
+                // per seconds active whatever unit it is captured with.
+                const type = series[0]?.type ?? meta?.type ?? '';
+                cards.push({
+                    kind: 'metric',
+                    name,
+                    // Nothing captured yet (or the history was cleared) leaves _plotFor with only the
+                    // catalog, which calls a timer cumulative: it is still a distribution in Prometheus.
+                    plot: series.length === 0 && DISTRIBUTION_TYPES.has(type.toUpperCase())
+                            ? 'distribution' : plot.kind,
+                    // The meter's own unit, which is what the exported name carries: plot.unit can be
+                    // the synthetic RATIO_UNIT, which no exporter writes into a name.
+                    unit: series[0]?.unit ?? meta?.unit ?? '',
+                    ratio: plot.unit === RATIO_UNIT,
+                    type,
+                    // Where a maximum is published differs by route, so the server picks: Micrometer
+                    // publishes one beside the meter when it tracks one (a function timer does not),
+                    // while over OTLP only a meter of its own, <name>.max, carries it.
+                    maxCaptured: series.some(s => (s.distribution?.maxes ?? []).some(Number.isFinite)),
+                    maxMeter: this._metricMeta(`${name}.max`) !== null,
+                });
+            }
+        }
+        // Metric cards are left out when the export naming is not known: say so, rather than hand over a
+        // dashboard that looks complete but is missing them.
+        const leftOut = prometheusNaming ? 0
+                : this._visibleCards().filter(id => id.startsWith(METRIC_PREFIX)).length;
+        if (cards.length === 0) {
+            notifier.showWarningMessage(leftOut > 0
+                    ? 'Nothing to export: metric cards need metrics exported to Prometheus, over OTLP or by the Micrometer Prometheus registry'
+                    : 'Nothing to export: this dashboard has no cards that Grafana can show');
+            return;
+        }
+        this.jsonRpc.exportGrafanaDashboard({
+            cards,
+            naming: prometheusNaming,
+            title: `Quarkus Dev UI - ${devuiState.applicationInfo.applicationName}`,
+        }).then(resp => {
+            this.exportJson(resp.result, 'quarkus-dev-ui-dashboard.json');
+            if (leftOut > 0) {
+                notifier.showWarningMessage(`Dashboard exported without its ${leftOut} metric card(s): this application `
+                        + 'does not export its metrics to Prometheus in a way the export knows how to name.');
+            } else {
+                notifier.showInfoMessage('Dashboard exported. Import it in Grafana under Dashboards, New, Import.');
+            }
+        }).catch(error => {
+            notifier.showErrorMessage('The dashboard could not be exported: ' + (error?.error?.message || error));
+        });
     }
 
     // ---------------------------------------------------------------- render
@@ -1076,6 +1215,7 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
         // leaving the page showing nothing.
         const maximized = cards.includes(this._maximized) ? this._maximized : null;
         const shown = maximized === null ? cards : [maximized];
+        const exportMenu = this._exportMenu(shown);
         return html`
             <div class="toolbar">
                 ${maximized === null ? '' : html`
@@ -1086,10 +1226,15 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
                                    title="Discard the points captured so far and start the charts again">
                         <vaadin-icon icon="font-awesome-solid:eraser" slot="prefix"></vaadin-icon>
                         Clear history
-                    </vaadin-button>
-                    <vaadin-button theme="small" @click=${this._export}>
-                        <vaadin-icon icon="font-awesome-solid:file-csv" slot="prefix"></vaadin-icon>
-                        Export CSV
+                    </vaadin-button>` : ''}
+                ${exportMenu === null ? '' : html`
+                    <vaadin-menu-bar theme="small dropdown-indicators" .items=${exportMenu}
+                                     @item-selected=${this._onExportSelected}></vaadin-menu-bar>`}
+                ${this._exportableToGrafana(cards) ? html`
+                    <vaadin-button theme="small" @click=${this._exportGrafana}
+                                   title="Download this dashboard as a Grafana dashboard, to import into the Grafana holding the same telemetry">
+                        <vaadin-icon icon="font-awesome-solid:chart-area" slot="prefix"></vaadin-icon>
+                        Export Grafana
                     </vaadin-button>` : ''}
                 <vaadin-button theme="small" @click=${this._edit}>
                     <vaadin-icon icon="font-awesome-solid:sliders" slot="prefix"></vaadin-icon>
@@ -1142,14 +1287,14 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
         const page = this._pageFor(signal);
         const tag = this._tag(page.componentName);
         return html`
-            <div class="${this._cardClass(id, true)}"
+            <div class="${this._cardClass(id, true)}" data-card="${id}"
                  @dragover=${e => this._onDragOver(e, id)} @drop=${e => this._onDrop(e, id)}>
                 ${this._renderCardHeader(id, html`
                     <vaadin-icon icon="${signal.icon}"></vaadin-icon>
                     <span class="title">${signal.title}</span>
                     <vaadin-button theme="tertiary small"
                                    @click=${() => this.routerController.goToPath('/' + page.id)}>Open</vaadin-button>`)}
-                <div class="card-body">${staticHtml`<${tag}></${tag}>`}</div>
+                <div class="card-body">${staticHtml`<${tag} embedded></${tag}>`}</div>
             </div>`;
     }
 
@@ -1173,7 +1318,7 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
                         : html`
                             <div class="caption">${plot.caption}</div>
                             ${this._renderPercentileSummary(name, plot)}
-                            ${this._renderPlot(name, plot)}`}
+                            ${this._renderPlot(name, plot, maximized)}`}
                 </div>
             </div>`;
     }
@@ -1313,7 +1458,11 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
         return summary === null ? '' : html`<div class="caption percentiles">${summary}</div>`;
     }
 
-    _renderPlot(name, plot) {
+    /**
+     * The legend only shows on a maximized card. In the grid it would take a third of a narrow
+     * card and still crop long tag combinations; the axis tooltip names every series anyway.
+     */
+    _renderPlot(name, plot, maximized) {
         if (plot.kind === 'histogram') {
             return html`<echarts-histogram buckets=${this._bucketsFor(name, plot)}></echarts-histogram>`;
         }
@@ -1338,6 +1487,7 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
         return html`
             <echarts-line series=${this._seriesFor(name, plot)}
                           ?step=${plot.kind === 'step'}
+                          .showLegend=${maximized}
                           .valueFormatter=${format}></echarts-line>`;
     }
 }

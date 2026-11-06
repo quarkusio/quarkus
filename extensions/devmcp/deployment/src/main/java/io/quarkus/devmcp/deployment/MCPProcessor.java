@@ -1,17 +1,20 @@
 package io.quarkus.devmcp.deployment;
 
-import java.io.IOException;
 import java.util.List;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.devjsonrpc.deployment.JsonRpcMapperBuildItem;
+import io.quarkus.devjsonrpc.deployment.JsonRpcRouterBuildItem;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devmcp.runtime.DevMcpRecorder;
 import io.quarkus.devmcp.runtime.McpBuildTimeData;
@@ -66,12 +69,12 @@ public class MCPProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
-    void registerStreamableHTTPHandlers(
+    void registerStreamableHTTPFilters(
             DevMcpBuildTimeConfig devMcpConfig,
             BuildProducer<RouteBuildItem> routeProducer,
             DevMcpRecorder recorder,
             LaunchModeBuildItem launchModeBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) throws IOException {
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
 
         if (launchModeBuildItem.isNotLocalDevModeType()) {
             return;
@@ -88,14 +91,41 @@ public class MCPProcessor {
                     .handler(recorder.createCorsFilter(devMcpConfig.hosts().orElse(null)))
                     .build());
         }
+    }
 
-        // Streamable HTTP for JsonRPC comms
+    /**
+     * The Streamable HTTP handler for JsonRPC comms. This is registered at runtime init, after the JsonRPC router is
+     * initialized, so that the endpoint is never served with a router that is still being initialized.
+     */
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @Consume(JsonRpcRouterBuildItem.class)
+    void registerStreamableHTTPHandler(
+            JsonRpcMapperBuildItem jsonRpcMapperBuildItem,
+            BuildProducer<RouteBuildItem> routeProducer,
+            DevMcpRecorder recorder,
+            LaunchModeBuildItem launchModeBuildItem,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+
+        if (launchModeBuildItem.isNotLocalDevModeType()) {
+            return;
+        }
+
         routeProducer.produce(
                 nonApplicationRootPathBuildItem
                         .routeBuilder().route(DEVMCP)
-                        .handler(recorder.mcpStreamableHTTPHandler(Version.getVersion()))
+                        .handler(recorder.mcpStreamableHTTPHandler(Version.getVersion(),
+                                jsonRpcMapperBuildItem.getJsonMapper()))
                         .build());
+    }
 
+    /**
+     * The JSON mapper used by the JsonRPC router and the MCP endpoint, which knows about the Vert.x JSON types.
+     */
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    JsonRpcMapperBuildItem createJsonRpcMapper(DevMcpRecorder recorder) {
+        return new JsonRpcMapperBuildItem(recorder.createJsonMapper());
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

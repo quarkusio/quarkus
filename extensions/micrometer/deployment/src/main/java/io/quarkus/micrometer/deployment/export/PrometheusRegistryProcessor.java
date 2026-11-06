@@ -13,6 +13,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.load.shedding.deployment.spi.LoadSheddingExemptPathBuildItem;
 import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
@@ -42,6 +43,11 @@ public class PrometheusRegistryProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
+            return isEnabled(mConfig);
+        }
+
+        /** The same check, for a build step that needs to know without being skipped. */
+        public static boolean isEnabled(MicrometerConfig mConfig) {
             return (REGISTRY_CLASS != null) && QuarkusClassLoader.isClassPresentAtRuntime(REGISTRY_CLASS_NAME)
                     && mConfig.checkRegistryEnabledWithDefault(mConfig.export().prometheus());
         }
@@ -99,6 +105,7 @@ public class PrometheusRegistryProcessor {
     @Record(value = ExecutionTime.STATIC_INIT)
     void createPrometheusRoute(BuildProducer<RouteBuildItem> routes,
             BuildProducer<RegistryBuildItem> registries,
+            BuildProducer<LoadSheddingExemptPathBuildItem> exemptPaths,
             MicrometerConfig mConfig,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
@@ -141,5 +148,10 @@ public class PrometheusRegistryProcessor {
         var path = nonApplicationRootPathBuildItem.resolveManagementPath(pConfig.path(),
                 managementBuildTimeConfig, launchModeBuildItem);
         registries.produce(new RegistryBuildItem("Prometheus", path));
+
+        // scraping must keep working while the application is overloaded, or the overload
+        // becomes invisible exactly when the metrics matter most
+        exemptPaths.produce(new LoadSheddingExemptPathBuildItem(path,
+                "metrics scraping must keep working during an overload, or the overload is invisible"));
     }
 }

@@ -163,11 +163,10 @@ package org.acme.quickstart.oidc;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
+import io.smallrye.config.Config;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.smallrye.mutiny.Uni;
@@ -181,7 +180,7 @@ public class CustomTenantResolver implements TenantConfigResolver {
         String path = context.request().path();
 
         if (path.startsWith("/tenant-a")) {
-           String keycloakUrl = ConfigProvider.getConfig().getValue("keycloak.url", String.class);
+           String keycloakUrl = Config.get().getValue("keycloak.url", String.class);
 
             OidcTenantConfig config = OidcTenantConfig
                     .authServerUrl(keycloakUrl + "/realms/tenant-a")
@@ -788,7 +787,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 <3> Use the resolved configuration to create a builder and update it as required.
 <4> Create an initial configuration if no configuration already exists.
 
-This is all you have to do update the already resolved dynamic tenantr configuration, without having to reconnect to the provider.
+This is all you have to do to update the already resolved dynamic tenant configuration, without having to reconnect to the provider.
 
 If reconnecting is necessary, for example, the `UserInfo` endpoint address may have changed for the tenant to rediscover it,
 then simply set a `RoutingContext` `replace-tenant-configuration-context` property to `true`:
@@ -1045,7 +1044,7 @@ package io.quarkus.it.keycloak;
 import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.smallrye.mutiny.Uni;
@@ -1111,7 +1110,7 @@ package io.quarkus.it.keycloak;
 import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.smallrye.mutiny.Uni;
@@ -1175,7 +1174,7 @@ package io.quarkus.it.keycloak;
 import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.smallrye.mutiny.Uni;

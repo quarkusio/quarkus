@@ -32,6 +32,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.security.webauthn.WebAuthn;
 import io.quarkus.security.webauthn.WebAuthnAuthenticationMechanism;
 import io.quarkus.security.webauthn.WebAuthnAuthenticatorStorage;
@@ -46,6 +47,12 @@ import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 
 @BuildSteps(onlyIf = QuarkusSecurityWebAuthnProcessor.IsEnabled.class)
 class QuarkusSecurityWebAuthnProcessor {
+
+    @BuildStep
+    RuntimeInitializedClassBuildItem runtimeInitFidoMDS3() {
+        return new RuntimeInitializedClassBuildItem(
+                "com.webauthn4j.async.metadata.FidoMDS3MetadataBLOBAsyncProvider");
+    }
 
     @BuildStep
     public IndexDependencyBuildItem addTypesToJandex() {

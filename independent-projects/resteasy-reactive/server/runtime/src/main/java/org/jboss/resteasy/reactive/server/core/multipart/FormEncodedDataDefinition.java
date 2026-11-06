@@ -205,11 +205,19 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
 
         private String decodeParameterValue(String name, String value, String charset, boolean decodeSlash,
                 StringBuilder stringBuilder) {
-            return URLUtils.decode(value, Charset.forName(charset), decodeSlash, stringBuilder);
+            try {
+                return URLUtils.decode(value, Charset.forName(charset), decodeSlash, stringBuilder);
+            } catch (IllegalArgumentException e) {
+                throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            }
         }
 
         private String decodeParameterName(String name, String charset, boolean decodeSlash, StringBuilder stringBuilder) {
-            return URLUtils.decode(name, Charset.forName(charset), decodeSlash, stringBuilder);
+            try {
+                return URLUtils.decode(name, Charset.forName(charset), decodeSlash, stringBuilder);
+            } catch (IllegalArgumentException e) {
+                throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            }
         }
 
         @Override

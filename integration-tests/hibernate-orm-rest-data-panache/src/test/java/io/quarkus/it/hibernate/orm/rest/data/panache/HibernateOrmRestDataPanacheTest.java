@@ -310,4 +310,56 @@ class HibernateOrmRestDataPanacheTest {
                 .and().body("violations[0].field", equalTo("update.entity.title"))
                 .and().body("violations[0].message", equalTo("must not be blank"));
     }
+
+    @Test
+    void shouldRejectSortByUnknownField() {
+        given().accept("application/json")
+                .when().get("/books?sort=unknownField")
+                .then().statusCode(400)
+                .and().body(equalTo("Unknown sort field 'unknownField'"));
+    }
+
+    @Test
+    void shouldRejectSortByUnknownFieldDescending() {
+        given().accept("application/json")
+                .when().get("/books?sort=-nonExistentColumn")
+                .then().statusCode(400)
+                .and().body(equalTo("Unknown sort field 'nonExistentColumn'"));
+    }
+
+    @Test
+    void shouldAllowSortByValidFields() {
+        given().accept("application/json")
+                .when().get("/books?sort=id")
+                .then().statusCode(200);
+        given().accept("application/json")
+                .when().get("/books?sort=-title")
+                .then().statusCode(200);
+    }
+
+    @Test
+    void shouldRejectSortByNestedField() {
+        given().accept("application/json")
+                .when().get("/books?sort=author.id")
+                .then().statusCode(400)
+                .and().body(equalTo("Invalid sort parameter 'author.id'"));
+    }
+
+    @Test
+    void shouldRejectPageSizeExceedingMaximum() {
+        given().accept("application/json")
+                .when().get("/books?size=200")
+                .then().statusCode(400)
+                .and().body(equalTo("Page size 200 exceeds maximum allowed size of 100"));
+    }
+
+    @Test
+    void shouldAllowPageSizeWithinMaximum() {
+        given().accept("application/json")
+                .when().get("/books?size=100")
+                .then().statusCode(200);
+        given().accept("application/json")
+                .when().get("/books?size=10")
+                .then().statusCode(200);
+    }
 }

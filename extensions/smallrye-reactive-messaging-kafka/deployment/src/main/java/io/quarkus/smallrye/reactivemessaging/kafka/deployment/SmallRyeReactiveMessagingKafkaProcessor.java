@@ -14,8 +14,6 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.jboss.jandex.AnnotationInstance;
@@ -57,6 +55,7 @@ import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedEmitterBui
 import io.quarkus.smallrye.reactivemessaging.kafka.ExactlyOnceInvoker;
 import io.quarkus.smallrye.reactivemessaging.kafka.KafkaConfigCustomizer;
 import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveExactlyOnceInvoker;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.tuples.Functions.TriConsumer;
 import io.smallrye.reactive.messaging.MediatorConfiguration;
 import io.smallrye.reactive.messaging.Shape;
@@ -1220,7 +1219,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     public void reflectiveValueSerializerPayload(CombinedIndexBuildItem combinedIndex,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         IndexView index = combinedIndex.getIndex();
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
 
         processOutgoingForReflectiveClassPayload(index, config,
                 (annotation, payloadType) -> produceReflectiveClass(reflectiveClass, payloadType));

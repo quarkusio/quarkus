@@ -66,6 +66,11 @@ public class QuarkusManagedBeanRegistry implements ManagedBeanRegistry {
     }
 
     @Override
+    public <T> ManagedBean<T> getBootstrapSafeBean(Class<T> beanClass, BeanInstanceCaching beanInstanceCaching) {
+        return getBean(beanClass, beanInstanceCaching);
+    }
+
+    @Override
     public <T> ManagedBean<T> getBean(Class<T> beanClass, BeanInstanceCaching beanInstanceCaching) {
         return getBean(beanClass, FallbackBeanInstanceProducer.INSTANCE);
     }

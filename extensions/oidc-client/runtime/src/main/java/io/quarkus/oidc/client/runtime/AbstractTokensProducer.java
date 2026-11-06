@@ -11,6 +11,7 @@ import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.Tokens;
 import io.smallrye.mutiny.Uni;
@@ -29,7 +30,7 @@ public abstract class AbstractTokensProducer {
     @Inject
     public Instance<OidcClientsImpl> oidcClientsInstance;
 
-    final TokensHelper tokensHelper = new TokensHelper();
+    private TokensHelper tokensHelper;
 
     @PostConstruct
     public void init() {
@@ -40,20 +41,27 @@ public abstract class AbstractTokensProducer {
         }
         final OidcClientsImpl oidcClients = oidcClientsInstance.get();
         Optional<OidcClient> initializedClient = client();
+        final OidcClientConfig oidcClientConfig;
         if (initializedClient.isEmpty()) {
             Optional<String> clientId = Objects.requireNonNull(clientId(), "clientId must not be null");
             if (clientId.isPresent()) {
                 // static named OidcClient
                 oidcClient = Objects.requireNonNull(oidcClients.getClient(clientId.get()), "Unknown client");
-                earlyTokenAcquisition = oidcClientsConfig.namedClients().get(clientId.get()).earlyTokensAcquisition();
+                oidcClientConfig = oidcClientsConfig.namedClients().get(clientId.get());
             } else {
                 // default OidcClient
-                earlyTokenAcquisition = OidcClientsConfig.getDefaultClient(oidcClientsConfig).earlyTokensAcquisition();
+                oidcClientConfig = OidcClientsConfig.getDefaultClient(oidcClientsConfig);
                 oidcClient = oidcClients.getClient();
             }
+            earlyTokenAcquisition = oidcClientConfig.earlyTokensAcquisition();
         } else {
             oidcClient = initializedClient.get();
+            oidcClientConfig = ClientProxy.unwrap(oidcClient) instanceof OidcClientImpl oidcClientImpl
+                    ? oidcClientImpl.getConfig()
+                    : null;
         }
+        tokensHelper = new TokensHelper(oidcClientConfig != null ? oidcClientConfig.tokenCacheMaxSize()
+                : TokensHelper.DEFAULT_TOKEN_CACHE_MAX_SIZE);
 
         initTokens();
         if (!isForceNewTokens()) {
@@ -135,6 +143,7 @@ public abstract class AbstractTokensProducer {
 
     /**
      * @return Additional parameters which will be used during the token acquisition or refresh methods.
+     *         The tokens are cached per set of additional parameters.
      */
     protected Map<String, String> additionalParameters() {
         return Map.of();

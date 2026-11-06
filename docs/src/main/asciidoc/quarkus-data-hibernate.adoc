@@ -17,6 +17,9 @@ Quarkus Data Hibernate is the perfect solution if you want to get started using 
 If you are new to Quarkus Data Hibernate, start with the
 xref:quarkus-data-hibernate-getting-started.adoc[Quarkus Data Hibernate getting started tutorial].
 
+To work with native SQL only, without entities, see the
+xref:quarkus-data-hibernate-sql.adoc[Quarkus Data native SQL tutorial].
+
 [NOTE]
 ====
 This guide does not go into the specifics of using either
@@ -56,7 +59,7 @@ Jakarta Persistence annotations.
 To map a Java class to a database table:
 
 - Write a class.
-- Annotate it with link:{jakarta-persistence-javadocs-url}/jakarta/persistence/entity[`@Entity`].
+- Annotate it with link:{jakarta-persistence-javadocs-url}jakarta/persistence/Entity.html[`@Entity`].
 - Optionally, make it extend `ManagedEntity` or `RecordEntity` (see <<session-and-access-models,Session and access models>>).
 - Make its fields `public`. <<entity-field-access,Getters and setters are not necessary thanks to bytecode enhancement>>.
 
@@ -254,6 +257,9 @@ For the behavioral differences between managed and record entities, see
 <<session-and-access-models,Session and access models>>. For standalone repositories and entities without Quarkus Data
 supertypes, see <<alternative-repository-definitions,Advanced usage>>.
 
+TIP: For queries without mapped entities, see the
+xref:quarkus-data-hibernate-sql.adoc[native SQL guide].
+
 === Generated finder and query methods
 
 You can use `@Find` methods to find single instances or collections of entities by using the parameters of the method
@@ -338,7 +344,8 @@ long deleteByName(String name);
 ----
 
 Generated finder and HQL query methods are type-checked at build time. They are validated for entity names, fields,
-HQL syntax, and parameter names. Native SQL is validated by the database when the query is executed at run time.
+HQL syntax, and parameter names. Native SQL is validated by the database when the query is executed; see the
+xref:quarkus-data-hibernate-sql.adoc[native SQL tutorial].
 
 === Obtaining and using a repository
 
@@ -958,7 +965,7 @@ separate query engines: each standard defines a different level of functionality
 - The link:{jakarta-persistence-spec-url}#a4665[Jakarta Persistence Query Language] (JPQL) is the standard query language
   defined by Jakarta Persistence and is a subset of HQL. A valid JPQL query is also a valid HQL query. This language is
   evolving into the standalone link:https://jakarta.ee/specifications/query/1.0/[Jakarta Query specification].
-- The link:{jakarta-data-spec-url}#_jakarta_data_query_language[Jakarta Data Query Language] (JDQL) is the portable
+- The link:{jakarta-data-spec-url}#_jakarta_common_query_language[Jakarta Data Query Language] (JDQL) is the portable
   subset of JPQL used by Jakarta Data's `@Query` annotation. Restrict queries to JDQL when the repository should remain
   independent of Hibernate-specific query features.
 - Panache Query Language adds concise forms for common HQL queries. It is accepted by query methods such as `find()`,
@@ -1092,11 +1099,11 @@ represents the majority of your use cases and use the following accessors for al
 |Session type|Entity accessor|Equivalent entity type
 
 |`Session`
-|`.managedBlocking()`
+|`.managed()`
 |`ManagedEntity`
 
 |`StatelessSession`
-|`.statelessBlocking()`
+|`.record()`
 |`RecordEntity`
 
 |`Mutiny.Session`
@@ -1104,7 +1111,7 @@ represents the majority of your use cases and use the following accessors for al
 |`ManagedEntity.Reactive`
 
 |`Mutiny.StatelessSession`
-|`.statelessReactive()`
+|`.recordReactive()`
 |`RecordEntity.Reactive`
 
 |===
@@ -1117,11 +1124,11 @@ For repository operations, obtain alternative repositories from the generated me
 |Session type|Metamodel accessor|Repository type
 
 |`Session`
-|`Cat_.managedBlocking()`
+|`Cat_.managed()`
 |`ManagedRepository<Cat>`
 
 |`StatelessSession`
-|`Cat_.statelessBlocking()`
+|`Cat_.record()`
 |`RecordRepository<Cat>`
 
 |`Mutiny.Session`
@@ -1129,7 +1136,7 @@ For repository operations, obtain alternative repositories from the generated me
 |`ManagedRepository.Reactive<Cat>`
 
 |`Mutiny.StatelessSession`
-|`Cat_.statelessReactive()`
+|`Cat_.recordReactive()`
 |`RecordRepository.Reactive<Cat>`
 
 |===

@@ -5,10 +5,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
+import io.smallrye.config.Config;
 
 public class SpringWebEndpointProvider implements TestHttpEndpointProvider {
     @Override
@@ -32,7 +32,7 @@ public class SpringWebEndpointProvider implements TestHttpEndpointProvider {
                 //TODO: there is not really any way to handle @ApplicationPath, we could do something for @QuarkusTest apps but we can't for
                 //native apps, so we just have to document the limitation
                 String path = "/";
-                Optional<String> appPath = ConfigProvider.getConfig().getOptionalValue("quarkus.resteasy.path", String.class);
+                Optional<String> appPath = Config.get().getOptionalValue("quarkus.resteasy.path", String.class);
                 if (appPath.isPresent()) {
                     path = appPath.get();
                 }

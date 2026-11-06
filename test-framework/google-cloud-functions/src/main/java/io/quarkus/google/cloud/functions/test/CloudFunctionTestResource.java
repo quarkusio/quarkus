@@ -49,10 +49,12 @@ public class CloudFunctionTestResource implements QuarkusTestResourceConfigurabl
 
     @Override
     public void stop() {
-        try {
-            this.invoker.stop();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        if (this.invoker != null) {
+            try {
+                this.invoker.stop();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

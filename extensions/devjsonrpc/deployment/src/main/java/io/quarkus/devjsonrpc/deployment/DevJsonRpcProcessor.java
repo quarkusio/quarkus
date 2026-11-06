@@ -27,6 +27,7 @@ import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -202,21 +203,22 @@ public class DevJsonRpcProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Record(ExecutionTime.RUNTIME_INIT)
+    @Produce(JsonRpcRouterBuildItem.class)
     void createJsonRpcRouter(DevJsonRpcRecorder recorder,
             BeanContainerBuildItem beanContainer,
             List<JsonRpcCodecCustomizerBuildItem> codecCustomizers,
             Optional<JsonRPCRuntimeMethodsBuildItem> jsonRPCMethodsBuildItem,
-            Optional<DeploymentMethodBuildItem> deploymentMethodBuildItem) {
+            Optional<DeploymentMethodBuildItem> deploymentMethodBuildItem,
+            Optional<JsonRpcMapperBuildItem> jsonRpcMapperBuildItem) {
 
         Map<String, RuntimeJsonRpcMethod> runtimeMethodsMap = jsonRPCMethodsBuildItem
                 .map(JsonRPCRuntimeMethodsBuildItem::getRuntimeMethodsMap).orElse(Collections.emptyMap());
         Map<String, RuntimeJsonRpcMethod> runtimeSubscriptionsMap = jsonRPCMethodsBuildItem
                 .map(JsonRPCRuntimeMethodsBuildItem::getRuntimeSubscriptionsMap).orElse(Collections.emptyMap());
 
-        if (DevConsoleManager.getGlobal(DevJsonRpcRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY) == null) {
-            DevConsoleManager.setGlobal(DevJsonRpcRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY,
-                    JsonMapper.Factory.deploymentLinker().createLinkData(createCodecFactory(codecCustomizers)));
-        }
+        // Set on every build, so the factory is the one for the current deployment (and its codec customizers)
+        DevConsoleManager.setGlobal(DevJsonRpcRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY,
+                JsonMapper.Factory.deploymentLinker().createLinkData(createCodecFactory(codecCustomizers)));
 
         recorder.createJsonRpcRouter(beanContainer.getValue(),
                 runtimeToJsonRpcMethods(runtimeMethodsMap),
@@ -228,7 +230,8 @@ public class DevJsonRpcProcessor {
                 recordedToJsonRpcMethods(deploymentMethodBuildItem.map(DeploymentMethodBuildItem::getRecordedMethods)
                         .orElse(Collections.emptyMap())),
                 recordedToJsonRpcMethods(deploymentMethodBuildItem.map(DeploymentMethodBuildItem::getRecordedSubscriptions)
-                        .orElse(Collections.emptyMap())));
+                        .orElse(Collections.emptyMap())),
+                jsonRpcMapperBuildItem.map(JsonRpcMapperBuildItem::getJsonMapper).orElse(null));
     }
 
     private Map<String, JsonRpcMethod> runtimeToJsonRpcMethods(Map<String, RuntimeJsonRpcMethod> m) {

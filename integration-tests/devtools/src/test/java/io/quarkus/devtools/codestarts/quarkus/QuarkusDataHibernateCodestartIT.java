@@ -44,7 +44,7 @@ public class QuarkusDataHibernateCodestartIT {
     @Test
     void testMavenContent() throws Throwable {
         codestartMavenTest.checkGeneratedSource("org.acme.MyEntity");
-        codestartMavenTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/resources/import.sql");
+        codestartMavenTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/resources/data.sql");
     }
 
     @Test

@@ -36,7 +36,6 @@ import org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerRefresh
 import org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerSaslClient;
 import org.apache.kafka.common.security.scram.internals.ScramSaslClient;
 import org.apache.kafka.common.serialization.*;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
@@ -72,6 +71,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
@@ -101,6 +101,7 @@ import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
 import io.quarkus.kafka.client.tls.QuarkusKafkaSslEngineFactory;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.smallrye.config.Config;
 
 public class KafkaProcessor {
 
@@ -449,7 +450,7 @@ public class KafkaProcessor {
                         .build());
 
         // Enable SSL support if kafka.security.protocol is set to something other than PLAINTEXT, which is the default
-        String securityProtocol = ConfigProvider.getConfig().getConfigValue("kafka.security.protocol").getValue();
+        String securityProtocol = Config.get().getConfigValue("kafka.security.protocol").getValue();
         if (securityProtocol != null && SecurityProtocol.forName(securityProtocol) != SecurityProtocol.PLAINTEXT) {
             sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.KAFKA_CLIENT));
         }
@@ -563,7 +564,15 @@ public class KafkaProcessor {
     }
 
     @BuildStep(onlyIf = NativeImageFutureDefault.RunTimeInitializeSecurityProvider.class)
-    RuntimeInitializedPackageBuildItem runtimeInitializedClasses() {
+    RuntimeInitializedPackageBuildItem runtimeInitializedClasses(
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClass) {
+        // These login modules register the Kafka SASL client providers in their static initializers.
+        // When the JDK security providers are initialized at run time, a registration performed at
+        // build time is lost, so initialize these classes at run time to register the providers then.
+        runtimeInitializedClass.produce(new RuntimeInitializedClassBuildItem(
+                "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule"));
+        runtimeInitializedClass.produce(new RuntimeInitializedClassBuildItem(
+                "org.apache.kafka.common.security.scram.ScramLoginModule"));
         return new RuntimeInitializedPackageBuildItem("org.apache.kafka.common.security.ssl");
     }
 

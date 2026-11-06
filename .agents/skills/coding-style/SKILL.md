@@ -21,7 +21,7 @@ description: >
 
 - Prefer package-private (default) visibility for internal implementation classes
 - Use `public` for user-facing API and for classes/methods that need to be accessed
-  across packages (e.g., processors, recorders, build items). Prefer package-private
+  across packages (e.g., processors, build items). Prefer package-private
   for purely internal implementation details
 - Use `protected` when designing for extension/subclassing
 - Internal classes should go in `.internal` or `.impl` sub-packages
@@ -30,7 +30,6 @@ description: >
 ## Naming
 
 - Deployment processors: `<Feature>Processor.java`
-- Recorders: `<Feature>Recorder.java`
 - Build items: `<Description>BuildItem.java`
 - Config interfaces: `<Feature>Config.java` or `<Feature>BuildTimeConfig.java` / `<Feature>RuntimeConfig.java`
 - Artifact IDs: `quarkus-<name>` (runtime), `quarkus-<name>-deployment` (deployment)
@@ -52,6 +51,20 @@ description: >
 - Commits should be atomic and semantic — properly squash before submitting PRs.
   This helps during bisects and makes it easier to revert changes when needed
 - Don't use deprecated methods or classes in new code
+
+## Bytecode
+
+- **Generate bytecode with Gizmo 2** (`io.quarkus.gizmo2`), writing the classes
+  through `GeneratedClassGizmo2Adaptor`. Gizmo 1 (`io.quarkus.gizmo`) is legacy;
+  do not add new Gizmo 1 code.
+- **Read and inspect bytecode with the ClassFile API** backport
+  (`io.smallrye.classfile`, artifact `io.smallrye.classfile:jdk-classfile-backport`,
+  the same API as `java.lang.classfile`): `ClassFile.of().parse(bytes)`, then
+  `methods()`, `code()`, `elementList()`. This applies to tests that check
+  generated classes too.
+- **Never add ASM** (`org.objectweb.asm`) to new code or tests. The only
+  remaining ASM entry point is `BytecodeTransformerBuildItem`, whose
+  transformers still take an ASM `ClassVisitor`; keep those minimal.
 
 ## Logging
 

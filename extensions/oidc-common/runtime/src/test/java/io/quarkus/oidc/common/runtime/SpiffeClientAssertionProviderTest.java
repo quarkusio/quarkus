@@ -25,6 +25,7 @@ public class SpiffeClientAssertionProviderTest {
 
     private static final String AUDIENCE = "https://service.example.com";
     private static final String SPIFFE_ID = "spiffe://example.org/workload";
+    private static final String ISSUER = "https://example.org";
 
     private static Vertx vertx;
 
@@ -50,7 +51,7 @@ public class SpiffeClientAssertionProviderTest {
     @Test
     public void testGetClientAssertionReturnsCachedToken() {
         String token = createSpiffeSvidToken();
-        WorkloadJsonWebToken svid = new TestJwtSvid(token, SPIFFE_ID, Set.of(AUDIENCE),
+        WorkloadJsonWebToken svid = new TestJwtSvid(token, ISSUER, SPIFFE_ID, Set.of(AUDIENCE),
                 Instant.now().plusSeconds(60));
         var spiffeClient = new StubSpiffeClient(svid);
         try (var provider = new SpiffeClientAssertionProvider(spiffeClient, AUDIENCE, vertx)) {
@@ -71,7 +72,7 @@ public class SpiffeClientAssertionProviderTest {
             public Uni<WorkloadJsonWebToken> getWorkloadJsonWebToken(String audience) {
                 int idx = fetchCount.getAndIncrement();
                 String token = idx == 0 ? firstToken : secondToken;
-                return Uni.createFrom().item(new TestJwtSvid(token, SPIFFE_ID, Set.of(audience),
+                return Uni.createFrom().item(new TestJwtSvid(token, ISSUER, SPIFFE_ID, Set.of(audience),
                         Instant.now().plusSeconds(4)));
             }
         };
@@ -91,7 +92,7 @@ public class SpiffeClientAssertionProviderTest {
 
     @Test
     public void testCloseStopsRefresh() throws InterruptedException {
-        WorkloadJsonWebToken svid = new TestJwtSvid(createShortLivedSpiffeSvidToken(), SPIFFE_ID,
+        WorkloadJsonWebToken svid = new TestJwtSvid(createShortLivedSpiffeSvidToken(), ISSUER, SPIFFE_ID,
                 Set.of(AUDIENCE), Instant.now().plusSeconds(1));
         var spiffeClient = new StubSpiffeClient(svid);
 
@@ -123,11 +124,11 @@ public class SpiffeClientAssertionProviderTest {
     }
 
     private static WorkloadJsonWebToken createJwtSvid() {
-        return new TestJwtSvid(createSpiffeSvidToken(), SPIFFE_ID, Set.of(AUDIENCE),
+        return new TestJwtSvid(createSpiffeSvidToken(), ISSUER, SPIFFE_ID, Set.of(AUDIENCE),
                 Instant.now().plusSeconds(4));
     }
 
-    private record TestJwtSvid(String token, String subject, Set<String> audience,
+    private record TestJwtSvid(String token, String issuer, String subject, Set<String> audience,
             Instant expiry) implements WorkloadJsonWebToken {
     }
 

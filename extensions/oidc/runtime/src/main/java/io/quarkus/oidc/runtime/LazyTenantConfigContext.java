@@ -37,6 +37,7 @@ final class LazyTenantConfigContext implements TenantConfigContext {
                 if (ctx.ready()) {
                     BackChannelLogoutHandler.fireBackChannelLogoutReadyEvent(ctx.oidcConfig());
                     ResourceMetadataHandler.fireResourceMetadataReadyEvent(ctx.oidcConfig());
+                    AttestationJwksHandler.fireAttestationJwksReadyEvent(ctx.oidcConfig());
                 }
             });
         }
@@ -61,6 +62,11 @@ final class LazyTenantConfigContext implements TenantConfigContext {
     @Override
     public OidcTenantConfig getOidcTenantConfig() {
         return delegate.getOidcTenantConfig();
+    }
+
+    @Override
+    public boolean isCreatedFrom(OidcTenantConfig oidcConfig) {
+        return delegate.isCreatedFrom(oidcConfig);
     }
 
     @Override

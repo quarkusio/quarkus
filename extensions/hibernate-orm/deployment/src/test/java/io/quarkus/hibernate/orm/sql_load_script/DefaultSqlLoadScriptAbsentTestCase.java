@@ -19,8 +19,8 @@ public class DefaultSqlLoadScriptAbsentTestCase {
                     .addAsResource("application.properties"))
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
             // In particular, we don't want Hibernate ORM to log
-            // "Specified schema generation script file [import.sql] did not exist for reading"
-            // when "import.sql" is just the Quarkus default.
+            // "Specified schema generation script file [schema.sql] did not exist for reading"
+            // when "schema.sql" or "data.sql" is just a Quarkus default.
             .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage).isEmpty());
 
     @Test

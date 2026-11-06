@@ -17,12 +17,14 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.grpc.client.GrpcClient;
+import io.vertx.grpc.client.GrpcClientOptions;
 
 class VertxGrpcSenderShutdownTest {
 
     private VertxGrpcSender createSender(GrpcClient client) {
         try (MockedStatic<GrpcClient> grpcClientFactory = mockStatic(GrpcClient.class)) {
-            grpcClientFactory.when(() -> GrpcClient.client(any(Vertx.class), any(HttpClientOptions.class)))
+            grpcClientFactory.when(
+                    () -> GrpcClient.client(any(Vertx.class), any(GrpcClientOptions.class), any(HttpClientOptions.class)))
                     .thenReturn(client);
             return new VertxGrpcSender(URI.create("http://localhost:4317"), VertxGrpcSender.GRPC_TRACE_SERVICE_NAME, false,
                     Duration.ofSeconds(10), Map.of(), options -> {

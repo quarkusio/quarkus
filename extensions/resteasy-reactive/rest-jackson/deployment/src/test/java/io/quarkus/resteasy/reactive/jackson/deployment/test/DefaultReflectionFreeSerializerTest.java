@@ -43,8 +43,8 @@ public class DefaultReflectionFreeSerializerTest {
                 .statusCode(200)
                 .extract().body().as(TestDto.class);
 
-        assertThat(result.getStackTrace()).anyMatch(s -> s.contains("$quarkusjacksonserializer.serialize"))
-                .noneMatch(s -> s.contains("BeanSerializer.serialize"));
+        assertThat(result.getStackTrace()).noneMatch(s -> s.contains("$quarkusjacksonserializer.serialize"))
+                .anyMatch(s -> s.contains("BeanSerializer.serialize"));
     }
 
     @Path("/test")

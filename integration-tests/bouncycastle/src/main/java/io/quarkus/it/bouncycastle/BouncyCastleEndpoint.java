@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import javax.crypto.Cipher;
+import javax.crypto.KEM;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -70,6 +71,13 @@ public class BouncyCastleEndpoint {
     public String checkAesCbcPKCS7PaddingCipher() throws Exception {
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS7Padding", "BC");
         return cipher.getAlgorithm();
+    }
+
+    @GET
+    @Path("checkMLKEM")
+    public String checkMLKEM() throws Exception {
+        KEM kem = KEM.getInstance("ML-KEM-768", "BC");
+        return kem.getAlgorithm();
     }
 
     @GET

@@ -8,14 +8,25 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials;
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Attestation;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Provider;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method;
-import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.ConfigInstanceBuilder;
 
 public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigBuilder<T> {
+
+    protected static <I extends OidcClientCommonConfig> ConfigInstanceBuilder<I> clientCommonConfig(Class<I> type,
+            OidcClientCommonConfigBuilder<?> builder) {
+        return commonConfig(type, builder)
+                .with(OidcClientCommonConfig::tokenPath, builder.tokenPath)
+                .with(OidcClientCommonConfig::revokePath, builder.revokePath)
+                .with(OidcClientCommonConfig::clientId, builder.clientId)
+                .with(OidcClientCommonConfig::clientName, builder.clientName)
+                .with(OidcClientCommonConfig::credentials, builder.credentials);
+    }
 
     protected static class OidcClientCommonConfigImpl extends OidcCommonConfigImpl implements OidcClientCommonConfig {
 
@@ -73,6 +84,20 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         this.clientId = oidcClientCommonConfig.clientId();
         this.clientName = oidcClientCommonConfig.clientName();
         this.credentials = oidcClientCommonConfig.credentials();
+    }
+
+    /**
+     * @return current {@link OidcClientCommonConfig#tokenPath()}
+     */
+    protected Optional<String> getTokenPath() {
+        return tokenPath;
+    }
+
+    /**
+     * @return current {@link OidcClientCommonConfig#credentials()}
+     */
+    protected Credentials getCredentials() {
+        return credentials;
     }
 
     /**
@@ -161,15 +186,12 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
      */
     public static final class CredentialsBuilder<T> {
 
-        private record CredentialsImpl(Optional<String> secret, Secret clientSecret, Jwt jwt,
-                boolean forAllEndpoints) implements Credentials {
-        }
-
         private final OidcClientCommonConfigBuilder<T> builder;
         private Optional<String> secret;
         private Secret clientSecret;
         private Jwt jwt;
         private boolean forAllEndpoints;
+        private Attestation attestation;
 
         public CredentialsBuilder() {
             this(getConfigBuilderWithDefaults());
@@ -181,6 +203,7 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
             this.clientSecret = builder.credentials.clientSecret();
             this.jwt = builder.credentials.jwt();
             this.forAllEndpoints = builder.credentials.forAllEndpoints();
+            this.attestation = builder.credentials.attestation();
         }
 
         /**
@@ -265,6 +288,24 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
+         * @param attestation {@link Credentials#attestation()} created with SmallRye Config
+         * @return this builder
+         */
+        public CredentialsBuilder<T> attestation(Attestation attestation) {
+            this.attestation = Objects.requireNonNull(attestation);
+            return this;
+        }
+
+        /**
+         * Starts building {@link Credentials#attestation()}.
+         *
+         * @return AttestationBuilder
+         */
+        public AttestationBuilder<T> attestation() {
+            return new AttestationBuilder<>(this);
+        }
+
+        /**
          * Builds {@link Credentials} and returns the builder.
          *
          * @return T builder
@@ -278,15 +319,18 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
          * @return Credentials
          */
         public Credentials build() {
-            return new CredentialsImpl(secret, clientSecret, jwt, forAllEndpoints);
+            return ConfigInstanceBuilder.forInterface(Credentials.class)
+                    .with(Credentials::secret, secret)
+                    .with(Credentials::clientSecret, clientSecret)
+                    .with(Credentials::jwt, jwt)
+                    .with(Credentials::attestation, attestation)
+                    .with(Credentials::forAllEndpoints, forAllEndpoints)
+                    .build();
         }
 
         private static <T> OidcClientCommonConfigBuilder<T> getConfigBuilderWithDefaults() {
-            final OidcClientCommonConfig clientCommonConfig = new SmallRyeConfigBuilder()
-                    .addDiscoveredConverters()
-                    .withMapping(OidcClientCommonConfig.class)
-                    .build()
-                    .getConfigMapping(OidcClientCommonConfig.class);
+            final OidcClientCommonConfig clientCommonConfig = ConfigInstanceBuilder.forInterface(OidcClientCommonConfig.class)
+                    .build();
             return new OidcClientCommonConfigBuilder<>(clientCommonConfig) {
                 @Override
                 protected T getBuilder() {
@@ -301,9 +345,6 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
      * The {@link Secret} builder.
      */
     public static final class SecretBuilder<T> {
-
-        private record SecretImpl(Optional<String> value, Optional<Method> method, Provider provider) implements Secret {
-        }
 
         private final CredentialsBuilder<T> builder;
 
@@ -414,7 +455,11 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         public Secret build() {
-            return new SecretImpl(value, method, provider);
+            return ConfigInstanceBuilder.forInterface(Secret.class)
+                    .with(Secret::value, value)
+                    .with(Secret::method, method)
+                    .with(Secret::provider, provider)
+                    .build();
         }
     }
 
@@ -422,10 +467,6 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
      * The {@link Provider} builder.
      */
     public static final class ProviderBuilder<T> {
-
-        private record ProviderImpl(Optional<String> name, Optional<String> keyringName,
-                Optional<String> key) implements Provider {
-        }
 
         private final Function<Provider, T> providerSetter;
         private Optional<String> name;
@@ -489,24 +530,16 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
          * @return Provider
          */
         public Provider build() {
-            return new ProviderImpl(name, keyringName, key);
+            return ConfigInstanceBuilder.forInterface(Provider.class)
+                    .with(Provider::name, name)
+                    .with(Provider::keyringName, keyringName)
+                    .with(Provider::key, key)
+                    .build();
         }
 
     }
 
     public static final class JwtBuilder<T> {
-
-        private record JwtImpl(Source source, Optional<String> secret, Provider secretProvider, Optional<String> key,
-                Optional<String> keyFile, Optional<String> keyStoreFile, Optional<String> keyStorePassword,
-                Optional<String> keyId, Optional<String> keyPassword,
-                Optional<String> publicKey, Optional<String> publicKeyFile,
-                Optional<String> audience,
-                boolean keepAudienceTrailingSlash,
-                Optional<String> tokenKeyId, Optional<String> issuer, Optional<String> subject, Map<String, String> claims,
-                Optional<String> signatureAlgorithm, int lifespan, boolean assertion,
-                Optional<Path> tokenPath) implements Jwt {
-
-        }
 
         private final CredentialsBuilder<T> builder;
         private final Map<String, String> claims = new HashMap<>();
@@ -828,11 +861,84 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
          * @return Jwt
          */
         public Jwt build() {
-            return new JwtImpl(source, secret, secretProvider, key, keyFile, keyStoreFile, keyStorePassword, keyId, keyPassword,
-                    publicKey, publicKeyFile,
-                    audience, keepAudienceTrailingSlash, tokenKeyId, issuer, subject, Map.copyOf(claims), signatureAlgorithm,
-                    lifespan, assertion,
-                    tokenPath);
+            return ConfigInstanceBuilder.forInterface(Jwt.class)
+                    .with(Jwt::source, source)
+                    .with(Jwt::secret, secret)
+                    .with(Jwt::secretProvider, secretProvider)
+                    .with(Jwt::key, key)
+                    .with(Jwt::keyFile, keyFile)
+                    .with(Jwt::keyStoreFile, keyStoreFile)
+                    .with(Jwt::keyStorePassword, keyStorePassword)
+                    .with(Jwt::keyId, keyId)
+                    .with(Jwt::keyPassword, keyPassword)
+                    .with(Jwt::publicKey, publicKey)
+                    .with(Jwt::publicKeyFile, publicKeyFile)
+                    .with(Jwt::audience, audience)
+                    .with(Jwt::keepAudienceTrailingSlash, keepAudienceTrailingSlash)
+                    .with(Jwt::tokenKeyId, tokenKeyId)
+                    .with(Jwt::issuer, issuer)
+                    .with(Jwt::subject, subject)
+                    .with(Jwt::claims, Map.copyOf(claims))
+                    .with(Jwt::signatureAlgorithm, signatureAlgorithm)
+                    .with(Jwt::lifespan, lifespan)
+                    .with(Jwt::assertion, assertion)
+                    .with(Jwt::tokenPath, tokenPath)
+                    .build();
+        }
+    }
+
+    /**
+     * The {@link Attestation} builder.
+     */
+    public static final class AttestationBuilder<T> {
+
+        private final CredentialsBuilder<T> builder;
+        private boolean enabled;
+        private Attestation.AttestationSignatureAlgorithm signatureAlgorithm;
+
+        public AttestationBuilder(CredentialsBuilder<T> builder) {
+            this.builder = Objects.requireNonNull(builder);
+            this.enabled = builder.attestation.enabled();
+            this.signatureAlgorithm = builder.attestation.signatureAlgorithm();
+        }
+
+        /**
+         * Enables attestation-based client authentication.
+         *
+         * @return this builder
+         */
+        public AttestationBuilder<T> enabled() {
+            this.enabled = true;
+            return this;
+        }
+
+        /**
+         * @param signatureAlgorithm {@link Attestation#signatureAlgorithm()}
+         * @return this builder
+         */
+        public AttestationBuilder<T> signatureAlgorithm(Attestation.AttestationSignatureAlgorithm signatureAlgorithm) {
+            this.signatureAlgorithm = Objects.requireNonNull(signatureAlgorithm);
+            return this;
+        }
+
+        /**
+         * Builds {@link Credentials#attestation()}.
+         *
+         * @return CredentialsBuilder
+         */
+        public CredentialsBuilder<T> end() {
+            Objects.requireNonNull(builder);
+            return builder.attestation(build());
+        }
+
+        /**
+         * @return Attestation
+         */
+        public Attestation build() {
+            return ConfigInstanceBuilder.forInterface(Attestation.class)
+                    .with(Attestation::enabled, enabled)
+                    .with(Attestation::signatureAlgorithm, signatureAlgorithm)
+                    .build();
         }
     }
 }

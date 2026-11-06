@@ -1,7 +1,6 @@
 package io.quarkus.mongodb.runtime.dns;
 
 import static java.lang.String.format;
-import static org.eclipse.microprofile.config.ConfigProvider.getConfig;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,7 +25,7 @@ import com.mongodb.spi.dns.DnsException;
 
 import io.quarkus.mongodb.runtime.MongoConfig;
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.dns.DnsClientOptions;
 import io.vertx.core.dns.SrvRecord;
@@ -46,7 +45,7 @@ public class MongoDnsClient implements DnsClient {
     private final MongoConfig mongoConfig;
 
     MongoDnsClient(io.vertx.core.Vertx vertx) {
-        this.mongoConfig = getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(MongoConfig.class);
+        this.mongoConfig = Config.get().getConfigMapping(MongoConfig.class);
         Vertx mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
 
         // If the server is not set, we attempt to read the /etc/resolv.conf. If it does not exist, we use the default

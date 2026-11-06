@@ -28,6 +28,6 @@ class NativeConfigTest {
     }
 
     private NativeConfig createConfig(String builderImage) {
-        return new TestNativeConfig(builderImage);
+        return TestNativeConfig.of(builderImage);
     }
 }

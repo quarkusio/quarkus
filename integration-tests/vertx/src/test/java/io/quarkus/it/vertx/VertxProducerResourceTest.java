@@ -1,6 +1,7 @@
 package io.quarkus.it.vertx;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +15,12 @@ public class VertxProducerResourceTest {
     public void testInjection() {
         RestAssured.when().get("/vertx-test").then()
                 .body(containsString("vertx=true"), containsString("eventbus=true"));
+    }
+
+    @Test
+    public void testDnsResolver() {
+        RestAssured.when().get("/vertx-test/dns").then()
+                .statusCode(200).body(equalTo("true"));
     }
 
     @Test

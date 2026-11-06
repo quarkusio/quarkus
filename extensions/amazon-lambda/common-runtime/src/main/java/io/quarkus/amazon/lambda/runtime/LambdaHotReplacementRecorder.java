@@ -4,9 +4,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.HotReplacementContext;
-import io.quarkus.runtime.annotations.Recorder;
 
-@Recorder
 public class LambdaHotReplacementRecorder {
     private static final Logger log = Logger.getLogger(LambdaHotReplacementRecorder.class);
 
@@ -43,7 +41,7 @@ public class LambdaHotReplacementRecorder {
         return false;
     }
 
-    public void enable() {
+    public static void enable() {
         enabled = true;
     }
 }

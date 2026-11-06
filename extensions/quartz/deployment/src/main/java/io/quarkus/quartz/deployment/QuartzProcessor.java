@@ -1,7 +1,5 @@
 package io.quarkus.quartz.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,13 +42,13 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -61,7 +59,7 @@ import io.quarkus.quartz.Nonconcurrent;
 import io.quarkus.quartz.runtime.QuarkusQuartzConnectionPoolProvider;
 import io.quarkus.quartz.runtime.QuartzBuildTimeConfig;
 import io.quarkus.quartz.runtime.QuartzExtensionPointConfig;
-import io.quarkus.quartz.runtime.QuartzRecorder;
+import io.quarkus.quartz.runtime.QuartzRuntimeConfig;
 import io.quarkus.quartz.runtime.QuartzSchedulerImpl;
 import io.quarkus.quartz.runtime.QuartzSupport;
 import io.quarkus.quartz.runtime.jdbc.JDBCDataSource;
@@ -353,9 +351,9 @@ public class QuartzProcessor {
     }
 
     @BuildStep
-    @Record(RUNTIME_INIT)
     public void quartzSupportBean(
-            QuartzRecorder recorder,
+            ServiceRegistrar serviceRegistrar,
+            QuartzBuildTimeConfig buildTimeConfig,
             QuartzJDBCDriverDialectBuildItem driverDialect,
             List<ScheduledBusinessMethodItem> scheduledMethods,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
@@ -366,12 +364,21 @@ public class QuartzProcessor {
                 nonconcurrentMethods.add(m.getMethod().declaringClass().name() + "#" + m.getMethod().name());
             }
         }
+        Set<String> capturedNonconcurrentMethods = Set.copyOf(nonconcurrentMethods);
+        String driver = driverDialect.getDriver().orElse(null);
+        List<JDBCDataSource> dataSources = driverDialect.getDataSources() == null ? null
+                : List.copyOf(driverDialect.getDataSources());
+
+        serviceRegistrar
+                .forService(QuartzSupport.class)
+                .require(QuartzRuntimeConfig.class)
+                .onStart((ctx, runtimeConfig) -> new QuartzSupport(runtimeConfig, buildTimeConfig,
+                        Optional.ofNullable(driver), dataSources, capturedNonconcurrentMethods));
 
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(QuartzSupport.class)
                 .scope(Singleton.class) // this should be @ApplicationScoped but it fails for some reason
                 .setRuntimeInit()
-                .supplier(recorder.quartzSupportSupplier(driverDialect.getDriver(), driverDialect.getDataSources(),
-                        nonconcurrentMethods))
+                .serviceValue(QuartzSupport.class)
                 .done());
     }
 

@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.condition.OS;
 import io.grpc.Channel;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.smallrye.config.Config;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.grpcio.client.GrpcIoClient;
@@ -30,7 +30,7 @@ public class GrpcDomainSocketIT {
 
     @BeforeEach
     public void setUp() {
-        String socketPath = ConfigProvider.getConfig()
+        String socketPath = Config.get()
                 .getValue("quarkus.http.domain-socket", String.class);
         vertx = Vertx.vertx();
         client = GrpcIoClient.client(vertx);

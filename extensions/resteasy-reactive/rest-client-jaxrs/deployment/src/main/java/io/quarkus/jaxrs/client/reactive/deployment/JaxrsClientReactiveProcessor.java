@@ -92,6 +92,8 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientMultipartForm;
+import org.jboss.resteasy.reactive.client.api.ClientRequestOptions;
+import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.handlers.ClientObservabilityHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientSendRequestHandler;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
@@ -141,6 +143,7 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Types;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -156,11 +159,13 @@ import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.AssignableResultHandle;
@@ -180,6 +185,7 @@ import io.quarkus.jaxrs.client.reactive.runtime.ParameterDescriptorFromClassSupp
 import io.quarkus.jaxrs.client.reactive.runtime.RestClientBase;
 import io.quarkus.jaxrs.client.reactive.runtime.ToObjectArray;
 import io.quarkus.jaxrs.client.reactive.runtime.impl.MultipartResponseDataBase;
+import io.quarkus.modular.spi.items.AddDependencyBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ParameterContainersBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
@@ -194,6 +200,7 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.metrics.MetricsFactory;
+import io.smallrye.modules.desc.Dependency;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
@@ -251,6 +258,19 @@ public class JaxrsClientReactiveProcessor {
     private static final String MULTIPART_FORM_DATA = "multipart/form-data";
 
     @BuildStep
+    ModuleExportBuildItem exportClientInternalsToGeneratedClients(CurateOutcomeBuildItem curateOutcome) {
+        return new ModuleExportBuildItem("io.quarkus.resteasy.reactive.client",
+                curateOutcome.getApplicationModel().getAppArtifact().getModuleName(),
+                "org.jboss.resteasy.reactive.client.impl");
+    }
+
+    @BuildStep
+    AddDependencyBuildItem clientContextResolverServices() {
+        return new AddDependencyBuildItem("io.quarkus.resteasy.reactive.client", "io.quarkus.rest.client.jaxrs",
+                Dependency.Modifier.Set.of(Dependency.Modifier.SERVICES, Dependency.Modifier.OPTIONAL));
+    }
+
+    @BuildStep
     void registerClientResponseBuilder(BuildProducer<ServiceProviderBuildItem> serviceProviders) {
         serviceProviders.produce(new ServiceProviderBuildItem(ResponseBuilderFactory.class.getName(),
                 ClientResponseBuilderFactory.class.getName()));
@@ -297,6 +317,7 @@ public class JaxrsClientReactiveProcessor {
             List<MessageBodyWriterOverrideBuildItem> messageBodyWriterOverrideBuildItems,
             List<JaxrsClientReactiveEnricherBuildItem> enricherBuildItems,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            ValidationPhaseBuildItem validationPhase,
             ApplicationIndexBuildItem applicationIndexBuildItem,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             Capabilities capabilities, Optional<MetricsCapabilityBuildItem> metricsCapability,
@@ -322,7 +343,7 @@ public class JaxrsClientReactiveProcessor {
 
         SerializersUtil.setupSerializers(recorder, reflectiveClassBuildItemBuildProducer, messageBodyReaderBuildItems,
                 messageBodyWriterBuildItems, messageBodyReaderOverrideBuildItems, messageBodyWriterOverrideBuildItems,
-                beanContainerBuildItem, applicationResultBuildItem, serialisers,
+                beanContainerBuildItem, validationPhase, applicationResultBuildItem, serialisers,
                 RuntimeType.CLIENT);
         Set<DotName> scannedParameterContainers = new HashSet<>();
 
@@ -1092,6 +1113,7 @@ public class JaxrsClientReactiveProcessor {
                     }
 
                     Integer bodyParameterIdx = null;
+                    ResultHandle clientRequestOptions = null;
                     Map<MethodDescriptor, ResultHandle> invocationBuilderEnrichers = new HashMap<>();
 
                     String[] consumes = extractProducesConsumesValues(
@@ -1253,6 +1275,8 @@ public class JaxrsClientReactiveProcessor {
                                     multipart,
                                     param.mimeType, param.partFileName, param.separator,
                                     jandexMethod.declaringClass().name() + "." + jandexMethod.name());
+                        } else if (isClientRequestOptions(param)) {
+                            clientRequestOptions = methodCreator.getMethodParam(paramIdx);
                         }
                     }
 
@@ -1284,6 +1308,9 @@ public class JaxrsClientReactiveProcessor {
                         methodCreator.assign(builder,
                                 methodCreator.invokeVirtualMethod(invocationBuilderEnricher.getKey(), methodCreator.getThis(),
                                         builder, invocationBuilderEnricher.getValue()));
+                    }
+                    if (clientRequestOptions != null) {
+                        setClientRequestOptions(methodCreator, builder, clientRequestOptions);
                     }
 
                     for (JaxrsClientReactiveEnricherBuildItem enricher : enrichers) {
@@ -1353,6 +1380,22 @@ public class JaxrsClientReactiveProcessor {
                         || param.parameterType == ParameterType.QUERY
                         || param.parameterType == ParameterType.FORM
                         || param.parameterType == ParameterType.MATRIX);
+    }
+
+    private static boolean isClientRequestOptions(MethodParameter param) {
+        return param.parameterType == ParameterType.CUSTOM
+                && ClientRequestOptions.class.getName().equals(param.declaredType);
+    }
+
+    /**
+     * A {@link ClientRequestOptions} parameter is not sent with the request: the invocation gets it as a request property.
+     */
+    private static void setClientRequestOptions(BytecodeCreator creator, AssignableResultHandle builder,
+            ResultHandle clientRequestOptions) {
+        creator.assign(builder, creator.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(Invocation.Builder.class, "property", Invocation.Builder.class, String.class,
+                        Object.class),
+                builder, creator.load(QuarkusRestClientProperties.REQUEST_OPTIONS), clientRequestOptions));
     }
 
     private ResultHandle disableEncodingForWebTarget(BytecodeCreator creator, ResultHandle baseTarget) {
@@ -1755,6 +1798,7 @@ public class JaxrsClientReactiveProcessor {
                     }
 
                     ResultHandle bodyParameterValue = null;
+                    ResultHandle clientRequestOptions = null;
                     AssignableResultHandle formParams = null;
                     Map<MethodDescriptor, ResultHandle> invocationBuilderEnrichers = new HashMap<>();
 
@@ -1918,6 +1962,8 @@ public class JaxrsClientReactiveProcessor {
                             // FIXME: this is weird, it doesn't go via converter nor multipart, looks like a bug
                             subMethodCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
                                     subMethodCreator.load(param.name), paramValue);
+                        } else if (isClientRequestOptions(param)) {
+                            clientRequestOptions = paramValue;
                         }
                     }
                     // handle sub-method parameters:
@@ -2072,6 +2118,8 @@ public class JaxrsClientReactiveProcessor {
                             subMethodCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
                                     subMethodCreator.load(param.name),
                                     subMethodCreator.getMethodParam(paramIdx));
+                        } else if (isClientRequestOptions(param)) {
+                            clientRequestOptions = subMethodCreator.getMethodParam(paramIdx);
                         }
 
                     }
@@ -2112,6 +2160,9 @@ public class JaxrsClientReactiveProcessor {
                                 subMethodCreator.invokeVirtualMethod(invocationBuilderEnricher.getKey(),
                                         subMethodCreator.getThis(),
                                         builder, invocationBuilderEnricher.getValue()));
+                    }
+                    if (clientRequestOptions != null) {
+                        setClientRequestOptions(subMethodCreator, builder, clientRequestOptions);
                     }
 
                     for (JaxrsClientReactiveEnricherBuildItem enricher : enrichers) {

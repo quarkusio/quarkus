@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
@@ -16,6 +15,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
@@ -64,7 +64,7 @@ public class OidcDevUiRecorder {
             boolean graphqlIsAvailable, String swaggerUiPath, String graphqlUiPath, String devServiceConfigHashCode,
             boolean discoverMetadata, String devUiLogoutPath, String devUiReadSessionCookiePath, String authServerUrl,
             String buildTimeKeycloakAdminUrl, String buildTimeOidcApplicationType, DevServiceType devServiceType) {
-        var config = ConfigProvider.getConfig();
+        Config config = Config.get();
         String authorizationUrl;
         String tokenUrl;
         String logoutUrl;

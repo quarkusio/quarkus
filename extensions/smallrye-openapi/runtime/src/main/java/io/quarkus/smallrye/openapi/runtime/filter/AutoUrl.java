@@ -1,7 +1,6 @@
 package io.quarkus.smallrye.openapi.runtime.filter;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
+import io.smallrye.config.Config;
 
 /**
  * Create a URL from a config, or a default value
@@ -46,7 +45,7 @@ public class AutoUrl {
     }
 
     public String getFinalUrlValue() {
-        Config c = ConfigProvider.getConfig();
+        Config c = Config.get();
 
         String u = c.getOptionalValue(this.configKey, String.class).orElse(defaultValue);
 

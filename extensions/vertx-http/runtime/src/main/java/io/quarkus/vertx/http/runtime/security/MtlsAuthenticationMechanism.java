@@ -29,7 +29,6 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -40,6 +39,7 @@ import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.CertificateAuthenticationRequest;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.vertx.http.security.MTLS;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.HttpServerRequest;
@@ -73,7 +73,7 @@ public final class MtlsAuthenticationMechanism implements HttpAuthenticationMech
         this.httpServerTlsConfigName = Objects.requireNonNull(mtlsConfig.httpServerTlsConfigName);
         this.initialTlsConfiguration = mtlsConfig.initialTlsConfiguration;
         this.priority = mtlsConfig.priority.orElseGet(() -> {
-            boolean inclusiveAuthentication = ConfigProvider.getConfig().getValue("quarkus.http.auth.inclusive", boolean.class);
+            boolean inclusiveAuthentication = Config.get().getValue("quarkus.http.auth.inclusive", boolean.class);
             return inclusiveAuthentication ? INCLUSIVE_AUTHENTICATION_PRIORITY : DEFAULT_PRIORITY;
         });
     }

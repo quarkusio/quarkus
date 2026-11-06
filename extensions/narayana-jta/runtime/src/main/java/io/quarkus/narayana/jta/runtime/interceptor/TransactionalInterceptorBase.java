@@ -24,7 +24,6 @@ import jakarta.transaction.Transaction;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.Transactional;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.jboss.tm.usertx.client.ServerVMClientUserTransaction;
 import org.reactivestreams.Publisher;
@@ -37,6 +36,7 @@ import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
 import io.quarkus.transaction.annotations.Rollback;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
 import io.smallrye.reactive.converters.Registry;
@@ -258,7 +258,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     }
 
     private Integer getTransactionTimeoutPropertyValue(TransactionConfiguration configAnnotation) {
-        Optional<Integer> configTimeout = ConfigProvider.getConfig()
+        Optional<Integer> configTimeout = Config.get()
                 .getOptionalValue(configAnnotation.timeoutFromConfigProperty(), Integer.class);
         if (configTimeout.isEmpty()) {
             if (log.isDebugEnabled()) {

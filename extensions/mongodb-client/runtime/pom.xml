@@ -79,6 +79,12 @@
             <artifactId>micrometer-core</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- The MongoDB driver references Micrometer Observation classes from its core code paths,
+             and they need to be present for the native image to be linked at build time -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-observation</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.graalvm.sdk</groupId>

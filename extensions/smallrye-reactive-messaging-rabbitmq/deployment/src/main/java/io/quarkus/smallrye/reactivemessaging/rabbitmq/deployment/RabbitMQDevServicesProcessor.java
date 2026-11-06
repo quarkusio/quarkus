@@ -8,8 +8,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -31,6 +29,7 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.Config;
 
 /**
  * Starts a RabbitMQ broker as dev service if needed.
@@ -179,7 +178,7 @@ public class RabbitMQDevServicesProcessor {
     }
 
     private boolean hasRabbitMQChannelWithoutHostAndPort() {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         for (String name : config.getPropertyNames()) {
             boolean isIncoming = name.startsWith("mp.messaging.incoming.");
             boolean isOutgoing = name.startsWith("mp.messaging.outgoing.");

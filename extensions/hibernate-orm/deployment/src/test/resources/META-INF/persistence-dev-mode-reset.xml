@@ -1,0 +1,10 @@
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence" version="3.0">
+    <persistence-unit name="templatePU" transaction-type="JTA">
+        <class>io.quarkus.hibernate.orm.MyEntity</class>
+        <properties>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
+            <property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/>
+            <property name="jakarta.persistence.validation.mode" value="NONE"/>
+        </properties>
+    </persistence-unit>
+</persistence>

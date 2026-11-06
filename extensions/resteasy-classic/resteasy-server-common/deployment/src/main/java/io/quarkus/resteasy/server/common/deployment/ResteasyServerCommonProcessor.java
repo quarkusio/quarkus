@@ -317,6 +317,12 @@ public class ResteasyServerCommonProcessor {
                 } else {
                     pathInterfaces.add(clazz.name());
                 }
+            } else if (annotation.target().kind() == Kind.METHOD) {
+                // RESTEasy discovers inherited endpoint annotations by reflecting on the declaring interface or superclass,
+                // which need not have a class-level @Path. Without this metadata, native route discovery can omit those
+                // endpoints. Register it here independently of Hibernate Validator's constrained-member registrations.
+                reflectiveClass.produce(ReflectiveClassBuildItem
+                        .builder(annotation.target().asMethod().declaringClass().name().toString()).methods().build());
             }
         }
 

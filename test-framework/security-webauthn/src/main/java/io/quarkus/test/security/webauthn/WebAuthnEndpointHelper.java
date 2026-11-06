@@ -1,7 +1,5 @@
 package io.quarkus.test.security.webauthn;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 
@@ -11,6 +9,7 @@ import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import io.smallrye.config.Config;
 import io.vertx.core.json.JsonObject;
 
 public class WebAuthnEndpointHelper {
@@ -117,13 +116,11 @@ public class WebAuthnEndpointHelper {
     }
 
     public static String getMainCookie() {
-        Config config = ConfigProvider.getConfig();
-        return config.getOptionalValue("quarkus.webauthn.cookie-name", String.class).orElse("quarkus-credential");
+        return Config.get().getOptionalValue("quarkus.webauthn.cookie-name", String.class).orElse("quarkus-credential");
     }
 
     public static String getChallengeCookie() {
-        Config config = ConfigProvider.getConfig();
-        return config.getOptionalValue("quarkus.webauthn.challenge-cookie-name", String.class)
+        return Config.get().getOptionalValue("quarkus.webauthn.challenge-cookie-name", String.class)
                 .orElse("_quarkus_webauthn_challenge");
     }
 }

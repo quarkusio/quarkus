@@ -1,9 +1,8 @@
 package io.quarkus.narayana.jta.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-
 import java.lang.annotation.RetentionPolicy;
 import java.lang.constant.ClassDesc;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -48,6 +47,8 @@ import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
@@ -56,11 +57,9 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Produce;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -68,6 +67,7 @@ import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaRecorder;
+import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
 import io.quarkus.narayana.jta.runtime.context.TransactionContext;
 import io.quarkus.narayana.jta.runtime.interceptor.TestTransactionInterceptor;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorMandatory;
@@ -80,6 +80,8 @@ import io.smallrye.context.jta.context.propagation.JtaContextProvider;
 
 class NarayanaJtaProcessor {
 
+    private static final String SETUP_SERVICE = "io.quarkus.narayana-jta.setup";
+
     private static final String TEST_TRANSACTION = "io.quarkus.test.TestTransaction";
 
     @BuildStep
@@ -88,9 +90,8 @@ class NarayanaJtaProcessor {
     }
 
     @BuildStep
-    @Record(RUNTIME_INIT)
     @Produce(NarayanaInitBuildItem.class)
-    public void build(NarayanaJtaRecorder recorder,
+    public void build(ServiceRegistrar serviceRegistrar,
             CombinedIndexBuildItem indexBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -98,9 +99,7 @@ class NarayanaJtaProcessor {
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<LogCleanupFilterBuildItem> logCleanupFilters,
             BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures,
-            ShutdownContextBuildItem shutdownContextBuildItem,
             Capabilities capabilities) {
-        recorder.handleShutdown(shutdownContextBuildItem);
         feature.produce(new FeatureBuildItem(Feature.NARAYANA_JTA));
         additionalBeans.produce(new AdditionalBeanBuildItem(NarayanaJtaProducers.class));
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf("io.quarkus.narayana.jta.RequestScopedTransaction"));
@@ -153,22 +152,33 @@ class NarayanaJtaProcessor {
         for (Object i : System.getProperties().keySet()) {
             defaultProperties.remove(i);
         }
+        Map<String, String> defaults = new HashMap<>();
+        for (String name : defaultProperties.stringPropertyNames()) {
+            defaults.put(name, defaultProperties.getProperty(name));
+        }
+        Map<String, String> capturedDefaults = Map.copyOf(defaults);
 
-        recorder.setDefaultProperties(defaultProperties);
-        // This must be done before setNodeName as the code in setNodeName will create a TSM based on the value of this property
-        recorder.disableTransactionStatusManager();
-        recorder.setNodeName();
-        recorder.setDefaultTimeout();
-        recorder.setReaperConfig();
-        recorder.setConfig();
+        serviceRegistrar
+                .forService(SETUP_SERVICE)
+                .atPhase(Phase.INIT)
+                .require(TransactionManagerConfiguration.class)
+                .onStart((ctx, transactions) -> {
+                    NarayanaJtaRecorder.setDefaultProperties(capturedDefaults);
+                    // This must be done before setNodeName as the code in setNodeName will create a TSM based on the value of this property
+                    NarayanaJtaRecorder.disableTransactionStatusManager();
+                    NarayanaJtaRecorder.setNodeName(transactions);
+                    NarayanaJtaRecorder.setDefaultTimeout(transactions);
+                    NarayanaJtaRecorder.setReaperConfig(transactions);
+                    NarayanaJtaRecorder.setConfig(transactions);
+                    ctx.onStop(NarayanaJtaRecorder::terminateReaper);
+                });
     }
 
     @BuildStep
-    @Record(RUNTIME_INIT)
     @Consume(NarayanaInitBuildItem.class)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    public void startRecoveryService(NarayanaJtaRecorder recorder, List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
-            ShutdownContextBuildItem shutdownContextBuildItem) {
+    public void startRecoveryService(ServiceRegistrar serviceRegistrar,
+            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {
         Map<String, String> configuredDataSourcesConfigKeys = jdbcDataSourceBuildItems.stream()
                 .map(j -> j.getName())
                 .collect(Collectors.toMap(Function.identity(),
@@ -180,8 +190,20 @@ class NarayanaJtaProcessor {
 
         boolean xaResourcesPresent = jdbcDataSourceBuildItems.stream()
                 .anyMatch(JdbcDataSourceBuildItem::isXaEnabled);
-        recorder.startRecoveryService(configuredDataSourcesConfigKeys, dataSourcesWithTransactionIntegration,
-                xaResourcesPresent, shutdownContextBuildItem);
+        Map<String, String> capturedKeys = Map.copyOf(configuredDataSourcesConfigKeys);
+        Set<String> capturedDataSources = Set.copyOf(dataSourcesWithTransactionIntegration);
+        serviceRegistrar
+                .forService("io.quarkus.narayana-jta.recovery")
+                .atPhase(Phase.INIT)
+                .require(TransactionManagerConfiguration.class)
+                .after(SETUP_SERVICE)
+                .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                .onStart((ctx, transactions) -> {
+                    if (NarayanaJtaRecorder.startRecoveryService(transactions, capturedKeys, capturedDataSources,
+                            xaResourcesPresent)) {
+                        ctx.onStop(NarayanaJtaRecorder::stopRecoveryService);
+                    }
+                });
     }
 
     @BuildStep(onlyIf = IsTest.class)

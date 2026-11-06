@@ -7,8 +7,6 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
@@ -21,6 +19,7 @@ import io.quarkus.observability.common.config.LgtmComponent;
 import io.quarkus.observability.common.config.LgtmConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.common.os.OS;
+import io.smallrye.config.Config;
 
 @SuppressWarnings("resource")
 public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
@@ -243,7 +242,7 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         String prometheusConfig = String.format(PROMETHEUS_CONFIG_DEFAULT, scraping);
         if (config.forceScraping().orElse(scrapingRequired)) {
             boolean isTest = LaunchMode.current() == LaunchMode.TEST;
-            Config runtimeConfig = ConfigProvider.getConfig();
+            Config runtimeConfig = Config.get();
             String rootPath = runtimeConfig.getOptionalValue("quarkus.management.root-path", String.class).orElse("/q");
             String metricsPath = runtimeConfig.getOptionalValue("quarkus.management.metrics.path", String.class)
                     .orElse("/metrics");

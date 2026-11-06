@@ -2,7 +2,7 @@ package io.quarkus.kubernetes.spi;
 
 import java.util.Optional;
 
-import org.eclipse.microprofile.config.ConfigProvider;
+import io.smallrye.config.Config;
 
 public class Property<T> {
 
@@ -21,7 +21,7 @@ public class Property<T> {
     }
 
     public static <T> Property<T> fromRuntimeConfiguration(String name, Class<T> type, T defaultValue) {
-        return new Property<T>(name, type, ConfigProvider.getConfig().getOptionalValue(name, type), defaultValue, true);
+        return new Property<T>(name, type, Config.get().getOptionalValue(name, type), defaultValue, true);
     }
 
     public String getName() {

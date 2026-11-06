@@ -17,10 +17,8 @@ import com.amazonaws.services.lambda.runtime.events.S3Event;
 import io.quarkus.amazon.lambda.runtime.handlers.CollectionInputReader;
 import io.quarkus.amazon.lambda.runtime.handlers.S3EventInputReader;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.core.StartContext;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.value.registry.ValueRegistry;
 import tools.jackson.databind.ObjectMapper;
 
@@ -28,7 +26,6 @@ import tools.jackson.databind.ObjectMapper;
  * Used for Amazon Lambda java runtime
  *
  */
-@Recorder
 public class AmazonLambdaRecorder {
     private static Class<? extends RequestHandler<?, ?>> handlerClass;
     static Class<? extends RequestStreamHandler> streamHandlerClass;
@@ -37,18 +34,17 @@ public class AmazonLambdaRecorder {
     private static LambdaOutputWriter objectWriter;
     protected static Set<Class<?>> expectedExceptionClasses;
 
-    private final RuntimeValue<LambdaConfig> runtimeConfig;
-    private final RuntimeValue<ValueRegistry> valueRegistry;
-
-    public AmazonLambdaRecorder(
-            RuntimeValue<LambdaConfig> runtimeConfig,
-            RuntimeValue<ValueRegistry> valueRegistry) {
-        this.runtimeConfig = runtimeConfig;
-        this.valueRegistry = valueRegistry;
+    public static void setHandlerClass(RequestHandlerClassNames requestHandler) {
+        initializeHandlerClass(requestHandler.load());
     }
 
-    public void setStreamHandlerClass(Class<? extends RequestStreamHandler> handler) {
-        streamHandlerClass = handler;
+    public static void setExpectedExceptionClasses(Set<Class<?>> classes) {
+        expectedExceptionClasses = classes;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void setStreamHandlerClass(String handler) {
+        streamHandlerClass = (Class<? extends RequestStreamHandler>) loadClass(handler);
     }
 
     static void initializeHandlerClass(RequestHandlerDefinition requestHandlerDefinition) {
@@ -78,7 +74,7 @@ public class AmazonLambdaRecorder {
         objectWriter = new JacksonOutputWriter(objectMapper.writerFor(outputTypeForWriter));
     }
 
-    public void setBeanContainer(BeanContainer container) {
+    public static void setBeanContainer(BeanContainer container) {
         beanContainer = container;
     }
 
@@ -102,19 +98,20 @@ public class AmazonLambdaRecorder {
         }
     }
 
-    public void chooseHandlerClass(List<RequestHandlerDefinition> unnamedHandlerDefinitions,
-            Map<String, RequestHandlerDefinition> namedHandlerDefinitions,
-            List<Class<? extends RequestStreamHandler>> unnamedStreamHandlerClasses,
-            Map<String, Class<? extends RequestStreamHandler>> namedStreamHandlerClasses) {
+    public static void chooseHandlerClass(LambdaConfig runtimeConfig,
+            List<RequestHandlerClassNames> unnamedHandlerDefinitions,
+            Map<String, RequestHandlerClassNames> namedHandlerDefinitions,
+            List<String> unnamedStreamHandlerClasses,
+            Map<String, String> namedStreamHandlerClasses) {
 
-        RequestHandlerDefinition handlerDefinition = null;
-        Class<? extends RequestStreamHandler> handlerStreamClass = null;
-        if (runtimeConfig.getValue().handler().isPresent()) {
-            handlerDefinition = namedHandlerDefinitions.get(runtimeConfig.getValue().handler().get());
-            handlerStreamClass = namedStreamHandlerClasses.get(runtimeConfig.getValue().handler().get());
+        RequestHandlerClassNames handlerDefinition = null;
+        String handlerStreamClass = null;
+        if (runtimeConfig.handler().isPresent()) {
+            handlerDefinition = namedHandlerDefinitions.get(runtimeConfig.handler().get());
+            handlerStreamClass = namedStreamHandlerClasses.get(runtimeConfig.handler().get());
 
             if (handlerDefinition == null && handlerStreamClass == null) {
-                String errorMessage = "Unable to find handler class with name " + runtimeConfig.getValue().handler().get()
+                String errorMessage = "Unable to find handler class with name " + runtimeConfig.handler().get()
                         + " make sure there is a handler class in the deployment with the correct @Named annotation";
                 throw new IllegalStateException(errorMessage);
             }
@@ -147,18 +144,19 @@ public class AmazonLambdaRecorder {
         if (handlerStreamClass != null) {
             setStreamHandlerClass(handlerStreamClass);
         } else {
-            initializeHandlerClass(handlerDefinition);
+            initializeHandlerClass(handlerDefinition.load());
         }
     }
 
-    public void startPollLoopIfDevOrTestOrExplicit(ShutdownContext context, LaunchMode launchMode) {
+    public static void startPollLoopIfDevOrTestOrExplicit(ValueRegistry valueRegistry, StartContext context,
+            LaunchMode launchMode) {
         if (launchMode.isDevOrTest() || AmazonLambdaApi.isTestMode()) {
-            startPollLoop(context, launchMode);
+            startPollLoop(valueRegistry, context, launchMode);
         }
     }
 
     @SuppressWarnings("rawtypes")
-    public void startPollLoop(ShutdownContext context, LaunchMode launchMode) {
+    public static void startPollLoop(ValueRegistry valueRegistry, StartContext context, LaunchMode launchMode) {
         AbstractLambdaPollLoop loop = new AbstractLambdaPollLoop(AmazonLambdaMapperRecorder.objectMapper,
                 AmazonLambdaMapperRecorder.cognitoIdReader, AmazonLambdaMapperRecorder.clientCtxReader, launchMode) {
 
@@ -196,10 +194,31 @@ public class AmazonLambdaRecorder {
                 return expectedExceptionClasses.stream().noneMatch(clazz -> clazz.isAssignableFrom(e.getClass()));
             }
         };
-        loop.startPollLoop(valueRegistry.getValue(), context);
+        loop.startPollLoop(valueRegistry, context);
     }
 
     public record RequestHandlerDefinition(Class<? extends RequestHandler<?, ?>> handlerClass,
             Class<?> handleRequestMethodHostClass, Class<?> inputType, Class<?> outputType) {
+    }
+
+    /**
+     * The class names of a {@link RequestHandlerDefinition}, loaded with the TCCL by {@link #load()}.
+     */
+    public record RequestHandlerClassNames(String handlerClass, String handleRequestMethodHostClass, String inputType,
+            String outputType) {
+
+        @SuppressWarnings("unchecked")
+        public RequestHandlerDefinition load() {
+            return new RequestHandlerDefinition((Class<? extends RequestHandler<?, ?>>) loadClass(handlerClass),
+                    loadClass(handleRequestMethodHostClass), loadClass(inputType), loadClass(outputType));
+        }
+    }
+
+    static Class<?> loadClass(String name) {
+        try {
+            return Class.forName(name, false, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Unable to load class " + name, e);
+        }
     }
 }

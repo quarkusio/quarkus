@@ -306,7 +306,7 @@ public final class MakeServiceTypes {
                         final int nextDepCount = depCount + 1;
                         String nextBuilder = classPrefix + nextDepCount;
                         sf.import_(Map.class);
-                        generateConsumeAllInterfaceMethod(cc, svcTypeParam, depCount, nextDepCount, nextBuilder, true);
+                        generateConsumeAllInterfaceMethods(cc, svcTypeParam, depCount, nextDepCount, nextBuilder, true);
                     }
 
                     // after() methods - ordering-only dependencies
@@ -502,7 +502,7 @@ public final class MakeServiceTypes {
                         final int nextDepCount2 = depCount + 1;
                         String nextBuilder2 = classPrefix + nextDepCount2;
                         sf.import_(Map.class);
-                        generateConsumeAllInterfaceMethod(cc, null, depCount, nextDepCount2, nextBuilder2, false);
+                        generateConsumeAllInterfaceMethods(cc, null, depCount, nextDepCount2, nextBuilder2, false);
                     }
 
                     // after() methods - ordering-only dependencies
@@ -1029,7 +1029,7 @@ public final class MakeServiceTypes {
                 if (depCount < MAX_DEPS) {
                     final int nextDepCount = depCount + 1;
                     String nextBuilder = implPrefix + nextDepCount;
-                    generateConsumeAllImplMethod(cc, sf, svcTypeParam, depCount, nextDepCount, nextBuilder, true);
+                    generateConsumeAllImplMethods(cc, sf, svcTypeParam, depCount, nextDepCount, nextBuilder, true);
                 }
 
                 // after() method impls
@@ -1236,7 +1236,7 @@ public final class MakeServiceTypes {
                 if (depCount < MAX_DEPS) {
                     final int nextDepCount2 = depCount + 1;
                     String nextBuilder2 = implPrefix + nextDepCount2;
-                    generateConsumeAllImplMethod(cc, sf, null, depCount, nextDepCount2, nextBuilder2, false);
+                    generateConsumeAllImplMethods(cc, sf, null, depCount, nextDepCount2, nextBuilder2, false);
                 }
 
                 // after() method impls
@@ -1546,13 +1546,14 @@ public final class MakeServiceTypes {
      * @param nextBuilder the next builder class name
      * @param hasServiceTypeParam whether the builder has a {@code T} type parameter
      */
-    private static void generateConsumeAllInterfaceMethod(
+    private static void generateConsumeAllInterfaceMethods(
             InterfaceCreator cc,
             Type svcTypeParam,
             int depCount,
             int nextDepCount,
             String nextBuilder,
             boolean hasServiceTypeParam) {
+        // consumeAll(Class<PN1> type)
         cc.method("consumeAll", mc -> {
             mc.docComment(dcc -> {
                 dcc.text("Consume all services of the given type. ");
@@ -1563,25 +1564,84 @@ public final class MakeServiceTypes {
             Type pn1 = mc.typeParam("P" + nextDepCount,
                     tpc -> tpc.docComment(dcc -> dcc.text("the type of the services to consume")));
             Type mapPn1 = Type.of(Map.class).typeArg(Type.of(String.class), pn1);
-            Type[] nextTypeArgs;
-            if (hasServiceTypeParam) {
-                nextTypeArgs = new Type[nextDepCount + 1];
-                nextTypeArgs[0] = svcTypeParam;
-                for (int j = 0; j < depCount; j++) {
-                    nextTypeArgs[j + 1] = Type.named("P" + (j + 1));
-                }
-                nextTypeArgs[nextDepCount] = mapPn1;
-            } else {
-                nextTypeArgs = new Type[nextDepCount];
-                for (int j = 0; j < depCount; j++) {
-                    nextTypeArgs[j] = Type.named("P" + (j + 1));
-                }
-                nextTypeArgs[depCount] = mapPn1;
-            }
+            Type[] nextTypeArgs = consumeAllNextTypeArgs(svcTypeParam, depCount, nextDepCount, mapPn1,
+                    hasServiceTypeParam);
             mc.returning(Type.named(nextBuilder).typeArg(nextTypeArgs));
             mc.param("type", Type.of(Class.class).typeArg(pn1),
                     pc -> pc.docComment(dcc -> dcc.text("the service type to consume (must not be {@code null})")));
         });
+        // consumeAll(Class<PN1> type, String name)
+        cc.method("consumeAll", mc -> {
+            mc.docComment(dcc -> {
+                dcc.text("Consume all services of the given type under the given name. ");
+                dcc.text("The services are injected as a {@code Map<String, T>} where keys are the ");
+                dcc.text("immediate child service names. Zero matches produces an empty map.");
+                dcc.return_(rc -> rc.text("a builder with the added dependency"));
+            });
+            Type pn1 = mc.typeParam("P" + nextDepCount,
+                    tpc -> tpc.docComment(dcc -> dcc.text("the type of the services to consume")));
+            Type mapPn1 = Type.of(Map.class).typeArg(Type.of(String.class), pn1);
+            Type[] nextTypeArgs = consumeAllNextTypeArgs(svcTypeParam, depCount, nextDepCount, mapPn1,
+                    hasServiceTypeParam);
+            mc.returning(Type.named(nextBuilder).typeArg(nextTypeArgs));
+            mc.param("type", Type.of(Class.class).typeArg(pn1),
+                    pc -> pc.docComment(dcc -> dcc.text("the service type to consume (must not be {@code null})")));
+            mc.param("name", Type.of(String.class),
+                    pc -> pc.docComment(dcc -> dcc.text("the service name prefix (must not be {@code null})")));
+        });
+        // consumeAll(Class<PN1> type, List<String> nameParts)
+        cc.method("consumeAll", mc -> {
+            mc.docComment(dcc -> {
+                dcc.text("Consume all services of the given type under the given name parts. ");
+                dcc.text("The services are injected as a {@code Map<String, T>} where keys are the ");
+                dcc.text("immediate child service names. Zero matches produces an empty map.");
+                dcc.return_(rc -> rc.text("a builder with the added dependency"));
+            });
+            Type pn1 = mc.typeParam("P" + nextDepCount,
+                    tpc -> tpc.docComment(dcc -> dcc.text("the type of the services to consume")));
+            Type mapPn1 = Type.of(Map.class).typeArg(Type.of(String.class), pn1);
+            Type[] nextTypeArgs = consumeAllNextTypeArgs(svcTypeParam, depCount, nextDepCount, mapPn1,
+                    hasServiceTypeParam);
+            mc.returning(Type.named(nextBuilder).typeArg(nextTypeArgs));
+            mc.param("type", Type.of(Class.class).typeArg(pn1),
+                    pc -> pc.docComment(dcc -> dcc.text("the service type to consume (must not be {@code null})")));
+            mc.param("nameParts", Type.of(List.class).typeArg(Type.of(String.class)),
+                    pc -> pc.docComment(dcc -> dcc.text("the service name parts prefix (must not be {@code null})")));
+        });
+    }
+
+    /**
+     * Build the next-builder type argument array for a {@code consumeAll} method.
+     *
+     * @param svcTypeParam the service type parameter ({@code T}), or {@code null} for void builders
+     * @param depCount the current dependency count
+     * @param nextDepCount the next dependency count (depCount + 1)
+     * @param mapPn1 the {@code Map<String, P>} type for the consumed dependency
+     * @param hasServiceTypeParam whether the builder has a {@code T} type parameter
+     * @return the type argument array
+     */
+    private static Type[] consumeAllNextTypeArgs(
+            Type svcTypeParam,
+            int depCount,
+            int nextDepCount,
+            Type mapPn1,
+            boolean hasServiceTypeParam) {
+        Type[] nextTypeArgs;
+        if (hasServiceTypeParam) {
+            nextTypeArgs = new Type[nextDepCount + 1];
+            nextTypeArgs[0] = svcTypeParam;
+            for (int j = 0; j < depCount; j++) {
+                nextTypeArgs[j + 1] = Type.named("P" + (j + 1));
+            }
+            nextTypeArgs[nextDepCount] = mapPn1;
+        } else {
+            nextTypeArgs = new Type[nextDepCount];
+            for (int j = 0; j < depCount; j++) {
+                nextTypeArgs[j] = Type.named("P" + (j + 1));
+            }
+            nextTypeArgs[depCount] = mapPn1;
+        }
+        return nextTypeArgs;
     }
 
     /**
@@ -1597,7 +1657,7 @@ public final class MakeServiceTypes {
      * @param nextBuilder the next builder impl class name
      * @param hasServiceTypeParam whether the builder has a {@code T} type parameter
      */
-    private static void generateConsumeAllImplMethod(
+    private static void generateConsumeAllImplMethods(
             ClassCreator cc,
             SourceFileCreator sf,
             Type svcTypeParam,
@@ -1606,32 +1666,57 @@ public final class MakeServiceTypes {
             String nextBuilder,
             boolean hasServiceTypeParam) {
         sf.import_(Map.class);
+        // consumeAll(Class<PN1> type)
         cc.method("consumeAll", mc -> {
             mc.public_();
             mc.annotate(Type.of(Override.class));
             Type pn1 = mc.typeParam("P" + nextDepCount, tpc -> {
             });
             Type mapPn1 = Type.of(Map.class).typeArg(Type.of(String.class), pn1);
-            Type[] nextTypeArgs;
-            if (hasServiceTypeParam) {
-                nextTypeArgs = new Type[nextDepCount + 1];
-                nextTypeArgs[0] = svcTypeParam;
-                for (int j = 0; j < depCount; j++) {
-                    nextTypeArgs[j + 1] = Type.named("P" + (j + 1));
-                }
-                nextTypeArgs[nextDepCount] = mapPn1;
-            } else {
-                nextTypeArgs = new Type[nextDepCount];
-                for (int j = 0; j < depCount; j++) {
-                    nextTypeArgs[j] = Type.named("P" + (j + 1));
-                }
-                nextTypeArgs[depCount] = mapPn1;
-            }
+            Type[] nextTypeArgs = consumeAllNextTypeArgs(svcTypeParam, depCount, nextDepCount, mapPn1,
+                    hasServiceTypeParam);
             Type nextType = Type.named(nextBuilder).typeArg(nextTypeArgs);
             mc.returning(nextType);
             Var type = mc.param("type", Type.of(Class.class).typeArg(pn1));
             mc.body(b0 -> {
                 b0.emit($v("sbi").call("consumeAll", type));
+                b0.return_(nextType.new_($v("sbi")));
+            });
+        });
+        // consumeAll(Class<PN1> type, String name)
+        cc.method("consumeAll", mc -> {
+            mc.public_();
+            mc.annotate(Type.of(Override.class));
+            Type pn1 = mc.typeParam("P" + nextDepCount, tpc -> {
+            });
+            Type mapPn1 = Type.of(Map.class).typeArg(Type.of(String.class), pn1);
+            Type[] nextTypeArgs = consumeAllNextTypeArgs(svcTypeParam, depCount, nextDepCount, mapPn1,
+                    hasServiceTypeParam);
+            Type nextType = Type.named(nextBuilder).typeArg(nextTypeArgs);
+            mc.returning(nextType);
+            Var type = mc.param("type", Type.of(Class.class).typeArg(pn1));
+            Var name = mc.param("name", Type.of(String.class));
+            mc.body(b0 -> {
+                b0.emit($v("sbi").call("consumeAll", type, name));
+                b0.return_(nextType.new_($v("sbi")));
+            });
+        });
+        // consumeAll(Class<PN1> type, List<String> nameParts)
+        cc.method("consumeAll", mc -> {
+            mc.public_();
+            mc.annotate(Type.of(Override.class));
+            sf.import_(List.class);
+            Type pn1 = mc.typeParam("P" + nextDepCount, tpc -> {
+            });
+            Type mapPn1 = Type.of(Map.class).typeArg(Type.of(String.class), pn1);
+            Type[] nextTypeArgs = consumeAllNextTypeArgs(svcTypeParam, depCount, nextDepCount, mapPn1,
+                    hasServiceTypeParam);
+            Type nextType = Type.named(nextBuilder).typeArg(nextTypeArgs);
+            mc.returning(nextType);
+            Var type = mc.param("type", Type.of(Class.class).typeArg(pn1));
+            Var nameParts = mc.param("nameParts", Type.of(List.class).typeArg(Type.of(String.class)));
+            mc.body(b0 -> {
+                b0.emit($v("sbi").call("consumeAll", type, nameParts));
                 b0.return_(nextType.new_($v("sbi")));
             });
         });

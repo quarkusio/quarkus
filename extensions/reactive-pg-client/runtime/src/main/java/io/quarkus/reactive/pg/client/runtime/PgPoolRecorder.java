@@ -133,6 +133,10 @@ public class PgPoolRecorder {
                 pgConnectOptions.setSslNegotiation(dataSourceReactivePostgreSQLConfig.sslNegotiation().get());
             }
 
+            if (dataSourceReactivePostgreSQLConfig.channelBinding().isPresent()) {
+                pgConnectOptions.setChannelBinding(dataSourceReactivePostgreSQLConfig.channelBinding().get());
+            }
+
             pgConnectOptions.setUseLayer7Proxy(dataSourceReactivePostgreSQLConfig.useLayer7Proxy());
 
             ReactivePoolUtil.configureSsl(pgConnectOptions, dataSourceReactiveRuntimeConfig, tlsRegistry);
@@ -155,7 +159,7 @@ public class PgPoolRecorder {
             SyntheticCreationalContext<Pool> context) {
         Instance<PoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL, qualifier(dataSourceName));
         if (instance.isResolvable()) {
-            PoolCreator.Input input = new DefaultInput(vertx, poolOptions, pgConnectOptionsList);
+            PoolCreator.Input input = new DefaultInput(vertx, poolOptions, pgConnectOptionsList, databases);
             return instance.get().create(input);
         }
 
@@ -168,11 +172,14 @@ public class PgPoolRecorder {
         private final Vertx vertx;
         private final PoolOptions poolOptions;
         private final List<? extends SqlConnectOptions> connectOptionsList;
+        private final Supplier<Future<SqlConnectOptions>> databases;
 
-        public DefaultInput(Vertx vertx, PoolOptions poolOptions, List<? extends SqlConnectOptions> connectOptionsList) {
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, List<? extends SqlConnectOptions> connectOptionsList,
+                Supplier<Future<SqlConnectOptions>> databases) {
             this.vertx = vertx;
             this.poolOptions = poolOptions;
             this.connectOptionsList = connectOptionsList;
+            this.databases = databases;
         }
 
         @Override
@@ -189,6 +196,11 @@ public class PgPoolRecorder {
         @SuppressWarnings("unchecked")
         public List<SqlConnectOptions> connectOptionsList() {
             return (List<SqlConnectOptions>) connectOptionsList;
+        }
+
+        @Override
+        public Supplier<Future<SqlConnectOptions>> dynamicConnectOptionsList() {
+            return databases;
         }
     }
 }

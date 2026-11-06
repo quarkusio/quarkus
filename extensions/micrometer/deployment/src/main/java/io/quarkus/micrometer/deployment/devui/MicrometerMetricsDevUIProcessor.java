@@ -1,16 +1,18 @@
 package io.quarkus.micrometer.deployment.devui;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.devui.observability.store.metrics.PrometheusNamingId;
 import io.quarkus.devui.spi.observability.MetricsBackendBuildItem;
 import io.quarkus.micrometer.deployment.MicrometerProcessor;
+import io.quarkus.micrometer.deployment.export.PrometheusRegistryProcessor;
+import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.devui.DevUiMetricsSampler;
+import io.smallrye.config.Config;
 
 /**
  * Wires the Micrometer metrics capture into the Dev UI in dev mode. Presence matrix: the
@@ -26,7 +28,8 @@ public class MicrometerMetricsDevUIProcessor {
     private static final String BRIDGE_RECORDER = "io.quarkus.micrometer.opentelemetry.runtime.MicrometerOtelBridgeBeanCreator";
 
     @BuildStep(onlyIf = { IsLocalDevelopment.class, MicrometerProcessor.MicrometerEnabled.class })
-    void registerMicrometerMetricsCapture(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+    void registerMicrometerMetricsCapture(MicrometerConfig micrometerConfig,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<MetricsBackendBuildItem> backends) {
         // The Dev UI metrics view is active whenever a metrics backend and the Dev UI are present
         // in dev mode — there is no separate build-time enable flag. It is dev-only via
@@ -36,10 +39,10 @@ public class MicrometerMetricsDevUIProcessor {
         // OTel metrics are enabled — then the OTel in-memory reader already captures the bridged
         // Micrometer meters. If the bridge is present but OTel metrics are disabled, its OTel sink
         // is a no-op and no OTel reader is registered, so the sampler must run as a fallback
-        // (otherwise nothing would be captured). Read the OTel flag via ConfigProvider to avoid a
+        // (otherwise nothing would be captured). Read the OTel flag via Config to avoid a
         // hard compile dependency on the (optional) OpenTelemetry config classes.
         boolean bridgePresent = QuarkusClassLoader.isClassPresentAtRuntime(BRIDGE_RECORDER);
-        boolean otelMetricsEnabled = ConfigProvider.getConfig()
+        boolean otelMetricsEnabled = Config.get()
                 .getOptionalValue("quarkus.otel.metrics.enabled", Boolean.class).orElse(Boolean.TRUE);
         if (bridgePresent && otelMetricsEnabled) {
             return; // covered by the OTel reader; avoid double counting
@@ -49,6 +52,11 @@ public class MicrometerMetricsDevUIProcessor {
                 .setDefaultScope(DotNames.SINGLETON)
                 .setUnremovable()
                 .build());
-        backends.produce(new MetricsBackendBuildItem("micrometer"));
+        // Only the Prometheus registry gives an export whose naming is known here; with any other registry
+        // the meters may reach Prometheus under different names, so no Grafana dashboard is offered. The
+        // check is the registry's own, so that registry-enabled-default is honoured as it is there.
+        boolean prometheusRegistry = PrometheusRegistryProcessor.PrometheusEnabled.isEnabled(micrometerConfig);
+        backends.produce(new MetricsBackendBuildItem("micrometer",
+                prometheusRegistry ? PrometheusNamingId.MICROMETER_PROMETHEUS : null));
     }
 }

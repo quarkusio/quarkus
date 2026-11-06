@@ -16,18 +16,19 @@
     <packaging>jar</packaging>
     <properties>
         <!-- The Graal version we suggest using in documentation - as that's
-           what we work with by self downloading it: -->
-        <graal-community.version-for-documentation>for JDK 21</graal-community.version-for-documentation>
-        <graal-community.tag-for-documentation>jdk21</graal-community.tag-for-documentation>
-        <graal-community.image-tag-for-documentation>jdk-21</graal-community.image-tag-for-documentation>
-        <mandrel.image-tag-for-documentation>jdk-21</mandrel.image-tag-for-documentation>
+           what we work with by self downloading it. NativeDocumentationPropertiesTest
+           checks these four values against ContainerImages and GraalVM.Version.CURRENT: -->
+        <graal-community.version-for-documentation>for JDK 25</graal-community.version-for-documentation>
+        <graal-community.tag-for-documentation>jdk25</graal-community.tag-for-documentation>
+        <graal-community.image-tag-for-documentation>jdk-25</graal-community.image-tag-for-documentation>
+        <mandrel.image-tag-for-documentation>jdk-25</mandrel.image-tag-for-documentation>
 
         <assembly-maven-plugin.version>3.8.0</assembly-maven-plugin.version>
         <asciidoctor-maven-plugin.version>3.2.0</asciidoctor-maven-plugin.version>
         <asciidoctorj-pdf.version>2.3.23</asciidoctorj-pdf.version>
         <asciidoctor.fail-if>WARN</asciidoctor.fail-if>
         <javaparser.version>3.28.2</javaparser.version>
-        <maven-model-helper.version>41</maven-model-helper.version>
+        <maven-model-helper.version>42</maven-model-helper.version>
         <eclipse-collections.version>13.0.0</eclipse-collections.version>
 
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
@@ -101,6 +102,13 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- For ContainerImages in NativeDocumentationPropertiesTest; the pom-typed entry further down
+           only orders the build and puts nothing on the classpath -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <!-- Minimal test dependencies for consistent build order -->
@@ -940,6 +948,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hal-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-accessor-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

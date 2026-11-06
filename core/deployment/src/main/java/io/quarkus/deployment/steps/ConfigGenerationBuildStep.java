@@ -35,7 +35,6 @@ import java.util.function.BooleanSupplier;
 
 import jakarta.annotation.Priority;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
@@ -69,6 +68,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
 import io.quarkus.deployment.builditem.ConfigMappingsRegistrarBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedConfigClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedConfigClassBuildItem.ConfigClassImplementation;
@@ -115,6 +115,7 @@ import io.quarkus.runtime.configuration.ConfigRecorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.DisableableConfigSource;
 import io.quarkus.runtime.configuration.FixedAtBuildTimeConfigBuilder;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
 import io.quarkus.runtime.configuration.StaticInitConfigBuilder;
@@ -299,6 +300,12 @@ public class ConfigGenerationBuildStep {
             }
 
             ClassInfo configClass = target.asClass();
+            // Only interfaces are @ConfigMapping roots. A class may also carry the annotation, for instance to set
+            // the naming strategy of a Spring @ConfigurationProperties class or of one of its nested classes, but
+            // such classes are registered by the extension that owns the mapping handler for them.
+            if (!configClass.isInterface()) {
+                continue;
+            }
             // Ignore scanned classes from the quarkus-processor.
             // Usually they are not available in Jandex, but there are cases where extensions have jandex to their
             // own classes, or user applications adding @ConfigRoot to generate documentation.
@@ -626,6 +633,8 @@ public class ConfigGenerationBuildStep {
                 .build();
     }
 
+    private static final String EXTENSION_DESCRIPTOR = "META-INF/quarkus-extension.properties";
+
     /**
      * Registers the lambda metadata required to support {@code ConfigInstanceBuilder.forInterface} in native mode.
      * <p>
@@ -638,6 +647,9 @@ public class ConfigGenerationBuildStep {
      * one of the interface methods. We start from the known users of each configuration interface and confirm, by
      * scanning the bytecode, that they actually create a serializable method reference to a configuration interface
      * method before registering them.
+     * <p>
+     * The runtime classes of the extensions are not part of the index, so they are also scanned directly, skipping the
+     * classes that do not reference the {@code ConfigInstanceBuilder}.
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void registerConfigInstanceBuilderLambdas(
@@ -647,11 +659,17 @@ public class ConfigGenerationBuildStep {
 
         IndexView index = combinedIndex.getIndex();
 
-        // All configuration interfaces (mapping interfaces and their nested interfaces), in internal name form
+        // All configuration interfaces (mapping interfaces and their nested interfaces), in internal name form. The capturing
+        // class always references the configuration interface (the method reference embeds a handle to one of its
+        // methods), so the known users of each interface are the candidates to scan
         Set<String> configInterfaces = new HashSet<>();
+        Set<DotName> candidates = new HashSet<>();
         for (GeneratedConfigClassBuildItem generatedConfigClass : generatedConfigClasses) {
             for (DotName configInterface : generatedConfigClass.getInterfaces()) {
-                configInterfaces.add(configInterface.toString().replace('.', '/'));
+                configInterfaces.add(configInterface.toString('/'));
+                for (ClassInfo user : index.getKnownUsers(configInterface)) {
+                    candidates.add(user.name());
+                }
             }
         }
 
@@ -659,37 +677,39 @@ public class ConfigGenerationBuildStep {
             return;
         }
 
-        // The capturing class always references the configuration interface (the method reference embeds a handle to one
-        // of its methods), so the known users of each interface are the candidates to scan
-        Set<DotName> candidates = new HashSet<>();
-        for (GeneratedConfigClassBuildItem generatedConfigClass : generatedConfigClasses) {
-            for (DotName configInterface : generatedConfigClass.getInterfaces()) {
-                for (ClassInfo user : index.getKnownUsers(configInterface)) {
-                    candidates.add(user.name());
+        Map<String, ClassPathElement> classes = new HashMap<>();
+        for (DotName candidate : candidates) {
+            String resourceName = candidate.toString('/') + ".class";
+            for (ClassPathElement element : QuarkusClassLoader.getElements(resourceName, false)) {
+                if (element.isRuntime()) {
+                    classes.putIfAbsent(resourceName, element);
+                    break;
+                }
+            }
+        }
+
+        // The runtime jars of the extensions are not part of the index, so the classes using the ConfigInstanceBuilder
+        // are not found as known users above
+        for (ClassPathElement element : QuarkusClassLoader.getElements(EXTENSION_DESCRIPTOR, false)) {
+            if (element.isRuntime()) {
+                for (String resourceName : element.getProvidedResources()) {
+                    if (resourceName.endsWith(".class") && !resourceName.startsWith("META-INF/")
+                            && !resourceName.equals("module-info.class")) {
+                        classes.putIfAbsent(resourceName, element);
+                    }
                 }
             }
         }
 
         // track what we've already registered to avoid duplicates
         Set<String> registered = new HashSet<>();
-
-        for (DotName candidate : candidates) {
-            byte[] bytecode = null;
-            String resourceName = candidate.toString().replace('.', '/') + ".class";
-            for (ClassPathElement element : QuarkusClassLoader.getElements(resourceName, false)) {
-                if (element.isRuntime()) {
-                    ClassPathResource resource = element.getResource(resourceName);
-                    if (resource != null) {
-                        bytecode = resource.getData();
-                        break;
-                    }
-                }
-            }
-
-            if (bytecode == null) {
+        for (Map.Entry<String, ClassPathElement> entry : classes.entrySet()) {
+            ClassPathResource resource = entry.getValue().getResource(entry.getKey());
+            if (resource == null) {
                 continue;
             }
-
+            byte[] bytecode = resource.getData();
+            String className = entry.getKey().substring(0, entry.getKey().length() - ".class".length()).replace('/', '.');
             new ClassReader(bytecode).accept(new ClassVisitor(Gizmo.ASM_API_VERSION) {
                 @Override
                 public MethodVisitor visitMethod(int access, String methodName, String methodDescriptor, String signature,
@@ -720,14 +740,14 @@ public class ConfigGenerationBuildStep {
                                     && configInterfaces.contains(implementation.getOwner())) {
                                 // create a unique key to avoid duplicate registrations
                                 // include implementation to differentiate lambdas within the same method
-                                final String key = candidate + "#" + methodName + methodDescriptor + "#" + implementation;
+                                final String key = className + "#" + methodName + methodDescriptor + "#" + implementation;
                                 if (registered.add(key)) {
                                     // extract parameter types from method descriptor
                                     final String[] paramTypes = extractParameterTypes(methodDescriptor);
                                     // extract lambda interfaces from the invokedynamic descriptor
                                     final String[] interfaces = extractLambdaInterfaces(invokeDescriptor);
                                     lambdaReflection.produce(LambdaReflectionBuildItem.builder(
-                                            candidate.toString(),
+                                            className,
                                             methodName)
                                             .parameterTypes(paramTypes)
                                             .interfaces(interfaces)
@@ -764,11 +784,23 @@ public class ConfigGenerationBuildStep {
         suppressNonRuntimeConfigChanged.produce(new SuppressNonRuntimeConfigChangedWarningBuildItem("quarkus.test.arg-line"));
     }
 
+    /**
+     * Releases the runtime configuration when the application shuts down, and clears the build time configuration
+     * when the {@link io.quarkus.bootstrap.app.CuratedApplication} is closed.
+     * <p>
+     * These are two distinct {@link QuarkusConfigFactory} instances. The recorded task runs with the runtime
+     * classloader, while the close task runs with the augmentation classloader, which is the one holding the
+     * configuration installed by {@link io.quarkus.deployment.ExtensionLoader#loadStepsFrom}.
+     */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void releaseConfigOnShutdown(ShutdownContextBuildItem shutdownContext,
+            CuratedApplicationShutdownBuildItem shutdownBuildItem,
             ConfigRecorder recorder) {
         recorder.releaseConfig(shutdownContext);
+        // Releases the build time configuration from both the deployment and the augmentation classloaders,
+        // because setConfig releases the previous configuration by instance
+        shutdownBuildItem.addCloseTask(() -> QuarkusConfigFactory.setConfig(null), true);
     }
 
     /**
@@ -812,7 +844,7 @@ public class ConfigGenerationBuildStep {
     public void watchConfigFiles(BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
         List<String> configWatchedFiles = new ArrayList<>();
 
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         String userDir = System.getProperty("user.dir");
 
         // Main files
@@ -914,8 +946,7 @@ public class ConfigGenerationBuildStep {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void warnDifferentProfileUsedBetweenBuildAndRunTime(ConfigRecorder configRecorder) {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        configRecorder.handleNativeProfileChange(config.getProfiles());
+        configRecorder.handleNativeProfileChange(Config.get().getProfiles());
     }
 
     @BuildStep(onlyIf = IsProduction.class)
@@ -927,6 +958,9 @@ public class ConfigGenerationBuildStep {
             ConfigTrackingConfig configTrackingConfig) {
         var readOptionsProvider = configBuildItem.getReadResult().getReadOptionsProvider();
         if (readOptionsProvider != null) {
+            // The profiles have to be resolved now. The closeable runs at the end of the augmentation, with the
+            // augmentation classloader, but this should take the profiles of the deployment classloader.
+            List<String> profiles = ConfigUtils.getProfiles();
             closeables.add(new Closeable() {
                 @Override
                 public void close() throws IOException {
@@ -934,7 +968,7 @@ public class ConfigGenerationBuildStep {
                             readOptionsProvider.getReadOptions(),
                             configTrackingConfig,
                             configBuildItem.getReadResult(),
-                            ConfigUtils.getProfiles(),
+                            profiles,
                             buildSystemTargetBuildItem.getOutputDirectory());
                 }
             });

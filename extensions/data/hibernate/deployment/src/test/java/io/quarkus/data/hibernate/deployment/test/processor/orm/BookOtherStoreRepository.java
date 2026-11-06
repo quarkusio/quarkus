@@ -1,0 +1,13 @@
+package io.quarkus.data.hibernate.deployment.test.processor.orm;
+
+import java.util.List;
+
+import jakarta.data.repository.CrudRepository;
+import jakarta.data.repository.Find;
+import jakarta.data.repository.Repository;
+
+@Repository(dataStore = "other")
+public interface BookOtherStoreRepository extends CrudRepository<QuarkusDataBook, Long> {
+    @Find
+    List<QuarkusDataBook> findBook(String isbn);
+}

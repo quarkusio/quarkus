@@ -220,6 +220,13 @@ The connection url is configured with the `quarkus.redis.hosts` (or `quarkus.red
 quarkus.redis.hosts=redis://[[username]:password@]host[:port][/db-number]
 ----
 
+Valkey servers are also supported using the `valkey://` (or `valkeys://` for TLS) scheme:
+
+[source,properties]
+----
+quarkus.redis.hosts=valkey://[[username]:password@]host[:port][/db-number]
+----
+
 === Use Unix Socket
 
 When using unix-socket, you need:
@@ -354,7 +361,7 @@ quarkus.redis.password=<the password>
 To use TLS, you need to:
 
 1. Set the `quarkus.redis.tls.enabled=true` property or use the  xref:./tls-registry-reference.adoc[TLS registry] (recommended)
-2. Make sure that your URL starts with `rediss://` (with two `s`)
+2. Make sure that your URL starts with `rediss://` (with two `s`) or `valkeys://` (for Valkey)
 
 
 When using the TLS registry, you need to use a named configuration to avoid conflicts with other TLS configurations:

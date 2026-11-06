@@ -5,9 +5,8 @@ import java.util.Map;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.spi.BeanManager;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.config.Config;
 
 public class SecurityEventHelper<S extends SecurityEvent, F extends SecurityEvent> {
 
@@ -108,7 +107,7 @@ public class SecurityEventHelper<S extends SecurityEvent, F extends SecurityEven
                 if (eventsDisabled == null) {
                     synchronized (this) {
                         if (eventsDisabled == null) {
-                            this.eventsDisabled = !ConfigProvider.getConfig().getValue("quarkus.security.events.enabled",
+                            this.eventsDisabled = !Config.get().getValue("quarkus.security.events.enabled",
                                     Boolean.class);
                         }
                     }

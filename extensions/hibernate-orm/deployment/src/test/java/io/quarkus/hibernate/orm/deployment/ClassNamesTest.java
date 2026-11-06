@@ -157,6 +157,8 @@ public class ClassNamesTest {
                 .contains(name.toString()));
         repositoryAnnotations.add(DotName.createSimple("org.hibernate.annotations.processing.HQL"));
         repositoryAnnotations.add(DotName.createSimple("org.hibernate.annotations.processing.SQL"));
+        repositoryAnnotations.add(DotName.createSimple("jakarta.persistence.query.JakartaQuery"));
+        repositoryAnnotations.add(DotName.createSimple("jakarta.persistence.query.NativeQuery"));
 
         assertThat(ClassNames.REPOSITORY_METHOD_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(repositoryAnnotations);

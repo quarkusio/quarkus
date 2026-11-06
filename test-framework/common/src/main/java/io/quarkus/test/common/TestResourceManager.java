@@ -718,6 +718,17 @@ public class TestResourceManager implements Closeable {
 
             return Objects.hashCode(array);
         }
+
+        /**
+         * Content-based so that {@link #getReloadGroupIdentifier(Set)}, which relies on {@code toString()}, produces the same
+         * identifier for equal arrays; the default record {@code toString()} would include the array identity hash.
+         */
+        @Override
+        public String toString() {
+            // wrapping in an Object[] lets deepToString handle both primitive and object arrays
+            String value = Arrays.deepToString(new Object[] { array });
+            return value.substring(1, value.length() - 1);
+        }
     }
 
     private static class TestResourceRunnable implements Runnable {

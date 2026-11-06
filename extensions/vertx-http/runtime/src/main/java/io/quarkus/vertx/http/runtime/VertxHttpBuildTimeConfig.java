@@ -89,17 +89,24 @@ public interface VertxHttpBuildTimeConfig {
     boolean enableDecompression();
 
     /**
-     * If user adds br, then brotli will be added to the list of supported compression algorithms.
-     * It implies loading libbrotli native library via JNI and in case of native image,
-     * packing the native library into the native image as a resource thus inflating its size.
-     * Note that a native shared object library must be available for your platform in Brotli4J project.
+     * The compression algorithms the server can use for HTTP responses.
      * <p>
-     * Client expresses its capability by sending Accept-Encoding header, e.g.
-     * Accept-Encoding: deflate, gzip, br
-     * Server chooses the compression algorithm based on the client's capabilities and
-     * marks it in a response header, e.g.:
-     * content-encoding: gzip
-     *
+     * When {@code quarkus.http.enable-compression} is {@code true}, the server picks an algorithm from this list that
+     * the client accepts (via the {@code Accept-Encoding} request header), compresses an eligible response body with it,
+     * and sets the {@code Content-Encoding} response header. The order of this list does not matter: when the client
+     * accepts several of them, the server prefers {@code br}, then {@code snappy}, {@code gzip} and {@code deflate},
+     * regardless of the order in this list
+     * <p>
+     * Supported values: {@code gzip}, {@code deflate}, {@code br} (Brotli) and {@code snappy}.
+     * Unknown values are logged and ignored.
+     * <p>
+     * {@code br} requires the {@code com.aayushatharva.brotli4j:brotli4j} dependency; the build fails if {@code br} is
+     * listed without it. Brotli uses a JNI library, which adds about 1 MB to native executables whenever the dependency
+     * is present.
+     * <p>
+     * This list does not restrict request decompression ({@code quarkus.http.enable-decompression}): {@code gzip},
+     * {@code deflate} and {@code snappy} are always accepted, and {@code br} is accepted whenever the Brotli4j dependency
+     * is present.
      */
     @WithDefault("gzip,deflate")
     Optional<List<String>> compressors();

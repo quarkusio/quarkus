@@ -120,7 +120,7 @@ public class CustomModuleLiveReloadTest {
         @Override
         public StringAndInt deserialize(JsonParser p, DeserializationContext ctxt) {
             if (p.currentToken() == JsonToken.VALUE_STRING) {
-                return StringAndInt.parse(p.getText());
+                return StringAndInt.parse(p.getString());
             } else if (p.currentToken() == JsonToken.VALUE_NULL) {
                 return null;
             }

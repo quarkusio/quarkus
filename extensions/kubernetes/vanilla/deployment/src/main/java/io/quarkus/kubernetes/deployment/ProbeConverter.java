@@ -1,10 +1,9 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.dekorate.kubernetes.config.Probe;
 import io.dekorate.kubernetes.config.ProbeBuilder;
+import io.smallrye.config.Config;
 
 public class ProbeConverter {
 
@@ -33,7 +32,7 @@ public class ProbeConverter {
 
     static int getQuarkusGrpcPort() {
         // TODO - Querying a runtime configuration during deployment
-        return ConfigProvider.getConfig().getOptionalValue("quarkus.grpc.server.port", Integer.class)
+        return Config.get().getOptionalValue("quarkus.grpc.server.port", Integer.class)
                 .orElse(9000);
     }
 }

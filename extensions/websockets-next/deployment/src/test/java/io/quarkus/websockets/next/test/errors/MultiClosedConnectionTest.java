@@ -25,7 +25,7 @@ import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.NoStackTraceThrowable;
+import io.vertx.core.http.HttpClosedException;
 
 public class MultiClosedConnectionTest {
 
@@ -81,7 +81,7 @@ public class MultiClosedConnectionTest {
         }
 
         @OnError
-        void onConnectionClosedError(NoStackTraceThrowable t, WebSocketConnection conn) {
+        void onConnectionClosedError(HttpClosedException t, WebSocketConnection conn) {
             Log.info("Error callback!");
             if (conn.isClosed()) {
                 String message = t.getMessage();

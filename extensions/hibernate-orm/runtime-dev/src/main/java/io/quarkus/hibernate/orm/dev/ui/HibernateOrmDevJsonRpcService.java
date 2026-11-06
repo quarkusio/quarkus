@@ -12,7 +12,6 @@ import java.util.concurrent.CompletionStage;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.Transaction;
@@ -31,6 +30,7 @@ import io.quarkus.hibernate.orm.dev.HibernateOrmDevController;
 import io.quarkus.hibernate.orm.dev.HibernateOrmDevInfo;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.config.Config;
 
 public class HibernateOrmDevJsonRpcService {
 
@@ -44,7 +44,7 @@ public class HibernateOrmDevJsonRpcService {
 
     public HibernateOrmDevJsonRpcService() {
         this.isDev = LaunchMode.current().isDev() && !LaunchMode.current().isRemoteDev();
-        this.allowedHost = ConfigProvider.getConfig()
+        this.allowedHost = Config.get()
                 .getOptionalValue("quarkus.datasource.dev-ui.allowed-db-host", String.class)
                 .orElse(null);
     }

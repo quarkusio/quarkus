@@ -9,14 +9,13 @@ import static io.quarkus.tests.simpleextension.Constants.SIMPLE_EXTENSION_CONTAI
 import java.util.Map;
 import java.util.Optional;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.StartableContainer;
+import io.smallrye.config.Config;
 
 public class SimpleDevServicesProcessor {
 
@@ -29,7 +28,7 @@ public class SimpleDevServicesProcessor {
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
     public DevServicesResultBuildItem createContainer() {
-        Optional<Integer> fixedPort = ConfigProvider.getConfig()
+        Optional<Integer> fixedPort = Config.get()
                 .getOptionalValue(QUARKUS_SIMPLE_EXTENSION_DEVSERVICES_PORT, Integer.class);
 
         return DevServicesResultBuildItem.owned()

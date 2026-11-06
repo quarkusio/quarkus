@@ -1,6 +1,8 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -47,8 +49,9 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
     private static final String SCHEMA_TYPE_CLASS_NAME = "org.eclipse.microprofile.openapi.annotations.enums.SchemaType";
     private static final String SCHEMA_TYPE_ARRAY = "ARRAY";
     private static final String ROLES_ALLOWED_ANNOTATION = "jakarta.annotation.security.RolesAllowed";
+    private static final String JAKARTA_SECURITY_PACKAGE = "jakarta.annotation.security";
     private static final String AUTHENTICATED_ANNOTATION = "io.quarkus.security.Authenticated";
-    private static final DotName AUTHENTICATED_ANNOTATION_DOT_NAME = DotName.createSimple(AUTHENTICATED_ANNOTATION);
+    private static final String PERMISSIONS_ALLOWED_ANNOTATION = "io.quarkus.security.PermissionsAllowed";
     private static final Logger LOGGER = Logger.getLogger(StandardMethodImplementor.class);
 
     protected final ResponseImplementor responseImplementor;
@@ -162,8 +165,14 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
         element.addAnnotation(Context.class);
     }
 
-    protected void addSortQueryParamValidatorAnnotation(AnnotatedElement element) {
-        element.addAnnotation(SortQueryParamValidator.class);
+    protected void addSortQueryParamValidatorAnnotation(AnnotatedElement element, Set<String> allowedFields,
+            Map<String, String> secureFields) {
+        String[] secureFieldSpecs = secureFields.entrySet().stream()
+                .map(e -> e.getKey() + ":" + e.getValue())
+                .toArray(String[]::new);
+        element.addAnnotation(SortQueryParamValidator.class)
+                .add("allowedFields", allowedFields.toArray(new String[0]))
+                .add("secureFields", secureFieldSpecs);
     }
 
     protected void addMethodAnnotations(AnnotatedElement element, Collection<AnnotationInstance> methodAnnotations) {
@@ -175,17 +184,27 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
     }
 
     protected void addSecurityAnnotations(AnnotatedElement element, ResourceProperties resourceProperties) {
+        // If the method already carries a security annotation copied from the resource method (e.g. @RolesAllowed,
+        // @Authenticated, @PermissionsAllowed), that annotation governs this method's access control. Emitting an
+        // inherited resource-level annotation on top would override the developer's explicit choice and make the
+        // generated method carry multiple security annotations, which the security extension rejects at build time.
+        boolean hasMethodLevelSecurityAnnotation = resourceProperties.getMethodAnnotations(getResourceMethodName()).stream()
+                .anyMatch(ai -> isSecurityAnnotation(ai.name()));
+
         String[] rolesAllowed = resourceProperties.getRolesAllowed(getResourceMethodName());
-        if (rolesAllowed.length > 0 && hasSecurityCapability()) {
+        if (rolesAllowed.length > 0 && hasSecurityCapability() && !hasMethodLevelSecurityAnnotation) {
             element.addAnnotation(ROLES_ALLOWED_ANNOTATION).add("value", rolesAllowed);
         }
-        // authenticatedAlreadyAdded will be true if the method has been specifically annotated with @Authenticated
-        // which means that the annotation has already been copied over to the generated method
-        boolean authenticatedAlreadyAdded = resourceProperties.getMethodAnnotations(getResourceMethodName()).stream()
-                .anyMatch(ai -> ai.name().equals(AUTHENTICATED_ANNOTATION_DOT_NAME));
-        if (resourceProperties.isAuthenticated() && !authenticatedAlreadyAdded) {
+        if (resourceProperties.isAuthenticated() && !hasMethodLevelSecurityAnnotation) {
             element.addAnnotation(AUTHENTICATED_ANNOTATION);
         }
+    }
+
+    private static boolean isSecurityAnnotation(DotName name) {
+        String annotationName = name.toString();
+        return annotationName.startsWith(JAKARTA_SECURITY_PACKAGE)
+                || annotationName.equals(AUTHENTICATED_ANNOTATION)
+                || annotationName.equals(PERMISSIONS_ALLOWED_ANNOTATION);
     }
 
     protected void addOpenApiResponseAnnotation(AnnotatedElement element, RestResponse.Status status) {

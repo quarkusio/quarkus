@@ -98,7 +98,7 @@ instance:
 
 [source,java]
 ----
-SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+Config config = Config.get();
 Server server = config.getConfigMapping(Server.class);
 ----
 

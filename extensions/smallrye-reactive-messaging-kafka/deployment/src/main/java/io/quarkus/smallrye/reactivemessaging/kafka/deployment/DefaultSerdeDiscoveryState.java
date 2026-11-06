@@ -11,8 +11,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -22,6 +20,7 @@ import org.jboss.jandex.IndexView;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
+import io.smallrye.config.Config;
 import io.smallrye.reactive.messaging.kafka.KafkaConnector;
 
 class DefaultSerdeDiscoveryState {
@@ -45,7 +44,7 @@ class DefaultSerdeDiscoveryState {
     }
 
     Config getConfig() {
-        return ConfigProvider.getConfig();
+        return Config.get();
     }
 
     boolean isKafkaConnector(List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors, boolean incoming,

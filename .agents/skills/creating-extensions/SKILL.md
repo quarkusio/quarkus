@@ -13,7 +13,7 @@ Every extension lives under `extensions/<name>/` with this structure:
 
 ```
 extensions/<name>/
-  runtime/          # Runtime classes, recorders, beans (quarkus-<name>)
+  runtime/          # Runtime classes, beans, service implementations (quarkus-<name>)
   runtime-api/      # (optional) Public APIs for loose coupling (quarkus-<name>-api)
   deployment/       # @BuildStep processors (quarkus-<name>-deployment)
   deployment-spi/   # (optional) Public build items for cross-extension use (quarkus-<name>-deployment-spi)

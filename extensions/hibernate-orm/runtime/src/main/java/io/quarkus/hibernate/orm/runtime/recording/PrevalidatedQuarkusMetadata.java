@@ -70,7 +70,7 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
                 metadata.getMetadataBuildingOptions().getServiceRegistry(),
                 metadata.getBootstrapContext());
         // This would normally be done by the constructor of SessionFactoryBuilderImpl,
-        // but we don't use a builder to create the session factory, for some reason.
+        // but we use FastBootSessionFactoryBuilder instead, which doesn't do it.
 
         Map<String, SqmFunctionDescriptor> sqlFunctions = metadata.getSqlFunctionMap();
         if (sqlFunctions != null) {

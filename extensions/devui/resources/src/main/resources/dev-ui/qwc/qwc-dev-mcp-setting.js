@@ -352,6 +352,26 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
   _getAgentMcpConfigurations() {
     return [
       {
+        name: 'IBM Bob',
+        icon: 'font-awesome-solid:code',
+        file: '.bob/mcp.json',
+        docsUrl: 'https://bob.ibm.com/docs/ide/configuration/mcp/mcp-in-bob',
+        config: {
+          "mcpServers": {
+            "quarkus-agent": {
+              "command": "${env:JBANG_HOME}/bin/jbang",
+              "args": [
+                "quarkus-agent-mcp@quarkusio"
+              ],
+              "env": {
+                "JAVA_HOME": "${env:JAVA_HOME}"
+              },
+              "disabled": false
+            }
+          }
+        }
+      },
+      {
         name: 'Claude Code',
         icon: 'font-awesome-solid:terminal',
         file: 'Run in terminal',
@@ -495,6 +515,20 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
   _getDirectMcpConfigurations() {
     return [
       {
+        name: 'IBM Bob',
+        icon: 'font-awesome-solid:code',
+        file: '.bob/mcp.json',
+        docsUrl: 'https://bob.ibm.com/docs/ide/configuration/mcp/mcp-in-bob',
+        config: {
+          mcpServers: {
+            'quarkus-mcp': {
+              type: 'streamable-http',
+              url: this._mcpPath
+            }
+          }
+        }
+      },
+      {
         name: 'OpenCode',
         icon: 'font-awesome-solid:terminal',
         file: 'opencode.json',
@@ -539,14 +573,10 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
         icon: 'font-awesome-solid:bolt',
         file: '~/.config/zed/settings.json',
         docsUrl: 'https://zed.dev/docs/ai/mcp',
-        prerequisite: 'Requires Node.js and npx',
         config: {
           context_servers: {
             'quarkus-mcp': {
-              command: {
-                path: 'npx',
-                args: ['-y', 'mcp-remote', this._mcpPath]
-              }
+              url: this._mcpPath
             }
           }
         }

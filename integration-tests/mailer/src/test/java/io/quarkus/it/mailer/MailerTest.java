@@ -6,7 +6,6 @@ import static org.awaitility.Awaitility.await;
 
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +21,7 @@ import io.quarkus.it.mailer.mailpit.Recipient;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.smallrye.config.Config;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -37,8 +37,8 @@ public class MailerTest {
 
     @BeforeEach
     public void init() {
-        client = new MailPitClient("http://" + ConfigProvider.getConfig().getValue("mailpit", String.class));
-        clientTls = new MailPitClient("http://" + ConfigProvider.getConfig().getValue("mailpit-tls", String.class));
+        client = new MailPitClient("http://" + Config.get().getValue("mailpit", String.class));
+        clientTls = new MailPitClient("http://" + Config.get().getValue("mailpit-tls", String.class));
     }
 
     @AfterEach

@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
@@ -24,7 +23,6 @@ import org.apache.avro.specific.AvroGenerated;
 import org.apache.pulsar.client.api.Messages;
 import org.apache.pulsar.client.api.Schema;
 import org.assertj.core.groups.Tuple;
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -37,7 +35,6 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -47,12 +44,11 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.pulsar.SchemaProviderRecorder;
-import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.pulsar.PulsarSchemaCreator.Kind;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.smallrye.common.annotation.Identifier;
+import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.common.MapBackedConfigSource;
 import io.smallrye.mutiny.Multi;
@@ -96,19 +92,10 @@ public class DefaultSchemaConfigTest {
                 return true;
             }
         };
-        RecorderContext rcMock = Mockito.mock(RecorderContext.class);
-        Mockito.when(rcMock.classProxy(Mockito.anyString())).thenAnswer(a -> Class.forName(a.getArgument(0)));
-        SyntheticBeanBuilder syntheticBean = new SyntheticBeanBuilder(syntheticBeans::add,
-                new SchemaProviderRecorder(), rcMock) {
+        SyntheticBeanBuilder syntheticBean = new SyntheticBeanBuilder(syntheticBeans::add) {
             @Override
             void produceSyntheticBeanSchema(BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItem,
-                    RuntimeValue<?> runtimeValue, String schemaId, Type type) {
-                // no-op
-            }
-
-            @Override
-            void produceSyntheticBeanSchema(BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItem,
-                    Supplier<?> supplier, String schemaId, Type type) {
+                    Kind kind, String schemaId, Type type) {
                 // no-op
             }
 

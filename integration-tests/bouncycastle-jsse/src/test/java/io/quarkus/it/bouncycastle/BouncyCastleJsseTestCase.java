@@ -2,6 +2,7 @@ package io.quarkus.it.bouncycastle;
 
 import static org.awaitility.Awaitility.given;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -41,6 +42,23 @@ public class BouncyCastleJsseTestCase {
     public void testListProviders() {
         doTestListProviders();
         checkLog(false);
+    }
+
+    @Test
+    public void testMLKEM() {
+        RequestSpecification spec = new RequestSpecBuilder()
+                .setBaseUri(String.format("%s://%s", url.getProtocol(), url.getHost()))
+                .setPort(url.getPort())
+                .setKeyStore("client-keystore.jks", "password")
+                .setTrustStore("client-truststore.jks", "secret")
+                .build();
+        RestAssured.given()
+                .spec(spec)
+                .when()
+                .get("/jsse/checkMLKEM")
+                .then()
+                .statusCode(200)
+                .body(equalTo("ML-KEM-768"));
     }
 
     protected void doTestListProviders() {

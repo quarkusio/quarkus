@@ -245,7 +245,7 @@ public class StreamCommandsTest extends DatasourceTestBase {
     }
 
     @Test
-    void xReadBlocking() throws InterruptedException {
+    void xReadBlocking() {
         Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
 
         CountDownLatch latch = new CountDownLatch(1);

@@ -49,6 +49,7 @@ import io.quarkus.deployment.builditem.IOThreadDetectorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.ModuleExportBuildItem;
+import io.quarkus.deployment.builditem.PreInitRunnableBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ThreadFactoryBuildItem;
@@ -102,13 +103,22 @@ class VertxCoreProcessor {
     }
 
     @BuildStep
+    PreInitRunnableBuildItem preInitByteBufAllocator() {
+        // VertxByteBufAllocator initializes Netty's default allocator (ByteBufAllocator.DEFAULT, adaptive by default),
+        // which builds its magazine groups and loads the allocator JFR event classes from the jar, as JFR event
+        // classes are excluded from the AOT cache. Vert.x first touches it when the HTTP server binds, on an event
+        // loop thread, which is on the startup critical path. Do it on a pre-init thread instead.
+        return PreInitRunnableBuildItem.initializeClass("io.vertx.core.impl.buffer.VertxByteBufAllocator");
+    }
+
+    @BuildStep
     AdditionalBeanBuildItem registerSafeDuplicatedContextInterceptor() {
         return new AdditionalBeanBuildItem(SafeVertxContextInterceptor.class.getName());
     }
 
     @BuildStep
     NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources) {
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources, VertxBuildTimeConfig config) {
         reflectiveClass.produce(
                 ReflectiveClassBuildItem.builder(VertxLogDelegateFactory.class.getName()).methods().build());
         reflectiveClass.produce(
@@ -121,7 +131,7 @@ class VertxCoreProcessor {
                 .addRuntimeInitializedClass("io.vertx.core.impl.buffer.VertxByteBufAllocator")
                 .addRuntimeInitializedClass("io.vertx.core.http.impl.tcp.VertxHttp2ClientUpgradeCodec")
                 .addRuntimeInitializedClass("io.vertx.core.file.FileSystemOptions")
-                .addNativeImageSystemProperty(SysProps.DISABLE_DNS_RESOLVER.name, "true")
+                .addNativeImageSystemProperty(SysProps.DISABLE_DNS_RESOLVER.name, Boolean.toString(!config.useAsyncDNS()))
                 .addNativeImageSystemProperty("vertx.logger-delegate-factory-class-name",
                         VertxLogDelegateFactory.class.getName())
                 .build();

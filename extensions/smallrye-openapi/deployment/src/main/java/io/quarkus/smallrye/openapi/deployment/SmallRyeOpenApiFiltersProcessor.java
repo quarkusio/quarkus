@@ -12,8 +12,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.OASConfig;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.jboss.jandex.AnnotationInstance;
@@ -32,6 +30,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
+import io.smallrye.config.Config;
 
 public class SmallRyeOpenApiFiltersProcessor {
 
@@ -151,7 +150,7 @@ public class SmallRyeOpenApiFiltersProcessor {
                 // see https://github.com/smallrye/smallrye-open-api/issues/2191
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         DotName configDefinedFilterName = config.getOptionalValue(OASConfig.FILTER, String.class).map(DotName::createSimple)
                 .orElse(null);
 

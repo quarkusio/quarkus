@@ -26,8 +26,19 @@ import io.vertx.mutiny.core.http.HttpClientResponse;
 @Singleton
 @Path("/client")
 public class PingPongResource {
+    /**
+     * Super interface of the REST client: its {@code @WithSpan} method is inherited by the registered interface.
+     */
+    public interface PingPongBaseRestClient {
+
+        @GET
+        @Path("/client/pong/{message}")
+        @WithSpan
+        String pingpongInherited(@SpanAttribute(value = "message") @PathParam("message") String message);
+    }
+
     @RegisterRestClient(configKey = "pingpong")
-    public interface PingPongRestClient {
+    public interface PingPongRestClient extends PingPongBaseRestClient {
 
         @Path("/client/pong/{message}")
         @GET
@@ -92,5 +103,11 @@ public class PingPongResource {
     @Path("pong-intercept/{message}")
     public String pongIntercept(@PathParam("message") String message) {
         return pingRestClient.pingpongIntercept(message);
+    }
+
+    @GET
+    @Path("pong-intercept-inherited/{message}")
+    public String pongInterceptInherited(@PathParam("message") String message) {
+        return pingRestClient.pingpongInherited(message);
     }
 }

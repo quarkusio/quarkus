@@ -11,7 +11,7 @@ import io.vertx.redis.client.Command;
 import io.vertx.redis.client.Request;
 import io.vertx.redis.client.Response;
 
-class RedisClientImpl implements RedisClient {
+public class RedisClientImpl implements RedisClient {
     private final RedisAPI redisAPI;
     private final Duration timeout;
 

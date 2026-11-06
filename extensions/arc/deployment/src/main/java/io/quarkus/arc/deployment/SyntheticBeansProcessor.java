@@ -139,7 +139,7 @@ public class SyntheticBeansProcessor {
             // steps (including the service action) have completed.
             Class<?> serviceType = bean.configurator().getServiceType();
             List<String> serviceNameParts = bean.configurator().getServiceNameParts();
-            String serviceKey = serviceType.getName() + ":" + String.join("/", serviceNameParts);
+            String serviceKey = LambdaTransliterator.serviceKey(serviceType, serviceNameParts);
 
             // the creation function reads from the startup context lazily on first CDI access;
             // null is passed for StartupContext at build time — the recorder emits code that

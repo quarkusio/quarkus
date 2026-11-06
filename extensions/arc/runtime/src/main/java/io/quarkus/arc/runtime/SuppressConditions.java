@@ -3,8 +3,7 @@ package io.quarkus.arc.runtime;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import io.smallrye.config.Config;
 
 public final class SuppressConditions {
 
@@ -12,7 +11,7 @@ public final class SuppressConditions {
     }
 
     public static boolean suppressIfProperty(String propertyName, String stringValue, boolean lookupIfMissing) {
-        Config config = ConfigProviderResolver.instance().getConfig();
+        Config config = Config.get();
         Optional<String> optionalValue = config.getOptionalValue(propertyName, String.class);
         if (optionalValue.isPresent()) {
             return !stringValue.equals(optionalValue.get());
@@ -22,7 +21,7 @@ public final class SuppressConditions {
     }
 
     public static boolean suppressUnlessProperty(String propertyName, String stringValue, boolean lookupIfMissing) {
-        Config config = ConfigProviderResolver.instance().getConfig();
+        Config config = Config.get();
         Optional<String> optionalValue = config.getOptionalValue(propertyName, String.class);
         if (optionalValue.isPresent()) {
             return stringValue.equals(optionalValue.get());
@@ -32,7 +31,7 @@ public final class SuppressConditions {
     }
 
     public static boolean suppressIfPropertyRegex(String propertyName, Pattern pattern, boolean lookupIfMissing) {
-        Config config = ConfigProviderResolver.instance().getConfig();
+        Config config = Config.get();
         Optional<String> optionalValue = config.getOptionalValue(propertyName, String.class);
         if (optionalValue.isPresent()) {
             return !pattern.matcher(optionalValue.get()).matches();
@@ -42,7 +41,7 @@ public final class SuppressConditions {
     }
 
     public static boolean suppressUnlessPropertyRegex(String propertyName, Pattern pattern, boolean lookupIfMissing) {
-        Config config = ConfigProviderResolver.instance().getConfig();
+        Config config = Config.get();
         Optional<String> optionalValue = config.getOptionalValue(propertyName, String.class);
         if (optionalValue.isPresent()) {
             return pattern.matcher(optionalValue.get()).matches();

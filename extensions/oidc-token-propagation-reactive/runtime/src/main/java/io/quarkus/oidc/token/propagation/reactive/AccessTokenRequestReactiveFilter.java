@@ -4,7 +4,7 @@ import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationC
 import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationConstants.OIDC_PROPAGATE_TOKEN_CREDENTIAL;
 
 import java.lang.reflect.Method;
-import java.util.Collections;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import jakarta.annotation.PostConstruct;
@@ -15,7 +15,6 @@ import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
@@ -25,13 +24,17 @@ import io.quarkus.arc.Arc;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.runtime.DisabledOidcClientException;
+import io.quarkus.oidc.client.runtime.OidcClientConfig;
 import io.quarkus.oidc.client.runtime.OidcClientConfig.Grant;
+import io.quarkus.oidc.client.runtime.OidcClientsConfig;
+import io.quarkus.oidc.client.runtime.TokensHelper;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.core.runtime.ContextLocalsVertxServiceProvider;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 
@@ -45,6 +48,7 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
 
     OidcClient exchangeTokenClient;
     String exchangeTokenProperty;
+    private TokensHelper tokensHelper;
 
     public AccessTokenRequestReactiveFilter() {
         this.enabledDuringAuthentication = Boolean.getBoolean(OIDC_PROPAGATE_TOKEN_CREDENTIAL)
@@ -58,7 +62,7 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
             OidcClients clients = Arc.container().instance(OidcClients.class).get();
             String clientName = getClientName();
             exchangeTokenClient = clientName != null ? clients.getClient(clientName) : clients.getClient();
-            Grant.Type exchangeTokenGrantType = ConfigProvider.getConfig()
+            Grant.Type exchangeTokenGrantType = Config.get()
                     .getValue(
                             "quarkus.oidc-client." + (clientName != null ? clientName + "." : "")
                                     + "grant.type",
@@ -71,11 +75,19 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
                 throw new ConfigurationException("Token exchange is required but OIDC client is configured "
                         + "to use the " + exchangeTokenGrantType.getGrantType() + " grantType");
             }
+            tokensHelper = new TokensHelper(tokenCacheMaxSize(clientName));
         }
     }
 
+    private static int tokenCacheMaxSize(String clientName) {
+        OidcClientsConfig clientsConfig = Config.get().getConfigMapping(OidcClientsConfig.class);
+        OidcClientConfig clientConfig = clientName != null ? clientsConfig.namedClients().get(clientName)
+                : OidcClientsConfig.getDefaultClient(clientsConfig);
+        return clientConfig.tokenCacheMaxSize();
+    }
+
     protected boolean isExchangeToken() {
-        return ConfigProvider.getConfig()
+        return Config.get()
                 .getValue("quarkus.rest-client-oidc-token-propagation.exchange-token", boolean.class);
     }
 
@@ -119,8 +131,7 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
     }
 
     protected String getClientName() {
-        return ConfigProvider
-                .getConfig()
+        return Config.get()
                 .getOptionalValue("quarkus.rest-client-oidc-token-propagation.client-name", String.class)
                 .orElse(null);
     }
@@ -180,7 +191,7 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
     }
 
     private Uni<String> exchangeToken(String token) {
-        return exchangeTokenClient.getTokens(Collections.singletonMap(exchangeTokenProperty, token))
+        return tokensHelper.getTokens(exchangeTokenClient, Map.of(exchangeTokenProperty, token), false)
                 .onItem().transform(t -> t.getAccessToken());
 
     }

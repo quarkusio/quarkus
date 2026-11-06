@@ -58,7 +58,12 @@ final class ReflectiveAccessModulesReconfigurer implements JvmModulesReconfigure
             final Module exportedModule = modulesContext.findModule(m.exportedModuleName());
             final Module exportingModule = modulesContext.findModule(m.exportingModuleName());
             for (String packageName : m.packageNames()) {
-                addExports(exportedModule, packageName, exportingModule);
+                if (modulesContext.isPackagePresent(exportedModule, packageName)) {
+                    addExports(exportedModule, packageName, exportingModule);
+                } else {
+                    logger.debugf("Package %s not found in module %s, skipping export", packageName,
+                            exportedModule.getName());
+                }
             }
         }
     }

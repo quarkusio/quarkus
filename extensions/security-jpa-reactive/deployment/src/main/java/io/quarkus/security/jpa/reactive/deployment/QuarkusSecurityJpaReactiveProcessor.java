@@ -30,10 +30,10 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.Var;
 import io.quarkus.gizmo2.creator.BlockCreator;
@@ -62,6 +62,7 @@ class QuarkusSecurityJpaReactiveProcessor {
     @BuildStep
     void configureJpaAuthConfig(ApplicationIndexBuildItem index,
             BuildProducer<GeneratedBeanBuildItem> beanProducer,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             Optional<JpaSecurityDefinitionBuildItem> jpaSecurityDefinitionBuildItem,
             PanacheEntityPredicateBuildItem panacheEntityPredicate) {
 
@@ -69,10 +70,10 @@ class QuarkusSecurityJpaReactiveProcessor {
             JpaSecurityDefinition jpaSecurityDefinition = jpaSecurityDefinitionBuildItem.get().get();
 
             generateIdentityProvider(index.getIndex(), jpaSecurityDefinition, jpaSecurityDefinition.passwordType(),
-                    jpaSecurityDefinition.customPasswordProvider(), beanProducer, panacheEntityPredicate);
+                    jpaSecurityDefinition.customPasswordProvider(), beanProducer, constantBootstraps, panacheEntityPredicate);
 
             generateTrustedIdentityProvider(index.getIndex(), jpaSecurityDefinition,
-                    beanProducer, panacheEntityPredicate);
+                    beanProducer, constantBootstraps, panacheEntityPredicate);
         }
     }
 
@@ -91,12 +92,12 @@ class QuarkusSecurityJpaReactiveProcessor {
 
     private static void generateIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition,
             AnnotationValue passwordTypeValue, AnnotationValue passwordProviderValue,
-            BuildProducer<GeneratedBeanBuildItem> beanProducer, PanacheEntityPredicateBuildItem panacheEntityPredicate) {
-        GeneratedBeanGizmo2Adaptor gizmoAdaptor = new GeneratedBeanGizmo2Adaptor(beanProducer);
+            BuildProducer<GeneratedBeanBuildItem> beanProducer, BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
+            PanacheEntityPredicateBuildItem panacheEntityPredicate) {
+        GeneratedBeanGizmo2Adaptor gizmoAdaptor = new GeneratedBeanGizmo2Adaptor(beanProducer, constantBootstraps);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaReactiveIdentityProviderImpl";
-        // todo: the gizmo-to-bean adapter doesn't know about constant bootstraps; use anon classes for lambdas for now
-        Gizmo.create(gizmoAdaptor).withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS).class_(name, cc -> {
+        Gizmo.create(gizmoAdaptor).class_(name, cc -> {
             cc.extends_(JpaReactiveIdentityProvider.class);
             cc.addAnnotation(Singleton.class);
             cc.defaultConstructor();
@@ -139,12 +140,12 @@ class QuarkusSecurityJpaReactiveProcessor {
     }
 
     private static void generateTrustedIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition,
-            BuildProducer<GeneratedBeanBuildItem> beanProducer, PanacheEntityPredicateBuildItem panacheEntityPredicate) {
-        GeneratedBeanGizmo2Adaptor gizmoAdaptor = new GeneratedBeanGizmo2Adaptor(beanProducer);
+            BuildProducer<GeneratedBeanBuildItem> beanProducer, BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
+            PanacheEntityPredicateBuildItem panacheEntityPredicate) {
+        GeneratedBeanGizmo2Adaptor gizmoAdaptor = new GeneratedBeanGizmo2Adaptor(beanProducer, constantBootstraps);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaReactiveTrustedIdentityProviderImpl";
-        // todo: the gizmo-to-bean adapter doesn't know about constant bootstraps; use anon classes for lambdas for now
-        Gizmo.create(gizmoAdaptor).withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS).class_(name, cc -> {
+        Gizmo.create(gizmoAdaptor).class_(name, cc -> {
             cc.extends_(JpaReactiveTrustedIdentityProvider.class);
             cc.addAnnotation(Singleton.class);
             cc.defaultConstructor();

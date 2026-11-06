@@ -2,8 +2,8 @@ package io.quarkus.hibernate.reactive.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.configureInitScripts;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.configureProperties;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.configureSqlLoadScript;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.setDialectAndStorageEngine;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.isHibernateValidatorPresent;
 
@@ -24,6 +24,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -39,6 +40,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.JpaModelPerPersistenceUnitBuildItem;
@@ -108,6 +110,7 @@ public final class HibernateReactiveProcessor {
             List<ReactiveDataSourceBuildItem> reactiveDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchModeBuildItem launchMode,
+            CurateOutcomeBuildItem curateOutcome,
             JpaModelPerPersistenceUnitBuildItem jpaModel,
             Capabilities capabilities,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
@@ -140,7 +143,8 @@ public final class HibernateReactiveProcessor {
             buildReactivePersistenceUnitFromConfig(hibernateOrmConfig, puDefinition, model,
                     reactiveDataSources,
                     applicationArchivesBuildItem,
-                    launchMode,
+                    launchMode.getLaunchMode(),
+                    curateOutcome.getApplicationModel().getApplicationModule(),
                     capabilities,
                     additionalSqlLoadScriptDefaults,
                     nativeImageResources,
@@ -154,7 +158,8 @@ public final class HibernateReactiveProcessor {
             JpaPersistenceUnitModel model,
             List<ReactiveDataSourceBuildItem> reactiveDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            LaunchModeBuildItem launchMode,
+            LaunchMode launchMode,
+            WorkspaceModule applicationModule,
             Capabilities capabilities,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
@@ -180,7 +185,8 @@ public final class HibernateReactiveProcessor {
         QuarkusPersistenceUnitDescriptorWithSupportedDBKind reactivePUWithDBKind = generateReactivePersistenceUnit(
                 hibernateOrmConfig, persistenceUnitName, persistenceUnitConfig, model,
                 dbKindOptional, explicitDialect, dbVersion, applicationArchivesBuildItem,
-                launchMode.getLaunchMode(),
+                launchMode,
+                applicationModule,
                 additionalSqlLoadScriptDefaults,
                 nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems);
 
@@ -276,6 +282,7 @@ public final class HibernateReactiveProcessor {
             Optional<String> dbVersion,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
+            WorkspaceModule applicationModule,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -301,8 +308,8 @@ public final class HibernateReactiveProcessor {
                 descriptor.getProperties()::setProperty);
 
         configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, true);
-        configureSqlLoadScript(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
-                additionalSqlLoadScriptDefaults,
+        configureInitScripts(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
+                applicationModule, additionalSqlLoadScriptDefaults,
                 nativeImageResources, hotDeploymentWatchedFiles, descriptor);
 
         return new QuarkusPersistenceUnitDescriptorWithSupportedDBKind(descriptor, supportedDatabaseKind);

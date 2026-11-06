@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.spi.Bean;
 
@@ -34,7 +35,7 @@ public final class AgroalDataSourceUtil {
 
     public static Set<String> activeDataSourceNames() {
         Set<String> activeNames = new LinkedHashSet<>();
-        for (var handle : Arc.container().select(AgroalDataSource.class).handles()) {
+        for (var handle : Arc.container().select(AgroalDataSource.class, Any.Literal.INSTANCE).handles()) {
             var bean = handle.getBean();
             if (bean != null && bean.isActive()) {
                 String name = dataSourceName(bean);

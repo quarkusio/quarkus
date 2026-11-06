@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -16,10 +15,10 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ThreadPoolConfig;
-import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder.VertxCustomizer;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
+import io.smallrye.config.ConfigInstanceBuilder;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.dns.AddressResolverOptions;
@@ -41,83 +40,15 @@ public class VertxCoreProducerTest {
 
     @Test
     public void shouldConfigureAddressResolver() {
-        VertxConfiguration configuration = new DefaultVertxConfiguration() {
-            @Override
-            public AddressResolverConfiguration resolver() {
-                return new AddressResolverConfiguration() {
-
-                    @Override
-                    public Duration queryTimeout() {
-                        return Duration.ofMillis(200L);
-                    }
-
-                    @Override
-                    public int maxQueries() {
-                        return 2;
-                    }
-
-                    @Override
-                    public Duration cacheNegativeTimeToLive() {
-                        return Duration.ofSeconds(1);
-                    }
-
-                    @Override
-                    public Duration cacheMinTimeToLive() {
-                        return Duration.ofSeconds(0);
-                    }
-
-                    @Override
-                    public Duration cacheMaxTimeToLive() {
-                        return Duration.ofSeconds(3);
-                    }
-
-                    @Override
-                    public Optional<String> hostsPath() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Duration hostRefreshPeriod() {
-                        return Duration.ofMillis(0);
-                    }
-
-                    @Override
-                    public Optional<List<String>> servers() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public boolean optResourceEnabled() {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean rdFlag() {
-                        return false;
-                    }
-
-                    @Override
-                    public Optional<List<String>> searchDomains() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public int ndots() {
-                        return 0;
-                    }
-
-                    @Override
-                    public Optional<Boolean> rotateServers() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public boolean roundRobinInetAddress() {
-                        return false;
-                    }
-                };
-            }
-        };
+        VertxConfiguration configuration = vertxConfiguration()
+                .with(VertxConfiguration::resolver, addressResolverConfiguration()
+                        .with(AddressResolverConfiguration::queryTimeout, Duration.ofMillis(200L))
+                        .with(AddressResolverConfiguration::maxQueries, 2)
+                        .with(AddressResolverConfiguration::cacheNegativeTimeToLive, Duration.ofSeconds(1))
+                        .with(AddressResolverConfiguration::cacheMinTimeToLive, Duration.ofSeconds(0))
+                        .with(AddressResolverConfiguration::cacheMaxTimeToLive, Duration.ofSeconds(3))
+                        .build())
+                .build();
 
         VertxCustomizer customizers = new VertxCustomizer(Collections.emptyList(), List.of(
                 new Consumer<VertxOptions>() {
@@ -133,7 +64,7 @@ public class VertxCoreProducerTest {
                     }
                 }));
 
-        VertxCoreRecorder.initialize(configuration, customizers, new DefaultThreadPoolConfig(), null, LaunchMode.TEST,
+        VertxCoreRecorder.initialize(configuration, customizers, threadPoolConfig().build(), null, LaunchMode.TEST,
                 List.of(), List.of());
     }
 
@@ -147,7 +78,7 @@ public class VertxCoreProducerTest {
                         called.set(true);
                     }
                 }));
-        Vertx v = VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers, new DefaultThreadPoolConfig(),
+        Vertx v = VertxCoreRecorder.initialize(vertxConfiguration().build(), customizers, threadPoolConfig().build(),
                 null, LaunchMode.TEST, List.of(), List.of());
         Assertions.assertTrue(called.get(), "Customizer should get called during initialization");
     }
@@ -162,206 +93,31 @@ public class VertxCoreProducerTest {
                         Assertions.assertNotNull(vertxOptions.getFileSystemOptions());
                         Assertions.assertEquals(cacheDir, vertxOptions.getFileSystemOptions().getFileCacheDir());
                     }));
-            VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers, new DefaultThreadPoolConfig(),
+            VertxCoreRecorder.initialize(vertxConfiguration().build(), customizers, threadPoolConfig().build(),
                     null, LaunchMode.TEST, List.of(), List.of());
         } finally {
             System.clearProperty(SysProps.FILE_CACHE_DIR.name);
         }
     }
 
-    static class DefaultVertxConfiguration implements VertxConfiguration {
-        @Override
-        public boolean caching() {
-            return true;
-        }
-
-        @Override
-        public Optional<String> cacheDirectory() {
-            return Optional.empty();
-        }
-
-        @Override
-        public boolean classpathResolving() {
-            return true;
-        }
-
-        @Override
-        public OptionalInt eventLoopsPoolSize() {
-            return OptionalInt.empty();
-        }
-
-        @Override
-        public Duration maxEventLoopExecuteTime() {
-            return Duration.ofSeconds(2);
-        }
-
-        @Override
-        public Duration warningExceptionTime() {
-            return Duration.ofSeconds(2);
-        }
-
-        @Override
-        public Duration maxWorkerExecuteTime() {
-            return Duration.ofSeconds(1);
-        }
-
-        @Override
-        public int internalBlockingPoolSize() {
-            return 20;
-        }
-
-        @Override
-        public OptionalInt queueSize() {
-            return OptionalInt.empty();
-        }
-
-        @Override
-        public float growthResistance() {
-            return 0;
-        }
-
-        @Override
-        public Duration keepAliveTime() {
-            return Duration.ofSeconds(30);
-        }
-
-        @Override
-        public boolean prefill() {
-            return false;
-        }
-
-        @Override
-        public boolean useAsyncDNS() {
-            return false;
-        }
-
-        @Override
-        public Duration blockedThreadCheckInterval() {
-            return Duration.ofSeconds(1);
-        }
-
-        @Override
-        public AddressResolverConfiguration resolver() {
-            return new AddressResolverConfiguration() {
-
-                @Override
-                public Duration queryTimeout() {
-                    return Duration.ofSeconds(5);
-                }
-
-                @Override
-                public int maxQueries() {
-                    return 4;
-                }
-
-                @Override
-                public Duration cacheNegativeTimeToLive() {
-                    return Duration.ofSeconds(0);
-                }
-
-                @Override
-                public Duration cacheMinTimeToLive() {
-                    return Duration.ofSeconds(0);
-                }
-
-                @Override
-                public Duration cacheMaxTimeToLive() {
-                    return Duration.ofSeconds(Integer.MAX_VALUE);
-                }
-
-                @Override
-                public Optional<String> hostsPath() {
-                    return Optional.empty();
-                }
-
-                @Override
-                public Duration hostRefreshPeriod() {
-                    return Duration.ofMillis(0);
-                }
-
-                @Override
-                public Optional<List<String>> servers() {
-                    return Optional.empty();
-                }
-
-                @Override
-                public boolean optResourceEnabled() {
-                    return false;
-                }
-
-                @Override
-                public boolean rdFlag() {
-                    return false;
-                }
-
-                @Override
-                public Optional<List<String>> searchDomains() {
-                    return Optional.empty();
-                }
-
-                @Override
-                public int ndots() {
-                    return 0;
-                }
-
-                @Override
-                public Optional<Boolean> rotateServers() {
-                    return Optional.empty();
-                }
-
-                @Override
-                public boolean roundRobinInetAddress() {
-                    return false;
-                }
-            };
-        }
-
+    static ConfigInstanceBuilder<VertxConfiguration> vertxConfiguration() {
+        // differs from the defaults declared in `VertxConfiguration`
+        return ConfigInstanceBuilder.forInterface(VertxConfiguration.class)
+                .with(VertxConfiguration::maxWorkerExecuteTime, Duration.ofSeconds(1))
+                .with(VertxConfiguration::resolver, addressResolverConfiguration().build());
     }
 
-    static class DefaultThreadPoolConfig implements ThreadPoolConfig {
-        @Override
-        public int coreThreads() {
-            return 0;
-        }
+    static ConfigInstanceBuilder<AddressResolverConfiguration> addressResolverConfiguration() {
+        // differs from the defaults declared in `AddressResolverConfiguration`
+        return ConfigInstanceBuilder.forInterface(AddressResolverConfiguration.class)
+                .with(AddressResolverConfiguration::rdFlag, false)
+                .with(AddressResolverConfiguration::ndots, 0);
+    }
 
-        @Override
-        public boolean prefill() {
-            return true;
-        }
-
-        @Override
-        public OptionalInt maxThreads() {
-            return OptionalInt.empty();
-        }
-
-        @Override
-        public OptionalInt queueSize() {
-            return OptionalInt.empty();
-        }
-
-        @Override
-        public float growthResistance() {
-            return 0;
-        }
-
-        @Override
-        public Duration shutdownTimeout() {
-            return DurationConverter.parseDuration("1M");
-        }
-
-        @Override
-        public Duration shutdownInterrupt() {
-            return DurationConverter.parseDuration("10");
-        }
-
-        @Override
-        public Optional<Duration> shutdownCheckInterval() {
-            return Optional.empty();
-        }
-
-        @Override
-        public Duration keepAliveTime() {
-            return DurationConverter.parseDuration("5");
-        }
+    static ConfigInstanceBuilder<ThreadPoolConfig> threadPoolConfig() {
+        // differs from the defaults declared in `ThreadPoolConfig`
+        return ConfigInstanceBuilder.forInterface(ThreadPoolConfig.class)
+                .with(ThreadPoolConfig::coreThreads, 0)
+                .with(ThreadPoolConfig::shutdownCheckInterval, Optional.<Duration> empty());
     }
 }

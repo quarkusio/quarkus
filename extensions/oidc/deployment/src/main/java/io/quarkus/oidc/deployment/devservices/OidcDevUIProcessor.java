@@ -3,8 +3,6 @@ package io.quarkus.oidc.deployment.devservices;
 import java.util.Optional;
 import java.util.Set;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsLocalDevelopment;
@@ -25,6 +23,7 @@ import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.smallrye.config.Config;
 
 class OidcDevUIProcessor extends AbstractDevUIProcessor {
 
@@ -117,7 +116,7 @@ class OidcDevUIProcessor extends AbstractDevUIProcessor {
     }
 
     private static String getConfigProperty(String name) {
-        return ConfigProvider.getConfig().getValue(name, String.class);
+        return Config.get().getValue(name, String.class);
     }
 
     private static boolean isOidcTenantEnabled() {
@@ -125,12 +124,12 @@ class OidcDevUIProcessor extends AbstractDevUIProcessor {
     }
 
     private static boolean isDiscoveryEnabled(OidcTenantConfig providerConfig) {
-        return ConfigProvider.getConfig().getOptionalValue(DISCOVERY_ENABLED_CONFIG_KEY, Boolean.class)
+        return Config.get().getOptionalValue(DISCOVERY_ENABLED_CONFIG_KEY, Boolean.class)
                 .orElse((providerConfig != null ? providerConfig.discoveryEnabled().orElse(true) : true));
     }
 
     private static boolean getBooleanProperty(String name) {
-        return ConfigProvider.getConfig().getOptionalValue(name, Boolean.class).orElse(true);
+        return Config.get().getOptionalValue(name, Boolean.class).orElse(true);
     }
 
     private static boolean isClientIdSet() {
@@ -147,7 +146,7 @@ class OidcDevUIProcessor extends AbstractDevUIProcessor {
 
     private static OidcTenantConfig getProviderConfig() {
         try {
-            return ConfigProvider.getConfig()
+            return Config.get()
                     .getOptionalValue(OIDC_PROVIDER_CONFIG_KEY, Provider.class)
                     .map(KnownOidcProviders::provider)
                     .orElse(null);

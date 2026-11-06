@@ -214,7 +214,6 @@ quarkus.datasource.jdbc.url=jdbc:postgresql://localhost/quarkus_test
 # Hibernate configuration
 quarkus.hibernate-orm.schema-management.strategy=none
 quarkus.hibernate-orm.log.sql=true
-quarkus.hibernate-orm.sql-load-script=no-file
 
 # flyway configuration
 quarkus.flyway.connect-retries=10

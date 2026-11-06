@@ -13,7 +13,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.runtime.metrics.MetricsFactory;
-import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.ConfigInstanceBuilder;
 
 class MongoClientProcessorTest {
     private final MongoClientProcessor buildStep = new MongoClientProcessor();
@@ -51,34 +51,14 @@ class MongoClientProcessorTest {
     }
 
     private static MongoClientBuildTimeConfig config(boolean metricsEnabled) {
-        return new MongoClientBuildTimeConfig() {
-            @Override
-            public boolean healthEnabled() {
-                return true;
-            }
-
-            @Override
-            public boolean metricsEnabled() {
-                return metricsEnabled;
-            }
-
-            @Override
-            public boolean forceDefaultClients() {
-                return false;
-            }
-
-            @Override
-            public boolean tracingEnabled() {
-                return false;
-            }
-
-            @Override
-            public DevServicesBuildTimeConfig devservices() {
-                return new SmallRyeConfigBuilder().addDiscoveredConverters()
-                        .withMapping(DevServicesBuildTimeConfig.class)
-                        .build().getConfigMapping(DevServicesBuildTimeConfig.class);
-            }
-        };
+        return ConfigInstanceBuilder.forInterface(MongoClientBuildTimeConfig.class)
+                .with(MongoClientBuildTimeConfig::healthEnabled, true)
+                .with(MongoClientBuildTimeConfig::metricsEnabled, metricsEnabled)
+                .with(MongoClientBuildTimeConfig::forceDefaultClients, false)
+                .with(MongoClientBuildTimeConfig::tracingEnabled, false)
+                .with(MongoClientBuildTimeConfig::devservices,
+                        ConfigInstanceBuilder.forInterface(DevServicesBuildTimeConfig.class).build())
+                .build();
     }
 
 }

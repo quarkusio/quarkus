@@ -10,8 +10,6 @@ import java.util.function.BooleanSupplier;
 
 import jakarta.enterprise.context.RequestScoped;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.ClaimValue;
 import org.eclipse.microprofile.jwt.Claims;
@@ -46,6 +44,7 @@ import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.quarkus.smallrye.jwt.runtime.auth.RawOptionalClaimCreator;
 import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
+import io.smallrye.config.Config;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
@@ -138,7 +137,7 @@ class SmallRyeJwtProcessor {
      */
     @BuildStep
     void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> nativeImageResource) {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         registerKeyLocationResource(config, MP_JWT_VERIFY_KEY_LOCATION, nativeImageResource);
         registerKeyLocationResource(config, MP_JWT_DECRYPT_KEY_LOCATION, nativeImageResource);
     }

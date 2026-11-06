@@ -5,17 +5,15 @@ import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.IsDevResourcesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.observability.runtime.DevResourceShutdownRecorder;
+import io.quarkus.observability.devresource.DevResources;
 import io.quarkus.observability.runtime.DevResourcesConfigBuilder;
 import io.quarkus.observability.runtime.config.ObservabilityConfiguration;
 import io.quarkus.runtime.LaunchMode;
@@ -44,9 +42,10 @@ class DevResourcesProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public DevResourcesBuildItem shutdownDevResources(DevResourceShutdownRecorder recorder, ShutdownContextBuildItem shutdown) {
-        recorder.shutdown(shutdown);
+    public DevResourcesBuildItem shutdownDevResources(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar
+                .forService("io.quarkus.observability.dev-resources.shutdown")
+                .onStart(ctx -> ctx.onStop(DevResources::stop));
         return new DevResourcesBuildItem();
     }
 

@@ -7,12 +7,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.Map;
-import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.OidcTenantConfigBuilder;
 import io.quarkus.oidc.UserInfo;
+import io.smallrye.config.ConfigInstanceBuilder;
 
 public class UserInfoCacheTest {
     DefaultTokenIntrospectionUserInfoCache cache = new DefaultTokenIntrospectionUserInfoCache(createOidcConfig(), null);
@@ -59,13 +59,14 @@ public class UserInfoCacheTest {
     }
 
     private static OidcConfig createOidcConfig() {
-        record OidcConfigImpl(OidcTenantConfig defaultTenant, Map<String, OidcTenantConfig> namedTenants, TokenCache tokenCache,
-                boolean resolveTenantsWithIssuer, int priority) implements OidcConfig {
-        }
-        record TokenCacheImpl(int maxSize, Duration timeToLive,
-                Optional<Duration> cleanUpTimerInterval) implements OidcConfig.TokenCache {
-        }
-        var tokenCache = new TokenCacheImpl(2, Duration.ofMinutes(3), Optional.empty());
-        return new OidcConfigImpl(null, Map.of(), tokenCache, false, 0);
+        return ConfigInstanceBuilder.forInterface(OidcConfig.class)
+                .with(OidcConfig::namedTenants, Map.<String, OidcTenantConfig> of())
+                .with(OidcConfig::tokenCache, ConfigInstanceBuilder.forInterface(OidcConfig.TokenCache.class)
+                        .with(OidcConfig.TokenCache::maxSize, 2)
+                        .with(OidcConfig.TokenCache::timeToLive, Duration.ofMinutes(3))
+                        .build())
+                .with(OidcConfig::resolveTenantsWithIssuer, false)
+                .with(OidcConfig::priority, 0)
+                .build();
     }
 }

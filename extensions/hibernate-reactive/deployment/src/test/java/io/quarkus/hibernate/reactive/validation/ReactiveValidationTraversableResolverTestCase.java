@@ -2,7 +2,6 @@ package io.quarkus.hibernate.reactive.validation;
 
 import static org.hamcrest.Matchers.containsString;
 
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,8 +15,7 @@ public class ReactiveValidationTraversableResolverTestCase {
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyLazyEntity.class, MyLazyChildEntity.class,
                             ReactiveTestValidationTraversableResolverResource.class)
-                    .addAsResource("application.properties")
-                    .addAsResource(new StringAsset(""), "import.sql")); // define an empty import.sql file
+                    .addAsResource("application.properties"));
 
     @Test
     public void testPass() {

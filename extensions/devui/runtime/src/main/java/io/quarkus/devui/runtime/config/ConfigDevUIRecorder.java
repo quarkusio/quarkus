@@ -10,13 +10,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigValue;
-import io.smallrye.config.SmallRyeConfig;
 
 @Recorder
 public class ConfigDevUIRecorder {
@@ -51,7 +50,7 @@ public class ConfigDevUIRecorder {
 
         List<ConfigDescription> ordered = new ArrayList<>();
         List<String> properties = new ArrayList<>();
-        SmallRyeConfig current = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config current = Config.get();
 
         Map<List<String>, Set<String>> allPropertySegments = new HashMap<>();
         Set<String> propertyNames = new HashSet<>();
@@ -242,7 +241,7 @@ public class ConfigDevUIRecorder {
         return ordered;
     }
 
-    private ConfigValue getConfigValue(SmallRyeConfig config, String name) {
+    private ConfigValue getConfigValue(Config config, String name) {
         try {
             return config.getConfigValue(name);
         } catch (java.util.NoSuchElementException nse) {

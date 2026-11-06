@@ -6,14 +6,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.topk.ReactiveTopKCommands;
 import io.smallrye.mutiny.Uni;
 import io.vertx.redis.client.Response;
 
 public class ReactiveTopKCommandsImpl<K, V> extends AbstractTopKCommands<K, V>
-        implements ReactiveTopKCommands<K, V>, ReactiveRedisCommands {
+        implements ReactiveTopKCommands<K, V> {
 
     private final ReactiveRedisDataSource reactive;
     final Type typeOfValue;

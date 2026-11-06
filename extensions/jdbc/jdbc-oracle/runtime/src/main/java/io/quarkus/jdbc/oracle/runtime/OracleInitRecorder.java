@@ -4,13 +4,11 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.quarkus.runtime.annotations.Recorder;
 import oracle.sql.CharacterSet;
 
-@Recorder
 public class OracleInitRecorder {
 
-    public void setupCharSets(boolean addAllCharsets) {
+    public static void setupCharSets(boolean addAllCharsets) {
         if (addAllCharsets) {
             for (short id : reflectivelyReadAllCharacterSetIdentifiers()) {
                 oracle.sql.CharacterSet.make(id);
@@ -23,7 +21,7 @@ public class OracleInitRecorder {
         }
     }
 
-    private List<Short> reflectivelyReadAllCharacterSetIdentifiers() {
+    private static List<Short> reflectivelyReadAllCharacterSetIdentifiers() {
         final Field[] fields = CharacterSet.class.getFields();
         final ArrayList<Short> collectedIds = new ArrayList<>(fields.length);
         for (Field field : fields) {

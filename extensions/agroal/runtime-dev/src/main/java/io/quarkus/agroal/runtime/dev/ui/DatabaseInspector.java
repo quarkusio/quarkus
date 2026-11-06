@@ -27,8 +27,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
@@ -42,6 +40,7 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.DevMCPEnableByDefault;
 import io.quarkus.runtime.annotations.JsonRpcDescription;
+import io.smallrye.config.Config;
 
 public final class DatabaseInspector {
 
@@ -63,7 +62,7 @@ public final class DatabaseInspector {
         LaunchMode currentMode = LaunchMode.current();
         this.isDev = currentMode.isDev() && !currentMode.isRemoteDev();
 
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         this.allowSql = config.getOptionalValue("quarkus.datasource.dev-ui.allow-sql", Boolean.class)
                 .orElse(false);
 

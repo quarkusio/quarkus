@@ -1,10 +1,11 @@
 package io.quarkus.resteasy.reactive.links.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT_NAME;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -17,6 +18,8 @@ import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -24,7 +27,6 @@ import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -32,18 +34,15 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
 import io.quarkus.resteasy.reactive.links.RestLinkId;
-import io.quarkus.resteasy.reactive.links.runtime.GetterAccessorsContainer;
-import io.quarkus.resteasy.reactive.links.runtime.GetterAccessorsContainerRecorder;
 import io.quarkus.resteasy.reactive.links.runtime.LinkInfo;
 import io.quarkus.resteasy.reactive.links.runtime.LinksContainer;
-import io.quarkus.resteasy.reactive.links.runtime.LinksProviderRecorder;
+import io.quarkus.resteasy.reactive.links.runtime.RestLinksProviderImpl;
 import io.quarkus.resteasy.reactive.links.runtime.RestLinksProviderProducer;
 import io.quarkus.resteasy.reactive.links.runtime.hal.HalServerResponseFilter;
 import io.quarkus.resteasy.reactive.links.runtime.hal.ResteasyReactiveHalService;
 import io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveResourceMethodEntriesBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerResponseFilterBuildItem;
-import io.quarkus.runtime.RuntimeValue;
 
 final class LinksProcessor {
 
@@ -60,24 +59,28 @@ final class LinksProcessor {
     }
 
     @BuildStep
-    @Record(STATIC_INIT)
     void initializeLinksProvider(JaxRsResourceIndexBuildItem indexBuildItem,
             ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntriesBuildItem,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer,
             BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
-            GetterAccessorsContainerRecorder getterAccessorsContainerRecorder,
-            LinksProviderRecorder linksProviderRecorder) {
+            ServiceRegistrar serviceRegistrar) {
         IndexView index = indexBuildItem.getIndexView();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClassesProducer, true);
 
         // Initialize links container
         LinksContainer linksContainer = getLinksContainer(resourceMethodEntriesBuildItem, index);
         // Implement getters to access link path parameter values
-        RuntimeValue<GetterAccessorsContainer> getterAccessorsContainer = implementPathParameterValueGetters(
-                index, classOutput, linksContainer, getterAccessorsContainerRecorder, bytecodeTransformersProducer);
+        Map<String, Map<String, String>> accessorClassNames = implementPathParameterValueGetters(
+                index, classOutput, linksContainer, bytecodeTransformersProducer);
 
-        linksProviderRecorder.setGetterAccessorsContainer(getterAccessorsContainer);
-        linksProviderRecorder.setLinksContainer(linksContainer);
+        Map<String, List<LinkInfo>> links = new HashMap<>();
+        for (Map.Entry<String, List<LinkInfo>> entry : linksContainer.getLinksMap().entrySet()) {
+            links.put(entry.getKey(), List.copyOf(entry.getValue()));
+        }
+        Map<String, List<LinkInfo>> capturedLinks = Map.copyOf(links);
+        serviceRegistrar.forService("io.quarkus.rest-links.provider")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> RestLinksProviderImpl.initialize(capturedLinks, accessorClassNames));
     }
 
     @BuildStep
@@ -135,22 +138,23 @@ final class LinksProcessor {
     /**
      * For each path parameter implement a getter method in a class that holds its value.
      * Then implement a getter accessor class that knows how to access that getter method to avoid using reflection later.
+     *
+     * @return the accessor class names, mapped by entity type and then by field name
      */
-    private RuntimeValue<GetterAccessorsContainer> implementPathParameterValueGetters(IndexView index,
+    private Map<String, Map<String, String>> implementPathParameterValueGetters(IndexView index,
             ClassOutput classOutput, LinksContainer linksContainer,
-            GetterAccessorsContainerRecorder getterAccessorsContainerRecorder,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer) {
-        RuntimeValue<GetterAccessorsContainer> getterAccessorsContainer = getterAccessorsContainerRecorder.newContainer();
+        Map<String, Map<String, String>> accessorClassNames = new HashMap<>();
         Set<GetterMetadata> implementedGetters = new HashSet<>();
 
         for (List<LinkInfo> linkInfos : linksContainer.getLinksMap().values()) {
             for (LinkInfo linkInfo : linkInfos) {
-                String entityType = linkInfo.getEntityType();
+                String entityType = linkInfo.entityType();
                 DotName className = DotName.createSimple(entityType);
 
                 validateClassHasFieldId(index, entityType);
 
-                for (String parameterName : linkInfo.getPathParameters()) {
+                for (String parameterName : linkInfo.pathParameters()) {
                     FieldInfo fieldInfo = resolveField(index, parameterName, className);
                     if (fieldInfo != null) {
                         GetterMetadata getterMetadata = new GetterMetadata(fieldInfo);
@@ -159,15 +163,18 @@ final class LinksProcessor {
                             implementedGetters.add(getterMetadata);
                         }
 
-                        getterAccessorsContainerRecorder.addAccessor(getterAccessorsContainer,
-                                entityType, parameterName,
-                                getterMetadata.getGetterAccessorName());
+                        accessorClassNames.computeIfAbsent(entityType, k -> new HashMap<>())
+                                .putIfAbsent(parameterName, getterMetadata.getGetterAccessorName());
                     }
                 }
             }
         }
 
-        return getterAccessorsContainer;
+        Map<String, Map<String, String>> captured = new HashMap<>();
+        for (Map.Entry<String, Map<String, String>> entry : accessorClassNames.entrySet()) {
+            captured.put(entry.getKey(), Map.copyOf(entry.getValue()));
+        }
+        return Map.copyOf(captured);
     }
 
     private FieldInfo resolveField(IndexView index, String parameterName, DotName className) {

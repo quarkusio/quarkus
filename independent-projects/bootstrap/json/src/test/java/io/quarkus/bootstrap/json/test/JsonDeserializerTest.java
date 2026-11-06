@@ -237,6 +237,11 @@ class JsonDeserializerTest {
     }
 
     @Test
+    void testInvalidJsonNonAsciiDigitsInUnicodeEscape() {
+        assertThrows(IllegalArgumentException.class, () -> JsonReader.of("[\"\\u１２３４\"]").read());
+    }
+
+    @Test
     void testStringWithForwardSlashEscape() {
         JsonObject obj = JsonReader.of("{\"url\":\"https:\\/\\/example.com\"}").read();
         assertEquals("https://example.com", ((JsonString) obj.get("url")).value());

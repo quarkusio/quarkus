@@ -7,9 +7,8 @@ import java.util.function.Function;
 
 import jakarta.ws.rs.Path;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
+import io.smallrye.config.Config;
 
 public class ResteasyReactiveTestHttpProvider implements TestHttpEndpointProvider {
     @Override
@@ -41,7 +40,7 @@ public class ResteasyReactiveTestHttpProvider implements TestHttpEndpointProvide
     }
 
     private Optional<String> getAppPath() {
-        return ConfigProvider.getConfig().getOptionalValue("quarkus.rest.path", String.class);
+        return Config.get().getOptionalValue("quarkus.rest.path", String.class);
     }
 
     private String getPath(Class<?> aClass) {

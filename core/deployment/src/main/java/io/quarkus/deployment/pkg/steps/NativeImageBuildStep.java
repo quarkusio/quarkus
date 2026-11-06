@@ -10,7 +10,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -25,11 +24,11 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeMonitoringBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAgentConfigDirectoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathAggregateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageEnableModule;
@@ -59,11 +58,11 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.graal.DisableLoggingFeature;
 import io.quarkus.runtime.graal.GraalVM.Distribution;
+import io.quarkus.runtime.graal.GraalVM.Version;
 import io.quarkus.runtime.graal.JVMChecksFeature;
 import io.quarkus.runtime.graal.SkipConsoleServiceProvidersFeature;
 import io.quarkus.sbom.CoreSbomContributionConfig;
 import io.quarkus.sbom.Purl;
-import io.smallrye.common.cpu.CPU;
 import io.smallrye.common.os.OS;
 import io.smallrye.common.process.AbnormalExitException;
 import io.smallrye.common.process.ProcessBuilder;
@@ -130,7 +129,7 @@ public class NativeImageBuildStep {
             List<ExcludeConfigBuildItem> excludeConfigs,
             NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
             List<NativeImageEnableModule> enableModules,
-            List<JPMSExportBuildItem> jpmsExportBuildItems,
+            List<ModuleExportBuildItem> moduleExportBuildItems,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
             NativeImageRunnerBuildItem nativeImageRunner,
@@ -156,7 +155,7 @@ public class NativeImageBuildStep {
                 .setOutputTargetBuildItem(outputTargetBuildItem)
                 .setNativeImageProperties(nativeImageProperties)
                 .setExcludeConfigs(excludeConfigs)
-                .setJPMSExportBuildItems(jpmsExportBuildItems)
+                .setModuleExportBuildItems(moduleExportBuildItems)
                 .setEnableModules(enableModules)
                 .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                 .setNativeImageSecurityProviders(nativeImageSecurityProviders)
@@ -210,7 +209,7 @@ public class NativeImageBuildStep {
             List<ExcludeConfigBuildItem> excludeConfigs,
             NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
-            List<JPMSExportBuildItem> jpmsExportBuildItems,
+            List<ModuleExportBuildItem> moduleExportBuildItems,
             List<NativeImageEnableModule> enableModules,
             List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions,
             List<UnsupportedOSBuildItem> unsupportedOses,
@@ -267,7 +266,7 @@ public class NativeImageBuildStep {
                     .setExcludeConfigs(excludeConfigs)
                     .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                     .setNativeImageSecurityProviders(nativeImageSecurityProviders)
-                    .setJPMSExportBuildItems(jpmsExportBuildItems)
+                    .setModuleExportBuildItems(moduleExportBuildItems)
                     .setNativeMonitoringOptions(nativeMonitoringItems)
                     .setEnableModules(enableModules)
                     .setNativeMinimalJavaVersions(nativeMinimalJavaVersions)
@@ -757,6 +756,18 @@ public class NativeImageBuildStep {
         }
     }
 
+    static void addModuleExports(List<String> nativeImageArgs, List<ModuleExportBuildItem> exports) {
+        if (exports != null) {
+            // The builder loads application libraries and generated features on the classpath.
+            // Their expected module names are therefore mapped to ALL-UNNAMED, as for fast-jar runners.
+            exports.stream()
+                    .flatMap(export -> export.packageNames().stream()
+                            .map(packageName -> "-J--add-exports=" + export.exportedModuleName() + "/" + packageName
+                                    + "=ALL-UNNAMED"))
+                    .distinct().sorted().forEach(nativeImageArgs::add);
+        }
+    }
+
     private static class NativeImageInvokerInfo {
         private final List<String> args;
 
@@ -775,7 +786,7 @@ public class NativeImageBuildStep {
             private List<NativeImageSystemPropertyBuildItem> nativeImageProperties;
             private List<ExcludeConfigBuildItem> excludeConfigs;
             private List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders;
-            private List<JPMSExportBuildItem> jpmsExports;
+            private List<ModuleExportBuildItem> moduleExports;
             private List<NativeImageEnableModule> enableModules;
             private List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions;
             private List<UnsupportedOSBuildItem> unsupportedOSes;
@@ -837,8 +848,8 @@ public class NativeImageBuildStep {
                 return this;
             }
 
-            public Builder setJPMSExportBuildItems(List<JPMSExportBuildItem> JPMSExportBuildItems) {
-                this.jpmsExports = JPMSExportBuildItems;
+            public Builder setModuleExportBuildItems(List<ModuleExportBuildItem> moduleExportBuildItems) {
+                this.moduleExports = moduleExportBuildItems;
                 return this;
             }
 
@@ -992,23 +1003,9 @@ public class NativeImageBuildStep {
                 // Generate a file with the list of built artifacts
                 addExperimentalVMOption(nativeImageArgs, "-H:+GenerateBuildArtifactsFile");
 
-                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_0_0) < 0) {
-                    // Enabled by default in GraalVM 24.0.0.
-                    nativeImageArgs.add("--strict-image-heap");
-                }
-
-                /*
-                 * Always install exit handlers, it will become the default and the flag will be deprecated
-                 * in GraalVM for JDK 25 see https://github.com/quarkusio/quarkus/issues/47799
-                 */
-                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0) < 0) {
-                    nativeImageArgs.add("--install-exit-handlers");
-                }
-
                 // Enable the new single callsite inliner on Mandrel 25.0.4+ by default.
                 // The feature is not yet available upstream, so do not enable for versions >= 25.1
-                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_4) >= 0
-                        && graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_1_0) < 0
+                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_1_0) < 0
                         && graalVMVersion.getDistribution() == Distribution.MANDREL) {
                     final List<String> additionalBuildArgs = NativeConfigUtils.getNativeAdditionalBuildArgs(nativeConfig);
                     if (additionalBuildArgs.stream().noneMatch(arg -> arg.contains("AOTSingleCallsiteInline"))) {
@@ -1037,26 +1034,6 @@ public class NativeImageBuildStep {
                 handleAdditionalProperties(nativeImageArgs);
 
                 addExperimentalVMOption(nativeImageArgs, "-H:+AllowFoldMethods");
-
-                /*
-                 * @formatter:off
-                 * Foreign Function and Memory API in Native Image, JDK's JEP 454
-                 * This is needed for JDK 24+ internal native calls due to AWT,
-                 * e.g. JDK-8337237 et al.
-                 * Note GraalVM FFI/FFM support per platform prior to JDK 25 and JDK 25+
-                 * https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/foreign-interface/#foreign-functions
-                 * @formatter:on
-                 */
-                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_2_0) >= 0
-                        && graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0) < 0
-                        && (CPU.host() == CPU.x64)) {
-                    addExperimentalVMOption(nativeImageArgs, "-H:+ForeignAPISupport");
-                }
-
-                // Netty 4.2's CleanerJava25 uses Arena.ofShared() for direct buffer cleanup
-                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0) >= 0) {
-                    addExperimentalVMOption(nativeImageArgs, "-H:+SharedArenaSupport");
-                }
 
                 if (nativeConfig.headless()) {
                     nativeImageArgs.add("-J-Djava.awt.headless=true");
@@ -1181,14 +1158,12 @@ public class NativeImageBuildStep {
                         monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
                     }
 
-                    if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_2_0) >= 0) {
-                        /*
-                         * After GraalVM/Mandrel 24.2, JCMD becomes available. The Quarkus thread dumper handles
-                         * SIGQUIT which interferes with JCMD. To avoid this problem, Quarkus must use the GraalVM
-                         * built-in thread dumper instead for versions beyond 24.2.
-                         */
-                        monitoringOptions.add(NativeConfig.MonitoringOption.THREADDUMP);
-                    }
+                    /*
+                     * After GraalVM/Mandrel 24.2, JCMD becomes available. The Quarkus thread dumper handles
+                     * SIGQUIT which interferes with JCMD. To avoid this problem, Quarkus must use the GraalVM
+                     * built-in thread dumper instead for versions beyond 24.2.
+                     */
+                    monitoringOptions.add(NativeConfig.MonitoringOption.THREADDUMP);
                 }
 
                 if (!monitoringOptions.isEmpty()) {
@@ -1215,16 +1190,7 @@ public class NativeImageBuildStep {
                     addExperimentalVMOption(nativeImageArgs, "-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
                 }
 
-                if (jpmsExports != null) {
-                    HashSet<JPMSExportBuildItem> deduplicatedJpmsExport = new HashSet<>(jpmsExports);
-                    for (JPMSExportBuildItem jpmsExport : deduplicatedJpmsExport) {
-                        if (jpmsExport.isRequired(graalVMVersion)) {
-                            nativeImageArgs.add(
-                                    "-J--add-exports=" + jpmsExport.getModule() + "/" + jpmsExport.getPackage()
-                                            + "=ALL-UNNAMED");
-                        }
-                    }
-                }
+                addModuleExports(nativeImageArgs, moduleExports);
                 if (enableModules != null && enableModules.size() > 0) {
                     String modules = enableModules.stream().map(NativeImageEnableModule::getModuleName).distinct().sorted()
                             .collect(Collectors.joining(","));

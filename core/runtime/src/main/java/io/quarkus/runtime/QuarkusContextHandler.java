@@ -4,7 +4,7 @@ import org.jboss.threads.ContextHandler;
 
 /**
  * A non-generic sub-interface of {@link ContextHandler} to support
- * ActionBuilder service registration without generic types.
+ * ServiceRegistrar service registration without generic types.
  */
 public interface QuarkusContextHandler extends ContextHandler<Object> {
 

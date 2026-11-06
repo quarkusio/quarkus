@@ -15,6 +15,7 @@ import io.quarkus.tls.runtime.config.PemCertsConfig;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
+import io.smallrye.config.ConfigInstanceBuilder;
 
 /**
  * Tests {@link PemCertsConfig} default methods.
@@ -27,7 +28,11 @@ class PemCertsConfigTest {
 
     private static final String TEMP_CERT_PREFIX = "PemCertsConfigTest";
 
-    private record PemCertsConfigImpl(Optional<List<Path>> certs, Optional<List<Path>> certDirs) implements PemCertsConfig {
+    private static PemCertsConfig pemCertsConfig(Optional<List<Path>> certs, Optional<List<Path>> certDirs) {
+        return ConfigInstanceBuilder.forInterface(PemCertsConfig.class)
+                .with(PemCertsConfig::certs, certs)
+                .with(PemCertsConfig::certDirs, certDirs)
+                .build();
     }
 
     @Test
@@ -40,24 +45,24 @@ class PemCertsConfigTest {
         Files.createFile(tempCertDirWith2Files.resolve("ts-1.pem"));
         Files.createFile(tempCertDirWith2Files.resolve("ts-2.pem"));
 
-        var noCertsFoundConfig = new PemCertsConfigImpl(Optional.of(List.of()), Optional.of(List.of(emptyTempCertDir)));
+        var noCertsFoundConfig = pemCertsConfig(Optional.of(List.of()), Optional.of(List.of(emptyTempCertDir)));
         assertThat(noCertsFoundConfig.hasNoTrustedCertificates()).isTrue();
 
-        var onlyCertFileConfig = new PemCertsConfigImpl(Optional.of(List.of(certInTempCertDirWith1File)), Optional.empty());
+        var onlyCertFileConfig = pemCertsConfig(Optional.of(List.of(certInTempCertDirWith1File)), Optional.empty());
         assertThat(onlyCertFileConfig.hasNoTrustedCertificates()).isFalse();
 
-        var certFileAndEmptyDirConfig = new PemCertsConfigImpl(Optional.of(List.of(certInTempCertDirWith1File)),
+        var certFileAndEmptyDirConfig = pemCertsConfig(Optional.of(List.of(certInTempCertDirWith1File)),
                 Optional.of(List.of(emptyTempCertDir)));
         assertThat(certFileAndEmptyDirConfig.hasNoTrustedCertificates()).isFalse();
 
-        var certFileAndCertDirConfig = new PemCertsConfigImpl(Optional.of(List.of(certInTempCertDirWith1File)),
+        var certFileAndCertDirConfig = pemCertsConfig(Optional.of(List.of(certInTempCertDirWith1File)),
                 Optional.of(List.of(tempCertDirWith2Files)));
         assertThat(certFileAndCertDirConfig.hasNoTrustedCertificates()).isFalse();
 
-        var certDirConfig = new PemCertsConfigImpl(Optional.empty(), Optional.of(List.of(tempCertDirWith2Files)));
+        var certDirConfig = pemCertsConfig(Optional.empty(), Optional.of(List.of(tempCertDirWith2Files)));
         assertThat(certDirConfig.hasNoTrustedCertificates()).isFalse();
 
-        var multipleCertDirsConfig = new PemCertsConfigImpl(Optional.empty(),
+        var multipleCertDirsConfig = pemCertsConfig(Optional.empty(),
                 Optional.of(List.of(tempCertDirWith1File, tempCertDirWith2Files)));
         assertThat(multipleCertDirsConfig.hasNoTrustedCertificates()).isFalse();
     }
@@ -75,21 +80,21 @@ class PemCertsConfigTest {
         Files.copy(firstCaCert, tempDirWith2Files.resolve("ca-1.crt"));
         Files.copy(secondCaCert, tempDirWith2Files.resolve("ca-2.crt"));
 
-        var noCertsFoundConfig = new PemCertsConfigImpl(Optional.of(List.of()), Optional.of(List.of(emptyTempCertDir)));
+        var noCertsFoundConfig = pemCertsConfig(Optional.of(List.of()), Optional.of(List.of(emptyTempCertDir)));
         assertThatThrownBy(noCertsFoundConfig::toOptions).isInstanceOf(IllegalArgumentException.class);
 
-        var oneCertDirWithOneFileConfig = new PemCertsConfigImpl(Optional.empty(), Optional.of(List.of(tempDirWith1File1st)));
+        var oneCertDirWithOneFileConfig = pemCertsConfig(Optional.empty(), Optional.of(List.of(tempDirWith1File1st)));
         assertThat(oneCertDirWithOneFileConfig.toOptions().getCertValues()).hasSize(1);
 
-        var oneCertAndOneCertDirWithFileConfig = new PemCertsConfigImpl(Optional.of(List.of(firstCaCert)),
+        var oneCertAndOneCertDirWithFileConfig = pemCertsConfig(Optional.of(List.of(firstCaCert)),
                 Optional.of(List.of(tempDirWith1File2nd)));
         assertThat(oneCertAndOneCertDirWithFileConfig.toOptions().getCertValues()).hasSize(2);
 
-        var twoCertDirsConfig = new PemCertsConfigImpl(Optional.empty(),
+        var twoCertDirsConfig = pemCertsConfig(Optional.empty(),
                 Optional.of(List.of(tempDirWith1File1st, tempDirWith1File2nd)));
         assertThat(twoCertDirsConfig.toOptions().getCertValues()).hasSize(2);
 
-        var oneCertDirWith2Files = new PemCertsConfigImpl(Optional.empty(), Optional.of(List.of(tempDirWith2Files)));
+        var oneCertDirWith2Files = pemCertsConfig(Optional.empty(), Optional.of(List.of(tempDirWith2Files)));
         assertThat(oneCertDirWith2Files.toOptions().getCertValues()).hasSize(2);
     }
 

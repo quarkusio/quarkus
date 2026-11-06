@@ -17,7 +17,8 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.eclipse.microprofile.config.Config;
+
+import io.smallrye.config.Config;
 
 /**
  * Endpoint to check the SSL/SASL connection.

@@ -18,13 +18,13 @@ import java.util.function.Supplier;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.openapi.OASFilter;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.AutoSecurityFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.DisabledRestEndpointsFilter;
+import io.smallrye.config.Config;
 import io.smallrye.openapi.api.SmallRyeOpenAPI;
 import io.smallrye.openapi.runtime.io.Format;
 

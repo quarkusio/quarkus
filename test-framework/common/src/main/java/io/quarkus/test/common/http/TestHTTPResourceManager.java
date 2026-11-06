@@ -9,13 +9,10 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.config.Config;
-import io.smallrye.config.SmallRyeConfig;
 
 public class TestHTTPResourceManager {
 
@@ -41,7 +38,7 @@ public class TestHTTPResourceManager {
                 TestHTTPResource resource = f.getAnnotation(TestHTTPResource.class);
                 if (resource != null) {
                     if (config == null) {
-                        config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+                        config = Config.get();
                     }
                     if (providers == null) {
                         providers = getProviders();
@@ -123,7 +120,10 @@ public class TestHTTPResourceManager {
 
     public static String testUrl(ValueRegistry valueRegistry, Config config, String... paths) {
         String host = host(config, "quarkus.http.host");
-        int port = valueRegistry.getOrDefault(ListeningAddress.HTTP_TEST_PORT, 8081);
+        // When served by the Lambda mock event server, there is no Vert.x HTTP server registering the test port
+        int port = valueRegistry.containsKey(ListeningAddress.LAMBDA_BASE_URI)
+                ? valueRegistry.get(ListeningAddress.LAMBDA_BASE_URI).getPort()
+                : valueRegistry.getOrDefault(ListeningAddress.HTTP_TEST_PORT, 8081);
         String rootPath = rootPath(config, paths);
         return "http://" + host + ":" + port + rootPath;
     }

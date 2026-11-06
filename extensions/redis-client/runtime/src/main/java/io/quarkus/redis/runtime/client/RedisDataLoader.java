@@ -18,7 +18,7 @@ public class RedisDataLoader {
 
     static final Logger LOGGER = Logger.getLogger("RedisDataLoader");
 
-    static void load(Vertx vertx, Redis redis, String path) {
+    public static void load(Vertx vertx, Redis redis, String path) {
         LOGGER.infof("Importing Redis data from %s", path);
 
         Buffer buffer = vertx.fileSystem().readFileBlocking(path);

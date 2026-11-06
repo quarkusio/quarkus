@@ -3,6 +3,7 @@ package io.quarkus.resteasy.reactive.server.runtime;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import org.jboss.resteasy.reactive.server.core.Deployment;
@@ -77,5 +78,11 @@ public class ResteasyReactiveRuntimeRecorder {
             }
             handler.configure(supplier.get());
         }
+    }
+
+    public void checkStaticResourceShadowing(RuntimeValue<Deployment> deployment, String httpRootPath,
+            Set<String> staticFilePaths) {
+        StaticResourceShadowingCheck.check(deployment.getValue(), httpRootPath,
+                httpRuntimeConfig.getValue().staticResources().indexPage(), staticFilePaths);
     }
 }

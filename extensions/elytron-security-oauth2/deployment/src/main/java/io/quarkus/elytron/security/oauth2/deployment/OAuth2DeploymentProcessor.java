@@ -1,25 +1,22 @@
 package io.quarkus.elytron.security.oauth2.deployment;
 
-import jakarta.enterprise.context.ApplicationScoped;
+import java.util.function.BooleanSupplier;
 
 import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronTokenMarkerBuildItem;
-import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.oauth2.runtime.OAuth2BuildTimeConfig;
 import io.quarkus.elytron.security.oauth2.runtime.OAuth2Recorder;
+import io.quarkus.elytron.security.oauth2.runtime.OAuth2RuntimeConfig;
+import io.quarkus.elytron.security.oauth2.runtime.auth.OAuth2Augmentor;
 import io.quarkus.elytron.security.oauth2.runtime.auth.OAuth2AuthMechanism;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.security.identity.SecurityIdentityAugmentor;
 
 /**
  * The build time process for the OAUth2 security aspects of the deployment. This creates {@linkplain BuildStep}s for
@@ -35,50 +32,41 @@ class OAuth2DeploymentProcessor {
         return new FeatureBuildItem(Feature.SECURITY_OAUTH2);
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsOAuth2Enabled.class)
     ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
         return new ExtensionSslNativeSupportBuildItem(Feature.SECURITY_OAUTH2);
     }
 
-    /**
-     * Configure a TokenSecurityRealm if enabled
-     *
-     * @param recorder - runtime OAuth2 security recorder
-     * @param securityRealm - the producer factory for the SecurityRealmBuildItem
-     * @return the AuthConfigBuildItem for the realm authentication mechanism if there was an enabled PropertiesRealmConfig,
-     *         null otherwise
-     * @throws Exception - on any failure
-     */
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    AdditionalBeanBuildItem configureOauth2RealmAuthConfig(OAuth2Recorder recorder,
-            OAuth2BuildTimeConfig oauth2BuildTimeConfig,
-            BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
-        if (!oauth2BuildTimeConfig.enabled()) {
-            return null;
-        }
-
-        RuntimeValue<SecurityRealm> realm = recorder.createRealm();
-        securityRealm.produce(new SecurityRealmBuildItem(realm, REALM_NAME, null));
+    @BuildStep(onlyIf = IsOAuth2Enabled.class)
+    AdditionalBeanBuildItem configureOauth2RealmAuthConfig(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar.forService(SecurityRealm.class, REALM_NAME)
+                .atPhase(Phase.DATA)
+                .require(OAuth2RuntimeConfig.class)
+                .onStart((ctx, runtimeConfig) -> OAuth2Recorder.createRealm(runtimeConfig));
         return AdditionalBeanBuildItem.unremovableOf(OAuth2AuthMechanism.class);
     }
 
-    @BuildStep
-    ElytronTokenMarkerBuildItem marker(OAuth2BuildTimeConfig oauth2BuildTimeConfig) {
-        if (!oauth2BuildTimeConfig.enabled()) {
-            return null;
-        }
+    @BuildStep(onlyIf = IsOAuth2Enabled.class)
+    ElytronTokenMarkerBuildItem marker() {
         return new ElytronTokenMarkerBuildItem();
     }
 
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    SyntheticBeanBuildItem augmentor(OAuth2Recorder recorder,
-            OAuth2BuildTimeConfig oauth2BuildTimeConfig) {
-        return SyntheticBeanBuildItem.configure(SecurityIdentityAugmentor.class)
-                .scope(ApplicationScoped.class)
-                .runtimeValue(recorder.augmentor(oauth2BuildTimeConfig))
-                .unremovable()
-                .done();
+    @BuildStep(onlyIf = IsOAuth2Enabled.class)
+    AdditionalBeanBuildItem registerOAuth2AugmentorAsCdiBean() {
+        return AdditionalBeanBuildItem.unremovableOf(OAuth2Augmentor.class);
+    }
+
+    static final class IsOAuth2Enabled implements BooleanSupplier {
+
+        private final boolean enabled;
+
+        IsOAuth2Enabled(OAuth2BuildTimeConfig oauth2BuildTimeConfig) {
+            this.enabled = oauth2BuildTimeConfig.enabled();
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return enabled;
+        }
     }
 }

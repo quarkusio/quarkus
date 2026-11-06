@@ -3,6 +3,7 @@ package io.quarkus.hibernate.reactive.runtime;
 import static io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.isPostgresOrDB2;
 import static io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfigPersistenceUnit.HibernateGenerationStrategy.getString;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -57,6 +58,7 @@ import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCaffeineCach
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
+import io.quarkus.hibernate.orm.runtime.schema.InitScriptSupport;
 import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.reactive.runtime.boot.FastBootReactiveEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.reactive.runtime.boot.registry.PreconfiguredReactiveServiceRegistryBuilder;
@@ -183,7 +185,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
-            SchemaToolingUtil.PreparedImportScripts importScripts = unzipZipFilesAndReplaceZipsInImportFiles(
+            List<SchemaToolingUtil.PreparedImportScripts> importScripts = unzipZipFilesAndReplaceZipsInImportFiles(
                     runtimeSettingsBuilder);
 
             HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig = hibernateOrmRuntimeConfig.persistenceUnits()
@@ -194,8 +196,10 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             }
 
             // Inject runtime configuration if the persistence unit was defined by Quarkus configuration
+            boolean populateAfterBoot = false;
             if (!recordedState.isFromPersistenceXml()) {
-                injectRuntimeConfiguration(persistenceUnitConfig, runtimeSettingsBuilder);
+                populateAfterBoot = injectRuntimeConfiguration(persistenceUnitName, persistenceUnitConfig,
+                        runtimeSettingsBuilder);
             }
 
             for (HibernateOrmIntegrationRuntimeDescriptor descriptor : integrationRuntimeDescriptors
@@ -287,19 +291,29 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                     runtimeSettings,
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
                     !blockingSessionFactoryExists,
-                    importScripts);
+                    importScripts, populateAfterBoot);
         }
 
         log.debug("Found no matching persistence units");
         return null;
     }
 
-    private SchemaToolingUtil.PreparedImportScripts unzipZipFilesAndReplaceZipsInImportFiles(
+    private List<SchemaToolingUtil.PreparedImportScripts> unzipZipFilesAndReplaceZipsInImportFiles(
             Builder runtimeSettingsBuilder) {
-        SchemaToolingUtil.PreparedImportScripts importScripts = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
-                (String) runtimeSettingsBuilder.get(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE));
-        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE,
-                importScripts.getRewrittenValue());
+        List<SchemaToolingUtil.PreparedImportScripts> importScripts = new ArrayList<>();
+        try {
+            // Data init scripts and schema init scripts alike
+            for (String setting : List.of(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE,
+                    AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCRIPT_SOURCE)) {
+                SchemaToolingUtil.PreparedImportScripts scripts = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
+                        (String) runtimeSettingsBuilder.get(setting));
+                importScripts.add(scripts);
+                runtimeSettingsBuilder.put(setting, scripts.getRewrittenValue());
+            }
+        } catch (RuntimeException e) {
+            importScripts.forEach(SchemaToolingUtil.PreparedImportScripts::close);
+            throw e;
+        }
         return importScripts;
     }
 
@@ -399,7 +413,12 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         serviceRegistry.addInitiator(new VertxInstanceInitiator(vertxHandle.get()));
     }
 
-    private static void injectRuntimeConfiguration(HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
+    /**
+     * @return whether the data init script must be executed once the session factory is built,
+     *         see {@link InitScriptSupport#configureDataManagement}
+     */
+    private static boolean injectRuntimeConfiguration(String persistenceUnitName,
+            HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
             Builder runtimeSettingsBuilder) {
 
         HibernateOrmRuntimeConfigPersistenceUnit.HibernateGenerationStrategy generationStrategy = persistenceUnitConfig
@@ -475,6 +494,10 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
 
         runtimeSettingsBuilder.put(HibernateHints.HINT_FLUSH_MODE,
                 persistenceUnitConfig.flush().mode().getHibernateFlushMode());
+
+        // Data management; must come after the schema management strategy has been applied
+        return InitScriptSupport.configureDataManagement(persistenceUnitName, persistenceUnitConfig, generationStrategy,
+                runtimeSettingsBuilder);
     }
 
     @Override

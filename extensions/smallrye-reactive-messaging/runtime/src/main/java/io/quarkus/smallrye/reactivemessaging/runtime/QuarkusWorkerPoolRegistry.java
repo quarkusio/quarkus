@@ -20,11 +20,10 @@ import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 import jakarta.interceptor.Interceptor;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.reactive.messaging.annotations.Blocking;
@@ -279,7 +278,7 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
                 throw getBlockingError(className, method, "value is blank or null");
             }
 
-            Config config = ConfigProvider.getConfig();
+            Config config = Config.get();
             // Validate @Blocking worker pool has configuration to define concurrency
             String maxConcurrencyConfigKey = WORKER_CONFIG_PREFIX + "." + poolName + "." + WORKER_CONCURRENCY;
             String shutdownTimeoutConfigKey = WORKER_CONFIG_PREFIX + "." + poolName + "." + SHUTDOWN_TIMEOUT;

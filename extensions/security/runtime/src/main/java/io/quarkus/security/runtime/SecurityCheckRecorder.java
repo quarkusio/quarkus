@@ -18,8 +18,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
@@ -43,6 +41,7 @@ import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityCheckStorage;
+import io.smallrye.config.Config;
 import io.smallrye.config.Expressions;
 import io.smallrye.config.common.utils.StringUtil;
 
@@ -97,7 +96,7 @@ public class SecurityCheckRecorder {
         return new Supplier<String[]>() {
             @Override
             public String[] get() {
-                final var config = ConfigProviderResolver.instance().getConfig(Thread.currentThread().getContextClassLoader());
+                final Config config = Config.get(Thread.currentThread().getContextClassLoader());
                 if (config.getOptionalValue(Config.PROPERTY_EXPRESSIONS_ENABLED, Boolean.class).orElse(Boolean.TRUE)
                         && Expressions.isEnabled()) {
                     // property expressions are enabled

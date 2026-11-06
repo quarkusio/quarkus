@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Map;
 import java.util.Optional;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.it.vertx.HttpServerRandomPortsTest.Profile;
@@ -14,7 +13,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.vertx.http.HttpServer;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 @QuarkusTest
 @TestProfile(Profile.class)
@@ -26,7 +25,7 @@ class HttpServerRandomPortsTest {
         assertTrue(httpServer.getPort() != 8081);
         assertEquals(httpServer.getPort(), httpServer.getLocalBaseUri().getPort());
 
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         Optional<Integer> httpPort = config.getOptionalValue("quarkus.http.port", Integer.class);
         assertTrue(httpPort.isPresent());
         assertEquals(httpServer.getPort(), httpPort.get());

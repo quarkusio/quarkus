@@ -94,6 +94,7 @@ export class QwcServerLog extends QwcAbstractLogElement {
         _selectedColumns: {state: true},
         _allLoggers: {state: true, type: Array},
         _filteredLoggers: {state: true, type: Array},
+        _rootLogger: {state: true},
         _loggerLevels: {state: false, type: Array}
     };
 
@@ -152,7 +153,10 @@ export class QwcServerLog extends QwcAbstractLogElement {
     _loadAllLoggers(){
         this.jsonRpc.getLoggers().then(jsonRpcResponse => {
             this._allLoggers = jsonRpcResponse.result;
-            this._filteredLoggers = this._allLoggers;
+            this._applyLoggerFilter();
+        });
+        this.jsonRpc.getLogger({'loggerName': ''}).then(jsonRpcResponse => {
+            this._rootLogger = jsonRpcResponse.result;
         });
     }
 
@@ -485,6 +489,7 @@ export class QwcServerLog extends QwcAbstractLogElement {
                             theme="spacing"
                             style="width: 600px; max-width: 100%; min-width: 300px; height: 100%; align-items: stretch;">
 
+                ${this._renderRootLevel()}
                 <vaadin-text-field
                         placeholder="${msg('Filter', { id: 'loglevelsdialog-filter' })}"
                         style="width: 100%;"
@@ -508,8 +513,22 @@ export class QwcServerLog extends QwcAbstractLogElement {
         }
     }
     
+    _renderRootLevel(){
+        if(this._rootLogger){
+            return html`<vaadin-horizontal-layout theme="spacing" style="align-items: baseline;">
+                    <span>${msg('Root level', { id: 'loglevelsdialog-root-level' })}</span>
+                    ${this._renderSelect(this._rootLogger.name, this._rootLogger.effectiveLevel)}
+                </vaadin-horizontal-layout>`;
+        }
+    }
+
     _filterLoggers(e) {
-        const searchTerm = (e.detail.value || '').trim();
+        this._loggerFilter = (e.detail.value || '').trim();
+        this._applyLoggerFilter();
+    }
+
+    _applyLoggerFilter() {
+        const searchTerm = this._loggerFilter || '';
         if (searchTerm === '') {
           this._filteredLoggers = this._allLoggers;
           return;
@@ -551,6 +570,9 @@ export class QwcServerLog extends QwcAbstractLogElement {
         this.jsonRpc.updateLogLevel({
             'loggerName': name,
             'levelValue': value
+        }).then(() => {
+            // Other loggers might inherit this level, so reload all effective levels
+            this._loadAllLoggers();
         });
     }
 

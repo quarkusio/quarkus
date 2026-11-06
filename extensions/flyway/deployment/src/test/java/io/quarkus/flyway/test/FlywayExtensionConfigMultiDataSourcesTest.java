@@ -1,5 +1,6 @@
 package io.quarkus.flyway.test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import jakarta.inject.Inject;
@@ -10,7 +11,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.flyway.FlywayDataSource;
+import io.quarkus.flyway.runtime.FlywayContainerUtil;
 import io.quarkus.test.QuarkusExtensionTest;
 
 /**
@@ -68,5 +71,18 @@ public class FlywayExtensionConfigMultiDataSourcesTest {
     public void testFlywayConfigDirectlyNamedInventoryInjection() {
         fixture.assertAllConfigurationSettings(flywayNamedInventory.getConfiguration(), "inventory");
         assertFalse(fixture.migrateAtStart(""));
+    }
+
+    @Test
+    @DisplayName("Enumerates all active datasources, not just the default one")
+    public void testActiveDataSourceNamesEnumeratesAllDatasources() {
+        assertThat(AgroalDataSourceUtil.activeDataSourceNames())
+                .containsExactlyInAnyOrder("<default>", "users", "inventory");
+    }
+
+    @Test
+    @DisplayName("Enumerates all active Flyway containers, not just the default one")
+    public void testActiveFlywayContainersEnumeratesAllDatasources() {
+        assertThat(FlywayContainerUtil.getActiveFlywayContainers()).hasSize(3);
     }
 }

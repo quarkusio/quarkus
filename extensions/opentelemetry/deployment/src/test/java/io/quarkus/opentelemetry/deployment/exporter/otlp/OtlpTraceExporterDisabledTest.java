@@ -2,6 +2,7 @@ package io.quarkus.opentelemetry.deployment.exporter.otlp;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.test.QuarkusExtensionTest;
@@ -35,5 +37,17 @@ public class OtlpTraceExporterDisabledTest {
         assertNotNull(openTelemetry);
         assertFalse(spanExporterInstance.isResolvable());
         assertFalse(metricExporters.isResolvable());
+    }
+
+    @Test
+    void telemetryIsStillGenerated() {
+        // disabling the exporter stops telemetry from being sent out, it does not stop it from being generated
+        Span span = openTelemetry.getTracer("test").spanBuilder("not-exported-span").startSpan();
+        try {
+            assertTrue(span.getSpanContext().isValid(),
+                    "Span context must be valid so that ids can be correlated and propagated");
+        } finally {
+            span.end();
+        }
     }
 }

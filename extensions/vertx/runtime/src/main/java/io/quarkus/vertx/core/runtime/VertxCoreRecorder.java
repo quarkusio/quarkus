@@ -539,7 +539,7 @@ public class VertxCoreRecorder {
             ThreadPoolConfig threadPoolConfig,
             ShutdownContext shutdown) {
 
-        if (!conf.useAsyncDNS()) {
+        if (buildTimeConfig == null || !buildTimeConfig.useAsyncDNS()) {
             System.setProperty(SysProps.DISABLE_DNS_RESOLVER.name, "true");
         }
 

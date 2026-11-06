@@ -36,5 +36,21 @@ public @interface DataSource {
         public String value() {
             return name;
         }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            } else if (other instanceof DataSource that) {
+                return this.name.equals(that.value());
+            } else {
+                return false;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return 127 * "value".hashCode() ^ this.name.hashCode();
+        }
     }
 }

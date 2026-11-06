@@ -161,7 +161,7 @@ quarkus.datasource.db-kind = postgresql <1>
 <2> The only different property from a Hibernate ORM configuration
 <3> Configure Hibernate ORM to create the schema on startup in production, which is useful for experimentation, but rely on xref:hibernate-orm.adoc#dev-mode[convenient defaults in tests / dev mode].
 
-In the same directory, create an `import.sql` file, which inserts a few fruits, so we don't start with an empty database in dev mode:
+In the same directory, create a `data.sql` file, which inserts a few fruits, so we don't start with an empty database in dev mode:
 
 [source, text]
 ----

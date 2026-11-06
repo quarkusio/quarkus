@@ -125,6 +125,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.HttpException;
 
 class ReactiveRoutesProcessor {
 
@@ -1385,9 +1386,9 @@ class ReactiveRoutesProcessor {
                         } else if (paramType.name().equals(DotNames.BUFFER)) {
                             return bc.invokeInterface(Methods.REQUEST_BODY_BUFFER, body);
                         } else if (paramType.name().equals(DotNames.JSON_OBJECT)) {
-                            return bc.invokeInterface(Methods.REQUEST_BODY_AS_JSON_OBJECT, body);
+                            return bc.invokeStatic(Methods.ROUTE_HANDLERS_BODY_AS_JSON_OBJECT, body);
                         } else if (paramType.name().equals(DotNames.JSON_ARRAY)) {
-                            return bc.invokeInterface(Methods.REQUEST_BODY_AS_JSON_ARRAY, body);
+                            return bc.invokeStatic(Methods.ROUTE_HANDLERS_BODY_AS_JSON_ARRAY, body);
                         }
                         // This should never happen
                         throw new IllegalArgumentException("Unsupported param type: " + paramType);
@@ -1408,11 +1409,11 @@ class ReactiveRoutesProcessor {
                         registerForReflection(paramType, reflectiveHierarchy);
                         Expr body = b0.invokeInterface(Methods.BODY, routingContext);
                         LocalVar bodyAsJson = b0.localVar("bodyAsJson",
-                                b0.invokeInterface(Methods.REQUEST_BODY_AS_JSON_OBJECT, body));
+                                b0.invokeStatic(Methods.ROUTE_HANDLERS_BODY_AS_JSON_OBJECT, body));
                         LocalVar result = b0.localVar("result", Const.ofDefault(Object.class));
                         b0.ifNotNull(bodyAsJson, b1 -> {
                             // TODO load `paramType` class from TCCL
-                            b1.set(result, b1.invokeVirtual(Methods.JSON_OBJECT_MAP_TO, bodyAsJson,
+                            b1.set(result, b1.invokeStatic(Methods.ROUTE_HANDLERS_BODY_MAP_TO, bodyAsJson,
                                     Const.of(classDescOf(paramType))));
                         });
                         return result;
@@ -1741,10 +1742,12 @@ class ReactiveRoutesProcessor {
                     }
                 });
                 tc.catch_(Throwable.class, "e", (b2, e) -> {
-                    b2.throw_(b2.new_(ConstructorDesc.of(IllegalArgumentException.class, String.class, Throwable.class),
-                            Const.of("Error converting parameter #" + methodParam.position() + " of method "
-                                    + methodParam.method().declaringClass() + "." + methodParam.method().name() + "()"),
-                            e));
+                    b2.throw_(b2.new_(ConstructorDesc.of(HttpException.class, int.class, Throwable.class), Const.of(400),
+                            b2.new_(ConstructorDesc.of(IllegalArgumentException.class, String.class, Throwable.class),
+                                    Const.of("Error converting parameter #" + methodParam.position() + " of method "
+                                            + methodParam.method().declaringClass() + "." + methodParam.method().name()
+                                            + "()"),
+                                    e)));
                 });
             });
         });

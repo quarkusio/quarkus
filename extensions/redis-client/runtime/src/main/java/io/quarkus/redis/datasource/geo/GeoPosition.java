@@ -23,7 +23,7 @@ public class GeoPosition {
             throw new IllegalArgumentException("The longitude must be in [-180, 180]");
         }
         if (latitude < -85.05112878 || latitude > 85.05112878) {
-            throw new IllegalArgumentException("The latitude must be in [85.05112878, 85.05112878]");
+            throw new IllegalArgumentException("The latitude must be in [-85.05112878, 85.05112878]");
         }
         this.longitude = longitude;
         this.latitude = latitude;

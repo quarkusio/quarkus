@@ -122,7 +122,7 @@ public class KubernetesClientUtils {
         return new KubernetesClientBuilder().withConfig(createConfig()).build();
     }
 
-    private static <T> Optional<T> optional(org.eclipse.microprofile.config.Config config, String key, Class<T> valueType) {
+    private static <T> Optional<T> optional(io.smallrye.config.Config config, String key, Class<T> valueType) {
         return config.getOptionalValue(PREFIX + key, valueType);
     }
 

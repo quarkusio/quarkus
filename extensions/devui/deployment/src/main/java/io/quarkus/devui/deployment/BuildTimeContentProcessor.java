@@ -39,8 +39,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.mvnpm.importmap.Aggregator;
@@ -82,6 +80,7 @@ import io.quarkus.devui.spi.page.SettingPageBuildItem;
 import io.quarkus.devui.spi.page.UnlistedPageBuildItem;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.smallrye.config.Config;
 import tools.jackson.core.JacksonException;
 
 /**
@@ -98,7 +97,7 @@ public class BuildTimeContentProcessor {
     private static final String FLAG_ICONS = "flag-icons";
     private static final String VAADIN_WEBCOMPONENTS = "vaadin-webcomponents";
 
-    final Config config = ConfigProvider.getConfig();
+    final Config config = Config.get();
 
     /**
      * Here we create references to internal dev ui files so that they can be imported by ref.

@@ -6,9 +6,8 @@ import java.util.function.Function;
 
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -30,7 +29,7 @@ public class OidcDevJsonRpcService {
 
     public Uni<OidcDevUiRuntimePropertiesDTO> getProperties() {
         return withProperties(props -> Uni.createFrom().item(new OidcDevUiRuntimePropertiesDTO(props.getAuthorizationUrl(),
-                props.getTokenUrl(), props.getLogoutUrl(), ConfigProvider.getConfig(), httpConfig.port(),
+                props.getTokenUrl(), props.getLogoutUrl(), Config.get(), httpConfig.port(),
                 props.getOidcProviderName(), props.getOidcApplicationType(), props.getOidcGrantType(),
                 props.isIntrospectionIsAvailable(), props.getKeycloakAdminUrl(),
                 props.getKeycloakRealms(), props.isSwaggerIsAvailable(), props.isGraphqlIsAvailable(), props.getSwaggerUiPath(),

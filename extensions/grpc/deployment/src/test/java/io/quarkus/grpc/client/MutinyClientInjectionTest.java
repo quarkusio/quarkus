@@ -70,8 +70,8 @@ public class MutinyClientInjectionTest {
                 context.runOnContext(() -> {
                     service.sayHello(HelloRequest.newBuilder().setName(s).build())
                             .map(HelloReply::getMessage)
-                            .invoke(() -> assertThat(Vertx.currentContext()).isNotNull().isEqualTo(context))
-                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate()).isInstanceOf(ContextInternal.class))
+                            .invoke(() -> assertThat(VertxContext.isDuplicatedContext(Vertx.currentContext().getDelegate()))
+                                    .isTrue())
                             .subscribe().with(e::complete, e::fail);
                 });
             }).await().atMost(Duration.ofSeconds(5));

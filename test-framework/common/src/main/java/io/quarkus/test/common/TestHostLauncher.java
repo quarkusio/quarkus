@@ -6,10 +6,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.runtime.logging.LogRuntimeConfig;
+import io.smallrye.config.Config;
 
 /**
  * A launcher that simply sets the {@code quarkus.http.host} property based on the value {@code quarkus.http.test-host}
@@ -22,7 +20,7 @@ public class TestHostLauncher implements ArtifactLauncher {
 
     @Override
     public ListeningResults start() throws IOException {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         // set 'quarkus.http.host' to ensure that RestAssured targets the proper host
         previousHost = System.setProperty("quarkus.http.host", config.getValue("quarkus.http.test-host", String.class));
 
@@ -33,7 +31,7 @@ public class TestHostLauncher implements ArtifactLauncher {
         Path logPath = config.getOptionalValue("quarkus.test.log.file.path", Path.class)
                 .or(() -> config.getOptionalValue("quarkus.log.file.path", Path.class))
                 .orElseGet(() -> {
-                    LogRuntimeConfig logRuntimeConfig = io.smallrye.config.Config.get()
+                    LogRuntimeConfig logRuntimeConfig = config
                             .getConfigMapping(LogRuntimeConfig.class);
                     return logRuntimeConfig.file().path().toPath();
                 });

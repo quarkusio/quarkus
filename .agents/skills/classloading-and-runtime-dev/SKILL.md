@@ -19,8 +19,10 @@ description: >
 - **Runtime code MUST NOT reference deployment classes.** Violations cause
   `ClassNotFoundException` at runtime.
 - **Deployment code CAN reference runtime classes.**
-- **Recorders bridge the gap.** A `@Recorder` lives in the runtime module but
-  is invoked from deployment build steps.
+- **Services bridge the gap.** Service lambdas are defined in deployment build
+  steps but execute at runtime. The lambda body can only reference runtime
+  classes; attempting to reference deployment classes will cause
+  `ClassNotFoundException` at runtime.
 
 ## Runtime-Dev Modules
 
@@ -74,7 +76,7 @@ Forgetting `conditionalDevDependencies` is particularly confusing because:
 ## Common Mistakes
 
 - Importing a deployment class in runtime code
-- Using a build-time-only library in a recorder
+- Using a build-time-only library in a service lambda
 - Accessing runtime config during augmentation (build time)
 - Putting user-facing API classes in deployment instead of runtime
 - Forgetting `conditionalDevDependencies` for `runtime-dev` modules

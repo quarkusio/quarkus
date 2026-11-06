@@ -49,7 +49,6 @@ import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.spi.CDI;
 
 import org.crac.Resource;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -111,6 +110,7 @@ import io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils;
 import io.quarkus.vertx.http.runtime.options.TlsCertificateReloader;
 import io.smallrye.common.cpu.ProcessorInfo;
 import io.smallrye.common.vertx.VertxContext;
+import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
@@ -1591,7 +1591,7 @@ public class VertxHttpRecorder {
                 }
 
                 private URI localBaseUri(String scheme, int actualPort) {
-                    SmallRyeConfig smallRyeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+                    Config smallRyeConfig = Config.get();
                     String host = config.getTcpHost();
                     if (host.equals("0.0.0.0")) {
                         host = "localhost";

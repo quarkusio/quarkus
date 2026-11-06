@@ -1,11 +1,17 @@
 package io.quarkus.hibernate.orm.multiplepersistenceunits;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.transaction.Transactional;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,36 +22,167 @@ public class MultiplePersistenceUnitsClassLevelAnnotationTest {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
-            .setExpectedException(IllegalStateException.class)
             .withApplicationRoot((jar) -> jar
-                    .addClass(EntityWithClassLevelPersistenceUnit.class)
-                    .addAsResource("application-multiple-persistence-units.properties",
-                            "application.properties"));
+                    .addClass(EntityInInventoryPU.class)
+                    .addClass(EntityInUsersPU.class)
+                    .addClass(EntityWithMultiplePUs.class))
+            .withConfiguration("""
+                    quarkus.hibernate-orm.datasource=<default>
+                    quarkus.hibernate-orm."users".datasource=users
+                    quarkus.hibernate-orm."inventory".datasource=inventory
+                    """);
+
+    @Inject
+    @PersistenceUnit("users")
+    EntityManager usersEntityManager;
+
+    @Inject
+    @PersistenceUnit("inventory")
+    EntityManager inventoryEntityManager;
 
     @Test
-    public void testInvalidConfiguration() {
-        // deployment exception should happen first
-        Assertions.fail();
+    @Transactional
+    public void testEntityInInventoryPU() {
+        EntityInInventoryPU entity = new EntityInInventoryPU("test-inventory");
+        inventoryEntityManager.persist(entity);
+
+        EntityInInventoryPU savedEntity = inventoryEntityManager.find(EntityInInventoryPU.class, entity.getId());
+        assertEquals(entity.getName(), savedEntity.getName());
+
+        // Entity should not be accessible from users PU
+        assertThatThrownBy(() -> usersEntityManager.find(EntityInInventoryPU.class, entity.getId()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unknown entity type");
+    }
+
+    @Test
+    @Transactional
+    public void testEntityInUsersPU() {
+        EntityInUsersPU entity = new EntityInUsersPU("test-user");
+        usersEntityManager.persist(entity);
+
+        EntityInUsersPU savedEntity = usersEntityManager.find(EntityInUsersPU.class, entity.getId());
+        assertEquals(entity.getName(), savedEntity.getName());
+
+        // Entity should not be accessible from inventory PU
+        assertThatThrownBy(() -> inventoryEntityManager.find(EntityInUsersPU.class, entity.getId()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unknown entity type");
+    }
+
+    @Test
+    @Transactional
+    public void testEntityWithMultiplePUsInInventory() {
+        EntityWithMultiplePUs entity = new EntityWithMultiplePUs("shared-entity-inventory");
+        inventoryEntityManager.persist(entity);
+
+        EntityWithMultiplePUs savedEntity = inventoryEntityManager.find(EntityWithMultiplePUs.class, entity.getId());
+        assertEquals(entity.getName(), savedEntity.getName());
+    }
+
+    @Test
+    @Transactional
+    public void testEntityWithMultiplePUsInUsers() {
+        EntityWithMultiplePUs entity = new EntityWithMultiplePUs("shared-entity-users");
+        usersEntityManager.persist(entity);
+
+        EntityWithMultiplePUs savedEntity = usersEntityManager.find(EntityWithMultiplePUs.class, entity.getId());
+        assertEquals(entity.getName(), savedEntity.getName());
     }
 
     @Entity
+    @Table(name = "entity_inventory")
     @PersistenceUnit("inventory")
-    public static class EntityWithClassLevelPersistenceUnit {
+    public static class EntityInInventoryPU {
 
-        private long id;
+        @Id
+        @GeneratedValue(strategy = GenerationType.SEQUENCE)
+        private Long id;
 
         private String name;
 
-        public EntityWithClassLevelPersistenceUnit() {
+        public EntityInInventoryPU() {
         }
 
-        @Id
-        @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "planeSeq")
-        public long getId() {
+        public EntityInInventoryPU(String name) {
+            this.name = name;
+        }
+
+        public Long getId() {
             return id;
         }
 
-        public void setId(long id) {
+        public void setId(Long id) {
+            this.id = id;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+    }
+
+    @Entity
+    @Table(name = "entity_users")
+    @PersistenceUnit("users")
+    public static class EntityInUsersPU {
+
+        @Id
+        @GeneratedValue(strategy = GenerationType.SEQUENCE)
+        private Long id;
+
+        private String name;
+
+        public EntityInUsersPU() {
+        }
+
+        public EntityInUsersPU(String name) {
+            this.name = name;
+        }
+
+        public Long getId() {
+            return id;
+        }
+
+        public void setId(Long id) {
+            this.id = id;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+    }
+
+    @Entity
+    @Table(name = "entity_multiple")
+    @PersistenceUnit.List({ @PersistenceUnit("inventory"), @PersistenceUnit("users") })
+    public static class EntityWithMultiplePUs {
+
+        @Id
+        @GeneratedValue(strategy = GenerationType.SEQUENCE)
+        private Long id;
+
+        private String name;
+
+        public EntityWithMultiplePUs() {
+        }
+
+        public EntityWithMultiplePUs(String name) {
+            this.name = name;
+        }
+
+        public Long getId() {
+            return id;
+        }
+
+        public void setId(Long id) {
             this.id = id;
         }
 

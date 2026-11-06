@@ -68,7 +68,7 @@ Check the xref:./virtual-threads.adoc#why-not[virtual thread reference guide] fo
 
 We need to customize the `pom.xml` file to use virtual threads.
 
-1) Locate the line with `<maven.compiler.release>17</maven.compiler.release>`, and replace it with:
+1) Check that the `maven.compiler.release` property is 21 or later:
 
 [source, xml]
 ----

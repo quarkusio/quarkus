@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.logging.LogRecord;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.config.Config;
 
 public class DevServicesOfflineStartTest {
 
@@ -26,7 +26,7 @@ public class DevServicesOfflineStartTest {
 
     @Test
     public void testDevServices() {
-        String value = ConfigProvider.getConfig()
+        String value = Config.get()
                 .getValue("quarkus.hibernate-orm.schema-management.strategy", String.class);
         assertThat(value).isEqualTo("none");
     }

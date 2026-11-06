@@ -46,7 +46,8 @@ class EchartsHistogram extends EchartsAbstractCanvas {
         }
 
         const option = {};
-        option.tooltip = { trigger: "axis", axisPointer: { type: "shadow" } };
+        // Appended to the body so the tooltip is not clipped by whatever card or panel holds the chart.
+        option.tooltip = { trigger: "axis", axisPointer: { type: "shadow" }, appendTo: "body" };
         option.grid = { top: "5%", left: "3%", right: "6%", bottom: "5%", containLabel: true };
         option.xAxis = {
             type: "value",

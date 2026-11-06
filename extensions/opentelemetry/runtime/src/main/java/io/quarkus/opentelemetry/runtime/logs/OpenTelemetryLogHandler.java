@@ -19,8 +19,6 @@ import java.util.Map;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logmanager.ExtHandler;
 import org.jboss.logmanager.ExtLogRecord;
 
@@ -30,6 +28,7 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
+import io.smallrye.config.Config;
 
 public class OpenTelemetryLogHandler extends ExtHandler {
 
@@ -56,7 +55,7 @@ public class OpenTelemetryLogHandler extends ExtHandler {
      * requires the CDI container — has been initialized.
      */
     public OpenTelemetryLogHandler() {
-        final Config config = ConfigProvider.getConfig();
+        final Config config = Config.get();
         this.logFileEnabled = config.getValue("quarkus.log.file.enabled", boolean.class);
         this.logFilePath = this.logFileEnabled ? config.getValue("quarkus.log.file.path", String.class) : null;
     }

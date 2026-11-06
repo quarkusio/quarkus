@@ -95,6 +95,12 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <!-- required by ConfigInstanceBuilder to generate the configuration instances -->
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

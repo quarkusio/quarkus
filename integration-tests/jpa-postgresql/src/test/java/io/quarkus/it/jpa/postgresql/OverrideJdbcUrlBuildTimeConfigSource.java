@@ -4,10 +4,10 @@ import java.util.HashMap;
 
 import jakarta.annotation.Priority;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.Config;
 import io.smallrye.config.Priorities;
 import io.smallrye.config.common.MapBackedConfigSource;
 
@@ -31,7 +31,7 @@ public class OverrideJdbcUrlBuildTimeConfigSource extends MapBackedConfigSource 
         }
 
         boolean isBuildTime = false;
-        for (ConfigSource configSource : ConfigProvider.getConfig().getConfigSources()) {
+        for (ConfigSource configSource : Config.get().getConfigSources()) {
             if (configSource.getName().equals("PropertiesConfigSource[source=Build system]")) {
                 isBuildTime = true;
                 break;

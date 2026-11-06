@@ -70,6 +70,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.auth.DefaultAuthExceptionHandlerProvider;
@@ -976,6 +977,12 @@ public class GrpcServerProcessor {
                 return !archive.getIndex().getKnownDirectImplementors(GrpcDotNames.MUTINY_BEAN).isEmpty();
             }
         });
+    }
+
+    @BuildStep
+    RuntimeInitializedClassBuildItem runtimeInitHttpGrpcOutboundStream() {
+        // Deal with VERTX_ALLOCATOR in HttpGrpcOutboundStream
+        return new RuntimeInitializedClassBuildItem("io.vertx.grpc.server.impl.HttpGrpcOutboundStream");
     }
 
     @BuildStep

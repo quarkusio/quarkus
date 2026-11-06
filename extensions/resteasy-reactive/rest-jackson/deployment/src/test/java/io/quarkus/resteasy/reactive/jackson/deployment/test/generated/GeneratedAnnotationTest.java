@@ -52,6 +52,7 @@ public class GeneratedAnnotationTest extends AbstractGeneratedAnnotationTest {
                                     FormatBean.class,
                                     FormatArrayShapeBean.class,
                                     FormatArrayShapeNoOrderBean.class,
+                                    FormatArrayShapeNoCreatorBean.class,
                                     FormatStringShapeBean.class,
                                     FormatNumberBooleanBean.class,
                                     FormatDateTimestampBean.class,

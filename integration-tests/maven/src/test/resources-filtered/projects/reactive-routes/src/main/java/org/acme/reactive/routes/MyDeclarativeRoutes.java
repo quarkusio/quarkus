@@ -29,6 +29,7 @@ public class MyDeclarativeRoutes {
     public void nettyVersion(RoutingContext rc) {
         rc.response().end(Version.identify().containsKey("netty-common") + ";" +
                 Version.identify().containsKey("netty-handler") + ";" +
-                Version.identify().containsKey("netty-codec"));
+                Version.identify().containsKey("netty-codec-base") + ";" +
+                Version.identify().containsKey("netty-codec-compression"));
     }
 }

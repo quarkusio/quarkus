@@ -37,10 +37,21 @@ final class Annotations {
     static boolean isPresent(Annotation requiredAnnotation, Iterable<Annotation> annotations,
             Map<String, Set<String>> nonbindingMembers) {
         Class<? extends Annotation> requiredClass = requiredAnnotation.annotationType();
-        Method[] members = requiredClass.getDeclaredMethods();
 
         Set<String> nonbinding = nonbindingMembers.get(requiredClass.getName());
 
+        // When there are no nonbinding members, the annotation's own equals() handles the comparison
+        // without needing reflective member-by-member access.
+        if (nonbinding == null || nonbinding.isEmpty()) {
+            for (Annotation annotation : annotations) {
+                if (requiredAnnotation.equals(annotation)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        Method[] members = requiredClass.getDeclaredMethods();
         for (Annotation annotation : annotations) {
             Class<? extends Annotation> clazz = annotation.annotationType();
             if (!clazz.equals(requiredClass)) {
@@ -48,7 +59,7 @@ final class Annotations {
             }
             boolean matches = true;
             for (Method value : members) {
-                if (nonbinding != null && nonbinding.contains(value.getName())) {
+                if (nonbinding.contains(value.getName())) {
                     continue;
                 }
 

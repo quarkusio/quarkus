@@ -120,6 +120,7 @@ export const templates = {
     'loglevelsdialog-filter': 'Filter',
     'loglevelsdialog-name': 'Name',
     'loglevelsdialog-level': 'Level',
+    'loglevelsdialog-root-level': 'Root level',
 
     // Connection status
     'connection-disconnected_from': 'Disconnected from',

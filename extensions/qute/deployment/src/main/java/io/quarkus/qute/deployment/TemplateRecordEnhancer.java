@@ -36,16 +36,19 @@ class TemplateRecordEnhancer implements BiFunction<String, ClassVisitor, ClassVi
     private final String fragmentId;
     private final String canonicalConstructorDescriptor;
     private final List<MethodParameterInfo> parameters;
+    private final List<String> parameterNames;
     private final CheckedTemplateAdapter adapter;
 
     TemplateRecordEnhancer(ClassInfo interfaceToImplement, ClassInfo recordClass, String templateId, String fragmentId,
-            String canonicalConstructorDescriptor, List<MethodParameterInfo> parameters, CheckedTemplateAdapter adapter) {
+            String canonicalConstructorDescriptor, List<MethodParameterInfo> parameters, List<String> parameterNames,
+            CheckedTemplateAdapter adapter) {
         this.interfaceToImplement = interfaceToImplement;
         this.recordClassName = recordClass.name().toString();
         this.templateId = templateId;
         this.fragmentId = fragmentId;
         this.canonicalConstructorDescriptor = canonicalConstructorDescriptor;
         this.parameters = parameters;
+        this.parameterNames = parameterNames;
         this.adapter = adapter;
     }
 
@@ -176,7 +179,7 @@ class TemplateRecordEnhancer implements BiFunction<String, ClassVisitor, ClassVi
                 for (int i = 0; i < parameters.size(); i++) {
                     // instance = instance.data("name", value);
                     Type paramType = parameters.get(i).type();
-                    visitLdcInsn(parameters.get(i).name());
+                    visitLdcInsn(parameterNames.get(i));
                     visitVarInsn(AsmUtil.getLoadOpcode(paramType), slot);
                     AsmUtil.boxIfRequired(this, paramType);
                     invokeInterface(this, templateInstanceData);

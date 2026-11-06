@@ -56,6 +56,11 @@ public class HibernateValidatorFunctionalityTest {
     }
 
     @Test
+    public void testAccessorFieldPolicy() {
+        RestAssured.get("/accessor-policy").then().statusCode(200).body(is("changed:original:record"));
+    }
+
+    @Test
     public void testBasicFeatures() throws Exception {
         StringBuilder expected = new StringBuilder();
         expected.append("failed: additionalEmails[0].<list element> (must be a well-formed email address)").append(", ")
@@ -552,4 +557,17 @@ public class HibernateValidatorFunctionalityTest {
                         containsString("id (must be greater than 0)"),
                         containsString("name (must not be null)"));
     }
+
+    @Test
+    void testConstraintsDefinedProgrammatically() {
+        RestAssured.given()
+                .when()
+                .get("/hibernate-validator/test/constraints-defined-programmatically")
+                .then()
+                .statusCode(200)
+                .body(containsString("failed"),
+                        containsString("string (must not be blank)"),
+                        containsString("nestedBean.string (must not be blank)"));
+    }
+
 }

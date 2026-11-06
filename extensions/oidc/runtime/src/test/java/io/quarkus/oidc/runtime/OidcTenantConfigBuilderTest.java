@@ -9,6 +9,7 @@ import static io.quarkus.oidc.runtime.OidcTenantConfig.SignatureAlgorithm.PS384;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
@@ -43,6 +44,7 @@ import io.quarkus.oidc.runtime.builders.AuthenticationConfigBuilder;
 import io.quarkus.oidc.runtime.builders.LogoutConfigBuilder;
 import io.quarkus.oidc.runtime.builders.LogoutConfigBuilder.BackchannelBuilder;
 import io.quarkus.oidc.runtime.builders.TokenConfigBuilder;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 public class OidcTenantConfigBuilderTest {
 
@@ -669,6 +671,123 @@ public class OidcTenantConfigBuilderTest {
     }
 
     @Test
+    public void testWellKnownProviderConfigMerged() {
+        OidcTenantConfig config = OidcTenantConfig.builder().provider(Provider.GITHUB).build();
+        assertEquals(Provider.GITHUB, config.provider().orElse(null));
+        assertEquals("https://github.com/login/oauth", config.authServerUrl().orElse(null));
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().orElse(null));
+        assertFalse(config.discoveryEnabled().orElseThrow());
+        assertEquals("authorize", config.authorizationPath().orElse(null));
+        assertFalse(config.authentication().idTokenRequired().orElseThrow());
+        assertTrue(config.authentication().userInfoRequired().orElseThrow());
+
+        // properties set directly take priority over the provider configuration
+        OidcTenantConfig customized = OidcTenantConfig.builder()
+                .provider(Provider.GITHUB)
+                .authServerUrl("https://github.example.com")
+                .applicationType(ApplicationType.HYBRID)
+                .authentication().idTokenRequired(true).userInfoRequired(false).end()
+                .build();
+        assertEquals(Provider.GITHUB, customized.provider().orElse(null));
+        assertEquals("https://github.example.com", customized.authServerUrl().orElse(null));
+        assertEquals(ApplicationType.HYBRID, customized.applicationType().orElse(null));
+        assertEquals("authorize", customized.authorizationPath().orElse(null));
+        assertTrue(customized.authentication().idTokenRequired().orElseThrow());
+        assertFalse(customized.authentication().userInfoRequired().orElseThrow());
+
+        // the merged configuration is retained when the built configuration is used to create another builder
+        OidcTenantConfig copy = OidcTenantConfig.builder(config).clientId("client").build();
+        assertEquals(Provider.GITHUB, copy.provider().orElse(null));
+        assertEquals("client", copy.clientId().orElse(null));
+        assertEquals("https://github.com/login/oauth", copy.authServerUrl().orElse(null));
+        assertEquals(ApplicationType.WEB_APP, copy.applicationType().orElse(null));
+    }
+
+    @Test
+    public void testRefreshExpiredEnabledByRefreshTokenTimeSkew() {
+        OidcTenantConfig webApp = OidcTenantConfig.authServerUrl("https://server").applicationType(ApplicationType.WEB_APP)
+                .token().refreshTokenTimeSkew(Duration.ofSeconds(5)).end().build();
+        assertTrue(webApp.token().refreshExpired());
+
+        OidcTenantConfig hybrid = OidcTenantConfig.authServerUrl("https://server").applicationType(ApplicationType.HYBRID)
+                .token().refreshTokenTimeSkew(Duration.ofSeconds(5)).end().build();
+        assertTrue(hybrid.token().refreshExpired());
+
+        // the refresh token time skew is only valid for the web applications
+        OidcTenantConfig service = OidcTenantConfig.authServerUrl("https://server")
+                .token().refreshTokenTimeSkew(Duration.ofSeconds(5)).end().build();
+        assertFalse(service.token().refreshExpired());
+
+        // the implied properties are only enabled for the tenants connecting to the OpenID Provider
+        OidcTenantConfig withoutAuthServer = OidcTenantConfig.builder().applicationType(ApplicationType.WEB_APP)
+                .token().refreshTokenTimeSkew(Duration.ofSeconds(5)).end().build();
+        assertFalse(withoutAuthServer.token().refreshExpired());
+        OidcTenantConfig disabled = OidcTenantConfig.authServerUrl("https://server").disableTenant()
+                .applicationType(ApplicationType.WEB_APP).token().refreshTokenTimeSkew(Duration.ofSeconds(5)).end().build();
+        assertFalse(disabled.token().refreshExpired());
+    }
+
+    @Test
+    public void testUserInfoRequiredEnabledByOtherProperties() {
+        OidcTenantConfig rolesSource = OidcTenantConfig.authServerUrl("https://server").roles().source(userinfo).end().build();
+        assertTrue(rolesSource.authentication().userInfoRequired().orElseThrow());
+
+        OidcTenantConfig serviceVerification = OidcTenantConfig.authServerUrl("https://server")
+                .token().verifyAccessTokenWithUserInfo().end().build();
+        assertTrue(serviceVerification.authentication().userInfoRequired().orElseThrow());
+
+        OidcTenantConfig hybridVerification = OidcTenantConfig.authServerUrl("https://server")
+                .applicationType(ApplicationType.HYBRID).token().verifyAccessTokenWithUserInfo().end().build();
+        assertTrue(hybridVerification.authentication().userInfoRequired().orElseThrow());
+
+        // the web application access tokens are verified with UserInfo only when the ID token is not required
+        OidcTenantConfig webAppVerification = OidcTenantConfig.authServerUrl("https://server")
+                .applicationType(ApplicationType.WEB_APP).token().verifyAccessTokenWithUserInfo().end().build();
+        assertTrue(webAppVerification.authentication().userInfoRequired().isEmpty());
+
+        OidcTenantConfig idTokenNotRequired = OidcTenantConfig.authServerUrl("https://server")
+                .applicationType(ApplicationType.WEB_APP).authentication().idTokenRequired(false).end().build();
+        assertTrue(idTokenNotRequired.authentication().userInfoRequired().orElseThrow());
+
+        // UserInfo is not required when it has been disabled
+        OidcTenantConfig userInfoDisabled = OidcTenantConfig.authServerUrl("https://server").roles().source(userinfo).end()
+                .authentication().userInfoRequired(false).end().build();
+        assertFalse(userInfoDisabled.authentication().userInfoRequired().orElseThrow());
+
+        // the implied properties are only enabled for the tenants connecting to the OpenID Provider
+        OidcTenantConfig withoutAuthServer = OidcTenantConfig.builder().roles().source(userinfo).end().build();
+        assertTrue(withoutAuthServer.authentication().userInfoRequired().isEmpty());
+        OidcTenantConfig publicKey = OidcTenantConfig.builder().publicKey("key").roles().source(userinfo).end().build();
+        assertTrue(publicKey.authentication().userInfoRequired().isEmpty());
+    }
+
+    @Test
+    public void testImpliedPropertiesEnabledForConfigMapping() {
+        // static tenants are created from the config mapping
+        OidcConfig oidcConfig = new SmallRyeConfigBuilder()
+                .addDiscoveredConverters()
+                .withMapping(OidcConfig.class)
+                .withDefaultValue("quarkus.oidc.auth-server-url", "https://server")
+                .withDefaultValue("quarkus.oidc.application-type", "web-app")
+                .withDefaultValue("quarkus.oidc.token.refresh-token-time-skew", "5S")
+                .withDefaultValue("quarkus.oidc.roles.source", "userinfo")
+                .build()
+                .getConfigMapping(OidcConfig.class);
+        io.quarkus.oidc.runtime.OidcTenantConfig mapping = OidcConfig.getDefaultTenant(oidcConfig);
+        assertFalse(mapping.token().refreshExpired());
+        assertTrue(mapping.authentication().userInfoRequired().isEmpty());
+
+        OidcTenantConfig config = OidcTenantConfig.of(mapping);
+        assertEquals("https://server", config.authServerUrl().orElse(null));
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().orElse(null));
+        assertTrue(config.token().refreshExpired());
+        assertTrue(config.authentication().userInfoRequired().orElseThrow());
+
+        // the config built by the builder is already complete
+        assertSame(config, OidcTenantConfig.of(config));
+    }
+
+    @Test
     public void testCopyProxyProperties() {
         var previousConfig = OidcTenantConfig.builder()
                 .tenantId("copy-proxy-properties-test")
@@ -695,12 +814,23 @@ public class OidcTenantConfigBuilderTest {
                 .tenantPath("tenant-path-test-1")
                 .tenantPaths("tenant-path-test-2", "tenant-path-test-3")
                 .publicKey("public-key-test-1")
+                .applicationType(ApplicationType.HYBRID)
                 .allowTokenIntrospectionCache()
                 .allowUserInfoCache()
                 .cacheUserInfoInIdtoken()
                 .provider(Provider.GOOGLE)
                 .dpop(Duration.ofMinutes(4))
-                // the rest of c&p tests for the OidcTenantConfig are tested in their dedicated builder tests below
+                .introspectionCredentials("introspection-name-test", "introspection-secret-test")
+                .roles(accesstoken, "role-claim-path-test")
+                .token("principal-claim-test")
+                .logout().path("/logout-path-test").end()
+                .certificateChain().leafCertificateName("leaf-certificate-test").end()
+                .resourceMetadata().resource("resource-metadata-test").end()
+                .clientIdMetadata().forceHttpsScheme(false).end()
+                .authentication().redirectPath("/redirect-path-test").end()
+                .codeGrant(Map.of("code-grant-header-test", "code-grant-header-value"))
+                .tokenStateManager().encryptionSecret("token-state-manager-secret-test").end()
+                .jwks().cacheSize(55).end()
                 .build();
 
         // OidcTenantConfig methods
@@ -715,6 +845,35 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(existingConfig.allowUserInfoCache());
         assertTrue(existingConfig.cacheUserInfoInIdtoken().orElseThrow());
         assertEquals(Duration.ofMinutes(4), existingConfig.dpop().proofAge());
+
+        // every property must be copied as is when nothing is changed
+        var copy = OidcTenantConfig.builder(existingConfig).build();
+        assertEquals("test-copy-tenant-props", copy.tenantId().orElse(null));
+        assertFalse(copy.tenantEnabled());
+        assertEquals(ApplicationType.HYBRID, copy.applicationType().orElse(null));
+        assertEquals("authorization-path-test-1", copy.authorizationPath().orElse(null));
+        assertEquals("user-info-path-test-1", copy.userInfoPath().orElse(null));
+        assertEquals("introspection-path-test-1", copy.introspectionPath().orElse(null));
+        assertEquals("jwks-path-test-1", copy.jwksPath().orElse(null));
+        assertEquals("end-session-path-test-1", copy.endSessionPath().orElse(null));
+        assertEquals(tenantPaths, copy.tenantPaths().orElseThrow());
+        assertEquals("public-key-test-1", copy.publicKey().orElse(null));
+        assertTrue(copy.allowTokenIntrospectionCache());
+        assertTrue(copy.allowUserInfoCache());
+        assertTrue(copy.cacheUserInfoInIdtoken().orElseThrow());
+        assertEquals(Provider.GOOGLE, copy.provider().orElse(null));
+        assertEquals("introspection-name-test", copy.introspectionCredentials().name().orElse(null));
+        assertEquals(accesstoken, copy.roles().source().orElse(null));
+        assertEquals("principal-claim-test", copy.token().principalClaim().orElse(null));
+        assertEquals(Duration.ofMinutes(4), copy.dpop().proofAge());
+        assertEquals("/logout-path-test", copy.logout().path().orElse(null));
+        assertEquals("leaf-certificate-test", copy.certificateChain().leafCertificateName().orElse(null));
+        assertEquals("resource-metadata-test", copy.resourceMetadata().resource().orElse(null));
+        assertFalse(copy.clientIdMetadata().forceHttpsScheme());
+        assertEquals("/redirect-path-test", copy.authentication().redirectPath().orElse(null));
+        assertEquals("code-grant-header-value", copy.codeGrant().headers().get("code-grant-header-test"));
+        assertEquals("token-state-manager-secret-test", copy.tokenStateManager().encryptionSecret().orElse(null));
+        assertEquals(55, copy.jwks().cacheSize());
 
         var newConfig = OidcTenantConfig.builder(existingConfig)
                 // OidcTenantConfig methods
@@ -841,6 +1000,15 @@ public class OidcTenantConfigBuilderTest {
         assertEquals(852, jwt.lifespan());
         assertTrue(jwt.assertion());
 
+        // every property must be copied as is when nothing is changed
+        var copy = OidcTenantConfig.builder(existingConfig).build();
+        assertEquals("token-path-yep", copy.tokenPath().orElse(null));
+        assertEquals("revoke-path-yep", copy.revokePath().orElse(null));
+        assertEquals("client-id-yep", copy.clientId().orElse(null));
+        assertEquals("client-name-yep", copy.clientName().orElse(null));
+        assertEquals(credentials, copy.credentials());
+        assertEquals("secret-yep", copy.credentials().secret().orElse(null));
+
         var newConfig = OidcTenantConfig.builder(existingConfig)
                 // OidcClientCommonConfig methods
                 .tokenPath("token-path-yep-CHANGED")
@@ -922,6 +1090,7 @@ public class OidcTenantConfigBuilderTest {
         var previousConfig = OidcTenantConfig.builder()
                 .tenantId("common-props-test")
                 .authServerUrl("we")
+                .discoveryPath("/discovery-path-test")
                 .discoveryEnabled(false)
                 .registrationPath("don't")
                 .connectionDelay(Duration.ofSeconds(656))
@@ -933,6 +1102,23 @@ public class OidcTenantConfigBuilderTest {
                 .tlsConfigurationName("Teacher!")
                 .proxyConfigurationName("Kreacher!")
                 .build();
+
+        // every property must be copied as is when nothing is changed
+        var copy = OidcTenantConfig.builder(previousConfig).build();
+        assertEquals("common-props-test", copy.tenantId().orElse(null));
+        assertEquals("we", copy.authServerUrl().orElse(null));
+        assertEquals("/discovery-path-test", copy.discoveryPath());
+        assertFalse(copy.discoveryEnabled().orElseThrow());
+        assertEquals("don't", copy.registrationPath().orElse(null));
+        assertEquals(656, copy.connectionDelay().map(Duration::getSeconds).orElse(null));
+        assertEquals(565, copy.connectionRetryCount());
+        assertEquals(673, copy.connectionTimeout().getSeconds());
+        assertTrue(copy.useBlockingDnsLookup());
+        assertEquals(376, copy.maxPoolSize().orElse(0));
+        assertFalse(copy.followRedirects());
+        assertEquals("Teacher!", copy.tls().tlsConfigurationName().orElse(null));
+        assertEquals("Kreacher!", copy.proxy().proxyConfigurationName().orElse(null));
+
         var newConfig = OidcTenantConfig.builder(previousConfig)
                 .discoveryEnabled(true)
                 .connectionDelay(Duration.ofSeconds(753))

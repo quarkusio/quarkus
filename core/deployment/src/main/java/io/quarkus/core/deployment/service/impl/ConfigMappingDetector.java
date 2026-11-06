@@ -2,10 +2,12 @@ package io.quarkus.core.deployment.service.impl;
 
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.ConfigMappings.ConfigClass;
 
 /**
  * Utility for detecting {@code @ConfigMapping} + {@code @ConfigRoot} interfaces.
- * Shared between {@link ConfigCaptureInterceptor} and {@link ServiceBuilderImpl}.
+ * Shared between {@link ConfigMappingSerializer}, {@link ServiceBuilderImpl}
+ * and {@link LambdaTransliterator}.
  */
 final class ConfigMappingDetector {
 
@@ -52,5 +54,19 @@ final class ConfigMappingDetector {
             return null;
         }
         return configInterface.getAnnotation(ConfigRoot.class);
+    }
+
+    /**
+     * Determine the prefix a {@code @ConfigMapping} interface is registered with.
+     * <p>
+     * This uses the same SmallRye Config handler logic that Quarkus uses when it
+     * registers {@code @ConfigRoot} mappings at build time, so the returned value
+     * matches the key the mapping instance is stored under at runtime.
+     *
+     * @param configInterface the {@code @ConfigMapping} interface
+     * @return the registration prefix (possibly empty, never {@code null})
+     */
+    static String prefix(Class<?> configInterface) {
+        return ConfigClass.configClass(configInterface).getPrefix();
     }
 }

@@ -73,11 +73,14 @@ implementation("io.quarkus:quarkus-smallrye-health")
 
 == Running the health check
 
-Importing the `smallrye-health` extension directly exposes three REST endpoints:
+Importing the `smallrye-health` extension directly exposes the following REST endpoints:
 
 - `/q/health/live` - The application is up and running.
 - `/q/health/ready` - The application is ready to serve requests.
 - `/q/health/started` - The application is started.
+- `/q/health/well` - The wellness checks, annotated with `@Wellness`.
+- `/q/health/group` - The checks in all health groups.
+- `/q/health/group/<name>` - The checks in one group, annotated with `@HealthGroup("<name>")`.
 - `/q/health` - Accumulating all health check procedures in the application.
 
 To check that the `smallrye-health` extension is working as expected:
@@ -399,27 +402,27 @@ public class LivenessAsync implements AsyncHealthCheck {
 If you need to react to change of the health status of your application, the Smallrye Health
 extension provides a CDI event that can notify you about the individual health status changes.
 
-To observe the health status change, you can observe the `io.smallrye.health.api.event.HealthStatusChangeEvent`
-with the standard CDI observation mechanism. Since we cannot guarantee that the observer method
+To observe the health status change, you can observe the `io.smallrye.health.event.SmallRyeHealthStatusChangeEvent` with the standard CDI observation mechanism.
+Since we cannot guarantee that the observer method
 runs all the time on the worker thread (meaning it can run on the event loop thread), it's
 recommended that you never block in the in observer method.
 
 [source,java]
 ----
-import io.smallrye.health.api.event.HealthStatusChangeEvent;
+import io.smallrye.health.event.SmallRyeHealthStatusChangeEvent;
 
 @ApplicationScoped
 public class HealthObserver {
 
-    public void observeHealthChange(@Observes @Default HealthStatusChangeEvent event) {
+    public void observeHealthChange(@Observes @Default SmallRyeHealthStatusChangeEvent event) {
         ...
     }
 
-    public void observeReadinessChange(@Observes @Readiness HealthStatusChangeEvent event) {
+    public void observeReadinessChange(@Observes @Readiness SmallRyeHealthStatusChangeEvent event) {
         ...
     }
 
-    public void observeLivenessChange(@Observes @Liveness HealthStatusChangeEvent event) {
+    public void observeLivenessChange(@Observes @Liveness SmallRyeHealthStatusChangeEvent event) {
         ...
     }
 }
@@ -432,7 +435,7 @@ Some extension may provide default health checks, including the extension will a
 For example, `quarkus-agroal` that is used to manage Quarkus datasource(s) automatically register a readiness health check
 that will validate each datasource: xref:datasource.adoc#datasource-health-check[Datasource Health Check].
 
-You can disable extension health checks via the property `quarkus.health.extensions.enabled` so none will be automatically registered.
+You can disable extension health checks via the property `quarkus.smallrye-health.extensions.enabled` so none will be automatically registered.
 
 [[ui]]
 == Health UI

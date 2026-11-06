@@ -226,7 +226,7 @@ participants:
       days: ["MONDAY", "WEDNESDAY", "FRIDAY"]
       maxIssues: 2
     maintenance:
-      labels: ["area/foundation", "area/grpc", "area/kafka", "area/mailer", "area/mutiny", "area/netty", "area/reactive", "area/reactive-messaging", "area/reactive-sql-clients", "area/reactive-streams-operators", "area/redis", "area/stork", "area/vertx", "area/virtual-threads", "area/websockets"]
+      labels: ["area/foundation", "area/grpc", "area/kafka", "area/mailer", "area/mutiny", "area/netty", "area/messaging", "area/reactive-sql-clients", "area/reactive-streams-operators", "area/redis", "area/stork", "area/vertx", "area/virtual-threads", "area/websockets"]
       days: ["MONDAY", "WEDNESDAY", "FRIDAY"]
       feedback:
         needed:
@@ -241,7 +241,7 @@ participants:
       days: ["WEDNESDAY"]
       maxIssues: 2
     maintenance:
-      labels: ["area/mutiny", "area/reactive", "area/vertx", "area/core", "env/podman", "area/kotlin"]
+      labels: ["area/mutiny", "area/vertx", "area/core", "env/podman", "area/kotlin"]
       days: ["WEDNESDAY"]
       feedback:
         needed:
@@ -271,7 +271,7 @@ participants:
       days: [ "MONDAY", "FRIDAY" ]
       maxIssues: 2
     maintenance:
-      labels: [ "area/kafka", "area/reactive-messaging", "area/reactive", "area/virtual-threads", "area/mutiny", "area/devtools" ]
+      labels: [ "area/kafka", "area/messaging", "area/virtual-threads", "area/mutiny", "area/devtools" ]
       days: [ "MONDAY", "FRIDAY" ]
       feedback:
         needed:

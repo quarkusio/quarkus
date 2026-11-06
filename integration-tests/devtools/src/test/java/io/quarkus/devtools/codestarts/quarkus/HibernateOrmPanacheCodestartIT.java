@@ -21,7 +21,7 @@ public class HibernateOrmPanacheCodestartIT {
     @Test
     void testContent() throws Throwable {
         codestartTest.checkGeneratedSource("org.acme.MyEntity");
-        codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/resources/import.sql");
+        codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/resources/data.sql");
     }
 
     @Test

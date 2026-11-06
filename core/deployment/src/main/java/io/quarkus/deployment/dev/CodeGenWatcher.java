@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.locks.Lock;
 
-import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -16,6 +15,7 @@ import io.quarkus.deployment.CodeGenerator;
 import io.quarkus.deployment.codegen.CodeGenData;
 import io.quarkus.deployment.util.FSWatchUtil;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.config.Config;
 
 class CodeGenWatcher {
 

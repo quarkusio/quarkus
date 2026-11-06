@@ -36,6 +36,7 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.grpc.client.GrpcClient;
+import io.vertx.grpc.client.GrpcClientOptions;
 import io.vertx.grpc.client.GrpcClientRequest;
 import io.vertx.grpc.client.GrpcClientResponse;
 import io.vertx.grpc.common.GrpcError;
@@ -84,11 +85,14 @@ public final class VertxGrpcSender implements GrpcSender {
         this.exportTimeout = timeout;
         var httpClientOptions = new HttpClientOptions()
                 .setHttp2ClearTextUpgrade(false) // needed otherwise connections get closed immediately
-                .setReadIdleTimeout((int) timeout.getSeconds())
                 .setTracingPolicy(TracingPolicy.IGNORE); // needed to avoid tracing the calls from this gRPC client
         clientOptionsCustomizer.accept(httpClientOptions);
+        // The timeout is the deadline of each call, see ClientRequestOnSuccessHandler, not a read idle timeout on the
+        // connection: that one counts from the last read on the connection, so it can close it while an export is in
+        // flight after the collector received it, and the retry sends it twice
+        var grpcClientOptions = new GrpcClientOptions().setScheduleDeadlineAutomatically(true);
         // FIXME No way to set the connection exception handler for the gRPC client, at the moment.
-        this.client = GrpcClient.client(vertx, httpClientOptions);
+        this.client = GrpcClient.client(vertx, grpcClientOptions, httpClientOptions);
     }
 
     @Override
@@ -268,6 +272,11 @@ public final class VertxGrpcSender implements GrpcSender {
             // Set the service name and the method to call
             request.serviceName(ServiceName.create(grpcEndpointPath));
             request.methodName(GRPC_METHOD_NAME);
+
+            // Cancels the call when the whole response has not arrived in time, even if the connection is not idle
+            if (exportTimeout.toMillis() > 0) {
+                request.timeout(exportTimeout.toMillis(), MILLISECONDS);
+            }
 
             if (!headers.isEmpty()) {
                 var vertxHeaders = request.headers();

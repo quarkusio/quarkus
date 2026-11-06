@@ -34,6 +34,11 @@ implementation("io.quarkus:quarkus-elytron-security-properties-file")
 The elytron-security-properties-file extension currently supports two different realms for storing authentication and authorization information.
 Both support storage of this information in properties files.
 
+If you enable both realms, give them different realm names by using the `quarkus.security.users.file.realm-name` and `quarkus.security.users.embedded.realm-name` configuration properties.
+When more than one realm is enabled, for example, the embedded realm together with the JDBC realm, users are authenticated by the default realm.
+The realm named `Quarkus` is the default realm.
+To select another default realm, set the xref:all-config.adoc#quarkus-elytron-security_quarkus-security-elytron-default-realm-name[`quarkus.security.elytron.default-realm-name`] configuration property.
+
 The following sections detail the specific configuration properties.
 
 [NOTE]

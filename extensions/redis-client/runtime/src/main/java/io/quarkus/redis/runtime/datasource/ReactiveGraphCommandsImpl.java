@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.redis.datasource.ReactiveRedisCommands;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.graph.GraphQueryResponseItem;
 import io.quarkus.redis.datasource.graph.ReactiveGraphCommands;
@@ -17,7 +16,7 @@ import io.vertx.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
 
 public class ReactiveGraphCommandsImpl<K> extends AbstractGraphCommands<K>
-        implements ReactiveGraphCommands<K>, ReactiveRedisCommands {
+        implements ReactiveGraphCommands<K> {
 
     private final ReactiveRedisDataSource reactive;
     protected final Class<K> typeOfKey;

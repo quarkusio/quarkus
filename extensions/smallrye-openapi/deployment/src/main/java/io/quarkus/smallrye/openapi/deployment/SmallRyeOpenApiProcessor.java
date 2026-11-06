@@ -37,8 +37,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.OASConfig;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -131,6 +129,7 @@ import io.quarkus.vertx.http.deployment.spi.WebDependencyJarBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.quarkus.vertx.http.security.AuthorizationPolicy;
+import io.smallrye.config.Config;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OperationHandler;
 import io.smallrye.openapi.api.SmallRyeOpenAPI;
@@ -342,7 +341,7 @@ public class SmallRyeOpenApiProcessor {
 
         // If management is enabled and swagger-ui is part of management, we need to add CORS so that swagger can hit the endpoint
         if (isManagement(managementBuildTimeConfig, openApiConfig, launch)) {
-            Config c = ConfigProvider.getConfig();
+            Config c = Config.get();
 
             // quarkus.http.cors.enabled=true
             // quarkus.http.cors.origins
@@ -371,7 +370,7 @@ public class SmallRyeOpenApiProcessor {
             Supplier<Boolean> securitySetting) {
 
         if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
-            Config config = ConfigProvider.getConfig();
+            Config config = Config.get();
             Optional<Boolean> authEnabled = config.getOptionalValue("quarkus.security.auth.enabled-in-dev-mode", Boolean.class);
             if (authEnabled.isPresent() && authEnabled.get()) {
                 return securitySetting.get();
@@ -408,7 +407,7 @@ public class SmallRyeOpenApiProcessor {
         CompositeIndex compositeIndex = CompositeIndex.create(
                 combinedIndexBuildItem.getIndex(),
                 beanArchiveIndexBuildItem.getIndex());
-        OpenApiConfig config = OpenApiConfig.fromConfig(ConfigProvider.getConfig());
+        OpenApiConfig config = OpenApiConfig.fromConfig(Config.get());
         Set<DotName> buildTimeClassExclusions = buildExclusionsBuildItem.getExcludedDeclaringClasses()
                 .stream()
                 .map(DotName::createSimple)
@@ -601,7 +600,7 @@ public class SmallRyeOpenApiProcessor {
     private OASFilter getAutoServerFilter(OpenApiDocumentConfig documentConfig, boolean defaultFlag,
             String description) {
         if (documentConfig.autoAddServer().orElse(defaultFlag)) {
-            Config c = ConfigProvider.getConfig();
+            Config c = Config.get();
 
             String scheme = "http";
             String host = c.getOptionalValue("quarkus.http.host", String.class).orElse("0.0.0.0");
@@ -965,7 +964,7 @@ public class SmallRyeOpenApiProcessor {
 
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
 
         List<Pattern> urlIgnorePatterns = ignoreStaticDocumentBuildItems.stream()
                 .map(IgnoreStaticDocumentBuildItem::getUrlIgnorePattern)
@@ -1182,7 +1181,7 @@ public class SmallRyeOpenApiProcessor {
 
     private boolean shouldScanAnnotations(Capabilities capabilities, IndexView index) {
         // Disabled via config
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         boolean scanDisable = config.getOptionalValue(OASConfig.SCAN_DISABLE, Boolean.class).orElse(false);
         if (scanDisable) {
             return false;
@@ -1208,7 +1207,7 @@ public class SmallRyeOpenApiProcessor {
         }
 
         SmallRyeOpenAPI.Builder staticBuilder = SmallRyeOpenAPI.builder()
-                .withConfig(ConfigProvider.getConfig())
+                .withConfig(Config.get())
                 .enableModelReader(false)
                 .enableStandardStaticFiles(false)
                 .enableAnnotationScan(false)

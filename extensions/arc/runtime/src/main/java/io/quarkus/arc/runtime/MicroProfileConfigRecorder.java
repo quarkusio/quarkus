@@ -11,13 +11,11 @@ import java.util.Set;
 
 import jakarta.enterprise.inject.spi.DeploymentException;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.arc.impl.ParameterizedTypeImpl;
 import io.quarkus.runtime.annotations.RecordableConstructor;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigValidationException;
@@ -31,7 +29,7 @@ import io.smallrye.config.inject.ConfigProducerUtil;
 public class MicroProfileConfigRecorder {
 
     public void validateConfigProperties(Set<ConfigValidationMetadata> properties) {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
             cl = MicroProfileConfigRecorder.class.getClassLoader();
@@ -90,8 +88,7 @@ public class MicroProfileConfigRecorder {
                             .configClass(load(entry.getKey(), Thread.currentThread().getContextClassLoader()), prefix));
                 }
             }
-            SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
-            ConfigMappings.registerConfigClasses(config, configClasses, false);
+            ConfigMappings.registerConfigClasses(Config.get().unwrap(SmallRyeConfig.class), configClasses, false);
         } catch (ConfigValidationException e) {
             throw new DeploymentException(e.getMessage(), e);
         }

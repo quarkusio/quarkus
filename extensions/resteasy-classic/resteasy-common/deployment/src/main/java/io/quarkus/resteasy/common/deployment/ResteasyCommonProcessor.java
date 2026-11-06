@@ -1,7 +1,5 @@
 package io.quarkus.resteasy.common.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,15 +40,15 @@ import org.jboss.resteasy.spi.InjectorFactory;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Consume;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -58,14 +56,13 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.resteasy.common.runtime.QuarkusInjectorFactory;
 import io.quarkus.resteasy.common.runtime.ResteasyCommonConfig;
-import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
 import io.quarkus.resteasy.common.runtime.config.ResteasyConfigBuilder;
 import io.quarkus.resteasy.common.runtime.providers.ServerFormUrlEncodedProvider;
 import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
-import io.quarkus.runtime.RuntimeValue;
 
 public class ResteasyCommonProcessor {
 
@@ -155,13 +152,14 @@ public class ResteasyCommonProcessor {
         }
     }
 
-    @Record(STATIC_INIT)
-    @Consume(BeanContainerBuildItem.class)
     @BuildStep
-    ResteasyInjectionReadyBuildItem setupResteasyInjection(
-            ResteasyInjectorFactoryRecorder recorder) {
-        RuntimeValue<InjectorFactory> injectorFactory = recorder.setup();
-        return new ResteasyInjectionReadyBuildItem(injectorFactory);
+    ResteasyInjectionReadyBuildItem setupResteasyInjection(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar
+                .forService(InjectorFactory.class)
+                .atPhase(Phase.STATIC_INIT)
+                .after(BeanContainer.class)
+                .onStart(ctx -> new QuarkusInjectorFactory());
+        return new ResteasyInjectionReadyBuildItem(serviceRegistrar.staticInitServiceAsRuntimeValue(InjectorFactory.class));
     }
 
     @BuildStep

@@ -2,20 +2,16 @@ package io.quarkus.agroal.deployment;
 
 import java.util.List;
 
-import io.quarkus.agroal.runtime.metrics.AgroalMetricsRecorder;
+import io.quarkus.agroal.runtime.metrics.AgroalMetricsConsumer;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 
 public class AgroalMetricsProcessor {
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void registerMetrics(AgroalMetricsRecorder recorder,
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+    void registerMetrics(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             BuildProducer<MetricsFactoryConsumerBuildItem> datasourceMetrics,
             List<JdbcDataSourceDefinitionBuildItem> aggregatedDataSourceBuildTimeConfigs) {
 
@@ -26,7 +22,7 @@ public class AgroalMetricsProcessor {
             if (dataSourcesBuildTimeConfig.metricsEnabled() &&
                     aggregatedDataSourceBuildTimeConfig.getJdbcConfig().metrics().enabled().orElse(true)) {
                 datasourceMetrics.produce(new MetricsFactoryConsumerBuildItem(
-                        recorder.registerDataSourceMetrics(aggregatedDataSourceBuildTimeConfig.getName())));
+                        new AgroalMetricsConsumer(aggregatedDataSourceBuildTimeConfig.getName())));
             }
         }
     }

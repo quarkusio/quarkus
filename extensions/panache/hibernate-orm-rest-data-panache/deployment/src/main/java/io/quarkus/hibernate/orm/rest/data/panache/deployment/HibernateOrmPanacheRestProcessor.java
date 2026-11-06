@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.rest.data.panache.deployment;
 import static io.quarkus.deployment.Feature.HIBERNATE_ORM_REST_DATA_PANACHE;
 import static io.quarkus.rest.data.panache.deployment.utils.EntityTypeUtils.getEntityFields;
 import static io.quarkus.rest.data.panache.deployment.utils.EntityTypeUtils.getListenersByEntityType;
+import static io.quarkus.rest.data.panache.deployment.utils.EntityTypeUtils.getSecureFields;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
@@ -104,7 +105,8 @@ class HibernateOrmPanacheRestProcessor {
 
             restDataResourceProducer.produce(new RestDataResourceBuildItem(
                     new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
-                            getEntityFields(index.getIndex(), entityType))));
+                            getEntityFields(index.getIndex(), entityType),
+                            getSecureFields(index.getIndex(), entityType))));
         }
     }
 
@@ -140,7 +142,8 @@ class HibernateOrmPanacheRestProcessor {
 
             restDataResourceProducer.produce(new RestDataResourceBuildItem(
                     new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
-                            getEntityFields(index.getIndex(), entityType))));
+                            getEntityFields(index.getIndex(), entityType),
+                            getSecureFields(index.getIndex(), entityType))));
         }
     }
 

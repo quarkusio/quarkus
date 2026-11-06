@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.extest.deployment.MapBuildTimeConfigBuildStep;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.config.Config;
 
 public class BuildTimeConfigTest {
 
@@ -42,7 +42,7 @@ public class BuildTimeConfigTest {
      */
     @Test
     void shouldWork() throws IOException {
-        String markerFilePath = ConfigProvider.getConfig().getValue(TEST_MAP_CONFIG_MARKER, String.class);
+        String markerFilePath = Config.get().getValue(TEST_MAP_CONFIG_MARKER, String.class);
         String content = Files.readString(Paths.get(markerFilePath));
         assertThat(content).isEqualTo(MapBuildTimeConfigBuildStep.INVOKED);
     }

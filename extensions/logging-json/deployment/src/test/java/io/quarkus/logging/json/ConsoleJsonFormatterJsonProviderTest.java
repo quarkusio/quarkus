@@ -26,7 +26,7 @@ public class ConsoleJsonFormatterJsonProviderTest {
             .withApplicationRoot((jar) -> jar.addClasses(ConsoleJsonFormatterDefaultConfigTest.class,
                     CustomJsonProvider.class, AuditFieldProvider.class,
                     LevelBasedProvider.class, MdcFieldProvider.class, NumericFieldProvider.class,
-                    MetadataProvider.class))
+                    MetadataProvider.class, ArrayFieldProvider.class, NestedArrayElementsProvider.class))
             .withConfigurationResource("application-console-json-formatter-default.properties");
 
     @Test
@@ -176,6 +176,87 @@ public class ConsoleJsonFormatterJsonProviderTest {
                     .add("version", "1.0")
                     .add("source", "test")
                     .endObject();
+        }
+    }
+
+    @Test
+    public void jsonProviderCanWriteArraysOfPrimitives() throws Exception {
+        JsonNode node = new ObjectMapper().readTree(
+                getJsonFormatter().format(new LogRecord(Level.INFO, "Array fields test")));
+
+        JsonNode maskingFields = node.get("maskedfields");
+        assertThat(maskingFields.isArray()).isTrue();
+        assertThat(maskingFields.size()).isEqualTo(2);
+        assertThat(maskingFields.get(0).asText()).isEqualTo("email");
+        assertThat(maskingFields.get(1).asText()).isEqualTo("phone");
+
+        JsonNode ports = node.get("ports");
+        assertThat(ports.isArray()).isTrue();
+        assertThat(ports.get(0).asInt()).isEqualTo(8080);
+        assertThat(ports.get(1).asInt()).isEqualTo(8443);
+
+        JsonNode timestamps = node.get("timestamps");
+        assertThat(timestamps.isArray()).isTrue();
+        assertThat(timestamps.get(0).asLong()).isEqualTo(1_700_000_000_000L);
+
+        JsonNode flags = node.get("flags");
+        assertThat(flags.isArray()).isTrue();
+        assertThat(flags.get(0).asBoolean()).isTrue();
+        assertThat(flags.get(1).asBoolean()).isFalse();
+    }
+
+    @ApplicationScoped
+    public static class ArrayFieldProvider implements JsonProvider {
+
+        @Override
+        public void writeTo(JsonLogGenerator generator, ExtLogRecord record) throws Exception {
+            generator.startArray("maskedfields")
+                    .add("email")
+                    .add("phone")
+                    .endArray();
+            generator.startArray("ports")
+                    .add(8080)
+                    .add(8443)
+                    .endArray();
+            generator.startArray("timestamps")
+                    .add(1_700_000_000_000L)
+                    .endArray();
+            generator.startArray("flags")
+                    .add(true)
+                    .add(false)
+                    .endArray();
+        }
+    }
+
+    @Test
+    public void jsonProviderCanWriteNestedObjectsInsideArray() throws Exception {
+        JsonNode node = new ObjectMapper().readTree(
+                getJsonFormatter().format(new LogRecord(Level.INFO, "Nested array elements test")));
+
+        JsonNode hosts = node.get("hosts");
+        assertThat(hosts.isArray()).isTrue();
+        assertThat(hosts.size()).isEqualTo(2);
+        assertThat(hosts.get(0).get("name").asText()).isEqualTo("primary");
+        assertThat(hosts.get(0).get("port").asInt()).isEqualTo(5432);
+        assertThat(hosts.get(1).get("name").asText()).isEqualTo("replica");
+        assertThat(hosts.get(1).get("port").asInt()).isEqualTo(5433);
+    }
+
+    @ApplicationScoped
+    public static class NestedArrayElementsProvider implements JsonProvider {
+
+        @Override
+        public void writeTo(JsonLogGenerator generator, ExtLogRecord record) throws Exception {
+            generator.startArray("hosts");
+            generator.startObject()
+                    .add("name", "primary")
+                    .add("port", 5432)
+                    .endObject();
+            generator.startObject()
+                    .add("name", "replica")
+                    .add("port", 5433)
+                    .endObject();
+            generator.endArray();
         }
     }
 }

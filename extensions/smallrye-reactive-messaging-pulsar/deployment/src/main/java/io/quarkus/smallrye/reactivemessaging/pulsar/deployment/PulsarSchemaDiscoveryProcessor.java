@@ -18,12 +18,8 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.KotlinUtils;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.pulsar.SchemaProviderRecorder;
 import io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 
@@ -35,20 +31,17 @@ public class PulsarSchemaDiscoveryProcessor {
      * Handles the serializer/deserializer detection and whether the graceful shutdown should be used in dev mode.
      */
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     public void defaultChannelConfiguration(
             ReactiveMessagingPulsarBuildTimeConfig buildTimeConfig,
             CombinedIndexBuildItem combinedIndex,
             List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigProducer,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBean,
-            RecorderContext recorderContext,
-            SchemaProviderRecorder recorder) {
+            BuildProducer<SyntheticBeanBuildItem> syntheticBean) {
         if (buildTimeConfig.schemaAutodetectionEnabled()) {
             DefaultSchemaDiscoveryState discoveryState = new DefaultSchemaDiscoveryState(combinedIndex.getIndex());
             discoverDefaultSerdeConfig(discoveryState, channelsManagedByConnectors, defaultConfigProducer,
                     buildTimeConfig.schemaGenerationEnabled()
-                            ? new SyntheticBeanBuilder(syntheticBean, recorder, recorderContext)
+                            ? new SyntheticBeanBuilder(syntheticBean)
                             : null);
         }
     }

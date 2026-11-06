@@ -14,8 +14,6 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Singleton;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -25,6 +23,7 @@ import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
+import io.smallrye.config.Config;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -47,7 +46,7 @@ public class SecurityConstrainer {
         this.additionalEventPropsSupplier = additionalEventPropsSupplier;
         this.storage = storage;
         if (runtimeConfigReady) {
-            boolean securityEventsEnabled = ConfigProvider.getConfig().getValue("quarkus.security.events.enabled",
+            boolean securityEventsEnabled = Config.get().getValue("quarkus.security.events.enabled",
                     Boolean.class);
             this.securityEventHelper = new SecurityEventHelper<>(authZSuccessEvent, authZFailureEvent, AUTHORIZATION_SUCCESS,
                     AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);

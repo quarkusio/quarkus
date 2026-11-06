@@ -1,29 +1,43 @@
 package io.quarkus.datasource.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.inject.Singleton;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
+import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourceRecorder;
 import io.quarkus.datasource.runtime.DataSourceSupport;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 
 public class DataSourcesExcludedFromHealthChecksProcessor {
 
     @BuildStep
-    @Record(RUNTIME_INIT)
-    void produceBean(
-            Capabilities capabilities,
-            DataSourceRecorder recorder,
+    void produceBean(DataSourcesBuildTimeConfig buildTimeConfig,
+            ServiceRegistrar serviceRegistrar,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+        Set<String> healthCheckExcludedNames = Set.copyOf(buildTimeConfig.dataSources().entrySet().stream()
+                .filter(dataSource -> dataSource.getValue().healthExclude())
+                .map(Map.Entry<String, DataSourceBuildTimeConfig>::getKey)
+                .collect(Collectors.toSet()));
+
+        serviceRegistrar.forService(DataSourceSupport.class)
+                .atPhase(Phase.CONFIG)
+                .require(DataSourcesRuntimeConfig.class)
+                .onStart((ctx, runtimeConfig) -> DataSourceRecorder.createDataSourceSupport(healthCheckExcludedNames,
+                        runtimeConfig));
+
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(DataSourceSupport.class)
                 .scope(Singleton.class)
                 .unremovable()
-                .runtimeValue(recorder.createDataSourceSupport())
+                .serviceValue(DataSourceSupport.class)
                 .setRuntimeInit()
                 .done());
     }

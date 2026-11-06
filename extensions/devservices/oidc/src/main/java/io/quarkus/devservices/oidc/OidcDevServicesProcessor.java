@@ -26,7 +26,6 @@ import java.util.StringTokenizer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.base64url.Base64Url;
@@ -41,6 +40,7 @@ import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.Config;
 import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerOptions;
@@ -149,11 +149,11 @@ class OidcDevServicesProcessor {
     }
 
     private static boolean isOidcEnabled() {
-        return ConfigProvider.getConfig().getValue(OIDC_ENABLED, Boolean.class);
+        return Config.get().getValue(OIDC_ENABLED, Boolean.class);
     }
 
     private static boolean isOidcTenantEnabled() {
-        return ConfigProvider.getConfig().getOptionalValue(TENANT_ENABLED_CONFIG_KEY, Boolean.class).orElse(true);
+        return Config.get().getOptionalValue(TENANT_ENABLED_CONFIG_KEY, Boolean.class).orElse(true);
     }
 
     private static String getOidcApplicationType() {
@@ -161,7 +161,7 @@ class OidcDevServicesProcessor {
     }
 
     private static Optional<String> getOptionalOidcApplicationType() {
-        return ConfigProvider.getConfig().getOptionalValue(APPLICATION_TYPE_CONFIG_KEY, String.class);
+        return Config.get().getOptionalValue(APPLICATION_TYPE_CONFIG_KEY, String.class);
     }
 
     private static String getOidcClientId() {
@@ -173,11 +173,11 @@ class OidcDevServicesProcessor {
     }
 
     private static Optional<String> getOptionalOidcClientId() {
-        return ConfigProvider.getConfig().getOptionalValue(CLIENT_ID_CONFIG_KEY, String.class);
+        return Config.get().getOptionalValue(CLIENT_ID_CONFIG_KEY, String.class);
     }
 
     private static Optional<String> getOptionalOidcClientSecret() {
-        return ConfigProvider.getConfig().getOptionalValue(CLIENT_SECRET_CONFIG_KEY, String.class);
+        return Config.get().getOptionalValue(CLIENT_SECRET_CONFIG_KEY, String.class);
     }
 
     private static void mainRoute(RoutingContext rc) {

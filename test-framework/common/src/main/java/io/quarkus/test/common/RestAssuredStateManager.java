@@ -1,13 +1,13 @@
 package io.quarkus.test.common;
 
+import static io.quarkus.test.common.ListeningAddress.LAMBDA_BASE_URI;
+import static io.quarkus.test.common.ListeningAddress.LOCAL_BASE_URI;
+
 import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.value.registry.ValueRegistry;
-import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 import io.restassured.RestAssured;
 import io.restassured.config.HttpClientConfig;
 import io.restassured.path.json.JsonPath;
@@ -43,7 +43,7 @@ public class RestAssuredStateManager {
 
     private static int getPortFromConfig(int defaultValue, String... keys) {
         for (String key : keys) {
-            Optional<Integer> port = ConfigProvider.getConfig().getOptionalValue(key, Integer.class);
+            Optional<Integer> port = Config.get().getOptionalValue(key, Integer.class);
             if (port.isPresent())
                 return port.get();
         }
@@ -79,14 +79,15 @@ public class RestAssuredStateManager {
         RestAssured.port = port;
 
         final String protocol = useSecureConnection ? "https://" : "http://";
-        String host = ConfigProvider.getConfig().getOptionalValue("quarkus.http.host", String.class)
+        Config config = Config.get();
+        String host = config.getOptionalValue("quarkus.http.host", String.class)
                 .orElse("localhost");
         if (host.equals("0.0.0.0")) {
             host = "localhost";
         }
         RestAssured.baseURI = protocol + host;
 
-        Optional<String> basePath = ConfigProvider.getConfig().getOptionalValue("quarkus.http.root-path",
+        Optional<String> basePath = config.getOptionalValue("quarkus.http.root-path",
                 String.class);
         if (basePath.isPresent() || additionalPath != null) {
             StringBuilder bp = new StringBuilder();
@@ -112,18 +113,15 @@ public class RestAssuredStateManager {
             RestAssured.basePath = bp.toString();
         }
 
-        Duration timeout = ConfigProvider.getConfig()
+        Duration timeout = config
                 .getOptionalValue("quarkus.http.test-timeout", Duration.class).orElse(Duration.ofSeconds(30));
         configureTimeouts(timeout);
 
-        if (ConfigProvider.getConfig()
+        if (config
                 .getOptionalValue("quarkus.test.rest-assured.enable-logging-on-failure", Boolean.class).orElse(true)) {
             RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
         }
     }
-
-    private static final RuntimeKey<URI> LOCAL_BASE_URI = RuntimeKey.key("quarkus.http.local-base-uri");
-    private static final RuntimeKey<URI> LAMBDA_BASE_URI = RuntimeKey.key("quarkus.lambda.local-base-uri");
 
     public static void setTestUri(ValueRegistry valueRegister) {
         setTestUri(valueRegister, null);

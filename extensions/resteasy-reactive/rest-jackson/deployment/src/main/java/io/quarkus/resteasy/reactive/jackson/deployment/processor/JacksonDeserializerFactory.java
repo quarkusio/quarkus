@@ -2,6 +2,7 @@ package io.quarkus.resteasy.reactive.jackson.deployment.processor;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
@@ -29,6 +30,7 @@ import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.VoidType;
+import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonSetter;
@@ -154,6 +156,15 @@ import tools.jackson.databind.type.TypeFactory;
  * }
  * }</pre>
  *
+ * The body of the {@code deserialize} method shown above is actually generated in a private
+ * {@code populate(JsonParser, DeserializationContext, Object)} method. Besides {@code deserialize(JsonParser,
+ * DeserializationContext)}, which invokes it with a new instance, the generated class also overrides
+ * {@code deserialize(JsonParser, DeserializationContext, Object)}, invoked by Jackson to update an existing
+ * instance (e.g. through {@code ObjectReader#readerForUpdating} when a JSON merge patch is applied), which passes
+ * that instance to it. The tree-based deserializers populate the instance to update in place as well, and for
+ * this reason no deserializer is generated for classes having properties that cannot be written through a public
+ * field or a setter.
+ *
  * Note that in this case also the {@code Address} class has to be deserialized in the same way, and then this factory triggers
  * the generation of a second StdDeserializer also for it. More in general if during the generation of a deserializer for a
  * given class it discovers a non-primitive field of another type for which a deserializer hasn't been generated yet, this
@@ -220,6 +231,8 @@ import tools.jackson.databind.type.TypeFactory;
  * }</pre>
  */
 public class JacksonDeserializerFactory extends JacksonCodeGenerator {
+
+    private static final Logger log = Logger.getLogger(JacksonDeserializerFactory.class);
 
     public JacksonDeserializerFactory(BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             IndexView jandexIndex) {
@@ -333,11 +346,12 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
         createIsCachableMethod(classCreator);
 
-        MethodCreator deserialize = classCreator
-                .getMethodCreator("deserialize", Object.class, JsonParser.class, DeserializationContext.class)
-                .setModifiers(ACC_PUBLIC)
-                .addException(IOException.class)
-                .addException(JacksonException.class);
+        // deserialize(JsonParser, DeserializationContext) creates a new instance of the bean, while Jackson invokes
+        // deserialize(JsonParser, DeserializationContext, Object) to populate an existing instance, e.g. when a JSON
+        // merge patch is applied through ObjectReader#readerForUpdating. Without the second overload Jackson would use
+        // the default implementation of ValueDeserializer, which ignores the instance to update and creates a new one
+        MethodCreator deserialize = createDeserializeMethod(classCreator, false);
+        MethodCreator deserializeInto = createDeserializeMethod(classCreator, true);
 
         Optional<MethodInfo> ctorOpt = findConstructor(classInfo);
         if (ctorOpt.isEmpty()) {
@@ -347,42 +361,81 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         MethodInfo ctor = ctorOpt.get();
 
         if (canUseStreaming(classInfo, ctor, beanClassName)) {
-            return createStreamingDeserializeMethod(classInfo, classCreator, deserialize, ctor);
+            return createStreamingDeserializeMethods(classInfo, classCreator, deserialize, deserializeInto, ctor);
         }
+        return createTreeDeserializeMethods(classInfo, classCreator, beanClassName, deserialize, deserializeInto, ctor);
+    }
 
-        ResultHandle strategyHandle = getStrategyHandle(deserialize);
+    private static MethodCreator createDeserializeMethod(ClassCreator classCreator, boolean intoExistingValue) {
+        Class<?>[] parameterTypes = intoExistingValue
+                ? new Class<?>[] { JsonParser.class, DeserializationContext.class, Object.class }
+                : new Class<?>[] { JsonParser.class, DeserializationContext.class };
+        return classCreator
+                .getMethodCreator("deserialize", Object.class, parameterTypes)
+                .setModifiers(ACC_PUBLIC)
+                .addException(IOException.class)
+                .addException(JacksonException.class);
+    }
+
+    private boolean createTreeDeserializeMethods(ClassInfo classInfo, ClassCreator classCreator, String beanClassName,
+            MethodCreator deserialize, MethodCreator deserializeInto, MethodInfo ctor) {
         PropertyNamingStrategy namingStrategy = getNamingStrategy(classInfo);
         Set<String> translatableNames = collectTranslatableFieldNames(classInfo, ctor, namingStrategy);
-        ResultHandle reverseIndexHandle = null;
-        if (!translatableNames.isEmpty()) {
+        boolean hasTranslatableNames = !translatableNames.isEmpty();
+        if (hasTranslatableNames) {
             generateTranslatableFieldNamesStaticField(classCreator, translatableNames);
-            reverseIndexHandle = buildReverseIndexHandle(deserialize, classCreator, strategyHandle);
         }
-        ResultHandle activeViewHandle = deserialize.invokeVirtualMethod(
-                ofMethod(DeserializationContext.class, "getActiveView", Class.class),
-                deserialize.getMethodParam(1));
-        DeserializationData deserData = new DeserializationData(classInfo, ctor, classCreator, deserialize,
-                getJsonNode(deserialize), parseTypeParameters(classInfo, classCreator), new HashSet<>(),
-                namingStrategy, strategyHandle, reverseIndexHandle, activeViewHandle);
+        Map<String, Integer> typeParametersIndex = parseTypeParameters(classInfo, classCreator);
+
+        DeserializationData deserData = newDeserializationData(classInfo, ctor, classCreator, deserialize,
+                typeParametersIndex, namingStrategy, hasTranslatableNames, false);
 
         ResultHandle deserializedHandle = ctor.parametersCount() == 0
-                ? deserData.methodCreator.newInstance(MethodDescriptor.ofConstructor(deserData.classInfo.name().toString()))
+                ? deserialize.newInstance(MethodDescriptor.ofConstructor(beanClassName))
                 : createDeserializedObject(deserData);
 
         if (deserializedHandle == null) {
             return false;
         }
 
-        boolean valid;
-        if (isClassFormatShapeArray(classInfo)) {
-            valid = deserializeArrayFields(deserData, deserializedHandle);
-        } else if (isAssignableTo(beanClassName, MAP_NAME)) {
-            valid = deserializeMapEntries(deserData, deserializedHandle);
-        } else {
-            valid = deserializeObjectFields(deserData, deserializedHandle);
-        }
+        boolean valid = deserializeFromTree(deserData, deserializedHandle, beanClassName);
         deserialize.returnValue(deserializedHandle);
+
+        // the same code is generated a second time to populate the existing instance: the properties bound to the
+        // constructor parameters, if any, are written through their field or setter like all the other ones here
+        DeserializationData updateData = newDeserializationData(classInfo, ctor, classCreator, deserializeInto,
+                typeParametersIndex, namingStrategy, hasTranslatableNames, true);
+        ResultHandle existingHandle = deserializeInto.checkCast(deserializeInto.getMethodParam(2), beanClassName);
+        if (!deserializeFromTree(updateData, existingHandle, beanClassName)) {
+            valid = false;
+        }
+        deserializeInto.returnValue(existingHandle);
         return valid;
+    }
+
+    private boolean deserializeFromTree(DeserializationData deserData, ResultHandle objHandle, String beanClassName) {
+        if (isClassFormatShapeArray(deserData.classInfo)) {
+            return deserializeArrayFields(deserData, objHandle);
+        }
+        if (isAssignableTo(beanClassName, MAP_NAME)) {
+            return deserializeMapEntries(deserData, objHandle);
+        }
+        return deserializeObjectFields(deserData, objHandle);
+    }
+
+    private static DeserializationData newDeserializationData(ClassInfo classInfo, MethodInfo ctor,
+            ClassCreator classCreator, MethodCreator methodCreator, Map<String, Integer> typeParametersIndex,
+            PropertyNamingStrategy namingStrategy, boolean hasTranslatableNames, boolean updating) {
+        ResultHandle strategyHandle = getStrategyHandle(methodCreator);
+        ResultHandle reverseIndexHandle = hasTranslatableNames
+                ? buildReverseIndexHandle(methodCreator, classCreator, strategyHandle)
+                : null;
+        ResultHandle activeViewHandle = methodCreator.invokeVirtualMethod(
+                ofMethod(DeserializationContext.class, "getActiveView", Class.class),
+                methodCreator.getMethodParam(1));
+        return new DeserializationData(classInfo, ctor, classCreator, methodCreator, getJsonNode(methodCreator),
+                typeParametersIndex, new HashSet<>(), namingStrategy, strategyHandle, reverseIndexHandle,
+                activeViewHandle, updating);
     }
 
     private static ResultHandle getStrategyHandle(MethodCreator deserialize) {
@@ -403,6 +456,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
     private ResultHandle createDeserializedObject(DeserializationData deserData) {
         ResultHandle[] params = new ResultHandle[deserData.constructor.parameters().size()];
+        // the bean doesn't exist yet, so like Jackson use its class as the referrer of any error path
+        ResultHandle referrer = deserData.methodCreator.loadClass(deserData.classInfo.name().toString());
         int i = 0;
         for (MethodParameterInfo paramInfo : deserData.constructor.parameters()) {
             FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(deserData.classInfo, paramInfo, deserData.namingStrategy);
@@ -428,8 +483,15 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 missingBranch.throwException(exception);
             }
 
+            if (fieldSpecs.fieldType.kind() == Type.Kind.PRIMITIVE) {
+                // like Jackson, a missing primitive creator property is treated as null
+                checkNullForPrimitive(deserData.methodCreator.ifNull(fieldValue).trueBranch(), fieldSpecs,
+                        deserData.methodCreator.getMethodParam(1), referrer);
+            }
+
             ResultHandle paramValue = readValueFromJson(deserData.classCreator, deserData.methodCreator,
-                    deserData.methodCreator.getMethodParam(1), fieldSpecs, deserData.typeParametersIndex, fieldValue);
+                    deserData.methodCreator.getMethodParam(1), fieldSpecs, deserData.typeParametersIndex, fieldValue,
+                    referrer);
             if (paramValue == null) {
                 // the value of this parameter cannot be deserialized in a reflection-free way (e.g. its
                 // type is polymorphic), so give up generating the deserializer for the whole class
@@ -551,8 +613,12 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             ResultHandle valueNode = deserData.methodCreator.invokeVirtualMethod(
                     ofMethod(JsonNode.class, "get", JsonNode.class, int.class),
                     deserData.jsonNode, deserData.methodCreator.load(i));
-            if (!deserializeField(deserData, deserData.methodCreator, objHandle,
-                    valueNode, fieldSpecs, deserializationContext)) {
+            // like Jackson, when an existing instance is updated the properties beyond the end of a too short array
+            // keep their current value
+            BytecodeCreator bytecode = deserData.updating
+                    ? deserData.methodCreator.ifNotNull(valueNode).trueBranch()
+                    : deserData.methodCreator;
+            if (!deserializeField(deserData, bytecode, objHandle, valueNode, fieldSpecs, deserializationContext)) {
                 valid = false;
             }
         }
@@ -937,7 +1003,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         }
 
         ResultHandle valueHandle = readValueFromJson(deserData.classCreator, effectiveBytecode, deserializationContext,
-                fieldSpecs, deserData.typeParametersIndex, fieldValue);
+                fieldSpecs, deserData.typeParametersIndex, fieldValue, objHandle);
         if (valueHandle == null) {
             return false;
         }
@@ -1006,11 +1072,11 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
     private ResultHandle readValueFromJson(ClassCreator classCreator, BytecodeCreator bytecode,
             ResultHandle deserializationContext, FieldSpecs fieldSpecs, Map<String, Integer> typeParametersIndex,
-            ResultHandle valueNode) {
+            ResultHandle valueNode, ResultHandle referrer) {
         Type fieldType = fieldSpecs.fieldType;
         String fieldTypeName = fieldType.name().toString();
         if (JacksonSerializationUtils.isBasicJsonType(fieldType)) {
-            return readValueForPrimitiveFields(bytecode, fieldType, valueNode);
+            return readValueForPrimitiveFields(bytecode, fieldSpecs, valueNode, deserializationContext, referrer);
         }
 
         if (hasJsonTypeInfoInTypeChain(fieldType)) {
@@ -1121,18 +1187,22 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return setter;
     }
 
-    private static ResultHandle readValueForPrimitiveFields(BytecodeCreator bytecode, Type fieldType,
-            ResultHandle valueNode) {
+    private static ResultHandle readValueForPrimitiveFields(BytecodeCreator bytecode, FieldSpecs fieldSpecs,
+            ResultHandle valueNode, ResultHandle deserializationContext, ResultHandle referrer) {
+        Type fieldType = fieldSpecs.fieldType;
         AssignableResultHandle result = bytecode.createVariable(DescriptorUtils.typeToString(fieldType));
 
         BranchResult isValueNull = bytecode.ifNull(valueNode);
 
+        // a missing value (e.g. an element beyond the end of a too short ARRAY-shaped bean) keeps the default
+        // value, as in Jackson; a missing primitive creator property is checked by createDeserializedObject
         BytecodeCreator isValueNullTrue = isValueNull.trueBranch();
         isValueNullTrue.assign(result, JacksonSerializationUtils.getDefaultValue(isValueNullTrue, fieldType));
 
         BranchResult isNullNode = isValueNull.falseBranch()
                 .ifTrue(isValueNull.falseBranch().invokeVirtualMethod(ofMethod(JsonNode.class, "isNull", boolean.class),
                         valueNode));
+        checkNullForPrimitive(isNullNode.trueBranch(), fieldSpecs, deserializationContext, referrer);
         isNullNode.trueBranch().assign(result, JacksonSerializationUtils.getDefaultValue(isNullNode.trueBranch(), fieldType));
 
         BytecodeCreator isValueNullFalse = isNullNode.falseBranch();
@@ -1174,26 +1244,58 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return result;
     }
 
-    @Override
-    protected Optional<MethodInfo> findConstructor(ClassInfo classInfo) {
-        Optional<MethodInfo> ctorOpt = super.findConstructor(classInfo);
-        if (ctorOpt.isPresent() && ctorOpt.get().parametersCount() == 0 && !classInfo.isRecord()) {
-            Set<String> unsettableFields = findUnsettableFields(classInfo);
-            if (!unsettableFields.isEmpty()) {
-                return classInfo.constructors().stream()
-                        .filter(ctor -> Modifier.isPublic(ctor.flags()) && ctorCoversFields(ctor, unsettableFields))
-                        .findFirst();
-            }
+    /**
+     * For a primitive field, emits a call to {@link JacksonMapperUtil#checkNullForPrimitive} that fails when its value
+     * is null and {@code FAIL_ON_NULL_FOR_PRIMITIVES} is enabled. The feature is checked at runtime, so that it also
+     * honors the customizations of the {@code ObjectMapper} and of the {@code ObjectReader} in use.
+     */
+    private static void checkNullForPrimitive(BytecodeCreator bytecode, FieldSpecs fieldSpecs,
+            ResultHandle deserializationContext, ResultHandle referrer) {
+        if (fieldSpecs.fieldType.kind() != Type.Kind.PRIMITIVE) {
+            return;
         }
-        return ctorOpt;
+        bytecode.invokeStaticMethod(
+                ofMethod(JacksonMapperUtil.class, "checkNullForPrimitive", void.class,
+                        DeserializationContext.class, Object.class, String.class, Class.class),
+                deserializationContext, referrer, bytecode.load(fieldSpecs.jsonName),
+                bytecode.loadClass(fieldSpecs.fieldType.name().toString()));
     }
 
-    private static boolean ctorCoversFields(MethodInfo ctor, Set<String> fieldNames) {
-        Set<String> paramNames = new HashSet<>();
-        for (MethodParameterInfo param : ctor.parameters()) {
-            paramNames.add(param.name());
+    @Override
+    protected boolean shouldGenerateCodeFor(ClassInfo classInfo) {
+        return super.shouldGenerateCodeFor(classInfo) && classInfo.hasNoArgsConstructor()
+                && canBeUpdatedInPlace(classInfo);
+    }
+
+    /**
+     * Jackson can ask a deserializer to populate an existing instance instead of creating a new one, e.g. through
+     * {@code ObjectReader#readerForUpdating}, typically used to apply a JSON merge patch. The generated deserializer
+     * can do so only if every property can be written through a public field or a setter, while the default Jackson
+     * deserializer also sets non-public fields and the properties bound to the creator parameters by reflection.
+     * Classes having such properties are then left to the default Jackson deserializer.
+     */
+    private boolean canBeUpdatedInPlace(ClassInfo classInfo) {
+        Set<String> unsettableFields = findUnsettableFields(classInfo);
+        if (!unsettableFields.isEmpty()) {
+            log.debugf("Skipping generation of reflection-free Jackson deserializer for class %s because its fields %s" +
+                    " have no setter and cannot be written when updating an existing instance", classInfo.name(),
+                    unsettableFields);
+            return false;
         }
-        return paramNames.containsAll(fieldNames);
+        Optional<MethodInfo> ctorOpt = findConstructor(classInfo);
+        if (ctorOpt.isPresent()) {
+            PropertyNamingStrategy namingStrategy = getNamingStrategy(classInfo);
+            for (MethodParameterInfo paramInfo : ctorOpt.get().parameters()) {
+                FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(classInfo, paramInfo, namingStrategy);
+                if (!fieldSpecs.isPublicField() && setterMethodInfo(classInfo, fieldSpecs) == null) {
+                    log.debugf("Skipping generation of reflection-free Jackson deserializer for class %s because its" +
+                            " creator parameter %s has no matching public field or setter and cannot be written when" +
+                            " updating an existing instance", classInfo.name(), paramInfo.name());
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private Set<String> findUnsettableFields(ClassInfo classInfo) {
@@ -1218,11 +1320,6 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return unsettable;
     }
 
-    @Override
-    protected boolean shouldGenerateCodeFor(ClassInfo classInfo) {
-        return super.shouldGenerateCodeFor(classInfo) && classInfo.hasNoArgsConstructor();
-    }
-
     // ── Streaming deserialization ──────────────────────────────────────────────
 
     private static final String FIELD_MATCHER_NAME = "FIELD_MATCHER";
@@ -1230,8 +1327,31 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
     private record MatcherEntry(String name, FieldSpecs fieldSpecs) {
     }
 
-    private boolean createStreamingDeserializeMethod(ClassInfo classInfo, ClassCreator classCreator,
-            MethodCreator deserialize, MethodInfo ctor) {
+    private static final String POPULATE_METHOD_NAME = "populate";
+
+    private boolean createStreamingDeserializeMethods(ClassInfo classInfo, ClassCreator classCreator,
+            MethodCreator deserialize, MethodCreator deserializeInto, MethodInfo ctor) {
+        // both the public methods delegate to a private one that reads the JSON properties into the instance it receives
+        MethodCreator populate = classCreator
+                .getMethodCreator(POPULATE_METHOD_NAME, Object.class, JsonParser.class, DeserializationContext.class,
+                        Object.class)
+                .setModifiers(ACC_PRIVATE)
+                .addException(IOException.class)
+                .addException(JacksonException.class);
+        boolean valid = createStreamingPopulateMethod(classInfo, classCreator, populate, ctor);
+
+        MethodDescriptor populateDescriptor = populate.getMethodDescriptor();
+        deserialize.returnValue(deserialize.invokeSpecialMethod(populateDescriptor, deserialize.getThis(),
+                deserialize.getMethodParam(0), deserialize.getMethodParam(1),
+                deserialize.newInstance(MethodDescriptor.ofConstructor(classInfo.name().toString()))));
+        deserializeInto.returnValue(deserializeInto.invokeSpecialMethod(populateDescriptor, deserializeInto.getThis(),
+                deserializeInto.getMethodParam(0), deserializeInto.getMethodParam(1),
+                deserializeInto.getMethodParam(2)));
+        return valid;
+    }
+
+    private boolean createStreamingPopulateMethod(ClassInfo classInfo, ClassCreator classCreator,
+            MethodCreator populate, MethodInfo ctor) {
 
         PropertyNamingStrategy namingStrategy = getNamingStrategy(classInfo);
         Set<String> translatableNames = collectTranslatableFieldNames(classInfo, ctor, namingStrategy);
@@ -1240,22 +1360,21 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         boolean hasTranslatableNames = !translatableNames.isEmpty();
         generateStreamingStaticInit(classCreator, entries, translatableNames);
 
-        ResultHandle strategyHandle = hasTranslatableNames ? getStrategyHandle(deserialize) : null;
+        ResultHandle strategyHandle = hasTranslatableNames ? getStrategyHandle(populate) : null;
 
-        ResultHandle activeViewHandle = deserialize.invokeVirtualMethod(
+        ResultHandle activeViewHandle = populate.invokeVirtualMethod(
                 ofMethod(DeserializationContext.class, "getActiveView", Class.class),
-                deserialize.getMethodParam(1));
+                populate.getMethodParam(1));
 
         Map<String, Integer> typeParametersIndex = parseTypeParameters(classInfo, classCreator);
 
-        ResultHandle objHandle = deserialize.newInstance(
-                MethodDescriptor.ofConstructor(classInfo.name().toString()));
+        ResultHandle objHandle = populate.checkCast(populate.getMethodParam(2), classInfo.name().toString());
 
-        ResultHandle parser = deserialize.getMethodParam(0);
-        ResultHandle ctxt = deserialize.getMethodParam(1);
+        ResultHandle parser = populate.getMethodParam(0);
+        ResultHandle ctxt = populate.getMethodParam(1);
 
-        AssignableResultHandle nameVar = deserialize.createVariable(String.class);
-        BytecodeCreator loopBody = deserialize.whileLoop(c -> {
+        AssignableResultHandle nameVar = populate.createVariable(String.class);
+        BytecodeCreator loopBody = populate.whileLoop(c -> {
             ResultHandle name = c.invokeVirtualMethod(
                     ofMethod(JsonParser.class, "nextName", String.class), parser);
             c.assign(nameVar, name);
@@ -1270,7 +1389,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 entries, typeParametersIndex, activeViewHandle, strategyHandle,
                 hasTranslatableNames, nameVar, valid);
 
-        deserialize.returnValue(objHandle);
+        populate.returnValue(objHandle);
         return valid.get();
     }
 
@@ -1427,7 +1546,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         }
 
         ResultHandle valueHandle = readValueFromJsonStreaming(classCreator, effectiveBytecode, parser, ctxt,
-                fieldSpecs, typeParametersIndex);
+                fieldSpecs, typeParametersIndex, objHandle);
         if (valueHandle == null) {
             return false;
         }
@@ -1449,12 +1568,12 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
     private ResultHandle readValueFromJsonStreaming(ClassCreator classCreator, BytecodeCreator bytecode,
             ResultHandle parser, ResultHandle deserializationContext,
-            FieldSpecs fieldSpecs, Map<String, Integer> typeParametersIndex) {
+            FieldSpecs fieldSpecs, Map<String, Integer> typeParametersIndex, ResultHandle objHandle) {
         Type fieldType = fieldSpecs.fieldType;
         String fieldTypeName = fieldType.name().toString();
 
         if (JacksonSerializationUtils.isBasicJsonType(fieldType)) {
-            return readPrimitiveFromParser(bytecode, fieldType, parser);
+            return readPrimitiveFromParser(bytecode, fieldSpecs, parser, deserializationContext, objHandle);
         }
 
         if (hasJsonTypeInfoInTypeChain(fieldType)) {
@@ -1482,8 +1601,9 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return bytecode.invokeVirtualMethod(readValue, deserializationContext, parser, typeHandle);
     }
 
-    private static ResultHandle readPrimitiveFromParser(BytecodeCreator bytecode, Type fieldType,
-            ResultHandle parser) {
+    private static ResultHandle readPrimitiveFromParser(BytecodeCreator bytecode, FieldSpecs fieldSpecs,
+            ResultHandle parser, ResultHandle deserializationContext, ResultHandle objHandle) {
+        Type fieldType = fieldSpecs.fieldType;
         AssignableResultHandle result = bytecode.createVariable(DescriptorUtils.typeToString(fieldType));
 
         ResultHandle currentToken = bytecode.invokeVirtualMethod(
@@ -1492,6 +1612,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
                 FieldDescriptor.of(JsonToken.class, "VALUE_NULL", JsonToken.class));
         BranchResult isNull = bytecode.ifReferencesEqual(currentToken, nullToken);
 
+        checkNullForPrimitive(isNull.trueBranch(), fieldSpecs, deserializationContext, objHandle);
         isNull.trueBranch().assign(result, JacksonSerializationUtils.getDefaultValue(isNull.trueBranch(), fieldType));
 
         BytecodeCreator notNull = isNull.falseBranch();
@@ -1587,10 +1708,13 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
 
     private static final String TRANSLATABLE_FIELD_NAMES = "TRANSLATABLE_FIELD_NAMES";
 
+    /**
+     * @param updating whether the generated method populates an existing instance instead of a newly created one
+     */
     private record DeserializationData(ClassInfo classInfo, MethodInfo constructor, ClassCreator classCreator,
             MethodCreator methodCreator,
             ResultHandle jsonNode, Map<String, Integer> typeParametersIndex, Set<String> constructorFields,
             PropertyNamingStrategy namingStrategy, ResultHandle strategyHandle, ResultHandle reverseIndexHandle,
-            ResultHandle activeViewHandle) {
+            ResultHandle activeViewHandle, boolean updating) {
     }
 }

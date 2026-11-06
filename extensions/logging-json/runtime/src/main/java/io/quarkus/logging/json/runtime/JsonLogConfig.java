@@ -207,6 +207,19 @@ public interface JsonLogConfig extends LogRuntimeConfig {
         boolean mdcFlatFields();
 
         /**
+         * Renames MDC entries in the JSON output, mapping the MDC key to the field name it is written as.
+         * E.g. `quarkus.log.console.json.mdc.key-overrides.traceId=TraceId`.
+         * <p>
+         * This is useful when MDC entries are written by libraries, such as the {@code traceId} and {@code spanId}
+         * entries of OpenTelemetry, and the log aggregator expects them under different names.
+         * It applies to both nested and flat ({@code mdc.flat-fields}) MDC output. MDC entries not listed here keep
+         * their key, and the entries in the MDC itself are left as they are.
+         */
+        @WithName("mdc.key-overrides")
+        @ConfigDocMapKey("mdc-key")
+        Map<String, String> mdcKeyOverrides();
+
+        /**
          * When true, access log events emitted by {@code io.quarkus.http.access-log} are enriched with
          * a nested {@code "accessLog"} JSON object containing first-class fields for the HTTP method,
          * request URI, status code, response time, bytes sent, remote IP address, and protocol.

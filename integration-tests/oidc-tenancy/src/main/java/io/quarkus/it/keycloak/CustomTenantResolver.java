@@ -27,6 +27,9 @@ public class CustomTenantResolver implements TenantResolver {
         }
         context.put("static_config_resolved", "true");
 
+        if (context.request().path().endsWith("/tenant-public-key-subject")) {
+            return "tenant-public-key-subject";
+        }
         if (context.request().path().endsWith("/tenant-public-key")) {
             return "tenant-public-key";
         }

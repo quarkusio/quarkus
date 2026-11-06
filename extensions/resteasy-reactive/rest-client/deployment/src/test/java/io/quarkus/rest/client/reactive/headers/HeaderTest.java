@@ -56,7 +56,7 @@ public class HeaderTest {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
         assertThat(client.headersList(List.of("a", "b"), List.of("c", "d"))).isEqualTo(expected);
         assertThat(client.headersSet(Set.of("a", "b"), Set.of("c", "d"))).isEqualTo(expected);
-        assertThat(client.headersSet(new TreeSet(List.of("a", "b")), new TreeSet(List.of("c", "d")))).isEqualTo(expected);
+        assertThat(client.headersSet(new TreeSet<>(List.of("a", "b")), new TreeSet<>(List.of("c", "d")))).isEqualTo(expected);
     }
 
     @Test
@@ -121,9 +121,9 @@ public class HeaderTest {
             return sb.toString();
         }
 
-        private String joiningCollections(Collection... collections) {
+        private String joiningCollections(Collection<?>... collections) {
             List<String> allHeaders = new ArrayList<>();
-            for (Collection collection : collections) {
+            for (Collection<?> collection : collections) {
                 collection.forEach(v -> allHeaders.add((String) v));
             }
             return allHeaders.stream().collect(Collectors.joining(", "));

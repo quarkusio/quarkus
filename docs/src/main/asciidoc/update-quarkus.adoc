@@ -81,3 +81,8 @@ ifdef::devtools-wrapped[+]
 The OpenRewrite recipes used by the update command are maintained in the https://github.com/quarkusio/quarkus-updates[Quarkus Updates] repository.
 If you find that a recipe is missing or incorrect, you can contribute improvements there.
 Refer to the https://github.com/quarkusio/quarkus-updates/blob/main/README.md[README.md] and the https://github.com/quarkusio/quarkus-updates/blob/main/CONTRIBUTING.md[CONTRIBUTING.md] guide for detailed instructions on how to write and test recipes.
+
+== Compare versions
+
+The https://quarkus.io/almanac[Quarkus Almanac] shows what changed between two Quarkus versions, including configuration properties, dependencies, extensions, and APIs.
+Use it to see how an update might affect your project before you start, or to find changes that the update command did not cover.

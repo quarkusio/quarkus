@@ -9,11 +9,13 @@ import java.util.function.BiConsumer;
 
 import org.jboss.logging.Logger;
 
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.core.internal.http.HttpServerRequestWrapper;
 
@@ -64,6 +66,22 @@ public class QuarkusRequestWrapper extends HttpServerRequestWrapper {
     @Override
     public HttpServerResponse response() {
         return response;
+    }
+
+    /**
+     * A successful upgrade ends the HTTP request: the 101 response is written and the connection belongs to the
+     * WebSocket from now on. Vert.x completes that response without firing its end or close handlers, and the socket
+     * closing later only notifies the WebSocket, so without this the request done handlers would never run and the
+     * request would count as in flight for the lifetime of the process, see the graceful shutdown.
+     */
+    @Override
+    public Future<ServerWebSocket> toWebSocket() {
+        return super.toWebSocket().onSuccess(new Handler<ServerWebSocket>() {
+            @Override
+            public void handle(ServerWebSocket webSocket) {
+                done();
+            }
+        });
     }
 
     void done() {

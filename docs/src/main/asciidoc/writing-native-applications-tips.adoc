@@ -208,6 +208,14 @@ public class MyReflectionConfiguration {
 
 Note: By default the `@RegisterForReflection` annotation will also register any potential nested classes for reflection. If you want to avoid this behavior, you can set the `ignoreNested` attribute to `true`.
 
+By default, `@RegisterForReflection` registers declared members, not members inherited from superclasses.
+You can set `registerFullHierarchy = true` to register the class hierarchy and dependencies, but the default hierarchy traversal excludes most JDK types, including `java.lang.Throwable`.
+Register such types explicitly when their members require reflective access.
+
+The Jackson extension registers the public methods of `Throwable` and `StackTraceElement` for exception serialization in native executables.
+Custom exception subclasses still need reflection registration for their own properties when they cannot be inferred at build time.
+This also applies to custom exception types used as causes or suppressed exceptions.
+
 ==== Using a configuration file
 
 You can also use a configuration file to register classes for reflection, if you prefer relying on the GraalVM infrastructure.

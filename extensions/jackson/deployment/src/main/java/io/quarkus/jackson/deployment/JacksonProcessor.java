@@ -134,6 +134,15 @@ public class JacksonProcessor {
     }
 
     @BuildStep
+    ReflectiveClassBuildItem throwableSerialization() {
+        // Register inherited exception getters and the properties returned by getStackTrace() for invocation.
+        return ReflectiveClassBuildItem.builder(Throwable.class, StackTraceElement.class)
+                .reason(getClass().getName())
+                .constructors(false)
+                .publicMethods().build();
+    }
+
+    @BuildStep
     void register(
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,

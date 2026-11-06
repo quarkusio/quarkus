@@ -17,6 +17,14 @@ Note that we differentiate two contexts where the solution applied might be diff
 
 Please refer to the appropriate section depending on your context.
 
+[NOTE]
+====
+For backward compatibility, Quarkus 3.x generates the legacy native-image configuration files, such as `resource-config.json`, `reflect-config.json`, and `proxy-config.json`, instead of the newer unified `reachability-metadata.json` file.
+Quarkus 3.x generates the legacy files even when you build with Mandrel 25.0 (GraalVM for JDK 25).
+For consistency and better compatibility, the examples in this guide use the same legacy files.
+The GraalVM for JDK 25 reference manual no longer describes the format of the legacy files, so the links in this guide to the descriptions of these file formats point to the GraalVM for JDK 21 reference manual.
+====
+
 == Supporting native in your application
 
 GraalVM imposes a number of constraints and making your application a native executable might require a few tweaks.

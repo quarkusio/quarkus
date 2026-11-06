@@ -32,7 +32,6 @@ import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.ProcessorTestStubs;
 import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
 import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
-import io.quarkus.hibernate.orm.runtime.TransactionSessions;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
 
 /**
@@ -89,7 +88,6 @@ class HibernateOrmCdiProcessorTest {
             assertThat(item.getBeanClasses()).containsExactly(QuarkusArcBeanContainer.class.getName());
             assertThat(item.getBeanClasses()).doesNotContain(
                     TransactionManager.class.getName(),
-                    TransactionSessions.class.getName(),
                     RequestScopedSessionHolder.class.getName(),
                     RequestScopedStatelessSessionHolder.class.getName());
             assertThat(item.isRemovable()).isFalse();
@@ -108,7 +106,6 @@ class HibernateOrmCdiProcessorTest {
                 .containsExactlyInAnyOrder(
                         QuarkusArcBeanContainer.class.getName(),
                         TransactionManager.class.getName(),
-                        TransactionSessions.class.getName(),
                         RequestScopedSessionHolder.class.getName(),
                         RequestScopedStatelessSessionHolder.class.getName()));
 

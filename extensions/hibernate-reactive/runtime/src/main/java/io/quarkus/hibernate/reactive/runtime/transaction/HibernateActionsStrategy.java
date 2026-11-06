@@ -9,7 +9,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 
-import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
+import io.quarkus.hibernate.reactive.runtime.session.ReactiveTransactionScopedSession;
+import io.quarkus.hibernate.reactive.runtime.session.ReactiveTransactionScopedStatelessSession;
 import io.quarkus.reactive.transaction.runtime.ReactiveResource;
 import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.mutiny.Uni;
@@ -31,8 +32,8 @@ public class HibernateActionsStrategy implements ReactiveResource {
     public Uni<Void> beforeCommit(Context context) {
         Optional<String> optPersistenceUnitName = getPersistenceUnitName(context);
         return optPersistenceUnitName.map(persistenceUnitName -> Uni.combine().all().unis(
-                HibernateReactiveRecorder.OPENED_SESSIONS_STATE.flushSession(context, persistenceUnitName),
-                HibernateReactiveRecorder.OPENED_SESSIONS_STATE_STATELESS.flushSession(context, persistenceUnitName))
+                ReactiveTransactionScopedSession.flushSession(context, persistenceUnitName),
+                ReactiveTransactionScopedStatelessSession.flushSession(context, persistenceUnitName))
                 .discardItems()).orElse(Uni.createFrom().voidItem());
     }
 
@@ -44,8 +45,8 @@ public class HibernateActionsStrategy implements ReactiveResource {
     public Uni<Void> afterCommit(Context context) {
         Optional<String> optPersistenceUnitName = getPersistenceUnitName(context);
         return optPersistenceUnitName.map(persistenceUnitName -> Uni.combine().all().unis(
-                HibernateReactiveRecorder.OPENED_SESSIONS_STATE.closeSession(context, persistenceUnitName),
-                HibernateReactiveRecorder.OPENED_SESSIONS_STATE_STATELESS.closeSession(context, persistenceUnitName))
+                ReactiveTransactionScopedSession.closeSession(context, persistenceUnitName),
+                ReactiveTransactionScopedStatelessSession.closeSession(context, persistenceUnitName))
                 .discardItems()).orElse(Uni.createFrom().voidItem())
                 .eventually(() -> {
                     // We want to make sure that we clear the state after the closing (and after the flushing) as well
@@ -58,9 +59,9 @@ public class HibernateActionsStrategy implements ReactiveResource {
     @Override
     public boolean isMarkedForRollback(Context context) {
         Optional<String> optPersistenceUnitName = getPersistenceUnitName(context);
-        return optPersistenceUnitName.flatMap(s -> HibernateReactiveRecorder.OPENED_SESSIONS_STATE
+        return optPersistenceUnitName.flatMap(s -> ReactiveTransactionScopedSession
                 .currentTransaction(context, s)
-                .or(() -> HibernateReactiveRecorder.OPENED_SESSIONS_STATE_STATELESS.currentTransaction(context, s))
+                .or(() -> ReactiveTransactionScopedStatelessSession.currentTransaction(context, s))
                 .map(Mutiny.Transaction::isMarkedForRollback))
                 .orElse(false);
     }

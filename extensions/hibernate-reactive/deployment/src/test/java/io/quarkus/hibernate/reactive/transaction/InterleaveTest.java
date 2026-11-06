@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.reactive.transaction;
 
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
-import static io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder.OPENED_SESSIONS_STATE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Optional;
@@ -14,7 +13,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.reactive.runtime.OpenedSessionsState;
+import io.quarkus.hibernate.reactive.runtime.session.ReactiveTransactionScopedSession;
 import io.quarkus.reactive.transaction.runtime.TransactionalInterceptorRequired;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
@@ -73,10 +72,10 @@ public class InterleaveTest {
     public Uni<Hero> findHero(Long heroId) {
 
         Uni<Hero> heroUni = session.find(Hero.class, heroId).invoke(s -> {
-            Optional<OpenedSessionsState.SessionWithKey<Mutiny.Session>> openedSessionsState = OPENED_SESSIONS_STATE
-                    .getOpenedSession(Vertx.currentContext(), DEFAULT_PERSISTENCE_UNIT_NAME);
+            Optional<Mutiny.Session> openedSession = ReactiveTransactionScopedSession
+                    .getExistingSession(Vertx.currentContext(), DEFAULT_PERSISTENCE_UNIT_NAME);
 
-            System.out.println(openedSessionsState.get());
+            System.out.println(openedSession.get());
 
         });
         return heroUni.chain(s -> Uni.createFrom().nothing());
@@ -84,12 +83,12 @@ public class InterleaveTest {
 
     public Uni<Void> simulateInterleavedTransactionalMethod() {
 
-        Optional<OpenedSessionsState.SessionWithKey<Mutiny.Session>> openedSessionsState = OPENED_SESSIONS_STATE
-                .getOpenedSession(Vertx.currentContext(), DEFAULT_PERSISTENCE_UNIT_NAME);
+        Optional<Mutiny.Session> openedSession = ReactiveTransactionScopedSession
+                .getExistingSession(Vertx.currentContext(), DEFAULT_PERSISTENCE_UNIT_NAME);
 
         // This will fail as the transaction will leak here.
         // This method shouldn't be able to access the transaction
-        assertThat(openedSessionsState).isEmpty();
+        assertThat(openedSession).isEmpty();
 
         return Uni.createFrom().nullItem();
     }

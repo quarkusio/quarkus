@@ -84,6 +84,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         final APIGatewayV2HTTPEvent request;
         CompletableFuture<APIGatewayV2HTTPResponse> future = new CompletableFuture<>();
         String contentType;
+        String contentEncoding;
 
         public NettyResponseHandler(APIGatewayV2HTTPEvent request) {
             this.request = request;
@@ -102,6 +103,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                     HttpResponse res = (HttpResponse) msg;
                     responseBuilder.setStatusCode(res.status().code());
                     contentType = res.headers().get(HttpHeaderNames.CONTENT_TYPE);
+                    contentEncoding = res.headers().get(HttpHeaderNames.CONTENT_ENCODING);
 
                     final Map<String, String> headers = new HashMap<>();
                     responseBuilder.setHeaders(headers);
@@ -152,7 +154,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                 }
                 if (msg instanceof LastHttpContent) {
                     if (baos != null) {
-                        if (isText(contentType)) {
+                        if (isText(contentType) && !isEncoded(contentEncoding)) {
                             responseBuilder.setBody(baos.toString(StandardCharsets.UTF_8));
                         } else {
                             responseBuilder.setIsBase64Encoded(true);
@@ -272,6 +274,10 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                     || ct.contains("yaml"));
         }
         return false;
+    }
+
+    private boolean isEncoded(String contentEncoding) {
+        return contentEncoding != null && !contentEncoding.equalsIgnoreCase("identity");
     }
 
 }

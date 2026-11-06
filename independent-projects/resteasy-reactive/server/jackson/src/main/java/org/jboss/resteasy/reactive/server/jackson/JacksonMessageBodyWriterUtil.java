@@ -42,6 +42,15 @@ public final class JacksonMessageBodyWriterUtil {
     public static void doLegacyWrite(Object o, Annotation[] annotations, MultivaluedMap<String, Object> httpHeaders,
             OutputStream entityStream, ObjectWriter defaultWriter) throws IOException {
         setContentTypeIfNecessary(httpHeaders);
+        doLegacyWrite(o, annotations, entityStream, defaultWriter);
+    }
+
+    /**
+     * Writes the entity without touching the headers, for writers whose {@code Content-Type} has already been decided,
+     * such as the REST Client writers.
+     */
+    public static void doLegacyWrite(Object o, Annotation[] annotations, OutputStream entityStream,
+            ObjectWriter defaultWriter) throws IOException {
         if ((o instanceof String) && (!(entityStream instanceof StreamingOutputStream))) {
             // YUK: done in order to avoid adding extra quotes... when we are not streaming a result
             entityStream.write(((String) o).getBytes(StandardCharsets.UTF_8));

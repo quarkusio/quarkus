@@ -9,10 +9,12 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.runtime.StartupEvent;
-import io.vertx.core.json.Json;
 import io.vertx.ext.web.Router;
 
 @ApplicationScoped
@@ -21,6 +23,10 @@ public class ExporterRouter {
     Router router;
     @Inject
     InMemorySpanExporter exporter;
+    // The managed mapper is customized by SpanAttributesJsonMapperCustomizer so that a SpanData's
+    // attributes are serialized as a flat {key: value} map (see that class for the why).
+    @Inject
+    ObjectMapper mapper;
 
     public void register(@Observes StartupEvent ev) {
         router.get("/reset").handler(rc -> {
@@ -35,9 +41,17 @@ public class ExporterRouter {
                             && !sd.getName().contains("bus/messages"))
                     .collect(Collectors.toList());
 
+            String body;
+            try {
+                body = mapper.writeValueAsString(export);
+            } catch (JsonProcessingException e) {
+                rc.fail(e);
+                return;
+            }
+
             rc.response()
                     .putHeader("content-type", "application/json; charset=utf-8")
-                    .end(Json.encodePrettily(export));
+                    .end(body);
         });
     }
 

@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -37,6 +38,25 @@ public class InMemoryLogRecordExporter implements LogRecordExporter {
         Awaitility.await().atMost(5, SECONDS)
                 .untilAsserted(() -> assertThat(getFinishedLogRecordItems().size()).isGreaterThanOrEqualTo(count));
         return getFinishedLogRecordItems();
+    }
+
+    /**
+     * Waits for the single log record carrying the given body. Records are exported in batches, so
+     * unrelated records produced by the application, like the "Installed features" startup message,
+     * can land in the exporter at any time. Filtering by body keeps the assertions independent of
+     * what else happens to be in the queue.
+     */
+    public LogRecordData getFinishedLogRecordItemWithBody(final String body) {
+        Awaitility.await().atMost(5, SECONDS)
+                .untilAsserted(() -> assertThat(getFinishedLogRecordItemsWithBody(body)).hasSize(1));
+        return getFinishedLogRecordItemsWithBody(body).get(0);
+    }
+
+    private List<LogRecordData> getFinishedLogRecordItemsWithBody(final String body) {
+        return getFinishedLogRecordItems().stream()
+                .filter(logRecord -> logRecord.getBodyValue() != null
+                        && body.equals(logRecord.getBodyValue().asString()))
+                .collect(Collectors.toList());
     }
 
     public List<LogRecordData> getFinishedLogRecordItemsWithWait(final Duration duration) {

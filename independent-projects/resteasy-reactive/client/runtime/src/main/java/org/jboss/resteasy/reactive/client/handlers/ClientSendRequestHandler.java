@@ -4,9 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -566,19 +564,13 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         Object clientRequestOptions = state.getClientFilterProperties().get(QuarkusRestClientProperties.REQUEST_OPTIONS);
         Uni<RequestOptions> requestOptions;
         state.setMultipartResponsesData(multipartResponseDataMap);
-        if (uri.getScheme() == null) { // invalid URI
+        // Validate without java.net.URL: the Vert.x transport does not need JDK URL protocol handlers.
+        // Stork resolves service URIs to HTTP(S) before this handler is invoked.
+        boolean isHttps = "https".equalsIgnoreCase(uri.getScheme());
+        if ((!isHttps && !"http".equalsIgnoreCase(uri.getScheme())) || uri.getHost() == null) { // invalid URI
             return Uni.createFrom()
                     .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri + "'"));
         }
-        try {
-            URL ignored = uri.toURL();
-        } catch (MalformedURLException mue) {
-            log.error("Invalid REST Client URL used: '" + uri + "'");
-            return Uni.createFrom()
-                    .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri + "'"));
-        }
-
-        boolean isHttps = "https".equals(uri.getScheme());
         int port = getPort(isHttps, uri.getPort());
         requestOptions = Uni.createFrom().item(new RequestOptions().setHost(uri.getHost())
                 .setPort(port).setSsl(isHttps));

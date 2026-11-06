@@ -12,6 +12,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 import io.vertx.core.http.Http2Settings;
@@ -215,7 +216,7 @@ public interface VertxHttpConfig {
      * is not suitable for production environments. This must be more than 16 characters long for security reasons
      */
     @WithName("auth.session.encryption-key")
-    Optional<String> encryptionKey();
+    Optional<Secret<String>> encryptionKey();
 
     /**
      * Enable socket reuse port (linux/macOs native transport only)

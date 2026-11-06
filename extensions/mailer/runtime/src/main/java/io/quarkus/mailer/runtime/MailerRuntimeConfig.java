@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
@@ -64,7 +65,7 @@ public interface MailerRuntimeConfig {
     /**
      * Sets the password to connect to the SMTP server.
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * The name of the TLS configuration to use.

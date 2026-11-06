@@ -15,6 +15,7 @@ import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithParentName;
 
@@ -41,7 +42,7 @@ public interface HibernateSearchBackendElasticsearchRuntimeConfig {
     /**
      * The password used for authentication.
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * The timeout when establishing a connection to an Elasticsearch server.

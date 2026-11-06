@@ -1,5 +1,7 @@
 🔒: Configuration property fixed at build time - All other configuration properties are overridable at runtime
 
+🔑: Secret configuration property - Its value is masked and cannot be looked up by name with the `Config` API
+
 <table>
 <thead>
 <tr>

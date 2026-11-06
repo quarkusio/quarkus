@@ -17,6 +17,7 @@ public final class Types {
     public static final String ANNOTATION_RECORD = "io.quarkus.deployment.annotations.Record";
 
     public static final String MEMORY_SIZE_TYPE = "io.quarkus.runtime.configuration.MemorySize";
+    public static final String SECRET_TYPE = "io.smallrye.config.Secret";
     public static final String ANNOTATION_CONFIG_ITEM = "io.quarkus.runtime.annotations.ConfigItem";
     public static final String ANNOTATION_BUILD_STEP = "io.quarkus.deployment.annotations.BuildStep";
     public static final String ANNOTATION_CONFIG_ROOT = "io.quarkus.runtime.annotations.ConfigRoot";

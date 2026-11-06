@@ -66,6 +66,7 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
         Map<String, String> quarkusFallbacks = new HashMap<>();
         Map<String, String> microProfileFallbacks = new HashMap<>();
         Map<String, List<String>> relocates = new HashMap<>();
+        List<String> secretKeys = new ArrayList<>();
 
         for (RegisteredRestClient restClient : restClients) {
             RestClientKeysProvider.KEYS.add(restClient.getFullName());
@@ -127,12 +128,17 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
             String mpRestFullName = restClient.getFullName() + "/mp-rest/";
             microProfileFallbacks.put(quotedFullName, mpRestFullName);
             fullNameRelocates.add(mpRestFullName);
+            addMicroProfileSecretKeys(secretKeys, mpRestFullName);
             if (configKey != null && !configKey.equals(restClient.getFullName())) {
                 String mpConfigKey = configKey + "/mp-rest/";
                 microProfileFallbacks.put(mpRestFullName, mpConfigKey);
                 fullNameRelocates.add(mpConfigKey);
+                addMicroProfileSecretKeys(secretKeys, mpConfigKey);
             }
         }
+
+        // The MP names are fallbacks for secret properties, so they must be secrets as well
+        builder.withSecretKeys(secretKeys.toArray(new String[0]));
 
         // Since interceptors do not keep state, we rewrite the key from the previous lookup:
         //  - FQN rewrites Simple Name
@@ -261,6 +267,7 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
     }
 
     private static final Map<String, String> MICROPROFILE_NAMES = new HashMap<>();
+    private static final List<String> MICROPROFILE_SECRET_NAMES = List.of("trustStorePassword", "keyStorePassword");
 
     static {
         MICROPROFILE_NAMES.put("url", "url");
@@ -438,6 +445,12 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
                     return names.next();
                 }
             };
+        }
+    }
+
+    private static void addMicroProfileSecretKeys(final List<String> secretKeys, final String mpRestPrefix) {
+        for (String secretName : MICROPROFILE_SECRET_NAMES) {
+            secretKeys.add(mpRestPrefix + secretName);
         }
     }
 

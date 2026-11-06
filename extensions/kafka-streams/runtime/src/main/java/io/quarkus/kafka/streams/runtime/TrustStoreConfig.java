@@ -3,6 +3,7 @@ package io.quarkus.kafka.streams.runtime;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.Secret;
 
 @ConfigGroup
 public interface TrustStoreConfig {
@@ -19,7 +20,7 @@ public interface TrustStoreConfig {
     /**
      * Trust store password
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * Trust store certificates

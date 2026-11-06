@@ -37,6 +37,7 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
 import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfigConfigurer;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.smallrye.config.Secret;
 
 public final class RestClientBuilderHelper {
 
@@ -141,10 +142,10 @@ public final class RestClientBuilderHelper {
             credentialsProvider.setCredentials(
                     new AuthScope(null, null, -1, null, null),
                     new UsernamePasswordCredentials(config.username().get(), config.password()
-                            .map(String::toCharArray).orElse(null)));
+                            .map(Secret::get).map(String::toCharArray).orElse(null)));
             httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
         } else if (hasApiKey) {
-            String apiKey = config.apiKey().get();
+            String apiKey = config.apiKey().get().get();
             Header apiKeyHeader = new BasicHeader(HttpHeaders.AUTHORIZATION, "ApiKey " + apiKey);
             httpClientBuilder.setDefaultHeaders(Collections.singleton(apiKeyHeader));
         }

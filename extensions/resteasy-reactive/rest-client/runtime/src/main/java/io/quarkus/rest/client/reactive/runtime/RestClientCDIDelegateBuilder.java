@@ -40,6 +40,7 @@ import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.config.Config;
+import io.smallrye.config.Secret;
 import io.vertx.core.http.HttpClientOptions;
 
 public class RestClientCDIDelegateBuilder<T> {
@@ -315,7 +316,8 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void registerKeyStore(String keyStorePath, QuarkusRestClientBuilder builder) {
-        Optional<String> keyStorePassword = oneOf(restClientConfig.keyStorePassword(), configRoot.keyStorePassword());
+        Optional<String> keyStorePassword = oneOf(restClientConfig.keyStorePassword(), configRoot.keyStorePassword())
+                .map(Secret::get);
         Optional<String> keyStoreType = oneOf(restClientConfig.keyStoreType(), configRoot.keyStoreType());
 
         try {
@@ -340,7 +342,7 @@ public class RestClientCDIDelegateBuilder<T> {
 
     private void registerTrustStore(String trustStorePath, QuarkusRestClientBuilder builder) {
         Optional<String> maybeTrustStorePassword = oneOf(restClientConfig.trustStorePassword(),
-                configRoot.trustStorePassword());
+                configRoot.trustStorePassword()).map(Secret::get);
         Optional<String> maybeTrustStoreType = oneOf(restClientConfig.trustStoreType(), configRoot.trustStoreType());
 
         try {

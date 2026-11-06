@@ -18,6 +18,7 @@ import org.hibernate.search.backend.elasticsearch.index.layout.IndexLayoutStrate
 import org.hibernate.search.engine.cfg.BackendSettings;
 
 import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.HibernateSearchBackendElasticsearchBuildTimeConfig.IndexConfig;
+import io.smallrye.config.Secret;
 
 public final class HibernateSearchBackendElasticsearchConfigHandler {
 
@@ -126,7 +127,7 @@ public final class HibernateSearchBackendElasticsearchConfigHandler {
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.USERNAME,
                     elasticsearchBackendConfig.username());
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.PASSWORD,
-                    elasticsearchBackendConfig.password());
+                    elasticsearchBackendConfig.password().map(Secret::get));
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.CONNECTION_TIMEOUT,
                     elasticsearchBackendConfig.connectionTimeout().toMillis());
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.READ_TIMEOUT,

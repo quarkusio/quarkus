@@ -208,7 +208,15 @@ public class VertxOutputStream extends OutputStream {
             } else {
                 final Optional<String> contentLength = context.getContentLength();
                 if (contentLength.isEmpty()) {
-                    response.setChunked(true);
+                    // An empty Optional means the framework has no length to hand us, either because
+                    // it does not know one or because the header is already on the response: when a
+                    // WriterInterceptor applies, WriterInterceptorContextImpl#proceed() encodes the
+                    // response headers before writing the body, so an application-set Content-Length
+                    // is already there. Content-Length and Transfer-Encoding are mutually exclusive
+                    // (RFC 9112), so only switch to chunked when the response really has neither.
+                    if (!response.headers().contains(HttpHeaderNames.CONTENT_LENGTH)) {
+                        response.setChunked(true);
+                    }
                 } else {
                     /* Pass the content length value from the framework writing into this stream */
                     response.headers().set(HttpHeaderNames.CONTENT_LENGTH, contentLength.get());

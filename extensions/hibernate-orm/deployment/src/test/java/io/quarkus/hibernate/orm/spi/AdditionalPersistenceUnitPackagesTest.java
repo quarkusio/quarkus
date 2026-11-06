@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm.spi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.function.Consumer;
 
@@ -18,18 +19,28 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.spi.pkgscan.AlsoManagedEntity;
 import io.quarkus.hibernate.orm.spi.pkgscan.PackageScannedEntity;
+import io.quarkus.hibernate.orm.spi.pkgscan.UserPersistenceUnitEntity;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class AdditionalPersistenceUnitPackagesTest {
 
     static final String PERSISTENCE_UNIT_NAME = "contributed";
+    static final String USER_PERSISTENCE_UNIT_NAME = "someUserPU";
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(PackageScannedEntity.class)
                     .addClass(AlsoManagedEntity.class)
-                    .addAsResource("application-additional-persistence-unit-packages.properties", "application.properties"))
+                    .addClass(UserPersistenceUnitEntity.class))
+            .withConfiguration(
+                    """
+                            # Only named datasources are defined: there is intentionally NO default datasource.
+                            # This guards against a persistence unit contributed through the SPI spuriously activating the default persistence unit.
+                            quarkus.datasource.vector.db-kind=h2
+                            quarkus.datasource.someuserpu.db-kind=h2
+                            quarkus.hibernate-orm."someUserPU".datasource=someuserpu
+                            """)
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -56,6 +67,10 @@ public class AdditionalPersistenceUnitPackagesTest {
     @PersistenceUnit(PERSISTENCE_UNIT_NAME)
     Session contributedSession;
 
+    @Inject
+    @PersistenceUnit(USER_PERSISTENCE_UNIT_NAME)
+    Session someUserSession;
+
     @Test
     @Transactional
     public void packageScannedEntityIsUsable() {
@@ -80,5 +95,27 @@ public class AdditionalPersistenceUnitPackagesTest {
         AlsoManagedEntity loaded = contributedSession.get(AlsoManagedEntity.class, entity.getId());
         assertThat(loaded).isNotNull();
         assertThat(loaded.getName()).isEqualTo("world");
+    }
+
+    @Test
+    @Transactional
+    public void userEntityWithClassLevelAnnotationIsUsableInItsOwnPersistenceUnit() {
+        UserPersistenceUnitEntity entity = new UserPersistenceUnitEntity("hello");
+        someUserSession.persist(entity);
+        someUserSession.flush();
+        someUserSession.clear();
+
+        UserPersistenceUnitEntity loaded = someUserSession.get(UserPersistenceUnitEntity.class, entity.getId());
+        assertThat(loaded).isNotNull();
+        assertThat(loaded.getName()).isEqualTo("hello");
+    }
+
+    @Test
+    @Transactional
+    public void userEntityWithClassLevelAnnotationIsNotAffectedByAdditionalPersistenceUnit() {
+        UserPersistenceUnitEntity entity = new UserPersistenceUnitEntity("world");
+        assertThatThrownBy(() -> contributedSession.persist(entity))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unknown entity type");
     }
 }

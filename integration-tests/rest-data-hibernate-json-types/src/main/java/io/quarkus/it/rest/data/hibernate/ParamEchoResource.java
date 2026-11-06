@@ -15,6 +15,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.RestQuery;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -99,6 +101,293 @@ public class ParamEchoResource {
     public Page<AnnotatedItem> pageAnnotated() {
         List<AnnotatedItem> items = List.of(new AnnotatedItem("Alice", 30, "s3cret"));
         return new PageRecord<>(PageRequest.ofPage(1, 10, true), items, 1);
+    }
+
+    /**
+     * Echoes an Order parameter with a custom parameter name specified via @RestQuery.
+     * Accepts query parameters like ?orderBy=name or ?orderBy=-age
+     */
+    @GET
+    @Path("order-custom-name")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> orderWithCustomName(@RestQuery("orderBy") Order<?> customOrder) {
+        if (customOrder == null || customOrder.sorts().isEmpty()) {
+            return Map.of("message", "No sorting provided");
+        }
+        List<Map<String, Object>> sorts = customOrder.sorts().stream()
+                .map(s -> Map.<String, Object> of(
+                        "property", s.property(),
+                        "ascending", s.isAscending()))
+                .toList();
+        return Map.of(
+                "parameterName", "orderBy",
+                "sorts", sorts);
+    }
+
+    /**
+     * Echoes a Sort parameter with a custom parameter name specified via @RestQuery.
+     * Accepts query parameters like ?sortBy=name or ?sortBy=-age
+     */
+    @GET
+    @Path("sort-custom-name")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> sortWithCustomName(@RestQuery("sortBy") Sort<?> customSort) {
+        if (customSort == null) {
+            return Map.of("message", "No sorting provided");
+        }
+        return Map.of(
+                "parameterName", "sortBy",
+                "property", customSort.property(),
+                "ascending", customSort.isAscending());
+    }
+
+    /**
+     * Echoes multiple Jakarta Data parameters with different custom names.
+     * Demonstrates that different parameters can use independent custom names.
+     */
+    @GET
+    @Path("multiple-custom-params")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> testMultipleCustomParams(
+            @RestQuery("orderBy") Order<?> ordering,
+            @RestQuery("filterBy") Sort<?> filter) {
+        Map<String, Object> result = new java.util.HashMap<>();
+
+        if (ordering != null && !ordering.sorts().isEmpty()) {
+            List<Map<String, Object>> sorts = ordering.sorts().stream()
+                    .map(s -> Map.<String, Object> of(
+                            "property", s.property(),
+                            "ascending", s.isAscending()))
+                    .toList();
+            result.put("ordering", sorts);
+        }
+
+        if (filter != null) {
+            result.put("filter", Map.of(
+                    "property", filter.property(),
+                    "ascending", filter.isAscending()));
+        }
+
+        return result;
+    }
+
+    /**
+     * Echoes Jakarta Data parameters using both default and custom names.
+     * The Sort parameter uses the default "sort" name, while Order uses a custom name.
+     */
+    @GET
+    @Path("mixed-params")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> testMixedParams(
+            Sort<?> defaultSort,
+            @RestQuery("customOrder") Order<?> customOrder) {
+        Map<String, Object> result = new java.util.HashMap<>();
+
+        if (defaultSort != null) {
+            result.put("defaultSort", Map.of(
+                    "property", defaultSort.property(),
+                    "ascending", defaultSort.isAscending()));
+        }
+
+        if (customOrder != null && !customOrder.sorts().isEmpty()) {
+            List<Map<String, Object>> sorts = customOrder.sorts().stream()
+                    .map(s -> Map.<String, Object> of(
+                            "property", s.property(),
+                            "ascending", s.isAscending()))
+                    .toList();
+            result.put("customOrder", sorts);
+        }
+
+        return result;
+    }
+
+    /**
+     * Echoes a Sort parameter with a custom name containing an underscore.
+     * Verifies that parameter names with special characters are supported.
+     */
+    @GET
+    @Path("special-chars")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> testSpecialChars(@RestQuery("order_by") Sort<?> orderBy) {
+        if (orderBy == null) {
+            return Map.of("message", "No sorting provided");
+        }
+        return Map.of(
+                "parameterName", "order_by",
+                "property", orderBy.property(),
+                "ascending", orderBy.isAscending());
+    }
+
+    /**
+     * Echoes a Sort parameter with bare @RestQuery (no explicit value).
+     * Should infer the Java parameter name "sortCriteria".
+     */
+    @GET
+    @Path("bare-query-sort")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> bareQuerySort(@RestQuery Sort<?> sortCriteria) {
+        if (sortCriteria == null) {
+            return Map.of("message", "No sorting provided");
+        }
+        return Map.of(
+                "parameterName", "sortCriteria",
+                "property", sortCriteria.property(),
+                "ascending", sortCriteria.isAscending());
+    }
+
+    /**
+     * Echoes an Order parameter with bare @RestQuery (no explicit value).
+     * Should infer the Java parameter name "orderCriteria".
+     */
+    @GET
+    @Path("bare-query-order")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> bareQueryOrder(@RestQuery Order<?> orderCriteria) {
+        if (orderCriteria == null || orderCriteria.sorts().isEmpty()) {
+            return Map.of("message", "No ordering provided");
+        }
+        List<Map<String, Object>> sorts = orderCriteria.sorts().stream()
+                .map(s -> Map.<String, Object> of(
+                        "property", s.property(),
+                        "ascending", s.isAscending()))
+                .toList();
+        return Map.of(
+                "parameterName", "orderCriteria",
+                "sorts", sorts);
+    }
+
+    /**
+     * Echoes a Direction parameter with bare @RestQuery (no explicit value).
+     * Should infer the Java parameter name "sortDir".
+     */
+    @GET
+    @Path("bare-query-direction")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> bareQueryDirection(@RestQuery Direction sortDir) {
+        if (sortDir == null) {
+            return Map.of("message", "No direction provided");
+        }
+        return Map.of(
+                "parameterName", "sortDir",
+                "direction", sortDir.name());
+    }
+
+    /**
+     * Echoes a Limit parameter with bare @RestQuery (no explicit value).
+     * Should infer the Java parameter name "rowLimit".
+     */
+    @GET
+    @Path("bare-query-limit")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> bareQueryLimit(@RestQuery Limit rowLimit) {
+        if (rowLimit == null) {
+            return Map.of("message", "No limit provided");
+        }
+        return Map.of(
+                "parameterName", "rowLimit",
+                "maxResults", rowLimit.maxResults(),
+                "startAt", rowLimit.startAt());
+    }
+
+    /**
+     * Echoes a PageRequest parameter with bare @RestQuery (no explicit value).
+     * Should infer the Java parameter name "pagination".
+     */
+    @GET
+    @Path("bare-query-page-request")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> bareQueryPageRequest(@RestQuery PageRequest pagination) {
+        return Map.of(
+                "parameterName", "pagination",
+                "page", pagination.page(),
+                "size", pagination.size(),
+                "requestTotal", pagination.requestTotal());
+    }
+
+    /**
+     * Echoes a Sort parameter with empty @RestQuery("").
+     * Should infer the Java parameter name "sortField".
+     */
+    @GET
+    @Path("empty-query-sort")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> emptyQuerySort(@RestQuery("") Sort<?> sortField) {
+        if (sortField == null) {
+            return Map.of("message", "No sorting provided");
+        }
+        return Map.of(
+                "parameterName", "sortField",
+                "property", sortField.property(),
+                "ascending", sortField.isAscending());
+    }
+
+    /**
+     * Echoes an Order parameter with empty @RestQuery("").
+     * Should infer the Java parameter name "orderFields".
+     */
+    @GET
+    @Path("empty-query-order")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> emptyQueryOrder(@RestQuery("") Order<?> orderFields) {
+        if (orderFields == null || orderFields.sorts().isEmpty()) {
+            return Map.of("message", "No ordering provided");
+        }
+        List<Map<String, Object>> sorts = orderFields.sorts().stream()
+                .map(s -> Map.<String, Object> of(
+                        "property", s.property(),
+                        "ascending", s.isAscending()))
+                .toList();
+        return Map.of(
+                "parameterName", "orderFields",
+                "sorts", sorts);
+    }
+
+    /**
+     * Echoes a Direction parameter with empty @RestQuery("").
+     * Should infer the Java parameter name "orderDirection".
+     */
+    @GET
+    @Path("empty-query-direction")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> emptyQueryDirection(@RestQuery("") Direction orderDirection) {
+        if (orderDirection == null) {
+            return Map.of("message", "No direction provided");
+        }
+        return Map.of(
+                "parameterName", "orderDirection",
+                "direction", orderDirection.name());
+    }
+
+    /**
+     * Echoes a Limit parameter with empty @RestQuery("").
+     * Should infer the Java parameter name "maxRecords".
+     */
+    @GET
+    @Path("empty-query-limit")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> emptyQueryLimit(@RestQuery("") Limit maxRecords) {
+        if (maxRecords == null) {
+            return Map.of("message", "No limit provided");
+        }
+        return Map.of(
+                "parameterName", "maxRecords",
+                "maxResults", maxRecords.maxResults(),
+                "startAt", maxRecords.startAt());
+    }
+
+    /**
+     * Echoes a PageRequest parameter with empty @RestQuery("").
+     * Should infer the Java parameter name "paging".
+     */
+    @GET
+    @Path("empty-query-page-request")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> emptyQueryPageRequest(@RestQuery("") PageRequest paging) {
+        return Map.of(
+                "parameterName", "paging",
+                "page", paging.page(),
+                "size", paging.size(),
+                "requestTotal", paging.requestTotal());
     }
 
     public static class Item {

@@ -182,7 +182,7 @@ public class ClientEndpointIndexer
 
     @Override
     protected boolean handleCustomParameter(Map<DotName, AnnotationInstance> anns, ClientIndexedParam builder, Type paramType,
-            boolean field, Map<String, Object> methodContext) {
+            boolean field, String sourceName, Map<String, Object> methodContext) {
         if (paramType.name().equals(CONTINUATION) || paramType.name().equals(CLIENT_REQUEST_OPTIONS)) {
             builder.setType(ParameterType.CUSTOM);
             return true;

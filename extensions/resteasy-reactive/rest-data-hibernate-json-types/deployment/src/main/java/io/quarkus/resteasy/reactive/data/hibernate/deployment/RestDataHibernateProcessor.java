@@ -9,8 +9,10 @@ import jakarta.data.Sort;
 import jakarta.data.page.PageRequest;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 
@@ -31,6 +33,7 @@ public class RestDataHibernateProcessor {
     private static final DotName ORDER = DotName.createSimple(Order.class);
     private static final DotName LIMIT = DotName.createSimple(Limit.class);
     private static final DotName DIRECTION = DotName.createSimple(Direction.class);
+    private static final DotName REST_QUERY = DotName.createSimple(RestQuery.class);
 
     @BuildStep
     AdditionalBeanBuildItem registerJacksonCustomizer() {
@@ -42,24 +45,58 @@ public class RestDataHibernateProcessor {
         return new MethodScannerBuildItem(new MethodScanner() {
             @Override
             public ParameterExtractor handleCustomParameter(Type paramType, Map<DotName, AnnotationInstance> annotations,
-                    boolean field, Map<String, Object> methodContext) {
+                    boolean field, String sourceName, Map<String, Object> methodContext) {
                 DotName name = paramType.name();
+                String parameterName = extractParameterName(annotations, name, sourceName);
+
                 if (name.equals(PAGE_REQUEST)) {
-                    return new PageRequestParamExtractor();
+                    return new PageRequestParamExtractor(parameterName);
                 }
                 if (name.equals(SORT)) {
-                    return new SortParamExtractor();
+                    return new SortParamExtractor(parameterName);
                 }
                 if (name.equals(ORDER)) {
-                    return new OrderParamExtractor();
+                    return new OrderParamExtractor(parameterName);
                 }
                 if (name.equals(LIMIT)) {
-                    return new LimitParamExtractor();
+                    return new LimitParamExtractor(parameterName);
                 }
                 if (name.equals(DIRECTION)) {
-                    return new DirectionParamExtractor();
+                    return new DirectionParamExtractor(parameterName);
                 }
                 return null;
+            }
+
+            private String extractParameterName(Map<DotName, AnnotationInstance> annotations, DotName paramType,
+                    String sourceName) {
+                AnnotationInstance restQuery = annotations.get(REST_QUERY);
+                if (restQuery != null) {
+                    AnnotationValue value = restQuery.value();
+                    if (value != null && !value.asString().isEmpty()) {
+                        return value.asString();
+                    }
+                    // Bare @RestQuery or @RestQuery("") - use the Java parameter name if available
+                    if (sourceName != null) {
+                        return sourceName;
+                    }
+                }
+                return getDefaultParameterName(paramType);
+            }
+
+            private String getDefaultParameterName(DotName paramType) {
+                if (paramType.equals(PAGE_REQUEST)) {
+                    return "page";
+                }
+                if (paramType.equals(SORT) || paramType.equals(ORDER)) {
+                    return "sort";
+                }
+                if (paramType.equals(LIMIT)) {
+                    return "limit";
+                }
+                if (paramType.equals(DIRECTION)) {
+                    return "direction";
+                }
+                return "param";
             }
         });
     }

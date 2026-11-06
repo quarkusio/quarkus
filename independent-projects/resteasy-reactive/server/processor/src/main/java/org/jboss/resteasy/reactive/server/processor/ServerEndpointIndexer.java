@@ -170,9 +170,9 @@ public class ServerEndpointIndexer
 
     @Override
     protected boolean handleCustomParameter(Map<DotName, AnnotationInstance> anns, ServerIndexedParameter builder,
-            Type paramType, boolean field, Map<String, Object> methodContext) {
+            Type paramType, boolean field, String sourceName, Map<String, Object> methodContext) {
         for (MethodScanner i : methodScanners) {
-            ParameterExtractor res = i.handleCustomParameter(paramType, anns, field, methodContext);
+            ParameterExtractor res = i.handleCustomParameter(paramType, anns, field, sourceName, methodContext);
             if (res != null) {
                 builder.setType(ParameterType.CUSTOM);
                 builder.setCustomParameterExtractor(res);

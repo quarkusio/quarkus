@@ -88,7 +88,7 @@ class DevServicesContainerReuseTest extends MojoTestBase {
                 .isEqualTo(firstContainerId);
     }
 
-    private static int findAvailablePort() {
+    static int findAvailablePort() {
         try (ServerSocket socket = new ServerSocket(0)) {
             return socket.getLocalPort();
         } catch (IOException e) {

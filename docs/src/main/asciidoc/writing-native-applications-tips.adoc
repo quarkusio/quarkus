@@ -705,7 +705,7 @@ Alternatively, you may create a `reachability-metadata.json` file as described i
 ====
 In both cases the configuration will be automatically parsed by the native build, without additional configuration.
 
-For more information about using Proxy Classes in native executables, see https://www.graalvm.org/jdk21/reference-manual/native-image/dynamic-features/DynamicProxy/[Dynamic Proxy in Native Image] and the https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/#reflection[GraalVM reflection metadata].
+For more information about using Proxy Classes in native executables, see the https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/#reflection[GraalVM reflection metadata], which also covers dynamic proxies.
 ====
 
 === Logging with Native Image

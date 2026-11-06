@@ -237,6 +237,10 @@ public class VertxCoreRecorder {
                 throw new RuntimeException(e);
             } finally {
                 synchronized (devModeThreads) {
+                    ClassLoader systemCl = ClassLoader.getSystemClassLoader();
+                    for (Thread t : devModeThreads) {
+                        t.setContextClassLoader(systemCl);
+                    }
                     devModeThreads.clear();
                     currentDevModeNewThreadCreationClassLoader = null;
                 }
@@ -245,6 +249,8 @@ public class VertxCoreRecorder {
                 // classloader pins the per-session runtime QuarkusClassLoader), leaking a classloader
                 // per dev-mode test class and eventually exhausting metaspace on JDK 21.
                 vertx = null;
+                VertxMDC.INSTANCE.clear();
+                LateBoundMDCProvider.setMDCProviderDelegate(null);
             }
         }
     }

@@ -441,12 +441,18 @@ public final class LoggingResourceProcessor {
                     .require(LogRuntimeConfig.class)
                     .require(ConsoleRuntimeConfig.class)
                     .onStart((ctx, handlers, namedFilters, consoleFmt, fileFmt, syslogFmt, socketFmt, bridge, notifier,
-                            cleanup, errorManager, config, consoleRt) -> LoggingSetup.configureRuntimeLogging(buildTimeConfig,
-                                    config, consoleRt, categoryDefaultMinLevels, notifier, cleanup, errorManager, namedFilters,
-                                    handlers.values(), bridge.additionalHandlers(), bridge.streaming(),
-                                    consoleFmt.orElse(null), fileFmt.orElse(null), syslogFmt.orElse(null),
-                                    socketFmt.orElse(null), bridge.namedHandlerFormatters(), bridge.banner(), launchMode,
-                                    alwaysEnableLogStream, includeFilters));
+                            cleanup, errorManager, config, consoleRt) -> {
+                        LoggingSetup.configureRuntimeLogging(buildTimeConfig,
+                                config, consoleRt, categoryDefaultMinLevels, notifier, cleanup, errorManager, namedFilters,
+                                handlers.values(), bridge.additionalHandlers(), bridge.streaming(),
+                                consoleFmt.orElse(null), fileFmt.orElse(null), syslogFmt.orElse(null),
+                                socketFmt.orElse(null), bridge.namedHandlerFormatters(), bridge.banner(), launchMode,
+                                alwaysEnableLogStream, includeFilters);
+                        if (launchMode.isDevOrTest()) {
+                            // the root handlers outlive the application in dev and test mode only
+                            ctx.onStop(() -> LoggingSetup.releaseCleanupFilter(cleanup));
+                        }
+                    });
 
             // ── build-time logging (runs now, during the deployment build) ──
             List<LogCleanupFilterElement> additionalLogCleanupFilters = new ArrayList<>(logCleanupFilters.size());

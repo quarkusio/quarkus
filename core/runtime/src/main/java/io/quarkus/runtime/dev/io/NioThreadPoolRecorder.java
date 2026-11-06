@@ -8,17 +8,12 @@ import io.quarkus.runtime.annotations.Recorder;
 public class NioThreadPoolRecorder {
 
     public void updateTccl(ShutdownContext context) {
-        ClassLoader newTccl = Thread.currentThread().getContextClassLoader();
-        ClassLoader oldTccl = NioThreadPoolThreadFactory.updateTccl(newTccl);
-        if (newTccl != oldTccl) {
-            context.addLastShutdownTask(new Runnable() {
-                @Override
-                public void run() {
-                    NioThreadPoolThreadFactory.updateTccl(oldTccl);
-                }
-            });
-        }
-        // Else: don't add an unnecessary shutdown task that may hold a reference to a QuarkusClassLoader,
-        // which could be a problem with QuarkusExtensionTest since it creates one classloader per test.
+        NioThreadPoolThreadFactory.updateTccl(Thread.currentThread().getContextClassLoader());
+        context.addLastShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                NioThreadPoolThreadFactory.updateTccl(ClassLoader.getSystemClassLoader());
+            }
+        });
     }
 }

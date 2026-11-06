@@ -40,6 +40,7 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.core.Phase;
 import io.quarkus.core.deployment.service.ServiceRegistrar;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
@@ -91,6 +92,18 @@ class NettyProcessor {
 
     static {
         InternalLoggerFactory.setDefaultFactory(new JBossNettyLoggerFactory());
+    }
+
+    /**
+     * In dev and test mode, make sure Netty's {@code PlatformDependent} classes do not retain the augmentation class
+     * loader through the backtrace of the exceptions they store, see {@link NettyRecorder#initializePlatformDependent()}.
+     */
+    @BuildStep(onlyIfNot = IsNormal.class)
+    void initializePlatformDependent(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar
+                .forService("io.quarkus.netty.initialize-platform-dependent")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> NettyRecorder.initializePlatformDependent());
     }
 
     @BuildStep

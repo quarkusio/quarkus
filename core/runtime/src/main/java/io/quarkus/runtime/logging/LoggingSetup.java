@@ -1222,6 +1222,22 @@ public final class LoggingSetup {
     }
 
     /**
+     * Remove the cleanup filter from the handlers installed on the root logger, which outlive the application in
+     * dev and test mode (in particular the static delayed handler), so that they do not retain the application
+     * class loader through the filter once the application is stopped.
+     *
+     * @param cleanupFilter the cleanup filter applied by {@link #configureRuntimeLogging}
+     */
+    public static void releaseCleanupFilter(final LogCleanupFilter cleanupFilter) {
+        final java.util.logging.Logger julRootLogger = LogManager.getLogManager().getLogger("");
+        for (Handler handler : julRootLogger.getHandlers()) {
+            if (handler.getFilter() == cleanupFilter) {
+                handler.setFilter(null);
+            }
+        }
+    }
+
+    /**
      * Adapt a single resolved formatter to the list-of-candidate-formatters shape expected by
      * {@link #createNamedHandlers}.
      * <p>

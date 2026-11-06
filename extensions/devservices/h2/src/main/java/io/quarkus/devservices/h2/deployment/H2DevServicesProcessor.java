@@ -25,6 +25,7 @@ import io.quarkus.devservices.datasource.common.DevServicesDatasourceContainerCo
 import io.quarkus.devservices.datasource.common.DevServicesDatasourceProvider;
 import io.quarkus.devservices.datasource.common.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.util.IsolatedClassInitializer;
 
 public class H2DevServicesProcessor {
 
@@ -87,13 +88,25 @@ public class H2DevServicesProcessor {
 
                         @Override
                         public void start() {
+                            Thread currentThread = Thread.currentThread();
+                            ClassLoader old = currentThread.getContextClassLoader();
+                            currentThread.setContextClassLoader(ClassLoader.getSystemClassLoader());
                             try {
+                                // H2 is shared across restarts in dev and test mode: initialize the classes whose
+                                // static initializers capture the stack or the context class loader before any
+                                // deployment class is on the stack, see H2ExitDatabaseCloserInitializer
+                                IsolatedClassInitializer.initialize(Server.class.getClassLoader(),
+                                        "org.h2.engine.OnExitDatabaseCloser",
+                                        "org.h2.message.DbException",
+                                        "org.h2.message.TraceObject");
                                 tcpServer.start();
                                 connectionUrl = "jdbc:h2:tcp://localhost:" + tcpServer.getPort() + "/mem:"
                                         + effectiveDbName
                                         + ";DB_CLOSE_DELAY=-1" + additionalArgs;
                             } catch (SQLException throwables) {
                                 throw new RuntimeException(throwables);
+                            } finally {
+                                currentThread.setContextClassLoader(old);
                             }
                         }
 

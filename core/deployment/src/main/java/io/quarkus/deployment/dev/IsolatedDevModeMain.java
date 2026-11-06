@@ -20,6 +20,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.aesh.command.metadata.MetadataProviderRegistry;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.formatters.ColorPatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
@@ -37,6 +38,7 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
+import io.quarkus.deployment.console.ConsoleCliManager;
 import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.deployment.dev.testing.TestSupport;
@@ -82,9 +84,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 //this is a bit yuck, but we need replace the default
                 //exit handler in the runtime class loader
                 //TODO: look at implementing a common core classloader, that removes the need for this sort of crappy hack
-                curatedApplication.getOrCreateBaseRuntimeClassLoader().loadClass(ApplicationLifecycleManager.class.getName())
-                        .getMethod("setDefaultExitCodeHandler", Consumer.class)
-                        .invoke(null, getExitCodeHandler());
+                setDefaultExitCodeHandler();
 
                 StartupAction start = augmentAction.createInitialRuntimeApplication();
                 try {
@@ -158,6 +158,28 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         }
     }
 
+    private void setDefaultExitCodeHandler() {
+        try {
+            curatedApplication.getOrCreateBaseRuntimeClassLoader().loadClass(ApplicationLifecycleManager.class.getName())
+                    .getMethod("setDefaultExitCodeHandler", Consumer.class)
+                    .invoke(null, getExitCodeHandler());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void resetDefaultExitCodeHandler() {
+        try {
+            // Not reset to null: that would restore the System.exit handler, and the main thread invokes the handler
+            // after the application is stopped, which can be after this point.
+            curatedApplication.getOrCreateBaseRuntimeClassLoader().loadClass(ApplicationLifecycleManager.class.getName())
+                    .getMethod("setNoopDefaultExitCodeHandler")
+                    .invoke(null);
+        } catch (Exception e) {
+            log.debug("Failed to reset default exit code handler", e);
+        }
+    }
+
     private Consumer<Integer> getExitCodeHandler() {
         if (context.isTest() || context.isAbortOnFailedStart()) {
             return TestExitCodeHandler.INSTANCE;
@@ -205,6 +227,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
 
             //ok, we have resolved all the deps
             try {
+                setDefaultExitCodeHandler();
                 StartupAction start = augmentAction.reloadExistingApplication(firstStartCompleted, changedResources,
                         classChangeInformation);
                 try {
@@ -326,6 +349,15 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 Thread.currentThread().setContextClassLoader(old);
             }
         }
+        // The exit code handler is set before the first start: reset it even if that start failed, otherwise
+        // ApplicationLifecycleManager retains it, and through it this class loader.
+        try {
+            resetDefaultExitCodeHandler();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        ConsoleCliManager.setCommands(List.of());
+        MetadataProviderRegistry.reset();
     }
 
     public void close() {
@@ -369,8 +401,11 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             } finally {
                 try {
                     DevConsoleManager.close();
-                    curatedApplication.close();
-                    curatedApplication = null;
+                    // close() can be invoked twice, e.g. by the shutdown hook while a test is closing dev mode
+                    if (curatedApplication != null) {
+                        curatedApplication.close();
+                        curatedApplication = null;
+                    }
                     augmentAction = null;
                     deploymentProblem.set(null);
                 } finally {

@@ -61,6 +61,11 @@ public class ApplicationLifecycleManager {
         public void accept(Boolean t) {
         }
     };
+    private static final BiConsumer<Integer, Throwable> NOOP_EXIT_CODE_HANDLER = new BiConsumer<>() {
+        @Override
+        public void accept(Integer exitCode, Throwable cause) {
+        }
+    };
     private static volatile BiConsumer<Integer, Throwable> defaultExitCodeHandler = MAIN_EXIT_CODE_HANDLER;
 
     private ApplicationLifecycleManager() {
@@ -346,6 +351,20 @@ public class ApplicationLifecycleManager {
         BiConsumer<Integer, Throwable> biConsumer = defaultExitCodeHandler == null ? null
                 : (exitCode, cause) -> defaultExitCodeHandler.accept(exitCode);
         setDefaultExitCodeHandler(biConsumer);
+    }
+
+    /**
+     * Replaces the default exit code handler with one that ignores the exit code.
+     * <p>
+     * Dev mode calls this method (by reflection, on the copy of this class loaded by the runtime class loader) once it
+     * has stopped the application, to release the handler it had installed. The handler is replaced with one that does
+     * nothing rather than with the default {@code System.exit} one because the main thread invokes the handler after
+     * the application is stopped, which can be after dev mode has released its own handler.
+     */
+    @SuppressWarnings("unused")
+    // Used by IsolatedDevModeMain via reflection
+    public static void setNoopDefaultExitCodeHandler() {
+        defaultExitCodeHandler = NOOP_EXIT_CODE_HANDLER;
     }
 
     @SuppressWarnings("unused")

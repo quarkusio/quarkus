@@ -1248,6 +1248,8 @@ We don't have plans to support the Lucene backend in Quarkus for now,
 though there is an issue tracking progress on such an implementation in the Quarkiverse:
 https://github.com/quarkiverse/quarkus-hibernate-search-extras/issues/179[quarkiverse/quarkus-hibernate-search-extras#179].
 
+include::{includes}/hibernate-accessor.adoc[]
+
 [[configuration-reference]]
 == Configuration Reference for Hibernate Search with Hibernate ORM
 

@@ -776,7 +776,8 @@ public class MessageBundleProcessor {
                             public String apply(String className) {
                                 String localeSuffix = "_" + locale;
                                 if (className.endsWith(localeSuffix)) {
-                                    return className.replace(localeSuffix, "");
+                                    // Remove the trailing locale suffix only, the package name may contain the same sequence
+                                    return className.substring(0, className.length() - localeSuffix.length());
                                 }
                                 return className;
                             }

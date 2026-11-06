@@ -10,6 +10,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -220,6 +221,53 @@ public class CachingTest extends BaseGradleTest {
 
         result = buildResult(env, arguments);
         assertBuildResult("follow-up", result, ALL_UP_TO_DATE);
+    }
+
+    @Test
+    void containerImageBuildIsNotRestoredFromCache() throws Exception {
+        prepareGradleBuildProject("");
+
+        String[] arguments = List.of("build", "--info", "--stacktrace", "--build-cache",
+                "-Dquarkus.package.jar.type=fast-jar",
+                "-Dquarkus.container-image.build=true")
+                .toArray(new String[0]);
+
+        Map<String, String> env = Map.of();
+        assertBuildResult("initial", buildResult(env, rerunTasks(arguments)), ALL_SUCCESS);
+
+        FileUtils.deleteDirectory(testProjectDir.resolve("build").toFile());
+
+        assertBuildResult("after clean", buildResult(env, arguments),
+                Map.of(":quarkusAppPartsBuild", TaskOutcome.SUCCESS));
+    }
+
+    @Test
+    void intTestRerunsWhenBuiltArtifactChanges() throws Exception {
+        prepareGradleBuildProject("");
+        Files.writeString(testProjectDir.resolve("build.gradle.kts"),
+                "\ndependencies {\n    testImplementation(\"io.quarkus:quarkus-junit\")\n}\n",
+                StandardOpenOption.APPEND);
+        writeFile("src/integrationTest/java/org/acme/FooIT.java", """
+                package org.acme;
+
+                import org.junit.jupiter.api.Test;
+
+                class FooIT {
+                    @Test
+                    void test() {
+                    }
+                }
+                """);
+
+        Map<String, String> env = Map.of();
+        List<String> fastJar = List.of("quarkusIntTest", "--info", "--stacktrace", "--no-build-cache",
+                "-Dquarkus.package.jar.type=fast-jar");
+        List<String> uberJar = List.of("quarkusIntTest", "--info", "--stacktrace", "--no-build-cache",
+                "-Dquarkus.package.jar.type=uber-jar");
+
+        assertBuildResult("fast-jar", buildResult(env, fastJar), Map.of(":quarkusIntTest", TaskOutcome.SUCCESS));
+        assertBuildResult("fast-jar rerun", buildResult(env, fastJar), Map.of(":quarkusIntTest", TaskOutcome.UP_TO_DATE));
+        assertBuildResult("uber-jar", buildResult(env, uberJar), Map.of(":quarkusIntTest", TaskOutcome.SUCCESS));
     }
 
     private static Map<String, String> cachingTestEnvironment(boolean simulateCI) {

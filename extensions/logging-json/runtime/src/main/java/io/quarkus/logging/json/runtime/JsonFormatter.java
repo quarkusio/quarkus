@@ -818,74 +818,31 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         }
 
         private void writeObject(final String key, final Object obj) throws Exception {
-            if (obj == null) {
-                if (key == null) {
-                    generator.writeNull();
-                } else {
-                    generator.writeNull(key);
-                }
-            } else if (obj instanceof Boolean) {
-                final Boolean value = (Boolean) obj;
-                if (key == null) {
-                    generator.write(value);
-                } else {
-                    generator.write(key, value);
-                }
-            } else if (obj instanceof Integer) {
-                final Integer value = (Integer) obj;
-                if (key == null) {
-                    generator.write(value);
-                } else {
-                    generator.write(key, value);
-                }
-            } else if (obj instanceof Long) {
-                final Long value = (Long) obj;
-                if (key == null) {
-                    generator.write(value);
-                } else {
-                    generator.write(key, value);
-                }
-            } else if (obj instanceof Double) {
-                final Double value = (Double) obj;
-                if (key == null) {
-                    generator.write(value);
-                } else {
-                    generator.write(key, value);
-                }
-            } else if (obj instanceof BigInteger) {
-                final BigInteger value = (BigInteger) obj;
-                if (key == null) {
-                    generator.write(value);
-                } else {
-                    generator.write(key, value);
-                }
-            } else if (obj instanceof BigDecimal) {
-                final BigDecimal value = (BigDecimal) obj;
-                if (key == null) {
-                    generator.write(value);
-                } else {
-                    generator.write(key, value);
-                }
-            } else if (obj instanceof String) {
-                final String value = (String) obj;
-                if (key == null) {
-                    generator.write(value);
-                } else {
-                    generator.write(key, value);
-                }
-            } else if (obj instanceof JsonValue) {
-                final JsonValue value = (JsonValue) obj;
-                if (key == null) {
-                    generator.write(value);
-                } else {
-                    generator.write(key, value);
-                }
-            } else {
-                final String value = String.valueOf(obj);
-                if (key == null) {
-                    generator.write(value);
-                } else {
-                    generator.write(key, value);
+            switch (obj) {
+                case Boolean value when key == null -> generator.write(value);
+                case Boolean value -> generator.write(key, value);
+                case Integer value when key == null -> generator.write(value);
+                case Integer value -> generator.write(key, value);
+                case Long value when key == null -> generator.write(value);
+                case Long value -> generator.write(key, value);
+                case Double value when key == null -> generator.write(value);
+                case Double value -> generator.write(key, value);
+                case BigInteger value when key == null -> generator.write(value);
+                case BigInteger value -> generator.write(key, value);
+                case BigDecimal value when key == null -> generator.write(value);
+                case BigDecimal value -> generator.write(key, value);
+                case String value when key == null -> generator.write(value);
+                case String value -> generator.write(key, value);
+                case JsonValue value when key == null -> generator.write(value);
+                case JsonValue value -> generator.write(key, value);
+                case Object value when key == null -> generator.write(String.valueOf(value));
+                case Object value -> generator.write(key, String.valueOf(value));
+                case null -> {
+                    if (key == null) {
+                        generator.writeNull();
+                    } else {
+                        generator.writeNull(key);
+                    }
                 }
             }
         }

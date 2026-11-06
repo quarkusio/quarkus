@@ -102,8 +102,10 @@ public class DevServicesDatasourceProcessor {
                 .collect(Collectors.toMap(DevServicesDatasourceProviderBuildItem::getDatabase,
                         DevServicesDatasourceProviderBuildItem::getDevServicesProvider));
 
+        Set<String> definedDatasourceNames = definedDatasources.stream().map(DataSourceDefinedBuildItem::getName)
+                .collect(Collectors.toSet());
         Map<String, Object> newDatasourceConfigs = buildMapFromBuildConfig(dataSourcesBuildTimeConfig,
-                definedDatasources.stream().map(DataSourceDefinedBuildItem::getName).collect(Collectors.toSet()));
+                definedDatasourceNames);
 
         for (DataSourceDefinedBuildItem ds : definedDatasources) {
             String name = ds.getName();
@@ -146,6 +148,8 @@ public class DevServicesDatasourceProcessor {
             res.put(name + ".devservices.port", config.devservices().port());
             res.put(name + ".devservices.properties", config.devservices().properties());
             res.put(name + ".devservices.reuse", config.devservices().reuse());
+            res.put(name + ".devservices.shared", config.devservices().shared());
+            res.put(name + ".devservices.service-name", config.devservices().serviceName());
             res.put(name + ".devservices.username", config.devservices().username());
             res.put(name + ".devservices.volumes", config.devservices().volumes());
             Optional<String> username = ConfigUtils.getFirstOptionalValue(
@@ -196,7 +200,7 @@ public class DevServicesDatasourceProcessor {
 
         try {
             DevServicesDatasourceContainerConfig containerConfig = getContainerConfig(dataSourceBuildTimeConfig,
-                    dbName, requiredFeatures);
+                    dbName, requiredFeatures, defaultDbKind);
 
             Map<String, Function<DatasourceStartable, String>> deferredConfigProviders = new HashMap<>();
             for (DevServicesDatasourceConfigurationHandlerBuildItem devDbConfigurationHandlerBuildItem : configHandlers) {
@@ -216,7 +220,9 @@ public class DevServicesDatasourceProcessor {
             String feature = devDbProvider.getFeature();
 
             DevServicesResultBuildItem buildItem = devDbProvider
-                    .findRunningComposeDatasource(launchMode, useSharedNetwork, containerConfig, composeProjectBuildItem)
+                    .findRunningSharedDatasource(launchMode, containerConfig)
+                    .or(() -> devDbProvider.findRunningComposeDatasource(launchMode, useSharedNetwork, containerConfig,
+                            composeProjectBuildItem))
                     .map(datasource -> DevServicesResultBuildItem.discovered().feature(feature).containerId(datasource.id())
                             .config(makeConfigMapForRunningDatasource(dbName, capabilities, configHandlers, datasource))
                             .build())
@@ -403,7 +409,8 @@ public class DevServicesDatasourceProcessor {
     private static DevServicesDatasourceContainerConfig getContainerConfig(
             DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
             String datasourceName,
-            Set<DatabaseFeature> requiredFeatures) {
+            Set<DatabaseFeature> requiredFeatures,
+            String dbKind) {
         return new DevServicesDatasourceContainerConfig(
                 dataSourceBuildTimeConfig.devservices().imageName(),
                 dataSourceBuildTimeConfig.devservices().containerEnv(),
@@ -420,7 +427,9 @@ public class DevServicesDatasourceProcessor {
                 dataSourceBuildTimeConfig.devservices().reuse(),
                 dataSourceBuildTimeConfig.devservices().showLogs(),
                 datasourceName,
-                requiredFeatures);
+                requiredFeatures,
+                dataSourceBuildTimeConfig.devservices().shared(),
+                dataSourceBuildTimeConfig.devservices().serviceName().orElse(dbKind));
     }
 
     private void setDataSourceProperties(Map<String, String> propertiesMap, String dbName, String propertyKeyRadical,

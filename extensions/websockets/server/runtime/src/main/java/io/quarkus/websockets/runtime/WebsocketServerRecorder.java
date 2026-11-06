@@ -26,7 +26,7 @@ import io.undertow.websockets.vertx.VertxServerWebSocketContainer;
 import io.undertow.websockets.vertx.VertxWebSocketHandler;
 import io.undertow.websockets.vertx.VertxWebSocketHttpExchange;
 import io.vertx.core.Handler;
-import io.vertx.core.net.impl.ConnectionBase;
+import io.vertx.core.http.impl.HttpServerConnection;
 import io.vertx.ext.web.RoutingContext;
 
 public class WebsocketServerRecorder {
@@ -64,7 +64,7 @@ public class WebsocketServerRecorder {
                             //close the connection when the identity expires
                             Long expire = user.getSecurityIdentity().getAttribute("quarkus.identity.expire-time");
                             if (expire != null) {
-                                ((ConnectionBase) routingContext.request().connection()).channel().eventLoop()
+                                ((HttpServerConnection) routingContext.request().connection()).context().nettyEventLoop()
                                         .schedule(new Runnable() {
                                             @Override
                                             public void run() {

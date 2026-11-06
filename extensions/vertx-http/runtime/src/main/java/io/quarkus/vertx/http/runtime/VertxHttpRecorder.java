@@ -143,7 +143,7 @@ import io.vertx.core.internal.VertxInternal;
 import io.vertx.core.net.SSLEngineOptions;
 import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.SocketAddress;
-import io.vertx.core.net.impl.ConnectionBase;
+import io.vertx.core.http.impl.HttpServerConnection;
 import io.vertx.core.net.impl.VertxHandler;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
@@ -1792,7 +1792,7 @@ public class VertxHttpRecorder {
                 }
 
                 if (!Context.isOnEventLoopThread()) {
-                    ((ConnectionBase) event.request().connection()).channel().eventLoop().execute(new Runnable() {
+                    ((HttpServerConnection) event.request().connection()).context().nettyEventLoop().execute(new Runnable() {
                         @Override
                         public void run() {
                             try {

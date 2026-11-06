@@ -19,9 +19,11 @@ import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ValueRegistryConfigSource;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -85,6 +87,10 @@ public final class RunTimeConfigurationGenerator {
             "isPropertyQuarkusCompoundName", boolean.class, NameIterator.class);
     static final MethodDescriptor PU_IS_PROPERTY_IN_ROOTS = ofMethod(PropertiesUtil.class,
             "isPropertyInRoots", boolean.class, String.class, Set.class);
+
+    static final MethodDescriptor IMAGE_MODE_CURRENT = ofMethod(ImageMode.class, "current", ImageMode.class);
+    static final FieldDescriptor IMAGE_MODE_NATIVE_BUILD = FieldDescriptor.of(ImageMode.class, "NATIVE_BUILD",
+            ImageMode.class);
 
     static final MethodDescriptor HS_NEW = ofConstructor(HashSet.class);
     static final MethodDescriptor HS_ADD = ofMethod(HashSet.class, "add", boolean.class, Object.class);
@@ -152,8 +158,15 @@ public final class RunTimeConfigurationGenerator {
             installConfiguration(config, mc);
 
             // generate sweep for clinit
-            configSweepLoop(mc, config, getRegisteredRoots(BUILD_AND_RUN_TIME_FIXED), unknownSet);
-            mc.invokeStaticMethod(CD_REPORT_UNKNOWN, unknownSet);
+            // ConfigDiagnostic.reportUnknown() only acts during a native image build, so only sweep the names then,
+            // with the same check as reportUnknown():
+            // if (ImageMode.current() == ImageMode.NATIVE_BUILD) { ... }
+            ResultHandle imageMode = mc.invokeStaticMethod(IMAGE_MODE_CURRENT);
+            ResultHandle nativeBuild = mc.readStaticField(IMAGE_MODE_NATIVE_BUILD);
+            try (BytecodeCreator nativeBuildBranch = mc.ifReferencesEqual(imageMode, nativeBuild).trueBranch()) {
+                configSweepLoop(nativeBuildBranch, config, getRegisteredRoots(BUILD_AND_RUN_TIME_FIXED), unknownSet);
+                nativeBuildBranch.invokeStaticMethod(CD_REPORT_UNKNOWN, unknownSet);
+            }
 
             mc.returnValue(null);
             mc.close();
@@ -190,7 +203,7 @@ public final class RunTimeConfigurationGenerator {
             mc.close();
         }
 
-        private void configSweepLoop(MethodCreator method, ResultHandle config, Set<String> registeredRoots,
+        private void configSweepLoop(BytecodeCreator method, ResultHandle config, Set<String> registeredRoots,
                 ResultHandle unknown) {
             ResultHandle propertyNames = method.invokeVirtualMethod(SRC_GET_PROPERTY_NAMES, config);
             ResultHandle iterator = method.invokeInterfaceMethod(ITRA_ITERATOR, propertyNames);

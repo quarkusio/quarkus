@@ -68,6 +68,17 @@ public class Marshaller {
         return result;
     }
 
+    @SafeVarargs
+    public final <T> byte[][] encodeAsArray(T... objects) {
+        nonNull(objects, "objects");
+        byte[][] result = new byte[objects.length][];
+        for (int i = 0; i < objects.length; i++) {
+            byte[] r = encode(objects[i]);
+            result[i] = r;
+        }
+        return result;
+    }
+
     Codec codec(Type clazz) {
         Codec codec = codecs.get(clazz);
         if (codec == null) {

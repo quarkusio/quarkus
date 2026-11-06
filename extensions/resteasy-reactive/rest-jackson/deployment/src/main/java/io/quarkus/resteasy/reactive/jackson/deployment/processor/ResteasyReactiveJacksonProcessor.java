@@ -15,9 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.PATCH;
@@ -70,7 +68,6 @@ import io.quarkus.resteasy.reactive.jackson.SecureField;
 import io.quarkus.resteasy.reactive.jackson.common.deployment.processor.ResteasyReactiveJacksonProviderDefinedBuildItem;
 import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJacksonRecorder;
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.NativeInvalidDefinitionExceptionMapper;
-import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigExpConsumer;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigExpStorage;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.SecurityCustomSerialization;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.BasicServerJacksonMessageBodyWriter;
@@ -90,6 +87,7 @@ import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
+import io.quarkus.security.spi.runtime.RolesAllowedConfigExpressions;
 import io.quarkus.vertx.deployment.ReinitializeVertxJsonBuildItem;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -353,42 +351,35 @@ public class ResteasyReactiveJacksonProcessor {
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
             ServiceRegistrar serviceRegistrar) {
         if (capabilities.isPresent(Capability.SECURITY)) {
-            BiConsumer<String, Supplier<String[]>> configValRecorder = null;
+            boolean configExpressionDetected = false;
             for (AnnotationInstance instance : indexBuildItem.getIndex().getAnnotations(SECURE_FIELD)) {
                 for (String role : instance.value("rolesAllowed").asStringArray()) {
                     if (isSecurityConfigExpressionCandidate(role)) {
-                        if (configValRecorder == null) {
-                            configValRecorder = registerRolesAllowedConfigExpServices(serviceRegistrar,
-                                    syntheticBeanProducer);
-                        }
-                        resolverProducer.produce(new RolesAllowedConfigExpResolverBuildItem(role, configValRecorder));
+                        configExpressionDetected = true;
+                        resolverProducer.produce(new RolesAllowedConfigExpResolverBuildItem(role));
                     }
                 }
             }
+            if (configExpressionDetected) {
+                serviceRegistrar.forService(RolesAllowedConfigExpStorage.class)
+                        .atPhase(Phase.STATIC_INIT)
+                        .require(RolesAllowedConfigExpressions.class)
+                        .onStart((ctx, configExpressions) -> new RolesAllowedConfigExpStorage(
+                                configExpressions.rolesSuppliers()));
+                // resolve the expressions once the runtime configuration is ready, so that failures happen
+                // when the application starts rather than when the first response is serialized
+                serviceRegistrar.forService("io.quarkus.resteasy.reactive.jackson.resolve-roles-allowed-config-expressions")
+                        .atPhase(Phase.INIT)
+                        .require(RolesAllowedConfigExpStorage.class)
+                        .onStart((ctx, storage) -> storage.resolveRolesAllowedConfigExp());
+                syntheticBeanProducer.produce(SyntheticBeanBuildItem
+                        .configure(RolesAllowedConfigExpStorage.class)
+                        .scope(Singleton.class)
+                        .unremovable()
+                        .serviceValue(RolesAllowedConfigExpStorage.class)
+                        .done());
+            }
         }
-    }
-
-    private static RolesAllowedConfigExpConsumer registerRolesAllowedConfigExpServices(ServiceRegistrar serviceRegistrar,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer) {
-        serviceRegistrar.forService(RolesAllowedConfigExpStorage.class)
-                .atPhase(Phase.STATIC_INIT)
-                .onStart(ctx -> new RolesAllowedConfigExpStorage());
-        serviceRegistrar.forService(RolesAllowedConfigExpConsumer.class)
-                .atPhase(Phase.STATIC_INIT)
-                .require(RolesAllowedConfigExpStorage.class)
-                .onStart((ctx, storage) -> storage);
-        syntheticBeanProducer.produce(SyntheticBeanBuildItem
-                .configure(RolesAllowedConfigExpStorage.class)
-                .scope(Singleton.class)
-                .serviceValue(RolesAllowedConfigExpStorage.class)
-                .unremovable()
-                .done());
-        // resolves the expressions once the runtime configuration is ready
-        serviceRegistrar.forService("io.quarkus.resteasy.reactive.jackson.roles-allowed-config-exp")
-                .require(RolesAllowedConfigExpStorage.class)
-                .onStart((ctx, storage) -> storage.resolveRolesAllowedConfigExp());
-
-        return serviceRegistrar.getRecorderProxy(RolesAllowedConfigExpConsumer.class);
     }
 
     @BuildStep(onlyIf = JacksonOptimizationConfig.IsReflectionFreeSerializersEnabled.class)

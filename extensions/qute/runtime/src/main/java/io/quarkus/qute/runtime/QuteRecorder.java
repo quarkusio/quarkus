@@ -1,5 +1,8 @@
 package io.quarkus.qute.runtime;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -16,9 +19,21 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class QuteRecorder {
 
-    public Supplier<Object> createContext(Map<String, List<String>> variants,
-            Set<String> templateRoots, Map<String, TemplateInfo> templates, List<String> excludePatterns,
-            Map<ParserConfig, Set<String>> nonDefaultParserConfigs) {
+    /**
+     * Create the supplier of the Qute context. The template data is read here, at static init, so that a native
+     * image holds it in the image heap and does not need the resource at run time.
+     *
+     * @param dataResource the generated resource that holds the templates, the variants and the
+     *        non-default parser configs, see {@link QuteContextData}
+     * @param templateRoots the template roots
+     * @param excludePatterns the template path exclude patterns
+     * @return the supplier of the Qute context
+     */
+    public Supplier<Object> createContext(String dataResource, Set<String> templateRoots, List<String> excludePatterns) {
+        QuteContextData data = readData(dataResource);
+        Map<String, TemplateInfo> templates = data.templates();
+        Map<String, List<String>> variants = data.variants();
+        Map<ParserConfig, Set<String>> nonDefaultParserConfigs = data.nonDefaultParserConfigs();
         return new Supplier<Object>() {
 
             @Override
@@ -82,6 +97,21 @@ public class QuteRecorder {
                 };
             }
         };
+    }
+
+    private static QuteContextData readData(String resource) {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        if (cl == null) {
+            cl = QuteRecorder.class.getClassLoader();
+        }
+        try (InputStream in = cl.getResourceAsStream(resource)) {
+            if (in == null) {
+                throw new IllegalStateException("Qute template data not found: " + resource);
+            }
+            return QuteContextData.read(in.readAllBytes());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public void initializeGeneratedClasses(List<String> resolverClasses, List<String> templateGlobalProviderClasses) {

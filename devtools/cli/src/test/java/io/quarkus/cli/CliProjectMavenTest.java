@@ -134,6 +134,25 @@ public class CliProjectMavenTest {
     }
 
     @Test
+    public void testCreateAppInOutputDirectory() throws Exception {
+        project = workspaceRoot.resolve("target-project");
+
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose",
+                "--no-project-directory",
+                "--output-directory=" + project,
+                "silly:my-project:0.1.0");
+
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains("SUCCESS"),
+                "Expected confirmation that the project has been created." + result);
+        Assertions.assertTrue(Files.exists(project.resolve("pom.xml")),
+                "pom.xml should be created directly in the output directory");
+        Assertions.assertFalse(Files.exists(project.resolve("my-project/pom.xml")),
+                "The artifactId directory should not be created when --no-project-directory is used");
+        validateBasicIdentifiers("silly", "my-project", "0.1.0");
+    }
+
+    @Test
     public void testExtensionList() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);

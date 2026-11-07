@@ -387,6 +387,10 @@ public class QuarkusPlugin implements Plugin<Project> {
                     SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
                     SourceSet testSourceSet = sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME);
 
+                    // The models only record the output directories that exist, so they run after the tasks creating them
+                    quarkusGenerateAppModelTask.configure(task -> task.dependsOn(resourcesTask));
+                    quarkusGenerateTestAppModelTask.configure(task -> task.dependsOn(classesTask));
+
                     quarkusGenerateCode.configure(task -> {
                         Configuration config = project.getConfigurations().getByName(
                                 ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.NORMAL));

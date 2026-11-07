@@ -58,6 +58,35 @@ public class RelocatedBuildCacheTest extends BaseGradleTest {
         }
     }
 
+    @Test
+    void testModelRecordsTheMainOutputDirectories() throws Exception {
+        Path checkout = prepareCheckout("checkout");
+
+        // The test model on its own, which used to run before the main classes and resources existed
+        BuildResult result = runner(checkout, testProjectDir.resolve("cache"), true, ":app:quarkusGenerateTestAppModel")
+                .build();
+
+        ApplicationModel appModel = ToolingUtils.deserializeAppModel(modelFile(checkout, "quarkus-app-test-model.dat"));
+        // Gradle records the canonical location, which on macOS differs from the temporary directory's
+        Path appBuildDir = checkout.toRealPath().resolve("app/build");
+        soft.assertThat(appModel.getAppArtifact().getResolvedPaths())
+                .describedAs("resolved paths of the application in the test model: %s", result.getOutput())
+                .contains(appBuildDir.resolve("classes/java/main"), appBuildDir.resolve("resources/main"));
+    }
+
+    @Test
+    void mainModelRecordsTheMainResources() throws Exception {
+        Path checkout = prepareCheckout("checkout");
+
+        BuildResult result = runner(checkout, testProjectDir.resolve("cache"), true, ":app:quarkusGenerateAppModel")
+                .build();
+
+        ApplicationModel appModel = ToolingUtils.deserializeAppModel(modelFile(checkout, "quarkus-app-model.dat"));
+        soft.assertThat(appModel.getAppArtifact().getResolvedPaths())
+                .describedAs("resolved paths of the application in the main model: %s", result.getOutput())
+                .contains(checkout.toRealPath().resolve("app/build/resources/main"));
+    }
+
     private static GradleRunner runner(Path checkout, Path cache, boolean configurationCache, String... tasks) {
         List<String> args = new ArrayList<>(List.of(tasks));
         args.add("--build-cache");

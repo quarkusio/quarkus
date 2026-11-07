@@ -154,9 +154,13 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         getProjectBuildFile().set(getProject().getBuildFile());
     }
 
+    /**
+     * Builds the application model from a copy of the project descriptor, since without the configuration cache the
+     * module is shared with the project's other model tasks.
+     */
     @TaskAction
     public void execute() throws IOException {
-        final DefaultProjectDescriptor projectDescriptor = getProjectDescriptor().get();
+        final DefaultProjectDescriptor projectDescriptor = getProjectDescriptor().get().copy();
 
         final ResolvedDependencyBuilder appArtifact = getProjectArtifact(projectDescriptor);
 

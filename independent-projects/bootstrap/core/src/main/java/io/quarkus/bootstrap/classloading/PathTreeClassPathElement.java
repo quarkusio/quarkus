@@ -37,6 +37,10 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     private final OpenPathTree pathTree;
     private final boolean runtime;
     private final ResolvedDependency resolvedDependency;
+    /**
+     * The number of class loaders using this element, see {@link #acquire()}.
+     */
+    private int users = 1;
 
     public PathTreeClassPathElement(PathTree pathTree, boolean runtime) {
         this(pathTree, runtime, null);
@@ -179,10 +183,33 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
         return new ProtectionDomain(codesource, null);
     }
 
+    /**
+     * Registers an additional user of this element.
+     * <p>
+     * A class path element may be shared by several class loaders (e.g. the augmentation class loader and the base
+     * runtime class loader). Each of them closes the element when it gets closed, but the element must only release
+     * its resources once the last user is closed: otherwise, the remaining users keep working but they have to open
+     * the underlying archive again for each operation, which is very slow.
+     */
+    public void acquire() {
+        lock.writeLock().lock();
+        try {
+            users++;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     @Override
     public void close() throws IOException {
         lock.writeLock().lock();
         try {
+            if (users > 0) {
+                users--;
+            }
+            if (users > 0) {
+                return;
+            }
             pathTree.close();
         } finally {
             lock.writeLock().unlock();

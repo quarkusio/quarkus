@@ -4,18 +4,16 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.InputFiles;
@@ -154,51 +152,14 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         return outputs;
     }
 
-    @SuppressWarnings("deprecation") // legacy JAR
+    /**
+     * Returns the files that this task copies into the final application.
+     *
+     * @return the outputs of {@code quarkusAppPartsBuild} and {@code quarkusDependenciesBuild}
+     */
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
-    protected Collection<File> getBuildInputFiles() {
-        List<File> inputs = new ArrayList<>();
-        if (nativeEnabled()) {
-            if (jarEnabled()) {
-                throw nativeAndJar();
-            }
-            if (nativeSourcesOnly()) {
-                // nothing
-            } else {
-                Path appBuildBaseDir = appBuildDir();
-                inputs.add(genBuildDir().toFile());
-                inputs.add(appBuildBaseDir.resolve(outputDirectory()).toFile());
-                runnerAndArtifactsInputs(inputs::add, appBuildBaseDir);
-            }
-        } else if (jarEnabled()) {
-            PackageConfig.JarConfig.JarType packageType = jarType();
-            switch (packageType) {
-                case FAST_JAR, AOT_JAR -> {
-                    Path appBuildBaseDir = appBuildDir();
-                    inputs.add(genBuildDir().toFile());
-                    inputs.add(appBuildBaseDir.resolve(outputDirectory()).toFile());
-                    runnerAndArtifactsInputs(inputs::add, appBuildBaseDir);
-                }
-                case LEGACY_JAR -> {
-                    inputs.add(depBuildDir().resolve("lib").toFile());
-                    inputs.add(appBuildDir().resolve("lib").toFile());
-                    runnerAndArtifactsInputs(inputs::add, appBuildDir());
-                }
-                case MUTABLE_JAR, UBER_JAR -> {
-                }
-            }
-        }
-        return inputs;
-    }
-
-    private void runnerAndArtifactsInputs(Consumer<File> buildInputs, Path sourceDir) {
-        buildInputs.accept(sourceDir.resolve(QUARKUS_ARTIFACT_PROPERTIES).toFile());
-        buildInputs.accept(sourceDir.resolve(nativeRunnerFileName()).toFile());
-        buildInputs.accept(sourceDir.resolve(runnerJarFileName()).toFile());
-        // TODO jib-image* ??
-        buildInputs.accept(sourceDir.resolve(nativeImageSourceJarDirName()).toFile());
-    }
+    public abstract ConfigurableFileCollection getApplicationParts();
 
     @SuppressWarnings("deprecation") // legacy JAR
     @TaskAction

@@ -1,7 +1,10 @@
 package io.quarkus.observability.test.utils;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -58,6 +61,8 @@ public class QueryResult {
         public String name;
         public String job;
         public String test;
+        @JsonAnySetter
+        public Map<String, String> labels = new LinkedHashMap<>();
 
         // getters and setters
 
@@ -67,6 +72,7 @@ public class QueryResult {
                     "name='" + name + '\'' +
                     ", job='" + job + '\'' +
                     ", test='" + test + '\'' +
+                    ", labels=" + labels +
                     '}';
         }
     }

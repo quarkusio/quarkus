@@ -22,6 +22,7 @@ import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.ClassPathResource;
 import io.quarkus.bootstrap.classloading.FilteredClassPathElement;
 import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
+import io.quarkus.bootstrap.classloading.PathTreeClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -198,6 +199,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         }
         ClassPathElement cpe = useCpeCache ? augmentationElements.get(artifact.getKey()) : null;
         if (cpe != null) {
+            acquire(cpe);
             consumer.accept(cpe);
             return;
         }
@@ -210,6 +212,16 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         consumer.accept(cpe);
         if (useCpeCache) {
             augmentationElements.put(artifact.getKey(), cpe);
+        }
+    }
+
+    /**
+     * A cached element is about to be used by another class loader: it must survive the closing of the class loaders
+     * that were already using it.
+     */
+    private static void acquire(ClassPathElement cpe) {
+        if (cpe instanceof PathTreeClassPathElement pathTreeElement) {
+            pathTreeElement.acquire();
         }
     }
 
@@ -308,6 +320,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         }
         ClassPathElement cpe = elementCache.get(artifact.getKey());
         if (cpe != null) {
+            acquire(cpe);
             consumer.accept(cpe);
             return;
         }

@@ -6,6 +6,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -45,6 +46,12 @@ public class VertxCertificateHolder implements TlsConfiguration {
     private KeyStore trustStore;
     private KeyCertOptions keyStoreOptions;
     private KeyStore keyStore;
+    /**
+     * Incremented every time a reload loads content differing from the content already in use. Components
+     * applying this configuration compare it with the version they last applied, so that a reload triggered by one
+     * of them does not hide the change from the others.
+     */
+    private long contentVersion;
 
     private final Vertx vertx;
     private final String name;
@@ -281,6 +288,11 @@ public class VertxCertificateHolder implements TlsConfiguration {
     }
 
     @Override
+    public synchronized long getContentVersion() {
+        return contentVersion;
+    }
+
+    @Override
     public boolean reload() {
         if (keyStore == null && trustStore == null) {
             return false;
@@ -293,6 +305,8 @@ public class VertxCertificateHolder implements TlsConfiguration {
             try {
                 keyStoreUpdateResult = CertificateRegistryImpl.getKeyStore(config, vertx, name);
             } catch (Exception e) {
+                LOGGER.errorf(e, "Unable to reload the key store of the TLS configuration '%s' - keeping the current one",
+                        name);
                 return false;
             }
         }
@@ -302,6 +316,8 @@ public class VertxCertificateHolder implements TlsConfiguration {
             try {
                 trustStoreUpdateResult = CertificateRegistryImpl.getTrustStore(config, vertx, name);
             } catch (Exception e) {
+                LOGGER.errorf(e, "Unable to reload the trust store of the TLS configuration '%s' - keeping the current one",
+                        name);
                 return false;
             }
         } else if (config.trustAll()) {
@@ -318,18 +334,37 @@ public class VertxCertificateHolder implements TlsConfiguration {
         List<Buffer> newCRLs = new ArrayList<>();
         if (config().certificateRevocationList().isPresent()) {
             for (Path path : config().certificateRevocationList().get()) {
-                byte[] bytes = TlsConfigUtils.read(path);
-                newCRLs.add(Buffer.buffer(bytes));
+                try {
+                    byte[] bytes = TlsConfigUtils.read(path);
+                    newCRLs.add(Buffer.buffer(bytes));
+                } catch (Exception e) {
+                    LOGGER.errorf(e, "Unable to reload the certificate revocation list '%s' of the TLS configuration "
+                            + "'%s' - keeping the current one", path, name);
+                    return false;
+                }
             }
         }
 
+        KeyCertOptions newKeyStoreOptions = keyStoreUpdateResult != null ? keyStoreUpdateResult.options : null;
+        TrustOptions newTrustOptions = trustStoreUpdateResult != null ? trustStoreUpdateResult.options : null;
+
         synchronized (this) {
-            keyStoreOptions = keyStoreUpdateResult != null ? keyStoreUpdateResult.options : null;
+            // The Vert.x options carry the content of the stores and not only their location, so comparing them
+            // tells whether the certificates were actually rotated. Nothing is swapped when they were not, which
+            // keeps the content version - and so the components comparing against it - untouched.
+            if (Objects.equals(keyStoreOptions, newKeyStoreOptions)
+                    && Objects.equals(trustOptions, newTrustOptions)
+                    && crls.equals(newCRLs)) {
+                return true;
+            }
+
+            keyStoreOptions = newKeyStoreOptions;
             keyStore = keyStoreUpdateResult != null ? keyStoreUpdateResult.keyStore : null;
-            trustOptions = trustStoreUpdateResult != null ? trustStoreUpdateResult.options : null;
+            trustOptions = newTrustOptions;
             trustStore = trustStoreUpdateResult != null ? trustStoreUpdateResult.trustStore : null;
             crls.clear();
             crls.addAll(newCRLs);
+            contentVersion++;
         }
         return true;
     }

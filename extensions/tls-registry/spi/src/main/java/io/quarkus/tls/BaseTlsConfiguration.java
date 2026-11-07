@@ -100,10 +100,10 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
     }
 
     /**
-     * Reloads the configuration.
-     * It usually means reloading the key store and trust store, especially when they are files.
+     * Reloads the configuration from its source (e.g., file system).
      *
-     * @return {@code true} if the configuration has been reloaded, {@code false} otherwise.
+     * @return {@code true} if the reload succeeded (whether or not the content changed),
+     *         {@code false} if the reload failed or the configuration is not reloadable.
      */
     public boolean reload() {
         return false;

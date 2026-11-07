@@ -237,6 +237,13 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         }
     }
 
+    // Whether integration tests target an already-running application. Kept package-private and pure
+    // so it can be unit-tested directly. This decision must be made before requiring
+    // `quarkus-artifact.properties`, which is only needed to launch a packaged artifact.
+    static boolean isTestHostLaunch(org.eclipse.microprofile.config.Config config) {
+        return config.getOptionalValue("quarkus.http.test-host", String.class).isPresent();
+    }
+
     // Formats the last `maxLines` lines of the given log content with a header, or returns an empty list
     // when there is nothing to show. Kept package-private and pure so it can be unit-tested directly.
     static List<String> applicationLogTail(List<String> lines, int maxLines, String fileName) {
@@ -255,12 +262,24 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
     private QuarkusTestExtensionState doProcessStart(Class<? extends QuarkusTestProfile> profile, ExtensionContext context)
             throws Throwable {
 
-        Properties quarkusArtifactProperties = readQuarkusArtifactProperties(context);
         Config config = Config.get();
         TestConfig testConfig = config.getConfigMapping(TestConfig.class);
-        String artifactType = getEffectiveArtifactType(testConfig, quarkusArtifactProperties);
-        boolean isDockerLaunch = isContainer(artifactType)
-                || (isJar(artifactType) && "test-with-native-agent".equals(testConfig.integrationTestProfile()));
+        boolean isTestHostLaunch = isTestHostLaunch(config);
+
+        Properties quarkusArtifactProperties;
+        String artifactType;
+        boolean isDockerLaunch;
+        if (isTestHostLaunch) {
+            // TestHostLauncher targets an already-running application, so no packaged artifact metadata is needed.
+            quarkusArtifactProperties = null;
+            artifactType = null;
+            isDockerLaunch = false;
+        } else {
+            quarkusArtifactProperties = readQuarkusArtifactProperties(context);
+            artifactType = getEffectiveArtifactType(testConfig, quarkusArtifactProperties);
+            isDockerLaunch = isContainer(artifactType)
+                    || (isJar(artifactType) && "test-with-native-agent".equals(testConfig.integrationTestProfile()));
+        }
 
         quarkusTestProfile = profile;
         currentJUnitTestClass = context.getRequiredTestClass();
@@ -332,8 +351,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             ThreadLocalConfigSourceProvider.set(ConfigInjector.get(context));
 
             ArtifactLauncher<?> launcher;
-            Optional<String> testHost = config.getOptionalValue("quarkus.http.test-host", String.class);
-            if (testHost.isPresent()) {
+            if (isTestHostLaunch) {
                 launcher = new TestHostLauncher();
             } else {
                 String target = TestConfigUtil.runTarget(config);

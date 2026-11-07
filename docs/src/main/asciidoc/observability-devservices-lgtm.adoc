@@ -310,7 +310,7 @@ quarkus.observability.dev-resources=true
 
 === MCP integration for AI tools
 
-The LGTM Dev Service supports the https://github.com/grafana/docker-otel-lgtm/blob/main/docs/mcp-integration.md[Model Context Protocol (MCP)], allowing AI coding tools like Claude Code and Cursor to query telemetry data directly from the running container.
+The LGTM Dev Service supports the https://github.com/grafana/docker-otel-lgtm/blob/v0.31.0/docs/mcp-integration.md[Model Context Protocol (MCP)], allowing AI coding tools like Claude Code and Cursor to query telemetry data directly from the running container.
 
 Two MCP pathways are available:
 

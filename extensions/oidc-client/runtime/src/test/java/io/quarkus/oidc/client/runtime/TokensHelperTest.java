@@ -866,12 +866,12 @@ class TokensHelperTest {
     }
 
     /**
-     * Only the callers arriving after a refresh has started are served the tokens being refreshed:
-     * the caller which starts the refresh is handed the refresh itself, so it waits for the token
-     * endpoint even though the tokens it would replace are still valid.
+     * The caller which starts the refresh is served the tokens being refreshed too, rather than waiting
+     * for the token endpoint: the refresh runs in the background and its result replaces the tokens
+     * once it completes.
      */
     @Test
-    void testCallerStartingRefreshWaitsWhileLaterCallersAreServedTokensBeingRefreshed() throws Exception {
+    void testCallerStartingRefreshServedTokensBeingRefreshed() throws Exception {
         Tokens current = tokens("current", 8);
         assertThat(current.isAccessTokenExpired()).isFalse();
         assertThat(current.isAccessTokenWithinRefreshInterval()).isTrue();
@@ -881,26 +881,112 @@ class TokensHelperTest {
         TokensHelper helper = new TokensHelper();
         helper.initTokens(new ImmediateOidcClient(current), Map.of());
 
-        final AtomicReference<Tokens> first = new AtomicReference<>();
-        final CountDownLatch firstCompleted = new CountDownLatch(1);
-        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {
-            first.set(t);
-            firstCompleted.countDown();
-        }, t -> firstCompleted.countDown());
+        Tokens first = helper.getTokens(client, Map.of(), false).await().atMost(Duration.ofSeconds(2));
+        assertThat(first).as("the caller which started the refresh is served the tokens being refreshed")
+                .isSameAs(current);
+        // The refresh has been started in the background regardless.
         client.awaitInFlight();
 
         Tokens second = helper.getTokens(client, Map.of(), false).await().atMost(Duration.ofSeconds(2));
         assertThat(second).as("the caller arriving during the refresh is served the tokens being refreshed")
                 .isSameAs(current);
 
-        assertThat(firstCompleted.await(1, TimeUnit.SECONDS))
-                .as("the caller which started the refresh waits for it, although the tokens being refreshed are still valid")
+        // A caller waiting for the refresh observes its result once it is released.
+        Uni<Tokens> refreshed = helper.getTokens(client, Map.of(), false, true);
+        client.release.countDown();
+        assertThat(refreshed.await().atMost(Duration.ofSeconds(10)).getAccessToken()).isEqualTo("refreshed");
+        assertThat(helper.getTokens(client, Map.of(), false).await().atMost(Duration.ofSeconds(2)).getAccessToken())
+                .isEqualTo("refreshed");
+        assertThat(client.acquisitions.get()).isEqualTo(1);
+    }
+
+    /**
+     * The periodic tokens refresh waits for the refresh it starts, instead of being served the tokens
+     * being refreshed, as it cancels itself after repeated failures and so must learn about them.
+     */
+    @Test
+    void testCallerWaitingForRefreshWaitsForRefreshItStarts() throws Exception {
+        Tokens current = tokens("current", 8);
+        BlockingOidcClient client = new BlockingOidcClient(tokens("refreshed", 300));
+        TokensHelper helper = new TokensHelper();
+        helper.initTokens(new ImmediateOidcClient(current), Map.of());
+
+        final AtomicReference<Tokens> served = new AtomicReference<>();
+        final CountDownLatch completed = new CountDownLatch(1);
+        helper.getTokens(client, Map.of(), false, true).subscribe().with(t -> {
+            served.set(t);
+            completed.countDown();
+        }, t -> completed.countDown());
+        client.awaitInFlight();
+
+        assertThat(completed.await(1, TimeUnit.SECONDS))
+                .as("the caller waiting for the refresh must not be served the tokens being refreshed")
                 .isFalse();
 
         client.release.countDown();
-        assertThat(firstCompleted.await(10, TimeUnit.SECONDS)).as("the first caller should have completed").isTrue();
-        assertThat(first.get().getAccessToken()).isEqualTo("refreshed");
+        assertThat(completed.await(10, TimeUnit.SECONDS)).as("the caller should have completed").isTrue();
+        assertThat(served.get().getAccessToken()).isEqualTo("refreshed");
         assertThat(client.acquisitions.get()).isEqualTo(1);
+    }
+
+    /**
+     * The periodic tokens refresh also waits for a refresh another caller has started, so that it
+     * learns about the failure of a refresh it did not start itself.
+     */
+    @Test
+    void testCallerWaitingForRefreshWaitsForRefreshInFlight() throws Exception {
+        Tokens current = tokens("current", 8);
+        BlockingOidcClient client = new BlockingOidcClient(tokens("refreshed", 300),
+                new IllegalStateException("token endpoint unavailable"));
+        TokensHelper helper = new TokensHelper();
+        helper.initTokens(new ImmediateOidcClient(current), Map.of());
+
+        assertThat(helper.getTokens(client, Map.of(), false).await().atMost(Duration.ofSeconds(2))).isSameAs(current);
+        client.awaitInFlight();
+
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+        final CountDownLatch completed = new CountDownLatch(1);
+        helper.getTokens(client, Map.of(), false, true).subscribe().with(t -> completed.countDown(), t -> {
+            failure.set(t);
+            completed.countDown();
+        });
+
+        assertThat(completed.await(1, TimeUnit.SECONDS))
+                .as("the caller waiting for the refresh must not be served the tokens being refreshed")
+                .isFalse();
+
+        client.release.countDown();
+        assertThat(completed.await(10, TimeUnit.SECONDS)).as("the caller should have completed").isTrue();
+        assertThat(failure.get()).as("the caller waiting for the refresh should learn that it has failed")
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(client.acquisitions.get()).isEqualTo(1);
+    }
+
+    /**
+     * When the refresh started in the background fails, the tokens are discarded as when a caller
+     * waits for the refresh, so the next caller acquires new tokens and learns about a failure.
+     */
+    @Test
+    void testFailedBackgroundRefreshDiscardsTokens() throws Exception {
+        Tokens current = tokens("current", 8);
+        BlockingOidcClient client = new BlockingOidcClient(tokens("refreshed", 300),
+                new IllegalStateException("token endpoint unavailable"));
+        TokensHelper helper = new TokensHelper();
+        helper.initTokens(new ImmediateOidcClient(current), Map.of());
+
+        assertThat(helper.getTokens(client, Map.of(), false).await().atMost(Duration.ofSeconds(2))).isSameAs(current);
+        client.awaitInFlight();
+
+        // Waiting for the refresh tells when it has failed, by which point the tokens have been discarded.
+        Uni<Tokens> refresh = helper.getTokens(client, Map.of(), false, true);
+        client.release.countDown();
+        assertThatThrownBy(() -> refresh.await().atMost(Duration.ofSeconds(10)))
+                .isInstanceOf(IllegalStateException.class);
+
+        assertThatThrownBy(() -> helper.getTokens(client, Map.of(), false).await().atMost(Duration.ofSeconds(10)))
+                .as("the next caller should acquire new tokens rather than be served the discarded ones")
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(client.acquisitions.get()).isEqualTo(2);
     }
 
     /**
@@ -1230,9 +1316,16 @@ class TokensHelperTest {
         private final CountDownLatch started = new CountDownLatch(1);
         private final AtomicInteger acquisitions = new AtomicInteger();
         private final Tokens newTokens;
+        /** When set, token acquisition fails with it once released instead of returning new tokens. */
+        private final RuntimeException failure;
 
         BlockingOidcClient(Tokens newTokens) {
+            this(newTokens, null);
+        }
+
+        BlockingOidcClient(Tokens newTokens, RuntimeException failure) {
             this.newTokens = newTokens;
+            this.failure = failure;
         }
 
         /** Blocks until a token request is genuinely in flight. */
@@ -1257,6 +1350,9 @@ class TokensHelperTest {
                     release.await(10, TimeUnit.SECONDS);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
+                }
+                if (failure != null) {
+                    throw failure;
                 }
                 return newTokens;
             }).runSubscriptionOn(Executors.newSingleThreadExecutor());

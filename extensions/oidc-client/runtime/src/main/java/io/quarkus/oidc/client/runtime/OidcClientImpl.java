@@ -207,31 +207,31 @@ public class OidcClientImpl implements OidcClient {
                 request.putHeader(headerEntry.getKey(), headerEntry.getValue());
             }
         }
-
         if (clientSecretBasicAuthScheme != null) {
             request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
             if (hasClientSecretProvider()) {
                 credentialsToRetry = PreparedPostRequest.CredentialsToRetry.CLIENT_SECRET_BASIC_AUTH_SCHEME;
             }
         } else if (jwtAssertionProvided) {
-            String clientAssertion = additionalGrantParameters.get(OidcConstants.CLIENT_ASSERTION);
-            if (clientAssertion == null) {
-                clientAssertion = asyncCredentials.clientAssertion;
-                if (clientAssertion != null) {
-                    body.set(OidcConstants.CLIENT_ASSERTION, clientAssertion);
-                }
+            if (OidcCommonUtils.isJwtAssertion(oidcConfig.credentials())) {
+                // The provided JWT bearer or SPIFFE token is a JWT bearer grant assertion which is exchanged for a new token.
+
+                // TODO: Currently, refreshing the tokens is not supported when the JWT bearer grant assertion is used
+                verifyJwtBearerGrantType(body);
+
+                body = copyMultiMap(body);
+                setProvidedJwtAssertion(body, OidcConstants.JWT_BEARER_GRANT_ASSERTION, additionalGrantParameters,
+                        asyncCredentials, op);
+            } else {
+                // The provided JWT bearer or SPIFFE token is a client assertion which is used to authenticate the client.
+                body = !isRefresh(op) ? copyMultiMap(body) : body;
+
+                setProvidedJwtAssertion(body, OidcConstants.CLIENT_ASSERTION, additionalGrantParameters,
+                        asyncCredentials, op);
+                body.set(OidcConstants.CLIENT_ASSERTION_TYPE,
+                        clientAssertionProvider != null ? clientAssertionProvider.getClientAssertionType()
+                                : OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
             }
-            if (clientAssertion == null) {
-                String errorMessage = String.format(
-                        "%s OidcClient can not complete the %s grant request because a %s client_assertion is missing",
-                        oidcConfig.id().get(), (isRefresh(op) ? OidcConstants.REFRESH_TOKEN_GRANT : grantType),
-                        OidcCommonUtils.getClientAssertionTokenType(oidcConfig.credentials().jwt().source()));
-                LOG.error(errorMessage);
-                throw new OidcClientException(errorMessage);
-            }
-            body.set(OidcConstants.CLIENT_ASSERTION_TYPE,
-                    clientAssertionProvider != null ? clientAssertionProvider.getClientAssertionType()
-                            : OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
         } else if (clientJwtKey != null) {
             // if it is a refresh then a map has already been copied
             body = !isRefresh(op) ? copyMultiMap(body) : body;
@@ -241,16 +241,13 @@ public class OidcClientImpl implements OidcClient {
                 body.add(OidcConstants.CLIENT_ID, oidcConfig.clientId().get());
                 body.add(OidcConstants.CLIENT_SECRET, jwt);
             } else if (OidcCommonUtils.isJwtAssertion(oidcConfig.credentials())) {
-                if (!OidcConstants.JWT_BEARER_GRANT_TYPE.equals(body.get(OidcConstants.GRANT_TYPE))) {
-                    String errorMessage = String.format(
-                            "%s OidcClient wants to use JWT bearer grant assertion but has a wrong grant type %s configured."
-                                    + " You must set 'quarkus.oidc-client.grant.type' property to 'jwt'.",
-                            oidcConfig.id().get(), body.get(OidcConstants.GRANT_TYPE));
-                    LOG.error(errorMessage);
-                    throw new OidcClientException(errorMessage);
-                }
+                // The generated JWT token is a JWT bearer grant assertion which is exchanged for a new token.
+
+                // TODO: Currently, refreshing the tokens is not supported when the JWT bearer grant assertion is used
+                verifyJwtBearerGrantType(body);
                 body.add(OidcConstants.JWT_BEARER_GRANT_ASSERTION, jwt);
             } else {
+                // The generated JWT token is a client assertion which is used to authenticate the client.
                 body.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
                 body.add(OidcConstants.CLIENT_ASSERTION, jwt);
             }
@@ -293,6 +290,34 @@ public class OidcClientImpl implements OidcClient {
                     return new OidcClientException("OIDC Server is not available");
                 });
         return new PreparedPostRequest(response, credentialsToRetry);
+    }
+
+    private void setProvidedJwtAssertion(MultiMap body, String assertionParam,
+            Map<String, String> additionalGrantParameters, AsyncCredentials asyncCredentials, Operation op) {
+        // the assertion provided as an additional grant parameter takes precedence
+        if (additionalGrantParameters.get(assertionParam) == null) {
+            if (asyncCredentials.clientAssertion == null) {
+                String errorMessage = String.format(
+                        "%s OidcClient can not complete the %s grant request because a %s %s is missing",
+                        oidcConfig.id().get(), (isRefresh(op) ? OidcConstants.REFRESH_TOKEN_GRANT : grantType),
+                        OidcCommonUtils.getClientAssertionTokenType(oidcConfig.credentials().jwt().source()),
+                        assertionParam);
+                LOG.error(errorMessage);
+                throw new OidcClientException(errorMessage);
+            }
+            body.set(assertionParam, asyncCredentials.clientAssertion);
+        }
+    }
+
+    private void verifyJwtBearerGrantType(MultiMap body) {
+        if (!OidcConstants.JWT_BEARER_GRANT_TYPE.equals(body.get(OidcConstants.GRANT_TYPE))) {
+            String errorMessage = String.format(
+                    "%s OidcClient wants to use JWT bearer grant assertion but has a wrong grant type %s configured."
+                            + " You must set 'quarkus.oidc-client.grant.type' property to 'jwt'.",
+                    oidcConfig.id().get(), body.get(OidcConstants.GRANT_TYPE));
+            LOG.error(errorMessage);
+            throw new OidcClientException(errorMessage);
+        }
     }
 
     private boolean hasClientSecretProvider() {

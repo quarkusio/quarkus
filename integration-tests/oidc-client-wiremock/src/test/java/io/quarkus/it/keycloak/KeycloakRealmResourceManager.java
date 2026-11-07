@@ -101,6 +101,15 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
                                 "{\"access_token\":\"access_token_jwt_bearer\", \"expires_in\":4, \"refresh_token\":\"refresh_token_jwt_bearer\"}")));
+        // JWT bearer token is a JWT bearer grant assertion, no client assertion is expected
+        server.stubFor(WireMock.post("/tokens-jwtbearer-grant-file")
+                .withRequestBody(matching("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&"
+                        + "assertion=" + jwtBearerToken))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_jwt_bearer_grant_file\", \"expires_in\":4}")));
         String spiffeSvidToken = Jwt.subject("spiffe://example.org/workload")
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
@@ -121,6 +130,15 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
                                 "{\"access_token\":\"access_token_spiffe\", \"expires_in\":20}")));
+        // SPIFFE JWT-SVID token is a JWT bearer grant assertion, no client assertion is expected
+        server.stubFor(WireMock.post("/tokens-spiffe-grant")
+                .withRequestBody(matching("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&"
+                        + "assertion=" + spiffeSvidToken))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_spiffe_grant\", \"expires_in\":4}")));
         server.stubFor(WireMock.post("/tokens_public_client")
                 .withRequestBody(matching("grant_type=password&username=alice&password=alice&client_id=quarkus-app"))
                 .willReturn(WireMock

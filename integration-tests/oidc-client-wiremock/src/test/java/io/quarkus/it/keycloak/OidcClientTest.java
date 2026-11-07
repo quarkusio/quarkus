@@ -97,6 +97,24 @@ public class OidcClientTest {
                 .body(equalTo("access_token_spiffe"));
     }
 
+    @Order(18)
+    @Test
+    public void testEchoTokensJwtBearerGrantFromFile() {
+        RestAssured.when().get("/frontend/echoTokenJwtBearerGrantFromFile")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_jwt_bearer_grant_file"));
+    }
+
+    @Order(19)
+    @Test
+    public void testEchoTokensSpiffeGrant() {
+        RestAssured.when().get("/frontend/echoTokensSpiffeGrant")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_spiffe_grant"));
+    }
+
     @Order(7)
     @Test
     public void testGetAccessTokenWithConfiguredExpiresIn() {

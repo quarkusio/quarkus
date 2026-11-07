@@ -299,7 +299,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
      */
     protected static boolean includeAppDependency(ResolvedDependency appDep, Optional<Set<ArtifactKey>> optionalDependencies,
             Set<ArtifactKey> removedArtifacts) {
-        if (!appDep.isJar()) {
+        if (!appDep.isJarOrZip()) {
             return false;
         }
         if (appDep.isOptional()) {

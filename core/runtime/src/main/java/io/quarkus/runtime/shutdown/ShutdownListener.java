@@ -9,7 +9,11 @@ package io.quarkus.runtime.shutdown;
  *
  * In the shutdown phase the app should disallow new external requests, however
  * allow existing requests to complete normally.
+ *
+ * @deprecated Use {@link io.quarkus.core.StartContext#onGracefulPreShutdown(Runnable)} and
+ *             {@link io.quarkus.core.StartContext#onGracefulShutdown(Runnable)} (or their async variants) instead.
  */
+@Deprecated(since = "4.0", forRemoval = true)
 public interface ShutdownListener {
 
     /**

@@ -13,7 +13,6 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.load.shedding.deployment.spi.LoadSheddingExemptPathBuildItem;
 import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
@@ -25,6 +24,7 @@ import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryExemplarConte
 import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryExemplarSamplerProvider;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.spi.ControlPlanePathBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 
 /**
@@ -105,7 +105,7 @@ public class PrometheusRegistryProcessor {
     @Record(value = ExecutionTime.STATIC_INIT)
     void createPrometheusRoute(BuildProducer<RouteBuildItem> routes,
             BuildProducer<RegistryBuildItem> registries,
-            BuildProducer<LoadSheddingExemptPathBuildItem> exemptPaths,
+            BuildProducer<ControlPlanePathBuildItem> exemptPaths,
             MicrometerConfig mConfig,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
@@ -151,7 +151,7 @@ public class PrometheusRegistryProcessor {
 
         // scraping must keep working while the application is overloaded, or the overload
         // becomes invisible exactly when the metrics matter most
-        exemptPaths.produce(new LoadSheddingExemptPathBuildItem(path,
+        exemptPaths.produce(new ControlPlanePathBuildItem(path,
                 "metrics scraping must keep working during an overload, or the overload is invisible"));
     }
 }

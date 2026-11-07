@@ -49,7 +49,6 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
-import io.quarkus.load.shedding.deployment.spi.LoadSheddingExemptPathBuildItem;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -69,6 +68,7 @@ import io.quarkus.smallrye.health.runtime.SmallRyeWellnessHandler;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.spi.ControlPlanePathBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
@@ -363,13 +363,13 @@ class SmallRyeHealthProcessor {
     void exemptHealthProbesFromLoadShedding(
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             SmallRyeHealthBuildTimeConfig healthConfig,
-            BuildProducer<LoadSheddingExemptPathBuildItem> exemptPaths) {
+            BuildProducer<ControlPlanePathBuildItem> exemptPaths) {
         String reason = "the health probes must keep responding, or the orchestrator restarts"
                 + " an overloaded application or cuts it off and overloads the other replicas";
 
         for (String probePath : List.of(healthConfig.livenessPath(), healthConfig.readinessPath(),
                 healthConfig.startupPath())) {
-            exemptPaths.produce(new LoadSheddingExemptPathBuildItem(
+            exemptPaths.produce(new ControlPlanePathBuildItem(
                     nonApplicationRootPathBuildItem.resolveManagementNestedPath(healthConfig.rootPath(), probePath),
                     reason));
         }

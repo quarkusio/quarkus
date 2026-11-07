@@ -1,0 +1,1003 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="http-rate-limit-reference"]
+= HTTP rate limit reference guide
+include::_attributes.adoc[]
+:diataxis-type: reference
+:numbered:
+:sectnums:
+:topics: web,rate-limit
+:extensions: io.quarkus:quarkus-http-rate-limit
+:extension-status: experimental
+
+include::{includes}/extension-status.adoc[]
+
+Rate limiting controls how frequently a client can access an application.
+It stops a single caller from using more than its share: a client stuck in a retry loop, someone guessing passwords on a login page, or a customer that goes beyond its plan.
+A rate limit combines a sustained request rate with a burst allowance for short spikes.
+
+The `quarkus-http-rate-limit` extension enforces rate limits in the Quarkus HTTP layer, before requests reach application endpoints.
+You configure named rules that select HTTP paths and methods, identify which requests share a limit, and define the permitted request rate.
+Requests that exceed a limit receive `429 Too Many Requests` with a `Retry-After` header.
+The extension rejects excess requests immediately; it does not queue them until capacity becomes available.
+
+Start with <<getting-started>>, then use <<choosing-the-limit>> and <<keys>> to choose a policy.
+For deployments with multiple instances, see <<shared-limits>>.
+The <<reference-details>> and <<configuration-reference>> sections describe matching, lifecycle, extension points, and configuration in detail.
+
+[NOTE]
+====
+Rate limiting is not overload protection.
+It limits each client separately, however idle the application is.
+To protect the application as a whole when it cannot keep up, use xref:load-shedding-reference.adoc[load shedding], which answers `503 Service Unavailable`.
+The two extensions can be used together; load shedding then runs first.
+
+To limit calls to a Java method rather than HTTP requests, see `@RateLimit` of SmallRye Fault Tolerance, which has no separate limits per client, or the Quarkiverse bucket4j extension.
+====
+
+[[getting-started]]
+== Getting started
+
+Add the extension to your project:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-http-rate-limit</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-http-rate-limit")
+----
+
+The extension limits nothing until you configure a _rule_.
+The following rule, named `api`, lets each client IP address make 100 requests per minute to the paths under `/api`:
+
+[source,properties]
+----
+quarkus.http.rate-limit.api.paths=/api/*
+quarkus.http.rate-limit.api.phase=pre-authentication
+quarkus.http.rate-limit.api.request-key=ip
+quarkus.http.rate-limit.api.permits=100
+quarkus.http.rate-limit.api.window=1m
+----
+
+* `paths` are the paths the rule limits.
+* `request-key` says who counts as one client, here the client IP address. See <<keys>> for the other choices.
+* `phase` says whether the rule runs before or after the user is authenticated. A rule keyed by IP address needs no user, so it runs before. See <<phases>>.
+* `permits` and `window` are the limit: 100 requests per minute. See <<choosing-the-limit>>.
+
+The rule name, `api` here, is your choice.
+It appears in logs and metrics, never in responses.
+
+To see the limit at work, provide an endpoint at `/api/hello` and start the application in dev mode with a smaller limit: `permits=2` and `window=1m`.
+Send three requests in quick succession from the same client:
+
+[source,shell]
+----
+curl -i localhost:8080/api/hello
+curl -i localhost:8080/api/hello
+curl -i localhost:8080/api/hello
+----
+
+The first two get the normal response.
+The third is refused, with a response like this:
+
+[source]
+----
+HTTP/1.1 429 Too Many Requests
+Retry-After: 30
+
+Too Many Requests
+----
+
+`Retry-After` is the number of seconds until the client may try again.
+In dev mode, the application log also shows every refusal, with the rule and the key that was refused.
+
+A client that accepts `application/problem+json`, `application/json` or `text/json` gets an RFC 9457 problem instead of the plain text: `{"type":"about:blank","title":"Too Many Requests","status":429}`.
+Any other client, including one that sends `Accept: */*`, gets the plain text, and a `HEAD` request gets no body.
+The response never says which rule refused the request, or which key was counted.
+
+To disable rate limiting when starting the application, set `quarkus.http.rate-limit.enabled=false`.
+
+[[choosing-the-limit]]
+== Choosing the limit
+
+A limit is not reset at fixed times.
+Permits come back one at a time, evenly: with `permits=60` and `window=1m`, a client gets one permit back every second, not 60 at the top of each minute.
+That time between two permits, `window / permits`, is the rule's _interval_.
+Each request uses one permit.
+
+image::http-rate-limit-windows.svg["A limit of 5 per minute admits all ten requests sent around a minute boundary when counted in fixed windows, and five with this extension"]
+
+`burst` says how many permits a client can save up while it is idle, and so how many requests it can make at once.
+It defaults to `permits`.
+
+The following table follows one client of a rule with `permits=2` and `window=10s`, so one permit back every 5 seconds, for three values of `burst`.
+The client starts idle, with as many permits as it can hold:
+
+[cols="1,2,3,3,3"]
+|===
+|Time |Requests |`burst=1` |`burst=2` |`burst=4`
+
+|0 s
+|5 at once
+|1 admitted, 4 refused with `Retry-After: 5`
+|2 admitted, 3 refused with `Retry-After: 5`
+|4 admitted, 1 refused with `Retry-After: 5`
+
+|2 s
+|1
+|refused with `Retry-After: 3`
+|refused with `Retry-After: 3`
+|refused with `Retry-After: 3`
+
+|5 s
+|1
+|admitted
+|admitted
+|admitted
+
+|10 s
+|1
+|admitted
+|admitted
+|admitted
+
+|30 s
+|3 at once
+|1 admitted, 2 refused with `Retry-After: 5`
+|2 admitted, 1 refused with `Retry-After: 5`
+|3 admitted
+|===
+
+image::http-rate-limit-burst.svg["The permits a client has over time, for burst 1, 2 and 4"]
+
+In all three columns, the client gets one request through every 5 seconds once its saved permits are spent.
+`burst` only changes how many it can save: after the quiet 20 seconds, it has 1, 2 or 4.
+
+* Raise `burst` above `permits` to allow short spikes from clients that are mostly idle.
+* Lower it below `permits` to spread each client's requests out more evenly.
+
+`Retry-After` is the wait until the next permit comes back, in whole seconds, at least 1.
+A client that retries exactly then may still be refused, if another request with the same key used that permit first.
+
+[[keys]]
+== Choosing what to count
+
+The `request-key` of a rule decides which requests share one limit:
+
+[cols="1,3"]
+|===
+|Key |Requests that share a limit
+
+|`ip`
+|Requests from the same client IP address.
+
+|`principal`
+|Requests of the same authenticated user.
+Requests without a user are counted by IP address.
+
+|`header:<name>`
+|Requests with the same value of the header `<name>`, for example `header:X-Api-Key`.
+Requests without the header, or with a blank value, are counted by IP address.
+
+|`path`
+|Requests to the same canonical request path, from any client.
+For example, `/items/1` and `/items/2` have separate limits, even if both are served by the same REST resource method.
+
+|`global`
+|All requests of the rule, from any client.
+
+|`custom:<name>`
+|Requests that your own key resolver gives the same key, see <<custom-keys>>.
+|===
+
+Keys are scoped to a rule and phase: the same client has independent limits in two different rules.
+Within one rule, requests with the same key share a limit across all of its paths and methods.
+For example, an `ip` rule with `paths=/orders/*,/search/*` gives each address one combined allowance for both sets of paths.
+With `path`, all clients requesting a particular path share its limit; with `global`, all matching requests share one limit.
+One busy client can exhaust either allowance for everyone who shares it.
+
+[[phases]]
+=== Before or after authentication
+
+Each rule runs in one of two phases, set with `phase`:
+
+image::http-rate-limit-pipeline.svg["A request passes load shedding, the pre-authentication rules, authentication, the post-authentication rules and the permission checks, each of which can refuse it"]
+
+* `pre-authentication` runs before the user is known.
+Use it for keys that need no user, such as `ip`.
+It also protects authentication itself: a login request with wrong credentials is answered `401` by authentication and never reaches a later phase, so limit password guessing with a `pre-authentication` rule keyed by `ip`.
+* `post-authentication` runs once the user is known, before the permission checks.
+`principal` keys need it.
+
+To limit the same paths in both phases, for example by IP address before authentication and by user after it, write one rule for each.
+
+Because the rules run after CORS, a `429` carries the CORS headers, and a valid CORS preflight request is answered without being counted.
+For a script to read `Retry-After` from a cross-origin response, list it with `quarkus.http.cors.exposed-headers=Retry-After`.
+
+A refused request's unread body is discarded, so that the connection can serve the next request.
+The server reads no more of it than an accepted request may send (`quarkus.http.limits.max-body-size`): a larger body is cut off once the response is sent, which over HTTP/1.1 closes the connection, and over HTTP/2 and HTTP/3 ends only the stream of that request.
+If your application installs a body handler for every route, the whole body is read before the limiter runs.
+
+A header key in the `pre-authentication` phase counts values that nothing has checked yet.
+Use it only for values that are secret, such as API keys, together with an `ip` rule on the same paths.
+For a value that is not secret, such as a tenant ID, validate that the authenticated caller may use that value before treating it as a trusted key.
+Selecting `post-authentication` makes the identity available but does not validate a header's relationship to that identity.
+A custom resolver can derive the tenant from the identity instead.
+
+[[client-ip-addresses]]
+=== Behind a proxy
+
+The `ip` key uses the address that the request comes from.
+Behind a reverse proxy or a load balancer, that is the proxy's address, and all clients share one limit.
+Set `quarkus.http.proxy.proxy-address-forwarding=true` and `quarkus.http.proxy.trusted-proxies` so that Quarkus takes the client's address from the proxy's forwarding headers, see xref:http-reference.adoc#reverse-proxy[Running behind a reverse proxy].
+
+[[custom-keys]]
+=== Your own keys
+
+To count requests some other way, for example by tenant, write a CDI bean that implements `io.quarkus.http.ratelimit.RateLimitKeyResolver`, annotate it with `@Identifier`, and select it with `custom:` followed by the identifier:
+
+[source,properties]
+----
+quarkus.http.rate-limit.api.phase=post-authentication
+quarkus.http.rate-limit.api.request-key=custom:tenant
+----
+
+[source,java]
+----
+import java.util.Optional;
+
+import jakarta.inject.Singleton;
+
+import io.quarkus.http.ratelimit.RateLimitContext;
+import io.quarkus.http.ratelimit.RateLimitKeyResolver;
+import io.smallrye.common.annotation.Identifier;
+import io.smallrye.mutiny.Uni;
+
+@Singleton
+@Identifier("tenant")
+public class TenantKeyResolver implements RateLimitKeyResolver {
+
+    @Override
+    public Uni<Optional<String>> resolve(RateLimitContext context) {
+        return Uni.createFrom().item(context.identity()
+                .map(identity -> identity.<String> getAttribute("tenant-id"))
+                .map(tenant -> "tenant:" + tenant));
+    }
+}
+----
+
+`RateLimitContext` exposes the routing context, rule name, phase, and, after authentication, the security identity.
+In this example, authentication must populate the `tenant-id` identity attribute.
+A resolver returns the key of a request, or `Optional.empty()` to skip this rule for the request.
+The example skips the rule when the attribute is absent; return a shared fallback key instead if those requests must also be limited.
+It runs on the event loop, so it must not block, and it must answer within `250ms`.
+If it fails or is too slow, the request is counted by IP address, so that a failing resolver never switches the rule off.
+See <<writing-a-resolver>> for more.
+
+== Common tasks
+
+=== Protecting a login page
+
+Limit login attempts by IP address, before authentication, and only for `POST`:
+
+[source,properties]
+----
+quarkus.http.rate-limit.login.paths=/login
+quarkus.http.rate-limit.login.methods=POST
+quarkus.http.rate-limit.login.phase=pre-authentication
+quarkus.http.rate-limit.login.request-key=ip
+quarkus.http.rate-limit.login.permits=5
+quarkus.http.rate-limit.login.window=1m
+----
+
+[[stacking]]
+=== Combining a short and a long limit
+
+To allow a few requests per second but also cap the requests per day, write two rules on the same paths:
+
+[source,properties]
+----
+quarkus.http.rate-limit.login-burst.paths=/login
+quarkus.http.rate-limit.login-burst.phase=pre-authentication
+quarkus.http.rate-limit.login-burst.request-key=ip
+quarkus.http.rate-limit.login-burst.permits=5
+quarkus.http.rate-limit.login-burst.window=10s
+
+quarkus.http.rate-limit.login-day.paths=/login
+quarkus.http.rate-limit.login-day.phase=pre-authentication
+quarkus.http.rate-limit.login-day.request-key=ip
+quarkus.http.rate-limit.login-day.permits=200
+quarkus.http.rate-limit.login-day.window=1d
+----
+
+image::http-rate-limit-stacking.svg["The 5 per 10 seconds rule is checked before the daily rule, and the first refusal answers the request"]
+
+Within each phase, all matching rules apply, including overlapping paths; a more specific path does not replace a broader rule.
+Rules are checked by ascending configured `window`, with ties ordered by rule name.
+The first refusal stops evaluation and answers the request.
+A request that the short rule admits and the long rule refuses still uses a permit of the short rule.
+
+[[global-settings]]
+=== Sharing settings between rules
+
+The shared defaults `phase`, `request-key`, `store`, `override`, and `max-keys` apply to every rule that does not set its own value.
+Set these directly under `quarkus.http.rate-limit`.
+Set `permits`, `window`, and other rule-specific settings on each rule.
+Here both rules count API keys after authentication:
+
+[source,properties]
+----
+quarkus.http.rate-limit.phase=post-authentication
+quarkus.http.rate-limit.request-key=header:X-Api-Key
+
+quarkus.http.rate-limit.orders.paths=/orders/*
+quarkus.http.rate-limit.orders.permits=100
+quarkus.http.rate-limit.orders.window=1m
+
+quarkus.http.rate-limit.search.paths=/search/*
+quarkus.http.rate-limit.search.permits=20
+quarkus.http.rate-limit.search.window=1m
+----
+
+[[overrides]]
+=== Giving some clients a different limit
+
+A rule gives every key the same limit.
+To give some keys another one, for example 1000 requests a minute for users on a paid plan instead of 100, write an _override_: a CDI bean that implements `io.quarkus.http.ratelimit.RateLimitOverride`, annotated with `@Identifier`, and selected by the rule's `override`:
+
+[source,properties]
+----
+quarkus.http.rate-limit.api.paths=/api/*
+quarkus.http.rate-limit.api.phase=post-authentication
+quarkus.http.rate-limit.api.request-key=principal
+quarkus.http.rate-limit.api.override=plans
+quarkus.http.rate-limit.api.permits=100
+quarkus.http.rate-limit.api.window=1m
+----
+
+For every request, the override gets the key and returns the limit for it, or an empty value to keep the rule's limit:
+
+[source,java]
+----
+import java.time.Duration;
+import java.util.Optional;
+
+import jakarta.inject.Singleton;
+
+import io.quarkus.http.ratelimit.RateLimitContext;
+import io.quarkus.http.ratelimit.RateLimitOverride;
+import io.smallrye.common.annotation.Identifier;
+import io.smallrye.mutiny.Uni;
+
+@Singleton
+@Identifier("plans")
+public class PlanOverride implements RateLimitOverride {
+
+    private final RateLimitPlans plans;
+
+    PlanOverride(RateLimitPlans plans) {
+        this.plans = plans;
+    }
+
+    @Override
+    public Uni<Optional<Limit>> override(RateLimitContext context, String key) {
+        if (!key.startsWith("principal:")) {
+            // an anonymous request, keyed by its client address: the configured limit
+            return Uni.createFrom().item(Optional.empty());
+        }
+        return plans.of(key.substring("principal:".length()))
+                .map(plan -> plan == RateLimitPlan.PAID
+                        ? Optional.of(Limit.of(1000, Duration.ofMinutes(1)))
+                        : Optional.<Limit> empty());
+    }
+}
+----
+
+`RateLimitPlans` and `RateLimitPlan` are the application's own code.
+In this example, `RateLimitPlans` reads the plan of each user from Redis with the reactive API of the `quarkus-redis-client` extension, so that the lookup never blocks, and gives up after `100ms`:
+
+[source,java]
+----
+public enum RateLimitPlan {
+    FREE,
+    PAID
+}
+
+@ApplicationScoped
+public class RateLimitPlans {
+
+    private final ReactiveValueCommands<String, String> plans;
+
+    RateLimitPlans(ReactiveRedisDataSource redis) {
+        this.plans = redis.value(String.class);
+    }
+
+    public Uni<RateLimitPlan> of(String user) {
+        return plans.get("plan:" + user)
+                .map(plan -> plan == null ? RateLimitPlan.FREE : RateLimitPlan.valueOf(plan))
+                .ifNoItem().after(Duration.ofMillis(100)).recoverWithItem(RateLimitPlan.FREE)
+                .onFailure().recoverWithItem(RateLimitPlan.FREE);
+    }
+}
+----
+
+Like a resolver, an override must not block and must answer within `250ms`.
+If it fails, is too slow, or returns an invalid limit, the key keeps the rule's limit.
+`Limit.of(permits, window)` uses `permits` as the burst; `Limit.of(permits, window, burst)` sets an explicit burst.
+An override changes only the limit, not the rule's paths, key, phase, or store.
+See <<override-details>> for what happens when a key's limit changes.
+
+=== Changing the response
+
+To answer refused requests differently, write a CDI bean that implements `io.quarkus.http.ratelimit.RateLimitRejectionWriter`.
+It replaces the default writer for all rules and is called after `Retry-After` is set.
+It runs on the event loop, must not block, and must set the status and end the response.
+For example:
+
+[source,java]
+----
+import jakarta.inject.Singleton;
+
+import io.quarkus.http.ratelimit.RateLimitRejectionInfo;
+import io.quarkus.http.ratelimit.RateLimitRejectionWriter;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.ext.web.RoutingContext;
+
+@Singleton
+public class CustomRejectionWriter implements RateLimitRejectionWriter {
+
+    @Override
+    public void write(RoutingContext context, RateLimitRejectionInfo rejection) {
+        context.response().setStatusCode(429)
+                .putHeader("Content-Type", "text/plain; charset=utf-8");
+        if (context.request().method() == HttpMethod.HEAD) {
+            context.response().end();
+        } else {
+            context.response().end("Request limit reached. Try again later.");
+        }
+    }
+}
+----
+
+Keep internal rule names, keys, and credentials out of public responses.
+The writer handles rate-limit rejections (`429`), not store-unavailable responses (`503`).
+
+=== Reacting to refusals
+
+Every `429` is also fired as a CDI event of type `io.quarkus.http.ratelimit.RateLimitRejectionInfo`, with the rule, the key, the `Retry-After` and some details of the request.
+Use it to act on a particular key; for counts and dashboards, use the <<metrics>> instead.
+Under attack the event can fire thousands of times per second, so an observer must be cheap; see <<rejection-events>>.
+
+[[shared-limits]]
+== Running several instances
+
+By default, each instance of the application keeps its own counts in memory: the `local` store.
+That needs no setup, but each instance applies the limit on its own.
+On three instances behind a load balancer, a limit of 100 requests a minute lets a client make up to 300.
+A restart also forgets every count, and all clients start again with a full burst.
+
+image::http-rate-limit-stores.svg["With the local store each of three instances admits 100 requests a minute from the same client; with the redis store they share one count"]
+
+To share one limit across all instances, keep the counts in Redis instead, with the `redis` store.
+A rule uses one store or the other, never both.
+
+=== Using Redis
+
+Add the `quarkus-redis-client` extension, and select the `redis` store for every rule, or with `store` for some rules only:
+
+[source,properties]
+----
+quarkus.http.rate-limit.store=redis
+quarkus.redis.hosts=redis://localhost:6379
+----
+
+Redis 5 or later is needed, standalone or cluster.
+The time used for every decision is that of the Redis server, so the clocks of the instances don't matter.
+
+Give the rate limiter its own Redis client, so that it does not compete with the rest of the application for connections, and size it for the limiter:
+
+[source,properties]
+----
+quarkus.redis.limits.hosts=redis://redis:6379
+quarkus.redis.limits.max-pool-size=32
+quarkus.redis.limits.max-pool-waiting=0
+quarkus.http.rate-limit.redis.client-name=limits
+----
+
+* `max-pool-size`: about the request rate times the round trip to Redis, plus headroom.
+For example, 2000 requests per second at a round trip of 5 ms keep about 10 connections busy.
+Every instance opens its own pool.
+* `max-pool-waiting=0`: when every connection is busy, a request is decided at once, by the failure mode below, instead of waiting for one.
+
+If several applications share one Redis database, give each its own `quarkus.application.name`, which keeps their keys apart.
+
+[[failure-modes]]
+=== When Redis is unavailable
+
+A call to Redis that fails, or takes longer than `quarkus.http.rate-limit.store-timeout` (`100ms` by default), is decided by the failure mode, `quarkus.http.rate-limit.store-failure-mode`:
+
+[cols="1,3"]
+|===
+|Mode |Behaviour
+
+|`local` (default)
+|The instance decides alone, from its own counts in memory, until Redis is back.
+The limit is then per instance.
+
+|`open`
+|The request is admitted.
+
+|`closed`
+|The request is refused with `503 Service Unavailable`.
+|===
+
+Choose `closed` when requests must be rejected if the shared store cannot decide, `open` when availability matters more than enforcing the limit during an outage, or `local` to keep enforcing a per-instance limit.
+These modes govern store failures; they do not remove the precision tradeoffs of lease mode or Redis failover.
+
+After repeated failures, the extension stops calling Redis for a few seconds, then tries again; while it waits, every request is decided by the failure mode.
+A WARN message is logged when that starts, and an INFO message when Redis is used again.
+
+The Redis client extension adds a readiness check that fails while Redis is down, which takes every instance out of service whatever the failure mode.
+If the application uses Redis only for rate limiting, disable that check with `quarkus.redis.health.enabled=false`, so that the failure mode decides instead.
+
+[[lease-mode]]
+=== Fewer calls to Redis: lease mode
+
+With the `redis` store, every request makes one call to Redis.
+For limits with many requests per key, lease mode lets each instance take several permits at once and hand them out locally:
+
+[source,properties]
+----
+quarkus.http.rate-limit.api.store=redis
+quarkus.http.rate-limit.api.lease-size=10
+----
+
+image::http-rate-limit-lease.svg["Instances claim several permits from Redis at once and serve requests from them without calling Redis"]
+
+The price is precision: the instances together may admit up to `lease-size` requests more than the limit.
+Keep `lease-size` small next to the limit, at most `permits / 20`; the extension warns otherwise.
+Lease mode does not help when most requests come with a key that the instance has not seen recently.
+
+By default, a request that finds no permit at hand waits for one call to Redis.
+With `max-overdraft=k`, an instance instead admits up to `k` such requests without waiting, and pays for them with its next call; if Redis refuses, they got through over the limit.
+Use it for limits where waiting costs more than an occasional extra request.
+
+See <<lease-guarantees>> for the exact bounds.
+
+== Observability
+
+[[metrics]]
+=== Metrics
+
+With the `quarkus-micrometer` extension, the following meters are published.
+Set `quarkus.http.rate-limit.metrics.enabled=false` to turn them off.
+Meters describe rule evaluations: a request admitted by one rule and rejected by another contributes to both rules.
+Rules that are skipped or never reached do not count as admitted requests.
+Keys and client addresses are not metric tags.
+
+[cols="2,1,2"]
+|===
+|Meter |Type |Tags and meaning
+
+|`http.rate.limit.requests`
+|Counter
+|`rule`, `phase`, `result`.
+`result` is `allowed` or `rejected`, and, for rules on Redis, `unavailable` for the `503` answers of the `closed` failure mode.
+
+|`http.rate.limit.near.limit`
+|Counter
+|`rule`, `phase`.
+Admitted requests that left the key less than a fifth of its burst.
+
+|`http.rate.limit.retry.after`
+|Distribution summary
+|`rule`, `phase`.
+The `Retry-After`, in seconds, of the refusals.
+
+|`http.rate.limit.keys`
+|Gauge
+|`rule`, `phase`.
+The number of keys held in this instance's memory, for rules on the `local` store and lease rules.
+
+|`http.rate.limit.lease.claims`
+|Counter
+|`rule`, `phase`, `result` (`granted` or `refused`).
+Lease rules only: the calls that took permits from Redis.
+
+|`http.rate.limit.lease.stranded`
+|Counter
+|`rule`, `phase`.
+Permits taken from Redis that this instance never handed out.
+
+|`http.rate.limit.lease.overdraft`
+|Counter
+|`rule`, `phase`, `result`.
+Requests that a lease rule with `max-overdraft` admitted without waiting, by what became of them: see <<overdraft-results>>.
+
+|`http.rate.limit.lease.overdraft.unreconciled`
+|Gauge
+|`rule`, `phase`.
+Requests admitted on overdraft whose payment is still unknown.
+
+|`http.rate.limit.lease.fallback.discarded`
+|Counter
+|`rule`, `phase`.
+Permits granted locally while Redis was unavailable and dropped unused.
+|===
+
+The health of the Redis store is visible through the `ft.circuitbreaker.*` meters of SmallRye Fault Tolerance, tagged `http-rate-limit-store-redis`.
+See xref:telemetry-micrometer.adoc[Micrometer] for how to expose meters.
+
+[[jfr]]
+=== JFR events
+
+With the `quarkus-jfr` extension, two JDK Flight Recorder events are recorded, in the `Quarkus` / `HTTP` category:
+
+`quarkus.RateLimitRejected`::
+One for every `429`, with the rule, the phase, the HTTP method, the path, the `Retry-After`, and the trace and span IDs of the request.
+
+`quarkus.RateLimitEvaluation`::
+One for each rule checked for a request, lasting from the start of the check to its outcome: `ALLOWED`, `REJECTED`, `UNAVAILABLE` (the `503` of the `closed` failure mode) or `SKIPPED` (the rule did not apply).
+By default only checks slower than `10 ms` are recorded, which shows slow calls to Redis.
+To record all of them, lower the threshold, for example with `jfr configure --input default.jfc +quarkus.RateLimitEvaluation#threshold=0ms --output rate-limit.jfc`.
+
+Neither event records the key or the client address, since recordings are often shared.
+The trace and span IDs are those of xref:jfr.adoc#identifying-requests[the JFR extension]; with OpenTelemetry, they are those of the request's server span.
+
+=== Logs
+
+At startup, one INFO line lists the rules; the DEBUG level of the `io.quarkus.http.ratelimit` category shows the full configuration of each.
+In dev mode every refusal is logged.
+In other modes refusals are not logged; use the metrics or the JFR events.
+A warning that could repeat on every request, such as a failing key resolver, is logged at most once per `quarkus.http.rate-limit.warning-interval` (one minute by default) for each rule.
+
+[[reference-details]]
+== Reference details
+
+=== Rule settings
+
+A rule needs `paths`, `phase`, `request-key`, `permits` and `window`; `phase` and `request-key` can come from the <<global-settings,shared defaults>>.
+`paths`, `methods`, `phase`, `request-key`, `store` and `override` are fixed at build time.
+The others, including the limit itself, are runtime settings: they can be changed when starting the built application, without rebuilding it, but not while it runs.
+Use <<overrides>> for limits that depend on application data and can change between requests.
+See <<configuration-reference>> for every setting and its default.
+
+A rule that is invalid, for example one with a key resolver, override or store that does not exist, fails the build.
+`permits`, `burst`, and `max-keys` must be at least 1, and `window` must be positive.
+The replenishment interval (`window / permits`) must be at least one microsecond, and `interval * burst` must not exceed 30 days.
+`lease-size` must be between 1 and `burst`, requires a non-local store, and `max-overdraft` must be between 0 and `burst` and requires `lease-size`.
+An invalid limit fails startup, and so does a limit for a rule that does not exist, such as a misspelled rule name.
+With `quarkus.http.rate-limit.enabled=false`, the runtime settings are not checked.
+
+=== Paths and methods
+
+`paths` and `methods` accept comma-separated lists.
+If `methods` is omitted, the rule applies to all HTTP methods; method names are normalized to uppercase.
+Unmatched requests proceed without being counted by that rule.
+A request that matches several paths of the same rule is counted only once by that rule.
+
+A path starts with `/`.
+A `*` must be a whole path segment, as in `/a/*/b` or a trailing `/*`, or the build fails.
+Paths include `quarkus.http.root-path`: with a root path of `/app`, write `/app/api/*`.
+This differs from `quarkus.http.auth.permission.*.paths`, where a path without a leading `/` is relative to the root path.
+Otherwise, paths are matched as for HTTP permissions.
+A trailing `/*` matches the path itself and its descendants; for example, `/api/*` covers `/api` and `/api/items`.
+Matching uses normalized paths, including removal of matrix parameters, as HTTP permissions do.
+When the router path and the canonical path differ, rules matching either path apply.
+A rule that lists `GET` also applies to `HEAD`.
+
+=== Keys
+
+* `header:<name>` matches the header name case-insensitively and trims the value.
+The value can be a credential, so the key holds its SHA-256 hash, `header:sha256:<hex>`, never the value; an override that needs the value reads the header from `RateLimitContext.routingContext()`.
+A hash protects only values that are hard to guess.
+Requests that send the header more than once share one key, `header:repeated`.
+* `principal` uses the user name, which is not qualified by tenant or realm.
+When several authentication mechanisms or OIDC tenants can have users of the same name, use a key resolver that adds the tenant.
+With cookie-based authentication, protect limited paths against cross-site requests, since another site can make a user's browser send them.
+* A key longer than 256 characters, one that starts with `sha256:`, or one that contains `{` or `}` is replaced by `sha256:` and the hex SHA-256 of the key.
+
+Each rule keeps at most `max-keys` keys in the memory of an instance.
+When there are more, some are forgotten, and a forgotten key starts again with a full burst.
+Header and principal keys are cheap to vary, so pair such a rule with an `ip` rule.
+A warning is logged when a rule reaches its `max-keys`; raise it unless the cause is a flood.
+
+[[authentication]]
+=== Authentication
+
+With lazy authentication (`quarkus.http.auth.proactive=false`), a `post-authentication` rule authenticates the request for all of its paths, using the mechanisms configured for those paths with `quarkus.http.auth.permission.*`; mechanisms selected by annotations on REST methods are not known yet.
+The build logs a warning for such a rule, and for a `principal` key when the application has no `HttpAuthenticationMechanism` bean, since every request would then be anonymous.
+
+A custom resolver in the `post-authentication` phase is called for anonymous requests too: `RateLimitContext.identity()` tells whether the request is anonymous.
+
+The `post-authentication` phase runs before the permission checks, so an anonymous request to a protected path is counted by its IP address before it is answered `401`.
+To refuse anonymous access, use an `authenticated` permission, not a rate limit.
+
+=== Responses
+
+Besides the `429` described in <<getting-started>>, the extension can answer:
+
+* `503 Service Unavailable` with `Retry-After`: a non-local store could not decide and the failure mode is `closed`.
+`Retry-After` is chosen at random between one and two circuit breaker delays (5 to 10 seconds by default), so that refused clients don't all come back at once.
+No CDI event is fired.
+* `500 Internal Server Error`: a custom `RateLimitRejectionWriter` failed before ending the response.
+
+The extension sends no headers about the remaining quota on admitted requests: with Redis and lease mode, the remaining quota is only an estimate.
+
+[[rejection-events]]
+=== Rejection events
+
+A `RateLimitRejectionInfo`, which a `RateLimitRejectionWriter` also receives, holds the rule, the phase, the key, the `Retry-After`, the HTTP method, the path the rules were matched against, the client address the `ip` key uses (which may be `null`), and, in the `post-authentication` phase, the user name.
+It is a snapshot that can be kept after the request ends.
+
+* A synchronous observer (`@Observes`) runs on the event loop before the response is written: it must be fast and must not block.
+* An asynchronous observer (`@ObservesAsync`) runs on a worker thread and may block, but nothing limits how many deliveries are pending: sample or bound expensive work.
+
+A failing observer does not affect the request.
+The key and the path come from the client: escape control characters before logging them, or a CR LF in them starts a forged log line.
+The following observer counts the refusals of each rule and logs one in a thousand:
+
+[source,java]
+----
+@Singleton
+public class RejectionSampler {
+
+    private static final Logger LOG = Logger.getLogger(RejectionSampler.class);
+
+    private final Map<String, LongAdder> rejections = new ConcurrentHashMap<>();
+    private final AtomicLong seen = new AtomicLong();
+
+    void onRejection(@Observes RateLimitRejectionInfo rejection) {
+        rejections.computeIfAbsent(rejection.rule(), rule -> new LongAdder()).increment();
+        if (seen.incrementAndGet() % 1000 == 0) {
+            LOG.infof("Rule '%s' rejected key '%s'", rejection.rule(),
+                    rejection.key().replaceAll("\\p{Cntrl}", "?"));
+        }
+    }
+}
+----
+
+=== Exempt paths
+
+The health probes of SmallRye Health (by default `/q/health/live`, `/q/health/ready` and `/q/health/started`) and the Prometheus endpoint of Micrometer (by default `/q/metrics`) are never limited, so that probes and scrapers are never answered `429`.
+Only these exact paths are exempt; `/q/health` itself and health groups are limited like any other path.
+The same paths are exempt from load shedding.
+
+[[override-details]]
+=== Overrides
+
+Rules that select no override, or another one, are not affected by an override.
+
+The limit is a token bucket, implemented with the Generic Cell Rate Algorithm (GCRA), which keeps the counts of a key as time, not as a number of used permits: a key that used up its limit owes the time it takes to earn its permits back.
+So raising `permits` without widening `window` does not unlock a key at once.
+A key that used up 5 requests a minute and is raised to 10 a minute is still refused for 6 seconds, one interval of the new limit; raised to 10 per 2 minutes instead, it is admitted at once.
+A key never owes more than its current burst: a key that moves from 1 request a day to 100 a minute waits at most one interval, not the rest of the day.
+The same applies when a rolling update changes `permits` or `window`.
+
+An override cannot block a key; give it a small limit instead.
+Make its result depend on the key only, not on other request data that the client controls: in lease mode, a key whose limit changes loses the permits its instance had leased.
+
+[[timeouts]]
+=== Time limits
+
+For each rule, a request spends at most `250ms` in the key resolver, `250ms` in the override, and `store-timeout` (`100ms` by default, or `quarkus.http.rate-limit.redis.timeout`) in the store.
+The built-in keys need no time.
+A resolver or override that does I/O should bound its own `Uni` with a shorter timeout and decide itself what a timeout means.
+
+A call to Redis that times out may still be carried out by Redis: commands already sent, or waiting for a connection, still run.
+After Redis hangs, up to `max-pool-size` plus `max-pool-waiting` permits can be used up for requests that the failure mode already decided, so the limit errs strict.
+A long pause of the application, such as a garbage collection, can also make calls time out while Redis is healthy; with the `closed` failure mode, keep `store-timeout` well above such pauses.
+
+=== Redis store details
+
+* Keys in Redis start with `quarkus.http.rate-limit.redis.key-prefix`, by default `quarkus:http-rate-limit:<application name>:`.
+* `max-keys` bounds the memory of an instance, not that of Redis.
+A key stays in Redis until its burst is full again.
+Set a `maxmemory` limit with the `volatile-ttl` policy: every key has an expiry, and those closest to it go first.
+Under `noeviction`, a full Redis fails every call, and the failure mode decides every request.
+* With asynchronous replication, a Redis failover can lose the latest updates, so keys start again from an older state: the limit errs lenient.
+* While Redis refuses a key, the instance refuses the key's requests until the `Retry-After` has passed without calling Redis, so a client over its limit costs Redis nothing.
+* `quarkus.http.rate-limit.redis.timeout` and `quarkus.http.rate-limit.redis.failure-mode` override `store-timeout` and `store-failure-mode` for the `redis` store.
+
+[[fault-tolerance]]
+=== Fault tolerance values
+
+Calls to a store other than `local` are protected by fixed values:
+
+* At most `256` calls to the same store are in flight at once; a call beyond that fails at once.
+* A circuit breaker looks at the last `20` calls, opens when half of them failed, and stays open for `5s`.
+Then one trial call is made: a success closes it, a failure opens it again.
+The trial is made as soon as the delay ends, without waiting for a request.
+* A call refused because the Redis connection pool is full falls back to the failure mode, but does not open the breaker: it means the pool is too small, not that Redis is down.
+
+The calls that failed, timeouts included, are counted by the `ft.circuitbreaker.*` meters.
+The circuit breaker can be tuned with a customizer, see <<customizers>>.
+
+[[lease-guarantees]]
+=== Lease mode
+
+A claim takes between 1 and `lease-size` permits from the store, depending on how many the instance used recently, and never more than half of what the store said was left.
+The number of instances never needs to be configured.
+An idle instance holds no permits, and a stopped instance loses at most the permits it held.
+
+Leased permits may be handed out for a _lease time_ of `lease-size` intervals (`window / permits`) from the claim, then expire.
+For example, with `permits=600` and `window=1m`, the interval is 100 ms, so `lease-size=30` gives a lease time of 3 seconds.
+For a key whose override gives it a burst below `lease-size`, that burst takes the place of `lease-size`.
+
+* Permits taken from the store: over any period, the instances together admit at most the limit plus `lease-size`, whatever the number of instances, restarts or delays.
+* With `max-overdraft=k`: each instance may also admit up to `k` requests per key that no claim pays for, in each interval, or in each `Retry-After` of the store's last refusal if that is longer, plus `k` more after a restart, after the key was forgotten, or after the key's limit changed.
+This grows with the number of instances: it is the price of never waiting.
+`max-overdraft` is at most the key's burst, and needs `lease-size`.
+* While the store is unavailable, permits granted by the `local` and `open` failure modes are per instance and not part of these bounds.
+Permits already leased keep being used during an outage, even with `closed`, which only refuses new claims.
+* Leased permits that expire, or whose claim reply was lost, are used up without being handed out: see `http.rate.limit.lease.stranded`.
+Repeated lost replies on one instance can use up a key's whole limit.
+* After a refusal, the instance makes no new claim for the key until the store's `Retry-After` has passed.
+* A request waits for a claim at most `store-timeout`; then the failure mode decides.
+
+For example, take a limit of 120 requests per hour per API key on 3 instances.
+The interval is `3600 s / 120 = 30 s`.
+With `lease-size=6` and `max-overdraft=1`, the lease time is 3 minutes, the instances admit at most 6 requests more than the limit, plus at most one request per instance every 30 seconds while every claim is refused, and Redis sees one call per up to 6 requests.
+
+[[overdraft-results]]
+=== Overdraft results
+
+`http.rate.limit.lease.overdraft` counts each request admitted on overdraft once as `admitted`, and once more under one of the other results once it is known how it was paid for:
+
+[cols="1,3"]
+|===
+|`result` |Meaning
+
+|`admitted`
+|Admitted on overdraft, before any claim paid for it.
+
+|`settled`
+|Paid for by the next claim the store granted.
+
+|`settled_fallback`
+|Paid for by the local counts, while the store was unavailable and `store-failure-mode` is `local`.
+
+|`settled_late`
+|Paid for by a claim whose answer arrived after the instance had lost track of the request.
+
+|`forgiven`
+|Never paid for: the store refused the claim, the store was unavailable under `open` or `closed`, or the instance forgot the key before any claim carried the request.
+The request got through over the limit.
+
+|`unreconciled`
+|The instance lost track of the request, because the key was forgotten or its limit changed, before the store answered the claim that carries it.
+It is counted again as `settled_late`, `settled_fallback` or `forgiven` when the answer arrives.
+|===
+
+These counts do not measure by how much a limit was exceeded: `forgiven` counts only the requests known to be unpaid.
+
+[[writing-a-resolver]]
+=== Writing a key resolver or override
+
+* Resolvers and overrides are looked up once at startup, so they must be thread-safe.
+* A blocking call stalls every request on the event loop, and the `250ms` bound cannot interrupt it; cache any I/O instead.
+* Keep the number of distinct keys bounded, and keep personal data out of keys: they are stored, in Redis too, and logged in dev mode.
+
+[[sentinel-key]]
+When the IP address is no useful fallback, for example because every request arrives through one gateway, catch failures and timeouts yourself and return a fixed key instead, so that all such requests share one limit:
+
+[source,java]
+----
+@Singleton
+@Identifier("tenant")
+public class TenantKeyResolver implements RateLimitKeyResolver {
+
+    @Override
+    public Uni<Optional<String>> resolve(RateLimitContext context) {
+        return lookUpTenant(context.routingContext())
+                .map(tenant -> Optional.of("tenant:" + tenant))
+                .ifNoItem().after(Duration.ofMillis(200)).fail()
+                .onFailure().recoverWithItem(Optional.of("unresolved"));
+    }
+
+    private Uni<String> lookUpTenant(RoutingContext context) {
+        ...
+    }
+}
+----
+
+[[writing-a-ratelimitstore]]
+=== Writing a store
+
+A custom store is a CDI bean that implements `io.quarkus.http.ratelimit.RateLimitStore`, annotated with `@Identifier("<name>")`, and selected with `store=<name>`.
+The names `local` and `redis` are reserved for the built-in stores.
+A custom store gets the timeout, circuit breaker and failure mode configured for non-local stores, and can also use lease mode.
+It must be thread-safe because multiple event loops can call it concurrently.
+
+* Never block: `tryConsume` runs on the event loop.
+* Check and consume atomically: of many concurrent calls of cost `1` for a new key, exactly `burst` must be allowed.
+A refusal leaves the state unchanged, except to cap a debt above the burst tolerance.
+* Take the time from the backend, such as `TIME` in Redis or `clock_timestamp()` in PostgreSQL, not from each instance.
+* Prefix the key with `policy.id()`: a key is unique only within one rule and phase.
+* Decide with the policy you are given, which an override may have changed for the key, and cap a key's debt at `burstToleranceMicros()`.
+* Return `Allowed` or `Rejected`, and signal a failure with a failed `Uni`; anything else is treated as a failure.
+* Treat cost `0` as a read-only check that reports what a cost `1` call would decide.
+* Keep the state bounded, for example by expiring each key once its burst is full again.
+* Don't touch the backend at startup: the store bean exists even when no rule uses it.
+Connect, create schemas or resolve clients, for example through an `Instance<Pool>`, on the first call.
+
+The decision script of the Redis store, `META-INF/http-rate-limit/try-consume.lua` in the `quarkus-http-rate-limit-redis` jar, is a reference for the arithmetic.
+
+[[customizers]]
+=== Customizers
+
+[WARNING]
+====
+Customizers are experimental, and may change or go away.
+====
+
+Most applications never need these.
+They run after the extension's own settings, in priority order: a lower `priority()` runs later and has the last word.
+
+A `io.quarkus.http.ratelimit.RateLimitStoreGuardCustomizer` bean tunes the circuit breaker of each store other than `local`, through the breaker builder of SmallRye Fault Tolerance:
+
+[source,java]
+----
+@Singleton
+public class FlakyStoreBreaker implements RateLimitStoreGuardCustomizer {
+
+    @Override
+    public void customize(String storeName, Guard.Builder.CircuitBreakerBuilder breaker) {
+        if (storeName.equals("flaky")) {
+            breaker.requestVolumeThreshold(5).delay(2, ChronoUnit.SECONDS);
+        }
+    }
+}
+----
+
+The breaker's delay also sets when the trial call is made and the `Retry-After` of the `closed` failure mode.
+Pool refusals never count as failures, whatever the customizer sets.
+`done()` must not be called.
+The store timeout and the limit of calls in flight cannot be changed, and the `smallrye.faulttolerance.*` configuration does not apply.
+
+A `io.quarkus.http.ratelimit.RateLimitLocalStoreCustomizer` bean is called once for each in-memory cache of a rule, the `local` store or the lease cache, and can register statistics of the cache's activity: lookups, updates, and keys forgotten or expired:
+
+[source,java]
+----
+@Singleton
+public class LocalStoreEvictions implements RateLimitLocalStoreCustomizer {
+
+    private final LongAdder evicted = new LongAdder(); // keys that started again with a full burst
+
+    @Override
+    public void customize(String rule, Settings settings) {
+        settings.statistics(new Statistics() {
+            @Override
+            public void evicted() {
+                evicted.increment();
+            }
+        });
+    }
+}
+----
+
+[[configuration-reference]]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-http-rate-limit.adoc[opts=optional, leveloffset=+1]
+
+=== With the Redis client extension
+
+The runtime settings of the `redis` store (`quarkus.http.rate-limit.redis.*`) are listed with the main configuration above.
+
+include::{generated-dir}/config/quarkus-http-rate-limit-redis.adoc[opts=optional, leveloffset=+1]
+
+=== With the Micrometer extension
+
+include::{generated-dir}/config/quarkus-http-rate-limit-micrometer.adoc[opts=optional, leveloffset=+1]

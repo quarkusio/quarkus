@@ -1194,7 +1194,8 @@ public class JaxrsClientReactiveProcessor {
                                     param.type, methodCreator.getThis(),
                                     getGenericTypeFromArray(methodCreator, methodGenericParametersField, paramIdx),
                                     getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx));
-                        } else if (param.parameterType == ParameterType.BODY) {
+                        } else if (param.parameterType == ParameterType.BODY
+                                || param.parameterType == ParameterType.ENTITY_PART_LIST) {
                             if (param.declaredType.equals(Multi.class.getName())) {
                                 if (!param.signature.equals(MULTI_BUFFER_SIGNATURE)
                                         && !param.signature.equals(MULTI_BYTE_ARRAY_SIGNATURE)) {
@@ -1889,7 +1890,8 @@ public class JaxrsClientReactiveProcessor {
                                             subParamField.paramIndex),
                                     getAnnotationsFromArray(subMethodCreator, subParamField.paramAnnotationsField,
                                             subParamField.paramIndex));
-                        } else if (param.parameterType == ParameterType.BODY) {
+                        } else if (param.parameterType == ParameterType.BODY
+                                || param.parameterType == ParameterType.ENTITY_PART_LIST) {
                             // just store the index of parameter used to create the body, we'll use it later
                             bodyParameterValue = paramValue;
                         } else if (param.parameterType == ParameterType.HEADER) {
@@ -2048,7 +2050,8 @@ public class JaxrsClientReactiveProcessor {
                                     subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
                                     getGenericTypeFromArray(subMethodCreator, subMethodGenericParametersField, paramIdx),
                                     getAnnotationsFromArray(subMethodCreator, subMethodParamAnnotationsField, paramIdx));
-                        } else if (param.parameterType == ParameterType.BODY) {
+                        } else if (param.parameterType == ParameterType.BODY
+                                || param.parameterType == ParameterType.ENTITY_PART_LIST) {
                             // just store the index of parameter used to create the body, we'll use it later
                             bodyParameterValue = subMethodCreator.getMethodParam(paramIdx);
                         } else if (param.parameterType == ParameterType.HEADER) {

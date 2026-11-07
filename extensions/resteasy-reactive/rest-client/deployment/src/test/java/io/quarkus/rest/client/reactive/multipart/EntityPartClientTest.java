@@ -2,6 +2,7 @@ package io.quarkus.rest.client.reactive.multipart;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -16,6 +17,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.MediaType;
@@ -42,7 +45,8 @@ public class EntityPartClientTest {
                             .addClasses(EchoResource.class, EntityPartWriterResource.class,
                                     EchoFormResource.class,
                                     EntityPartContainerClient.class, ClientFormWithEntityPart.class,
-                                    Greeting.class);
+                                    Greeting.class, EntityPartListClient.class,
+                                    FileManagerClient.class, EntityPartListFilter.class);
                 }
             });
 
@@ -108,6 +112,55 @@ public class EntityPartClientTest {
         assertThat(result).contains("name=testName");
     }
 
+    @Test
+    void entityPartListAsRestClientBody() throws IOException {
+        EntityPartListClient restClient = RestClientBuilder.newBuilder()
+                .baseUri(baseUri).build(EntityPartListClient.class);
+
+        List<EntityPart> parts = List.of(
+                EntityPart.withName("greeting")
+                        .content("hello")
+                        .mediaType(MediaType.TEXT_PLAIN_TYPE)
+                        .build(),
+                EntityPart.withName("count")
+                        .content("42")
+                        .mediaType(MediaType.TEXT_PLAIN_TYPE)
+                        .build());
+
+        String result = restClient.echo(parts);
+        assertThat(result).contains("greeting=hello");
+        assertThat(result).contains("count=42");
+    }
+
+    /**
+     * Mirrors the TCK's {@code EntityPartTest}, which is excluded from our TCK run because it is
+     * {@code @RunAsClient}.
+     */
+    @Test
+    void entityPartListVisibleToClientRequestFilter() throws Exception {
+        List<EntityPart> parts = List.of(
+                EntityPart.withName("test-file1.txt")
+                        .fileName("test-file1.txt")
+                        .content("content1".getBytes(StandardCharsets.UTF_8))
+                        .mediaType(MediaType.APPLICATION_OCTET_STREAM_TYPE)
+                        .build(),
+                EntityPart.withFileName("test-file2.txt")
+                        .content(new ByteArrayInputStream("content2".getBytes(StandardCharsets.UTF_8)))
+                        .mediaType(MediaType.APPLICATION_OCTET_STREAM_TYPE)
+                        .build());
+
+        try (FileManagerClient restClient = RestClientBuilder.newBuilder()
+                .baseUri(baseUri)
+                .register(EntityPartListFilter.class)
+                .build(FileManagerClient.class)) {
+            Response response = restClient.uploadFile(parts);
+
+            assertThat(response.getStatus()).isEqualTo(201);
+            assertThat(response.readEntity(String.class)).isEqualTo(
+                    "test-file1.txt/test-file1.txt=content1;test-file2.txt/test-file2.txt=content2;");
+        }
+    }
+
     @Path("/echo-parts")
     public static class EchoResource {
 
@@ -158,6 +211,44 @@ public class EntityPartClientTest {
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         @Produces(MediaType.TEXT_PLAIN)
         String send(ClientFormWithEntityPart form);
+    }
+
+    @Path("/echo-parts")
+    public interface EntityPartListClient {
+        @POST
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        @Produces(MediaType.TEXT_PLAIN)
+        String echo(List<EntityPart> parts);
+    }
+
+    @Path("/files")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    public interface FileManagerClient extends AutoCloseable {
+        @POST
+        @Path("upload")
+        Response uploadFile(List<EntityPart> entityParts) throws IOException;
+    }
+
+    public static class EntityPartListFilter implements ClientRequestFilter {
+        @Override
+        @SuppressWarnings("unchecked")
+        public void filter(ClientRequestContext requestContext) throws IOException {
+            List<EntityPart> parts = (List<EntityPart>) requestContext.getEntity();
+            StringBuilder body = new StringBuilder();
+            for (EntityPart part : parts) {
+                body.append(part.getName())
+                        .append('/')
+                        .append(part.getFileName().orElse(null))
+                        .append('=')
+                        .append(part.getContent(String.class))
+                        .append(';');
+            }
+            requestContext.abortWith(Response.status(201)
+                    .entity(body.toString())
+                    .type(MediaType.TEXT_PLAIN_TYPE)
+                    .build());
+        }
     }
 
     public static class ClientFormWithEntityPart {

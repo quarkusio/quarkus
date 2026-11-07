@@ -829,6 +829,7 @@ public final class LambdaTransliterator {
                 .addSerializer(ConfigMappingSerializer.INSTANCE)
                 .addSerializer(QuarkusClassLoaderSerializer.INSTANCE)
                 .addSerializer(JavaTimeSerializer.INSTANCE)
+                .addSerializer(JavaTypeSerializer.INSTANCE)
                 .build();
     }
 

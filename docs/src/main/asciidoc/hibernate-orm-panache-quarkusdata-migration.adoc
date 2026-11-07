@@ -1,0 +1,376 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="hibernate-orm-panache-quarkusdata-migration"]
+= Migrate from Hibernate ORM with Panache to Quarkus Data Hibernate
+include::_attributes.adoc[]
+:diataxis-type: howto
+:summary: Learn how to migrate a blocking Hibernate ORM with Panache application to Quarkus Data Hibernate.
+:config-file: application.properties
+:topics: data,hibernate-orm,panache,sql,jdbc
+:extensions: io.quarkus:quarkus-data-hibernate,io.quarkus:quarkus-hibernate-orm
+:extension-status: experimental
+
+Hibernate ORM with Panache makes common persistence operations concise while supporting both active-record and repository styles.
+Quarkus Data Hibernate retains that focus on simple persistence, while adding generated CDI repositories, build-time validation for declared repository methods, and Jakarta Data APIs.
+
+This guide helps you migrate an existing *blocking* Hibernate ORM with Panache application to Quarkus Data Hibernate.
+It focuses on the managed, stateful Hibernate ORM model, which preserves the usual Hibernate ORM persistence-context and dirty-checking behavior.
+
+For a complete description of either API, see xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] and the
+xref:quarkus-data-hibernate.adoc[Quarkus Data Hibernate reference guide].
+
+[WARNING]
+====
+Quarkus Data Hibernate is currently experimental. Its APIs may change.
+====
+
+== Prepare the application
+
+Quarkus Data Hibernate generates repository implementations and metamodel accessors at build time.
+Enable its annotation processor and add the required extension by following the
+xref:quarkus-data-hibernate-getting-started.adoc[Quarkus Data Hibernate getting started tutorial].
+
+Your existing entity mappings, datasource configuration, Hibernate ORM configuration, and transaction boundaries remain applicable.
+
+=== Choose the managed model
+
+Use `ManagedEntity` and `ManagedRepository` as the normal migration target.
+They use Hibernate ORM's stateful `Session`: an entity loaded or persisted in a transaction is managed, and Hibernate flushes changes to it through normal dirty checking.
+
+Do not select `RecordEntity` or `RecordRepository` merely because you are changing persistence APIs.
+They use a stateless session, where updates must be explicit and first-level-cache and entity-lifecycle behavior differs.
+That is a deliberate change of persistence model, not a mechanical Panache migration.
+
+== Migrate an active-record entity
+
+`PanacheEntity` combines an inherited generated `Long` identifier, instance persistence operations, and static query operations.
+`ManagedEntity` retains the identifier and instance operations, but does not provide static query methods.
+Move those operations to a repository.
+
+For example, migrate this Panache entity:
+
+[source,java]
+----
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import jakarta.persistence.Entity;
+
+@Entity
+public class Person extends PanacheEntity {
+    public String name;
+    public Status status;
+}
+
+List<Person> people = Person.list("status", Status.ALIVE);
+----
+
+to a managed entity with a nested repository:
+
+[source,java]
+----
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
+import jakarta.persistence.Entity;
+
+@Entity
+public class Person extends ManagedEntity {
+    public String name;
+    public Status status;
+
+    public interface Repo extends ManagedRepository<Person> {
+    }
+}
+----
+
+Inject the repository wherever queries are needed:
+
+[source,java]
+----
+import jakarta.inject.Inject;
+
+@Inject
+Person.Repo people;
+
+List<Person> alive = people.list("status", Status.ALIVE);
+----
+
+The generated Jakarta Persistence metamodel also provides access to the standard managed repository.
+This is useful when a static-looking access style makes the calling code clearer:
+
+[source,java]
+----
+List<Person> alive = Person_.managedBlocking().list("status", Status.ALIVE);
+----
+
+For a custom nested repository, the generated metamodel exposes the nested interface by its name:
+
+[source,java]
+----
+List<Person> alive = Person_.repo().list("status", Status.ALIVE);
+----
+
+Choose either injection or a metamodel accessor consistently for the area of the application you are migrating.
+
+=== Move custom static methods
+
+Move custom static query helpers from the entity into a repository default method, a generated `@Find`, `@Query`, or `@Delete` method, or an application service.
+For example:
+
+[source,java]
+----
+import io.quarkus.data.hibernate.ManagedRepository;
+import jakarta.data.repository.Find;
+
+public interface PersonRepository extends ManagedRepository<Person> {
+    @Find
+    List<Person> findByStatus(Status status);
+
+    default List<Person> findAlive() {
+        return list("status", Status.ALIVE);
+    }
+}
+----
+
+There is no generated replacement for arbitrary public static methods on an entity; moving them is the main structural change in an active-record migration.
+
+== Migrate a Panache repository
+
+Replace a handwritten CDI repository implementation with an interface.
+Quarkus Data generates its CDI implementation at build time.
+
+[source,java]
+.Before: Panache repository with a custom identifier
+----
+import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
+import jakarta.enterprise.context.ApplicationScoped;
+
+import java.util.UUID;
+
+@ApplicationScoped
+public class PersonRepository implements PanacheRepositoryBase<Person, UUID> {
+}
+----
+
+[source,java]
+.After: generated Quarkus Data repository
+----
+import io.quarkus.data.hibernate.ManagedRepository;
+
+import java.util.UUID;
+
+public interface PersonRepository extends ManagedRepository.CustomId<Person, UUID> {
+}
+----
+
+Inject `PersonRepository` as before, but remove the `@ApplicationScoped` implementation class.
+Default methods and annotated repository methods can remain on the interface.
+
+=== Migrate entity identifiers
+
+`PanacheEntity` maps directly to `ManagedEntity`: both provide a generated `Long` identifier.
+For a `PanacheEntityBase` entity with an application-defined identifier, retain its `@Id` mapping, implement `ManagedEntity.CustomId`, and use `ManagedRepository.CustomId<Entity, Id>`.
+
+[source,java]
+----
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+
+import java.util.UUID;
+
+@Entity
+public class Person implements ManagedEntity.CustomId {
+    @Id
+    UUID id;
+
+    public interface Repo extends ManagedRepository.CustomId<Person, UUID> {
+    }
+}
+----
+
+If you want an inherited generated identifier of another type, Quarkus Data also provides `WithId.AutoString`, `WithId.AutoUUID`, and `WithId.AutoUUIDv7`.
+See xref:quarkus-data-hibernate.adoc#about-entity-identifiers[entity identifiers] for details.
+
+== Migrate common operations
+
+Most Panache repository and entity operations are available from `ManagedRepository` and `ManagedEntity` with the same names.
+The following table shows the usual replacements.
+
+[cols="2,3",options="header"]
+|===
+|Panache |Quarkus Data Hibernate
+
+|`persist(entity)`, `persistAndFlush(entity)`
+|`repository.persist(entity)`, `repository.persistAndFlush(entity)`
+
+|`delete(entity)`, `isPersistent(entity)`, `flush()`
+|The corresponding `ManagedRepository` methods.
+
+|`entity.persist()`, `entity.persistAndFlush()`, `entity.delete()`
+|The same instance operations after the entity extends `ManagedEntity` or implements `ManagedEntity.CustomId`.
+
+|`findById(id)`, `findByIdOptional(id)`, `deleteById(id)`, `deleteAll()`
+|The same `ManagedRepository` operations.
+
+|`count()`, `count(query, parameters)`, `update(query, parameters)`, `delete(query, parameters)`
+|The same `ManagedRepository` operations.
+
+|`find()`, `list()`, `stream()` and their `*All` variants
+|The same operations, except that sorting is applied to the query object. See <<sorting>>.
+
+|`getEntityManager()` or `getSession()`
+|`repository.getSession()` for entity-bound work. Inject `Session` or `EntityManager` for general-purpose access.
+|===
+
+`ManagedRepository` supports the indexed `Object...` and named `Map<String, Object>` parameter forms used by Panache.
+Replace deprecated Panache `Parameters` instances with a `Map`, for example `Map.of("status", Status.ALIVE)`.
+
+`findByIds(List<?>)` has no inherited `ManagedRepository` counterpart.
+Use a repository finder such as `@Find List<Person> findByIdIn(List<UUID> ids)`, or use a dynamic query such as `repository.list("id in ?1", ids)` with the actual identifier attribute name.
+
+== Migrate query results
+
+`find()` and `findAll()` now return `BlockingDataQuery<Entity>` instead of `PanacheQuery<Entity>`.
+Most result operations remain direct equivalents.
+
+[cols="2,3",options="header"]
+|===
+|Panache `PanacheQuery` |Quarkus Data `BlockingDataQuery`
+
+|`list()`, `stream()`, `firstResult()`, `singleResult()`
+|The same method.
+
+|`firstResultOptional()`, `singleResultOptional()`, `count()`
+|The same method.
+
+|`project(Dto.class)`
+|The same method. Existing Panache projection annotations remain applicable.
+
+|`withLock(lockMode)`, `withHint(name, value)`, `filter(name, parameters)`
+|The same method; use the `Map` form for filter parameters.
+|===
+
+[[sorting]]
+=== Sorting
+
+Panache passes `io.quarkus.panache.common.Sort` directly to `find`, `list`, and `stream` methods.
+With Quarkus Data, sort the `BlockingDataQuery` returned by `find()` or `findAll()` using Jakarta Data `Sort` or `Order`.
+
+[source,java]
+----
+// Before
+List<Person> ordered = Person.list(Sort.by("name"));
+
+// After
+List<Person> ordered = people.findAll().sort(jakarta.data.Sort.asc("name")).list();
+
+// Before
+List<Person> alive = Person.list("status", Sort.by("name"), Status.ALIVE);
+
+// After
+List<Person> alive = people.find("status", Status.ALIVE)
+        .sort(jakarta.data.Sort.asc("name"))
+        .list();
+----
+
+For multiple sort criteria, use `jakarta.data.Order`:
+
+[source,java]
+----
+import jakarta.data.Order;
+import jakarta.data.Sort;
+
+List<Person> ordered = people.findAll()
+        .sort(Order.by(Sort.asc("name"), Sort.desc("birth")))
+        .list();
+----
+
+Jakarta Data `Sort` supports ascending, descending, and ignore-case variants, but it does not expose Panache `Sort` features such as null precedence or `disableEscaping()`.
+Use an explicit HQL `order by` expression when that Hibernate-specific behavior is required.
+
+=== Pagination and ranges
+
+Paging and ranges are available from nested query operations:
+
+[cols="2,3",options="header"]
+|===
+|Panache |Quarkus Data Hibernate
+
+|`query.page(pageIndex, pageSize)`
+|`query.pages().page(pageIndex, pageSize)`
+
+|`nextPage()`, `previousPage()`, `firstPage()`, `lastPage()`
+|`query.pages().next()`, `previous()`, `first()`, `last()`
+
+|`hasNextPage()`, `hasPreviousPage()`, `pageCount()`
+|`query.pages().hasNext()`, `hasPrevious()`, `count()`
+
+|`page()`
+|`query.pages().request()`
+
+|`range(startIndex, lastIndex)`
+|`query.limits().range(startIndex, lastIndex)`
+|===
+
+`pages().page(pageIndex, pageSize)` is the closest mechanical replacement and retains Panache's zero-based page index.
+The page request type is `jakarta.data.page.PageRequest` rather than `io.quarkus.panache.common.Page`.
+As with Panache, do not combine fixed ranges and paging on the same query.
+
+== Adopt generated repository methods where useful
+
+Dynamic Panache-style query strings continue to work on `ManagedRepository`, including Panache Query Language shorthand, named queries, HQL, indexed parameters, named `Map` parameters, locks, hints, filters, and projections.
+
+You can also replace stable custom helpers with build-time validated repository methods:
+
+[source,java]
+----
+import jakarta.data.repository.Delete;
+import jakarta.data.repository.Find;
+import jakarta.data.repository.Query;
+
+public interface PersonRepository extends ManagedRepository<Person> {
+    @Find
+    List<Person> findByStatus(Status status);
+
+    @Delete
+    long deleteByStatus(Status status);
+
+    @Query("where status = :status order by name")
+    List<Person> findOrderedByStatus(Status status);
+}
+----
+
+Use `@NativeQuery` for SQL when necessary. For runtime-built queries, continue to use repository `find`, `list`, `count`, `update`, and `delete` methods.
+For type-safe dynamic filtering and ordering, consider Jakarta Data restrictions and the generated metamodel; see
+xref:quarkus-data-hibernate.adoc#dynamically-built-queries[dynamically built queries].
+
+== Replace global Panache utilities deliberately
+
+Panache global static helpers do not have direct Quarkus Data equivalents.
+This includes global `getEntityManager()`, `getSession()`, `getTransactionManager()`, `executeUpdate()`, `setRollbackOnly()`, and `flush()` methods.
+
+For work associated with an entity repository, use `repository.getSession()` and `repository.flush()`.
+For arbitrary HQL, Criteria, or native SQL, inject the appropriate Hibernate `Session` or Jakarta Persistence `EntityManager`; qualify it when using a named persistence unit.
+For transaction-manager or rollback-only control, use the Jakarta Transactions facilities appropriate to the application.
+
+== Update tests
+
+`PanacheMock` mocks static active-record methods and therefore does not apply to Quarkus Data repositories.
+After moving static entity queries to an injected repository, mock or replace that CDI bean using the normal Quarkus test mechanisms, such as `@InjectMock` from `quarkus-junit-mockito`.
+
+Existing tests should continue to cover the same persistence behavior.
+Add focused tests for every moved static helper and for intentional query changes, particularly sorting, paging, ranges, and custom identifier handling.
+
+== Migration checklist
+
+* Enable the Quarkus Data Hibernate annotation processor and extension.
+* Migrate blocking Panache entities to `ManagedEntity`, or implement `ManagedEntity.CustomId` for custom identifiers.
+* Replace `PanacheRepository` with `ManagedRepository<Entity>` and `PanacheRepositoryBase<Entity, Id>` with `ManagedRepository.CustomId<Entity, Id>`.
+* Move active-record static query methods and custom static helpers to repositories or services.
+* Replace Panache `Sort`, `Page`, and `Parameters` usages with Jakarta Data `Sort`/`Order`, `PageRequest`, and `Map` as appropriate.
+* Replace `findByIds` with an annotated finder or a query.
+* Replace uses of global Panache utilities with repository, `Session`, `EntityManager`, or transaction APIs.
+* Update static Panache mocks to CDI repository mocks, and run the relevant tests.

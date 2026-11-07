@@ -1,6 +1,5 @@
 package io.quarkus.opentelemetry.runtime;
 
-import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_NAME;
 import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_VERSION;
 import static io.opentelemetry.semconv.incubating.WebengineIncubatingAttributes.WEBENGINE_NAME;
 import static io.opentelemetry.semconv.incubating.WebengineIncubatingAttributes.WEBENGINE_VERSION;
@@ -9,6 +8,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
@@ -19,7 +19,8 @@ import org.eclipse.microprofile.config.spi.Converter;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
@@ -47,20 +48,26 @@ public class OpenTelemetryRecorder {
 
     @StaticInit
     public Supplier<DelayedAttributes> delayedAttributes(String quarkusVersion,
-            String serviceName,
             String serviceVersion) {
         return new Supplier<>() {
             @Override
             public DelayedAttributes get() {
                 var result = new DelayedAttributes();
-                result.setAttributesDelegate(Resource.getDefault()
-                        .merge(Resource.create(
-                                Attributes.of(
-                                        SERVICE_NAME, serviceName,
-                                        SERVICE_VERSION, serviceVersion,
-                                        WEBENGINE_NAME, "Quarkus",
-                                        WEBENGINE_VERSION, quarkusVersion)))
-                        .getAttributes());
+                // These are merged into the resource after the SDK built it, so they must not carry
+                // an attribute the SDK built a resource entity from. Resource.getDefault() carries
+                // service.name="unknown_service:java", which would drop the service entity, and the
+                // SDK already starts its own resource from Resource.getDefault() anyway.
+                AttributesBuilder attributes = Resource.getDefault().getAttributes().toBuilder();
+                attributes.removeIf(new Predicate<AttributeKey<?>>() {
+                    @Override
+                    public boolean test(AttributeKey<?> key) {
+                        return ResourceConfigReconciler.ENTITY_OWNED_ATTRIBUTES.contains(key.getKey());
+                    }
+                });
+                attributes.put(SERVICE_VERSION, serviceVersion);
+                attributes.put(WEBENGINE_NAME, "Quarkus");
+                attributes.put(WEBENGINE_VERSION, quarkusVersion);
+                result.setAttributesDelegate(attributes.build());
                 return result;
             }
         };
@@ -166,6 +173,9 @@ public class OpenTelemetryRecorder {
                     oTelConfigs.putAll(otel);
                     oTelConfigs.putAll(quarkus);
                 }
+
+                ResourceConfigReconciler.reconcile(oTelConfigs,
+                        config.getOptionalValue("quarkus.application.name", String.class).orElse("unset"));
 
                 return oTelConfigs;
             }

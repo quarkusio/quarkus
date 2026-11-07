@@ -1,0 +1,88 @@
+package io.quarkus.reactive.mssql.client;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.reactive.datasource.PoolCreator;
+import io.quarkus.reactive.datasource.ReactiveDataSource;
+import io.quarkus.test.QuarkusExtensionTest;
+import io.vertx.core.net.NetClientOptions;
+import io.vertx.mssqlclient.MSSQLBuilder;
+import io.vertx.sqlclient.Pool;
+
+public class TransportOptionsPoolCreatorTest {
+
+    @RegisterExtension
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(ConfiguredPoolCreator.class, DefaultPoolCreator.class))
+            .overrideConfigKey("quarkus.datasource.db-kind", "mssql")
+            .overrideConfigKey("quarkus.datasource.reactive.url", "sqlserver://localhost:1/db")
+            .overrideConfigKey("quarkus.datasource.reactive.tcp-keep-alive", "true")
+            .overrideConfigKey("quarkus.datasource.reactive.tcp-keep-alive-idle", "30s")
+            .overrideConfigKey("quarkus.datasource.reactive.tcp-keep-alive-interval", "5s")
+            .overrideConfigKey("quarkus.datasource.reactive.tcp-keep-alive-count", "3")
+            .overrideConfigKey("quarkus.datasource.\"unconfigured\".db-kind", "mssql")
+            .overrideConfigKey("quarkus.datasource.\"unconfigured\".reactive.url", "sqlserver://localhost:1/db");
+
+    @Inject
+    Pool pool;
+
+    @Inject
+    @ReactiveDataSource("unconfigured")
+    Pool unconfiguredPool;
+
+    @Test
+    public void configuredOptionsArePassedToPoolCreator() {
+        pool.size(); // force the creation of the pool
+        NetClientOptions options = ConfiguredPoolCreator.netClientOptions;
+
+        assertThat(options).isNotNull();
+        assertThat(options.isTcpKeepAlive()).isTrue();
+        assertThat(options.getTcpKeepAliveIdleSeconds()).isEqualTo(30);
+        assertThat(options.getTcpKeepAliveIntervalSeconds()).isEqualTo(5);
+        assertThat(options.getTcpKeepAliveCount()).isEqualTo(3);
+    }
+
+    @Test
+    public void unconfiguredOptionsKeepVertxDefaults() {
+        unconfiguredPool.size(); // force the creation of the pool
+        NetClientOptions options = DefaultPoolCreator.netClientOptions;
+        NetClientOptions defaults = new NetClientOptions();
+
+        assertThat(options).isNotNull();
+        assertThat(options.toJson()).isEqualTo(defaults.toJson());
+    }
+
+    @Singleton
+    public static class ConfiguredPoolCreator implements PoolCreator {
+
+        static volatile NetClientOptions netClientOptions;
+
+        @Override
+        public Pool create(Input input) {
+            netClientOptions = input.netClientOptions();
+            return MSSQLBuilder.pool().with(input.poolOptions()).with(input.netClientOptions())
+                    .connectingTo(input.dynamicConnectOptionsList()).using(input.vertx()).build();
+        }
+    }
+
+    @Singleton
+    @ReactiveDataSource("unconfigured")
+    public static class DefaultPoolCreator implements PoolCreator {
+
+        static volatile NetClientOptions netClientOptions;
+
+        @Override
+        public Pool create(Input input) {
+            netClientOptions = input.netClientOptions();
+            return MSSQLBuilder.pool().with(input.poolOptions()).with(input.netClientOptions())
+                    .connectingTo(input.dynamicConnectOptionsList()).using(input.vertx()).build();
+        }
+    }
+}

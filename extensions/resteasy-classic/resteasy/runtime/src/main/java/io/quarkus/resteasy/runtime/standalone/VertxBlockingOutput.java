@@ -2,7 +2,6 @@ package io.quarkus.resteasy.runtime.standalone;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -12,7 +11,6 @@ import org.jboss.logging.Logger;
 import io.netty.buffer.ByteBuf;
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
 import io.quarkus.vertx.utils.NoBoundChecksBuffer;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -121,32 +119,20 @@ public class VertxBlockingOutput implements VertxOutput {
 
     @Override
     public CompletionStage<Void> writeNonBlocking(ByteBuf data, boolean last) {
-        CompletableFuture<Void> ret = new CompletableFuture<>();
         if (last && data == null) {
-            request.response().end().onComplete(handler(ret));
-            return ret;
+            return request.response().end().toCompletionStage();
         }
         Buffer buffer = createBuffer(data);
-        if (last) {
-            request.response().end(buffer).onComplete(handler(ret));
-        } else {
-            request.response().write(buffer).onComplete(handler(ret));
-        }
         //no need to free 'data', the write will handle this
-        return ret;
+        if (last) {
+            return request.response().end(buffer).toCompletionStage();
+        } else {
+            return request.response().write(buffer).toCompletionStage();
+        }
     }
 
     private <T extends Throwable> void rethrow(Throwable x) throws T {
         throw (T) x;
-    }
-
-    private Handler<AsyncResult<Void>> handler(CompletableFuture<Void> ret) {
-        return res -> {
-            if (res.succeeded())
-                ret.complete(null);
-            else
-                ret.completeExceptionally(res.cause());
-        };
     }
 
     private void awaitWriteable() throws IOException {

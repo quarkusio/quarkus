@@ -30,10 +30,14 @@ public class EvalSectionHelper implements SectionHelper {
                 if (t1 != null) {
                     ret.completeExceptionally(t1);
                 } else {
-                    // Parse the template and execute with the params as the root context object
-                    String contents = evaluatedParams.get(TEMPLATE).toString();
-                    parseAndResolve(ret, contents,
-                            context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null));
+                    try {
+                        // Parse the template and execute with the params as the root context object
+                        String contents = evaluatedParams.get(TEMPLATE).toString();
+                        parseAndResolve(ret, contents,
+                                context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null));
+                    } catch (Throwable e) {
+                        ret.completeExceptionally(e);
+                    }
                 }
             });
         } else {
@@ -45,7 +49,11 @@ public class EvalSectionHelper implements SectionHelper {
                     if (t != null) {
                         ret.completeExceptionally(t);
                     } else {
-                        parseAndResolve(ret, r.toString(), context.resolutionContext());
+                        try {
+                            parseAndResolve(ret, r.toString(), context.resolutionContext());
+                        } catch (Throwable e) {
+                            ret.completeExceptionally(e);
+                        }
                     }
                 });
             }

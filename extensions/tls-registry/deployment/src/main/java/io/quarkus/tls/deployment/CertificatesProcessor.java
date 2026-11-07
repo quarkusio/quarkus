@@ -15,13 +15,12 @@ import org.jboss.jandex.DotName;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.core.Phase;
 import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.KeyStoreFactory;
 import io.quarkus.tls.KeyStoreProvider;
@@ -32,7 +31,7 @@ import io.quarkus.tls.TrustStoreProvider;
 import io.quarkus.tls.deployment.spi.TlsCertificateBuildItem;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.tls.runtime.CertificateRegistryImpl;
-import io.quarkus.tls.runtime.LetsEncryptRecorder;
+import io.quarkus.tls.runtime.LetsEncryptSupport;
 import io.quarkus.tls.runtime.config.TlsConfig;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
@@ -40,6 +39,10 @@ import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.Vertx;
 
 public class CertificatesProcessor {
+
+    private static final String LETS_ENCRYPT_CHALLENGE = "io.quarkus.tls-registry.lets-encrypt.challenge";
+    private static final String LETS_ENCRYPT_CHALLENGE_ADMIN = "io.quarkus.tls-registry.lets-encrypt.challenge-admin";
+    private static final String LETS_ENCRYPT_RELOAD = "io.quarkus.tls-registry.lets-encrypt.reload";
 
     static final DotName IDENTIFIER_DOT_NAME = DotName.createSimple(Identifier.class);
     static final DotName KEYSTORE_PROVIDER_DOT_NAME = DotName.createSimple(KeyStoreProvider.class);
@@ -98,33 +101,56 @@ public class CertificatesProcessor {
                 reg.serviceAsRecorderSupplier(TlsConfigurationRegistry.class));
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = LetsEncryptEnabled.class)
-    void createManagementRoutes(BuildProducer<RouteBuildItem> routes,
-            LetsEncryptRecorder recorder,
-            TlsRegistryBuildItem registryBuildItem) {
+    void createManagementRoutes(BuildProducer<RouteBuildItem> routes, ServiceRegistrar reg) {
 
         // Check if Vert.x Web is present
         if (!QuarkusClassLoader.isClassPresentAtRuntime("io.vertx.ext.web.Router")) {
             throw new ConfigurationException("Cannot use Let's Encrypt without the quarkus-vertx-http extension");
         }
 
-        recorder.initialize(registryBuildItem.registry());
+        reg
+                .forService(LetsEncryptSupport.class)
+                .atPhase(Phase.APPLICATION)
+                .require(TlsConfigurationRegistry.class)
+                .require(BeanContainer.class)
+                .onStart((ctx, registry, beanContainer) -> new LetsEncryptSupport(registry));
+        reg
+                .forService(LetsEncryptSupport.RouteHandler.class, LETS_ENCRYPT_CHALLENGE)
+                .atPhase(Phase.APPLICATION)
+                .require(LetsEncryptSupport.class)
+                .onStart((ctx, letsEncrypt) -> letsEncrypt.challengeHandler());
+        reg
+                .forService(LetsEncryptSupport.RouteHandler.class, LETS_ENCRYPT_CHALLENGE_ADMIN)
+                .atPhase(Phase.APPLICATION)
+                .require(LetsEncryptSupport.class)
+                .onStart((ctx, letsEncrypt) -> letsEncrypt.chalengeAdminHandler());
+        reg
+                .forService(LetsEncryptSupport.RouteCustomizer.class, LETS_ENCRYPT_CHALLENGE_ADMIN)
+                .atPhase(Phase.APPLICATION)
+                .require(LetsEncryptSupport.class)
+                .onStart((ctx, letsEncrypt) -> letsEncrypt.setupCustomizer());
+        reg
+                .forService(LetsEncryptSupport.RouteHandler.class, LETS_ENCRYPT_RELOAD)
+                .atPhase(Phase.APPLICATION)
+                .require(LetsEncryptSupport.class)
+                .onStart((ctx, letsEncrypt) -> letsEncrypt.reload());
 
         // Route to handle the Let's Encrypt challenge - primary HTTP server
         routes.produce(RouteBuildItem.newAbsoluteRoute("/.well-known/acme-challenge/:token")
-                .withRequestHandler(recorder.challengeHandler())
+                .withRequestHandler(reg.getRecorderProxy(LetsEncryptSupport.RouteHandler.class, LETS_ENCRYPT_CHALLENGE))
                 .build());
 
         // Route to configure the Let's Encrypt challenge - management server
         routes.produce(RouteBuildItem.newManagementRoute("lets-encrypt/challenge")
-                .withRequestHandler(recorder.chalengeAdminHandler())
-                .withRouteCustomizer(recorder.setupCustomizer())
+                .withRequestHandler(reg.getRecorderProxy(LetsEncryptSupport.RouteHandler.class, LETS_ENCRYPT_CHALLENGE_ADMIN))
+                .withRouteCustomizer(
+                        reg.getRecorderProxy(LetsEncryptSupport.RouteCustomizer.class, LETS_ENCRYPT_CHALLENGE_ADMIN))
                 .build());
 
         // Route to refresh the certificates - management server
         routes.produce(RouteBuildItem.newManagementRoute("lets-encrypt/certs")
-                .withRequestHandler(recorder.reload())
+                .withRequestHandler(reg.getRecorderProxy(LetsEncryptSupport.RouteHandler.class, LETS_ENCRYPT_RELOAD))
                 .build());
     }
 

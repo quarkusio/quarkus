@@ -1,5 +1,6 @@
-package io.quarkus.apicurio.registry.binding;
+package io.quarkus.apicurio.registry.binding.deployment;
 
+import io.quarkus.apicurio.registry.binding.ServiceRegistryBindingConverter;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;

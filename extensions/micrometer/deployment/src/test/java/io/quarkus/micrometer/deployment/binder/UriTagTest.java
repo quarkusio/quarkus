@@ -2,6 +2,8 @@ package io.quarkus.micrometer.deployment.binder;
 
 import static io.restassured.RestAssured.when;
 
+import java.util.List;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -9,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.micrometer.test.HelloResource;
 import io.quarkus.micrometer.test.PingPongResource;
@@ -63,6 +66,10 @@ public class UriTagTest {
         when().get("/vertx/item/1/123").then().statusCode(200);
         when().get("/servlet/12345").then().statusCode(200);
 
+        // Server path with no template, requested twice with a different query string
+        when().get("/vertx/query?filter=a").then().statusCode(200);
+        when().get("/vertx/query?filter=b").then().statusCode(200);
+
         // Server GET vs. HEAD methods -- templated
         when().get("/hello/one").then().statusCode(200);
         when().get("/hello/two").then().statusCode(200);
@@ -84,10 +91,10 @@ public class UriTagTest {
         when().get("/async-ping/three").then().statusCode(200);
 
         // Try to let metrics gathering finish.
-        // Looking for server request timers: /vertx/item/{id}, /vertx/item/{id}/{sub}, /servlet/,
+        // Looking for server request timers: /vertx/item/{id}, /vertx/item/{id}/{sub}, /servlet/, /vertx/query,
         //   /ping/{message}, /async-ping/{message}, /pong/{message}, and 2 of both /hello/{message} and /vertx/echo/{msg}
         // Looking for client request: /pong/{message}
-        Util.waitForMeters(registry.find("http.server.requests").timers(), 10);
+        Util.waitForMeters(registry.find("http.server.requests").timers(), 11);
         Util.waitForMeters(registry.find("http.client.requests").timers(), 1);
 
         System.out.println("Server paths\n" + Util.listMeters(registry, "http.server.requests"));
@@ -108,6 +115,16 @@ public class UriTagTest {
                         "Vert.x Web template path (/vertx/item/:id/:sub) should be detected/translated to /vertx/item/{id}/{sub}."));
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/servlet").timers().size(),
                 Util.foundServerRequests(registry, "Servlet path (/servlet) should be used for servlet"));
+
+        // The query string is not part of the path, so both /vertx/query requests share one timer
+        List<Timer> queryTimers = registry.find("http.server.requests").timers().stream()
+                .filter(t -> String.valueOf(t.getId().getTag("uri")).startsWith("/vertx/query")).toList();
+        Assertions.assertEquals(1, queryTimers.size(),
+                Util.foundServerRequests(registry, "/vertx/query should be measured with a single uri tag."));
+        Assertions.assertEquals("/vertx/query", queryTimers.get(0).getId().getTag("uri"),
+                Util.foundServerRequests(registry, "The uri tag should be the path without the query string."));
+        Assertions.assertEquals(2, queryTimers.get(0).count(),
+                Util.foundServerRequests(registry, "Both /vertx/query requests should be counted by the same timer."));
 
         // GET and HEAD are two different methods, there should be two timers for each of these URI tag values
         Assertions.assertEquals(2, registry.find("http.server.requests").tag("uri", "/hello/{message}").timers().size(),

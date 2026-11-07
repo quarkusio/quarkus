@@ -13,9 +13,12 @@ import java.util.function.UnaryOperator;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
+import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -42,6 +45,23 @@ public final class ReactivePoolUtil {
     private static final Logger log = Logger.getLogger(ReactivePoolUtil.class);
 
     private ReactivePoolUtil() {
+    }
+
+    /**
+     * Whether the pool of the given data source is active, i.e. the data source is not deactivated and has a
+     * reactive URL.
+     */
+    public static ActiveResult checkActive(String dataSourceName, DataSourcesRuntimeConfig runtimeConfig,
+            DataSourcesReactiveRuntimeConfig reactiveRuntimeConfig) {
+        Optional<Boolean> active = runtimeConfig.dataSources().get(dataSourceName).active();
+        if (active.isPresent() && !active.get()) {
+            return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonDeactivated(dataSourceName));
+        }
+        if (reactiveRuntimeConfig.dataSources().get(dataSourceName).reactive().url().isEmpty()) {
+            return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName,
+                    "reactive.url"));
+        }
+        return ActiveResult.active();
     }
 
     /**

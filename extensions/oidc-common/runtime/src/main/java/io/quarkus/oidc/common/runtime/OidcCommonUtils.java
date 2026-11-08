@@ -125,6 +125,12 @@ public class OidcCommonUtils {
         if (formParams.contains(OidcConstants.CLIENT_ASSERTION)) {
             debugFormParams.set(OidcConstants.CLIENT_ASSERTION, "...");
         }
+        if (formParams.contains(OidcConstants.JWT_BEARER_GRANT_ASSERTION)) {
+            debugFormParams.set(OidcConstants.JWT_BEARER_GRANT_ASSERTION, "...");
+        }
+        if (formParams.contains(OidcConstants.EXCHANGE_GRANT_SUBJECT_TOKEN)) {
+            debugFormParams.set(OidcConstants.EXCHANGE_GRANT_SUBJECT_TOKEN, "...");
+        }
         if (formParams.contains(OidcConstants.PASSWORD_GRANT_PASSWORD)) {
             debugFormParams.set(OidcConstants.PASSWORD_GRANT_PASSWORD, "...");
         }

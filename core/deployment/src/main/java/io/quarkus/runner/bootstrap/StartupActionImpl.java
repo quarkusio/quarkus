@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
@@ -55,6 +56,7 @@ import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.dev.testing.ApplicationPropertiesUtils;
 import io.quarkus.deployment.jvm.JvmModulesReconfigurer;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
+import io.quarkus.dev.appstate.ApplicationStartException;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.Quarkus;
@@ -149,8 +151,12 @@ public class StartupActionImpl implements StartupAction {
         //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
 
-        //this clears any old state, and gets ready to start again
-        ApplicationStateNotification.reset();
+        boolean auxiliaryApplication = curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication();
+        if (!auxiliaryApplication) {
+            //this clears any old state, and gets ready to start again
+            ApplicationStateNotification.reset();
+        }
+        AtomicReference<Throwable> startupFailure = new AtomicReference<>();
         //we have our class loaders
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(runtimeClassLoader);
@@ -166,8 +172,10 @@ public class StartupActionImpl implements StartupAction {
                         start.invoke(null, (Object) (args == null ? new String[0] : args));
                     } catch (Throwable e) {
                         log.error("Error running Quarkus", e);
+                        startupFailure.set(e);
                         //this can happen if we did not make it to application init
-                        if (ApplicationStateNotification.getState() == ApplicationStateNotification.State.INITIAL) {
+                        if (!auxiliaryApplication
+                                && ApplicationStateNotification.getState() == ApplicationStateNotification.State.INITIAL) {
                             ApplicationStateNotification.notifyStartupFailed(e);
                         }
                     } finally {
@@ -189,7 +197,11 @@ public class StartupActionImpl implements StartupAction {
                 }
             }, "Quarkus Main Thread");
             t.start();
-            ApplicationStateNotification.waitForApplicationStart();
+            if (auxiliaryApplication) {
+                waitForAuxiliaryApplicationStart(t, startupFailure);
+            } else {
+                ApplicationStateNotification.waitForApplicationStart();
+            }
             return new RunningQuarkusApplicationImpl(new Closeable() {
                 @Override
                 public void close() throws IOException {
@@ -220,6 +232,30 @@ public class StartupActionImpl implements StartupAction {
     @Override
     public void addRuntimeCloseTask(Closeable closeTask) {
         this.runtimeCloseTasks.add(closeTask);
+    }
+
+    /**
+     * An auxiliary application, such as a test application run by continuous testing next to the dev mode
+     * application, does not report its state through {@link ApplicationStateNotification}: that state is a JVM-wide
+     * singleton owned by the main application. Wait on the application's own lifecycle instead.
+     */
+    private void waitForAuxiliaryApplicationStart(Thread mainThread, AtomicReference<Throwable> startupFailure)
+            throws Exception {
+        Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true, runtimeClassLoader);
+        Method getCurrentApplication = lifecycleManager.getMethod("getCurrentApplication");
+        while (true) {
+            Object application = getCurrentApplication.invoke(null);
+            if (application != null && (boolean) application.getClass().getMethod("isStarted").invoke(application)) {
+                return;
+            }
+            if (!mainThread.isAlive()) {
+                Throwable failure = startupFailure.get();
+                throw new ApplicationStartException(
+                        failure != null ? failure
+                                : new IllegalStateException("The main method returned before the application started"));
+            }
+            mainThread.join(10);
+        }
     }
 
     private void doClose() {

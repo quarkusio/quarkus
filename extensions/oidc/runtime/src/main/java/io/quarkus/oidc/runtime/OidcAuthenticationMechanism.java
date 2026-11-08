@@ -129,7 +129,7 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
         });
     }
 
-    private static void setTenantIdAttribute(RoutingContext context) {
+    private void setTenantIdAttribute(RoutingContext context) {
         if (context.get(OidcUtils.TENANT_ID_ATTRIBUTE) == null) {
             for (Cookie cookie : context.request().cookies()) {
                 String cookieName = cookie.getName();
@@ -144,9 +144,10 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
         }
     }
 
-    private static void setTenantIdAttribute(RoutingContext context, String cookiePrefix, String cookieName,
+    private void setTenantIdAttribute(RoutingContext context, String cookiePrefix, String cookieName,
             boolean sessionCookie) {
-        String tenantId = OidcUtils.getTenantIdFromCookie(cookiePrefix, cookieName, sessionCookie);
+        String tenantId = OidcUtils.getTenantIdFromCookie(cookiePrefix, cookieName, sessionCookie,
+                resolver.getTenantConfigBean());
 
         context.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
         context.put(sessionCookie ? OidcUtils.TENANT_ID_SET_BY_SESSION_COOKIE : OidcUtils.TENANT_ID_SET_BY_STATE_COOKIE,

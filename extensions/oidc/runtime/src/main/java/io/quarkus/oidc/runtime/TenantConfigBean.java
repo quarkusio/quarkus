@@ -14,6 +14,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -39,6 +40,13 @@ public final class TenantConfigBean {
                 oidc.getDefaultTenantConfig());
         this.defaultTenant = tenantContextFactory.createDefaultTenantConfig(oidc.getStaticTenantConfigs(),
                 oidc.getDefaultTenantConfig());
+        verifyTenantIds();
+    }
+
+    private void verifyTenantIds() {
+        for (TenantConfigContext tenant : getAllTenantConfigs()) {
+            OidcUtils.verifyTenantId(tenant.getOidcTenantConfig(), this);
+        }
     }
 
     Uni<TenantConfigContext> createDynamicTenantContext(OidcTenantConfig oidcConfig) {
@@ -55,6 +63,16 @@ public final class TenantConfigBean {
                     public TenantConfigContext apply(TenantConfigContext t) {
                         var previousValue = dynamicTenantsConfig.putIfAbsent(tenantId, t);
                         if (previousValue == null) {
+                            try {
+                                // the ids of the existing tenants may start with the new tenant id as well
+                                verifyTenantIds();
+                            } catch (ConfigurationException ex) {
+                                dynamicTenantsConfig.remove(tenantId);
+                                if (t.provider() != null) {
+                                    t.provider().close();
+                                }
+                                throw ex;
+                            }
                             BackChannelLogoutHandler.fireBackChannelLogoutReadyEvent(oidcConfig);
                             ResourceMetadataHandler.fireResourceMetadataReadyEvent(oidcConfig);
                             ClientIdMetadataHandler.fireClientIdMetadataReadyEvent(oidcConfig);
@@ -107,6 +125,25 @@ public final class TenantConfigBean {
 
     public TenantConfigContext getStaticTenant(String tenantId) {
         return staticTenantsConfig.get(tenantId);
+    }
+
+    /**
+     * @return true if the tenant id is an id of the default, static or already created dynamic tenant
+     */
+    boolean isKnownTenantId(String tenantId) {
+        return OidcUtils.DEFAULT_TENANT_ID.equals(tenantId) || staticTenantsConfig.containsKey(tenantId)
+                || dynamicTenantsConfig.containsKey(tenantId);
+    }
+
+    /**
+     * @return configuration of the static or already created dynamic tenant, null if there is no such tenant
+     */
+    OidcTenantConfig getTenantConfig(String tenantId) {
+        TenantConfigContext tenant = staticTenantsConfig.get(tenantId);
+        if (tenant == null) {
+            tenant = dynamicTenantsConfig.get(tenantId);
+        }
+        return tenant == null ? null : tenant.getOidcTenantConfig();
     }
 
     public TenantConfigContext getDefaultTenant() {

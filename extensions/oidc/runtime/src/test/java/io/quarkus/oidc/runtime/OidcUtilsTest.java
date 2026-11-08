@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
@@ -31,6 +32,8 @@ import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.http.Cookie;
@@ -432,6 +435,150 @@ public class OidcUtilsTest {
                 OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_chunk_1", true));
         assertEquals("a", OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a", true));
         assertEquals("a", OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_chunk_1", true));
+        // tenant id with an underscore is not known, the first segment is assumed to be a tenant id
+        assertEquals("a", OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_1", true));
+    }
+
+    @Test
+    public void testGetSessionCookieTenantIdWithOverlappingTenantIds() throws Exception {
+        TenantConfigBean tenantIds = knownTenantIds("a", "a_1", "a_1_b");
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID,
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session", true, tenantIds));
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID,
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_chunk_1", true, tenantIds));
+        // default tenant with a cookie suffix
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID,
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_Default_test", true, tenantIds));
+
+        assertEquals("a", OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a", true, tenantIds));
+        assertEquals("a",
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_chunk_1", true, tenantIds));
+        // tenant `a` with a cookie suffix `test`
+        assertEquals("a",
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_test", true, tenantIds));
+
+        assertEquals("a_1", OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_1", true, tenantIds));
+        assertEquals("a_1",
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_1_chunk_1", true, tenantIds));
+        // tenant `a_1` with a cookie suffix `test`
+        assertEquals("a_1",
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_1_test", true, tenantIds));
+
+        assertEquals("a_1_b",
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_1_b", true, tenantIds));
+        assertEquals("a_1_b",
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_1_b_chunk_2", true, tenantIds));
+
+        // `a_1_c` is not a known tenant, so it must be the tenant `a_1` with a cookie suffix `c`
+        assertEquals("a_1",
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_1_c", true, tenantIds));
+        // `ab` is not a known tenant, so it is a tenant id which has not been created yet
+        assertEquals("ab", OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_ab", true, tenantIds));
+        assertEquals("ab",
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_ab_chunk_1", true, tenantIds));
+    }
+
+    @Test
+    public void testGetStateCookieTenantIdWithOverlappingTenantIds() throws Exception {
+        TenantConfigBean tenantIds = knownTenantIds("a", "a_1");
+        String state = UUID.randomUUID().toString();
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID,
+                OidcUtils.getTenantIdFromCookie(OidcUtils.STATE_COOKIE_NAME, "q_auth", false, tenantIds));
+        // default tenant, multiple code flows are allowed
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID,
+                OidcUtils.getTenantIdFromCookie(OidcUtils.STATE_COOKIE_NAME, "q_auth_Default_" + state, false, tenantIds));
+
+        assertEquals("a", OidcUtils.getTenantIdFromCookie(OidcUtils.STATE_COOKIE_NAME, "q_auth_a", false, tenantIds));
+        assertEquals("a",
+                OidcUtils.getTenantIdFromCookie(OidcUtils.STATE_COOKIE_NAME, "q_auth_a_" + state, false, tenantIds));
+
+        assertEquals("a_1", OidcUtils.getTenantIdFromCookie(OidcUtils.STATE_COOKIE_NAME, "q_auth_a_1", false, tenantIds));
+        assertEquals("a_1",
+                OidcUtils.getTenantIdFromCookie(OidcUtils.STATE_COOKIE_NAME, "q_auth_a_1_" + state, false, tenantIds));
+    }
+
+    @Test
+    public void testGetSessionCookieTenantIdSkipsChunkCandidates() throws Exception {
+        // the `_chunk_N` tail is removed before the candidates are checked, so neither `a_1_chunk_2` nor `a_1_chunk`
+        // is considered even though tenants with such ids exist
+        TenantConfigBean tenantIds = knownTenantIds("a_1", "a_1_chunk", "a_1_chunk_2");
+        assertEquals("a_1",
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_1_chunk_2", true, tenantIds));
+        // the chunk tail is only removed from the session cookie names
+        assertEquals("a_1_chunk_2",
+                OidcUtils.getTenantIdFromCookie(OidcUtils.STATE_COOKIE_NAME, "q_auth_a_1_chunk_2", false, tenantIds));
+    }
+
+    @Test
+    public void testGetSessionCookieTenantIdLimits() throws Exception {
+        TenantConfigBean tenantIds = knownTenantIds("a_1");
+
+        // the candidates with up to MAX_TENANT_ID_UNDERSCORES underscores removed are checked, so the cookie suffix
+        // following the tenant id can have up to 5 underscores
+        assertEquals("a_1", OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_1_b_c_d_e_f", true,
+                tenantIds));
+        assertEquals("a", OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_1_b_c_d_e_f_g", true,
+                tenantIds));
+
+        // the candidates of the cookie names longer than the maximum cookie length are not checked
+        String longSuffix = "a_1_" + "b".repeat(OidcUtils.MAX_COOKIE_LENGTH);
+        assertEquals("a",
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_" + longSuffix, true, tenantIds));
+    }
+
+    @Test
+    public void testVerifyTenantId() throws Exception {
+        TenantConfigBean tenants = tenants(webApp("a"), tenant("b", ApplicationType.SERVICE),
+                tenant("c", ApplicationType.HYBRID), OidcTenantConfig.builder(webApp("d")).tenantEnabled(false).build());
+
+        // no underscore or no tenant with the shorter id
+        OidcUtils.verifyTenantId(webApp("a"), tenants);
+        OidcUtils.verifyTenantId(webApp("a1"), tenants);
+        OidcUtils.verifyTenantId(webApp("e_1"), tenants);
+        OidcUtils.verifyTenantId(webApp("_a"), tenants);
+        // service and disabled tenants have no cookies
+        OidcUtils.verifyTenantId(webApp("b_1"), tenants);
+        OidcUtils.verifyTenantId(webApp("d_1"), tenants);
+
+        // the cookies of the web-app tenant `a` can be resolved to the tenant `a_1`, whatever its type
+        ConfigurationException ex = assertThrows(ConfigurationException.class,
+                () -> OidcUtils.verifyTenantId(webApp("a_1"), tenants));
+        assertTrue(ex.getMessage().contains("Tenant id 'a_1' starts with the id of the tenant 'a' followed by '_'"),
+                ex.getMessage());
+        assertThrows(ConfigurationException.class,
+                () -> OidcUtils.verifyTenantId(tenant("a_1", ApplicationType.SERVICE), tenants));
+        // all the shorter ids are checked
+        ex = assertThrows(ConfigurationException.class, () -> OidcUtils.verifyTenantId(webApp("a_1_b"), tenants));
+        assertTrue(ex.getMessage().contains("Tenant id 'a_1_b' starts with the id of the tenant 'a' followed by '_'"),
+                ex.getMessage());
+        // hybrid tenants have cookies too
+        assertThrows(ConfigurationException.class, () -> OidcUtils.verifyTenantId(webApp("c_1"), tenants));
+    }
+
+    private static OidcTenantConfig webApp(String tenantId) {
+        return tenant(tenantId, ApplicationType.WEB_APP);
+    }
+
+    private static OidcTenantConfig tenant(String tenantId, ApplicationType applicationType) {
+        return OidcTenantConfig.builder().tenantId(tenantId).applicationType(applicationType).build();
+    }
+
+    private static TenantConfigBean tenants(OidcTenantConfig... tenants) {
+        TenantConfigBean tenantConfigBean = Mockito.mock(TenantConfigBean.class);
+        for (OidcTenantConfig tenant : tenants) {
+            Mockito.when(tenantConfigBean.getTenantConfig(tenant.tenantId().get())).thenReturn(tenant);
+        }
+        return tenantConfigBean;
+    }
+
+    private static TenantConfigBean knownTenantIds(String... tenantIds) {
+        TenantConfigBean tenantConfigBean = Mockito.mock(TenantConfigBean.class);
+        for (String tenantId : tenantIds) {
+            Mockito.when(tenantConfigBean.isKnownTenantId(tenantId)).thenReturn(true);
+        }
+        return tenantConfigBean;
     }
 
     public static JsonObject read(InputStream input) throws IOException {

@@ -69,6 +69,7 @@ import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Logout.ClearSiteData;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Roles;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Token;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -135,6 +136,8 @@ public final class OidcUtils {
     public static final String DEFAULT_SCOPE_SEPARATOR = " ";
     public static final String ANNOTATION_BASED_TENANT_RESOLUTION_ENABLED = "io.quarkus.oidc.runtime.select-tenants-with-annotation";
     static final String UNDERSCORE = "_";
+    // Tenant id and cookie suffix are not expected to contain many underscores
+    static final int MAX_TENANT_ID_UNDERSCORES = 5;
     static final String CODE_ACCESS_TOKEN_RESULT = "code_flow_access_token_result";
     static final String CODE_ACCESS_TOKEN_FAILURE = "code_flow_access_token_failure";
     static final String COMMA = ",";
@@ -725,6 +728,21 @@ public final class OidcUtils {
     }
 
     public static String getTenantIdFromCookie(String cookiePrefix, String cookieName, boolean sessionCookie) {
+        return getTenantIdFromCookie(cookiePrefix, cookieName, sessionCookie, null);
+    }
+
+    /**
+     * Get a tenant id from the session or state cookie name.
+     *
+     * @param cookiePrefix session or state cookie name prefix, for example, `q_session` or `q_auth`
+     * @param cookieName cookie name which has already been checked to start with the cookie prefix
+     * @param sessionCookie true if the cookie is a session cookie, false if it is a state cookie
+     * @param tenantConfigBean tenant config bean which knows the ids of the default, static and already created dynamic
+     *        tenants, can be null in which case only the default tenant id is known
+     * @return tenant id
+     */
+    public static String getTenantIdFromCookie(String cookiePrefix, String cookieName, boolean sessionCookie,
+            TenantConfigBean tenantConfigBean) {
         // It has already been checked the cookieName starts with the cookiePrefix
         if (cookieName.length() == cookiePrefix.length()) {
             return OidcUtils.DEFAULT_TENANT_ID;
@@ -735,10 +753,62 @@ public final class OidcUtils {
                 return OidcUtils.DEFAULT_TENANT_ID;
             } else {
                 // It can be either a tenant_id, or a tenant_id and cookie suffix property, example, q_session_github or q_session_github_test
-                // or it can be a session cookie chunk like q_session_chunk_1 in which case the suffix will be chunk_1
-                int index = suffix.indexOf("_", 0);
-                return index == -1 ? suffix : suffix.substring(0, index);
+                // or it can be a session cookie chunk like q_session_github_chunk_1 in which case the suffix will be github_chunk_1
+                // or it can be a state cookie with a state value appended if multiple code flows are allowed, example, q_auth_github_<state>
+                int index = suffix.indexOf(UNDERSCORE, 0);
+                if (index == -1) {
+                    return suffix;
+                }
+                // The suffix contains an underscore, the tenant id itself may contain underscores too, for example,
+                // q_session_a_1 can be a cookie of the tenant `a_1` or a cookie of the tenant `a` with a cookie suffix `1`.
+                // Check the candidates ending at each underscore, starting with the whole suffix without the session cookie
+                // chunk tail, and prefer the longest known tenant id, for example, for `a_1_chunk_2` check `a_1` and `a`.
+                // Cookie names longer than the maximum cookie length are not created by Quarkus and the candidates with
+                // more than MAX_TENANT_ID_UNDERSCORES underscores removed are not checked to limit the work done for
+                // unexpected cookie names.
+                if (tenantConfigBean != null && suffix.length() <= MAX_COOKIE_LENGTH) {
+                    int chunkIndex = sessionCookie ? suffix.indexOf(SESSION_COOKIE_CHUNK) : -1;
+                    String candidate = chunkIndex == -1 ? suffix : suffix.substring(0, chunkIndex);
+                    for (int i = 0; i <= MAX_TENANT_ID_UNDERSCORES; i++) {
+                        if (tenantConfigBean.isKnownTenantId(candidate)) {
+                            return candidate;
+                        }
+                        int lastIndex = candidate.lastIndexOf(UNDERSCORE);
+                        if (lastIndex == -1) {
+                            break;
+                        }
+                        candidate = candidate.substring(0, lastIndex);
+                    }
+                }
+                // No known tenant id matches, for example, a dynamic tenant has not been created yet after a restart,
+                // fall back to the first segment
+                return suffix.substring(0, index);
             }
+        }
+    }
+
+    /**
+     * Verify that the tenant id does not start with the id of a web-app or hybrid tenant followed by an underscore,
+     * for example, `q_session_a_1` would be resolved to the tenant `a_1` even if it is a cookie of the tenant `a`
+     * with a cookie suffix `1`.
+     *
+     * @param oidcConfig tenant configuration
+     * @param tenantConfigBean tenant config bean which knows the static and already created dynamic tenants
+     */
+    static void verifyTenantId(OidcTenantConfig oidcConfig, TenantConfigBean tenantConfigBean) {
+        String tenantId = oidcConfig.tenantId().get();
+        // Check the same candidates which getTenantIdFromCookie checks, except for the tenant id itself
+        int index = tenantId.lastIndexOf(UNDERSCORE);
+        while (index > 0) {
+            String shorterTenantId = tenantId.substring(0, index);
+            OidcTenantConfig shorterTenantConfig = tenantConfigBean.getTenantConfig(shorterTenantId);
+            if (shorterTenantConfig != null && shorterTenantConfig.tenantEnabled() && !isServiceApp(shorterTenantConfig)) {
+                throw new ConfigurationException(String.format(
+                        "Tenant id '%s' starts with the id of the tenant '%s' followed by '_', the cookies of the tenant '%s'"
+                                + " can be resolved to the tenant '%s'. Please change the id of the tenant '%s' or '%s'.",
+                        tenantId, shorterTenantId, shorterTenantId, tenantId, shorterTenantId, tenantId));
+            }
+            index = tenantId.lastIndexOf(UNDERSCORE, index - 1);
         }
     }
 

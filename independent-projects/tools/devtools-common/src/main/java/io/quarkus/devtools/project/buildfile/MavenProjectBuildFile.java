@@ -275,7 +275,7 @@ public class MavenProjectBuildFile extends BuildFile {
         if (!managed) {
             d.setVersion(coords.getVersion());
         }
-        // When classifier is empty, you get  <classifier></classifier> in the pom.xml
+        // When classifier is empty, you get <classifier></classifier> in the pom.xml
         if (coords.getClassifier() != null && !coords.getClassifier().isEmpty()) {
             d.setClassifier(coords.getClassifier());
         }
@@ -372,6 +372,10 @@ public class MavenProjectBuildFile extends BuildFile {
     @Override
     protected String getProperty(String propertyName) {
         return projectProps.getProperty(propertyName);
+    }
+
+    public String getRawPomProperty(String name) {
+        return projectProps == null ? null : projectProps.getProperty(name);
     }
 
     @Override

@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.criteria.JoinType;
 
 import org.hibernate.SharedSessionContract;
 
@@ -34,6 +35,11 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     public <T> PanacheQuery<T> project(Class<T> type) {
         return new PanacheQueryImpl<>(delegate.project(type));
+    }
+
+    @Override
+    public <T> PanacheQuery<T> project(Class<T> type, JoinType joinType) {
+        return new PanacheQueryImpl<>(delegate.project(type, joinType));
     }
 
     @Override

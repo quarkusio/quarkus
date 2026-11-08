@@ -73,6 +73,26 @@ public class OidcCommonUtilsTest {
     }
 
     @Test
+    public void testMaskJwtBearerGrantAssertionFormData() throws Exception {
+        MultiMap form = MultiMap.caseInsensitiveMultiMap().set("assertion", "ey.token.signature");
+
+        MultiMap maskedForm = OidcCommonUtils.maskFormData(form);
+        assertEquals("...", maskedForm.get("assertion"));
+
+        assertEquals("ey.token.signature", form.get("assertion"));
+    }
+
+    @Test
+    public void testMaskExchangeGrantSubjectTokenFormData() throws Exception {
+        MultiMap form = MultiMap.caseInsensitiveMultiMap().set("subject_token", "ey.token.signature");
+
+        MultiMap maskedForm = OidcCommonUtils.maskFormData(form);
+        assertEquals("...", maskedForm.get("subject_token"));
+
+        assertEquals("ey.token.signature", form.get("subject_token"));
+    }
+
+    @Test
     public void testMaskPasswordGrantPasswordFormData() throws Exception {
         MultiMap form = MultiMap.caseInsensitiveMultiMap().set("password", "secret");
 

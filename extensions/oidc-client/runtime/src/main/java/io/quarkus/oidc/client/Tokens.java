@@ -74,11 +74,6 @@ public class Tokens {
         return minRemainingAccessTokenLifespan;
     }
 
-    /**
-     * Whether this access token has enough of its lifespan left to still be worth sending while it is
-     * being refreshed, so that it does not expire in transit or while the target service is processing
-     * the request.
-     */
     public boolean hasMinRemainingAccessTokenLifespan() {
         if (minRemainingAccessTokenLifespan == null || accessTokenExpiresAt == null) {
             return false;

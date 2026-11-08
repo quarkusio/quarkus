@@ -28,6 +28,7 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
@@ -74,8 +75,10 @@ import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HostValidationRecorder;
 import io.quarkus.vertx.http.runtime.HttpCertificateUpdateEventListener;
 import io.quarkus.vertx.http.runtime.HttpStaticDirConfig;
+import io.quarkus.vertx.http.runtime.RouteHandler;
 import io.quarkus.vertx.http.runtime.VertxConfigBuilder;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig.InsecureRequests;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder;
@@ -91,6 +94,9 @@ import io.vertx.core.impl.VertxImpl;
 import io.vertx.ext.web.Router;
 
 class VertxHttpProcessor {
+
+    private static final String CORS_SERVICE = "io.quarkus.vertx.http.cors.handler";
+    private static final String HOST_VALIDATION_SERVICE = "io.quarkus.vertx.http.host-validation.handler";
 
     private static final String META_INF_SERVICES_EXCHANGE_ATTRIBUTE_BUILDER = "META-INF/services/io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder";
     private static final Logger logger = Logger.getLogger(VertxHttpProcessor.class);
@@ -155,22 +161,35 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    FilterBuildItem cors(CORSRecorder recorder,
+    FilterBuildItem cors(ServiceRegistrar serviceRegistrar,
             Optional<HttpSecurityConfigSetupCompleteBuildItem> httpSecurityConfigSetupCompleteBuildItem,
             Capabilities capabilities) {
-        RuntimeValue<CORSConfig> programmaticCorsConfig = httpSecurityConfigSetupCompleteBuildItem
-                .map(i -> i.programmaticCorsConfig).orElse(null);
-        return new FilterBuildItem(
-                recorder.corsHandler(programmaticCorsConfig, capabilities.isPresent(Capability.SECURITY)),
+        boolean securityPresent = capabilities.isPresent(Capability.SECURITY);
+        if (httpSecurityConfigSetupCompleteBuildItem.map(i -> i.programmaticCorsConfig).orElse(false)) {
+            serviceRegistrar
+                    .forService(RouteHandler.class, CORS_SERVICE)
+                    .require(VertxHttpConfig.class)
+                    .require(CORSConfig.class, HttpSecurityProcessor.PROGRAMMATIC_CORS_CONFIG_SERVICE)
+                    .onStart((ctx, httpConfig, programmaticCorsConfig) -> CORSRecorder
+                            .corsHandler(httpConfig, programmaticCorsConfig, securityPresent)::handle);
+        } else {
+            serviceRegistrar
+                    .forService(RouteHandler.class, CORS_SERVICE)
+                    .require(VertxHttpConfig.class)
+                    .onStart((ctx, httpConfig) -> CORSRecorder.corsHandler(httpConfig, null, securityPresent)::handle);
+        }
+        return new FilterBuildItem(serviceRegistrar.getRecorderProxy(RouteHandler.class, CORS_SERVICE),
                 SecurityHandlerPriorities.CORS);
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    FilterBuildItem hostValidation(HostValidationRecorder recorder) {
-        // If the handler is null, it will be automatically filtered out by finalizeRouter.
-        return new FilterBuildItem(recorder.hostValidationHandler(), SecurityHandlerPriorities.HOST_VALIDATION);
+    FilterBuildItem hostValidation(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar
+                .forService(RouteHandler.class, HOST_VALIDATION_SERVICE)
+                .require(VertxHttpConfig.class)
+                .onStart((ctx, httpConfig) -> HostValidationRecorder.hostValidationHandler(httpConfig)::handle);
+        return new FilterBuildItem(serviceRegistrar.getRecorderProxy(RouteHandler.class, HOST_VALIDATION_SERVICE),
+                SecurityHandlerPriorities.HOST_VALIDATION);
     }
 
     @BuildStep

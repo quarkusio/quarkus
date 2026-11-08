@@ -10,14 +10,12 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.ReproducibilityCheckBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.maven.dependency.GACT;
@@ -27,18 +25,19 @@ import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
 import io.quarkus.vertx.http.runtime.webjar.WebJarRecorder;
 
 public class WebJarProcessor {
-    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIfNot = IsProduction.class)
-    WebJarResultsBuildItem processWebJarDevMode(WebJarRecorder recorder, List<WebJarBuildItem> webJars,
+    WebJarResultsBuildItem processWebJarDevMode(ServiceRegistrar serviceRegistrar, List<WebJarBuildItem> webJars,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            ShutdownContextBuildItem shutdownContext,
             Optional<ReproducibilityCheckBuildItem> reproducibilityCheckBuildItem,
             ApplicationConfig applicationConfig) throws IOException {
 
         Map<WebJarResultsBuildItem.Key, WebJarResultsBuildItem.WebJarResult> results = new HashMap<>();
 
         Path deploymentBasePath = getDeploymentBasePath(applicationConfig, reproducibilityCheckBuildItem.isPresent());
-        recorder.shutdownTask(shutdownContext, deploymentBasePath.toString());
+        String deploymentBasePathString = deploymentBasePath.toString();
+        serviceRegistrar
+                .forService("io.quarkus.vertx.http.webjar.cleanup")
+                .onStart(ctx -> ctx.onStop(WebJarRecorder.deleteDirectoryTask(deploymentBasePathString)));
 
         for (WebJarBuildItem webJar : webJars) {
             Path resourcesDirectory = deploymentBasePath

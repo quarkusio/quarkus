@@ -9,8 +9,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Route;
@@ -18,28 +16,21 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.FileSystemAccess;
 import io.vertx.ext.web.handler.StaticHandler;
 
-@Recorder
 public class StaticResourcesRecorder {
 
     public static final String META_INF_RESOURCES = "META-INF/resources";
 
     private static volatile List<Path> hotDeploymentResourcePaths;
 
-    private final VertxHttpBuildTimeConfig httpBuildTimeConfig;
-    private final RuntimeValue<VertxHttpConfig> httpConfig;
-
-    public StaticResourcesRecorder(
-            final VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            final RuntimeValue<VertxHttpConfig> httpConfig) {
-        this.httpBuildTimeConfig = httpBuildTimeConfig;
-        this.httpConfig = httpConfig;
+    private StaticResourcesRecorder() {
     }
 
     public static void setHotDeploymentResources(List<Path> resources) {
         hotDeploymentResourcePaths = resources;
     }
 
-    public Consumer<Route> start(Set<String> knownPaths) {
+    public static Consumer<Route> start(VertxHttpBuildTimeConfig httpBuildTimeConfig, VertxHttpConfig httpConfig,
+            Set<String> knownPaths) {
         List<Handler<RoutingContext>> handlers = new ArrayList<>();
         Set<String> compressMediaTypes;
         if (httpBuildTimeConfig.enableCompression() && httpBuildTimeConfig.compressMediaTypes().isPresent()) {
@@ -47,7 +38,7 @@ public class StaticResourcesRecorder {
         } else {
             compressMediaTypes = Set.of();
         }
-        StaticResourcesConfig config = httpConfig.getValue().staticResources();
+        StaticResourcesConfig config = httpConfig.staticResources();
 
         if (hotDeploymentResourcePaths != null && !hotDeploymentResourcePaths.isEmpty()) {
             for (Path resourcePath : hotDeploymentResourcePaths) {

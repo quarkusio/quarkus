@@ -10,17 +10,12 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.annotations.Recorder;
-
-@Recorder
 public class WebJarRecorder {
 
     private static final Logger LOG = Logger.getLogger(WebJarRecorder.class);
 
-    public void shutdownTask(ShutdownContext shutdownContext, String deploymentBasePath) {
-
-        shutdownContext.addShutdownTask(new DeleteDirectoryRunnable(deploymentBasePath));
+    public static Runnable deleteDirectoryTask(String deploymentBasePath) {
+        return new DeleteDirectoryRunnable(deploymentBasePath);
     }
 
     private static final class DeleteDirectoryRunnable implements Runnable {

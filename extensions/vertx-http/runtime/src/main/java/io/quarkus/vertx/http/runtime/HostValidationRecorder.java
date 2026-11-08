@@ -5,25 +5,23 @@ import java.util.Set;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
-@Recorder
 public class HostValidationRecorder {
     private static final Logger LOG = Logger.getLogger(HostValidationRecorder.class);
     private static final Set<String> LOCAL_HOSTNAMES = Set.of("localhost", "127.0.0.1", "[::1]");
 
-    private final RuntimeValue<VertxHttpConfig> httpConfig;
-
-    public HostValidationRecorder(RuntimeValue<VertxHttpConfig> httpConfig) {
-        this.httpConfig = httpConfig;
+    private HostValidationRecorder() {
     }
 
-    public Handler<RoutingContext> hostValidationHandler() {
-        return hostValidationHandler(httpConfig.getValue().hostValidation(), httpConfig.getValue().host(), false);
+    /**
+     * @return the host validation handler, or a handler that passes the request through when no validation is required
+     */
+    public static Handler<RoutingContext> hostValidationHandler(VertxHttpConfig httpConfig) {
+        Handler<RoutingContext> handler = hostValidationHandler(httpConfig.hostValidation(), httpConfig.host(), false);
+        return handler != null ? handler : RoutingContext::next;
     }
 
     static Handler<RoutingContext> hostValidationHandler(HostValidationConfig hostValidationConfig, String quarkusHttpHost,

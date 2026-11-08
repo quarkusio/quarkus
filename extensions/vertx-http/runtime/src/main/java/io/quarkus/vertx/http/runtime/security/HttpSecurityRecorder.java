@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -31,7 +32,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.AuthenticationCompletionException;
@@ -65,17 +65,8 @@ import io.vertx.ext.web.RoutingContext;
 public class HttpSecurityRecorder {
     private static final Logger log = Logger.getLogger(HttpSecurityRecorder.class);
 
-    private final RuntimeValue<VertxHttpConfig> httpConfig;
-    private final VertxHttpBuildTimeConfig httpBuildTimeConfig;
-
-    public HttpSecurityRecorder(final RuntimeValue<VertxHttpConfig> httpConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
-        this.httpConfig = httpConfig;
-        this.httpBuildTimeConfig = httpBuildTimeConfig;
-    }
-
-    public void initializeHttpAuthenticatorHandler(RuntimeValue<AuthenticationHandler> handlerRuntimeValue,
-            BeanContainer beanContainer) {
-        handlerRuntimeValue.getValue().init(beanContainer.beanInstance(PathMatchingHttpSecurityPolicy.class),
+    public static void initializeHttpAuthenticatorHandler(AuthenticationHandler handler, BeanContainer beanContainer) {
+        handler.init(beanContainer.beanInstance(PathMatchingHttpSecurityPolicy.class),
                 HttpSecurityConfiguration.get().rolesMapping());
     }
 
@@ -136,24 +127,43 @@ public class HttpSecurityRecorder {
         }
     }
 
-    public Supplier<EagerSecurityInterceptorStorage> createSecurityInterceptorStorage(
-            Map<RuntimeValue<MethodDescription>, Consumer<RoutingContext>> endpointRuntimeValToInterceptor,
-            Map<String, Consumer<RoutingContext>> classNameToInterceptor) {
-
+    /**
+     * @param definitions interceptors to create and the intercepted methods and classes
+     * @param creators interceptor creators by identifier
+     */
+    public static EagerSecurityInterceptorStorage createSecurityInterceptorStorage(
+            List<EagerSecurityInterceptorDefinition> definitions,
+            Map<String, ? extends Function<String, Consumer<RoutingContext>>> creators) {
         final Map<MethodDescription, Consumer<RoutingContext>> endpointToInterceptor = new HashMap<>();
-        for (var entry : endpointRuntimeValToInterceptor.entrySet()) {
-            endpointToInterceptor.put(entry.getKey().getValue(), entry.getValue());
-        }
-
-        return new Supplier<EagerSecurityInterceptorStorage>() {
-            @Override
-            public EagerSecurityInterceptorStorage get() {
-                return new EagerSecurityInterceptorStorage(endpointToInterceptor, classNameToInterceptor);
+        final Map<String, Consumer<RoutingContext>> classNameToInterceptor = new HashMap<>();
+        for (EagerSecurityInterceptorDefinition definition : definitions) {
+            Consumer<RoutingContext> interceptor = creators.get(definition.creatorId()).apply(definition.annotationValue());
+            for (InterceptedMethod method : definition.methods()) {
+                var description = new MethodDescription(method.className(), method.methodName(),
+                        method.parameterTypes().toArray(String[]::new));
+                endpointToInterceptor.merge(description, interceptor,
+                        (existing, added) -> compoundSecurityInterceptor(added, existing));
             }
-        };
+            for (String className : definition.classNames()) {
+                classNameToInterceptor.merge(className, interceptor,
+                        (existing, added) -> compoundSecurityInterceptor(added, existing));
+            }
+        }
+        return new EagerSecurityInterceptorStorage(endpointToInterceptor, classNameToInterceptor);
     }
 
-    public Supplier<Map<String, Object>> createAdditionalSecEventPropsSupplier() {
+    /**
+     * Interceptors with the same {@code creatorId} and {@code annotationValue} are created once and applied to the
+     * methods and classes.
+     */
+    public record EagerSecurityInterceptorDefinition(String creatorId, String annotationValue,
+            List<InterceptedMethod> methods, List<String> classNames) {
+    }
+
+    public record InterceptedMethod(String className, String methodName, List<String> parameterTypes) {
+    }
+
+    public static Supplier<Map<String, Object>> createAdditionalSecEventPropsSupplier() {
         return new Supplier<Map<String, Object>>() {
             @Override
             public Map<String, Object> get() {
@@ -177,11 +187,14 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public RuntimeValue<CORSConfig> prepareHttpSecurityConfiguration(ShutdownContext shutdownContext) {
+    public static CORSConfig prepareHttpSecurityConfiguration(VertxHttpConfig httpConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         // this is done so that we prepare and validate HTTP Security config before the first incoming request
-        var config = HttpSecurityConfiguration.get(httpConfig.getValue(), httpBuildTimeConfig);
-        shutdownContext.addShutdownTask(HttpSecurityConfiguration::clear);
-        return new RuntimeValue<>(config.getCorsConfig());
+        return HttpSecurityConfiguration.get(httpConfig, httpBuildTimeConfig).getCorsConfig();
+    }
+
+    public static void clearHttpSecurityConfiguration() {
+        HttpSecurityConfiguration.clear();
     }
 
     /**
@@ -515,11 +528,16 @@ public class HttpSecurityRecorder {
         }
     }
 
-    public RuntimeValue<MethodDescription> createMethodDescription(String className, String methodName, String[] paramTypes) {
-        return new RuntimeValue<>(new MethodDescription(className, methodName, paramTypes));
+    /**
+     * @deprecated only used to bridge the deprecated recorder-based interceptor creators to services
+     */
+    @Deprecated(since = "4.0")
+    public EagerSecurityInterceptorCreator wrapLegacyEagerSecurityInterceptorCreator(
+            Function<String, Consumer<RoutingContext>> creator) {
+        return creator::apply;
     }
 
-    public Function<String, Consumer<RoutingContext>> authMechanismSelectionInterceptorCreator() {
+    public static Function<String, Consumer<RoutingContext>> authMechanismSelectionInterceptorCreator() {
         return new Function<String, Consumer<RoutingContext>>() {
             @Override
             public Consumer<RoutingContext> apply(String authMechanismName) {
@@ -536,12 +554,7 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public Consumer<RoutingContext> createEagerSecurityInterceptor(
-            Function<String, Consumer<RoutingContext>> interceptorCreator, String annotationValue) {
-        return interceptorCreator.apply(annotationValue);
-    }
-
-    public Consumer<RoutingContext> compoundSecurityInterceptor(Consumer<RoutingContext> interceptor1,
+    private static Consumer<RoutingContext> compoundSecurityInterceptor(Consumer<RoutingContext> interceptor1,
             Consumer<RoutingContext> interceptor2) {
         return new Consumer<RoutingContext>() {
             @Override
@@ -552,7 +565,7 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public void selectAuthMechanismViaAnnotation() {
+    public static void selectAuthMechanismViaAnnotation() {
         HttpAuthenticator.selectAuthMechanismWithAnnotation();
     }
 

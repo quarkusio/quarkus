@@ -15,12 +15,11 @@ import java.util.stream.Collectors;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -34,6 +33,10 @@ import io.quarkus.vertx.http.deployment.spi.AdditionalStaticResourceBuildItem;
 import io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem;
 import io.quarkus.vertx.http.runtime.GeneratedStaticResourcesRecorder;
 import io.quarkus.vertx.http.runtime.RouteConstants;
+import io.quarkus.vertx.http.runtime.RouteCustomizer;
+import io.quarkus.vertx.http.runtime.RouteHandler;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.handlers.DevStaticHandler;
 
 /**
@@ -43,6 +46,8 @@ import io.quarkus.vertx.http.runtime.handlers.DevStaticHandler;
  */
 public class GeneratedStaticResourcesProcessor {
 
+    private static final String ROUTE_CUSTOMIZER_SERVICE = "io.quarkus.vertx.http.generated-static-resources.route-customizer";
+    private static final String HANDLER_SERVICE = "io.quarkus.vertx.http.generated-static-resources.handler";
     private static final int ROUTE_ORDER = RouteConstants.ROUTE_ORDER_BEFORE_DEFAULT + 60;
 
     @BuildStep
@@ -84,10 +89,10 @@ public class GeneratedStaticResourcesProcessor {
     }
 
     @BuildStep(onlyIfNot = IsProduction.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
     public void process(List<GeneratedStaticResourceBuildItem> generatedStaticResources,
             LaunchModeBuildItem launchModeBuildItem,
-            BuildProducer<RouteBuildItem> routes, GeneratedStaticResourcesRecorder generatedStaticResourcesRecorder,
+            BuildProducer<RouteBuildItem> routes, ServiceRegistrar serviceRegistrar,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFoundPageProducer) throws BuildException {
         if (generatedStaticResources.isEmpty()) {
             return;
@@ -99,17 +104,27 @@ public class GeneratedStaticResourcesProcessor {
                     "Duplicate endpoints detected, the endpoint for static resources must be unique: " + duplicates);
         }
 
-        Map<String, String> generatedFilesResources = generatedStaticResources.stream()
+        Map<String, String> generatedFilesResources = Map.copyOf(generatedStaticResources.stream()
                 .peek(path -> notFoundPageProducer.produce(new NotFoundPageDisplayableEndpointBuildItem(path.getEndpoint())))
                 .filter(GeneratedStaticResourceBuildItem::isFile)
                 .collect(Collectors.toMap(GeneratedStaticResourceBuildItem::getEndpoint,
-                        GeneratedStaticResourceBuildItem::getFileAbsolutePath));
+                        GeneratedStaticResourceBuildItem::getFileAbsolutePath)));
         Set<String> generatedClassPathResources = generatedStaticResources.stream()
                 .map(GeneratedStaticResourceBuildItem::getEndpoint)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toUnmodifiableSet());
+        serviceRegistrar
+                .forService(RouteCustomizer.class, ROUTE_CUSTOMIZER_SERVICE)
+                .onStart(ctx -> GeneratedStaticResourcesRecorder.createRouteCustomizer()::accept);
+        serviceRegistrar
+                .forService(RouteHandler.class, HANDLER_SERVICE)
+                .require(VertxHttpConfig.class)
+                .onStart((ctx, httpConfig) -> GeneratedStaticResourcesRecorder
+                        .createHandler(httpConfig, httpBuildTimeConfig, generatedClassPathResources,
+                                generatedFilesResources)::handle);
         routes.produce(RouteBuildItem.builder()
-                .orderedRoute("/*", ROUTE_ORDER, generatedStaticResourcesRecorder.createRouteCustomizer())
-                .handler(generatedStaticResourcesRecorder.createHandler(generatedClassPathResources, generatedFilesResources))
+                .orderedRoute("/*", ROUTE_ORDER,
+                        serviceRegistrar.getRecorderProxy(RouteCustomizer.class, ROUTE_CUSTOMIZER_SERVICE))
+                .handler(serviceRegistrar.getRecorderProxy(RouteHandler.class, HANDLER_SERVICE))
                 .build());
     }
 

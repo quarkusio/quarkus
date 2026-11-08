@@ -15,22 +15,25 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.DecoratorInfo;
 import io.quarkus.arc.processor.InterceptorInfo;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.runtime.RouteHandler;
 import io.quarkus.vertx.http.runtime.devmode.ArcDevRecorder;
 
 public class ArcDevProcessor {
+    private static final String SUMMARY_SERVICE = "io.quarkus.devui.arc.summary-handler";
+    private static final String BEANS_SERVICE = "io.quarkus.devui.arc.beans-handler";
+    private static final String REMOVED_BEANS_SERVICE = "io.quarkus.devui.arc.removed-beans-handler";
+    private static final String OBSERVERS_SERVICE = "io.quarkus.devui.arc.observers-handler";
     private static final String BEAN_DEPENDENCIES = "io.quarkus.arc.beanDependencies";
 
-    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsDevelopment.class)
-    void registerRoutes(ArcConfig arcConfig, ArcDevRecorder recorder,
+    void registerRoutes(ArcConfig arcConfig, ServiceRegistrar serviceRegistrar,
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
@@ -47,14 +50,14 @@ public class ArcDevProcessor {
         if (removedDecorators != null) {
             removed.addAll(removedDecorators);
         }
-        List<String[]> removedInterceptorsDecorators;
+        List<List<String>> removedInterceptorsDecorators;
         if (removed.isEmpty()) {
             removedInterceptorsDecorators = Collections.emptyList();
         } else {
             removedInterceptorsDecorators = new ArrayList<>();
             for (BeanInfo r : removed) {
-                removedInterceptorsDecorators.add(new String[] { r.isInterceptor() ? InjectableBean.Kind.INTERCEPTOR.toString()
-                        : InjectableBean.Kind.DECORATOR.toString(), r.getImplClazz().name().toString() });
+                removedInterceptorsDecorators.add(List.of(r.isInterceptor() ? InjectableBean.Kind.INTERCEPTOR.toString()
+                        : InjectableBean.Kind.DECORATOR.toString(), r.getImplClazz().name().toString()));
             }
         }
 
@@ -62,26 +65,43 @@ public class ArcDevProcessor {
         String beansPath = basePath + "/beans";
         String removedBeansPath = basePath + "/removed-beans";
         String observersPath = basePath + "/observers";
+
+        Map<String, String> configProperties = Map.copyOf(getConfigProperties(arcConfig));
+        String rootPath = nonApplicationRootPathBuildItem.getNonApplicationRootPath();
+        int removedCount = removedInterceptorsDecorators.size();
+        List<List<String>> removedBeans = List.copyOf(removedInterceptorsDecorators);
+
+        serviceRegistrar
+                .forService(RouteHandler.class, SUMMARY_SERVICE)
+                .onStart(ctx -> ArcDevRecorder.createSummaryHandler(configProperties, rootPath, removedCount)::handle);
+        serviceRegistrar
+                .forService(RouteHandler.class, BEANS_SERVICE)
+                .onStart(ctx -> ArcDevRecorder.createBeansHandler(BEAN_DEPENDENCIES)::handle);
+        serviceRegistrar
+                .forService(RouteHandler.class, REMOVED_BEANS_SERVICE)
+                .onStart(ctx -> ArcDevRecorder.createRemovedBeansHandler(removedBeans)::handle);
+        serviceRegistrar
+                .forService(RouteHandler.class, OBSERVERS_SERVICE)
+                .onStart(ctx -> ArcDevRecorder.createObserversHandler()::handle);
+
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route(basePath)
                 .displayOnNotFoundPage("CDI Overview")
-                .handler(recorder.createSummaryHandler(getConfigProperties(arcConfig),
-                        nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
-                        removedInterceptorsDecorators.size()))
+                .handler(serviceRegistrar.getRecorderProxy(RouteHandler.class, SUMMARY_SERVICE))
                 .build());
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route(beansPath)
                 .displayOnNotFoundPage("Active CDI Beans")
-                .handler(recorder.createBeansHandler(BEAN_DEPENDENCIES)).build());
+                .handler(serviceRegistrar.getRecorderProxy(RouteHandler.class, BEANS_SERVICE)).build());
 
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route(removedBeansPath)
                 .displayOnNotFoundPage("Removed CDI Beans")
-                .handler(recorder.createRemovedBeansHandler(removedInterceptorsDecorators)).build());
+                .handler(serviceRegistrar.getRecorderProxy(RouteHandler.class, REMOVED_BEANS_SERVICE)).build());
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route(observersPath)
                 .displayOnNotFoundPage("Active CDI Observers")
-                .handler(recorder.createObserversHandler()).build());
+                .handler(serviceRegistrar.getRecorderProxy(RouteHandler.class, OBSERVERS_SERVICE)).build());
     }
 
     // Note that we can't turn ArcConfig into BUILD_AND_RUN_TIME_FIXED because it's referencing IndexDependencyConfig

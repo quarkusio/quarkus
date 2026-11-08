@@ -8,16 +8,16 @@ import java.util.Optional;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.ide.Ide;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.runtime.RouteHandler;
 import io.quarkus.vertx.http.runtime.ide.IdeRecorder;
 import io.smallrye.common.process.ProcessBuilder;
 
@@ -25,24 +25,27 @@ import io.smallrye.common.process.ProcessBuilder;
  * Processor for Ide interaction in Dev UI
  */
 public class IdeProcessor {
+    private static final String OPEN_IN_IDE_SERVICE = "io.quarkus.devui.ide.open-in-ide-handler";
     private static final Logger log = Logger.getLogger(IdeProcessor.class);
     private static final Map<String, String> LANG_TO_EXT = Map.of("java", "java", "kotlin", "kt");
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
     void createOpenInIDEService(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
             BuildProducer<RouteBuildItem> routeProducer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
-            IdeRecorder recorder) {
+            ServiceRegistrar serviceRegistrar) {
 
         if (effectiveIdeBuildItem.isPresent()) {
             Ide ide = effectiveIdeBuildItem.get().getIde();
             if (ide != null) {
                 // For normal links (like from the error page)
+                serviceRegistrar
+                        .forService(RouteHandler.class, OPEN_IN_IDE_SERVICE)
+                        .onStart(ctx -> IdeRecorder.openInIde()::handle);
                 routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                         .route("open-in-ide/:fileName/:lang/:lineNumber")
-                        .handler(recorder.openInIde())
+                        .handler(serviceRegistrar.getRecorderProxy(RouteHandler.class, OPEN_IN_IDE_SERVICE))
                         .build());
 
                 // For Dev UI (like from the server log)

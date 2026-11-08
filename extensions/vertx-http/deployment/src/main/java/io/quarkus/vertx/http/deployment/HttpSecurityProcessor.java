@@ -18,7 +18,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,7 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -46,7 +45,6 @@ import org.jboss.jandex.TypeVariable;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
@@ -54,7 +52,7 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.builder.item.EmptyBuildItem;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.core.Phase;
 import io.quarkus.core.deployment.service.ServiceRegistrar;
@@ -71,14 +69,12 @@ import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
@@ -97,9 +93,11 @@ import io.quarkus.vertx.http.runtime.RouteHandler;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.AdditionalSecurityEventProps;
 import io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.DuplicatedContextSecurityIdentityAssociation;
+import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorCreator;
 import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
@@ -107,6 +105,8 @@ import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.AuthenticationHandler;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.EagerSecurityInterceptorDefinition;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.InterceptedMethod;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
@@ -118,13 +118,15 @@ import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
 import io.quarkus.vertx.http.security.AuthorizationPolicy;
 import io.quarkus.vertx.http.security.CSRF;
 import io.vertx.core.http.ClientAuth;
-import io.vertx.ext.web.RoutingContext;
 
 public class HttpSecurityProcessor {
 
     private static final DotName AUTH_MECHANISM_NAME = DotName.createSimple(HttpAuthenticationMechanism.class);
     private static final DotName BASIC_AUTH_ANNOTATION_NAME = DotName.createSimple(BasicAuthentication.class);
     private static final String KOTLIN_SUSPEND_IMPL_SUFFIX = "$suspendImpl";
+    private static final String AUTH_MECHANISM_SELECTION_CREATOR_ID = "auth-mechanism-selection";
+    static final String HTTP_SECURITY_INIT_SERVICE = "io.quarkus.vertx.http.security.init";
+    static final String PROGRAMMATIC_CORS_CONFIG_SERVICE = "io.quarkus.vertx.http.security.programmatic-cors-config";
     static final DotName AUTHORIZATION_POLICY = DotName.createSimple(AuthorizationPolicy.class);
 
     @Consume(HttpSecurityConfigSetupCompleteBuildItem.class)
@@ -148,15 +150,6 @@ public class HttpSecurityProcessor {
         }
     }
 
-    // NOTE: registering the synthetic bean and defining its service action are deliberately kept in two
-    // separate build steps (this one and defineFormAuthService below); they must not be merged.
-    // This step produces a SyntheticBeanBuildItem, which ARC's synthetic-bean pipeline consumes to build
-    // the bean container, so it is *upstream* of BeanContainerBuildItem. defineFormAuthService consumes
-    // HttpSecurityInitCompleteBuildItem, which initializeHttpSecurity produces after consuming
-    // BeanContainerBuildItem, so it is *downstream* of the container. A single step doing both would be
-    // both upstream and downstream of the container build, forming a build-step cycle through the synthetic
-    // bean pipeline. The basic-auth path (initBasicAuth / defineBasicAuthService) is split for the same
-    // reason. See HttpSecurityInitCompleteBuildItem.
     @BuildStep
     void registerFormAuthMechanism(BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
             VertxHttpBuildTimeConfig buildTimeConfig) {
@@ -172,15 +165,13 @@ public class HttpSecurityProcessor {
         }
     }
 
-    // Kept separate from registerFormAuthMechanism to avoid a build-step cycle through ARC's synthetic bean
-    // pipeline; see the note on registerFormAuthMechanism above.
-    @Consume(HttpSecurityInitCompleteBuildItem.class) // service ordering: remove when bytecode recorders are removed
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
     void defineFormAuthService(ServiceRegistrar reg, VertxHttpBuildTimeConfig buildTimeConfig) {
         if (buildTimeConfig.auth().form()) {
             reg
                     .forService(FormAuthenticationMechanism.class)
+                    .after(HTTP_SECURITY_INIT_SERVICE)
                     .onStart(ctx -> HttpSecurityConfiguration.get().getFormAuthenticationMechanism());
         }
     }
@@ -200,6 +191,7 @@ public class HttpSecurityProcessor {
         if (capabilities.isPresent(Capability.SECURITY)) {
             reg
                     .forService("io.quarkus.vertx.http.security.mtls-cert-roles")
+                    .after(HTTP_SECURITY_INIT_SERVICE)
                     .require(io.quarkus.vertx.http.runtime.VertxHttpConfig.class)
                     .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
                     .onStart((ctx, httpConfig) -> HttpSecurityRecorder.setMtlsCertificateRoleProperties(httpConfig));
@@ -265,7 +257,6 @@ public class HttpSecurityProcessor {
         return configurator.done();
     }
 
-    @Consume(HttpSecurityInitCompleteBuildItem.class) // service ordering: remove when bytecode recorders are removed
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
     void defineBasicAuthService(ServiceRegistrar reg, VertxHttpBuildTimeConfig httpBuildTimeConfig,
@@ -273,6 +264,7 @@ public class HttpSecurityProcessor {
         if (applicationBasicAuthRequired(httpBuildTimeConfig, managementBuildTimeConfig)) {
             reg
                     .forService(BasicAuthenticationMechanism.class)
+                    .after(HTTP_SECURITY_INIT_SERVICE)
                     .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
                     .onStart(ctx -> HttpSecurityConfiguration.get().getBasicAuthenticationMechanism());
         }
@@ -356,8 +348,7 @@ public class HttpSecurityProcessor {
                     .forService(AuthenticationHandler.class)
                     .atPhase(Phase.STATIC_INIT)
                     .onStart(ctx -> new AuthenticationHandler(proactive, propagateSecurityIdentity));
-            authenticationHandlerProducer.produce(new HttpAuthenticationHandlerBuildItem(
-                    reg.staticInitServiceAsRuntimeValue(AuthenticationHandler.class)));
+            authenticationHandlerProducer.produce(new HttpAuthenticationHandlerBuildItem());
         }
     }
 
@@ -395,19 +386,39 @@ public class HttpSecurityProcessor {
     // synthetic bean, which is initialized during RUNTIME_INIT; ensure that init has run first
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     @Produce(PreRouterFinalizationBuildItem.class)
-    @Produce(HttpSecurityInitCompleteBuildItem.class) // service ordering: remove when bytecode recorders are removed
-    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    HttpSecurityConfigSetupCompleteBuildItem initializeHttpSecurity(
+    HttpSecurityConfigSetupCompleteBuildItem initializeHttpSecurity(ServiceRegistrar reg,
             Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
-            HttpSecurityRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
-            ShutdownContextBuildItem shutdown) {
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         if (authenticationHandler.isPresent()) {
-            RuntimeValue<CORSConfig> programmaticCorsConfig = recorder.prepareHttpSecurityConfiguration(shutdown);
-            recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler, beanContainerBuildItem.getValue());
-            return new HttpSecurityConfigSetupCompleteBuildItem(programmaticCorsConfig);
+            reg
+                    .forService(CORSConfig.class, PROGRAMMATIC_CORS_CONFIG_SERVICE)
+                    .require(io.quarkus.vertx.http.runtime.VertxHttpConfig.class)
+                    .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                    .afterBuildItem(TlsRegistryBuildItem.class)
+                    .onStart((ctx, httpConfig) -> {
+                        ctx.onStop(HttpSecurityRecorder::clearHttpSecurityConfiguration);
+                        return HttpSecurityRecorder.prepareHttpSecurityConfiguration(httpConfig, httpBuildTimeConfig);
+                    });
+            reg
+                    .forService("io.quarkus.vertx.http.security.authenticator-init")
+                    .after(CORSConfig.class, PROGRAMMATIC_CORS_CONFIG_SERVICE)
+                    .require(AuthenticationHandler.class)
+                    .require(BeanContainer.class)
+                    .onStart((ctx, handler, beanContainer) -> HttpSecurityRecorder
+                            .initializeHttpAuthenticatorHandler(handler, beanContainer));
+            reg
+                    .forService(HTTP_SECURITY_INIT_SERVICE)
+                    .after("io.quarkus.vertx.http.security.authenticator-init")
+                    .onStart(ctx -> {
+                    });
+        } else {
+            reg
+                    .forService(HTTP_SECURITY_INIT_SERVICE)
+                    .onStart(ctx -> {
+                    });
         }
-        return new HttpSecurityConfigSetupCompleteBuildItem(null);
+        return new HttpSecurityConfigSetupCompleteBuildItem(authenticationHandler.isPresent());
     }
 
     @BuildStep
@@ -435,9 +446,8 @@ public class HttpSecurityProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void registerAuthMechanismSelectionInterceptor(Capabilities capabilities, VertxHttpBuildTimeConfig buildTimeConfig,
-            BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer, HttpSecurityRecorder recorder,
+            BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer, ServiceRegistrar reg,
             BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredMethodsProducer,
             BuildProducer<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckProducer,
             List<ClassSecurityAnnotationBuildItem> classSecurityAnnotations,
@@ -501,9 +511,16 @@ public class HttpSecurityProcessor {
             Map<String, String> knownBindingValues = additionalHttpAuthMechAnnotations.stream()
                     .collect(Collectors.toUnmodifiableMap(item -> item.annotationName.toString(),
                             item -> item.authMechanismScheme));
+            reg
+                    .forService(EagerSecurityInterceptorCreator.class, AUTH_MECHANISM_SELECTION_CREATOR_ID)
+                    .atPhase(Phase.STATIC_INIT)
+                    .onStart(ctx -> HttpSecurityRecorder.authMechanismSelectionInterceptorCreator()::apply);
             bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(
-                    recorder.authMechanismSelectionInterceptorCreator(), knownBindingValues, mechNames));
-            recorder.selectAuthMechanismViaAnnotation();
+                    AUTH_MECHANISM_SELECTION_CREATOR_ID, knownBindingValues, mechNames));
+            reg
+                    .forService("io.quarkus.vertx.http.security.select-auth-mechanism-via-annotation")
+                    .atPhase(Phase.STATIC_INIT)
+                    .onStart(ctx -> HttpSecurityRecorder.selectAuthMechanismViaAnnotation());
 
             // make all @HttpAuthenticationMechanism annotation targets authenticated by default
             if (!methodsWithoutRbacAnnotations.isEmpty()) {
@@ -552,78 +569,84 @@ public class HttpSecurityProcessor {
         }
     }
 
+    /**
+     * Exposes the interceptor creators provided by the deprecated
+     * {@link EagerSecurityInterceptorBindingBuildItem#EagerSecurityInterceptorBindingBuildItem(java.util.function.Function, DotName...)}
+     * as services. Remove together with the deprecated constructors.
+     */
+    @Produce(ServiceStartBuildItem.class)
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void produceEagerSecurityInterceptorStorage(HttpSecurityRecorder recorder,
+    void bridgeLegacyEagerSecurityInterceptorCreators(HttpSecurityRecorder recorder, ServiceRegistrar reg,
+            List<EagerSecurityInterceptorBindingBuildItem> interceptorBindings) {
+        for (EagerSecurityInterceptorBindingBuildItem binding : interceptorBindings) {
+            if (binding.getLegacyInterceptorCreator() != null) {
+                reg.aliasRecorderValue(EagerSecurityInterceptorCreator.class, binding.getCreatorId(),
+                        recorder.wrapLegacyEagerSecurityInterceptorCreator(binding.getLegacyInterceptorCreator()),
+                        Phase.STATIC_INIT);
+            }
+        }
+    }
+
+    @BuildStep
+    void produceEagerSecurityInterceptorStorage(ServiceRegistrar reg,
             BuildProducer<SyntheticBeanBuildItem> producer,
             List<EagerSecurityInterceptorBindingBuildItem> interceptorBindings,
             List<EagerSecurityInterceptorClassesBuildItem> interceptorClasses,
             List<EagerSecurityInterceptorMethodsBuildItem> interceptorMethods) {
         if (!interceptorMethods.isEmpty() || !interceptorClasses.isEmpty()) {
-            final var bindingNameToInterceptorCreator = interceptorBindings
-                    .stream()
-                    .flatMap(binding -> Arrays.stream(binding.getAnnotationBindings())
-                            .map(name -> Map.entry(name, binding.getInterceptorCreator())))
-                    .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-            final var methodCache = new HashMap<MethodInfo, RuntimeValue<MethodDescription>>();
-            final var methodDescriptionToInterceptor = new LinkedHashMap<RuntimeValue<MethodDescription>, Consumer<RoutingContext>>();
-            for (EagerSecurityInterceptorMethodsBuildItem interceptorMethod : interceptorMethods) {
-                var interceptorCreator = bindingNameToInterceptorCreator.get(interceptorMethod.interceptorBinding);
-                for (Map.Entry<String, List<MethodInfo>> e : interceptorMethod.bindingValueToInterceptedMethods.entrySet()) {
-                    var annotationValue = e.getKey();
-                    var annotatedMethods = e.getValue();
-                    var interceptor = recorder.createEagerSecurityInterceptor(interceptorCreator, annotationValue);
-                    for (MethodInfo method : annotatedMethods) {
-                        // transform method info to description
-                        final RuntimeValue<MethodDescription> methodDescription = methodCache
-                                .computeIfAbsent(method, mi -> {
-                                    String[] paramTypes = mi.parameterTypes().stream().map(t -> t.name().toString())
-                                            .toArray(String[]::new);
-                                    String className = mi.declaringClass().name().toString();
-                                    String methodName = mi.name();
-                                    return recorder.createMethodDescription(className, methodName, paramTypes);
-                                });
-
-                        // add (methodDesc -> interceptor) to the storage
-                        methodDescriptionToInterceptor.compute(methodDescription,
-                                (desc, existingInterceptor) -> existingInterceptor == null ? interceptor
-                                        : recorder.compoundSecurityInterceptor(interceptor, existingInterceptor));
-                    }
+            final Map<DotName, String> bindingNameToCreatorId = new HashMap<>();
+            for (EagerSecurityInterceptorBindingBuildItem binding : interceptorBindings) {
+                for (DotName name : binding.getAnnotationBindings()) {
+                    bindingNameToCreatorId.put(name, binding.getCreatorId());
                 }
             }
 
-            final var classNameToInterceptor = new HashMap<String, Consumer<RoutingContext>>();
-            for (EagerSecurityInterceptorClassesBuildItem interceptorClass : interceptorClasses) {
-                var interceptorCreator = bindingNameToInterceptorCreator.get(interceptorClass.interceptorBinding);
-                interceptorClass.bindingValueToInterceptedClasses.forEach((annotationValue, annotatedClasses) -> {
-                    Consumer<RoutingContext> interceptor = recorder.createEagerSecurityInterceptor(interceptorCreator,
-                            annotationValue);
-                    for (String annotatedClass : annotatedClasses) {
-                        // add (class name -> interceptor) to the storage
-                        classNameToInterceptor.compute(annotatedClass,
-                                (c, existingInterceptor) -> existingInterceptor == null ? interceptor
-                                        : recorder.compoundSecurityInterceptor(interceptor, existingInterceptor));
-                    }
-                });
+            final List<EagerSecurityInterceptorDefinition> definitions = new ArrayList<>();
+            for (EagerSecurityInterceptorMethodsBuildItem interceptorMethod : interceptorMethods) {
+                String creatorId = bindingNameToCreatorId.get(interceptorMethod.interceptorBinding);
+                for (Map.Entry<String, List<MethodInfo>> e : interceptorMethod.bindingValueToInterceptedMethods.entrySet()) {
+                    List<InterceptedMethod> methods = e.getValue().stream()
+                            .map(mi -> new InterceptedMethod(mi.declaringClass().name().toString(), mi.name(),
+                                    mi.parameterTypes().stream().map(t -> t.name().toString()).toList()))
+                            .toList();
+                    definitions.add(new EagerSecurityInterceptorDefinition(creatorId, e.getKey(), methods, List.of()));
+                }
             }
+            for (EagerSecurityInterceptorClassesBuildItem interceptorClass : interceptorClasses) {
+                String creatorId = bindingNameToCreatorId.get(interceptorClass.interceptorBinding);
+                interceptorClass.bindingValueToInterceptedClasses.forEach((annotationValue, annotatedClasses) -> definitions
+                        .add(new EagerSecurityInterceptorDefinition(creatorId, annotationValue, List.of(),
+                                List.copyOf(annotatedClasses))));
+            }
+
+            final List<EagerSecurityInterceptorDefinition> capturedDefinitions = List.copyOf(definitions);
+            reg
+                    .forService(EagerSecurityInterceptorStorage.class)
+                    .atPhase(Phase.STATIC_INIT)
+                    .consumeAll(EagerSecurityInterceptorCreator.class)
+                    .onStart((ctx, creators) -> HttpSecurityRecorder.createSecurityInterceptorStorage(capturedDefinitions,
+                            creators));
 
             producer.produce(SyntheticBeanBuildItem
                     .configure(EagerSecurityInterceptorStorage.class)
                     .scope(ApplicationScoped.class)
-                    .supplier(recorder.createSecurityInterceptorStorage(methodDescriptionToInterceptor, classNameToInterceptor))
+                    .serviceValue(EagerSecurityInterceptorStorage.class)
                     .unremovable()
                     .done());
         }
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void addRoutingCtxToSecurityEventsForCdiBeans(HttpSecurityRecorder recorder, Capabilities capabilities,
+    void addRoutingCtxToSecurityEventsForCdiBeans(ServiceRegistrar reg, Capabilities capabilities,
             BuildProducer<AdditionalSecurityConstrainerEventPropsBuildItem> producer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
-            producer.produce(
-                    new AdditionalSecurityConstrainerEventPropsBuildItem(recorder.createAdditionalSecEventPropsSupplier()));
+            reg
+                    .forService(AdditionalSecurityEventProps.class)
+                    .atPhase(Phase.STATIC_INIT)
+                    .onStart(ctx -> HttpSecurityRecorder.createAdditionalSecEventPropsSupplier()::get);
+            producer.produce(new AdditionalSecurityConstrainerEventPropsBuildItem(
+                    reg.getRecorderProxy(AdditionalSecurityEventProps.class)));
         }
     }
 
@@ -1026,10 +1049,7 @@ public class HttpSecurityProcessor {
     }
 
     static final class HttpAuthenticationHandlerBuildItem extends SimpleBuildItem {
-        private final RuntimeValue<AuthenticationHandler> handler;
-
-        private HttpAuthenticationHandlerBuildItem(RuntimeValue<AuthenticationHandler> handler) {
-            this.handler = handler;
+        private HttpAuthenticationHandlerBuildItem() {
         }
     }
 
@@ -1049,24 +1069,10 @@ public class HttpSecurityProcessor {
 
     static final class HttpSecurityConfigSetupCompleteBuildItem extends SimpleBuildItem {
 
-        final RuntimeValue<CORSConfig> programmaticCorsConfig;
+        final boolean programmaticCorsConfig;
 
-        private HttpSecurityConfigSetupCompleteBuildItem(RuntimeValue<CORSConfig> programmaticCorsConfig) {
+        private HttpSecurityConfigSetupCompleteBuildItem(boolean programmaticCorsConfig) {
             this.programmaticCorsConfig = programmaticCorsConfig;
         }
-    }
-
-    /**
-     * Ordering-only build item produced by {@link #initializeHttpSecurity} to signal that
-     * {@link HttpSecurityConfiguration} is initialized and service actions that depend on it
-     * may now safely run.
-     * <p>
-     * This is separate from {@link HttpSecurityConfigSetupCompleteBuildItem} to avoid creating
-     * a build-step cycle through ARC's synthetic bean pipeline.
-     * <p>
-     * This build item should be removed once bytecode recorders are removed and service
-     * dependency ordering is used instead.
-     */
-    static final class HttpSecurityInitCompleteBuildItem extends EmptyBuildItem {
     }
 }

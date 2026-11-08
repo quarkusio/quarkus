@@ -17,16 +17,17 @@ import io.quarkus.arc.InjectableObserverMethod;
 import io.quarkus.arc.RemovedBean;
 import io.quarkus.arc.impl.ArcContainerImpl;
 import io.quarkus.dev.console.DevConsoleManager;
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.Json.JsonArrayBuilder;
 import io.quarkus.vertx.http.runtime.devmode.Json.JsonObjectBuilder;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
-@Recorder
 public class ArcDevRecorder {
 
-    public Handler<RoutingContext> createSummaryHandler(Map<String, String> configProperties, String rootPath,
+    private ArcDevRecorder() {
+    }
+
+    public static Handler<RoutingContext> createSummaryHandler(Map<String, String> configProperties, String rootPath,
             int removedInterceptorsDecorators) {
         return new Handler<RoutingContext>() {
 
@@ -61,7 +62,7 @@ public class ArcDevRecorder {
         };
     }
 
-    public Handler<RoutingContext> createBeansHandler(String beanDependenciesGlobalKey) {
+    public static Handler<RoutingContext> createBeansHandler(String beanDependenciesGlobalKey) {
         return new Handler<RoutingContext>() {
 
             @Override
@@ -149,7 +150,7 @@ public class ArcDevRecorder {
         };
     }
 
-    public Handler<RoutingContext> createObserversHandler() {
+    public static Handler<RoutingContext> createObserversHandler() {
         return new Handler<RoutingContext>() {
 
             @Override
@@ -185,7 +186,7 @@ public class ArcDevRecorder {
         };
     }
 
-    public Handler<RoutingContext> createRemovedBeansHandler(List<String[]> removedInterceptorsDecorators) {
+    public static Handler<RoutingContext> createRemovedBeansHandler(List<List<String>> removedInterceptorsDecorators) {
         return new Handler<RoutingContext>() {
 
             @Override
@@ -215,10 +216,10 @@ public class ArcDevRecorder {
                     bean.put("qualifiers", qualifiers);
                     removed.add(bean);
                 }
-                for (String[] interceptorDecorator : removedInterceptorsDecorators) {
+                for (List<String> interceptorDecorator : removedInterceptorsDecorators) {
                     JsonObjectBuilder bean = Json.object();
-                    bean.put("kind", interceptorDecorator[0]);
-                    bean.put("description", interceptorDecorator[1]);
+                    bean.put("kind", interceptorDecorator.get(0));
+                    bean.put("description", interceptorDecorator.get(1));
                     removed.add(bean);
                 }
                 ctx.response().end(removed.build());

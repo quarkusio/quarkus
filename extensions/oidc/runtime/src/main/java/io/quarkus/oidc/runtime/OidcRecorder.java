@@ -93,7 +93,7 @@ public class OidcRecorder {
         }
     }
 
-    public Function<String, Consumer<RoutingContext>> tenantResolverInterceptorCreator() {
+    public static Function<String, Consumer<RoutingContext>> tenantResolverInterceptorCreator() {
         return new Function<String, Consumer<RoutingContext>>() {
             @Override
             public Consumer<RoutingContext> apply(String tenantId) {
@@ -148,7 +148,7 @@ public class OidcRecorder {
         };
     }
 
-    public Function<String, Consumer<RoutingContext>> authenticationContextInterceptorCreator() {
+    public static Function<String, Consumer<RoutingContext>> authenticationContextInterceptorCreator() {
         StepUpAuthenticationPolicy.markAsEnabled();
         return new Function<String, Consumer<RoutingContext>>() {
             @Override

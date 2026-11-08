@@ -1,26 +1,24 @@
 package io.quarkus.vertx.http.runtime.cors;
 
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
-@Recorder
 public class CORSRecorder {
-    private final RuntimeValue<VertxHttpConfig> httpConfig;
-
-    public CORSRecorder(RuntimeValue<VertxHttpConfig> httpConfig) {
-        this.httpConfig = httpConfig;
+    private CORSRecorder() {
     }
 
-    public Handler<RoutingContext> corsHandler(RuntimeValue<CORSConfig> programmaticCorsConfig, boolean securityPresent) {
+    /**
+     * @return the CORS handler, or a handler that passes the request through when CORS is disabled
+     */
+    public static Handler<RoutingContext> corsHandler(VertxHttpConfig httpConfig, CORSConfig programmaticCorsConfig,
+            boolean securityPresent) {
         final CORSConfig corsConfig;
-        if (programmaticCorsConfig != null && programmaticCorsConfig.getValue() != null) {
-            corsConfig = programmaticCorsConfig.getValue();
+        if (programmaticCorsConfig != null) {
+            corsConfig = programmaticCorsConfig;
         } else {
-            corsConfig = httpConfig.getValue().cors();
+            corsConfig = httpConfig.cors();
         }
         if (corsConfig.enabled()) {
             if (!corsConfig.returnExactOrigins()) {
@@ -44,7 +42,7 @@ public class CORSRecorder {
             }
             return new CORSFilter(corsConfig);
         }
-        return null;
+        return RoutingContext::next;
     }
 
 }

@@ -1,7 +1,5 @@
 package io.quarkus.vertx.http.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -10,28 +8,31 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.paths.PathVisitor;
-import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.spi.AdditionalStaticResourceBuildItem;
 import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
+import io.quarkus.vertx.http.runtime.RouteCustomizer;
 import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 
 /**
  * Handles all static file resources found in {@code META-INF/resources} unless the servlet container is present.
  */
 public class StaticResourcesProcessor {
+
+    private static final String STATIC_RESOURCES_SERVICE = "io.quarkus.vertx.http.static-resources.route-customizer";
 
     @BuildStep(onlyIf = IsDevelopment.class)
     HotDeploymentWatchedFileBuildItem indexHtmlFile() {
@@ -60,12 +61,18 @@ public class StaticResourcesProcessor {
     }
 
     @BuildStep
-    @Record(RUNTIME_INIT)
-    public void runtimeInit(Optional<StaticResourcesBuildItem> staticResources, StaticResourcesRecorder recorder,
-            CoreVertxBuildItem vertx, BeanContainerBuildItem beanContainer,
+    public void runtimeInit(Optional<StaticResourcesBuildItem> staticResources, ServiceRegistrar serviceRegistrar,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<DefaultRouteBuildItem> defaultRoutes) {
         if (staticResources.isPresent()) {
-            defaultRoutes.produce(new DefaultRouteBuildItem(recorder.start(staticResources.get().getPaths())));
+            Set<String> knownPaths = Set.copyOf(staticResources.get().getPaths());
+            serviceRegistrar
+                    .forService(RouteCustomizer.class, STATIC_RESOURCES_SERVICE)
+                    .require(VertxHttpConfig.class)
+                    .onStart((ctx, httpConfig) -> StaticResourcesRecorder.start(httpBuildTimeConfig, httpConfig,
+                            knownPaths)::accept);
+            defaultRoutes.produce(new DefaultRouteBuildItem(
+                    serviceRegistrar.getRecorderProxy(RouteCustomizer.class, STATIC_RESOURCES_SERVICE)));
         }
     }
 

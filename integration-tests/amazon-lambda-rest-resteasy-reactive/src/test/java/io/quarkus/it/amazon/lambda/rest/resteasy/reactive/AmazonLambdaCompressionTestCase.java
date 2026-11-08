@@ -1,12 +1,9 @@
 package io.quarkus.it.amazon.lambda.rest.resteasy.reactive;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -30,11 +27,11 @@ public class AmazonLambdaCompressionTestCase {
     @Test
     public void testCompressed() throws IOException {
         JsonPath response = invoke("/compression/compressed");
-        assertEquals("gzip", headers(response).getFirst("Content-Encoding"));
-        assertTrue(response.getBoolean("isBase64Encoded"));
+        assertThat(headers(response).getFirst("Content-Encoding")).isEqualTo("gzip");
+        assertThat(response.getBoolean("isBase64Encoded")).isTrue();
         byte[] gzipped = Base64.getDecoder().decode(response.getString("body"));
         try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(gzipped))) {
-            assertEquals(CompressionResource.MESSAGE, new String(in.readAllBytes(), StandardCharsets.UTF_8));
+            assertThat(new String(in.readAllBytes(), StandardCharsets.UTF_8)).isEqualTo(CompressionResource.MESSAGE);
         }
 
         String body = given()
@@ -44,15 +41,15 @@ public class AmazonLambdaCompressionTestCase {
                 .statusCode(200)
                 .header("Content-Encoding", "gzip")
                 .extract().asString();
-        assertEquals(CompressionResource.MESSAGE, body);
+        assertThat(body).isEqualTo(CompressionResource.MESSAGE);
     }
 
     @Test
     public void testUncompressed() {
         JsonPath response = invoke("/compression/uncompressed");
-        assertNull(headers(response).getFirst("Content-Encoding"));
-        assertFalse(response.getBoolean("isBase64Encoded"));
-        assertEquals(CompressionResource.MESSAGE, response.getString("body"));
+        assertThat(headers(response).getFirst("Content-Encoding")).isNull();
+        assertThat(response.getBoolean("isBase64Encoded")).isFalse();
+        assertThat(response.getString("body")).isEqualTo(CompressionResource.MESSAGE);
 
         given()
                 .when()
@@ -66,6 +63,11 @@ public class AmazonLambdaCompressionTestCase {
     @Test
     public void testStaticFile() {
         // with a compressor in the pipeline, files are written in chunks instead of a FileRegion
+        JsonPath response = invoke("/compression.txt");
+        assertThat(headers(response).getFirst("Content-Encoding")).isEqualTo("gzip");
+        assertThat(headers(response).getFirst("Transfer-Encoding")).isNull();
+        assertThat(response.getBoolean("isBase64Encoded")).isTrue();
+
         String body = given()
                 .when()
                 .get("/compression.txt")
@@ -73,7 +75,7 @@ public class AmazonLambdaCompressionTestCase {
                 .statusCode(200)
                 .header("Content-Encoding", "gzip")
                 .extract().asString();
-        assertEquals(CompressionResource.MESSAGE, body);
+        assertThat(body).isEqualTo(CompressionResource.MESSAGE);
     }
 
     private JsonPath invoke(String path) {

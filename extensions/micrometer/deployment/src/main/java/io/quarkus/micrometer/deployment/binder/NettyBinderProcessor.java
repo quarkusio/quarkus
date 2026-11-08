@@ -67,6 +67,17 @@ public class NettyBinderProcessor {
         Class<?> getCheckClass() {
             return NETTY_BYTE_BUF_ALLOCATOR_CLASS;
         }
+
+        /**
+         * When Vert.x is present, the allocators it exposes already include Netty's default allocator
+         * ({@code VertxByteBufAllocator.POOLED_ALLOCATOR} is {@code ByteBufAllocator.DEFAULT} unless that is
+         * unpooled, and {@code UnpooledByteBufAllocator.DEFAULT} is tracked as {@code vertx-unpooled}):
+         * tracking it again would report the same memory twice.
+         */
+        @Override
+        public boolean getAsBoolean() {
+            return VERTX_BYTE_BUF_ALLOCATOR_CLASS == null && super.getAsBoolean();
+        }
     }
 
     static class VertxAllocatorSupportEnabled extends AbstractSupportEnabled {

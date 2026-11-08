@@ -590,6 +590,44 @@ Since Netty 4.2, the default allocator is **AdaptiveByteBufAllocator**, which us
 - **Subpages**: Smaller allocations within a page for tiny objects.
 - **Thread-local Caches**: Per-thread cache for frequently used small buffers, reducing contention.
 
+==== Tracked Allocators
+Each allocator is reported once, identified by the `name` tag.
+The `allocator_type` tag reports its implementation class (e.g. `AdaptiveByteBufAllocator`), which depends on the `io.netty.allocator.type` system property.
+
+When Vert.x is present, which is the case for most Quarkus applications:
+
+|===
+| Name | Allocator
+
+| `vertx-pooled`
+| The allocator Vert.x uses for pooled buffers. This is Netty's default allocator (`ByteBufAllocator.DEFAULT`): an `AdaptiveByteBufAllocator`, or a `PooledByteBufAllocator` with `io.netty.allocator.type=pooled`. With `io.netty.allocator.type=unpooled`, Vert.x uses a dedicated `AdaptiveByteBufAllocator` instead.
+
+| `vertx-unpooled`
+| Netty's shared `UnpooledByteBufAllocator` (`UnpooledByteBufAllocator.DEFAULT`), also used by Vert.x for direct buffers. With `io.netty.allocator.type=unpooled`, this is also Netty's default allocator.
+|===
+
+When Vert.x is not present:
+
+|===
+| Name | Allocator
+
+| `default`
+| Netty's default allocator (`ByteBufAllocator.DEFAULT`): an `AdaptiveByteBufAllocator`, unless `io.netty.allocator.type` selects another one.
+
+| `unpooled`
+| Netty's shared `UnpooledByteBufAllocator` (`UnpooledByteBufAllocator.DEFAULT`). Not reported separately with `io.netty.allocator.type=unpooled`, as it is then the `default` allocator.
+|===
+
+In both cases, the allocator used by the REST Client for multipart form uploads is reported as `quarkus-multipart-form-upload`.
+
+Allocators that libraries create for their own use are not tracked, nor are the heap buffers created by Vert.x (e.g. with `Buffer.buffer()`), which are regular JVM heap objects.
+
+[NOTE]
+====
+Previous versions also reported allocators named `pooled` and `unpooled` when Vert.x was present.
+They were removed, as `pooled` tracked `PooledByteBufAllocator.DEFAULT`, which is not used by default since Netty 4.2, and `unpooled` tracked the same allocator as `vertx-unpooled`, so its memory was reported twice.
+====
+
 ==== Metrics for Netty Memory Management
 The Micrometer metrics report key metrics from Netty's allocator, helping monitor memory usage, pinned memory, pooling efficiency, and cache behavior.
 
@@ -606,7 +644,12 @@ These metrics track the current memory usage by Netty allocators (in bytes)
 
 |===
 
+For pooling allocators (`AdaptiveByteBufAllocator` and `PooledByteBufAllocator`), this is the memory reserved in chunks, including the free space within them, rather than the size of the buffers currently in use: it grows in chunk-sized steps, and only decreases when a whole chunk is freed, not when individual buffers are released.
+For `UnpooledByteBufAllocator`, this is the size of the buffers currently allocated.
+
 ===== **2. Pooled  Allocator - Pinned Memory Metrics**
+This metric and the following ones are only reported for allocators of type `PooledByteBufAllocator`, so with Netty's defaults they are absent unless `io.netty.allocator.type=pooled` is set.
+
 Pinned memory refers to buffers that cannot be recycled due to active references, preventing reuse by the allocator. A _high_ number may indicate some kind of leak (as reference are not released).
 
 |===

@@ -2,20 +2,24 @@ package io.quarkus.qute.debug.agent.scopes;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.lsp4j.debug.Variable;
 
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
-import io.quarkus.qute.debug.agent.variables.VariablesHelper;
+import io.quarkus.qute.debug.agent.variables.NamespaceVariable;
 import io.quarkus.qute.debug.agent.variables.VariablesRegistry;
 
 /**
  * Represents the namespace resolvers scope in the Qute debugger.
  * <p>
  * This scope exposes all the namespaces that are registered in the Qute Engine.
- * Each namespace becomes a variable in the debugger so that its resolvers
- * can be explored.
+ * Each namespace becomes a variable in the debugger so that its resolvers can
+ * be explored.
  * </p>
  */
 public class NamespaceResolversScope extends RemoteScope {
@@ -47,12 +51,18 @@ public class NamespaceResolversScope extends RemoteScope {
     @Override
     protected Collection<Variable> createVariables() {
         Collection<Variable> variables = new ArrayList<>();
+        Map<String, Set<String>> namespaces = new HashMap<>();
         engine.getNamespaceResolvers().forEach(resolver -> {
-            // Create a variable for the namespace with an empty value
-            Variable var = VariablesHelper.fillVariable(resolver.getNamespace(), null, getStackFrame(), variables,
-                    getVariablesRegistry());
-            var.setValue("");
+            var supportedMethods = namespaces.computeIfAbsent(resolver.getNamespace(), k -> new HashSet<String>());
+            supportedMethods.addAll(resolver.getSupportedMethods());
         });
+
+        for (var entry : namespaces.entrySet()) {
+            String namespace = entry.getKey();
+            var supportedMethods = entry.getValue();
+            var ns = new NamespaceVariable(namespace, supportedMethods, getVariablesRegistry());
+            variables.add(ns);
+        }
         return variables;
     }
 }

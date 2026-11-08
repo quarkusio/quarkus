@@ -71,7 +71,7 @@ public class TokensHelper {
         return getTokens(oidcClient, additionalParameters, forceNewTokens, false);
     }
 
-    public Uni<Tokens> getTokens(OidcClient oidcClient, Map<String, String> additionalParameters, boolean forceNewTokens,
+    Uni<Tokens> getTokens(OidcClient oidcClient, Map<String, String> additionalParameters, boolean forceNewTokens,
             boolean waitForRefresh) {
         return getTokens(oidcClient, additionalParameters, forceNewTokens, waitForRefresh,
                 tokenRequestStateHolder(additionalParameters));

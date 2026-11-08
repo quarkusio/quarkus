@@ -17,6 +17,8 @@ import org.jboss.logging.Logger;
 import org.testcontainers.db2.Db2Container;
 import org.testcontainers.utility.DockerImageName;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
+
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Feature;
@@ -156,11 +158,14 @@ public class DB2DevServicesProcessor {
     }
 
     private static class QuarkusDb2Container extends Db2Container implements DatasourceStartable {
+
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
         private final boolean podman;
 
         private final String hostName;
+
+        private boolean reused;
 
         public QuarkusDb2Container(Optional<String> imageName, OptionalInt fixedExposedPort,
                 String defaultNetworkId, boolean useSharedNetwork, boolean podman) {
@@ -170,6 +175,23 @@ public class DB2DevServicesProcessor {
             this.useSharedNetwork = useSharedNetwork;
             this.podman = podman;
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "db2");
+        }
+
+        @Override
+        protected void containerIsStarted(InspectContainerResponse containerInfo, boolean reused) {
+            this.reused = reused;
+            super.containerIsStarted(containerInfo, reused);
+        }
+
+        /**
+         * A reused container keeps its data, including the effect of the init scripts that ran when it was first
+         * started, so the scripts are not run again: a non-idempotent script would fail on the second run.
+         */
+        @Override
+        protected void runInitScriptIfRequired() {
+            if (!reused) {
+                super.runInitScriptIfRequired();
+            }
         }
 
         @Override

@@ -46,6 +46,11 @@ public class BaseCreateCommand implements Callable<Integer> {
     String targetDirectory;
 
     /**
+     * If false, create the project directly in the output directory instead of a new artifactId directory.
+     */
+    protected boolean createProjectDirectory = true;
+
+    /**
      * Parameters gathered for project creation
      */
     private Map<String, Object> values = new HashMap<>();
@@ -102,6 +107,10 @@ public class BaseCreateCommand implements Callable<Integer> {
      * @param targetGav Group, Artifact, and Version for the single-module project.
      *        The artifactId is used as the directory name.
      */
+    public void setCreateProjectDirectory(boolean createProjectDirectory) {
+        this.createProjectDirectory = createProjectDirectory;
+    }
+
     public void setSingleProjectGAV(TargetGAVGroup targetGav) {
         projectDirName = targetGav.getArtifactId();
 
@@ -125,6 +134,10 @@ public class BaseCreateCommand implements Callable<Integer> {
      *         in other words, return true if caller should exit with an error.
      */
     public boolean checkProjectRootAlreadyExists(boolean dryRun) {
+        if (!createProjectDirectory) {
+            projectRootPath = outputDirectory();
+            return false;
+        }
         if (projectRootPath == null) {
             try {
                 projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName);
@@ -149,6 +162,9 @@ public class BaseCreateCommand implements Callable<Integer> {
      * @return the project root path
      */
     public Path projectRoot() {
+        if (!createProjectDirectory) {
+            return outputDirectory();
+        }
         if (projectRootPath == null) {
             projectRootPath = CreateProjectHelper.checkProjectRootPath(outputDirectory(), projectDirName);
         }
@@ -249,6 +265,7 @@ public class BaseCreateCommand implements Callable<Integer> {
                 + ", projectDirName=" + projectDirName
                 + ", projectRootPath=" + projectRootPath
                 + ", targetDirectory=" + targetDirectory
+                + ", createProjectDirectory=" + createProjectDirectory
                 + ", values=" + values + "]";
     }
 

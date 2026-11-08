@@ -174,6 +174,36 @@ quarkus.oidc-client.grant.type=ciba
 
 Then, you can use the `OidcClient.accessTokens` method to accept a Map of extra properties and pass the `auth_req_id` parameter to exchange the token authorization code.
 
+[[oidc-client-jwt-bearer-grant-assertion]]
+==== JWT bearer grant with a JWT bearer or SPIFFE JWT-SVID token
+
+Some providers expect a workload to exchange a token which identifies it, such as a Kubernetes service account token or a SPIFFE JWT-SVID token, for an access token.
+With the link:https://www.rfc-editor.org/rfc/rfc7523#section-2.1[JWT bearer token grant], this token is sent as an `assertion` grant parameter, instead of being used to <<oidc-client-jwt-bearer,authenticate the client>>.
+
+`OidcClient` can load such a token and use it as the JWT bearer grant assertion.
+For example, if the token is available in the file system:
+
+[source,properties]
+----
+quarkus.oidc-client.auth-server-url=${auth-server-url}
+quarkus.oidc-client.client-id=quarkus-app
+quarkus.oidc-client.grant.type=jwt <1>
+quarkus.oidc-client.credentials.jwt.source=bearer <2>
+quarkus.oidc-client.credentials.jwt.token-path=/var/run/secrets/tokens <3>
+quarkus.oidc-client.credentials.jwt.assertion=true <4>
+----
+<1> Use the JWT bearer token grant.
+<2> Use an existing JWT bearer token. Set it to `spiffe-jwt` to use a <<oidc-client-spiffe-jwt-svid,SPIFFE JWT-SVID>> token.
+<3> Path to the token. Quarkus loads a new token from the file system and reloads it when the token expires.
+<4> Send the token as the `assertion` grant parameter.
+
+If `quarkus.oidc-client.credentials.jwt.source` is set to `spiffe-jwt`, the xref:security-spiffe-client.adoc[SPIFFE Client] extension is present, and no `token-path` is set, then Quarkus fetches the JWT-SVID from the SPIFFE Workload API.
+In this case, set `quarkus.oidc-client.credentials.jwt.audience` to the audience which the provider requires for the JWT bearer grant assertion.
+If it is not set, the audience defaults to the `quarkus.oidc-client.auth-server-url` value.
+
+No custom code is required to provide the assertion, therefore you can use `OidcClient` with the <<rest-client-oidc-filter,OIDC client filters>> as usual.
+If you prefer to provide the assertion yourself, use `OidcClient` methods which accept additional grant parameters, for example, `oidcClient.getTokens(Map.of("assertion", "ey..."))`. This assertion takes precedence over the one loaded by Quarkus.
+
 ==== Grant scopes
 
 You might need to request that a specific set of scopes be associated with an issued access token.
@@ -1256,6 +1286,9 @@ public class OidcClientRequestCustomFilter extends AbstractOidcClientRequestFilt
 TIP: To make the most of the <<additional-grant-parameters-token-cache,token cache>>, let Quarkus load the client assertion with the `quarkus.oidc-client.credentials.jwt.token-path` property instead of using a custom filter.
 Quarkus then renews the client assertion without affecting the cached tokens.
 
+NOTE: The JWT bearer token can also be used as a JWT bearer grant assertion instead of the client assertion. For more information, see the <<oidc-client-jwt-bearer-grant-assertion,JWT bearer grant with a JWT bearer or SPIFFE JWT-SVID token>> section.
+
+[[oidc-client-spiffe-jwt-svid]]
 ==== SPIFFE JWT-SVID
 
 link:https://spiffe.io[SPIFFE] (Secure Production Identity Framework for Everyone) JWT-SVID tokens can be used as client assertions for client authentication.
@@ -1293,6 +1326,8 @@ quarkus.oidc-client.credentials.jwt.source=spiffe-jwt
 
 The JWT-SVID audience defaults to the `quarkus.oidc-client.auth-server-url` value.
 If the OIDC provider's issuer differs from `quarkus.oidc-client.auth-server-url`, set `quarkus.oidc-client.credentials.jwt.audience` explicitly.
+
+NOTE: The SPIFFE JWT-SVID token can also be used as a JWT bearer grant assertion instead of the client assertion. For more information, see the <<oidc-client-jwt-bearer-grant-assertion,JWT bearer grant with a JWT bearer or SPIFFE JWT-SVID token>> section.
 
 TIP: For development and testing with Keycloak, see xref:security-spiffe-client.adoc#keycloak-dev-svc-integration[SPIFFE integration with Dev Services for Keycloak].
 

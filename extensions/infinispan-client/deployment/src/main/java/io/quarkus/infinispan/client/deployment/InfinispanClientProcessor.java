@@ -250,14 +250,17 @@ class InfinispanClientProcessor {
                     }
                 }
                 properties.putAll(marshallingBuildItem.getProperties());
-                Collection<ClassInfo> schemaClasses = index.getAllKnownImplementations(DotName.createSimple(
-                        Schema.class.getName()));
-                schemaClasses
-                        .addAll(index.getAllKnownImplementations(DotName.createSimple(GeneratedSchema.class.getName())));
+                Set<String> schemaClasses = new HashSet<>();
+                for (ClassInfo schemaClass : index.getAllKnownImplementations(Schema.class)) {
+                    schemaClasses.add(schemaClass.toString());
+                }
+                for (ClassInfo schemaClass : index.getAllKnownImplementations(GeneratedSchema.class)) {
+                    schemaClasses.add(schemaClass.toString());
+                }
 
                 Set<Schema> schemas = new HashSet<>(schemaClasses.size());
-                for (ClassInfo ci : schemaClasses) {
-                    Class<?> initializerClass = Thread.currentThread().getContextClassLoader().loadClass(ci.toString());
+                for (String schemaClass : schemaClasses) {
+                    Class<?> initializerClass = Thread.currentThread().getContextClassLoader().loadClass(schemaClass);
                     try {
                         Schema sci = (Schema) initializerClass
                                 .getDeclaredConstructor().newInstance();

@@ -148,8 +148,8 @@ public class TokensHelper {
                             newState.tokenUni.subscribe().with(
                                     refreshedTokens -> {
                                     },
-                                    failure -> LOG.warnf("Background refresh of the tokens for client %s has failed: %s",
-                                            tokensBeingRefreshed.getClientId(), failure.getMessage()));
+                                    failure -> LOG.warnf(failure, "Background refresh of the tokens for client %s has failed",
+                                            tokensBeingRefreshed.getClientId()));
                             return Uni.createFrom().item(tokensBeingRefreshed);
                         }
                         return newState.tokenUni;

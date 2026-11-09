@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -82,6 +83,14 @@ public class MemoryCache<T> {
 
     public boolean containsKey(String key) {
         return cacheMap.containsKey(key);
+    }
+
+    void removeIf(Predicate<T> filter) {
+        for (Map.Entry<String, CacheEntry<T>> next : cacheMap.entrySet()) {
+            if (filter.test(next.getValue().result())) {
+                removeCacheEntry(next.getKey(), next.getValue());
+            }
+        }
     }
 
     T getOrComputeDeferredValue(String key, Function<CacheEntryAction, T> itemFactory) {

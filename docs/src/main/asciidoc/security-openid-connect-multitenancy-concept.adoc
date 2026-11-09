@@ -1,0 +1,317 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= OpenID Connect (OIDC) Multi-Tenancy
+include::_attributes.adoc[]
+:categories: security
+:summary: This overview explains OpenID Connect multi-tenancy for Quarkus applications
+
+The goal of OIDC multi-tenancy is developing an application which can provide functionality to users from different organisations. Each enabled organisation could store its registered users and their credentials in its own `realm`, and use OIDC to supply security-related user information with the application. Each call to the application must therefore contain at least two kinds of information:
+
+* A `tenant identifier` which uniquely identifies the realm where the end user was authenticated / logged in. While you can technically use any means of sending the `tenant identifier` from the user's browser or other client-side application, it is convenient to insert it as a string within the context path of the service.
+* An `idToken` holding user information in the form of a JSON Web Token which contains a set of properties (called `claims` in OAuth2/OIDC vocabulary) for the authenticated user. Refer to https://jwt.io[JWT IO] for examples and  https://www.rfc-editor.org/rfc/rfc7519[RFC 7519] for the JWT specification.
+
+
+== The 1-minute overview of a multi-tenant application
+
+Multi-tenant applications can enable development teams to quickly provide and maintain functionality to many organisations without compromising security concerns. However, understanding and translating concepts and best practises from the OIDC world can be a daunting task, so this overview will illustrate the workings of a typical multi-tenant application to highlight the OIDC and security-related parts.
+
+.Two clients calling a multi-tenant application
+[caption="Figure 1: "]
+image::oidc-multitenancy-concept-1.svg[Multitenant Application]
+
+The image above shows 2 users from different organisations call a calendar service to find their respective organisations' festivities. For the sake of simplicity, we assume that the application serves RESTful data to a browser-based Single-Page Application (SPA).
+
+. Each user has logged in using their organisation's own single-sign ("SSO"), which is frequently called OIDC Authentication Provider (called `"OpenID Provider"`, `"Identity Provider"` or `"IdP"` in OIDC literature). Upon login, the SSO has produced an `IdToken` JWT with user data and delivered that to the user's web browser.
+. The two user will call the calendar service with _different resource paths_ within the service URL to reach the calendar service. The application uses the `tenant identifier` part of the URI to identify the caller's organisation. Should an authenticated user from organisation 1 accidentally use a resource path allocated to organisation 2, the call will yield an unauthenticated HTTP response.
+. The `IdToken` data retreived from the own organisation's SSO is normally sent to the multi-tenant application with each call as an HTTP header, called `"authorization:"`. In this respect, an IdToken works as a session cookie which contains user information.
+
+With every call, the multi-tenant application can translate the `tenant identifier` "org1" to imply that the user is logged in to the SSO of organisation 1, and "org2" to the SSO of organisation 2. The multi-tenant application can also verify that the user information in the `IdToken` is not changed, and extract the data within it.
+
+
+== The 20-minute overview of a multi-tenant application
+
+Quarkus multi-tenant applications need to perform several tasks with each call from a client to provide a simple and consistent development experience. Understanding the sequence of those steps helps designing multi-tenant applications correctly; the conceptual models described in the OIDC and OAuth2 specifications is huge and illustrating the steps required by development teams helps to clarify multi-tenant application development.
+
+In this example, our multi-tenant application is designed to serve RESTful resources to already logged-in users. This mode of operation is called `Bearer authentication` in OIDC and indicates that an HTTP `Authorization` header with the value `Bearer *access_token*` must be present in each request from the client to the application.
+
+.Partial steps of a multi-tenant application
+[caption="Figure 2: "]
+image::oidc-multitenancy-concept-2.svg[Multitenant Application Steps]
+
+The illustration below is somewhat simplified, but covers the main lifecycle security tasks within a multi-tenant application. Figure 2 illustrates a multi-tenant application which receives a call from a user authenticated within organisation 2 and the tasks performed by Quarkus shown in blue squares. The 3 numbered, red circles indicate process steps where you need to supply custom implementations to ensure that the multi-tenant application works well.
+
+The 3 required steps are detailed below, along with descriptions of concepts and some considerations:
+
+. Find `tenant identifier` from request, and lookup/resolve the corresponding OIDC configuration for the active tenant.
+. Inject user information (packaged in a `JsonWebToken` object) from the active `AccessToken`. This includes implementing reusable logic to simplify access to information given by OIDC.
+. Validate user authorization to retrieve or create data.
+
+=== 1. Resolve the `tenant identifier` and `OidcTenantConfig`
+
+Before being able to execute the actual business logic of a multi-tenant application, Quarkus needs to enforce security requirements for authentication and authorization. To do that, Quarkus must verify that received ID and/or access tokens are valid, and that the information within them permits the active user to read or update the current resource. In order to do so, Quarkus must read the active `tenant id` of the current request and use it to resolve the active tenant's OIDC configuration (defined by an instance of `OidcTenantConfig`). Finding the tenant id from the current request can be done in one of 2 ways:
+
+. Provide static configuration for all known tenants and the corresponding OIDC configuration for each of them within the `application.properties` file, or
+. Implement a `@Singleton` CDI bean which implements the `io.quarkus.oidc.TenantConfigResolver` interface. The resolver will be invoked for each inbound call to fetch the OIDC configuration for the active tenant id.
+
+The former approach will become quite cumbersome with increasing number of tenants and environments, so if your application is intended to work with more than few tenants it is recommendable to opt for a more scalable, dynamic approach. Also, it is imperative for enterprises maintaining many multi-tenant applications to use _the same algorithm_ for deriving the tenant identifier and OIDC configuration from inbound requests. This yields the necessary usability and maintainability to enable running a plethora of multi-tenant applications. While technically anything within a service request can be used to find the tenant id, it is practical to *embed the tenant id as a resource path segment within the URL*.
+
+[NOTE]
+====
+**_Question:_** Why is it "practical" to embed the tenant ID as a path segment? Why not as a custom HTTP Header or through other means?
+
+**_(Short) Answer:_** To reduce complexities regarding CORS-aware applications, it is practical to embed the tenant id within the path than most other means.
+
+**_(Longer) Answer:_** During development of multi-tenant applications, it is common to run both frontend and backend services on a development machine - and if so, they have to run on different ports to avoid network clashes. This implies that the browser rendering data from the frontend development application will launch a https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS[CORS OPTIONS preflight call] to the backend service, since the port differs from the front end service. By specification, browsers will not provide custom HTTP headers in the OPTIONS preflight call without special configuration - so if your tenant id is encoded in HTTP Headers, expect problems with required workarounds. Supplying the tenant id as part of the URI resource path largely removes all such problems in the development environment. Moreover, in test or production environments multi-tenant services are often deployed behind network proxies such as Apache or NGinx. Nonstandard HTTP headers require extra configuration in these proxy services to be relayed to the multi-tenant service - but encoding the tenant id within the request path will not such configuration. _You have been warned._
+====
+
+
+The only required method to implement is `Uni<OidcTenantConfig> resolve(RoutingContext routingContext, OidcRequestContext<OidcTenantConfig> requestContext);`. If possible, cache realm IDs and their corresponding `OidcTenantConfig` at application launch to yield good performance during application runtime. A simple structure for resolving tenant configuration is shown below.
+
+. The resolve method considers the request path retrieved from the RoutingContext. This approach yields scalable performance.
+. In the resolve method, the `tenant identifier` is named `realm`
+. The `OidcTenantConfig` factory itself is not shown in the code snippet below as it focuses on the tenant configuration resolution part.
+. The `keycloak.url` configuration property would normally be qualified per environment, enabling different keycloak installations in development, test, staging and production environments.
+
+[source,kotlin]
+----
+@Singleton
+@AddDefaultConstructor
+@UseOpenMembers
+class OidcConfigurationResolver @Inject constructor(
+
+  @ConfigProperty(name = "keycloak.url")
+  val oidcServiceBaseURL: String
+
+) : TenantConfigResolver {
+
+  @PostConstruct
+  fun postConstruct() {
+
+    log.info("Using oidcServiceBaseURL [$oidcServiceBaseURL]")
+
+    // Populate the REALM_2_OIDC_CONFIG cache
+  }
+
+  override fun resolve(routingContext: RoutingContext?,
+                       requestContext: OidcRequestContext<OidcTenantConfig>?): Uni<OidcTenantConfig>? {
+
+    // #0) Check sanity
+    //
+    if (routingContext == null) {
+
+      log.warn("Received null RoutingContext. Cannot determine realm; reverting to default tenant.")
+      return Uni.createFrom().nullItem()
+    }
+
+    // #1) Find the tenant identifier/realm, from the path.
+    //
+    val contextPath = routingContext.request().path()
+    val realm = getRealmFrom(contextPath)
+
+    if (realm == null) {
+
+      log.warn("== No Realm derived from request path [$contextPath]")
+      return Uni.createFrom().nullItem()
+    } else {
+      log.debug("== Realm [$realm] found from request path [$contextPath]")
+    }
+
+    // #2) Fallback to null result if the tenant identifier was not recognized
+    //
+    return when (val config = REALM_2_OIDC_CONFIG[realm]) {
+      null -> Uni.createFrom().nullItem()
+      else -> Uni.createFrom().item(config)
+    }
+  }
+
+  companion object {
+
+    @JvmStatic
+    internal val REALM_2_OIDC_CONFIG: SortedMap<String, Supplier<OidcTenantConfig>> = TreeMap()
+
+    @JvmStatic
+    private val log = LoggerFactory.getLogger(OidcConfigurationResolver::class.java)
+  }
+}
+----
+
+This implementation concludes steps `1` in Figure 2 above. Quarkus is now aware of the tenant identifier/realm, and has resolved the configuration for the OIDC provider which authenticated the calling user.
+
+=== 2. Retrieve injected IdToken and user information
+
+Quarkus provides means to inject the current user's information into the multi-tenant application's resources. It is often practical to access these properties in a standard way within your RESTful resource implementations, such as within a common RESTful resource superclass.
+
+There are several options to inject OIDC-based user information from Quarkus's security framework into your resources, 3 of which are illustrated in the code snippet below:
+
+. `Inject the AccessToken` typecast to a `JsonWebToken`, which holds information from OIDC provider with simple access methods. This is a `@RequestScoped` CDI bean, which is automatically provided by the `quarkus-oidc` extension. As discussed above, the access token holds user authorization information, so it is the best option to use when validating that the user is authorized to perform operations within the multi-tenant service.
+. _(Preferred):_ `Inject a custom JsonWebToken wrapper` exemplified by a TokenBasedCallerInfo below. Depending on your corporate/business requirements
+. _(Discouraged):_ `Inject the IdToken` typecast to a `JsonWebToken`, which holds information from the IdToken generated by the OIDC provider. This is a `@RequestScoped` CDI bean, which is automatically provided by the `quarkus-oidc` extension. You need to qualify the injection point with `@IdToken` - but OAuth2 authentication information is not necessarily part of the IdToken as discussed above.
+
+[source,kotlin]
+----
+abstract class AbstractCalendarResource {
+
+  // All 3 options illustrated here for completeness.
+  // In real implementations, only 1 is used.
+
+  @Inject
+  protected lateinit var accessToken: JsonWebToken
+
+  @Inject
+  @IdToken
+  protected lateinit var idToken: JsonWebToken
+
+  @Inject
+  protected lateinit var callerInfo: TokenBasedCallerInfo
+}
+----
+
+A custom wrapper for the injected Access Token is often preferrable to using the JsonWebToken directly, since the JsonWebToken API retrieves all claims by key, similar to a Map. In enterprise environments, it is frequently desirable to reduce the potential for spelling errors or other mistakes when accessing the JsonWebToken claims - hence injecting your own `@RequestScoped` wrapper around the Access Token will frequently yield stabler and simpler results.
+
+The `TokenBasedCallerInfo` below shows the structure for a custom wrapper around the injected Access Token:
+
+[source,kotlin]
+----
+@RequestScoped
+@UseOpenMembers
+class TokenBasedCallerInfo  {
+
+    @Inject
+    protected lateinit var accessToken: JsonWebToken
+
+    @PostConstruct
+    fun onConstruction() {
+
+        if (log.isDebugEnabled) {
+            log.debug("Got AccessToken: $accessToken")
+        }
+    }
+
+    // Usability-enhancing getters
+    // Expose values parsed from the injected JsonWebToken in a user-friendly manner
+
+    val firstName: String by lazy { accessToken.getClaim("given_name") }
+    val lastName: String by lazy { accessToken.getClaim("family_name") }
+    val email: String by lazy { accessToken.getClaim("email") }
+    val roles: SortedSet<String> by lazy { rolesFromRealmAccess(accessToken) }
+    val userId: Long
+        get() {
+            // Find the userId within the accessToken
+        }
+
+    // ... more getters, as required ...
+
+    companion object {
+
+        @JvmStatic
+        fun rolesFromRealmAccess(accessToken: JsonWebToken): SortedSet<String> {
+            // Parse the Access Token to find given roles
+        }
+
+        // ... more methods to parse the Access Token for custom purposes ...
+
+        @JvmStatic
+        private val log = LoggerFactory.getLogger(TokenBasedCallerInfo::class.java)
+    }
+}
+----
+
+This implementation concludes step `2` in Figure 2 above. We have implemented a wrapper around the AccessToken available from Quarkus' security framework, and injected user information (i.e. JsonWebToken claims) into the multi-tenant application.
+
+=== 3. Validate user authorization to retrieve or create data.
+
+Multi-tenant applications of some complexity tend to require both annotated and programmatic authorization for users calling resource methods. Since we now have user information injected (assuming we chose to use the `TokenBasedCallerInfo` request scoped bean defined above), we can use its properties in any `AbstractCalendarResource` subclass - and any other class in which we inject the `TokenBasedCallerInfo`. The common/shared information about the service's resource path and used roles is extracted to a shared singleton holding constants:
+
+[source,kotlin]
+----
+object SharedInformation {
+
+  internal const val SERVICE_ROOT_RESOURCE_PREFIX = "/service/calendar"
+
+  /**
+   * ResourcePath prefix for all exposed resources.
+   * Includes the OIDC tenant / Realm.
+   */
+  const val CALENDAR_SERVICE_RESOURCE_PATH = "$SERVICE_ROOT_RESOURCE_PREFIX/{realm}"
+
+  /**
+   * Role name for administrators of the festivities
+   */
+  const val FESTIVITY_ADMIN_ROLE = "festivity_admin"
+}
+----
+
+By using the constants above, RESTful resources can now be created in a maintainable way - note the constant within the `@Path` annotation on the class. Moreover, all AccessToken properties are injected and available in all RESTful resources, which leads to simple access:
+
+. *Programmatic use*: Each method can retrieve information from the `TokenBasedCallerInfo` bean with the reference `callerInfo`. This is exemplified in methods `getFestivityWithID` and `createNewFestivity`.
+. *Annotated use*: Each resource or method can be annotated with `@RolesAllowed` to permit execution only to users whose AccessToken's roles contains the role names given in the annotation's attributes. This is exemplified in the method `createNewFestivity`
+
+[source,kotlin]
+----
+@Path("$CALENDAR_SERVICE_RESOURCE_PATH/festivities")
+class FestivitiesResource : AbstractCalendarResource() {
+
+  @GET
+  @Path("/id/{festivityId}")
+  open fun getFestivityWithID(@PathParam("festivityId") festivityId: Long): Festivities {
+
+      // #1) Check authorization programmatically
+      //
+      if(!festivityDAO.hasAccess(callerInfo)) {
+          throw InsufficientPrivilegesException("User (${callerInfo.fullName()}) is not permitted ... ")
+      }
+
+      // ... rest of the implementation
+  }
+
+  @GET
+  @Path("/all")
+  open fun getMembershipWithID(): Festivities {
+      // ... rest of the implementation
+  }
+
+  @POST
+  @Path("/create")
+  @RolesAllowed(FESTIVITY_ADMIN_ROLE)
+  fun createNewFestivity(payload: FestivityCreationTemplate): Festivities {
+
+    // #1) Enrich with data from AccessToken
+    //
+    payload.modifierId = callerInfo.userId
+    payload.modifierName = callerInfo.fullName()
+
+    // #2) Delegate execution to DAO and return
+    //
+  }
+
+  // Resource methods here
+}
+----
+
+This implementation concludes step `2` in Figure 2 above. We have implemented a multi-tenant application with access to user information and AccessToken properties for users from multiple tenants.
+
+_Great!_
+
+== `IdToken` vs `AccessToken`
+
+While the OIDC and OAuth2 specifications define several types of information (`token`) to be exchanged between clients and servers, the 2 most relevant for application developers are `IdToken` and `AccessToken`:
+
+* `IdTokens` are defined by the **OIDC specification** and contains **authentication** information (i.e. "who the logged-in user is"). IdTokens are issued by an `OIDC Identity Provider` (such as Keycloak or Okta) when a user supplies correct authentication information (such as username and password). IdTokens cannot be used to extract authorization information (i.e. "what a user is permitted to do").
+* `AccessTokens` are defined by the **OAuth2 specification** and contains **authorization** information (i.e. "what you have granted a service to do on your behalf"). AccessTokens are also issued by an Identity Provider (such as Keycloak or Okta) at the request of an application. AccessTokens cannot be used to extract authentication information (i.e. "if a user is logged in").
+
+Token references:
+
+. https://auth0.com/blog/id-token-access-token-what-is-the-difference[IdToken vs AccessToken]
+. https://cloud.google.com/docs/authentication/token-types[Token Types]
+
+== References
+
+* xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]
+* xref:security-overview-concept.adoc[Quarkus Security overview]
+* https://www.keycloak.org/documentation.html[Keycloak Documentation]
+* https://openid.net/connect/[OpenID Connect]
+* https://tools.ietf.org/html/rfc7519[JSON Web Token]
+* https://developers.google.com/identity/protocols/OpenIDConnect[Google OpenID Connect]

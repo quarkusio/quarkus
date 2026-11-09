@@ -95,7 +95,6 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.StaticFieldVar;
@@ -322,8 +321,7 @@ public class MainClassBuildStep {
         // Application class
         GeneratedClassGizmo2Adaptor gizmoOutput = new GeneratedClassGizmo2Adaptor(generatedClass, null, null,
                 constantBootstraps, true);
-        Gizmo g = Gizmo.create(gizmoOutput)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS); // This ensures compatibility in both JVM and native modes
+        Gizmo g = Gizmo.create(gizmoOutput);
 
         g.class_(Application.APP_CLASS_NAME, file -> {
             file.extends_(Application.class);

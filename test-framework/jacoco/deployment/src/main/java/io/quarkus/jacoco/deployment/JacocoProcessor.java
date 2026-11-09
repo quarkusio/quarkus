@@ -114,8 +114,9 @@ public class JacocoProcessor {
             workspaceModules.put(appModel.getAppArtifact().getKey(), appModel.getAppArtifact());
         }
         for (ResolvedDependency d : appModel.getRuntimeDependencies()) {
-            // we can't use d.isWorkspaceModule() for now for some Gradle projects, which is why we check whether a workspace module is not null
-            if (d.getWorkspaceModule() != null) {
+            // in Gradle tests, project dependencies have the workspace module flag set but no workspace module
+            // (see QuarkusApplicationModelTask) so we need to check both
+            if (d.isWorkspaceModule() || d.getWorkspaceModule() != null) {
                 workspaceModules.put(d.getKey(), d);
             }
         }
@@ -227,6 +228,13 @@ public class JacocoProcessor {
             // Add classes and sources for the current build
             if (instrumentArtifacts.isEmpty()) {
                 for (ResolvedDependency workspaceModule : workspaceModules.values()) {
+                    if (workspaceModule.getWorkspaceModule() == null) {
+                        // we don't know where the sources and the build directory are,
+                        // the classes are instrumented but we can't add them to the report
+                        log.debugf("Workspace module %s has no workspace information, not including it in the report",
+                                workspaceModule.getKey());
+                        continue;
+                    }
                     addDependency(workspaceModule, config, projectRoot, info, includes, excludes, null);
                 }
             } else {

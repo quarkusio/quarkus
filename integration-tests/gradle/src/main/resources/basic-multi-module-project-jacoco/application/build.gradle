@@ -4,5 +4,6 @@ plugins {
 
 dependencies {
     implementation project(":common")
+    implementation project(":library")
     testImplementation('io.quarkus:quarkus-jacoco')
 }

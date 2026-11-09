@@ -742,6 +742,11 @@ public class SmallRyeOpenApiProcessor {
 
     void addMethodImplementationClassNames(MethodInfo method, Type[] params, Collection<ClassInfo> classes,
             Map<String, ClassAndMethod> classNames) {
+        // The declaring type itself may be the scanned resource (e.g. `@Path` on an interface)
+        ClassInfo tagClass = classes.size() == 1 ? classes.iterator().next() : method.declaringClass();
+        classNames.put(createUniqueMethodReference(method.declaringClass(), method),
+                new ClassAndMethod(tagClass, method));
+
         for (ClassInfo impl : classes) {
             MethodInfo implMethod = impl.method(method.name(), params);
 

@@ -80,6 +80,7 @@ import io.vertx.core.streams.ReadStream;
 public class ClientSendRequestHandler implements ClientRestHandler {
     private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
     public static final String CONTENT_TYPE = "Content-Type";
+    static final long DEFAULT_STREAM_READ_TIMEOUT = 100_000;
 
     private final HttpClientOptions httpClientOptions;
     private final boolean followRedirects;
@@ -481,10 +482,11 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                             if (loggingScope != LoggingScope.NONE) {
                                 clientLogger.logResponse(clientResponse, false);
                             }
-                            //TODO: make timeout configurable
                             requestContext
                                     .setResponseEntityStream(
-                                            new VertxClientInputStream(clientResponse, 100000));
+                                            new VertxClientInputStream(clientResponse,
+                                                    streamReadTimeout(requestContext.getConfiguration()
+                                                            .getProperty(QuarkusRestClientProperties.READ_TIMEOUT))));
                             requestContext.resume();
                         } else {
                             clientResponse.body().onComplete(ar -> {
@@ -555,6 +557,18 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             serviceInstance.recordReply();
             serviceInstance.recordEnd(throwable);
         }
+    }
+
+    /**
+     * Returns the time to wait for the next chunk when the response body is read through an {@link InputStream}.
+     * The configured read timeout is honored if it is larger than {@link #DEFAULT_STREAM_READ_TIMEOUT}, but never
+     * used to shorten it, so that streams pausing for longer than the default read timeout keep working.
+     */
+    static long streamReadTimeout(Object readTimeout) {
+        if (readTimeout instanceof Long) {
+            return Math.max((Long) readTimeout, DEFAULT_STREAM_READ_TIMEOUT);
+        }
+        return DEFAULT_STREAM_READ_TIMEOUT;
     }
 
     public Uni<HttpClientRequest> createRequest(RestClientRequestContext state) {

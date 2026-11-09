@@ -456,6 +456,9 @@ public interface FilesService {
 
 The body is read according to the demand of the subscriber of the `Multi`: a subscriber that consumes the items slowly, for example by writing them to disk one at a time, slows down the reading of the response instead of causing its remaining content to accumulate in memory.
 
+When the body is read through an `InputStream` (including a `Response` returned by a non-reactive method), a read fails with an `IOException` if no data is received from the server for 100 seconds.
+To allow longer pauses between chunks, set `quarkus.rest-client."client".read-timeout` to a higher value: the larger of the two is used.
+
 === Getting other response properties
 
 ==== Using RestResponse

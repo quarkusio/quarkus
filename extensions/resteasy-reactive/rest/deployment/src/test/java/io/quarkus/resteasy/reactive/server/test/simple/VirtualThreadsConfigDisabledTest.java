@@ -1,0 +1,100 @@
+package io.quarkus.resteasy.reactive.server.test.simple;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import org.hamcrest.Matchers;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusExtensionTest;
+import io.restassured.RestAssured;
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.common.annotation.RunOnVirtualThread;
+import io.smallrye.mutiny.Uni;
+
+public class VirtualThreadsConfigDisabledTest {
+
+    @RegisterExtension
+    static QuarkusExtensionTest test = new QuarkusExtensionTest()
+            .overrideConfigKey("quarkus.rest.blocking.signatures.execution.mode", "virtual-thread")
+            .overrideConfigKey("quarkus.virtual-threads.enabled", "false")
+            .setLogRecordPredicate(record -> record.getLevel().equals(Level.SEVERE)
+                    && record.getLoggerName()
+                            .equals("org.jboss.resteasy.reactive.server.core.startup.RuntimeResourceDeployment"))
+            .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage).isEmpty())
+            .setArchiveProducer(new Supplier<>() {
+                @Override
+                public JavaArchive get() {
+                    return ShrinkWrap.create(JavaArchive.class)
+                            .addClasses(ThreadNameResource.class);
+                }
+            });
+
+    @Test
+    public void test() {
+        // with virtual threads disabled, endpoints that would run on a virtual thread fall back to worker threads
+        RestAssured.get("/tname/default")
+                .then().body(Matchers.containsString("executor"), Matchers.not(Matchers.containsString("virtual")));
+
+        RestAssured.get("/tname/blocking")
+                .then().body(Matchers.containsString("executor"), Matchers.not(Matchers.containsString("virtual")));
+
+        RestAssured.get("/tname/virtual")
+                .then().body(Matchers.containsString("executor"), Matchers.not(Matchers.containsString("virtual")));
+
+        // non-blocking endpoints stay on the event loop
+        RestAssured.get("/tname/nonblocking")
+                .then().body(Matchers.containsString("eventloop"), Matchers.not(Matchers.containsString("virtual")));
+
+        RestAssured.get("/tname/uni")
+                .then().body(Matchers.containsString("eventloop"), Matchers.not(Matchers.containsString("virtual")));
+    }
+
+    @Path("tname")
+    public static class ThreadNameResource {
+
+        @Path("default")
+        @GET
+        public String threadName() {
+            return Thread.currentThread().getName();
+        }
+
+        @Blocking
+        @Path("blocking")
+        @GET
+        public String blocking() {
+            return Thread.currentThread().getName();
+        }
+
+        @RunOnVirtualThread
+        @Path("virtual")
+        @GET
+        public String virtual() {
+            return Thread.currentThread().getName();
+        }
+
+        @NonBlocking
+        @Path("nonblocking")
+        @GET
+        public String nonBlocking() {
+            return Thread.currentThread().getName();
+        }
+
+        @Path("uni")
+        @GET
+        public Uni<String> uni() {
+            return Uni.createFrom().item(Thread.currentThread().getName());
+        }
+    }
+
+}

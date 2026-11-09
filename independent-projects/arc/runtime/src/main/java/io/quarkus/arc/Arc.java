@@ -48,11 +48,23 @@ public final class Arc {
             synchronized (Arc.class) {
                 container = INSTANCE;
                 if (container == null) {
-                    // Set the container instance first because Arc.container() can be used within ArcContainerImpl.init()
-                    container = new ArcContainerImpl(config.getCurrentContextFactory(), config.isStrictCompatibility(),
-                            config.isTestMode());
-                    INSTANCE = container;
-                    container.init();
+                    try {
+                        // Set the container instance first because Arc.container() can be used within ArcContainerImpl.init()
+                        container = new ArcContainerImpl(config.getCurrentContextFactory(), config.isStrictCompatibility(),
+                                config.isTestMode());
+                        INSTANCE = container;
+                        container.init();
+                    } catch (Throwable e) {
+                        // A container that failed to initialize is never shut down; do not keep it, nor its classes in the
+                        // static caches - the application may be started again in this JVM, e.g. in dev mode
+                        INSTANCE = null;
+                        if (container != null) {
+                            container.clear();
+                        } else {
+                            ArcContainerImpl.clearStaticCaches();
+                        }
+                        throw e;
+                    }
                 }
             }
         }

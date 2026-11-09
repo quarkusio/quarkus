@@ -9,12 +9,16 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
 import io.quarkus.elytron.security.properties.runtime.ElytronPropertiesFileRecorder;
 import io.quarkus.elytron.security.properties.runtime.MPRealmRuntimeConfig;
 import io.quarkus.elytron.security.properties.runtime.PropertiesRealmConfig;
 import io.quarkus.elytron.security.properties.runtime.SecurityUsersConfig;
+import io.quarkus.modular.spi.items.AddDependencyBuildItem;
+import io.smallrye.modules.desc.Dependency.Modifier;
 
 /**
  * The build time process for the security aspects of the deployment. This creates {@linkplain BuildStep}s for integration
@@ -65,6 +69,26 @@ class ElytronPropertiesProcessor {
             return new ElytronPasswordMarkerBuildItem();
         }
         return null;
+    }
+
+    /**
+     * The {@code digest-sha-512-256} embedded realm algorithm is the only one whose message digest the JDK does not
+     * provide: the Elytron password provider resolves it to {@code org.wildfly.security.digest.SHA512_256MessageDigest}
+     * from the {@code wildfly-elytron-digest} module and instantiates it reflectively.
+     */
+    @BuildStep
+    void registerSha512_256MessageDigest(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ModuleExportBuildItem> moduleExports,
+            BuildProducer<AddDependencyBuildItem> moduleDependencies) {
+        if (propertiesConfig.embedded().enabled()) {
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder("org.wildfly.security.digest.SHA512_256MessageDigest")
+                    .reason(getClass().getName())
+                    .build());
+            moduleExports.produce(new ModuleExportBuildItem("org.wildfly.security.wildfly.elytron.digest",
+                    "org.wildfly.security.wildfly.elytron.credential", "org.wildfly.security.digest"));
+            moduleDependencies.produce(new AddDependencyBuildItem("org.wildfly.security.wildfly.elytron.credential",
+                    "org.wildfly.security.wildfly.elytron.digest", Modifier.Set.of(Modifier.READ, Modifier.LINKED)));
+        }
     }
 
     /**

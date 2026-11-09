@@ -30,6 +30,11 @@
             <artifactId>wildfly-elytron-password-impl</artifactId>
         </dependency>
         <dependency>
+            <!-- Provides the SHA-512-256 message digest the embedded realm digest-sha-512-256 algorithm is verified with -->
+            <groupId>org.wildfly.security</groupId>
+            <artifactId>wildfly-elytron-digest</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.wildfly.security</groupId>
             <artifactId>wildfly-elytron-realm</artifactId>
         </dependency>
@@ -66,6 +71,12 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <configuration>
+                    <parentFirstArtifacts>
+                        <!-- instantiated by the parent-first WildFlyElytronPasswordProvider, so it must be visible to it -->
+                        <parentFirstArtifact>org.wildfly.security:wildfly-elytron-digest</parentFirstArtifact>
+                    </parentFirstArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

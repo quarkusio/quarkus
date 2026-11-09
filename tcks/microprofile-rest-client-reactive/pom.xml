@@ -81,7 +81,9 @@
                         <!-- TODO fix this-->
                         <exclude>org.eclipse.microprofile.rest.client.tck.jsonb.InvokeWithJsonBProviderTest</exclude>
 
-                        <!-- Missing implementation - See org.jboss.resteasy.reactive.common.jaxrs.RuntimeDelegateImpl.createEntityPartBuilder -->
+                        <!-- The only @RunAsClient test of the TCK: our REST client needs a running application. -->
+                        <!-- We have our own in-container version of this test: -->
+                        <!-- io.quarkus.rest.client.reactive.multipart.EntityPartClientTest -->
                         <exclude>**/EntityPartTest</exclude>
 
                         <!-- These are flaky -->

@@ -24,6 +24,6 @@ public class BufferOutputStream extends OutputStream {
 
     @Override
     public void write(int b) throws IOException {
-        buffer.appendInt(b);
+        buffer.appendByte((byte) b);
     }
 }

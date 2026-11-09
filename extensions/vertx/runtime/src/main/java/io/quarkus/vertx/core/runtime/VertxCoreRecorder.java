@@ -1,6 +1,7 @@
 package io.quarkus.vertx.core.runtime;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -120,6 +121,16 @@ public class VertxCoreRecorder {
     private final RuntimeValue<ShutdownConfig> shutdownConfig;
 
     /**
+     * Static reference to the shutdown configuration for timeout retrieval during shutdown.
+     */
+    private static volatile RuntimeValue<ShutdownConfig> staticShutdownConfig;
+
+    /**
+     * Temporary cache directory created when caching is enabled and no explicit directory is set.
+     */
+    private static volatile File tempCacheDir;
+
+    /**
      * We keep a static reference on the build time config as we need to pass it for the Vert.x creation after failures.
      */
     static VertxBuildTimeConfig buildTimeConfig;
@@ -131,9 +142,10 @@ public class VertxCoreRecorder {
         this.vertxConfig = vertxConfig;
         this.threadPoolConfig = threadPoolConfig;
         this.shutdownConfig = shutdownConfig;
+        staticShutdownConfig = shutdownConfig;
     }
 
-    public VertxSupplier configureVertx(LaunchMode launchMode, ShutdownContext shutdown,
+    public VertxSupplier configureVertx(LaunchMode launchMode,
             List<Consumer<VertxBootstrap>> bootstrapCustomizers, List<Consumer<VertxOptions>> optionsCustomizers,
             List<String> vertxServiceProviderClassNames,
             List<String> verticleFactoryClassNames, ExecutorService executorProxy) {
@@ -142,56 +154,17 @@ public class VertxCoreRecorder {
 
         if (launchMode != LaunchMode.DEVELOPMENT) {
             vertx = new VertxSupplierImpl(launchMode, vertxConfig.getValue(), new ArrayList<>(bootstrapCustomizers),
-                    new ArrayList<>(optionsCustomizers), threadPoolConfig.getValue(), shutdown,
+                    new ArrayList<>(optionsCustomizers), threadPoolConfig.getValue(),
                     vertxServiceProviderClassNames, verticleFactoryClassNames);
-            // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)
-            // could cause problem to beans that rely on Vert.x and contain shutdown tasks
-            shutdown.addLastShutdownTask(new Runnable() {
-                @Override
-                public void run() {
-                    destroy();
-                    QuarkusExecutorFactory.sharedExecutor = null;
-                    currentDevModeNewThreadCreationClassLoader = null;
-                }
-            });
         } else {
             if (vertx == null) {
                 vertx = new VertxSupplierImpl(launchMode, vertxConfig.getValue(), new ArrayList<>(bootstrapCustomizers),
                         new ArrayList<>(optionsCustomizers),
                         threadPoolConfig.getValue(),
-                        shutdown, vertxServiceProviderClassNames, verticleFactoryClassNames);
+                        vertxServiceProviderClassNames, verticleFactoryClassNames);
             } else if (vertx.v != null) {
                 tryCleanTccl();
             }
-            shutdown.addLastShutdownTask(new Runnable() {
-                @Override
-                public void run() {
-                    List<CountDownLatch> latches = new ArrayList<>();
-                    if (vertx.v != null) {
-                        Set<String> ids = new HashSet<>(vertx.v.deploymentIDs());
-                        for (String id : ids) {
-                            if (!id.equals(webDeploymentId)) {
-                                CountDownLatch latch = new CountDownLatch(1);
-                                latches.add(latch);
-                                vertx.v.undeploy(id).onComplete(new Handler<AsyncResult<Void>>() {
-                                    @Override
-                                    public void handle(AsyncResult<Void> event) {
-                                        latch.countDown();
-                                    }
-                                });
-                            }
-                        }
-                        for (CountDownLatch latch : latches) {
-                            try {
-                                latch.await();
-                            } catch (InterruptedException e) {
-                                LOGGER.error("Failed waiting for verticle undeploy", e);
-                            }
-                        }
-                    }
-                    QuarkusExecutorFactory.sharedExecutor = null;
-                }
-            });
         }
         return vertx;
     }
@@ -260,14 +233,14 @@ public class VertxCoreRecorder {
     }
 
     public static Vertx initialize(VertxConfiguration conf, VertxCustomizer customizer,
-            ThreadPoolConfig threadPoolConfig, ShutdownContext shutdown,
+            ThreadPoolConfig threadPoolConfig,
             LaunchMode launchMode, List<String> vertxServiceProviderClassNames,
             List<String> verticleFactoryClassNames) {
 
         VertxOptions options = new VertxOptions();
 
         if (conf != null) {
-            convertToVertxOptions(conf, options, threadPoolConfig, shutdown);
+            convertToVertxOptions(conf, options, threadPoolConfig);
         }
 
         if (customizer != null) {
@@ -542,8 +515,7 @@ public class VertxCoreRecorder {
     }
 
     private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options,
-            ThreadPoolConfig threadPoolConfig,
-            ShutdownContext shutdown) {
+            ThreadPoolConfig threadPoolConfig) {
 
         if (buildTimeConfig == null || !buildTimeConfig.useAsyncDNS()) {
             System.setProperty(SysProps.DISABLE_DNS_RESOLVER.name, "true");
@@ -583,17 +555,7 @@ public class VertxCoreRecorder {
                 LOGGER.debugf("Vert.x Cache configured to: %s", cache.getAbsolutePath());
                 fileSystemOptions.setFileCacheDir(cache.getAbsolutePath());
                 fileSystemOptions.setFileCacheDirAsExactPath(true);
-                if (shutdown != null) {
-                    shutdown.addLastShutdownTask(new Runnable() {
-                        @Override
-                        public void run() {
-                            // Recursively delete the created directory and all the files
-                            deleteDirectory(cache);
-                            // We do not delete the vertx-cache directory on purpose, as it could be used concurrently by
-                            // another application. In the worse case, it's just an empty directory.
-                        }
-                    });
-                }
+                tempCacheDir = cache;
             }
         } else {
             fileSystemOptions.setFileCacheDir(fileCacheDir);
@@ -656,7 +618,53 @@ public class VertxCoreRecorder {
         return (int) Math.max(2, Math.min(maxAllowed, recommended));
     }
 
-    void destroy() {
+    /**
+     * Stop the Vert.x instance.
+     * <p>
+     * In development mode, undeploys non-web verticles and clears the shared executor so
+     * Vert.x can be reused across hot-reloads. In other modes, closes Vert.x and clears
+     * all associated state.
+     *
+     * @param launchMode the current launch mode
+     */
+    public static void stopVertx(LaunchMode launchMode) {
+        if (launchMode != LaunchMode.DEVELOPMENT) {
+            destroy();
+            QuarkusExecutorFactory.sharedExecutor = null;
+            currentDevModeNewThreadCreationClassLoader = null;
+        } else {
+            if (vertx != null && vertx.v != null) {
+                List<CountDownLatch> latches = new ArrayList<>();
+                Set<String> ids = new HashSet<>(vertx.v.deploymentIDs());
+                for (String id : ids) {
+                    if (!id.equals(webDeploymentId)) {
+                        CountDownLatch latch = new CountDownLatch(1);
+                        latches.add(latch);
+                        vertx.v.undeploy(id).onComplete(new Handler<AsyncResult<Void>>() {
+                            @Override
+                            public void handle(AsyncResult<Void> event) {
+                                latch.countDown();
+                            }
+                        });
+                    }
+                }
+                for (CountDownLatch latch : latches) {
+                    try {
+                        latch.await();
+                    } catch (InterruptedException e) {
+                        LOGGER.error("Failed waiting for verticle undeploy", e);
+                    }
+                }
+            }
+            QuarkusExecutorFactory.sharedExecutor = null;
+        }
+    }
+
+    /**
+     * Destroy and close the running Vert.x instance, waiting up to the configured
+     * shutdown timeout.
+     */
+    static void destroy() {
         if (vertx != null && vertx.v != null) {
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> problem = new AtomicReference<>();
@@ -671,9 +679,11 @@ public class VertxCoreRecorder {
             });
             try {
                 // Use configured shutdown timeout or default to 10 seconds
-                long timeoutMillis = shutdownConfig.getValue().timeout()
-                        .map(duration -> duration.toMillis())
-                        .orElse(10000L);
+                long timeoutMillis = staticShutdownConfig != null && staticShutdownConfig.getValue() != null
+                        ? staticShutdownConfig.getValue().timeout()
+                                .map(Duration::toMillis)
+                                .orElse(10000L)
+                        : 10000L;
                 boolean completed = latch.await(timeoutMillis, TimeUnit.MILLISECONDS);
                 if (!completed) {
                     LOGGER.warn("Vert.x shutdown timed out after " + timeoutMillis + "ms");
@@ -684,6 +694,10 @@ public class VertxCoreRecorder {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Exception when closing Vert.x instance", e);
+            }
+            if (tempCacheDir != null) {
+                deleteDirectory(tempCacheDir);
+                tempCacheDir = null;
             }
             VertxMDC.INSTANCE.clear();
             LateBoundMDCProvider.setMDCProviderDelegate(null);
@@ -887,7 +901,7 @@ public class VertxCoreRecorder {
     public static VertxSupplier recoverFailedStart(VertxConfiguration config,
             ThreadPoolConfig threadPoolConfig) {
         return vertx = new VertxSupplierImpl(LaunchMode.DEVELOPMENT, config, Collections.emptyList(), Collections.emptyList(),
-                threadPoolConfig, null, List.of(),
+                threadPoolConfig, List.of(),
                 List.of());
 
     }
@@ -904,7 +918,6 @@ public class VertxCoreRecorder {
         final VertxConfiguration config;
         final VertxCustomizer customizer;
         final ThreadPoolConfig threadPoolConfig;
-        final ShutdownContext shutdown;
         final List<String> vertxServiceProviderClassNames;
         final List<String> verticleFactoryClassNames;
         Vertx v;
@@ -913,13 +926,11 @@ public class VertxCoreRecorder {
                 List<Consumer<VertxBootstrap>> bootstrapCustomizers,
                 List<Consumer<VertxOptions>> optionCustomizers,
                 ThreadPoolConfig threadPoolConfig,
-                ShutdownContext shutdown,
                 List<String> vertxServiceProviderClassNames, List<String> verticleFactoryClassNames) {
             this.launchMode = launchMode;
             this.config = config;
             this.customizer = new VertxCustomizer(bootstrapCustomizers, optionCustomizers);
             this.threadPoolConfig = threadPoolConfig;
-            this.shutdown = shutdown;
             this.vertxServiceProviderClassNames = vertxServiceProviderClassNames;
             this.verticleFactoryClassNames = verticleFactoryClassNames;
         }
@@ -927,7 +938,7 @@ public class VertxCoreRecorder {
         @Override
         public synchronized Vertx get() {
             if (v == null) {
-                v = initialize(config, customizer, threadPoolConfig, shutdown, launchMode, vertxServiceProviderClassNames,
+                v = initialize(config, customizer, threadPoolConfig, launchMode, vertxServiceProviderClassNames,
                         verticleFactoryClassNames);
             }
             return v;

@@ -43,12 +43,13 @@ public interface TracesBuildConfig {
      * The sampler to use for tracing.
      * <p>
      * Has one of the values on {@link SamplerType} `always_on`, `always_off`, `traceidratio`, `parentbased_always_on`,
-     * `parentbased_always_off`, `parentbased_traceidratio` or the Sampler SPI name. This will use the OTel SPI hooks
-     * for the {@link io.opentelemetry.sdk.trace.samplers.Sampler} implementation set in the provider:
-     * {@link io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider}.
+     * `parentbased_always_off`, `parentbased_traceidratio` or the Sampler SPI name.
      * <p>
-     * Fallbacks to the legacy property <code>quarkus.opentelemetry.tracer.sampler.sampler.name</code> or
-     * defaults to {@value SamplerType.Constants#PARENT_BASED_TRACE_ID_RATIO}.
+     * Options with the `parentbased` prefix will decide sampling based on the status of the span’s parent.
+     * Please note that span propagation includes the sampling status.
+     * <p>
+     * The default configuration is {@link SamplerType#PARENT_BASED_TRACE_ID_RATIO} and works in tandem with the `arg`
+     * runtime configuration `quarkus.otel.traces.sampler.arg` responsible for setting the ratio.
      */
     @WithDefault(SamplerType.Constants.PARENT_BASED_TRACE_ID_RATIO)
     String sampler();

@@ -159,6 +159,7 @@ import io.quarkus.qute.generator.ValueResolverGenerator;
 import io.quarkus.qute.runtime.ContentTypes;
 import io.quarkus.qute.runtime.EngineProducer;
 import io.quarkus.qute.runtime.QuteConfig;
+import io.quarkus.qute.runtime.QuteContextData;
 import io.quarkus.qute.runtime.QuteRecorder;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 import io.quarkus.qute.runtime.QuteRecorder.TemplateInfo;
@@ -2810,7 +2811,8 @@ public class QuteProcessor {
     @Record(value = STATIC_INIT)
     void initialize(BuildProducer<SyntheticBeanBuildItem> syntheticBeans, QuteConfig config, QuteRecorder recorder,
             EffectiveTemplatePathsBuildItem effectiveTemplatePaths, Optional<TemplateVariantsBuildItem> templateVariants,
-            TemplateRootsBuildItem templateRoots, List<TemplatePathExcludeBuildItem> templatePathExcludes) {
+            TemplateRootsBuildItem templateRoots, List<TemplatePathExcludeBuildItem> templatePathExcludes,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources) {
 
         Map<String, TemplateInfo> templates = new HashMap<>();
         for (TemplatePathBuildItem template : effectiveTemplatePaths.getTemplatePaths()) {
@@ -2856,11 +2858,16 @@ public class QuteProcessor {
             nonDefaultParserConfigs = Map.of();
         }
 
+        // The data that grows with the number of templates goes to a resource: recorded, it would
+        // exceed the constant pool of one generated class with tens of thousands of templates.
+        generatedResources.produce(new GeneratedResourceBuildItem(QuteContextData.RESOURCE,
+                new QuteContextData(templates, variants, nonDefaultParserConfigs).write()));
+
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(QuteContext.class)
                 .scope(BuiltinScope.SINGLETON.getInfo())
-                .supplier(recorder.createContext(variants,
+                .supplier(recorder.createContext(
                         templateRoots.getPaths().stream().map(p -> p + "/").collect(Collectors.toSet()),
-                        templates, excludePatterns, nonDefaultParserConfigs))
+                        excludePatterns))
                 .done());
     }
 

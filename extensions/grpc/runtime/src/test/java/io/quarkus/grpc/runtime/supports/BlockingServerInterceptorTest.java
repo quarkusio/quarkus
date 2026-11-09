@@ -1,12 +1,16 @@
 package io.quarkus.grpc.runtime.supports;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,6 +83,50 @@ class BlockingServerInterceptorTest {
         } finally {
             context.detach(previous);
         }
+    }
+
+    @Test
+    @Timeout(10)
+    void testRequestIsDispatchedToTheEventLoopAfterTheCallIsInitialized() throws Exception {
+        final ServerCall serverCall = mock(ServerCall.class);
+        final MethodDescriptor methodDescriptor = mock(MethodDescriptor.class);
+        when(methodDescriptor.getFullMethodName()).thenReturn("my-service/blocking");
+        when(serverCall.getMethodDescriptor()).thenReturn(methodDescriptor);
+
+        AtomicBoolean eventLoopTaskDone = new AtomicBoolean();
+        AtomicBoolean requestedAfterEventLoopTask = new AtomicBoolean();
+        AtomicReference<String> requestThread = new AtomicReference<>();
+        CountDownLatch requested = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            requestThread.set(Thread.currentThread().getName());
+            requestedAfterEventLoopTask.set(eventLoopTaskDone.get());
+            requested.countDown();
+            return null;
+        }).when(serverCall).request(anyInt());
+
+        // Like grpc-stub's UnaryServerCallHandler, request the messages from startCall, which runs on a worker thread
+        ServerCallHandler serverCallHandler = (call, headers) -> {
+            call.request(2);
+            return new ServerCall.Listener() {
+            };
+        };
+
+        vertx.getOrCreateContext().runOnContext(ignored -> {
+            blockingServerInterceptor.interceptCall(serverCall, new Metadata(), serverCallHandler);
+            // The Vert.x gRPC bridge initializes the read side of the call on the event loop after the interceptors
+            // ran, and that must complete before any request(n) reaches it. Keep the event loop busy to let the
+            // worker thread get ahead.
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            eventLoopTaskDone.set(true);
+        });
+
+        requested.await();
+        assertThat(requestThread.get()).contains("vert.x-eventloop");
+        assertThat(requestedAfterEventLoopTask).isTrue();
     }
 
     @Test

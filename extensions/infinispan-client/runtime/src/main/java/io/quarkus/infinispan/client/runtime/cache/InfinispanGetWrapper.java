@@ -51,20 +51,25 @@ public class InfinispanGetWrapper {
                             stage.complete(valGet);
                             synchronousGets.remove(key);
                         } else {
-                            Object newValue = valueLoader.apply(key);
-                            if (newValue == null) {
+                            try {
+                                Object newValue = valueLoader.apply(key);
+                                if (newValue == null) {
+                                    synchronousGets.remove(key);
+                                    stage.complete(null);
+                                } else {
+                                    cache.putIfAbsentAsync(key, newValue)
+                                            .whenComplete((valPut, tPut) -> {
+                                                if (tPut != null) {
+                                                    stage.completeExceptionally((Throwable) tPut);
+                                                } else {
+                                                    stage.complete(valPut == null ? newValue : valPut);
+                                                }
+                                                synchronousGets.remove(key);
+                                            });
+                                }
+                            } catch (Throwable t) {
                                 synchronousGets.remove(key);
-                                stage.complete(null);
-                            } else {
-                                cache.putIfAbsentAsync(key, newValue)
-                                        .whenComplete((valPut, tPut) -> {
-                                            if (tPut != null) {
-                                                stage.completeExceptionally((Throwable) tPut);
-                                            } else {
-                                                stage.complete(valPut == null ? newValue : valPut);
-                                            }
-                                            synchronousGets.remove(key);
-                                        });
+                                stage.completeExceptionally(t);
                             }
                         }
                     });

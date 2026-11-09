@@ -29,11 +29,8 @@ class DependentContext implements InjectableContext {
         }
 
         T instance = contextual.create(creationalContext);
-        if (creationalContext instanceof CreationalContextImpl) {
-            // we can remove this `if` and cast unconditionally after https://github.com/jakartaee/cdi-tck/pull/452
-            CreationalContextImpl<T> ccimpl = (CreationalContextImpl<T>) creationalContext;
-            ccimpl.addDependentInstance((InjectableBean<T>) contextual, instance, creationalContext);
-        }
+        CreationalContextImpl<T> cc = (CreationalContextImpl<T>) creationalContext;
+        cc.addDependentInstance((InjectableBean<T>) contextual, instance, creationalContext);
         return instance;
     }
 

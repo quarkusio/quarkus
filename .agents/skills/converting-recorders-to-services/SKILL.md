@@ -278,14 +278,14 @@ services. Return `Optional.empty()` when inactive; downstream services
 using `request()` receive the empty optional and can propagate it:
 
 ```java
-reg.forService(RedisClientConnection.class, name)
+serviceRegistrar.forService(RedisClientConnection.class, name)
     .optional()
     .require(RedisConfig.class)
     .onStart((ctx, config) -> config.clients().get(name).active()
         ? Optional.of(createConnection(config))
         : Optional.empty());
 
-reg.forService(RedisDataSource.class, name)
+serviceRegistrar.forService(RedisDataSource.class, name)
     .optional()
     .request(RedisClientConnection.class, name)
     .onStart((ctx, connOpt) -> connOpt.map(conn -> ...));

@@ -4,6 +4,7 @@ import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.Set;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -62,8 +63,11 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
     }
 
     private boolean requiresValidation(MethodInfo method) {
-        for (DotName consideredAnnotation : consideredAnnotations) {
-            if (method.hasAnnotation(consideredAnnotation)) {
+        // iterate the annotations of the method (including the ones of its parameters and signature types)
+        // rather than looking up each considered annotation: this transformer runs on every method of every
+        // class ArC looks at and DotName comparisons allocate whereas hash lookups do not
+        for (AnnotationInstance annotation : method.annotations()) {
+            if (consideredAnnotations.contains(annotation.name())) {
                 return !isSynthetic(method.flags());
             }
         }

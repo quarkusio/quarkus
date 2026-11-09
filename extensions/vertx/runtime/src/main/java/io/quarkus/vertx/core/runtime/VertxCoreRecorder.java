@@ -118,12 +118,7 @@ public class VertxCoreRecorder {
 
     private final RuntimeValue<VertxConfiguration> vertxConfig;
     private final RuntimeValue<ThreadPoolConfig> threadPoolConfig;
-    private final RuntimeValue<ShutdownConfig> shutdownConfig;
-
-    /**
-     * Static reference to the shutdown configuration for timeout retrieval during shutdown.
-     */
-    private static volatile RuntimeValue<ShutdownConfig> staticShutdownConfig;
+    private static volatile RuntimeValue<ShutdownConfig> shutdownConfig;
 
     /**
      * Temporary cache directory created when caching is enabled and no explicit directory is set.
@@ -141,8 +136,7 @@ public class VertxCoreRecorder {
         buildTimeConfig = btConfig;
         this.vertxConfig = vertxConfig;
         this.threadPoolConfig = threadPoolConfig;
-        this.shutdownConfig = shutdownConfig;
-        staticShutdownConfig = shutdownConfig;
+        VertxCoreRecorder.shutdownConfig = shutdownConfig;
     }
 
     public VertxSupplier configureVertx(LaunchMode launchMode,
@@ -679,8 +673,8 @@ public class VertxCoreRecorder {
             });
             try {
                 // Use configured shutdown timeout or default to 10 seconds
-                long timeoutMillis = staticShutdownConfig != null && staticShutdownConfig.getValue() != null
-                        ? staticShutdownConfig.getValue().timeout()
+                long timeoutMillis = shutdownConfig != null && shutdownConfig.getValue() != null
+                        ? shutdownConfig.getValue().timeout()
                                 .map(Duration::toMillis)
                                 .orElse(10000L)
                         : 10000L;

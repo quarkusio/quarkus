@@ -25,21 +25,17 @@ public class QuarkusErrorServlet extends HttpServlet {
 
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String details = "";
+        String details;
         String stack = "";
         Object uuid = req.getAttribute(QuarkusExceptionHandler.ERROR_ID);
         Throwable exception = (Throwable) req.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-        String errorMessage = (String) req.getAttribute(RequestDispatcher.ERROR_MESSAGE);
-        if (errorMessage != null) {
-            details = errorMessage;
-        }
         final boolean showStack = Boolean.parseBoolean(getInitParameter(SHOW_STACK));
         if (showStack && exception != null) {
             details = generateHeaderMessage(exception, uuid == null ? null : uuid.toString());
             stack = generateStackTrace(exception);
 
-        } else if (uuid != null) {
-            details += "Error id " + uuid;
+        } else {
+            details = generateHeaderMessage(req, exception, uuid);
         }
 
         String accept = req.getHeader("Accept");
@@ -78,6 +74,30 @@ public class QuarkusErrorServlet extends HttpServlet {
         exception.printStackTrace(new PrintWriter(stringWriter));
 
         return stringWriter.toString().trim();
+    }
+
+    /**
+     * Builds the message displayed when the stack trace is not shown, which is the default in production.
+     * <p>
+     * The message of an uncaught exception is deliberately left out: it is internal information that must not be
+     * exposed to the client. It remains available in the log, correlated through the error id. A message passed to
+     * {@link HttpServletResponse#sendError(int, String)} is chosen by the application and is preserved.
+     */
+    private static String generateHeaderMessage(final HttpServletRequest req, final Throwable exception, final Object uuid) {
+        final StringBuilder message = new StringBuilder();
+        if (exception == null) {
+            final String errorMessage = (String) req.getAttribute(RequestDispatcher.ERROR_MESSAGE);
+            if (errorMessage != null) {
+                message.append(errorMessage);
+            }
+        }
+        if (uuid != null) {
+            if (!message.isEmpty()) {
+                message.append(", ");
+            }
+            message.append("Error id ").append(uuid);
+        }
+        return message.toString();
     }
 
     private static String generateHeaderMessage(final Throwable exception, String uuid) {

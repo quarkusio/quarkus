@@ -39,7 +39,7 @@ public class AcmeClient extends AcmeClientSpi implements AutoCloseable {
 
     final String managementUser;
     final String managementPassword;
-    final String managementKey;
+    final String tlsConfigurationName;
 
     private final WebClient managementClient;
 
@@ -49,7 +49,7 @@ public class AcmeClient extends AcmeClientSpi implements AutoCloseable {
     public AcmeClient(String managementUrl,
             String managementUser,
             String managementPassword,
-            String managementKey,
+            String tlsConfigurationName,
             boolean insecureMode) {
         this.vertx = Vertx.vertx();
         LOGGER.infof("\uD83D\uDD35 Creating AcmeClient with %s", managementUrl);
@@ -76,7 +76,12 @@ public class AcmeClient extends AcmeClientSpi implements AutoCloseable {
         this.certsUrl = base + "/certs";
         this.managementUser = managementUser;
         this.managementPassword = managementPassword;
-        this.managementKey = managementKey;
+        this.tlsConfigurationName = tlsConfigurationName;
+        if (managementUser != null && managementPassword != null) {
+            AUDIT.info("Using basic authentication for management endpoint (user: " + managementUser + ")");
+        } else {
+            AUDIT.warn("No authentication credentials provided for management endpoint");
+        }
     }
 
     private void checkRateLimit(String operation) {
@@ -236,14 +241,11 @@ public class AcmeClient extends AcmeClientSpi implements AutoCloseable {
     }
 
     private void addKeyAndUser(HttpRequest<Buffer> request) {
-        if (managementKey != null) {
-            AUDIT.info("Using API key authentication for management endpoint");
-            request.addQueryParam("key", managementKey);
-        } else if (managementUser != null && managementPassword != null) {
-            AUDIT.info("Using basic authentication for management endpoint (user: " + managementUser + ")");
+        if (tlsConfigurationName != null) {
+            request.addQueryParam("key", tlsConfigurationName);
+        }
+        if (managementUser != null && managementPassword != null) {
             request.basicAuthentication(managementUser, managementPassword);
-        } else {
-            AUDIT.warn("No authentication credentials provided for management endpoint");
         }
     }
 

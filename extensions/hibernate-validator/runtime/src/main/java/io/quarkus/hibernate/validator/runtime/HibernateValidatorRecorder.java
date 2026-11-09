@@ -211,6 +211,7 @@ public class HibernateValidatorRecorder {
                 }
 
                 configuration.accessorFactory(accessorFactory.getValue());
+                configuration.beanProvider(new ArcBeanProvider(Arc.container()));
 
                 Instance<ValidatorFactoryCustomizer> validatorFactoryCustomizers = context
                         .getInjectedReference(INSTANCE_VALIDATOR_FACTORY_CUSTOMER_TYPE_LITERAL);

@@ -1,6 +1,8 @@
 package io.quarkus.gradle.tooling;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
@@ -11,8 +13,18 @@ public class DefaultProjectDescriptor implements Serializable, ProjectDescriptor
 
     private WorkspaceModule.Mutable module;
 
+    /**
+     * Workspace modules of the other projects of the build, keyed by project path
+     */
+    private final Map<String, WorkspaceModule.Mutable> projectModules;
+
     public DefaultProjectDescriptor(WorkspaceModule.Mutable module) {
+        this(module, Map.of());
+    }
+
+    public DefaultProjectDescriptor(WorkspaceModule.Mutable module, Map<String, WorkspaceModule.Mutable> projectModules) {
         this.module = module;
+        this.projectModules = new HashMap<>(projectModules);
     }
 
     @Override
@@ -30,9 +42,15 @@ public class DefaultProjectDescriptor implements Serializable, ProjectDescriptor
     }
 
     @Override
+    public WorkspaceModule.Mutable getWorkspaceModuleForProjectOrNull(String projectPath) {
+        return projectModules.get(projectPath);
+    }
+
+    @Override
     public String toString() {
         return "DefaultProjectDescriptor{" +
                 "\nmodule=" + module +
+                "\nprojectModules=" + projectModules.keySet() +
                 "\n}";
     }
 }

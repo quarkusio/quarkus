@@ -15,7 +15,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.launcher.QuarkusLauncher;
-import io.quarkus.runtime.shutdown.ShutdownRecorder;
 
 /**
  * The entry point for applications that use a main method. Quarkus will shut down when the main method returns.
@@ -316,11 +315,10 @@ public class Quarkus {
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 @Override
                 public void run() {
-                    ShutdownRecorder.runShutdown();
-                    manualApp.doStop();
+                    manualApp.stop();
                 }
             });
-            manualApp.doStart(args);
+            manualApp.start(args);
         } catch (RuntimeException e) {
             manualState = MANUAL_FAILURE;
             throw e;

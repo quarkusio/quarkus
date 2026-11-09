@@ -65,6 +65,7 @@ import io.quarkus.netty.runtime.virtual.VirtualAddress;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.runtime.ErrorPageAction;
+import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.QuarkusBindException;
@@ -151,6 +152,9 @@ public class VertxHttpRecorder {
     private static final String DISABLE_WEBSOCKETS_PROP_NAME = "vertx.disableWebsockets";
 
     private static final Logger LOGGER = Logger.getLogger(VertxHttpRecorder.class.getName());
+
+    // Evaluated during native-image build-time initialization so remote dev paths can be eliminated during analysis.
+    private static final boolean JVM_MODE = ImageMode.current() == ImageMode.JVM;
 
     private static volatile Handler<RoutingContext> hotReplacementHandler;
     private static volatile HotReplacementContext hotReplacementContext;
@@ -319,7 +323,8 @@ public class VertxHttpRecorder {
 
             Handler<HttpServerRequest> root = router;
             LiveReloadConfig liveReloadConfig = config.getConfigMapping(LiveReloadConfig.class);
-            if (liveReloadConfig.password().isPresent()
+            // Remote development requires JVM mode. Exclude its handler from native-image analysis.
+            if (JVM_MODE && liveReloadConfig.password().isPresent()
                     && hotReplacementContext.getDevModeType() == DevModeType.REMOTE_SERVER_SIDE) {
                 root = remoteSyncHandler = new RemoteSyncHandler(liveReloadConfig.password().get(), root,
                         hotReplacementContext, "/");
@@ -570,7 +575,8 @@ public class VertxHttpRecorder {
                 }
             });
         }
-        if (launchMode == LaunchMode.DEVELOPMENT && liveReloadConfig.password().isPresent()
+        // Remote development requires JVM mode. Exclude its handler from native-image analysis.
+        if (JVM_MODE && launchMode == LaunchMode.DEVELOPMENT && liveReloadConfig.password().isPresent()
                 && hotReplacementContext.getDevModeType() == DevModeType.REMOTE_SERVER_SIDE) {
             root = remoteSyncHandler = new RemoteSyncHandler(liveReloadConfig.password().get(), root, hotReplacementContext,
                     rootPath);

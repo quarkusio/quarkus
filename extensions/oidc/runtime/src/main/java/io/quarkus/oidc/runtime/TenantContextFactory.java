@@ -303,6 +303,12 @@ final class TenantContextFactory {
                         "The '" + getConfigPropertyForTenant(tenantId, "logout.path") + "' property can only be enabled for "
                                 + io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType.WEB_APP + " application types");
             }
+            if (oidcConfig.authentication().applicationLoginPath().isPresent()) {
+                throw new ConfigurationException(
+                        "The '" + getConfigPropertyForTenant(tenantId, "authentication.application-login-path")
+                                + "' property can only be enabled for "
+                                + io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType.WEB_APP + " application types");
+            }
             if (oidcConfig.roles().source().isPresent()
                     && oidcConfig.roles().source().get() == io.quarkus.oidc.runtime.OidcTenantConfig.Roles.Source.idtoken) {
                 throw new ConfigurationException(
@@ -312,6 +318,7 @@ final class TenantContextFactory {
                                 + " application types");
             }
         } else {
+            verifyApplicationLoginPath(oidcConfig, tenantId);
             if (oidcConfig.authentication().sessionAgeExtension().isPresent()
                     && !oidcConfig.token().refreshExpired()) {
                 LOG.warn(
@@ -414,6 +421,13 @@ final class TenantContextFactory {
             LOG.warnf("'%s' is a Client ID Metadata Document URL but the 'client-id-metadata' route is not in"
                     + " 'quarkus.oidc.allowed-routes'; this tenant will not publish its Client ID Metadata Document",
                     getConfigPropertyForTenant(tenantId, "client-id"));
+        }
+    }
+
+    private static void verifyApplicationLoginPath(OidcTenantConfig oidcConfig, String tenantId) {
+        if (OidcCommonUtils.isAbsoluteUrl(oidcConfig.authentication().applicationLoginPath())) {
+            String property = getConfigPropertyForTenant(tenantId, "authentication.application-login-path");
+            throw new ConfigurationException("'" + property + "' must be a relative path", Set.of(property));
         }
     }
 

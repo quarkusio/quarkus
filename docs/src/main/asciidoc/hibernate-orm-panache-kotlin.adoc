@@ -239,6 +239,30 @@ annotation is required. If your DTO declares several constructors and you want t
 annotate it with `@ProjectedConstructor` as described in the
 xref:hibernate-orm-panache.adoc#query-projection[Java version].
 
+=== Using a value class as the entity identifier
+
+A `@JvmInline` value class can be the type of an entity's `@Id` property and the `Id` type argument of
+`PanacheRepositoryBase` or `PanacheCompanionBase`. Kotlin compiles the value class to its underlying type,
+which is what Hibernate ORM maps, and the generated `findById` and `deleteById` implementations pass that
+underlying value on, so the repository is used with the value class:
+
+[source,kotlin]
+----
+@JvmInline
+value class GreetingId(val value: UUID)
+
+@Entity
+class Greeting {
+    @Id
+    var id: GreetingId = GreetingId(UUID.randomUUID())
+}
+
+@ApplicationScoped
+class GreetingRepository : PanacheRepositoryBase<Greeting, GreetingId>
+
+val greeting = greetingRepository.findById(GreetingId(uuid))
+----
+
 For more examples, please consult the xref:hibernate-orm-panache.adoc[Java version] for complete details.  Both APIs
 are the same and work identically except for some Kotlin-specific tweaks to make things feel more natural to
 Kotlin developers.  These tweaks include things like better use of nullability and the lack of `Optional` on API

@@ -65,6 +65,8 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     protected static final ByteCodeType CLASS = new ByteCodeType(Class.class);
     private static final String CTOR_METHOD_NAME = "<init>";
     private static final String CLINIT_METHOD_NAME = "<clinit>";
+    private static final DotName DOTNAME_JVM_INLINE = DotName.createSimple("kotlin.jvm.JvmInline");
+    private static final String VALUE_CLASS_UNBOX_METHOD = "unbox-impl";
     protected final Function<String, Type> argMapper;
     protected final ClassInfo classInfo;
     protected final ByteCodeType entityUpperBound;
@@ -73,6 +75,11 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     private final ByteCodeType baseType;
     private final Set<String> userMethods = new HashSet<>();
     private final Set<String> baseTypeMethods = new HashSet<>();
+    /**
+     * When the Id type argument is a Kotlin value class, kotlinc emits the base type methods taking an Id under a
+     * mangled name and with the underlying type as parameter; this maps the base method key to that name
+     */
+    private final Map<String, String> mangledNames = new HashMap<>();
     private final Map<String, String> erasures = new HashMap<>();
     private final IndexView indexView;
     protected List<PanacheMethodCustomizer> methodCustomizers;
@@ -116,6 +123,27 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                 baseTypeMethods.add(method.name() + "/" + descriptor);
             }
         }
+    }
+
+    /**
+     * A Kotlin {@code @JvmInline value class} is compiled to its underlying type: the entity's id field, the
+     * signature kotlinc emits for the base type methods taking an Id, and what Hibernate expects are all the
+     * underlying type, so that is the type the generated operations must use.
+     */
+    private static ByteCodeType unwrapValueClass(ByteCodeType idType, IndexView indexView) {
+        if (idType.isPrimitive()) {
+            return idType;
+        }
+        ClassInfo idClass = indexView.getClassByName(idType.dotName());
+        if (idClass == null || !idClass.hasDeclaredAnnotation(DOTNAME_JVM_INLINE)) {
+            return idType;
+        }
+        for (MethodInfo method : idClass.methods()) {
+            if (method.name().equals(VALUE_CLASS_UNBOX_METHOD) && method.parametersCount() == 0) {
+                return new ByteCodeType(method.returnType());
+            }
+        }
+        return idType;
     }
 
     public static List<ByteCodeType> recursivelyFindEntityTypeArguments(IndexView indexView, DotName clazz,
@@ -249,7 +277,8 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                 classInfo.name(), baseType.dotName());
 
         ByteCodeType entityType = (foundTypeArguments.size() > 0) ? foundTypeArguments.get(0) : OBJECT;
-        ByteCodeType idType = (foundTypeArguments.size() > 1) ? foundTypeArguments.get(1).unbox() : OBJECT;
+        ByteCodeType idType = (foundTypeArguments.size() > 1) ? unwrapValueClass(foundTypeArguments.get(1), indexView).unbox()
+                : OBJECT;
 
         typeArguments.put("Entity", entityType);
         typeArguments.put("Id", idType);
@@ -304,9 +333,11 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     }
 
     private void generate(MethodInfo method) {
+        String descriptor = method.descriptor(argMapper);
+        String name = mangledNames.getOrDefault(method.name() + "/" + descriptor, method.name());
         // Note: we can't use SYNTHETIC here because otherwise Mockito will never mock these methods
-        MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC, method.name(),
-                method.descriptor(argMapper), method.genericSignature(argMapper), null);
+        MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC, name,
+                descriptor, method.genericSignature(argMapper), null);
 
         AsmUtil.copyParameterNames(mv, method);
         for (PanacheMethodCustomizer customizer : methodCustomizers) {
@@ -510,9 +541,18 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         // Kotlinc or something will add bridge methods for the base type methods, these are not user methods
         // so we filter them out since we add them back in visitEnd()
         String sig = name + "/" + descriptor;
-        if ((access & Opcodes.ACC_BRIDGE) != 0
-                && baseTypeMethods.contains(sig)) {
-            return null;
+        if ((access & Opcodes.ACC_BRIDGE) != 0) {
+            if (baseTypeMethods.contains(sig)) {
+                return null;
+            }
+            int mangling = name.indexOf('-');
+            if (mangling > 0) {
+                String baseSig = name.substring(0, mangling) + "/" + descriptor;
+                if (baseTypeMethods.contains(baseSig)) {
+                    mangledNames.put(baseSig, name);
+                    return null;
+                }
+            }
         }
         userMethods.add(sig);
         return super.visitMethod(access, name, descriptor, signature, exceptions);
@@ -525,7 +565,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
             AnnotationInstance bridge = method.annotation(DOTNAME_GENERATE_BRIDGE);
             if (!userMethods.contains(method.name() + "/" + descriptor) && bridge != null) {
                 generate(method);
-                if (needsJvmBridge(method)) {
+                if (needsJvmBridge(method) && !mangledNames.containsKey(method.name() + "/" + descriptor)) {
                     String bridgeDescriptor = bridgeMethodDescriptor(method, type -> {
                         ByteCodeType mapped = typeArguments.get(type);
                         return mapped != null ? mapped.get() : null;

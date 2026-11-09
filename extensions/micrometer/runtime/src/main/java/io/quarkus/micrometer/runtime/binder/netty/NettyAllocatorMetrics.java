@@ -32,6 +32,13 @@ public class NettyAllocatorMetrics implements MeterBinder {
         this.allocator = allocator;
     }
 
+    /**
+     * @return the {@code ByteBuf} allocator instrumented by this binder
+     */
+    public ByteBufAllocatorMetricProvider getAllocator() {
+        return allocator;
+    }
+
     @Override
     public void bindTo(MeterRegistry registry) {
         ByteBufAllocatorMetric allocatorMetric = this.allocator.metric();

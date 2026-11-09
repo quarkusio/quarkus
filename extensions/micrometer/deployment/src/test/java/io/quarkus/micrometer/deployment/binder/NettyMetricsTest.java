@@ -1,7 +1,11 @@
 package io.quarkus.micrometer.deployment.binder;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -30,16 +34,19 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.netty4.NettyEventExecutorMetrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufAllocatorMetricProvider;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.SingleThreadEventExecutor;
 import io.quarkus.micrometer.runtime.binder.netty.NettyAllocatorMetrics;
-import io.quarkus.micrometer.runtime.binder.netty.NettyMetricsProvider;
 import io.quarkus.micrometer.runtime.binder.netty.VertxNettyAllocatorMetricsProvider;
 import io.quarkus.micrometer.test.HelloResource;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.buffer.VertxByteBufAllocator;
 import io.vertx.core.internal.VertxInternal;
 
 public class NettyMetricsTest {
@@ -70,18 +77,6 @@ public class NettyMetricsTest {
 
     @Inject
     Vertx vertx;
-
-    private static final Set<Tag> NAM_PBBA_TAGS = Tags.of(
-            "name", NettyMetricsProvider.NETTY_DEFAULT_POOLED_ALLOCATOR_NAME,
-            "allocator.type", "PooledByteBufAllocator")
-            .stream()
-            .collect(Collectors.toSet());
-
-    private static final Set<Tag> NAM_UNPBBA_TAGS = Tags.of(
-            "name", NettyMetricsProvider.NETTY_DEFAULT_UNPOOLED_ALLOCATOR_NAME,
-            "allocator.type", "UnpooledByteBufAllocator")
-            .stream()
-            .collect(Collectors.toSet());
 
     private static final Set<Tag> VX_NAM_PBBA_TAGS = Tags.of(
             "name", VertxNettyAllocatorMetricsProvider.VERTX_POOLED_ALLOCATOR_NAME,
@@ -149,7 +144,7 @@ public class NettyMetricsTest {
 
     @Test
     public void testNettyAllocatorMetrics() {
-        testNettyMetrics(5L, NettyAllocatorMetrics.class);
+        testNettyMetrics(3L, NettyAllocatorMetrics.class);
     }
 
     @Test
@@ -159,10 +154,29 @@ public class NettyMetricsTest {
 
     @Test
     public void testAllocatorMetricsValues() {
-        testAllocatorMetricsValues(NAM_PBBA_TAGS);
-        testAllocatorMetricsValues(NAM_UNPBBA_TAGS);
         testAllocatorMetricsValues(VX_NAM_PBBA_TAGS);
         testAllocatorMetricsValues(VX_NAM_UNPBBA_TAGS);
+    }
+
+    /**
+     * The allocators Netty actually uses must each be tracked, and exactly once: tracking an unused allocator
+     * reports flat metrics, while tracking the same allocator under two names double counts its memory when
+     * aggregating across names.
+     */
+    @Test
+    public void testAllocatorsInUseAreTrackedExactlyOnce() {
+        List<ByteBufAllocatorMetricProvider> tracked = binders.stream()
+                .filter(NettyAllocatorMetrics.class::isInstance)
+                .map(b -> ((NettyAllocatorMetrics) b).getAllocator())
+                .toList();
+
+        assertThat(tracked).filteredOn(a -> a == ByteBufAllocator.DEFAULT).hasSize(1);
+        assertThat(tracked).filteredOn(a -> a == VertxByteBufAllocator.POOLED_ALLOCATOR).hasSize(1);
+        assertThat(tracked).filteredOn(a -> a == UnpooledByteBufAllocator.DEFAULT).hasSize(1);
+
+        Set<ByteBufAllocatorMetricProvider> distinct = Collections.newSetFromMap(new IdentityHashMap<>());
+        distinct.addAll(tracked);
+        assertThat(distinct).hasSameSizeAs(tracked);
     }
 
     @Test

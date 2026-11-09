@@ -40,7 +40,7 @@ public class RunnerClassLoaderTest {
                 Collections.emptySet(),
                 Collections.emptyList(), Collections.emptyMap(),
                 null, Collections.emptySet(),
-                null, Collections.emptySet());
+                null, Collections.emptySet(), false);
 
         // Put the RunnerClassLoader in a postBootPhase thus enabling the jars cache
         runnerClassLoader.resetInternalCaches();
@@ -114,7 +114,7 @@ public class RunnerClassLoaderTest {
                 Collections.emptySet(),
                 Collections.emptyList(), Collections.emptyMap(),
                 null, Collections.emptySet(),
-                null, Collections.emptySet());
+                null, Collections.emptySet(), false);
 
         assertThat(runnerClassLoader.findResource("org").toString()).endsWith("/org");
         assertThat(runnerClassLoader.findResource("org/").toString()).endsWith("/org/");

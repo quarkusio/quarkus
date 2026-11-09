@@ -35,7 +35,7 @@ public class SerializedApplication {
     private static final List<String> FULLY_INDEXED_DIRECTORIES = List.of("", "META-INF", "META-INF/services");
 
     private static final int MAGIC = 0XF0315432;
-    private static final int VERSION = 3;
+    private static final int VERSION = 4;
 
     private static final ClassLoadingResource[] EMPTY_ARRAY = new ClassLoadingResource[0];
     private static final JarResource SENTINEL = new JarResource(null, Path.of("wqxehxivam"));
@@ -58,10 +58,27 @@ public class SerializedApplication {
 
     public static void write(OutputStream outputStream, String mainClass, Path applicationRoot, List<Path> classPath,
             List<Path> parentFirst) throws IOException {
+        write(outputStream, mainClass, applicationRoot, classPath, parentFirst, false);
+    }
+
+    /**
+     * Write the data that {@link #read(InputStream, Path)} needs to create the class loader of the application.
+     *
+     * @param outputStream the stream to write to
+     * @param mainClass the name of the main class of the application
+     * @param applicationRoot the root directory of the application
+     * @param classPath the jars of the application
+     * @param parentFirst the jars that the parent class loader loads
+     * @param cracEnabled whether the class loader registers its CRaC resource
+     * @throws IOException if the data cannot be written
+     */
+    public static void write(OutputStream outputStream, String mainClass, Path applicationRoot, List<Path> classPath,
+            List<Path> parentFirst, boolean cracEnabled) throws IOException {
         try (DataOutputStream data = new DataOutputStream(outputStream)) {
             data.writeInt(MAGIC);
             data.writeInt(VERSION);
             data.writeUTF(mainClass);
+            data.writeBoolean(cracEnabled);
             data.writeShort(classPath.size());
 
             Map<String, List<Integer>> fullyIndexedResourcesToCPJarIndex = new LinkedHashMap<>();
@@ -138,6 +155,7 @@ public class SerializedApplication {
                 throw new RuntimeException("Wrong class path version");
             }
             String mainClass = in.readUTF();
+            boolean cracEnabled = in.readBoolean();
             ResourceDirectoryTracker resourceDirectoryTracker = new ResourceDirectoryTracker();
             int numPaths = in.readUnsignedShort();
             ClassLoadingResource[] allClassLoadingResources = new ClassLoadingResource[numPaths];
@@ -209,7 +227,7 @@ public class SerializedApplication {
                     resourceDirectoryTracker.getResult(), parentFirstPackages,
                     FULLY_INDEXED_DIRECTORIES, fullyIndexedResourcesIndexMap,
                     generatedBytecodeClassLoadingResource, generatedBytecode,
-                    transformedBytecodeClassLoadingResource, transformedBytecode);
+                    transformedBytecodeClassLoadingResource, transformedBytecode, cracEnabled);
             for (ClassLoadingResource classLoadingResource : allClassLoadingResources) {
                 classLoadingResource.init();
             }

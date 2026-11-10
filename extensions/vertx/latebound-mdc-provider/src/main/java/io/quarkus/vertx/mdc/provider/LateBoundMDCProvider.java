@@ -144,7 +144,10 @@ public class LateBoundMDCProvider implements MDCProvider {
 
     private Object putLocal(String key, Object value) {
         Objects.requireNonNull(key);
-        Objects.requireNonNull(value);
+        if (value == null) {
+            // SLF4J allows null MDC values when the implementation supports it; treat null as removal
+            return removeLocal(key);
+        }
 
         Map<String, Object> map = threadLocalMap.get();
         if (map == null) {

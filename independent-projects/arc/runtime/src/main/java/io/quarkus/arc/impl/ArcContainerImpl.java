@@ -485,16 +485,32 @@ public class ArcContainerImpl implements ArcContainer {
             contexts.singletonContext.destroy();
 
             // Clear caches
-            Reflections.clearCaches();
-            resolved.clear();
-            running.set(false);
-            InterceptedStaticMethods.clear();
-            if (eventMocks != null) {
-                eventMocks.clear();
-            }
+            clear();
 
             LOGGER.debugf("ArC DI container shut down");
         }
+    }
+
+    /**
+     * Clears the caches of this container and marks it as not running. Called by {@link #shutdown()}, and when the
+     * container fails to initialize, as such a container is never shut down.
+     */
+    public void clear() {
+        clearStaticCaches();
+        resolved.clear();
+        running.set(false);
+        if (eventMocks != null) {
+            eventMocks.clear();
+        }
+    }
+
+    /**
+     * Clears the static caches that hold classes of a container. Called by {@link #clear()}, and when the container
+     * constructor fails.
+     */
+    public static void clearStaticCaches() {
+        Reflections.clearCaches();
+        InterceptedStaticMethods.clear();
     }
 
     public List<InjectableBean<?>> getBeans() {

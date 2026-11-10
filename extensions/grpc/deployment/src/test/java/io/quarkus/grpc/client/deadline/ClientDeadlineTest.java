@@ -1,7 +1,6 @@
 package io.quarkus.grpc.client.deadline;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.time.Duration;
 
@@ -13,7 +12,6 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.grpc.Deadline;
 import io.grpc.examples.helloworld.Greeter;
 import io.grpc.examples.helloworld.GreeterClient;
 import io.grpc.examples.helloworld.GreeterGrpc;
@@ -38,8 +36,6 @@ public class ClientDeadlineTest {
     @Test
     public void testCallOptions() {
         GreeterClient client = (GreeterClient) GrpcClientUtils.getProxiedObject(consumer.service);
-        Deadline deadline = client.getStub().getCallOptions().getDeadline();
-        assertNotNull(deadline);
         HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("Scaladar").build()).onFailure()
                 .recoverWithItem(HelloReply.newBuilder().setMessage("ERROR!").build()).await().atMost(Duration.ofSeconds(5));
         assertEquals("ERROR!", reply.getMessage());

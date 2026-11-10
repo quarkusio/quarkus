@@ -11,6 +11,7 @@ import jakarta.json.bind.JsonbException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.common.providers.serialisers.AbstractJsonMessageBodyReader;
 import org.jboss.resteasy.reactive.common.util.StreamUtil;
@@ -59,8 +60,35 @@ public class JsonbMessageBodyReader extends AbstractJsonMessageBodyReader implem
             if (isEmptyInputException(e)) {
                 return null;
             }
+            if (isInputTooDeeplyNestedException(e)) {
+                // excessively nested JSON is a client error, other JsonbExceptions
+                // (e.g. type definition problems) are not
+                throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
+            }
             throw e;
+        } catch (StackOverflowError e) {
+            // Yasson deserializes nested JSON recursively and can exhaust the thread stack before the
+            // parser's nesting limit is reached. Treat such excessively nested input as a client error
+            // instead of letting it escape as an unmapped 500 (see GHSA-mf6v-cw62-468m). The cause is
+            // intentionally not attached to avoid carrying around (and potentially logging) its huge stack trace.
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
+    }
+
+    private boolean isInputTooDeeplyNestedException(Exception e) {
+        // Parsson rejects input nested beyond its limit with a plain RuntimeException ("Input is too deeply
+        // nested"), which Yasson wraps in a JsonbException; it is not a JsonParsingException. Yasson may also
+        // wrap a StackOverflowError from its own recursive deserialization. Both are client errors.
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof StackOverflowError) {
+                return true;
+            }
+            String message = t.getMessage();
+            if (message != null && message.contains("too deeply nested")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isEmptyInputException(Exception e) {

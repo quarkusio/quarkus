@@ -299,7 +299,7 @@ public class NativeImageBuildStep {
                         nativeImageName,
                         resultingExecutableName, outputDir,
                         graalVMVersion, nativeConfig.debug().enabled(),
-                        processInheritIODisabledBuildItem.isPresent());
+                        processInheritIODisabledBuildItem.isPresent(), nativeConfig.enableReports());
             } catch (Throwable t) {
                 throw imageGenerationFailed(t, isContainerBuild);
             }
@@ -504,7 +504,7 @@ public class NativeImageBuildStep {
 
             log.info("Rebuilding native image with PGO profile...");
             localRunner.build(pgoArgs, nativeImageName, resultingExecutableName, outputDir,
-                    null, nativeConfig.debug().enabled(), false);
+                    null, nativeConfig.debug().enabled(), false, nativeConfig.enableReports());
 
             // Copy the optimized binary from outputDir to targetDir (same as the original build flow)
             Path generatedBinary = outputDir.resolve(resultingExecutableName);

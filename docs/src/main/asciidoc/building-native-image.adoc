@@ -232,7 +232,9 @@ At the `x64 Native Tools Command Prompt`, you can navigate to your project folde
 ====
 
 The build produces `target/getting-started-1.0.0-SNAPSHOT-runner`.
-You can run it directly:
+When `quarkus.native.enable-reports=true` is set, the native-image compiler's standard output and standard error are also saved in separate UTF-8 logs alongside the executable, with `-build-stdout.log` and `-build-stderr.log` appended to its name (for example, `target/getting-started-1.0.0-SNAPSHOT-runner-build-stdout.log` and `target/getting-started-1.0.0-SNAPSHOT-runner-build-stderr.log`).
+Both logs are replaced on each native-image compilation and are retained whether compilation succeeds or fails.
+You can run the executable directly:
 
 [source,bash]
 ----

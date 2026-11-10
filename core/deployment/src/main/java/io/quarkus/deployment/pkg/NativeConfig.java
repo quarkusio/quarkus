@@ -297,7 +297,10 @@ public interface NativeConfig {
     Optional<List<MonitoringOption>> monitoring();
 
     /**
-     * If the reports on call paths and included packages/classes/methods should be generated
+     * If the reports on call paths and included packages/classes/methods should be generated.
+     * Also save the native-image compiler's standard output and standard error in separate UTF-8 logs alongside
+     * the executable, with {@code -build-stdout.log} and {@code -build-stderr.log} appended to its name.
+     * Both logs are replaced on each compilation.
      */
     @WithDefault("false")
     boolean enableReports();

@@ -62,7 +62,8 @@ public final class RunnerClassLoader extends ClassLoader {
             Set<String> parentFirstPackages,
             List<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> fullyIndexedResourcesIndexMap,
             ClassLoadingResource generatedBytecodeClassLoadingResource, Set<String> generatedBytecode,
-            ClassLoadingResource transformedBytecodeClassLoadingResource, Set<String> transformedBytecode) {
+            ClassLoadingResource transformedBytecodeClassLoadingResource, Set<String> transformedBytecode,
+            boolean cracEnabled) {
         super(parent);
         this.resourceDirectoryMap = resourceDirectoryMap;
         this.parentFirstPackages = parentFirstPackages;
@@ -73,12 +74,19 @@ public final class RunnerClassLoader extends ClassLoader {
         this.transformedBytecodeClassLoadingResource = transformedBytecodeClassLoadingResource;
         this.transformedBytecode = transformedBytecode;
 
-        if (CracSupport.isEnabled()) {
+        if (cracEnabled || CracSupport.isEnabled()) {
             resource = new CracResource();
             org.crac.Core.getGlobalContext().register(resource);
         } else {
             resource = null;
         }
+    }
+
+    /**
+     * @return {@code true} if this class loader registered its CRaC resource
+     */
+    boolean isCracResourceRegistered() {
+        return resource != null;
     }
 
     @Override

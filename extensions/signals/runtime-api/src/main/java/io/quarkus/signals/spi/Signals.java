@@ -5,7 +5,6 @@ import java.lang.annotation.Annotation;
 import jakarta.enterprise.util.TypeLiteral;
 
 import io.quarkus.signals.Signal;
-import io.smallrye.common.annotation.Experimental;
 
 /**
  * SPI for programmatic creation of {@link Signal} instances.
@@ -15,7 +14,6 @@ import io.smallrye.common.annotation.Experimental;
  * or {@link Signal#create(TypeLiteral, Annotation...)} when CDI injection is not available.
  * This SPI is intended for framework integrators.
  */
-@Experimental("This API is experimental and may change in the future")
 public interface Signals {
 
     /**

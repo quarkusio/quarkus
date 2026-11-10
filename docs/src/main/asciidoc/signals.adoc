@@ -11,12 +11,9 @@ include::_attributes.adoc[]
 :sectnumlevels: 4
 :topics: events,signals,messages
 :extensions: io.quarkus:quarkus-signals
-:extension-status: experimental
 
 Signals allow application components to interact in a loosely coupled fashion, by emitting and receiving _signals_.
 A signal is an object -- optionally augmented with qualifiers and metadata -- that is emitted by one component and delivered to one or more _receivers_.
-
-include::{includes}/extension-status.adoc[]
 
 Resolution:: The extension provides a type-safe resolution model, inspired by the https://jakarta.ee/specifications/cdi/5.0/jakarta-cdi-spec-5.0.html#events[CDI events].
 Emission Modes:: Inspired by the https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x EventBus], the API supports unicast (point-to-point) and request-reply patterns in addition to the traditional multicast (publish-subscribe) pattern.

@@ -6,8 +6,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import io.smallrye.common.annotation.Experimental;
-
 /**
  * Identifies the signal parameter of a receiver method declared on a CDI bean.
  *
@@ -54,7 +52,6 @@ import io.smallrye.common.annotation.Experimental;
  *
  * @see Signal
  */
-@Experimental("This API is experimental and may change in the future")
 @Retention(RUNTIME)
 @Target(ElementType.PARAMETER)
 public @interface Receives {

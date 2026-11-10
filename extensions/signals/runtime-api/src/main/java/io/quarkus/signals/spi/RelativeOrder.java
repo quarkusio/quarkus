@@ -5,8 +5,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import io.smallrye.common.annotation.Experimental;
-
 /**
  * Defines the ordering of a component relative to other components of the same type.
  * <p>
@@ -14,7 +12,6 @@ import io.smallrye.common.annotation.Experimental;
  * <p>
  * Cycles in the ordering are detected at build time and result in a deployment error.
  */
-@Experimental("This API is experimental and may change in the future")
 @Target({ ElementType.TYPE, ElementType.METHOD, ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RelativeOrder {

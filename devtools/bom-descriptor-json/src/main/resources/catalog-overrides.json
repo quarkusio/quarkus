@@ -131,6 +131,11 @@
       "description": "Serializing and deserializing various formats"
     },
     {
+      "name": "Automation",
+      "id": "automation",
+      "description": "Rules engine, scheduling, BPM, etc"
+    },
+    {
       "name": "Miscellaneous",
       "id": "miscellaneous",
       "description": "Mixed bag of good stuff"

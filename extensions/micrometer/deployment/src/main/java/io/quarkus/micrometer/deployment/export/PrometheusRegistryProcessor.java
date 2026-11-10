@@ -5,6 +5,7 @@ import java.util.function.BooleanSupplier;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -13,6 +14,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.load.shedding.deployment.spi.LoadSheddingExemptPathBuildItem;
 import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
@@ -57,6 +59,21 @@ public class PrometheusRegistryProcessor {
         @Override
         public boolean getAsBoolean() {
             return QuarkusClassLoader.isClassPresentAtRuntime("io.quarkus.opentelemetry.runtime.OpenTelemetryUtil");
+        }
+    }
+
+    @BuildStep
+    void initializeShadedProtobufAtRuntime(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+        // Protobuf caches Unsafe field offsets, which must be computed for the native image layout.
+        // Discover the shaded class because Prometheus includes the protobuf version in its package name.
+        for (ClassPathElement element : QuarkusClassLoader.getElements(
+                "io/prometheus/metrics/expositionformats/internal/PrometheusProtobufWriterImpl.class", false)) {
+            for (String resource : element.getProvidedResources()) {
+                if (resource.startsWith("io/prometheus/metrics/shaded/") && resource.endsWith("/UnsafeUtil.class")) {
+                    runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem(
+                            resource.substring(0, resource.length() - ".class".length()).replace('/', '.')));
+                }
+            }
         }
     }
 

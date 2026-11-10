@@ -12,24 +12,13 @@ import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CacheManagerInfo;
 import io.quarkus.cache.runtime.CacheManagerImpl;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 
-@Recorder
 public class InfinispanCacheBuildRecorder {
 
     private static final Logger LOGGER = Logger.getLogger(InfinispanCacheBuildRecorder.class);
 
-    private final InfinispanCachesBuildTimeConfig buildConfig;
-    private final RuntimeValue<InfinispanCachesConfig> infinispanCacheConfigRV;
-
-    public InfinispanCacheBuildRecorder(InfinispanCachesBuildTimeConfig buildConfig,
-            RuntimeValue<InfinispanCachesConfig> infinispanCacheConfigRV) {
-        this.buildConfig = buildConfig;
-        this.infinispanCacheConfigRV = infinispanCacheConfigRV;
-    }
-
-    public CacheManagerInfo getCacheManagerSupplier() {
+    public static CacheManagerInfo getCacheManagerSupplier(InfinispanCachesBuildTimeConfig buildConfig,
+            InfinispanCachesConfig infinispanCacheConfig) {
         return new CacheManagerInfo() {
             @Override
             public boolean supports(Context context) {
@@ -44,7 +33,7 @@ public class InfinispanCacheBuildRecorder {
                     public CacheManager get() {
                         Set<InfinispanCacheInfo> cacheInfos = InfinispanCacheInfoBuilder.build(context.cacheNames(),
                                 buildConfig,
-                                infinispanCacheConfigRV.getValue());
+                                infinispanCacheConfig);
                         if (cacheInfos.isEmpty()) {
                             return new CacheManagerImpl(Collections.emptyMap());
                         } else {

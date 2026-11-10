@@ -10,18 +10,11 @@ import java.util.Map;
 
 import org.hibernate.accessor.AccessorFactory;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.hibernate.accessor.runtime.AccessorFactoryBootstrap;
-import io.quarkus.hibernate.accessor.runtime.HibernateAccessorRecorder;
-import io.quarkus.hibernate.accessor.runtime.HibernateAccessorStrategy;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.StartupContext;
-import io.quarkus.runtime.StartupTask;
+import io.quarkus.hibernate.accessor.runtime.HibernateAccessorFactory;
 import io.smallrye.classfile.ClassFile;
 import io.smallrye.classfile.Opcode;
 import io.smallrye.classfile.instruction.InvokeInstruction;
@@ -57,56 +50,14 @@ class HibernateAccessorBootstrapTest {
         try {
             Thread.currentThread().setContextClassLoader(new ClassLoader(null) {
             });
-            var recorder = new HibernateAccessorRecorder();
             AccessorFactory factory = (withFallback
-                    ? recorder.createAccessorFactoryWithFallback(new RuntimeValue<>(bootstrap))
-                    : recorder.createAccessorFactory(new RuntimeValue<>(bootstrap))).getValue();
+                    ? bootstrap.create(HibernateAccessorFactory.createReflectionFactory())
+                    : bootstrap.create(null));
             checkFactory(factory, withFallback);
             // Later calls through the bootstrap must retain the first initialized factory and fallback.
-            assertThat(bootstrap.create(recorder.createReflectionFactory().getValue())).isSameAs(factory);
+            assertThat(bootstrap.create(HibernateAccessorFactory.createReflectionFactory())).isSameAs(factory);
             assertThat(bootstrap.create(null)).isSameAs(factory);
             checkFactory(factory, withFallback);
-        } finally {
-            Thread.currentThread().setContextClassLoader(previous);
-        }
-    }
-
-    @ParameterizedTest
-    @EnumSource(HibernateAccessorStrategy.class)
-    void startupConstructsBootstrapDirectlyAndPublishesFactory(HibernateAccessorStrategy strategy) throws Exception {
-        Map<String, byte[]> classes = strategy == HibernateAccessorStrategy.REFLECTION
-                ? new LinkedHashMap<>()
-                : generate(strategy == HibernateAccessorStrategy.GENERATED_WITH_FALLBACK);
-        ClassLoader previous = Thread.currentThread().getContextClassLoader();
-        try (var recordingLoader = QuarkusClassLoader.builder("accessor recording", getClass().getClassLoader(), true)
-                .build()) {
-            Thread.currentThread().setContextClassLoader(recordingLoader);
-            var recording = new BytecodeRecorderImpl(true, "HibernateAccessorBootstrapTest", "accessFactory", strategy.name(),
-                    true);
-            var item = new HibernateAccessorProcessor().accessFactory(() -> strategy,
-                    recording.getRecordingProxy(HibernateAccessorRecorder.class), recording);
-            Map<String, byte[]> startup = new LinkedHashMap<>();
-            recording.writeBytecode(startup::put);
-            List<InvokeInstruction> calls = startup.values().stream().flatMap(bytes -> calls(bytes).stream()).toList();
-            List<InvokeInstruction> bootstrapCalls = calls.stream()
-                    .filter(call -> call.owner().asInternalName().equals(BOOTSTRAP.replace('.', '/'))).toList();
-            if (strategy == HibernateAccessorStrategy.REFLECTION) {
-                assertThat(bootstrapCalls).isEmpty();
-            } else {
-                assertThat(bootstrapCalls).singleElement().satisfies(call -> {
-                    assertThat(call.opcode()).isEqualTo(Opcode.INVOKESPECIAL);
-                    assertThat(call.name().stringValue()).isEqualTo("<init>");
-                    assertThat(call.type().stringValue()).isEqualTo("()V");
-                });
-            }
-            startup.forEach((name, bytes) -> classes.put(name.replace('/', '.'), bytes));
-            var task = (StartupTask) loader(classes).loadClass(recording.getClassName()).getConstructor().newInstance();
-            try (var context = new StartupContext()) {
-                task.deploy(context);
-                var returned = (BytecodeRecorderImpl.ReturnedProxy) item.accessorFactory();
-                var factory = (RuntimeValue<?>) context.getValue(returned.__returned$proxy$key());
-                checkFactory((AccessorFactory) factory.getValue(), strategy != HibernateAccessorStrategy.GENERATED);
-            }
         } finally {
             Thread.currentThread().setContextClassLoader(previous);
         }

@@ -140,6 +140,12 @@ public class JacksonProcessor {
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        // Register inherited exception getters and the properties returned by getStackTrace() for invocation.
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(Throwable.class, StackTraceElement.class)
+                        .reason(getClass().getName())
+                        .constructors(false)
+                        .publicMethods().build());
         reflectiveClass.produce(
                 ReflectiveClassBuildItem.builder("com.fasterxml.jackson.annotation.SimpleObjectIdResolver")
                         .reason(getClass().getName())

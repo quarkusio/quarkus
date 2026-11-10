@@ -163,17 +163,16 @@ public class PersistentLoginManager {
     }
 
     public void clear(RoutingContext ctx) {
-        // Vert.x sends back a set-cookie with max-age and expiry but no path, so we have to set it first,
-        // otherwise web clients don't clear it
-        Cookie cookie = ctx.request().getCookie(cookieName);
-        if (cookie != null) {
-            cookie.setPath("/");
+        // Web clients identify a cookie by its name, domain and path, so the expired cookie must have
+        // the same domain and path as the cookie created by the 'save' method, otherwise it is not cleared
+        Cookie cookie = Cookie.cookie(cookieName, "")
+                .setMaxAge(0)
+                .setPath(cookiePath)
+                .setSecure(ctx.request().isSSL());
+        if (cookieDomain != null) {
+            cookie.setDomain(cookieDomain);
         }
-        ctx.response().removeCookie(cookieName);
-    }
-
-    String getCookieName() {
-        return cookieName;
+        ctx.response().addCookie(cookie);
     }
 
     public static class RestoreResult {

@@ -124,6 +124,12 @@ public class VertxOutputStream extends OutputStream {
             return;
         }
         assert lock.isHeldByCurrentThread();
+        if (throwable != null) {
+            throw new IOException(throwable);
+        }
+        if (response.closed()) {
+            throw new IOException("Connection has been closed");
+        }
         while (response.writeQueueFull()) {
             if (throwable != null) {
                 throw new IOException(throwable);
@@ -175,6 +181,9 @@ public class VertxOutputStream extends OutputStream {
         }
         if (closed) {
             throw new IOException("Stream is closed");
+        }
+        if (response.closed()) {
+            throw new IOException("Connection has been closed");
         }
 
         int rem = len;

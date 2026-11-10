@@ -195,6 +195,8 @@ NOTE: If you are building on a non-Linux system, you will need to also pass in a
 Lambda requires Linux binaries.  You can do this by passing this property to your build:
 `-Dnative-image.docker-build=true`.  This requires you to have Docker installed locally, however.
 
+include::{includes}/aws-lambda-native-march-note.adoc[]
+
 include::{includes}/devtools/build-native-container.adoc[]
 
 Either of these commands will compile and create a native executable.  It also generates a zip file `target/function.zip`.

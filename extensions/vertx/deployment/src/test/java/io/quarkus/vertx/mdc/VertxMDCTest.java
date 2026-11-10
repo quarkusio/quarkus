@@ -146,6 +146,32 @@ public class VertxMDCTest {
         });
     }
 
+    @RepeatedTest(10)
+    public void mdcSlf4jNullValueTest() {
+        InMemoryLogHandler.reset();
+        await().until(() -> producer.isInitialized());
+        await().until(InitialConfigurator.DELAYED_HANDLER::isActivated);
+        await().until(() -> {
+            return Arrays.stream(InitialConfigurator.DELAYED_HANDLER.getHandlers()).anyMatch(h -> h == inMemoryLogHandler);
+        });
+
+        String mdcValue = "Test SLF4J MDC value";
+        org.slf4j.MDC.put("requestId", mdcValue);
+
+        await().untilAsserted(() -> {
+            LOGGER.info("Null test 1");
+            assertThat(inMemoryLogHandler.logRecords(), hasItem(mdcValue + " ### Null test 1"));
+        });
+
+        // SLF4J allows null values, a null value removes the key
+        org.slf4j.MDC.put("requestId", null);
+
+        await().untilAsserted(() -> {
+            LOGGER.info("Null test 2");
+            assertThat(inMemoryLogHandler.logRecords(), hasItem(" ### Null test 2"));
+        });
+    }
+
     private void sendRequests(List<String> ids, CountDownLatch done) {
         WebClient webClient = WebClient.create(vertx, new WebClientOptions().setDefaultPort(VERTICLE_PORT));
 

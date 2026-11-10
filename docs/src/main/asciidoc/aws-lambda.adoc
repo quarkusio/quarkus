@@ -148,7 +148,7 @@ The `target/manage.sh` script is for managing your lambda using the AWS Lambda J
 your convenience. Examine the output of the `manage.sh` script if you want to learn what aws commands are executed
 to create, delete, and update your lambdas.
 
-`manage.sh` supports four operation:  `create`, `delete`, `update`, and `invoke`.
+`manage.sh` supports four operations:  `create`, `delete`, `update`, and `invoke`.
 
 NOTE: To verify your setup, that you have the AWS CLI installed, executed aws configure for the AWS access keys,
 and set up the `LAMBDA_ROLE_ARN` environment variable (as described above), please execute `manage.sh` without any parameters.
@@ -242,6 +242,18 @@ NOTE: If you are building on a non-Linux system, you will need to also pass in a
 Lambda requires linux binaries.  You can do this by passing this property to your build:
 `-Dquarkus.native.container-build=true`. This requires you to have Docker installed locally, however.
 
+[NOTE]
+====
+According to the https://docs.aws.amazon.com/linux/al2023/ug/system-requirements.html#system-requirements-cpu-x86-64[AWS documentation], AL2023
+x86-64 binaries are built for the x86-64-**v2** revision of the x86-64 architecture.
+In Quarkus, the default value of xref:building-native-image.adoc#quarkus-core_quarkus-native-march[quarkus.native.march] is x86-64-**v3**.
+This could cause
+https://repost.aws/questions/QUBVnl6hn-Toe1LPr1qjOXzg/lambda-failed-with-java-compiled-into-machine-code[issues] if AWS Lambda provisions older
+hardware.
+To maximize Lambda compatibility, you can set `quarkus.native.march` to `x86-64-v2`.
+See the xref:native-reference.adoc#work-around-missing-cpu-features[Native Reference] guide for more information.
+====
+
 include::{includes}/devtools/build-native-container.adoc[]
 
 Either of these commands will compile and create a native executable image.  It also generates a zip file `target/function.zip`.
@@ -291,7 +303,6 @@ Example Gradle dependencies:
 ----
 dependencies {
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-    implementation 'io.quarkus:quarkus-resteasy'
     implementation 'io.quarkus:quarkus-amazon-lambda'
 
     testImplementation 'io.quarkus:quarkus-junit'
@@ -410,11 +421,11 @@ There are times when you may have to add some additions to the `function.zip` la
 by the build.  To do this, create a `zip.jvm` or `zip.native` directory within `src/main`.
 Create `zip.jvm/` if you are doing a pure Java lambda.  `zip.native/` if you are doing a native deployment.
 
-Any you files and directories you create under your zip directory will be included within `function.zip`
+Any files and directories you create under your zip directory will be included within `function.zip`
 
 == Custom `bootstrap` script
 
-There are times you may want to set a specific system properties or other arguments when lambda invokes
+There are times you may want to set specific system properties or other arguments when lambda invokes
 your native quarkus lambda deployment.  If you include a `bootstrap` script file within
 `zip.native`, the quarkus extension will automatically rename the executable to `runner` within
 `function.zip` and set the unix mode of the `bootstrap` script to executable.

@@ -90,7 +90,7 @@ public interface ReactiveTransactionalListCommands<K, V> extends ReactiveTransac
      *
      * @param timeout the timeout, in seconds
      * @param source the source key
-     * @param destination the detination key
+     * @param destination the destination key
      * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
      *         otherwise. In the case of failure, the transaction is discarded.
      * @deprecated See https://redis.io/commands/brpoplpush

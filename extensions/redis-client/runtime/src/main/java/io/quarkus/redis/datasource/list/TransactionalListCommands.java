@@ -79,7 +79,7 @@ public interface TransactionalListCommands<K, V> extends TransactionalRedisComma
      *
      * @param timeout the timeout, in seconds
      * @param source the source key
-     * @param destination the detination key
+     * @param destination the destination key
      * @deprecated See https://redis.io/commands/brpoplpush
      */
     @Deprecated

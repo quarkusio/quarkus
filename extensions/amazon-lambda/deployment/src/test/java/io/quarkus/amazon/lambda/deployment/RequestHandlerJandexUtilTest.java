@@ -31,7 +31,7 @@ public class RequestHandlerJandexUtilTest {
     public static void setup() throws IOException {
         Indexer indexer = new Indexer();
 
-        // Mimick what would happen in a regular Quarkus app:
+        // Mimic what would happen in a regular Quarkus app:
         // forcefully index all test classes, but let the computing index index JDK classes
         indexer.indexClass(SimpleStringHandler.class);
         indexer.indexClass(SimpleIntegerHandler.class);

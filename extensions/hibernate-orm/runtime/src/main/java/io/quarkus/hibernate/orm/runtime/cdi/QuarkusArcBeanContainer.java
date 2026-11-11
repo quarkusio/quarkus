@@ -17,7 +17,7 @@ import org.hibernate.resource.beans.spi.BeanInstanceProducer;
  * <ol>
  * <li>When a class is annotated with a scope, such as <code>@ApplicationScoped</code> or <code>@Dependent</code>, we will
  * comply with that (with some gotchas, see last item).
- * This is not in line with the behavior from the Jakarta Persitence spec, which would ignore explicit scopes.
+ * This is not in line with the behavior from the Jakarta Persistence spec, which would ignore explicit scopes.
  * <li>When a class is NOT annotated with any scope, it will behave as a <code>@Dependent</code> CDI bean,
  * at least for attribute converters and entity listeners (with some gotchas, see last item).
  * This is in line with what the Jakarta Persistence spec requires.

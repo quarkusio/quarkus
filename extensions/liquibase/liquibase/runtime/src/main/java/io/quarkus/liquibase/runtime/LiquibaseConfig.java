@@ -105,7 +105,7 @@ public class LiquibaseConfig {
     /**
      * Whether Liquibase should enforce secure parsing.
      * <p>
-     * If secure parsing is enforced, unsecure files may not be parsed.
+     * If secure parsing is enforced, insecure files may not be parsed.
      */
     public boolean secureParsing = true;
 

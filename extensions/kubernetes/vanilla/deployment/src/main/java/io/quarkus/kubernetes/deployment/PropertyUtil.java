@@ -45,7 +45,7 @@ public class PropertyUtil {
                     platformCapitalized, kubernetesProperty.getName(), kubernetesProperty.getValue().get(), runtimeOrBuildTime,
                     extensionProperty.getName(), extensionProperty.getValue().get(), usage);
         } else {
-            // Both proeprties are present and aligned.
+            // Both properties are present and aligned.
         }
     }
 }

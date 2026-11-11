@@ -183,7 +183,7 @@ class KubernetesProcessor {
                     }
                 });
 
-                //The targetDirectory should be the custom if provided, oterwise the 'default' output directory.
+                //The targetDirectory should be the custom if provided, otherwise the 'default' output directory.
                 //I this case 'default' means that one that we used until now (up until we introduced the ability to override).
                 Path targetDirectory = customOutputDir
                         .map(CustomKubernetesOutputDirBuildItem::getOutputDir)

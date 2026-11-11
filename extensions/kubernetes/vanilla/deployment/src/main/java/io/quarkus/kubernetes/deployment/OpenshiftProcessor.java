@@ -305,7 +305,7 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
             context.add(new AddLabelDecorator(name, OPENSHIFT_APP_RUNTIME, QUARKUS));
         }
 
-        // Enalbe local lookup policy for all image streams
+        // Enable local lookup policy for all image streams
         context.add(new EnableImageStreamLocalLookupPolicyDecorator());
 
         // Handle custom s2i builder images

@@ -69,7 +69,7 @@ public final class ElasticsearchJavaClientFeature implements Feature {
         // _DESERIALIZER constant field through reflection,
         // so we need to let GraalVM know.
 
-        // Best-guess of the built class, given the coding coventions in Elasticsearch Java Client;
+        // Best-guess of the built class, given the coding conventions in Elasticsearch Java Client;
         // ideally we'd resolve generics but it's hard and we don't have the right utils in our dependencies.
         var builtClass = builderSubClass.getEnclosingClass();
         if (builtClass == null) {

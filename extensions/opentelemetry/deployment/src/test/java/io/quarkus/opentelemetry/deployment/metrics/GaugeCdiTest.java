@@ -89,7 +89,7 @@ public class GaugeCdiTest {
      * This is how an invalid classloader looks like:
      * "bean.classloader.name" -> "NULL (SYSTEM CLASSLOADER)"
      * "bean.thread.name" -> "PeriodicMetricReader-1"
-     * "resolver.failue" -> "Cannot invoke "java.lang.ClassLoader.getName()" because the return value of
+     * "resolver.failure" -> "Cannot invoke "java.lang.ClassLoader.getName()" because the return value of
      * "java.lang.Thread.getContextClassLoader()" is null"
      *
      * @throws ExecutionException

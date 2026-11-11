@@ -51,7 +51,7 @@ public interface DataQuery<Query extends DataQuery<Query, Entity, SortEntity, En
          * @return the current limit
          * @throws UnsupportedOperationException if no limit or range has been set
          */
-        // FIXME: do we group these appart in a Ranging interface?
+        // FIXME: do we group these apart in a Ranging interface?
         Limit limit();
 
         /**

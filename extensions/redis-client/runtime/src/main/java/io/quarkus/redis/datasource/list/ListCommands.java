@@ -99,7 +99,7 @@ public interface ListCommands<K, V> extends RedisCommands {
      *
      * @param timeout the timeout, in seconds
      * @param source the source key
-     * @param destination the detination key
+     * @param destination the destination key
      * @return the element being popped from source and pushed to destination. If timeout is reached, a Null reply is returned.
      * @deprecated See https://redis.io/commands/brpoplpush
      **/

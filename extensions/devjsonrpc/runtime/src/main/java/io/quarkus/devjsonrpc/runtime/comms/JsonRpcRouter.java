@@ -293,7 +293,7 @@ public class JsonRpcRouter {
             returnedObject = DevConsoleManager.invoke(jsonRpcMethodName, getArgsAsMap(jsonRpcRequest));
         }
         if (returnedObject != null) {
-            // Support for Mutiny is diffcult because we are between the runtime and deployment classpath.
+            // Support for Mutiny is difficult because we are between the runtime and deployment classpath.
             // Supporting something like CompletableFuture and Flow.Publisher that is in the JDK works fine
             if (returnedObject instanceof Flow.Publisher) {
                 Flow.Publisher<?> publisher = (Flow.Publisher) returnedObject;

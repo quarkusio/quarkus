@@ -236,7 +236,7 @@ public class ResteasyCommonProcessor {
         for (AnnotationInstance i : indexBuildItem.getIndex().getAnnotations(ResteasyDotNames.PROVIDER)) {
             if (i.target().kind() == AnnotationTarget.Kind.CLASS) {
                 String annotatedProvider = i.target().asClass().name().toString();
-                // If we use build-in providers, we can ignore duplicate entries
+                // If we use built-in providers, we can ignore duplicate entries
                 if (!useBuiltinProviders || !availableProviders.contains(annotatedProvider)) {
                     annotatedProviders.add(annotatedProvider);
                 }

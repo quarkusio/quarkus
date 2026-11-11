@@ -45,7 +45,7 @@ public class OpenApiMPDirectOpenApiFilterAnnotationTest {
 
     @Test
     public void testOpenApiFilterResource() {
-        // validating that MyOASFilter does not change version to 3.0.0, but keeps configured verison
+        // validating that MyOASFilter does not change version to 3.0.0, but keeps configured version
         given().header("Accept", "application/json")
                 .when().get(OPEN_API_PATH)
                 .then()

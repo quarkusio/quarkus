@@ -25,7 +25,7 @@ import io.vertx.core.http.WebSocketConnectOptions;
  * <p>
  * This construct is not thread-safe and should not be used concurrently.
  * <p>
- * Connectors should not be reused. If you need to create multiple connections in a row you'll need to obtain a new connetor
+ * Connectors should not be reused. If you need to create multiple connections in a row you'll need to obtain a new connector
  * instance programmatically using {@link Instance#get()}:
  * <code><pre>
  * import jakarta.enterprise.inject.Instance;

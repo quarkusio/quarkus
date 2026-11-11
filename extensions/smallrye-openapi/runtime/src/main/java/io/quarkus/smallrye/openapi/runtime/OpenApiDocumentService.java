@@ -166,7 +166,7 @@ public class OpenApiDocumentService {
     /**
      * Deferred allows to lazily execute the loader. The loader is discarded after the first call. <br/>
      * In case the action happened before construction of the Deferred, an already materialized value can be provided, so that
-     * the same API can be used in deferred and non defered code paths.
+     * the same API can be used in deferred and non deferred code paths.
      */
     static class Deferred<T> {
         private final ReentrantLock lock = new ReentrantLock();

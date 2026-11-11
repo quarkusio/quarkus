@@ -95,7 +95,7 @@ public class StorkDevModeTest {
                 .get("/helper/smallrye stork")
                 .then()
                 .statusCode(200)
-                // The response contains an encoded blank espace
+                // The response contains an encoded blank escape
                 .body(equalTo("Hello, smallrye stork"));
     }
 }

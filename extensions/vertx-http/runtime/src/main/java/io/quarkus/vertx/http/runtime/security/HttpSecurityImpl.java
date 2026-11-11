@@ -90,7 +90,7 @@ final class HttpSecurityImpl implements HttpSecurity {
         final CORSConfig newCorsConfig = (CORSConfig) cors;
         if (!corsConfig.origins().orElse(List.of()).isEmpty()) {
             // for example SmallRye OpenAPI extension adds a management URL to 'origins'
-            // and we want users know that they are loosing some configuration
+            // and we want users know that they are losing some configuration
             final List<String> newOrigins = newCorsConfig.origins().orElse(List.of());
             final String missingOrigins = corsConfig.origins().get().stream()
                     .filter(origin -> !newOrigins.contains(origin)).collect(Collectors.joining(","));

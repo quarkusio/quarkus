@@ -68,7 +68,7 @@ public class VertxContextSupportTest {
                     assertTrue(VertxContext.isOnDuplicatedContext());
                     VertxContextSafetyToggle.validateContextIfExists("Error", "Error");
                     assertTrue(Arc.container().requestContext().isActive());
-                    // New duplicated contex -> new request context
+                    // New duplicated context -> new request context
                     String asyncBravoId = bravo.getId();
                     assertNotEquals(bravoId, asyncBravoId);
 

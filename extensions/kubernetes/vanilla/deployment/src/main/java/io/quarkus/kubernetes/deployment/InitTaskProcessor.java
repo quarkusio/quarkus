@@ -42,7 +42,7 @@ public class InitTaskProcessor {
         boolean generateRoleForJobs = false;
         for (InitTaskBuildItem task : initTasks) {
             String taskName = task.getName()
-                    //Strip appplication.name prefix and init suffix (for compatibility with previous versions)
+                    //Strip application.name prefix and init suffix (for compatibility with previous versions)
                     .replaceAll("^" + Pattern.quote(name + "-"), "")
                     .replaceAll(Pattern.quote("-init") + "$", "");
             String jobName = name + "-" + taskName + "-init";

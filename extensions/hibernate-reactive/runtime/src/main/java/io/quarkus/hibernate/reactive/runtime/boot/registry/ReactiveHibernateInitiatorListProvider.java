@@ -53,7 +53,7 @@ import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcConnectionP
 public final class ReactiveHibernateInitiatorListProvider implements InitialInitiatorListProvider {
 
     //N.B. this class is currently constructed via reflection by the ORM core extension
-    //(iif the Hibernate Reactive extension is available)
+    //(if the Hibernate Reactive extension is available)
 
     @Override
     public List<StandardServiceInitiator<?>> initialInitiatorList() {

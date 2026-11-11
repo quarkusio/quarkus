@@ -43,7 +43,7 @@ class QuarkusNettyConnectionCache implements ConnectionCache {
 
         // `FastThreadLocalThread` uses an array and increasing index for `FastThreadLocal`, the thread
         // local variables will *never* be expunged until the thread exits, so `FastThreadLocal` instance
-        // musn't be created again.
+        // mustn't be created again.
         //
         // For other non-`FastThreadLocalThread` threads, `FastThreadLocal` actually uses static
         // `java.lang.ThreadLocal`, it's useless to create fresh `FastThreadLocal` instance.

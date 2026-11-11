@@ -128,7 +128,7 @@ public final class KubernetesInitContainerBuildItem extends MultiBuildItem imple
     /**
      * Flag for tasks that require access to the environment variables of the application.
      * Often tasks need to access resources, configured via environment variables. This
-     * flag expresses that the task should be executed using the same envrironment variables as the application.
+     * flag expresses that the task should be executed using the same environment variables as the application.
      *
      * @return true when the task is meant to share environment variables with the application.
      */

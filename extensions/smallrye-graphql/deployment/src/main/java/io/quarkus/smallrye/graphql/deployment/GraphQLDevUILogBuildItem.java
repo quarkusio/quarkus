@@ -6,7 +6,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
- * Used to create the publisher for the graphql trafic log in dev ui
+ * Used to create the publisher for the graphql traffic log in dev ui
  */
 public final class GraphQLDevUILogBuildItem extends SimpleBuildItem {
     private final RuntimeValue<SubmissionPublisher<String>> publisher;

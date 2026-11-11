@@ -38,7 +38,7 @@ public class ExecutorServiceBeanTest {
     public void testExecutorServiceBean() throws InterruptedException {
         // unwrap the proxies first
         ExecutorService es = assertNonNullProxy(executorService);
-        // all injection points should be satisifed by the same application scoped bean
+        // all injection points should be satisfied by the same application scoped bean
         assertTrue(es == assertNonNullProxy(executor));
         assertTrue(es == assertNonNullProxy(scheduledExecutorService));
         // verify execution

@@ -304,7 +304,7 @@ public class OidcBuildStep {
     /**
      * Produce {@link TenantIdentityProvider} with already selected tenant for each {@link TenantIdentityProvider}
      * injection point annotated with {@link Tenant} annotation.
-     * For example, we produce {@link TenantIdentityProvider} with pre-selected tenant 'my-tenant' for injection point:
+     * For example, we produce {@link TenantIdentityProvider} with preselected tenant 'my-tenant' for injection point:
      *
      * <code>
      *  &#064;Inject

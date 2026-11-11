@@ -118,7 +118,7 @@ public abstract class TransactionalInterceptorBase {
                         return connectionUni
                                 .onItem()
                                 .transformToUni(connection -> actualRollback(connection.transaction(), exception).invoke(() -> {
-                                    // onItemOrFailure() will still propagate the chain even with an execption
+                                    // onItemOrFailure() will still propagate the chain even with an exception
                                     // we need to rethrow it to make sure the reactive chain fails
                                     throw new RuntimeException("Transaction rolled back due to: ", exception);
                                 }));

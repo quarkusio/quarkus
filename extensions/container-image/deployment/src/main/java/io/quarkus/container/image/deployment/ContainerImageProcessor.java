@@ -151,7 +151,7 @@ public class ContainerImageProcessor {
     }
 
     /**
-     * Users are allowed to specify an empty group, however this is mapped to Optional.emtpy().
+     * Users are allowed to specify an empty group, however this is mapped to Optional.empty().
      * We need to know if the user has actually specified a group or not.
      * The only way is to check the property names provided.
      **/

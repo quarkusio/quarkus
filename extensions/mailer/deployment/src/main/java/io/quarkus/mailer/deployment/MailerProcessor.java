@@ -135,7 +135,7 @@ public class MailerProcessor {
     }
 
     private boolean isTypeSafeMailTemplateFound(IndexView index) {
-        // Find all occurences of @CheckedTemplate
+        // Find all occurrences of @CheckedTemplate
         Collection<AnnotationInstance> checkedTemplates = index.getAnnotations(CheckedTemplate.class);
         for (AnnotationInstance annotation : checkedTemplates) {
             if (annotation.target().kind() == Kind.CLASS) {

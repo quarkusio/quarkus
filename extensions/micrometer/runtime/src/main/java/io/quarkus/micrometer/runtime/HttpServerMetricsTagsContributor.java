@@ -31,7 +31,7 @@ public interface HttpServerMetricsTagsContributor {
         /**
          * Represents the HTTP response, if one exists.
          * This is {@link Optional} because {@link HttpServerMetricsTagsContributor#contribute(Context)} is called
-         * in both cases where the HTTP request has been completed and when the request was reset (so no respose exists)
+         * in both cases where the HTTP request has been completed and when the request was reset (so no response exists)
          */
         Optional<HttpResponse> response();
 

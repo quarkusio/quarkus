@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 /**
  * This class is never referenced directly from application bytecode.
- * It is only referenced inside the serialized resource file (data.ser),
+ * It is only referenced inside the serialized resource file (data.set),
  * created by {@link GenerateResource} during the build.
  * The tree shaker must discover it by scanning serialized resources
  * in this dependency.

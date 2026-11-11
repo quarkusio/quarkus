@@ -31,7 +31,7 @@ import io.quarkus.test.QuarkusProdModeTest;
 //   - Two ImageStream are generated (one named after the app).
 //   - A Deployment resource was created
 //   - local lookup is enabled
-//   - single segement image is requested
+//   - single segment image is requested
 //
 public class OpenshiftWithDeploymentResourceAndLocalLookupTest {
 

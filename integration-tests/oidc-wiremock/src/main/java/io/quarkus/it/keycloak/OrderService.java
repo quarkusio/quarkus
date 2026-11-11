@@ -29,7 +29,7 @@ public class OrderService {
     @ConsumeEvent("product-order")
     void processOrder(Product product) {
         if (!identity.isAnonymous()) {
-            // this condition establish need for OIDCIdentityProvider with pre-selected tenant
+            // this condition establish need for OIDCIdentityProvider with preselected tenant
             throw new IllegalStateException("Event is expected to be consumed on new request context");
         }
         var principal = identityProvider.authenticate(new AccessTokenCredential(product.accessToken)).await().indefinitely()

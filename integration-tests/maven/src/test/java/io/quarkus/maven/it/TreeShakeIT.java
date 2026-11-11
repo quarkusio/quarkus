@@ -43,7 +43,7 @@ public class TreeShakeIT extends MojoTestBase {
     }
 
     /**
-     * Generates {@code lib-serialization/src/main/resources/org/acme/serialization/data.ser}
+     * Generates {@code lib-serialization/src/main/resources/org/acme/serialization/data.set}
      * containing a Java serialization stream with a class descriptor for
      * {@code org.acme.serialization.SerializedTarget}. This class has no direct bytecode
      * reference from application code — the tree shaker must discover it by scanning

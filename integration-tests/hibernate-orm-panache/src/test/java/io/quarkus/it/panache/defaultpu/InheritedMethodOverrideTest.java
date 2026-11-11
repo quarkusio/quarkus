@@ -42,7 +42,7 @@ public class InheritedMethodOverrideTest {
     @Test
     @Transactional
     void count_fromSuperInterfaceWithAbstractRedeclaration_shouldStillWork() {
-        // count() is re-declared as abstract in DontDeletePanacheRepository,
+        // count() is redeclared as abstract in DontDeletePanacheRepository,
         // Panache should still generate the implementation
         long count = interfaceRepo.count();
         assertThat(count).isGreaterThanOrEqualTo(0);

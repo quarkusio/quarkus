@@ -662,7 +662,7 @@ public class CodeFlowTest {
             webResponse = loginForm.getButtonByName("login").click().getWebResponse();
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
 
-            // This is a redirect from the OIDC server to the endpoint, with technical paramerts like `code`
+            // This is a redirect from the OIDC server to the endpoint, with technical parameters like `code`
             // but without a request specific query parameter
             String endpointLocation = webResponse.getResponseHeaderValue("location");
 
@@ -721,7 +721,7 @@ public class CodeFlowTest {
             webResponse = loginForm.getButtonByName("login").click().getWebResponse();
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
 
-            // This is a redirect from the OIDC server to the endpoint, with technical paramerts like `code`
+            // This is a redirect from the OIDC server to the endpoint, with technical parameters like `code`
             // but without a request specific query parameter
             String endpointLocation = webResponse.getResponseHeaderValue("location");
 

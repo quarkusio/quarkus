@@ -10,7 +10,7 @@ public class NoTestResourceProfile implements QuarkusTestProfile {
         return "no-test-resource";
     }
 
-    // This profile is supposed to exercise defauly behaviour, but the application.properties changes a lot of defaults, so undo some of those changes
+    // This profile is supposed to exercise default behaviour, but the application.properties changes a lot of defaults, so undo some of those changes
     public Map<String, String> getConfigOverrides() {
         return Map.of("quarkus.keycloak.devservices.create-realm", "true",
                 "quarkus.keycloak.policy-enforcer.enabled", "false",

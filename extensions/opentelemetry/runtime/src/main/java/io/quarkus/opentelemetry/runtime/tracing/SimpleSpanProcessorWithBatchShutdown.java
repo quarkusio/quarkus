@@ -10,6 +10,13 @@ import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 
+/**
+ * @deprecated This processor only exists to serve the
+ *             {@link io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer} chain and
+ *             goes away with it when SDK initialization moves to the OpenTelemetry declarative configuration
+ *             model, which describes the simple processor directly instead of replacing a batch processor.
+ */
+@Deprecated(since = "4.0", forRemoval = true)
 public final class SimpleSpanProcessorWithBatchShutdown implements SpanProcessor {
     private final SpanProcessor delegate;
     private final SpanProcessor replacedBatchProcessor;

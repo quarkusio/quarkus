@@ -51,7 +51,7 @@
         <smallrye-config.version>4.2.2</smallrye-config.version> <!-- keep in sync with microprofile-config-api -->
         <smallrye-health.version>4.3.0</smallrye-health.version>
         <smallrye-modules.version>1.0.beta1</smallrye-modules.version>
-        <smallrye-open-api.version>4.4.0</smallrye-open-api.version>
+        <smallrye-open-api.version>4.4.1</smallrye-open-api.version>
         <smallrye-serial.version>1.0.beta6</smallrye-serial.version>
         <smallrye-graphql.version>3.0.0.Beta9</smallrye-graphql.version>
         <!-- smallrye-fault-tolerance.version is located in the root POM -->

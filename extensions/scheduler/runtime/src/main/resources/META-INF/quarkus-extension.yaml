@@ -10,7 +10,7 @@ metadata:
   guide: "https://quarkus.io/guides/scheduler"
   quickstart: "scheduler-quickstart"
   categories:
-  - "miscellaneous"
+  - "automation"
   status: "stable"
   config:
   - "quarkus.scheduler."

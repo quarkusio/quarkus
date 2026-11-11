@@ -516,7 +516,7 @@ public class QuarkusDevModeTest
      * Resolves an {@link ApplicationModel} for the current module running the test.
      *
      * @param forcedDependencies dependencies to add to the application, or whose version to override
-     * @return application model for the module runnign the test
+     * @return application model for the module running the test
      */
     private static ApplicationModel resolveOriginalAppModel(List<Dependency> forcedDependencies) {
         try {

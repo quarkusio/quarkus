@@ -50,7 +50,7 @@ public class BaseBuildCommand {
      * This is needed for testing purposes.
      * More specifically --cli-test-dir relies on this.
      *
-     * @param output The command ouput
+     * @param output The command output
      */
     public void setOutput(OutputOptionMixin output) {
         this.output = output;

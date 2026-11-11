@@ -213,7 +213,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             log.debug("Could not load annotations for FacadeClassLoader: " + e);
         }
         // We want to see what services are registered, but without going through the service loader, since that results in a huge catastrophe of class not found exceptions
-        // as the servoce loader tries to instantiate things in a nobbled loader. Instead, do it in a crude, safe, way by looking for the resource files and reading them.
+        // as the service loader tries to instantiate things in a nobbled loader. Instead, do it in a crude, safe, way by looking for the resource files and reading them.
         try {
             Enumeration<URL> declaredExtensions = annotationLoader
                     .getResources("META-INF/services/org.junit.jupiter.api.extension.Extension");

@@ -368,7 +368,7 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
      * (as in start with <code>quarkus.</code>). This avoids exposing configuration that may contain secrets or
      * passwords not related to Quarkus (for instance environment variables storing sensitive data for other systems).
      *
-     * @param appArtifact the application dependency to retrive the quarkus application name and version.
+     * @param appArtifact the application dependency to retrieve the quarkus application name and version.
      * @return a filtered view of the configuration only with <code>quarkus.</code> names.
      */
     protected Map<String, String> buildSystemProperties(ResolvedDependency appArtifact, Map<String, String> quarkusProperties) {

@@ -73,7 +73,7 @@ public class DependencyDataCollector {
      * Sets direct dependencies for the given dependency builder based on the provided declared dependencies.
      * <p>
      * The intention here is to use this method right before we build the model, making sure that the modelBuilder
-     * hass all the info about all dependencies, so we can properly set the flags for direct dependencies (e.g.
+     * hash all the info about all dependencies, so we can properly set the flags for direct dependencies (e.g.
      * MISSING_FROM_APPLICATION).
      */
     public static void setDirectDeps(

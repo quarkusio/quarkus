@@ -156,7 +156,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
                     Path wd = (Path) cmd.get(1);
                     File wdir = wd != null ? wd.toFile() : workingDirectory.get();
 
-                    // this was all very touchy to get the process outputing to console and exiting cleanly
+                    // this was all very touchy to get the process outputting to console and exiting cleanly
                     // change at your own risk
 
                     // We cannot use getProject().exec() as contrl-c is not processed correctly

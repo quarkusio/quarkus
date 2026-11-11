@@ -672,7 +672,7 @@ public class TestResourceManager implements Closeable {
     /**
      * Utility record to hold an array value as the value of {@link TestResourceComparisonInfo#args()}. Annotation
      * values are always static array values, cannot be constants, so they are always a new instance. When comparing
-     * annotations with array values, the comparison will always fail and a reload woudl be forced, even if the values
+     * annotations with array values, the comparison will always fail and a reload would be forced, even if the values
      * of the actual arrays are equal.
      * <p/>
      * By wrapping arrays, we can perform a correct {@link Object#equals(Object)} comparison.

@@ -15,7 +15,7 @@ import org.jboss.shrinkwrap.api.spec.WebArchive;
  * Arquillian automatically adds the test class to a test deployment. However, some MP Config tests do add the test class to a
  * library jar too. As a result, we get ambiguous dependency when trying to instantiate the test class. Unfortunately, we can't
  * use an ApplicationArchiveProcessor to remove the test class added by Arquillian because it's applied
- * before the test class is added. Therefore, we deciced to remove the test class from any library jar.
+ * before the test class is added. Therefore, we decided to remove the test class from any library jar.
  */
 public class ConfigApplicationArchiveProcessor implements ApplicationArchiveProcessor {
 

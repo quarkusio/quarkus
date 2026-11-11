@@ -97,7 +97,7 @@ public class PluginCatalogServiceTest {
         assertTrue(catalog.getPlugins().containsKey("bar"));
         assertTrue(catalog.getPlugins().containsKey("baz"));
 
-        //The project catalog should alway override the user catalog, so `foo` that is used in both should be read from project
+        //The project catalog should always override the user catalog, so `foo` that is used in both should be read from project
         assertEquals(catalog.getPlugins().get("foo").getCatalogLocation().map(Path::toAbsolutePath).map(Path::toString).get(),
                 projectCatalog.toAbsolutePath().toString());
     }

@@ -66,7 +66,7 @@ public enum ImageBuilder {
     }
 
     /**
-     * Get teh image builder extensions found in the project.
+     * Get the image builder extensions found in the project.
      *
      * @param the project to search for extensions
      * @return A set with the discovered extensions.

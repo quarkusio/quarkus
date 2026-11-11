@@ -79,11 +79,15 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
                 instrumenter.end(spanOperation.getSpanContext(), (REQ) request, (RESP) response, failure);
             }
         } else {
-            try (scope) {
-                if (spanOperation.tryEndSpan()) {
-                    instrumenter.end(spanOperation.getSpanContext(), (REQ) request, (RESP) response, failure);
-                }
+            if (spanOperation.tryEndSpan()) {
+                instrumenter.end(spanOperation.getSpanContext(), (REQ) request, (RESP) response, failure);
             }
+            // Defer scope close to the end of the current event loop tick so that
+            // response endHandlers (e.g. access log) can still read MDC data.
+            // In Vert.x 5, sendResponse fires at headers time (observeOutboundHeaders),
+            // before the response endHandler, so closing the scope here would clear
+            // traceId/spanId from the MDC too early.
+            context.runOnContext(v -> scope.close());
         }
     }
 

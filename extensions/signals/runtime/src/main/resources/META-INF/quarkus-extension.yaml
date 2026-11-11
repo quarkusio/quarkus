@@ -11,4 +11,4 @@ metadata:
   guide: "https://quarkus.io/guides/signals"
   categories:
   - "core"
-  status: "experimental"
+  status: "stable"

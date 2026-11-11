@@ -1,7 +1,6 @@
 package io.quarkus.signals.spi;
 
 import io.quarkus.signals.SignalContext;
-import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -27,7 +26,6 @@ import io.smallrye.mutiny.Uni;
  *
  * @see RelativeOrder
  */
-@Experimental("This API is experimental and may change in the future")
 public interface ReceiverInterceptor {
 
     /**

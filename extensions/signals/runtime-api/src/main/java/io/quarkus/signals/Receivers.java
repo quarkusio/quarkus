@@ -9,7 +9,6 @@ import java.util.function.Function;
 
 import jakarta.enterprise.util.TypeLiteral;
 
-import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -31,7 +30,6 @@ import io.smallrye.mutiny.Uni;
  *
  * @see Signal
  */
-@Experimental("This API is experimental and may change in the future")
 public interface Receivers {
 
     /**

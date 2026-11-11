@@ -2,7 +2,6 @@ package io.quarkus.signals.spi;
 
 import io.quarkus.signals.Signal;
 import io.quarkus.signals.SignalContext;
-import io.smallrye.common.annotation.Experimental;
 
 /**
  * Enriches the metadata of a signal emission before any receiver is invoked.
@@ -16,7 +15,6 @@ import io.smallrye.common.annotation.Experimental;
  *
  * @see RelativeOrder
  */
-@Experimental("This API is experimental and may change in the future")
 public interface SignalMetadataEnricher {
 
     /**

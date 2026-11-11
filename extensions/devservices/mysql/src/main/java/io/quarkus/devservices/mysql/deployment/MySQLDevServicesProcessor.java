@@ -16,6 +16,8 @@ import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
@@ -42,7 +44,9 @@ public class MySQLDevServicesProcessor {
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMysql(
-            DevServicesComposeProjectBuildItem composeProjectBuildItem) {
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            Capabilities capabilities) {
+        boolean openTelemetryPresent = capabilities.isPresent(Capability.OPENTELEMETRY_TRACER);
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MYSQL, new DevServicesDatasourceProvider() {
             @Override
             public String getFeature() {
@@ -83,6 +87,11 @@ public class MySQLDevServicesProcessor {
                             containerConfig.getContainerProperties().get(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME));
                 }
 
+                // Testcontainers opens a JDBC connection as its startup check, before Agroal can apply JDBC properties.
+                // Prevent Connector/J from initializing a global OpenTelemetry instance from that connection.
+                if (openTelemetryPresent) {
+                    container.withUrlParam("openTelemetry", "DISABLED");
+                }
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);
                 containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);

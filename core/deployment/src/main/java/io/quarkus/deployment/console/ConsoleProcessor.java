@@ -230,6 +230,8 @@ public class ConsoleProcessor {
                 commandInvocation.getShell().writeln(
                         c.getParser().getProcessedCommand().name() + "\t" + c.getParser().getProcessedCommand().description());
             }
+            commandInvocation.getShell().writeln("alias\tDefine or list user-defined aliases");
+            commandInvocation.getShell().writeln("unalias\tRemove a user-defined alias");
 
             return CommandResult.SUCCESS;
         }

@@ -307,6 +307,7 @@ quarkus.management.auth.enabled=true
 Once enabled, you can use same authentication mechanism you have already configured for the main server, or use a different one.
 All of these mechanisms are detailed in the xref:security-authentication-mechanisms.adoc[Authentication mechanisms in Quarkus] guide.
 
+[id="use-http-security-policy-to-enable-path-based-authentication"]
 === Use HTTP Security Policy to enable path-based authentication
 
 The following configuration example demonstrates how you can enforce a single selectable authentication mechanism for a given request path:
@@ -328,7 +329,7 @@ by the xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token aut
 [IMPORTANT]
 ====
 The `quarkus.management.root-path` property is prepended to the configured policy paths that do not start with a forward slash, in the same way as the `quarkus.http.root-path` property is prepended to the main HTTP server policy paths.
-For more information, see the xref:security-authorize-web-endpoints-reference.adoc#permission-paths-and-root-paths[Permission paths and HTTP root path] section of the Authorization of web endpoints guide.
+For more information, see the xref:security-authorize-web-endpoints-reference.adoc#permission-paths-and-root-paths[Permission paths and HTTP root path] section of the Authorize access to web endpoints guide.
 ====
 
 [[basic-auth]]

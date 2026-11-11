@@ -205,7 +205,7 @@ public class ProtectedResource {
 <1> Only requests with OpenID Connect scope `email` will be granted access.
 <2> The read access is limited to the client requests with the `orders_read` scope.
 
-For more information about the `io.quarkus.security.PermissionsAllowed` annotation, see the xref:security-authorize-web-endpoints-reference.adoc#permission-annotation[Permission annotation] section of the "Authorization of web endpoints" guide.
+For more information about the `io.quarkus.security.PermissionsAllowed` annotation, see the xref:security-authorize-web-endpoints-reference.adoc#permission-annotation[Authorize with permissions] section of the "Authorize access to web endpoints" guide.
 
 [[bearer-token-token-verification-introspection]]
 === Token verification and introspection

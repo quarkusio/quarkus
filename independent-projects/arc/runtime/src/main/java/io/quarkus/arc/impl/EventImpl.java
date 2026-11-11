@@ -69,6 +69,9 @@ class EventImpl<T> implements Event<T> {
 
     private transient volatile Notifier<? super T> lastNotifier;
 
+    // Events returned by select(Class) and select(TypeLiteral) without additional qualifiers, created lazily
+    private volatile ConcurrentMap<Type, EventImpl<?>> selected;
+
     private static final Logger LOGGER = Logger.getLogger(EventImpl.class);
 
     EventImpl(Type eventType, Set<Annotation> qualifiers, InjectionPoint injectionPoint) {
@@ -150,6 +153,9 @@ class EventImpl<T> implements Event<T> {
             throw new IllegalArgumentException(
                     "Event#select(Class<U>, Annotation...) cannot be used with type variable parameter");
         }
+        if (qualifiers.length == 0) {
+            return selectSubtype(subtype);
+        }
         ArcContainerImpl.instance().registeredQualifiers.verify(qualifiers);
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
@@ -163,9 +169,36 @@ class EventImpl<T> implements Event<T> {
             throw new IllegalArgumentException(
                     "Event#select(TypeLiteral, Annotation...) cannot be used with type variable parameter");
         }
+        if (qualifiers.length == 0) {
+            return selectSubtype(subtype.getType());
+        }
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
         return new EventImpl<U>(subtype.getType(), mergerdQualifiers, injectionPoint);
+    }
+
+    /**
+     * Returns an event for the given subtype and the qualifiers of this event. The instance is reused, so that its
+     * cached notifiers are reused as well. Selections with additional qualifiers are not cached because the qualifier
+     * values may be unbounded.
+     */
+    @SuppressWarnings("unchecked")
+    private <U> Event<U> selectSubtype(Type subtype) {
+        ConcurrentMap<Type, EventImpl<?>> selected = this.selected;
+        if (selected == null) {
+            // A race may create the map twice, which only means that an event is created twice
+            selected = new ConcurrentHashMap<>(DEFAULT_CACHE_CAPACITY);
+            this.selected = selected;
+        }
+        EventImpl<?> event = selected.get(subtype);
+        if (event == null) {
+            event = new EventImpl<>(subtype, qualifiers, injectionPoint);
+            EventImpl<?> previous = selected.putIfAbsent(subtype, event);
+            if (previous != null) {
+                event = previous;
+            }
+        }
+        return (Event<U>) event;
     }
 
     private Notifier<? super T> createNotifier(Class<?> runtimeType) {

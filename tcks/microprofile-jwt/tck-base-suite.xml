@@ -40,6 +40,9 @@
         </groups>
         <classes>
             <class name="org.eclipse.microprofile.jwt.tck.util.TokenUtilsTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.util.TokenUtilsEncryptTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.util.TokenUtilsSignEncryptTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.util.TokenUtilsExtraTest" />
             <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.UnsecuredPingTest" />
             <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.RequiredClaimsTest" />
             <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.ClaimValueInjectionTest" />
@@ -47,8 +50,15 @@
             <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.ProviderInjectionTest" />
             <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.RolesAllowedTest" />
             <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.InvalidTokenTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.TokenAgeTest" />
             <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.PrimitiveInjectionTest" />
             <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.PrincipalInjectionTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.AudValidationTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.AudArrayValidationTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.AudValidationBadAudTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.AudValidationMissingAudTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.ApplicationScopedInjectionTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.RsaKeySignatureTest" />
             <class name="org.eclipse.microprofile.jwt.tck.config.PublicKeyAsPEMTest" />
             <class name="org.eclipse.microprofile.jwt.tck.config.PublicKeyAsPEMLocationTest" />
             <class name="org.eclipse.microprofile.jwt.tck.config.PublicKeyAsPEMLocationURLTest" />
@@ -59,10 +69,23 @@
             <class name="org.eclipse.microprofile.jwt.tck.config.PublicKeyAsJWKSLocationTest" />
             <class name="org.eclipse.microprofile.jwt.tck.config.PublicKeyAsBase64JWKTest" />
             <class name="org.eclipse.microprofile.jwt.tck.config.PublicKeyAsFileLocationURLTest" />
-            <class name="org.eclipse.microprofile.jwt.tck.config.IssNoValidationNoIssTest" />
-            <class name="org.eclipse.microprofile.jwt.tck.config.IssNoValidationBadIssTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.config.ECPublicKeyAsPEMTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.config.ECPublicKeyAsPEMLocationTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.config.ECPublicKeyAsJWKLocationTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.config.RsaAndEcSignatureAlgorithmTest" />
             <class name="org.eclipse.microprofile.jwt.tck.config.IssValidationTest" />
             <class name="org.eclipse.microprofile.jwt.tck.config.IssValidationFailTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.CookieTokenTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.config.TokenAsCookieIgnoredTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.config.TokenAsCookieTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.EmptyTokenTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.jwe.RolesAllowedSignEncryptTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.jwe.RolesAllowedSignEncryptRsaOaepTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.jwe.RolesAllowedSignEncryptRsaOaep256Test" />
+            <class name="org.eclipse.microprofile.jwt.tck.container.jaxrs.jwe.DecryptKeyAlgorithmDefaultTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.config.jwe.PrivateKeyAsPEMClasspathTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.config.jwe.PrivateKeyAsJWKClasspathTest" />
+            <class name="org.eclipse.microprofile.jwt.tck.config.jwe.PrivateKeyAsJWKSClasspathTest" />
         </classes>
     </test>
 

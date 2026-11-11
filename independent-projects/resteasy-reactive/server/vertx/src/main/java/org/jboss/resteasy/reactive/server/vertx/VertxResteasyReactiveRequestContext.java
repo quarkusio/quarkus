@@ -451,8 +451,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse end(String data) {
-        var buffer = VertxByteBufAllocator.POOLED_ALLOCATOR.directBuffer(ByteBufUtil.utf8MaxBytes(data.length()));
-        buffer.writeCharSequence(data, CharsetUtil.UTF_8);
+        byte[] bytes = data.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        var buffer = VertxByteBufAllocator.POOLED_ALLOCATOR.directBuffer(bytes.length);
+        buffer.writeBytes(bytes);
         response.end(new NoBoundChecksBuffer(buffer));
         return this;
     }

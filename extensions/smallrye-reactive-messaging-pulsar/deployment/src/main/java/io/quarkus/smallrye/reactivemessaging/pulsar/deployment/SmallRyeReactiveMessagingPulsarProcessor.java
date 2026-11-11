@@ -2,6 +2,7 @@ package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.logging.Level;
@@ -10,6 +11,7 @@ import org.apache.pulsar.client.impl.conf.ClientConfigurationData;
 import org.apache.pulsar.client.impl.conf.ConsumerConfigurationData;
 import org.apache.pulsar.client.impl.conf.ProducerConfigurationData;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -183,19 +185,17 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
                 .builder("org.apache.pulsar.client.util.SecretsSerializer")
                 .constructors().build());
 
-        // Pulsar 4.2.x's DnsResolverGroupImpl / ConnectionPool use Netty's
+        // Pulsar's DnsResolverGroupImpl / ConnectionPool use Netty's
         // ReflectiveChannelFactory against the platform SocketChannel returned by
         // EventLoopUtil. quarkus-netty registers only the NIO variants; register
-        // Epoll/KQueue/IOUring here so native image can find their no-arg
+        // Epoll/KQueue here so native image can find their no-arg
         // constructors at runtime. Revisit when bumping pulsar-client — if Pulsar
         // moves to non-reflective ChannelFactory factories, these can be removed.
         reflectiveClass.produce(ReflectiveClassBuildItem
                 .builder("io.netty.channel.epoll.EpollSocketChannel",
                         "io.netty.channel.epoll.EpollDatagramChannel",
                         "io.netty.channel.kqueue.KQueueSocketChannel",
-                        "io.netty.channel.kqueue.KQueueDatagramChannel",
-                        "io.netty.incubator.channel.uring.IOUringSocketChannel",
-                        "io.netty.incubator.channel.uring.IOUringDatagramChannel")
+                        "io.netty.channel.kqueue.KQueueDatagramChannel")
                 .constructors().build());
 
         Collection<ClassInfo> authPluginClasses = combinedIndex.getIndex()
@@ -204,58 +204,94 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(authPluginClass.name().toString())
                     .constructors().build());
         }
-        Collection<ClassInfo> sslFactoryClasses = combinedIndex.getIndex()
-                .getAllKnownImplementations(DotNames.PULSAR_SSL_FACTORY);
-        for (ClassInfo sslFactoryClass : sslFactoryClasses) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(sslFactoryClass.name().toString())
-                    .constructors().build());
+        // TLS factory plugins are instantiated reflectively. Pulsar 4.x uses PulsarSslFactory,
+        // Pulsar 5.x replaced it with PulsarTlsFactory; register implementations of both.
+        for (DotName tlsFactory : List.of(DotNames.PULSAR_SSL_FACTORY, DotNames.PULSAR_TLS_FACTORY)) {
+            for (ClassInfo tlsFactoryClass : combinedIndex.getIndex().getAllKnownImplementations(tlsFactory)) {
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(tlsFactoryClass.name().toString())
+                        .constructors().build());
+            }
         }
 
         NativeImageConfigBuildItem.Builder nativeImageConfig = NativeImageConfigBuildItem.builder()
                 .addNativeImageSystemProperty("io.netty.handler.ssl.noOpenSsl", "true")
                 .addNativeImageSystemProperty("pulsar.enableUring", "false")
-                .addRuntimeInitializedClass("org.apache.pulsar.common.allocator.PulsarByteBufAllocator")
-                .addRuntimeInitializedClass("org.apache.pulsar.common.protocol.Commands")
-                // Pulsar 4.2.x's LightProtoCodec computes Unsafe field offsets
+                // Pulsar's LightProtoCodec computes Unsafe field offsets
                 // (String.value field offset, byte[] base offset) in its static
                 // initializer. GraalVM cannot auto-recompute these, so building
                 // them at image-build time bakes in host-JVM offsets and segfaults
                 // at runtime in writeRawString. Initialize at run time so the
-                // offsets match the SubstrateVM heap layout. Revisit when bumping
-                // pulsar-client — Pulsar 25883 embeds this config upstream.
+                // offsets match the SubstrateVM heap layout. The native-image
+                // config Pulsar 5.x ships (apache/pulsar#25883) does not cover it.
                 .addRuntimeInitializedClass("org.apache.pulsar.common.api.proto.LightProtoCodec")
-                .addRuntimeInitializedClass("org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenClient")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.crypto.MessageCryptoBc")
-                .addRuntimeInitializedClass("org.apache.pulsar.client.impl.schema.generic.GenericProtobufNativeSchema")
-                .addRuntimeInitializedClass("org.apache.pulsar.client.impl.ConnectionPool")
-                .addRuntimeInitializedClass("org.apache.pulsar.client.impl.ControlledClusterFailover")
-                .addRuntimeInitializedClass("org.apache.pulsar.client.impl.HttpClient")
-                .addRuntimeInitializedClass("com.yahoo.sketches.quantiles.DoublesSketch")
                 .addRuntimeInitializedClass("io.netty.buffer.PooledByteBufAllocator")
                 .addRuntimeInitializedClass("io.netty.buffer.UnpooledByteBufAllocator$InstrumentedUnpooledHeapByteBuf")
-                .addRuntimeInitializedClass("io.netty.incubator.channel.uring.IOUringEventLoopGroup")
-                .addRuntimeInitializedClass("io.netty.incubator.channel.uring.Native")
-                .addRuntimeInitializedClass("io.netty.incubator.channel.uring.IOUring")
                 .addRuntimeInitializedClass("org.asynchttpclient.RequestBuilderBase")
                 .addRuntimeInitializedClass("org.asynchttpclient.RequestBuilder")
                 .addRuntimeInitializedClass("org.asynchttpclient.BoundRequestBuilder")
                 .addRuntimeInitializedClass("org.asynchttpclient.ntlm.NtlmEngine")
                 .addRuntimeInitializedClass("sun.awt.dnd.SunDropTargetContextPeer$EventDispatcher")
                 .addRuntimeInitializedClass("com.google.protobuf.JavaFeaturesProto");
-        if (QuarkusClassLoader.isClassPresentAtRuntime("org.apache.pulsar.common.util.Backoff")) {
-            nativeImageConfig
-                    .addRuntimeInitializedClass("org.apache.pulsar.common.util.Backoff");
+        // Pulsar 5.x clients initialize these classes at run time through the native-image.properties
+        // they ship in pulsar-client-original. Pulsar 4.x clients ship no native-image configuration.
+        if (!QuarkusClassLoader.isResourcePresentAtRuntime(
+                "META-INF/native-image/org.apache.pulsar/pulsar-client-original/native-image.properties")) {
+            for (String className : List.of("org.apache.pulsar.common.allocator.PulsarByteBufAllocator",
+                    "org.apache.pulsar.common.protocol.Commands",
+                    "org.apache.pulsar.common.util.Backoff",
+                    "org.apache.pulsar.client.impl.Backoff",
+                    "org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenClient",
+                    "org.apache.pulsar.client.impl.schema.generic.GenericProtobufNativeSchema",
+                    "org.apache.pulsar.client.impl.ConnectionPool",
+                    "org.apache.pulsar.client.impl.ControlledClusterFailover",
+                    "org.apache.pulsar.client.impl.HttpClient")) {
+                if (QuarkusClassLoader.isClassPresentAtRuntime(className)) {
+                    nativeImageConfig.addRuntimeInitializedClass(className);
+                }
+            }
         }
-        if (QuarkusClassLoader.isClassPresentAtRuntime("org.apache.pulsar.client.impl.Backoff")) {
+        // Pulsar 4.x uses Netty's incubator io_uring transport and com.yahoo.sketches. Pulsar 5.x uses
+        // io.netty.channel.uring, which quarkus-netty configures, and Apache DataSketches (KllSketch below).
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.incubator.channel.uring.IOUring")) {
+            reflectiveClass.produce(ReflectiveClassBuildItem
+                    .builder("io.netty.incubator.channel.uring.IOUringSocketChannel",
+                            "io.netty.incubator.channel.uring.IOUringDatagramChannel")
+                    .constructors().build());
             nativeImageConfig
-                    .addRuntimeInitializedClass("org.apache.pulsar.client.impl.Backoff");
+                    .addRuntimeInitializedClass("io.netty.incubator.channel.uring.IOUringEventLoopGroup")
+                    .addRuntimeInitializedClass("io.netty.incubator.channel.uring.Native")
+                    .addRuntimeInitializedClass("io.netty.incubator.channel.uring.IOUring");
+        }
+        if (QuarkusClassLoader.isClassPresentAtRuntime("com.yahoo.sketches.quantiles.DoublesSketch")) {
+            nativeImageConfig.addRuntimeInitializedClass("com.yahoo.sketches.quantiles.DoublesSketch");
+        }
+        // Pulsar 5.x classes holding state that cannot be stored in the image heap:
+        // AutoShutdownExecutorService has a static java.lang.ref.Cleaner (daemon thread),
+        // JcaKeyStores has a static SecureRandom (seed must not be fixed at build time),
+        // KllSketch (Apache DataSketches, replaces com.yahoo.sketches for client stats) has a static Random,
+        // CompressionCodecProvider statically creates codecs that capture PulsarByteBufAllocator.DEFAULT.
+        for (String className : List.of("org.apache.pulsar.common.util.PulsarExecutors$AutoShutdownExecutorService",
+                "org.apache.pulsar.common.util.tls.JcaKeyStores",
+                "org.apache.datasketches.kll.KllSketch",
+                "org.apache.pulsar.common.compression.CompressionCodecProvider")) {
+            if (QuarkusClassLoader.isClassPresentAtRuntime(className)) {
+                nativeImageConfig.addRuntimeInitializedClass(className);
+            }
         }
 
         return nativeImageConfig.build();
     }
 
     @BuildStep(onlyIf = NativeImageFutureDefault.RunTimeInitializeSecurityProvider.class)
-    RuntimeInitializedPackageBuildItem runtimeInitializedClasses() {
-        return new RuntimeInitializedPackageBuildItem("org.apache.pulsar.common.util.SecurityUtility");
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedPackageBuildItem> runtimeInitialized) {
+        // Classes that register JCA security providers. Pulsar 4.x uses SecurityUtility,
+        // Pulsar 5.x moved provider loading to JcaProviders.
+        for (String securityClass : List.of("org.apache.pulsar.common.util.SecurityUtility",
+                "org.apache.pulsar.common.util.tls.JcaProviders")) {
+            if (QuarkusClassLoader.isClassPresentAtRuntime(securityClass)) {
+                runtimeInitialized.produce(new RuntimeInitializedPackageBuildItem(securityClass));
+            }
+        }
     }
 }

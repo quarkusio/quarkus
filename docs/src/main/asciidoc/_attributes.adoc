@@ -44,6 +44,7 @@ endif::[]
 :mongo-image: ${mongo.image}
 :rabbitmq-image: ${rabbitmq.image}
 :pulsar-image: ${pulsar.image}
+:pulsar-client-version: ${pulsar-client.version}
 :redis-image: ${redis.image}
 :infinispan-image: ${infinispan.image}
 :jandex-version: ${jandex.version}

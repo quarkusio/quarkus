@@ -22,7 +22,7 @@
         <compiler-plugin.version>${version.compiler.plugin}</compiler-plugin.version>
         <kotlin.version>2.4.20</kotlin.version>
         <ksp-gradle-plugin.version>2.2.10-2.0.2</ksp-gradle-plugin.version> <!-- Kotlin Symbol Processing plugin used in a test -->
-        <dokka.version>2.2.0</dokka.version>
+        <dokka.version>2.3.0</dokka.version>
 
         <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
 

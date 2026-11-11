@@ -187,6 +187,7 @@ public final class HibernateReactiveProcessor {
                 dbKindOptional, explicitDialect, dbVersion, applicationArchivesBuildItem,
                 launchMode,
                 applicationModule,
+                capabilities,
                 additionalSqlLoadScriptDefaults,
                 nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems);
 
@@ -283,6 +284,7 @@ public final class HibernateReactiveProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
             WorkspaceModule applicationModule,
+            Capabilities capabilities,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -307,7 +309,8 @@ public final class HibernateReactiveProcessor {
                 dbKindDialectBuildItems,
                 descriptor.getProperties()::setProperty);
 
-        configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, true);
+        configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, true,
+                isHibernateValidatorPresent(capabilities));
         configureInitScripts(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
                 applicationModule, additionalSqlLoadScriptDefaults,
                 nativeImageResources, hotDeploymentWatchedFiles, descriptor);

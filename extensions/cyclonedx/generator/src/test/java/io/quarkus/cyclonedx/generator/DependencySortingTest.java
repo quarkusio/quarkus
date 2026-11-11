@@ -9,12 +9,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.cyclonedx.model.Bom;
+import org.cyclonedx.model.BomReference;
 import org.cyclonedx.model.Component;
+import org.cyclonedx.model.Dependency;
 import org.cyclonedx.parsers.JsonParser;
 import org.junit.jupiter.api.Test;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -85,28 +84,25 @@ class DependencySortingTest {
         String camelRtRef = Purl.maven("org.acme.camel", "camel-quarkus-core", "3.20.0", "jar", null).toString();
         String camelDepRef = Purl.maven("org.acme.camel", "camel-support", "3.20.0", "jar", null).toString();
 
-        List<String> provides = provides(json, product.getBomRef());
+        List<String> provides = provides(bom, product.getBomRef());
         // emitted in sorted order even though the artifacts were supplied reversed
         assertThat(provides).containsExactly(camelRtRef, camelDepRef);
         assertThat(provides).isSorted();
     }
 
-    private static List<String> provides(String json, String ref) {
-        try {
-            JsonNode dependencies = new ObjectMapper().readTree(json).get("dependencies");
-            for (JsonNode dep : dependencies) {
-                if (ref.equals(dep.path("ref").asText())) {
-                    JsonNode array = dep.get("provides");
-                    if (array == null) {
-                        return List.of();
-                    }
-                    List<String> refs = new ArrayList<>(array.size());
-                    array.forEach(n -> refs.add(n.asText()));
-                    return refs;
+    private static List<String> provides(Bom bom, String ref) {
+        for (Dependency dep : bom.getDependencies()) {
+            if (ref.equals(dep.getRef())) {
+                List<BomReference> provides = dep.getProvides();
+                if (provides == null) {
+                    return List.of();
                 }
+                List<String> refs = new ArrayList<>(provides.size());
+                for (BomReference provided : provides) {
+                    refs.add(provided.getRef());
+                }
+                return refs;
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse SBOM JSON", e);
         }
         throw new AssertionError("no dependency entry for " + ref);
     }

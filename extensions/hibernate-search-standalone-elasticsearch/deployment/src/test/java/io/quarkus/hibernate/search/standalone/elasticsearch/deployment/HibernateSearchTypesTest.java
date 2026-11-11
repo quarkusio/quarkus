@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.hibernate.search.backend.elasticsearch.common.deployment.HibernateSearchAccessorDiscovery;
 
 /**
  * Test that hardcoded lists of Hibernate Search types stay up-to-date.
@@ -43,6 +44,18 @@ public class HibernateSearchTypesTest {
         assertThat(HibernateSearchTypes.BUILT_IN_ROOT_MAPPING_ANNOTATIONS)
                 .isNotEmpty()
                 .containsExactlyInAnyOrderElementsOf(rootMappingAnnotations);
+    }
+
+    @Test
+    public void testNoMissingAccessorMappingAnnotation() {
+        Set<DotName> mappingAnnotations = new TreeSet<>();
+        for (DotName metaAnnotation : HibernateSearchAccessorDiscovery.MAPPING_META_ANNOTATIONS) {
+            mappingAnnotations.addAll(findAnnotationsAnnotatedWith(hibernateSearchPojoBaseIndex, metaAnnotation));
+            mappingAnnotations.addAll(findAnnotationsAnnotatedWith(hibernateSearchPojoStandaloneIndex, metaAnnotation));
+        }
+        assertThat(HibernateSearchAccessorDiscovery.BUILT_IN_MAPPING_ANNOTATIONS)
+                .isNotEmpty()
+                .containsExactlyInAnyOrderElementsOf(mappingAnnotations);
     }
 
     private Set<DotName> findAnnotationsAnnotatedWith(Index index, DotName annotationName) {

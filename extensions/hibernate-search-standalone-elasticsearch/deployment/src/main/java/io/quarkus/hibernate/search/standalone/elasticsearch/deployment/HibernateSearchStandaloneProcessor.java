@@ -51,6 +51,7 @@ import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommon
 import io.quarkus.hibernate.accessor.FieldAccess;
 import io.quarkus.hibernate.accessor.deployment.HibernateAccessorFactoryBuildItem;
 import io.quarkus.hibernate.accessor.deployment.HibernateAccessorRegistrationBuildItem;
+import io.quarkus.hibernate.search.backend.elasticsearch.common.deployment.HibernateSearchAccessorDiscovery;
 import io.quarkus.hibernate.search.backend.elasticsearch.common.deployment.HibernateSearchBackendElasticsearchEnabledBuildItem;
 import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.ElasticsearchVersionSubstitution;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneBuildTimeConfig;
@@ -81,8 +82,7 @@ class HibernateSearchStandaloneProcessor {
 
     @BuildStep
     public void configure(CombinedIndexBuildItem combinedIndexBuildItem,
-            BuildProducer<HibernateSearchStandaloneEnabledBuildItem> enabled,
-            BuildProducer<HibernateAccessorRegistrationBuildItem> accessorBuildItemProducer) {
+            BuildProducer<HibernateSearchStandaloneEnabledBuildItem> enabled) {
         IndexView index = combinedIndexBuildItem.getIndex();
         Collection<AnnotationInstance> indexedAnnotations = index.getAnnotations(INDEXED);
         if (indexedAnnotations.isEmpty()) {
@@ -100,11 +100,23 @@ class HibernateSearchStandaloneProcessor {
         Map<String, Set<String>> backendAndIndexNamesForSearchExtensions = collectBackendAndIndexNamesForSearchExtensions(
                 index);
 
-        Set<String> rootAnnotationMappedClassNames = collectRootAnnotationMappedClasses(index, accessorBuildItemProducer);
+        Set<String> rootAnnotationMappedClassNames = collectRootAnnotationMappedClasses(index);
 
         var mapperContext = new HibernateSearchStandaloneElasticsearchMapperContext(backendNamesForIndexedEntities,
                 backendAndIndexNamesForSearchExtensions);
         enabled.produce(new HibernateSearchStandaloneEnabledBuildItem(mapperContext, rootAnnotationMappedClassNames));
+    }
+
+    @BuildStep
+    void registerAccessors(CombinedIndexBuildItem index, Optional<HibernateSearchStandaloneEnabledBuildItem> enabled,
+            BuildProducer<HibernateAccessorRegistrationBuildItem> accessors) {
+        if (enabled.isEmpty()) {
+            return;
+        }
+        for (ClassInfo type : HibernateSearchAccessorDiscovery.collectTypes(index)) {
+            accessors.produce(new HibernateAccessorRegistrationBuildItem.Builder(type)
+                    .source(HibernateSearchStandaloneProcessor.class.getName()).all(type, FieldAccess.READ).build());
+        }
     }
 
     @BuildStep
@@ -134,8 +146,7 @@ class HibernateSearchStandaloneProcessor {
         return result;
     }
 
-    private static Set<String> collectRootAnnotationMappedClasses(IndexView index,
-            BuildProducer<HibernateAccessorRegistrationBuildItem> accessorBuildItemProducer) {
+    private static Set<String> collectRootAnnotationMappedClasses(IndexView index) {
         // Look for classes annotated with annotations meta-annotated with @RootMapping:
         // those classes will have their annotations processed.
         // Built-in annotations from Hibernate Search must be added explicitly,
@@ -157,20 +168,7 @@ class HibernateSearchStandaloneProcessor {
         Set<String> rootAnnotationMappedClassNames = new LinkedHashSet<>();
         for (DotName rootMappingAnnotationName : rootMappingAnnotationNames) {
             for (AnnotationInstance annotation : index.getAnnotations(rootMappingAnnotationName)) {
-                ClassInfo enclosingClass = JandexUtil.getEnclosingClass(annotation);
-                rootAnnotationMappedClassNames.add(enclosingClass.name().toString());
-
-                // TODO: Discover all Hibernate Search model types that require accessors, including types reached
-                // through @IndexedEmbedded, nested projections and programmatic mappings. Root mapping annotations
-                // and their class hierarchies are only entry points into the model.
-                ClassInfo current = enclosingClass;
-                while (current != null && !DotName.OBJECT_NAME.equals(current.name())) {
-                    accessorBuildItemProducer
-                            .produce(new HibernateAccessorRegistrationBuildItem.Builder(current)
-                                    .source(HibernateSearchStandaloneProcessor.class.getName()).all(current, FieldAccess.READ)
-                                    .build());
-                    current = index.getClassByName(current.superName());
-                }
+                rootAnnotationMappedClassNames.add(JandexUtil.getEnclosingClass(annotation).name().toString());
             }
         }
         return rootAnnotationMappedClassNames;

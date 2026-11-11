@@ -41,7 +41,8 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
         try {
             RequestContextHelper.reactivate(requestContext, dfe);
             Context vc = Vertx.currentContext();
-            if (vc == null || runBlocking(dfe) || BlockingHelper.blockingShouldExecuteNonBlocking(operation, vc)) {
+            if ((vc == null && !Context.isOnEventLoopThread()) || runBlocking(dfe)
+                    || BlockingHelper.blockingShouldExecuteNonBlocking(operation, vc)) {
                 return super.invokeAndTransform(c, dfe, resultBuilder, transformedArguments);
             } else {
                 return invokeAndTransformBlocking(c, dfe, resultBuilder, transformedArguments, vc);
@@ -58,7 +59,8 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
         try {
             RequestContextHelper.reactivate(requestContext, dfe);
             Context vc = Vertx.currentContext();
-            if (vc == null || runBlocking(dfe) || BlockingHelper.blockingShouldExecuteNonBlocking(operation, vc)) {
+            if ((vc == null && !Context.isOnEventLoopThread()) || runBlocking(dfe)
+                    || BlockingHelper.blockingShouldExecuteNonBlocking(operation, vc)) {
                 return super.invokeBatch(dfe, arguments);
             } else {
                 return invokeBatchBlocking(dfe, arguments, vc);

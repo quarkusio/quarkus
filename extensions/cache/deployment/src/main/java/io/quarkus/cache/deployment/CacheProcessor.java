@@ -14,18 +14,17 @@ import static io.quarkus.cache.deployment.CacheDeploymentConstants.INTERCEPTOR_B
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.MULTI;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.REGISTER_REST_CLIENT;
 import static io.quarkus.cache.runtime.CacheBuildConfig.CAFFEINE_CACHE_TYPE;
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.runtime.metrics.MetricsFactory.MICROMETER;
-import static java.util.stream.Collectors.toList;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.spi.DeploymentException;
@@ -44,12 +43,14 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.KotlinUtils;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.cache.CacheManager;
+import io.quarkus.cache.CacheManagerInfo;
 import io.quarkus.cache.deployment.exception.ClassTargetException;
 import io.quarkus.cache.deployment.exception.KeyGeneratorConstructorException;
 import io.quarkus.cache.deployment.exception.PrivateMethodTargetException;
@@ -58,14 +59,15 @@ import io.quarkus.cache.deployment.exception.VoidReturnTypeTargetException;
 import io.quarkus.cache.deployment.spi.AdditionalCacheNameBuildItem;
 import io.quarkus.cache.deployment.spi.CacheTypeBuildItem;
 import io.quarkus.cache.runtime.CacheBuildConfig;
+import io.quarkus.cache.runtime.CacheConfig;
 import io.quarkus.cache.runtime.CacheInvalidateAllInterceptor;
 import io.quarkus.cache.runtime.CacheInvalidateInterceptor;
 import io.quarkus.cache.runtime.CacheManagerRecorder;
 import io.quarkus.cache.runtime.CacheResultInterceptor;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -269,32 +271,57 @@ class CacheProcessor {
     }
 
     @BuildStep
-    @Record(RUNTIME_INIT)
-    void cacheManagerInfos(BuildProducer<CacheManagerInfoBuildItem> producer,
-            Optional<MetricsCapabilityBuildItem> metricsCapability, CacheManagerRecorder recorder) {
-        producer.produce(new CacheManagerInfoBuildItem(recorder.noOpCacheManagerInfo()));
-        producer.produce(new CacheManagerInfoBuildItem(recorder.getCacheManagerInfoWithoutMetrics()));
+    void cacheManagerInfos(Optional<MetricsCapabilityBuildItem> metricsCapability, ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar.forService(CacheManagerInfo.class, "noop")
+                .onStart(ctx -> CacheManagerRecorder.noOpCacheManagerInfo());
+        serviceRegistrar.forService(CacheManagerInfo.class, CAFFEINE_CACHE_TYPE)
+                .require(CacheConfig.class)
+                .onStart((ctx, cacheConfig) -> CacheManagerRecorder.getCacheManagerInfoWithoutMetrics(cacheConfig));
         if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MICROMETER)) {
             // if we include this unconditionally the native image building will fail when Micrometer is not around
-            producer.produce(new CacheManagerInfoBuildItem(recorder.getCacheManagerInfoWithMicrometerMetrics()));
+            serviceRegistrar.forService(CacheManagerInfo.class, CAFFEINE_CACHE_TYPE + "-micrometer")
+                    .require(CacheConfig.class)
+                    .onStart((ctx, cacheConfig) -> CacheManagerRecorder.getCacheManagerInfoWithMicrometerMetrics(cacheConfig));
         }
     }
 
+    @SuppressWarnings("removal")
     @BuildStep
-    @Record(RUNTIME_INIT)
-    SyntheticBeanBuildItem configureCacheManagerSyntheticBean(List<CacheManagerInfoBuildItem> infos,
-            CacheNamesBuildItem cacheNames, Optional<MetricsCapabilityBuildItem> metricsCapability,
-            CacheManagerRecorder cacheManagerRecorder) {
+    void cacheManagerService(List<CacheManagerInfoBuildItem> infos, CacheNamesBuildItem cacheNames,
+            CacheBuildConfig cacheBuildConfig, Optional<MetricsCapabilityBuildItem> metricsCapability,
+            ServiceRegistrar serviceRegistrar) {
+        for (int i = 0; i < infos.size(); i++) {
+            serviceRegistrar.aliasRecorderValue(CacheManagerInfo.class, "build-item-" + i, infos.get(i).get());
+        }
 
         boolean micrometerSupported = metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MICROMETER);
-        List<String> sortedCacheNames = cacheNames.getNames().stream().sorted().toList();
-        Supplier<CacheManager> cacheManagerSupplier = cacheManagerRecorder.resolveCacheInfo(
-                infos.stream().map(CacheManagerInfoBuildItem::get).collect(toList()), sortedCacheNames,
-                micrometerSupported);
+        Map<String, String> cacheTypeByCacheName = new HashMap<>();
+        for (String cacheName : cacheNames.getNames()) {
+            CacheBuildConfig.CacheTypeBuildConfig cacheTypeBuildConfig = cacheBuildConfig.cacheTypeByName().get(cacheName);
+            // check if the cache type is defined for this cache name "quarkus.cache.<cache-name>.type"
+            if (cacheTypeBuildConfig != null && cacheTypeBuildConfig.type() != null && !cacheTypeBuildConfig.type().isEmpty()) {
+                cacheTypeByCacheName.put(cacheName, cacheTypeBuildConfig.type());
+            } else {
+                // if not, use the default cache type defined "quarkus.cache.type"
+                cacheTypeByCacheName.put(cacheName, cacheBuildConfig.type());
+            }
+        }
+        Map<String, String> cacheTypes = Map.copyOf(cacheTypeByCacheName);
 
+        serviceRegistrar.forService(CacheManager.class)
+                .require(CacheConfig.class)
+                .consumeAll(CacheManagerInfo.class)
+                // the cache backends look up their client beans, which may be runtime-init synthetic beans
+                .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                .onStart((ctx, cacheConfig, cacheManagerInfos) -> CacheManagerRecorder.createCacheManager(
+                        cacheManagerInfos.values(), cacheTypes, cacheConfig, micrometerSupported));
+    }
+
+    @BuildStep
+    SyntheticBeanBuildItem configureCacheManagerSyntheticBean() {
         return SyntheticBeanBuildItem.configure(CacheManager.class)
                 .scope(ApplicationScoped.class)
-                .supplier(cacheManagerSupplier)
+                .serviceValue(CacheManager.class)
                 .setRuntimeInit()
                 .startup()
                 .done();

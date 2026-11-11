@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutorService;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.smallrye.graphql.schema.model.Execute;
 import io.smallrye.graphql.schema.model.Operation;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.Context;
 import io.vertx.core.Promise;
 
@@ -21,7 +22,10 @@ public final class BlockingHelper {
 
     public static boolean nonBlockingShouldExecuteBlocking(Operation operation, Context vc) {
         // Rule is that by default this should execute non-blocking except if marked as blocking
-        return vc != null && operation.getExecute().equals(Execute.BLOCKING) && vc.isEventLoopContext();
+        if (!operation.getExecute().equals(Execute.BLOCKING)) {
+            return false;
+        }
+        return vc != null ? vc.isEventLoopContext() : Context.isOnEventLoopThread();
     }
 
     public static boolean shouldUseVirtualThread(Operation operation, Context vc) {
@@ -44,6 +48,16 @@ public final class BlockingHelper {
             });
         } else if (vc != null) {
             vc.executeBlocking(contextualCallable, false).onComplete(result);
+        } else if (Context.isOnEventLoopThread()) {
+            // Event-loop thread with no Vert.x context (Netty callback that was not dispatched
+            // with runOnContext). Running inline trips BlockingOperationControl.
+            Infrastructure.getDefaultWorkerPool().execute(() -> {
+                try {
+                    result.complete(contextualCallable.call());
+                } catch (Throwable t) {
+                    result.fail(t);
+                }
+            });
         } else {
             // No Vert.x context (e.g. ForkJoinPool thread after CompletableFuture.supplyAsync) —
             // already off the event loop, safe to execute directly

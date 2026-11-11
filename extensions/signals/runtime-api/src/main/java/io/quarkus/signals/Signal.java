@@ -8,7 +8,6 @@ import jakarta.enterprise.util.TypeLiteral;
 import io.quarkus.arc.Arc;
 import io.quarkus.signals.spi.Signals;
 import io.smallrye.common.annotation.CheckReturnValue;
-import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -66,7 +65,6 @@ import io.smallrye.mutiny.Uni;
  * @param <T> the type of the signal object
  * @see Receives
  */
-@Experimental("This API is experimental and may change in the future")
 public interface Signal<T> {
 
     /**

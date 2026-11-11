@@ -66,7 +66,7 @@ For more information about how you can secure your Quarkus applications by using
 == Role-based access control
 
 {project-name} also includes built-in security to allow for role-based access control (RBAC) based on the common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAll` on REST endpoints and CDI beans.
-For more information, see the Quarkus xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints] guide.
+For more information, see the Quarkus xref:security-authorize-web-endpoints-reference.adoc[Authorize access to web endpoints] guide.
 
 [[basic-auth-programmatic-set-up]]
 == Set up Basic authentication programmatically
@@ -101,4 +101,4 @@ If you generate an OpenAPI schema document with the SmallRye OpenAPI extension, 
 * xref:security-architecture.adoc[Quarkus Security architecture]
 * xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Other supported authentication mechanisms]
 * xref:security-identity-providers.adoc[Identity providers]
-* xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints]
+* xref:security-authorize-web-endpoints-reference.adoc[Authorize access to web endpoints]

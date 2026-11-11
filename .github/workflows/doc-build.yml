@@ -272,14 +272,27 @@ jobs:
       - name: Run link crawler
         if: steps.link_scope.outputs.mode != 'skip'
         run: |
-          CHANGED_PATHS_ARG=""
+          # Only the guides synced from this PR (version/main/guides/) are crawled.
+          # The released guides and the rest of the site are checked by quarkusio.github.io.
+          # The crawler is always given explicit pages to start from: without them, it
+          # starts at the site root and crawls the whole site.
+          # In partial mode only the changed guides are checked; otherwise every guide is.
           if [ "${{ steps.link_scope.outputs.mode }}" = "partial" ]; then
-            CHANGED_PATHS_ARG="-Dtest.crawl.changed-paths=${{ steps.link_scope.outputs.paths }}"
+            CRAWL_PATHS="${{ steps.link_scope.outputs.paths }}"
+          else
+            CRAWL_PATHS=$(find target/roq/version/main/guides -maxdepth 2 -name index.html \
+              | sed 's|^target/roq||; s|index\.html$||' \
+              | grep -v -E '/(images|javascript|assets|stylesheet)/$' \
+              | sort | paste -sd, -)
+          fi
+          if [ -z "$CRAWL_PATHS" ]; then
+            echo "No guides found under target/roq/version/main/guides/"
+            exit 1
           fi
           mvn -B test -Pe2e -Dtest.url=http://localhost:8090 \
             -Dtest.crawl.check-external=false \
-            -Dtest.crawl.exclude-paths=/version/2,/version/3,/version/4,/version/5,/version/main \
-            $CHANGED_PATHS_ARG
+            -Dtest.crawl.exclude-paths=/version/2,/version/3,/version/4,/version/5 \
+            "-Dtest.crawl.changed-paths=$CRAWL_PATHS"
         env:
           PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: 1
 
@@ -295,7 +308,7 @@ jobs:
           fi
 
       - name: Upload changed pages
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: changed-pages
           path: changed-pages.txt

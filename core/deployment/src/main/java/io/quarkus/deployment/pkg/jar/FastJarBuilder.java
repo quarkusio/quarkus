@@ -55,7 +55,8 @@ public class FastJarBuilder extends AbstractFastJarBuilder {
     @Override
     protected void writeSerializedApplication(OutputStream out, Path buildDir, List<Path> allJars, List<Path> sortedParentFirst)
             throws IOException {
-        SerializedApplication.write(out, mainClass.getClassName(), buildDir, allJars, sortedParentFirst);
+        SerializedApplication.write(out, mainClass.getClassName(), buildDir, allJars, sortedParentFirst,
+                packageConfig.jar().crac().enabled());
     }
 
     @Override

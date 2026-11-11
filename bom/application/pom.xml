@@ -22,7 +22,7 @@
         <cyclonedx.version>13.2.0</cyclonedx.version>
         <expressly.version>6.0.0</expressly.version>
         <findbugs.version>3.0.2</findbugs.version>
-        <jandex.version>3.6.0</jandex.version>
+        <jandex.version>3.6.1</jandex.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <parsson.version>1.1.9</parsson.version>
@@ -104,7 +104,7 @@
         <narayana-lra.version>2.0.1.Final</narayana-lra.version>
         <agroal.version>3.2.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>9.4.8</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>9.4.9</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.3.0.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.3.0.Final</wildfly.openssl-linux.version>
@@ -164,7 +164,7 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.3.0</awaitility.version>
         <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
-        <flyway.version>13.12.0</flyway.version>
+        <flyway.version>13.12.1</flyway.version>
         <yasson.version>3.0.5</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.33.0</liquibase.version>
@@ -200,7 +200,7 @@
         <log4j2-jboss-logmanager.version>2.0.1.Final</log4j2-jboss-logmanager.version>
         <log4j2-api.version>2.26.1</log4j2-api.version>
         <avro.version>1.12.2</avro.version>
-        <apicurio-registry.version>3.3.3</apicurio-registry.version>
+        <apicurio-registry.version>3.3.4</apicurio-registry.version>
         <testcontainers.version>2.0.5</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.7.1</docker-java.version> <!-- must be the version Testcontainers use: https://central.sonatype.com/artifact/org.testcontainers/testcontainers -->
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
@@ -216,7 +216,7 @@
         <java-buildpack-client.version>0.0.17</java-buildpack-client.version>
         <crac.version>1.5.0</crac.version>
         <sshd-common.version>2.20.0</sshd-common.version>
-        <mime4j.version>0.8.12</mime4j.version>
+        <mime4j.version>0.8.15</mime4j.version>
         <mutiny-zero.version>1.3.1</mutiny-zero.version>
         <pulsar-client.version>4.2.1</pulsar-client.version>
         <async-http-client.version>2.16.1</async-http-client.version>
@@ -225,7 +225,7 @@
         <!-- Dev UI -->
         <importmap.version>2.0.0</importmap.version>
         <webauthn4j.version>0.31.11.RELEASE</webauthn4j.version>
-        <jsoup.version>1.23.2</jsoup.version> <!-- JSoup is used by Camel and LangChain4J so be careful when updating -->
+        <jsoup.version>1.24.1</jsoup.version> <!-- JSoup is used by Camel and LangChain4J so be careful when updating -->
         <reactor.version>3.8.7</reactor.version>
         <zstd-jni.version>1.5.7-16</zstd-jni.version> <!-- used by kafka-clients and some Camel components -->
     </properties>

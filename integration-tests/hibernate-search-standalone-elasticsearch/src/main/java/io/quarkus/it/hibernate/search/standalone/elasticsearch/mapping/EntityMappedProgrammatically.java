@@ -1,5 +1,9 @@
 package io.quarkus.it.hibernate.search.standalone.elasticsearch.mapping;
 
+import io.quarkus.hibernate.accessor.GeneratedAccessor;
+
+// Programmatic mappings cannot be discovered from Search mapping annotations.
+@GeneratedAccessor
 public class EntityMappedProgrammatically {
 
     public static final String INDEX = "programmatic-index";

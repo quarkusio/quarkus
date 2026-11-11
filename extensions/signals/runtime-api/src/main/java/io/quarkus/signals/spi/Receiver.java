@@ -5,7 +5,6 @@ import io.quarkus.signals.Receives;
 import io.quarkus.signals.Signal;
 import io.quarkus.signals.SignalContext;
 import io.smallrye.common.annotation.CheckReturnValue;
-import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -38,7 +37,6 @@ import io.smallrye.mutiny.Uni;
  * @see Signal
  * @see Receivers
  */
-@Experimental("This API is experimental and may change in the future")
 public interface Receiver<SIGNAL, RESPONSE> extends Receivers.ReceiverInfo {
 
     /**

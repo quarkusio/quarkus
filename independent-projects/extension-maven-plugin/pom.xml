@@ -41,7 +41,7 @@
         <smallrye-beanbag.version>1.6.1</smallrye-beanbag.version>
         <junit.version>6.1.3</junit.version>
         <mockito.version>5.24.0</mockito.version>
-        <version.jandex>3.6.0</version.jandex>
+        <version.jandex>3.6.1</version.jandex>
     </properties>
     <build>
         <testResources>

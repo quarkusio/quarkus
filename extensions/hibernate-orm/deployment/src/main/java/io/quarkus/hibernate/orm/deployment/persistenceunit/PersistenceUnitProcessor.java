@@ -465,7 +465,8 @@ final class PersistenceUnitProcessor {
                 explicitDialect,
                 reflectiveMethods, descriptor.getProperties()::setProperty);
 
-        configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, false);
+        configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, false,
+                isHibernateValidatorPresent(capabilities));
 
         if (capabilities.isPresent(Capability.JACKSON)) {
             descriptor.getProperties().setProperty(MappingSettings.JSON_FORMAT_MAPPER,

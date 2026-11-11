@@ -1,8 +1,6 @@
 package io.quarkus.reactive.datasource.deployment;
 
-import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildUtil.qualifier;
 import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildUtil.qualifiers;
-import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceDotNames.INJECT_INSTANCE;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -19,17 +18,18 @@ import jakarta.inject.Singleton;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.devui.Name;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -49,10 +49,6 @@ class ReactiveDataSourceProcessor {
     private static final Logger log = Logger.getLogger(ReactiveDataSourceProcessor.class);
 
     private static final Type POOL_CREATOR_TYPE = ClassType.create(DotName.createSimple(PoolCreator.class));
-    private static final ParameterizedType POOL_CREATOR_INJECTION_TYPE = ParameterizedType.create(INJECT_INSTANCE,
-            new Type[] { POOL_CREATOR_TYPE }, null);
-    private static final DotName POOL = DotName.createSimple(Pool.class);
-    private static final Type POOL_TYPE = ClassType.create(POOL);
 
     @BuildStep
     void addQualifierAsBean(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -102,6 +98,7 @@ class ReactiveDataSourceProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void registerReactivePools(
             ReactivePoolRecorder recorder,
+            ServiceRegistrar serviceRegistrar,
             List<ReactivePoolBuildItem> poolBuildItems,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<VertxPoolBuildItem> vertxPool) {
@@ -114,44 +111,52 @@ class ReactiveDataSourceProcessor {
 
         for (ReactivePoolBuildItem poolBuildItem : poolBuildItems) {
             String dataSourceName = poolBuildItem.getDataSourceName();
+            Supplier<ActiveResult> checkActive = recorder.poolCheckActiveSupplier(dataSourceName);
 
             // Register the bare Vert.x Pool as a synthetic bean
-            ExtendedBeanConfigurator poolBeanConfigurator = SyntheticBeanBuildItem.configure(Pool.class)
+            syntheticBeans.produce(SyntheticBeanBuildItem.configure(Pool.class)
                     .defaultBean()
                     .addType(Pool.class)
                     .scope(ApplicationScoped.class)
                     .qualifiers(qualifiers(dataSourceName))
-                    .addInjectionPoint(POOL_CREATOR_INJECTION_TYPE, qualifier(dataSourceName))
-                    .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
-                    .createWith(poolBuildItem.getPool())
+                    .checkActive(checkActive)
+                    .serviceValue(Pool.class, dataSourceName)
                     .unremovable()
                     .setRuntimeInit()
-                    .startup();
-            syntheticBeans.produce(poolBeanConfigurator.done());
+                    .startup()
+                    .done());
 
-            // Register the Mutiny Pool as a synthetic bean
-            ExtendedBeanConfigurator mutinyPoolConfigurator = SyntheticBeanBuildItem
+            // Register the Mutiny Pool as a service that wraps the Vert.x Pool, and as a synthetic bean
+            serviceRegistrar.forService(io.vertx.mutiny.sqlclient.Pool.class, dataSourceName)
+                    .atPhase(Phase.DATA)
+                    .request(Pool.class, dataSourceName)
+                    .optional()
+                    .onStart((ctx, pool) -> pool.map(io.vertx.mutiny.sqlclient.Pool::newInstance));
+            syntheticBeans.produce(SyntheticBeanBuildItem
                     .configure(io.vertx.mutiny.sqlclient.Pool.class)
                     .defaultBean()
                     .addType(io.vertx.mutiny.sqlclient.Pool.class)
                     .scope(ApplicationScoped.class)
                     .qualifiers(qualifiers(dataSourceName))
-                    .addInjectionPoint(POOL_TYPE, qualifier(dataSourceName))
-                    .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
-                    .createWith(recorder.mutinyPool(dataSourceName))
+                    .checkActive(checkActive)
+                    .serviceValue(io.vertx.mutiny.sqlclient.Pool.class, dataSourceName)
                     .unremovable()
                     .setRuntimeInit()
-                    .startup();
-            syntheticBeans.produce(mutinyPoolConfigurator.done());
+                    .startup()
+                    .done());
 
             healthSqlMap.put(dataSourceName, poolBuildItem.getHealthCheckSql());
         }
 
         // Register the health config bean
+        Map<String, String> healthCheckSqlByDataSource = Map.copyOf(healthSqlMap);
+        serviceRegistrar.forService(ReactivePoolsHealthConfig.class)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> new ReactivePoolsHealthConfig(healthCheckSqlByDataSource));
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(ReactivePoolsHealthConfig.class)
                 .scope(Singleton.class)
                 .unremovable()
-                .runtimeValue(recorder.createHealthConfig(healthSqlMap))
+                .serviceValue(ReactivePoolsHealthConfig.class)
                 .setRuntimeInit()
                 .done());
 

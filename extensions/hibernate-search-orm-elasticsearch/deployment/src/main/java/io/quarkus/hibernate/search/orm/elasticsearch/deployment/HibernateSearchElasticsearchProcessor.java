@@ -53,6 +53,7 @@ import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitRequestB
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationStaticInitListener;
+import io.quarkus.hibernate.search.backend.elasticsearch.common.deployment.HibernateSearchAccessorDiscovery;
 import io.quarkus.hibernate.search.backend.elasticsearch.common.deployment.HibernateSearchBackendElasticsearchEnabledBuildItem;
 import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.ElasticsearchVersionSubstitution;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig;
@@ -182,13 +183,21 @@ class HibernateSearchElasticsearchProcessor {
 
     @BuildStep
     public void discoverRootAnnotationMappedClassNames(CombinedIndexBuildItem combinedIndexBuildItem,
-            BuildProducer<HibernateSearchOrmRootMappedClassesBuildItem> mappedClassesBuildItem,
-            BuildProducer<HibernateAccessorRegistrationBuildItem> accessorBuildItemProducer) {
+            BuildProducer<HibernateSearchOrmRootMappedClassesBuildItem> mappedClassesBuildItem) {
         IndexView index = combinedIndexBuildItem.getIndex();
 
-        Set<String> rootAnnotationMappedClassNames = collectRootAnnotationMappedClasses(index, accessorBuildItemProducer);
+        Set<String> rootAnnotationMappedClassNames = collectRootAnnotationMappedClasses(index);
 
         mappedClassesBuildItem.produce(new HibernateSearchOrmRootMappedClassesBuildItem(rootAnnotationMappedClassNames));
+    }
+
+    @BuildStep
+    void registerAccessors(CombinedIndexBuildItem index,
+            BuildProducer<HibernateAccessorRegistrationBuildItem> accessors) {
+        for (ClassInfo type : HibernateSearchAccessorDiscovery.collectTypes(index)) {
+            accessors.produce(new HibernateAccessorRegistrationBuildItem.Builder(type)
+                    .source(HibernateSearchElasticsearchProcessor.class.getName()).all(type, FieldAccess.READ).build());
+        }
     }
 
     @BuildStep
@@ -244,8 +253,7 @@ class HibernateSearchElasticsearchProcessor {
         }
     }
 
-    private static Set<String> collectRootAnnotationMappedClasses(IndexView index,
-            BuildProducer<HibernateAccessorRegistrationBuildItem> accessorBuildItemProducer) {
+    private static Set<String> collectRootAnnotationMappedClasses(IndexView index) {
         // Look for classes annotated with annotations meta-annotated with @RootMapping:
         // those classes will have their annotations processed on every persistence unit.
         // At the moment only @ProjectionConstructor is meta-annotated with @RootMapping.
@@ -264,20 +272,7 @@ class HibernateSearchElasticsearchProcessor {
         Set<String> rootAnnotationMappedClassNames = new LinkedHashSet<>();
         for (DotName rootMappingAnnotationName : rootMappingAnnotationNames) {
             for (AnnotationInstance annotation : index.getAnnotations(rootMappingAnnotationName)) {
-                ClassInfo enclosingClass = JandexUtil.getEnclosingClass(annotation);
-                rootAnnotationMappedClassNames.add(enclosingClass.name().toString());
-
-                // TODO: Discover all Hibernate Search model types that require accessors, including types reached
-                //  through @IndexedEmbedded, nested projections and programmatic mappings. Root mapping annotations
-                //  and their class hierarchies are only entry points into the model.
-                ClassInfo current = enclosingClass;
-                while (current != null && !DotName.OBJECT_NAME.equals(current.name())) {
-                    accessorBuildItemProducer
-                            .produce(new HibernateAccessorRegistrationBuildItem.Builder(current)
-                                    .source(HibernateSearchElasticsearchProcessor.class.getName())
-                                    .all(current, FieldAccess.READ).build());
-                    current = index.getClassByName(current.superName());
-                }
+                rootAnnotationMappedClassNames.add(JandexUtil.getEnclosingClass(annotation).name().toString());
             }
         }
         return rootAnnotationMappedClassNames;

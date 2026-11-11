@@ -8,7 +8,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
+import jakarta.inject.Inject;
+
 import org.eclipse.microprofile.graphql.GraphQLApi;
+import org.eclipse.microprofile.graphql.Name;
 import org.eclipse.microprofile.graphql.Query;
 import org.eclipse.microprofile.graphql.Source;
 import org.hamcrest.CoreMatchers;
@@ -19,6 +22,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
+import io.vertx.core.internal.VertxInternal;
 
 /**
  * Reproducer for https://github.com/quarkusio/quarkus/issues/44762
@@ -29,6 +38,9 @@ import io.restassured.RestAssured;
  * is null. Blocking {@code @Source} field resolvers that run as
  * downstream continuations then NPE in
  * {@code BlockingHelper.runBlocking} because the Vert.x context is null.
+ * <p>
+ * The same null context on an event-loop thread
+ * (https://github.com/quarkusio/quarkus/issues/58283) must run that resolver on a worker.
  */
 public class CompletionStageWithBlockingSourceTest extends AbstractGraphQLTest {
 
@@ -96,8 +108,28 @@ public class CompletionStageWithBlockingSourceTest extends AbstractGraphQLTest {
                         CoreMatchers.containsString("88"));
     }
 
+    @Test
+    public void blockingSourceOnEventLoopWithoutContextRunsOnWorker() {
+        String request = getPayload("{ personFromEventLoop { callback thread blockingUniThread } }");
+
+        RestAssured.given()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .log().ifValidationFails()
+                .statusCode(200)
+                .body("data.personFromEventLoop.callback", CoreMatchers.equalTo("true:true"))
+                .body("data.personFromEventLoop.thread", CoreMatchers.startsWith("executor-thread-"))
+                .body("data.personFromEventLoop.blockingUniThread", CoreMatchers.startsWith("executor-thread-"));
+    }
+
     @GraphQLApi
     public static class PersonGraphQLApi {
+
+        @Inject
+        Vertx vertx;
 
         @Query
         public CompletionStage<Person> getPerson(long id) {
@@ -107,6 +139,20 @@ public class CompletionStageWithBlockingSourceTest extends AbstractGraphQLTest {
         @Query
         public CompletionStage<List<Person>> getPeople() {
             return supplyAsync(() -> new ArrayList<>(Person.ALL));
+        }
+
+        @Query
+        public Uni<Person> personFromEventLoop() {
+            Person person = new Person("Carol");
+            // Subscribe on a worker, then complete from a raw Netty task so the callback runs on an
+            // event-loop thread with no Vert.x context. execute() from that event loop would run inline.
+            return Uni.createFrom().item(person)
+                    .emitOn(Infrastructure.getDefaultWorkerPool())
+                    .flatMap(ignored -> Uni.createFrom().emitter(em -> ((VertxInternal) vertx).nettyEventLoopGroup().next()
+                            .execute(() -> {
+                                person.callback = Context.isOnEventLoopThread() + ":" + (Vertx.currentContext() == null);
+                                em.complete(person);
+                            })));
         }
 
         // Completes the future on a non-Vert.x thread (ForkJoinPool) with a
@@ -124,6 +170,16 @@ public class CompletionStageWithBlockingSourceTest extends AbstractGraphQLTest {
                 }
                 return supplier.get();
             });
+        }
+
+        public String thread(@Source Person person) {
+            return Thread.currentThread().getName();
+        }
+
+        @Name("blockingUniThread")
+        @Blocking
+        public Uni<String> blockingUniThread(@Source Person person) {
+            return Uni.createFrom().item(() -> Thread.currentThread().getName());
         }
 
         public Score getScore(@Source Person person) {
@@ -145,6 +201,7 @@ public class CompletionStageWithBlockingSourceTest extends AbstractGraphQLTest {
                 new Person("Bob"));
 
         public String name;
+        public String callback;
 
         public Person() {
         }

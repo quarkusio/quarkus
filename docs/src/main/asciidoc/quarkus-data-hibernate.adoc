@@ -1043,7 +1043,7 @@ Generic interface methods using type variables or wildcards cannot currently be 
 annotations. Apply the security annotation to the calling method, such as a REST endpoint, or redeclare the repository
 method with a concrete type.
 
-See the xref:security-authorize-web-endpoints-reference.adoc[authorization of web endpoints reference] for information
+See the xref:security-authorize-web-endpoints-reference.adoc[Authorize access to web endpoints] guide for information
 about Quarkus Security annotations.
 
 == Advanced usage

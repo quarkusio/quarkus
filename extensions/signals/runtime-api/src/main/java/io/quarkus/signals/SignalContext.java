@@ -5,14 +5,11 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Set;
 
-import io.smallrye.common.annotation.Experimental;
-
 /**
  * Immutable contextual information about an emitted signal.
  *
  * @param <T> the signal type
  */
-@Experimental("This API is experimental and may change in the future")
 public interface SignalContext<T> {
 
     /**

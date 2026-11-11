@@ -22,7 +22,7 @@ import jakarta.enterprise.inject.spi.ObserverMethod;
  * lifecycle callbacks are invoked and finally the method itself is invoked.</li>
  * <p>
  * The behavior is similar to a declaration of a {@link StartupEvent} observer. In fact, a synthetic observer of the
- * {@link StartupEvent} is generated for each occurence of this annotation.
+ * {@link StartupEvent} is generated for each occurrence of this annotation.
  * <p>
  * Furthermore, {@link #value()} can be used to specify the priority of the generated observer method and thus affects observers
  * ordering.

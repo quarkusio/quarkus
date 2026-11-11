@@ -10,7 +10,7 @@ public interface DevModeListener {
     int DEFAULT_ORDER = 0;
 
     /**
-     * Executed after the first successfull application start.
+     * Executed after the first successful application start.
      *
      * @param application
      */

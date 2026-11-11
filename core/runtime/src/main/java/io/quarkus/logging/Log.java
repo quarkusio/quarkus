@@ -226,7 +226,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of TRACE.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param params the parameters
      */
     public static void tracef(String format, Object... params) {
@@ -239,7 +239,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of TRACE.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the sole parameter
      */
     public static void tracef(String format, Object param1) {
@@ -252,7 +252,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of TRACE.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      */
@@ -266,7 +266,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of TRACE.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      * @param param3 the third parameter
@@ -877,7 +877,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of DEBUG.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param params the parameters
      */
     public static void debugf(String format, Object... params) {
@@ -890,7 +890,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of DEBUG.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the sole parameter
      */
     public static void debugf(String format, Object param1) {
@@ -903,7 +903,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of DEBUG.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      */
@@ -917,7 +917,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of DEBUG.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      * @param param3 the third parameter
@@ -1528,7 +1528,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of INFO.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param params the parameters
      */
     public static void infof(String format, Object... params) {
@@ -1541,7 +1541,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of INFO.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the sole parameter
      */
     public static void infof(String format, Object param1) {
@@ -1554,7 +1554,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of INFO.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      */
@@ -1568,7 +1568,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of INFO.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      * @param param3 the third parameter
@@ -1810,7 +1810,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of WARN.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param params the parameters
      */
     public static void warnf(String format, Object... params) {
@@ -1823,7 +1823,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of WARN.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the sole parameter
      */
     public static void warnf(String format, Object param1) {
@@ -1836,7 +1836,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of WARN.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      */
@@ -1850,7 +1850,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of WARN.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      * @param param3 the third parameter
@@ -2092,7 +2092,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of ERROR.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param params the parameters
      */
     public static void errorf(String format, Object... params) {
@@ -2105,7 +2105,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of ERROR.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the sole parameter
      */
     public static void errorf(String format, Object param1) {
@@ -2118,7 +2118,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of ERROR.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      */
@@ -2132,7 +2132,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of ERROR.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      * @param param3 the third parameter
@@ -2374,7 +2374,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of FATAL.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param params the parameters
      */
     public static void fatalf(String format, Object... params) {
@@ -2387,7 +2387,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of FATAL.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the sole parameter
      */
     public static void fatalf(String format, Object param1) {
@@ -2400,7 +2400,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of FATAL.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      */
@@ -2414,7 +2414,7 @@ public final class Log {
     /**
      * Issue a formatted log message with a level of FATAL.
      *
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      * @param param3 the third parameter
@@ -2737,7 +2737,7 @@ public final class Log {
      * Issue a formatted log message at the given log level.
      *
      * @param level the level
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param params the parameters
      */
     public static void logf(Logger.Level level, String format, Object... params) {
@@ -2751,7 +2751,7 @@ public final class Log {
      * Issue a formatted log message at the given log level.
      *
      * @param level the level
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the sole parameter
      */
     public static void logf(Logger.Level level, String format, Object param1) {
@@ -2765,7 +2765,7 @@ public final class Log {
      * Issue a formatted log message at the given log level.
      *
      * @param level the level
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      */
@@ -2780,7 +2780,7 @@ public final class Log {
      * Issue a formatted log message at the given log level.
      *
      * @param level the level
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      * @param param3 the third parameter
@@ -2861,7 +2861,7 @@ public final class Log {
      * @param loggerFqcn the logger class name
      * @param level the level
      * @param t the throwable cause
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the sole parameter
      */
     public static void logf(String loggerFqcn, Logger.Level level, Throwable t, String format, Object param1) {
@@ -2877,7 +2877,7 @@ public final class Log {
      * @param loggerFqcn the logger class name
      * @param level the level
      * @param t the throwable cause
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      */
@@ -2894,7 +2894,7 @@ public final class Log {
      * @param loggerFqcn the logger class name
      * @param level the level
      * @param t the throwable cause
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param param1 the first parameter
      * @param param2 the second parameter
      * @param param3 the third parameter
@@ -2913,7 +2913,7 @@ public final class Log {
      * @param loggerFqcn the logger class name
      * @param level the level
      * @param t the throwable cause
-     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
+     * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefore
      * @param params the message parameters
      */
     public static void logf(String loggerFqcn, Logger.Level level, Throwable t, String format, Object... params) {

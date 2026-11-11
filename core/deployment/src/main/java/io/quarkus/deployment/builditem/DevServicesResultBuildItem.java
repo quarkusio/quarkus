@@ -387,7 +387,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
          * @param key the config key which should be waited for
          * @param function a function which should be invoked on the startable to pass in the config; will not be called if the
          *        config never becomes available
-         * @param optional whether to start the service if the config never becomes availbale
+         * @param optional whether to start the service if the config never becomes available
          *
          * @return a builder, for chaining
          */

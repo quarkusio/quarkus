@@ -14,7 +14,7 @@ import jakarta.enterprise.inject.spi.ObserverMethod;
  * annotated method must be non-private and non-static and declare no arguments.
  * <p>
  * The behavior is similar to a declaration of a {@link ShutdownEvent} observer. In fact, a synthetic observer of the
- * {@link ShutdownEvent} is generated for each occurence of this annotation. Within the observer, the contextual instance of a
+ * {@link ShutdownEvent} is generated for each occurrence of this annotation. Within the observer, the contextual instance of a
  * bean is obtained first, and then the method is invoked.
  * <p>
  * Furthermore, {@link #value()} can be used to specify the priority of the generated observer method and thus affects observers

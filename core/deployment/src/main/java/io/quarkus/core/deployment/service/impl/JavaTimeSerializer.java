@@ -26,7 +26,7 @@ import io.smallrye.serial.spi.ObjectSerializer;
  * <p>
  * This runs at {@code PRIORITY_REPLACE + 1} to intercept the objects before
  * {@code writeReplace()} would convert them into the package-private
- * {@code java.time.Ser} externalizable proxy. By handling them directly, we
+ * {@code java.time.Set} externalizable proxy. By handling them directly, we
  * avoid the need to parse the binary externalizable protocol and instead use
  * the public API to decompose each object into its constituent field values.
  * <p>

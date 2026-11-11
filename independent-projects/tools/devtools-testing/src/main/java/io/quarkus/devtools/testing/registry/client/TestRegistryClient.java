@@ -172,7 +172,7 @@ public class TestRegistryClient implements RegistryClient {
 
     @Override
     public void clearCache() {
-        log.debug("% clearCache not supported", config.getId());
+        log.debug("%s clearCache not supported", config.getId());
     }
 
     public static RegistryConfig getDefaultConfig() {

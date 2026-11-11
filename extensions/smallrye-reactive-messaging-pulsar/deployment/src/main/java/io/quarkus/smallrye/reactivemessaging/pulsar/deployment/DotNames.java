@@ -50,7 +50,9 @@ final class DotNames {
     static final DotName PROTOBUF_GENERATED = DotName.createSimple("com.google.protobuf.GeneratedMessageV3");
     static final DotName PULSAR_SCHEMA = DotName.createSimple(org.apache.pulsar.client.api.Schema.class.getName());
     static final DotName PULSAR_AUTHENTICATION = DotName.createSimple(org.apache.pulsar.client.api.Authentication.class.getName());
-    static final DotName PULSAR_SSL_FACTORY = DotName.createSimple(org.apache.pulsar.common.util.PulsarSslFactory.class.getName());
+    // Pulsar 4.x TLS SPI, replaced by PULSAR_TLS_FACTORY in Pulsar 5.x (PIP-478)
+    static final DotName PULSAR_SSL_FACTORY = DotName.createSimple("org.apache.pulsar.common.util.PulsarSslFactory");
+    static final DotName PULSAR_TLS_FACTORY = DotName.createSimple("org.apache.pulsar.tls.PulsarTlsFactory");
 
     static final DotName LIST = DotName.createSimple(java.util.List.class.getName());
 

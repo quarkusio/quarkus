@@ -101,7 +101,7 @@ public class ParameterParser {
     /**
      * Tests if the given character is present in the array of characters.
      *
-     * @param ch the character to test for presense in the array of characters
+     * @param ch the character to test for presence in the array of characters
      * @param charray the array of characters to test against
      * @return <code>true</code> if the character is present in the array of
      *         characters, <code>false</code> otherwise.

@@ -94,7 +94,7 @@ public final class PluginUtil {
     }
 
     /**
-     * Chekcs if specified {@link String} is a valid {@URL}.
+     * Checks if specified {@link String} is a valid {@URL}.
      *
      * @param location The string to check
      * @return The {@link URL} wrapped in {@link Optional} if valid, empty otherwise.
@@ -112,7 +112,7 @@ public final class PluginUtil {
     }
 
     /**
-     * Chekcs if specified {@link String} is a valid {@URL}.
+     * Checks if specified {@link String} is a valid {@URL}.
      *
      * @param location The string to check
      * @return The {@link URL} wrapped in {@link Optional} if valid, empty otherwise.
@@ -130,7 +130,7 @@ public final class PluginUtil {
     }
 
     /**
-     * Chekcs if specified {@link String} is a valid path.
+     * Checks if specified {@link String} is a valid path.
      *
      * @param location The string to check
      * @return The {@link Path} wrapped in {@link Optional} if valid, empty otherwise.
@@ -148,7 +148,7 @@ public final class PluginUtil {
     }
 
     /**
-     * Chekcs if specified {@link String} contains a valid remote catalog
+     * Checks if specified {@link String} contains a valid remote catalog
      *
      * @param location The string to check
      * @return The catalog wrapped in {@link Optional} if valid, empty otherwise.

@@ -125,7 +125,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<T
     }
 
     /**
-     * Wheter to ignore availability on local repository tail (default: true)
+     * Whether to ignore availability on local repository tail (default: true)
      *
      * @param localRepoTailIgnoreAvailability whether to ignore availability on local repository tail
      * @return this instance

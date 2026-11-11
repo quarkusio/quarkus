@@ -19,7 +19,7 @@ public class JarFileReference {
     // and then it is necessary to avoid blocking on it.
     private final JarFile jarFile;
 
-    // The referenceCounter - 1 represents the number of effective readers (#aqcuire - #release), while the first
+    // The referenceCounter - 1 represents the number of effective readers (#acquire - #release), while the first
     // reference is used to determine if a close has been required.
     // The JarFileReference is created as already acquired and that's why the referenceCounter starts from 2
     private final AtomicInteger referenceCounter = new AtomicInteger(2);

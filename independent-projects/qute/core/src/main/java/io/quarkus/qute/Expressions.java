@@ -265,7 +265,7 @@ public final class Expressions {
         /**
          *
          * @param candidate
-         * @return {@code true} if the characted should be treated as a "part" separator
+         * @return {@code true} if the character should be treated as a "part" separator
          */
         boolean isSeparator(char candidate);
 
@@ -273,7 +273,7 @@ public final class Expressions {
          * A "part" separator used inside a literal must be ignored.
          *
          * @param candidate
-         * @return {@code true} if the characted should be treated as a "literal" start separator
+         * @return {@code true} if the character should be treated as a "literal" start separator
          */
         default boolean isLiteralSeparatorStart(char candidate) {
             return LiteralSupport.isStringLiteralSeparator(candidate);
@@ -283,7 +283,7 @@ public final class Expressions {
          *
          * @param startSeparator
          * @param candidate
-         * @return {@code true} if the characted should be treated as a "literal" end separator
+         * @return {@code true} if the character should be treated as a "literal" end separator
          */
         default boolean isLiteralSeparatorEnd(char startSeparator, char candidate) {
             if (isLiteralSeparatorStart(startSeparator)) {

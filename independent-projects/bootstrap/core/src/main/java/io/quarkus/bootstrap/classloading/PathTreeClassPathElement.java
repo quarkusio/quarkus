@@ -68,7 +68,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
      * In case the root path is configured, Vert.x may be looking for resources like 'META-INF/resources//index.html'.
      * This method will make sure there are no duplicate separators.
      *
-     * @param path path to santize
+     * @param path path to sanitize
      * @return sanitized path
      */
     private static String sanitize(String path) {

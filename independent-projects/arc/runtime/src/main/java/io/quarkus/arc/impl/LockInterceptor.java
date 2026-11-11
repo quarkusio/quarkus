@@ -21,7 +21,7 @@ public class LockInterceptor {
 
     private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
 
-    // This lock is used exclusively to synchronize the block where we release all read locks and aquire the write lock
+    // This lock is used exclusively to synchronize the block where we release all read locks and acquire the write lock
     private final ReentrantLock rl = new ReentrantLock();
 
     @AroundInvoke

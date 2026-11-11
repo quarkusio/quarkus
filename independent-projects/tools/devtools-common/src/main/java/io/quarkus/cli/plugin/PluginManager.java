@@ -50,7 +50,7 @@ public class PluginManager {
      * Remote plugins, that are not detected can be added by the location (e.g. url or maven coordinates).
      *
      * @param nameOrLocation The name or location of the plugin.
-     * @return the pugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
+     * @return the plugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
      */
     public Optional<Plugin> addPlugin(String nameOrLocation) {
         return addPlugin(nameOrLocation, false, Optional.empty());
@@ -64,7 +64,7 @@ public class PluginManager {
      * @param nameOrLocation The name or location of the plugin.
      * @param userCatalog Flag to only use the user catalog.
      * @param description An optional description to add to the plugin.
-     * @return The pugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
+     * @return The plugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
      */
     public Optional<Plugin> addPlugin(String nameOrLocation, boolean userCatalog, Optional<String> description) {
         PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
@@ -111,7 +111,7 @@ public class PluginManager {
      * Remote plugins, that are not detected can be added by the location (e.g. url or maven coordinates).
      *
      * @param plugin The plugin.
-     * @return The pugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
+     * @return The plugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
      */
     public Optional<Plugin> addPlugin(Plugin plugin) {
         return addPlugin(plugin, false);
@@ -124,7 +124,7 @@ public class PluginManager {
      *
      * @param plugin The plugin.
      * @param userCatalog Flag to only use the user catalog.
-     * @return The pugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
+     * @return The plugin that was added wrapped in {@link Optional}, or empty if no plugin was added.
      */
     public Optional<Plugin> addPlugin(Plugin plugin, boolean userCatalog) {
         PluginCatalogService pluginCatalogService = state.getPluginCatalogService();

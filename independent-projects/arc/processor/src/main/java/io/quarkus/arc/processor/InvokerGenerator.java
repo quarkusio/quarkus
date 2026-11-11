@@ -842,7 +842,7 @@ public class InvokerGenerator extends AbstractGenerator {
             if (transformer.isInputTransformer()) {
                 // for input transformer (target instance, argument):
                 // - we can't check what comes into the transformer
-                // - we can check what comes out of the transformer, because that's what the invokable method consumes
+                // - we can check what comes out of the transformer, because that's what the invocable method consumes
                 //   (and the transformer must produce a subtype)
 
                 boolean returnTypeOk = isAnyType(method.returnType()) || isSubtype(method.returnType(), expectedType);
@@ -854,7 +854,7 @@ public class InvokerGenerator extends AbstractGenerator {
                 }
             } else if (transformer.isOutputTransformer()) {
                 // for output transformer (return value, exception):
-                // - we can check what comes into the transformer, because that's what the invokable method produces
+                // - we can check what comes into the transformer, because that's what the invocable method produces
                 //   (and the transformer must consume a supertype)
                 // - we can't check what comes out of the transformer
 

@@ -8,7 +8,7 @@ package io.quarkus.qute;
  * Some characters are reserved: {@code #}, {@code /}, {@code @}, {@code _}, {@code |}, {@code !}.
  * Digit/alphabetic chars are also disallowed.
  *
- * @param expressionCommand the command characted used to identify an output expression
+ * @param expressionCommand the command character used to identify an output expression
  */
 public record ParserConfig(Character expressionCommand) {
 

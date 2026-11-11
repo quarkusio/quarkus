@@ -13,7 +13,7 @@ public class Bravo extends Charlie {
         return "b/" + ctx.proceed() + "/b";
     }
 
-    // This callback is overriden
+    // This callback is overridden
     @PostConstruct
     void alphaDummyInit(InvocationContext ctx) throws Exception {
         SuperclassInterceptorMethodsTest.LIFECYCLE_CALLBACKS.add("b");
@@ -26,7 +26,7 @@ public class Bravo extends Charlie {
         ctx.proceed();
     }
 
-    // This callback is overriden
+    // This callback is overridden
     @AroundConstruct
     public void construct(InvocationContext ctx) throws Exception {
         SuperclassInterceptorMethodsTest.LIFECYCLE_CALLBACKS.add("B");

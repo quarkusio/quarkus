@@ -228,7 +228,7 @@ public interface Template {
     interface Fragment extends Template {
 
         /**
-         * An attibute with this key is added to a template instance of a fragment.
+         * An attribute with this key is added to a template instance of a fragment.
          *
          * @see TemplateInstance#setAttribute(String, Object)
          */

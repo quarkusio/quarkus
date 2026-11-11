@@ -83,7 +83,7 @@ public final class ContextConfigurator {
     }
 
     /**
-     * By default, the context is considered normal if the scope annotion is annotated with {@link NormalScope}.
+     * By default, the context is considered normal if the scope annotation is annotated with {@link NormalScope}.
      * <p>
      * It is possible to change this behavior. However, in such case the registrator is responsible for the correct
      * implementation of {@link InjectableContext#isNormal()}.
@@ -95,7 +95,7 @@ public final class ContextConfigurator {
     }
 
     /**
-     * By default, the context is considered normal if the scope annotion is annotated with {@link NormalScope}.
+     * By default, the context is considered normal if the scope annotation is annotated with {@link NormalScope}.
      * <p>
      * It is possible to change this behavior. However, in such case the registrator is responsible for the correct
      * implementation of {@link InjectableContext#isNormal()}.

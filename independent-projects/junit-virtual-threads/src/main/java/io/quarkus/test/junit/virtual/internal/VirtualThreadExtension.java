@@ -243,7 +243,7 @@ public class VirtualThreadExtension
     }
 
     /**
-     * @deprecated Remove as soon as we remove the junit5 package as we won't need this abstration anymore
+     * @deprecated Remove as soon as we remove the junit5 package as we won't need this abstraction anymore
      */
     @Deprecated(since = "3.31", forRemoval = true)
     private record ShouldPinRecord(int atMost) {
@@ -258,7 +258,7 @@ public class VirtualThreadExtension
     }
 
     /**
-     * @deprecated Remove as soon as we remove the junit5 package as we won't need this abstration anymore
+     * @deprecated Remove as soon as we remove the junit5 package as we won't need this abstraction anymore
      */
     @Deprecated(since = "3.31", forRemoval = true)
     private record ShouldNotPinRecord(int atMost) {

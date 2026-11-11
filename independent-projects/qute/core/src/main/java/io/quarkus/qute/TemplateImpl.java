@@ -371,7 +371,7 @@ class TemplateImpl implements Template {
                 } else if (node.isSection()) {
                     SectionHelper helper = node.asSection().getHelper();
                     if (LoopSectionHelper.class.isInstance(helper)) {
-                        // Loop secion - multiply the capacity of the main block by 10
+                        // Loop section - multiply the capacity of the main block by 10
                         ret += 10 * computeCapacity(node.asSection().blocks.get(0));
                     } else if (IncludeSectionHelper.class.isInstance(helper)) {
                         // At this point we don't really know - the included template can be tiny or huge

@@ -19,7 +19,7 @@ public class Charlie {
         ctx.proceed();
     }
 
-    // This callback is overriden
+    // This callback is overridden
     @PreDestroy
     void destroy(InvocationContext ctx) throws Exception {
         SuperclassInterceptorMethodsTest.LIFECYCLE_CALLBACKS.add("c");

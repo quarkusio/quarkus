@@ -146,7 +146,7 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
 
         //If there are locally installed catalogs, then go through every single one of them
         //and collect the aliases.
-        //Unfortunaltely jbang can't return all alias in one go.
+        //Unfortunately jbang can't return all alias in one go.
         //This is because it currently omits `@catalog` suffix in some cases.
         if (!localCatalogs.isEmpty()) {
             Map<String, JBangAlias> aliases = new HashMap<>();

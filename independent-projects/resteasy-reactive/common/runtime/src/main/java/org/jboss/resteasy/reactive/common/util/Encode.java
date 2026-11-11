@@ -31,7 +31,7 @@ public class Encode {
 
     static {
         /*
-         * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed allong with '/'
+         * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed along with '/'
          *
          * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
          * sub-delims = "!" / "$" / "&" / "'" / "(" / ")"
@@ -304,7 +304,7 @@ public class Encode {
     }
 
     /**
-     * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed allong with '/'
+     * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed along with '/'
      * <p>
      * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
      * sub-delims = "!" / "$" / "&#x26;" / "'" / "(" / ")"
@@ -331,7 +331,7 @@ public class Encode {
     }
 
     /**
-     * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed allong with '/'
+     * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed along with '/'
      * <p>
      * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
      * sub-delims = "!" / "$" / "&#x26;" / "'" / "(" / ")"

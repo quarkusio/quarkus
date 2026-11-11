@@ -90,7 +90,7 @@ public @interface ServerRequestFilter {
 
     /**
      * Whether the filter is a pre-matching filter. Pre-matching filters run on the event loop by default, unless
-     * overriden by {@link #nonBlocking()}.
+     * overridden by {@link #nonBlocking()}.
      * <p>
      * Note that this setting and {@link ServerRequestFilter#readBody()} cannot be both set to true.
      */

@@ -11,7 +11,7 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ResourceReferenceProvider;
 
 /**
- * Represents a placeholder for all suppored non-CDI injection points.
+ * Represents a placeholder for all supported non-CDI injection points.
  *
  * @author Martin Kouba
  * @see ResourceReferenceProvider

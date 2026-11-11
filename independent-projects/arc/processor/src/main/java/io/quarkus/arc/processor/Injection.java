@@ -388,7 +388,7 @@ public class Injection {
             if (info != null) {
                 List<Injection> superInjections = forClassBean(beanClass, info, beanDeployment, transformer, true, seenMethods);
 
-                // injections are discovered bottom-up to easily skip overriden methods,
+                // injections are discovered bottom-up to easily skip overridden methods,
                 // but they need to be performed top-down per the AtInject specification
                 superInjections.addAll(injections);
                 injections = superInjections;

@@ -8,7 +8,7 @@ public class Level3 extends Level2 {
         return 3;
     }
 
-    // This method should be overriden
+    // This method should be overridden
     public int getLevel4() {
         return 34;
     }

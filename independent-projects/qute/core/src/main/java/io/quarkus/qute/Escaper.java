@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Escapes a characted sequence using a map of replacements.
+ * Escapes a character sequence using a map of replacements.
  */
 public final class Escaper {
 

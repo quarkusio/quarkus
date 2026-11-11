@@ -32,7 +32,7 @@ public class AnnotationsTransformerSpecificBuildersTest extends AbstractTransfor
                             .whenField(f -> f.name().equals("seven"))
                             .thenTransform(t -> t.add(Inject.class)),
 
-                    // Add @Produces to a method that returns int and is not annoated with @Simple
+                    // Add @Produces to a method that returns int and is not annotated with @Simple
                     AnnotationsTransformer.appliedToMethod()
                             .whenContainsNone(Simple.class)
                             .whenMethod(m -> m.returnType().name().equals(PrimitiveType.INT.name()))

@@ -151,7 +151,7 @@ public class ExtensionsEntryPoint {
             new ExtensionPhaseDiscovery(invoker, computingApplicationIndex, errors, additionalClasses,
                     overlay, qualifiers, interceptorBindings, stereotypes, contexts).run();
         } finally {
-            // noone should attempt annotation transformations on custom meta-annotations after `@Discovery` is finished
+            // no one should attempt annotation transformations on custom meta-annotations after `@Discovery` is finished
             preAnnotationTransformations.addAll(overlay.freeze());
 
             BuildServicesImpl.reset();
@@ -281,7 +281,7 @@ public class ExtensionsEntryPoint {
         try {
             new ExtensionPhaseEnhancement(invoker, beanArchiveIndex, errors, annotationOverlay).run();
         } finally {
-            // noone should attempt annotation transformations on application classes after `@Enhancement` is finished
+            // no one should attempt annotation transformations on application classes after `@Enhancement` is finished
             List<AnnotationTransformation> annotationTransformations = annotationOverlay.freeze();
 
             builder.addAnnotationTransformation(new AnnotationTransformation() {

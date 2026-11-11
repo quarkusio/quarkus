@@ -32,7 +32,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.test.ArcTestContainer;
 
 /**
- * Tests type inheritence, e.g. that scopes, stereotypes, bindings and qualifiers are inherited so long as they
+ * Tests type inheritance, e.g. that scopes, stereotypes, bindings and qualifiers are inherited so long as they
  * declare {@code @Inherited}
  *
  * Scope inheritance is tested separately, see ScopeInheritanceTest

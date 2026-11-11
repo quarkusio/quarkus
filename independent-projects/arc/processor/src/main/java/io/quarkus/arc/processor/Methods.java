@@ -242,7 +242,7 @@ final class Methods {
         if (bindingsDiscovery.hasAnnotation(method, DotNames.NO_CLASS_INTERCEPTORS)
                 || noClassInterceptorsMethods.contains(methodKey)) {
             // The set of methods with `@NoClassInterceptors` is shared in the traversal of class hierarchy, so once
-            // a method with the annotation is found, all subsequent occurences of the "same" method are treated
+            // a method with the annotation is found, all subsequent occurrences of the "same" method are treated
             // as if they also had it. Given that we traverse classes bottom-up, this works as expected: presence
             // of `@NoClassInterceptors` on subclass overrides absence on superclass, and absence on subclass overrides
             // presence on superclass. We process interfaces after all superclasses, so presence/absence on a class
@@ -468,7 +468,7 @@ final class Methods {
             }
             if (InterceptorInfo.hasInterceptorMethodParameter(method)
                     && InterceptorInfo.isInterceptorMethodOverriden(regularMethods, method)) {
-                // Has exactly one param InvocationContext/ArcInvocationContext and is overriden
+                // Has exactly one param InvocationContext/ArcInvocationContext and is overridden
                 return true;
             }
             if (isOverridenByBridgeMethod(method)) {

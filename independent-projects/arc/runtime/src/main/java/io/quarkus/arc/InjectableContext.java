@@ -63,7 +63,7 @@ public interface InjectableContext extends AlterableContext {
     /**
      * Destroy all contextual instances from the given state.
      * <p>
-     * The default implementation is not optimized and does not guarantee proper sychronization. Implementations of this
+     * The default implementation is not optimized and does not guarantee proper synchronization. Implementations of this
      * interface are encouraged to provide an optimized implementation of this method.
      *
      * @param state

@@ -39,7 +39,7 @@ public class AnnotationsTransformerBuilderTest extends AbstractTransformerBuilde
                                     context.transform().add(Inject.class).done();
                                 }
                             }),
-                    // Add @Produces to a method that returns int and is not annoated with @Simple
+                    // Add @Produces to a method that returns int and is not annotated with @Simple
                     AnnotationsTransformer.builder()
                             .appliesTo(Kind.METHOD)
                             .whenContainsNone(Simple.class)

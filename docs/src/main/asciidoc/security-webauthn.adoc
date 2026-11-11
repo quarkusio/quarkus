@@ -1111,6 +1111,26 @@ link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnSecurity.html#rememberU
  and link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnSecurity.html#logout(io.vertx.ext.web.RoutingContext)[`WebAuthnSecurity.logout`]
  methods on the same link:{webauthn-api}/io/quarkus/security/webauthn/WebAuthnSecurity.html[`WebAuthnSecurity`] class if you want to manually set up login cookies.
 
+== Attestation
+
+During registration, an authenticator can attest its make and model with a certificate chain, if the application
+requests it with the <<quarkus-security-webauthn_quarkus-webauthn-attestation,`quarkus.webauthn.attestation`>> property.
+Quarkus verifies the chain against a set of trust anchors, and rejects the registration if the chain does not lead to one of them.
+
+By default, the trust anchors are the root certificates of the Android Keystore, Apple WebAuthn and FIDO Metadata
+Service attestations. To trust other roots, for example the private CA of your enterprise authenticators, put them in
+the trust store of a xref:./tls-registry-reference.adoc[TLS configuration], and reference it with the
+<<quarkus-security-webauthn_quarkus-webauthn-tls-configuration-name,`quarkus.webauthn.tls-configuration-name`>> property:
+
+[source,properties]
+----
+quarkus.webauthn.attestation=direct
+quarkus.webauthn.tls-configuration-name=webauthn-attestation
+quarkus.tls.webauthn-attestation.trust-store.pem.certs=attestation-roots.pem
+----
+
+If `quarkus.webauthn.tls-configuration-name` is not set, the TLS configuration named `webauthn` is used if it exists.
+
 == Blocking version
 
 If you're using a blocking data access to the database, you can safely block on the 

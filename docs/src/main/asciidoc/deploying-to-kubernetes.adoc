@@ -535,7 +535,7 @@ It is also possible to add a prefix when you are generating env from ConfigMap, 
 [source,properties]
 ----
 quarkus.kubernetes.env.configmaps=foo
-quarkus.kubernetes.prefixes."BAR".for-configmap=foo
+quarkus.kubernetes.env.using-prefix."BAR".for-configmap=foo
 ----
 
 This would generate the following in the `env` section of your container:

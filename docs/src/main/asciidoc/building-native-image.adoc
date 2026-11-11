@@ -99,12 +99,13 @@ If you cannot install GraalVM, you can use a multi-stage Docker build to run Mav
 There is an explanation of how to do this at <<#multistage-docker,the end of this guide>>.
 ====
 
-GraalVM {graalvm-version} is required.
+GraalVM {graalvm-version} is recommended.
 
 1. Install GraalVM if you haven't already. You have a few options for this:
-** Download the appropriate archive from <https://github.com/graalvm/mandrel/releases> or <https://github.com/graalvm/graalvm-ce-builds/releases>, and unpack it like you would any other JDK.
-** Use platform-specific installer tools like https://sdkman.io/jdks#graalce[sdkman], https://github.com/graalvm/homebrew-tap[homebrew], or https://github.com/ScoopInstaller/Java[scoop].
-We recommend the _community edition_ of GraalVM. For example, install it with `sdk install java 21-graalce`.
+** Download the appropriate archive from <https://github.com/graalvm/mandrel/releases> or <https://www.graalvm.org/downloads/>, and unpack it like you would any other JDK.
+** Use platform-specific installer tools like https://mise.jdx.dev/lang/java.html[mise], https://github.com/graalvm/homebrew-tap[homebrew], or https://github.com/ScoopInstaller/Java[scoop].
+We recommend the Mandrel distribution of GraalVM.
+For example, with `mise`, run `mise install java@mandrel-25.0`.
 2. Configure the runtime environment. Set `GRAALVM_HOME` environment variable to the GraalVM installation directory, for example:
 +
 [source,bash]

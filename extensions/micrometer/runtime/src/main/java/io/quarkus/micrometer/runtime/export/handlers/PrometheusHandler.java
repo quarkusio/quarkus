@@ -18,6 +18,7 @@ import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.MIMEHeader;
 import io.vertx.ext.web.RoutingContext;
 
 public class PrometheusHandler implements Handler<RoutingContext> {
@@ -70,7 +71,7 @@ public class PrometheusHandler implements Handler<RoutingContext> {
                     .setStatusMessage("Unable to resolve Prometheus registry instance");
         } else {
             ManagedContext requestContext = Arc.container().requestContext();
-            var acceptHeader = chooseContentType(routingContext.request().getHeader("Accept"));
+            var acceptHeader = chooseContentType(routingContext.parsedHeaders().accept());
             if (requestContext.isActive()) {
                 doHandle(response, acceptHeader);
             } else {
@@ -84,12 +85,25 @@ public class PrometheusHandler implements Handler<RoutingContext> {
         }
     }
 
-    private String chooseContentType(String acceptHeader) {
-        if (acceptHeader == null) {
-            return CONTENT_TYPE_OPENMETRICS_100;
-        }
-        if (acceptHeader.contains("text/plain") || acceptHeader.contains("text/html")) {
-            return CONTENT_TYPE_004;
+    /**
+     * Picks the format by the weights of the Accept header: Prometheus asks for OpenMetrics first and lists
+     * text/plain as a fallback, and must get OpenMetrics, the only format with exemplars. A browser (text/html)
+     * gets the text format; no Accept header or only wildcards get OpenMetrics.
+     */
+    private String chooseContentType(List<MIMEHeader> acceptedTypes) {
+        // Sorted by Vert.x, the highest weight first
+        for (MIMEHeader type : acceptedTypes) {
+            if (type.weight() <= 0) {
+                continue;
+            }
+            String subComponent = type.subComponent();
+            if ("application".equalsIgnoreCase(type.component()) && "openmetrics-text".equalsIgnoreCase(subComponent)) {
+                return CONTENT_TYPE_OPENMETRICS_100;
+            }
+            if ("text".equalsIgnoreCase(type.component())
+                    && ("plain".equalsIgnoreCase(subComponent) || "html".equalsIgnoreCase(subComponent))) {
+                return CONTENT_TYPE_004;
+            }
         }
         return CONTENT_TYPE_OPENMETRICS_100;
     }

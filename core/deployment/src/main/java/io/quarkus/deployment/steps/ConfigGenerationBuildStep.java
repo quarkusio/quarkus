@@ -1293,7 +1293,7 @@ public class ConfigGenerationBuildStep {
                 method.invokeStaticMethod(WITH_MAPPING, configBuilder, method.readStaticField(sharedFields.get(mapping)));
             }
 
-            for (String path : mappingsIgnorePaths) {
+            for (String path : new TreeSet<>(mappingsIgnorePaths)) {
                 method.invokeStaticMethod(WITH_MAPPING_IGNORE, configBuilder, method.load(path));
             }
 
@@ -1362,12 +1362,13 @@ public class ConfigGenerationBuildStep {
         return staticSafe;
     }
 
-    private static Set<ConfigClass> staticSafeConfigMappings(Optional<ConfigMappingsRegistrarBuildItem> configMappings) {
+    static Set<ConfigClass> staticSafeConfigMappings(Optional<ConfigMappingsRegistrarBuildItem> configMappings) {
         if (configMappings.isEmpty()) {
             return Collections.emptySet();
         }
 
-        Set<ConfigClass> configClasses = new HashSet<>();
+        Set<ConfigClass> configClasses = new TreeSet<>(
+                Comparator.comparing((ConfigClass cc) -> cc.getType().getName()).thenComparing(ConfigClass::getPrefix));
         for (Entry<String, Set<String>> entry : configMappings.get().getConfigMappings().entrySet()) {
             for (String prefix : entry.getValue()) {
                 Class<?> klass = loadClass(entry.getKey());

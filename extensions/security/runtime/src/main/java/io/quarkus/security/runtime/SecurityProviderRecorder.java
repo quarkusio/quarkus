@@ -13,15 +13,13 @@ import java.util.Set;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
-@Recorder
 public class SecurityProviderRecorder {
 
     private static final Logger LOG = Logger.getLogger(SecurityProviderRecorder.class);
 
-    public void configureProvider(String providerName, List<String> providerConfigs) {
+    public static void configureProvider(String providerName, List<String> providerConfigs) {
         Provider provider = Security.getProvider(providerName);
         if (provider == null) {
             throw new ConfigurationException(
@@ -41,13 +39,13 @@ public class SecurityProviderRecorder {
         }
     }
 
-    public void addBouncyCastleProvider(boolean inFipsMode) {
+    public static void addBouncyCastleProvider(boolean inFipsMode) {
         final String providerName = inFipsMode ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
                 : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME;
         addProvider(loadProvider(providerName));
     }
 
-    public void addBouncyCastleJsseProvider() {
+    public static void addBouncyCastleJsseProvider() {
         Provider bc = loadProvider(SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME);
         Provider bcJsse = loadProvider(SecurityProviderUtils.BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME);
         int sunJsseIndex = findProviderIndex(SecurityProviderUtils.SUN_JSSE_PROVIDER_NAME);
@@ -55,7 +53,7 @@ public class SecurityProviderRecorder {
         insertProvider(bcJsse, sunJsseIndex + 1);
     }
 
-    public void addBouncyCastleFipsJsseProvider() {
+    public static void addBouncyCastleFipsJsseProvider() {
         Provider bc = loadProvider(SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME);
         int sunIndex = findProviderIndex(SecurityProviderUtils.SUN_PROVIDER_NAME);
         insertProvider(bc, sunIndex);

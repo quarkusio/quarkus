@@ -30,21 +30,21 @@ This tutorial focuses on connecting to the database and does not cover the front
 
 To create the application and prepare its development environment:
 
-:create-app-artifact-id: quarkus-data-tutorial
-:add-extension-extensions: quarkus-data-hibernate,quarkus-jdbc-postgresql
 . Create a new empty Quarkus application:
 +
 --
+:create-app-artifact-id: quarkus-data-tutorial
 include::{includes}/devtools/create-app.adoc[]
 --
 
 . Add the `quarkus-data-hibernate` and `quarkus-jdbc-postgresql` extensions:
 +
 --
+:add-extension-extensions: quarkus-data-hibernate,quarkus-jdbc-postgresql
 include::{includes}/devtools/extension-add.adoc[]
 
-The `quarkus-data-hibernate` extension adds database access support.
-Use `quarkus-jdbc-postgresql` as the JDBC driver to connect Quarkus to a PostgreSQL database.
+The first extension, `quarkus-data-hibernate`, provides everything you need for database access.
+The second, `quarkus-jdbc-postgresql`, is the JDBC driver that lets Quarkus connect to a PostgreSQL database.
 If you use a different database, such as MySQL, MariaDB, or H2, pick the corresponding `quarkus-jdbc-*` driver instead (see xref:datasource.adoc#configure-a-jdbc-datasource[Configure a JDBC datasource]).
 Quarkus Data Hibernate cannot work without a JDBC driver <<reactive,or a reactive SQL client>>.
 
@@ -59,14 +59,15 @@ These two data access layers are mutually
 exclusive, so pick only one of them.
 ====
 
+--
+
+. Add the annotation processor configuration to your build file.
++
+--
 Quarkus Data Hibernate uses the Quarkus Data annotation processor, a key component that reads your repository interfaces at compile time, validates queries, and generates implementation classes.
 These generated classes are compiled together with your code and wired up automatically by Quarkus.
 They are also simple to read if you want to understand how they work internally.
---
 
-. Add the annotation processor configuration to your build file:
-+
---
 include::{includes}/quarkus-data-processor-config.adoc[]
 --
 
@@ -160,7 +161,7 @@ If you reference a field that does not exist or make a syntax error, the build f
 The query language is HQL (Hibernate Query Language); for the full syntax, see the link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/querylanguage/html_single/[HQL guide].
 --
 
-. Restore the parameter name to `title`.
+. Restore the parameter name to `title` so that the build passes and you can continue with the tutorial.
 
 == Creating new entities
 

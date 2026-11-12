@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 :diataxis-type: concept
-:summary: What is post-quantum key exchange and how Quarkus supports it, covering TLS background, Diffie-Hellman, ML-KEM, Vert.x integration, and JDK compatibility.
+:summary: What post-quantum key establishment is, why it matters, and how to enable it in Quarkus, covering TLS background, classical and post-quantum key agreement protocols, and JDK compatibility.
 :sectnums:
 :sectnumlevels: 4
 :topics: security, TLS, cryptography, pqc, post-quantum
@@ -26,7 +26,7 @@ Similarly, collected *encrypted messages* could in theory be broken in the futur
 
 Post-quantum cryptography is a broad field. It covers key establishment (agreeing on a shared secret), digital signatures (proving identity), each addressed by different algorithms with different urgency profiles. This guide focuses specifically on post-quantum *key establishment in TLS*: the step in the TLS handshake where the client and server arrive at a session secret. Post-quantum digital signatures (used for certificate authentication and for signing tokens such as JWTs) are separate efforts not covered here.
 
-This guide explains the relevant background on TLS and key establishment, describes the post-quantum algorithm now standardized as the replacement (X25519MLKEM768), and explains how it is supported in Quarkus, regardless of JDK version.
+This guide explains the relevant background on TLS and key establishment, describes the post-quantum algorithms now standardized as replacements, and explains how to enable post-quantum key establishment in Quarkus.
 
 == Background on TLS and cryptography
 
@@ -206,42 +206,25 @@ X25519 is a well-established protocol (Curve25519 dates from 2006; X25519 in TLS
 
 image::x25519mlkem768.svg[X25519MLKEM768 hybrid key exchange overview, align="center"]
 
+=== Post-quantum digital signatures
+
+Post-quantum digital signatures address the authentication leg of TLS: the certificates and tokens (such as JWTs) that prove identity. link:https://csrc.nist.gov/pubs/fips/204/final[FIPS 204] standardizes ML-DSA, the post-quantum signature algorithm. The urgency is lower than for key establishment since harvest-now-decrypt-later does not apply to signatures. Quarkus support for ML-DSA will be documented separately once available.
+
 == Supporting PQC in Quarkus
 
-On JDK 25 (October 2026 Critical Patch Update or later) and JDK 27+, X25519MLKEM768 is negotiated by default: no configuration is required. The `pqc-enforcement-policy` property is not needed to enable PQC; it is there to guarantee the use of post-quantum key exchange groups (rejecting peers that do not support it) and to fail fast at startup if the runtime ends up without a PQC-capable engine.
+On JDK 25 (October 2026 Critical Patch Update or later) and JDK 27+, post-quantum key exchange groups are negotiated by default: no configuration is required.
 
-For JDK 17 and 21, PQC requires OpenSSL 3.5+ via `smallrye-openssl`. X25519MLKEM768 will be backported to those versions according to the link:https://www.java.com/en/jre-jdk-cryptoroadmap.html[Oracle JRE and JDK Cryptographic Roadmap]; dates may change.
+To require post-quantum key establishment -- and fail at startup if the runtime cannot provide it -- set:
 
-Quarkus therefore supports PQC via two mechanisms:
+[source,properties]
+----
+# allow fallback to classical for clients that do not support PQC
+quarkus.tls.pqc-enforcement-policy=client-negotiated
+# or reject any client that does not negotiate a post-quantum group
+quarkus.tls.pqc-enforcement-policy=strict
+----
 
-* using the JDK default SSL engine for JDK 25 (October 2026 Critical Patch Update or later) and JDK 27+
-* using the OpenSSL engine for JDK 17 and 21
-
-This was also an opportunity to have proper SSL engine selection in Quarkus, as using OpenSSL over JdkSSL can result in better performance. Vert.x HTTP servers being the underlying stack of Quarkus, the integration began in Vert.x.
-
-=== Vert.x integration
-
-Vert.x already had a way to leverage OpenSSL using link:https://github.com/netty/netty-tcnative[*netty-tcnative*] (`io.netty:netty-tcnative`), a JNI bridge that allows Netty to delegate TLS operations to a native SSL library, bypassing the JDK's built-in SSL implementation.
-
-Netty-tcnative ships in several variants: statically linked (the native library is bundled inside the JAR) and dynamically linked (it links against a native library installed on the host at runtime), each available for OpenSSL, LibreSSL, and BoringSSL.
-
-The static OpenSSL version is too old (1.1.1) and does not support PQC. A dynamic OpenSSL variant also exists, acting as a thin JNI mapping between the `netty-tcnative-classes` Java API and the host OpenSSL library. However, this variant was compiled against OpenSSL 1.x headers. OpenSSL 3.x is not a drop-in replacement: loading the 1.x-compiled `.so` against a 3.x host library causes a runtime crash. Relinking is not sufficient, the C sources must be recompiled against the 3.x headers.
-
-`netty-tcnative-openssl-dynamic` was therefore rebuilt against OpenSSL 3.x, and published as link:https://github.com/smallrye/smallrye-openssl[smallrye-openssl] on Maven Central. This gives Vert.x users access to OpenSSL 3.5+ features, including post-quantum algorithms, without any changes to the Java API surface.
-
-[discrete]
-===== Requirements
-
-To use OpenSSL, the user needs:
-
-* Linux x86_64 or Linux aarch64 only: `smallrye-openssl` does not ship native binaries for macOS, Windows, IBM Power (ppc64le), IBM Z (s390x), or Alpine Linux
-* OpenSSL 3.5+ on the host machine
-* `libapr-1` on the host machine, a library required by netty-tcnative
-* a dependency on `netty-tcnative-classes` in their project
-* a dependency on the platform-specific `smallrye-openssl` classifier artifact in their project
-
-Both artifacts are managed by the Quarkus BOM, so no explicit version is needed.
-Add `netty-tcnative-classes` unconditionally, then add the `smallrye-openssl` artifact for the target platform:
+On JDK 17 and 21, post-quantum algorithms are not yet available in the JDK. Quarkus falls back to OpenSSL 3.5+ via link:https://github.com/smallrye/smallrye-openssl[`smallrye-openssl`], a rebuilt variant of `netty-tcnative` compiled against OpenSSL 3.x headers. OpenSSL 3.5+ and `libapr-1` must be installed on the host, and the following dependencies added to the project (managed by the Quarkus BOM; Linux x86_64 and Linux aarch64 only):
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -257,154 +240,6 @@ Add `netty-tcnative-classes` unconditionally, then add the `smallrye-openssl` ar
 </dependency>
 ----
 
-The following table indicates how PQC is available depending on the JDK version:
-
-[cols="1,2", options="header"]
-|===
-| Runtime | How PQC is provided
-
-| JDK 27+
-| JdkSSL (built-in) or OpenSSL (`smallrye-openssl`)
-
-| JDK 25 (October 2026 Critical Patch Update or later)
-| JdkSSL (built-in) or OpenSSL (`smallrye-openssl`)
-
-| JDK 17 / 21
-| OpenSSL (`smallrye-openssl`) only; JdkSSL backport expected in the first half of 2027
-|===
-
-Rows listing OpenSSL require OpenSSL 3.5+ and `libapr-1` on the host, and the `netty-tcnative-classes` and `smallrye-openssl` Maven dependencies listed above. Dates follow the link:https://www.java.com/en/jre-jdk-cryptoroadmap.html[Oracle JRE and JDK Cryptographic Roadmap] and may change.
-
-[#quarkus-integration]
-=== Quarkus integration
-
-Quarkus uses a centralized mechanism for specifying TLS-related properties: the `TlsConfigurationRegistry` class. Properties are declared in `application.properties` and propagated to the underlying TLS stack.
-
-Three properties control post-quantum key establishment:
-
-`quarkus.tls.key-exchange-groups`::
-A comma-separated list of key exchange groups to advertise during the TLS handshake (for example, `X25519MLKEM768`). If the active SSL engine does not support at least one group in the list, the application fails at startup.
-
-`quarkus.tls.pqc-enforcement-policy`::
-Controls how strictly the application requires post-quantum key establishment. Accepts `relaxed`, `client-negotiated`, or `strict`.
-
-`quarkus.tls.ssl-engine`::
-Selects the SSL engine: `jdkssl` or `openssl`. When omitted and `pqc-enforcement-policy` is `client-negotiated` or `strict`, the engine is selected automatically as described below.
-
-==== Key exchange group resolution
-
-`key-exchange-groups` and `pqc-enforcement-policy` interact and are resolved once at startup. The following table shows how `key-exchange-groups` is interpreted depending on the policy.
-
-[cols="2,2,2,2", options="header"]
-|===
-| `key-exchange-groups` | `strict` | `client-negotiated` | `relaxed` / not set
-
-| not set / empty
-| *Defaulted* → PQC-compliant groups (`X25519MLKEM768`)
-| *Defaulted* → a default list of key exchange groups, mixing classical and post-quantum
-| *Passed through* → not set / empty
-
-| All PQC-compliant
-| *Accepted* as-is
-| *Accepted* as-is
-| *Passed through* as-is
-
-| Mixed (some PQC-compliant)
-| *Overridden* → PQC-compliant groups only
-| *Accepted* as-is
-| *Passed through* as-is
-
-| None PQC-compliant
-| *Overridden* → PQC-compliant groups only
-| *Augmented* → PQC-compliant groups prepended
-| *Passed through* as-is
-|===
-
-==== SSL engine resolution
-
-When `pqc-enforcement-policy` is `client-negotiated` or `strict` and `ssl-engine` is not set, Quarkus selects the SSL engine automatically at startup. The following table shows the resolution logic.
-
-[cols="2,1,3,2", options="header"]
-|===
-| `pqc-enforcement-policy` | `ssl-engine` | Runtime condition | Outcome
-
-| `strict` or `client-negotiated`
-| set
-| engine supports PQC
-| *Validated* - provided engine used
-
-| `strict` or `client-negotiated`
-| set
-| engine does not support PQC
-| *Startup failure* - engine lacks PQC support
-
-| `strict` or `client-negotiated`
-| not set
-| JDK supports PQC
-| *Auto-selected* `jdkssl`
-
-| `strict` or `client-negotiated`
-| not set
-| JDK does not support PQC, OpenSSL supports PQC
-| *Auto-selected* `openssl`
-
-| `strict` or `client-negotiated`
-| not set
-| neither JDK nor OpenSSL support PQC
-| *Startup failure* - no PQC-capable engine available
-
-| `relaxed` / not set
-| set
-| -
-| *Accepted* - provided engine used
-
-| `relaxed` / not set
-| not set
-| -
-| *Default* - `jdkssl` used
-|===
-
-The OpenSSL engine requires OpenSSL 3.5+, `libapr-1`, and the Maven dependencies listed in the requirements above.
-
-==== JVM mode vs. native mode
-
-The configuration described above applies to *JVM mode*. In JVM mode, both SSL engine paths are available: OpenSSL via `smallrye-openssl` on any supported JDK, and JdkSSL on JDK 25 (October 2026 Critical Patch Update or later) and JDK 27+.
-
-In *native mode*, the OpenSSL path is not available. The `smallrye-openssl` JNI bridge loads a native `.so` at runtime, which is incompatible with GraalVM native image's closed-world assumption. JdkSSL is the only engine available in a native executable, and its PQC support depends on the JDK version integrated in Mandrel, the GraalVM distribution used to build Quarkus native images. PQC will be available in native mode once a future Mandrel release ships based on a JDK version that includes X25519MLKEM768.
-
-The following table summarizes the current state:
-
-[cols="1,1,1", options="header"]
-|===
-| Mode | SSL engine | PQC support
-
-| JVM
-| JdkSSL (JDK 27+)
-| Yes
-
-| JVM
-| JdkSSL (JDK 25, October 2026 Critical Patch Update or later)
-| Yes
-
-| JVM
-| OpenSSL (`smallrye-openssl`)
-| Yes
-
-| Native
-| JdkSSL
-| Pending (Mandrel)
-
-| Native
-| OpenSSL
-| No
-|===
-
-== Conclusion
-
-The rise of quantum computers threatens the security of TLS not only in a few years but also today: existing key exchange protocols such as X25519 are prone to harvest-now-decrypt-later attacks. Consequently, new post-quantum standards such as X25519MLKEM768 have been adopted to ensure that communications cannot be collected today and decrypted when a sufficiently capable quantum computer becomes available.
-
-OpenSSL integrates these new schemes in its version 3.5, and in Java starting with JDK 25 (October 2026 Critical Patch Update) and JDK 27+. The Java team is working to backport the integration to JDK 17 and 21, expected in the first half of 2027 according to the link:https://www.java.com/en/jre-jdk-cryptoroadmap.html[Oracle JRE and JDK Cryptographic Roadmap]; dates may change.
-
-Due to the pressing nature of harvest-now-decrypt-later attacks, Quarkus had to integrate PQC in Java 21 before January 2027. To that end, `netty-tcnative` was used for Vert.x, the underlying engine of Quarkus, to leverage OpenSSL 3.5+ and benefit from PQC.
+For the full configuration reference -- key exchange group resolution, SSL engine selection, and native mode limitations -- see xref:tls-registry-reference.adoc#pqc-availability-summary[PQC availability summary] in the TLS registry reference.
 
 

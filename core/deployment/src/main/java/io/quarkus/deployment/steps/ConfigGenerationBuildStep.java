@@ -8,6 +8,7 @@ import static io.quarkus.deployment.configuration.RunTimeConfigurationGenerator.
 import static io.quarkus.deployment.steps.ConfigBuildSteps.SERVICES_PREFIX;
 import static io.quarkus.deployment.util.ServiceUtil.classNamesNamedIn;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
+import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toSet;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
@@ -895,7 +896,7 @@ public class ConfigGenerationBuildStep {
                 method.invokeStaticMethod(WITH_MAPPING, configBuilder, method.readStaticField(sharedFields.get(mapping)));
             }
 
-            for (String path : mappingsIgnorePaths) {
+            for (String path : new TreeSet<>(mappingsIgnorePaths)) {
                 method.invokeStaticMethod(WITH_MAPPING_IGNORE, configBuilder, method.load(path));
             }
 
@@ -969,11 +970,13 @@ public class ConfigGenerationBuildStep {
         return staticSafe;
     }
 
-    private static Set<ConfigClass> staticSafeConfigMappings(List<ConfigMappingBuildItem> configMappings) {
+    static Set<ConfigClass> staticSafeConfigMappings(List<ConfigMappingBuildItem> configMappings) {
         return configMappings.stream()
                 .filter(ConfigMappingBuildItem::isStaticInitSafe)
                 .map(ConfigMappingBuildItem::toConfigClass)
-                .collect(toSet());
+                .collect(toCollection(() -> new TreeSet<>(
+                        Comparator.comparing((ConfigClass cc) -> cc.getType().getName())
+                                .thenComparing(ConfigClass::getPrefix))));
     }
 
     private static Set<ConfigClass> runtimeConfigMappings(List<ConfigMappingBuildItem> configMappings) {

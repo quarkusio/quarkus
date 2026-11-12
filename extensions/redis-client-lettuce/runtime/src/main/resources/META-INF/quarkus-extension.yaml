@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Redis Client - Lettuce"
+metadata:
+  keywords:
+    - "redis"
+    - "redis-client"
+    - "lettuce"
+    - "reactive"
+  guide: "https://quarkus.io/guides/redis-reference#lettuce-backend"
+  categories:
+    - "data"
+    - "reactive"
+  status: "experimental"

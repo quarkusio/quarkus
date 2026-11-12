@@ -15,7 +15,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
-import org.jose4j.lang.UnresolvableKeyException;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.AuthorizationCodeTokens;
@@ -38,6 +37,7 @@ import io.quarkus.oidc.common.runtime.OidcWebClient;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method;
 import io.quarkus.security.credential.TokenCredential;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
 import io.vertx.core.MultiMap;

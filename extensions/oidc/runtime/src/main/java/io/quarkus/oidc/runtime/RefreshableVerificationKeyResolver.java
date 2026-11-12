@@ -1,7 +1,6 @@
 package io.quarkus.oidc.runtime;
 
-import org.jose4j.keys.resolvers.VerificationKeyResolver;
-
+import io.smallrye.jwt.auth.VerificationKeyResolver;
 import io.smallrye.mutiny.Uni;
 
 public interface RefreshableVerificationKeyResolver extends VerificationKeyResolver {

@@ -34,7 +34,23 @@ include::{includes}/devtools/extension-add.adoc[]
 
 WARNING: In situations where all that is needed to build a container image and no push to a registry is necessary (essentially by having set `quarkus.container-image.build=true` and left `quarkus.container-image.push` unset - it defaults to `false`), then this extension creates a container image and registers
 it with the Docker daemon. This means that although Docker isn't used to build the image, it is nevertheless necessary. Also note that using this mode, the built container image *will*
-show up when executing `docker images`.
+show up when executing `docker images`. An alternative is to instead create a tarball, as explained in <<jib-build-tar>>.
+
+[[jib-build-tar]]
+==== Building a tarball
+
+To build the container image without a container runtime and without pushing it, for example in a CI job that only archives the image, set `quarkus.container-image.tar.enabled=true`.
+The image is then written to a tarball named after the image, for example `quarkus-my-app-1.0.tar`, in the output directory of the build tool (`target` with Maven) instead of being registered with the Docker daemon.
+Use `quarkus.container-image.tar.file` to write it somewhere else.
+
+[source,bash]
+----
+./mvnw package -Dquarkus.container-image.build=true -Dquarkus.container-image.tar.enabled=true
+docker load --input target/quarkus-my-app-1.0.tar
+----
+
+`podman load` works the same way.
+`quarkus.container-image.tar.enabled` cannot be combined with pushing the image to a registry. The build fails if both are configured.
 
 ==== Including extra files
 

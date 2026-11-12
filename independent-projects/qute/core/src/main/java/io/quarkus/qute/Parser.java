@@ -336,6 +336,17 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             cdataPipeCount++;
             return;
         }
+        // Unparsed data closed before any content, e.g. {||} or {|||} (regression #57646)
+        // The counted pipes are not a multi-pipe opener: the opener was a single pipe,
+        // the trailing |} closes an (empty) section, and extra pipes are content
+        if (character == END_DELIMITER && buffer.length() == 0 && cdataPipeCount >= 2) {
+            state = State.TEXT;
+            for (int i = 0; i < cdataPipeCount - 2; i++) {
+                buffer.append(CDATA_END_DELIMITER);
+            }
+            flushText();
+            return;
+        }
         if (character == END_DELIMITER && buffer.length() >= cdataPipeCount
                 && isCdataEnd()) {
             // End of cdata

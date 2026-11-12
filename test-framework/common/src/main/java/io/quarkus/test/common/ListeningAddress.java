@@ -46,4 +46,7 @@ public record ListeningAddress(Integer port, String protocol) {
     public static final RuntimeKey<URI> LOCAL_MANAGEMENT_BASE_URI = RuntimeKey.key("quarkus.management.local-base-uri");
     public static final RuntimeKey<Optional<ListeningAddress>> MANAGEMENT_LISTENING_ADDRESS = RuntimeKey
             .key("quarkus.management.listening-address");
+
+    // Registered by the Amazon Lambda extension when requests are served by the mock event server
+    public static final RuntimeKey<URI> LAMBDA_BASE_URI = RuntimeKey.key("quarkus.lambda.local-base-uri");
 }

@@ -20,7 +20,7 @@ public interface PrometheusRuntimeConfig {
      * Prometheus registry configuration properties.
      *
      * A property source for configuration of the Prometheus MeterRegistry,
-     * see https://micrometer.io/docs/registry/prometheus.
+     * see https://docs.micrometer.io/micrometer/reference/implementations/prometheus.html.
      *
      * @asciidoclet
      */

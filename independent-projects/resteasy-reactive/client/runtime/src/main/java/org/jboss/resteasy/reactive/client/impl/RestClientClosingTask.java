@@ -19,6 +19,10 @@ public interface RestClientClosingTask {
 
     @SuppressWarnings("unused") // this is called by the implementation class of the REST Client when the {@code close} method is called
     static void invokeAll(Context context) {
+        if (context.baseTarget().getRestClient().isClosed()) {
+            // closing an already closed client has no effect, see java.io.Closeable#close()
+            return;
+        }
         for (RestClientClosingTask restClientClosingTask : ServiceLoader.load(RestClientClosingTask.class)) {
             try {
                 restClientClosingTask.close(context);

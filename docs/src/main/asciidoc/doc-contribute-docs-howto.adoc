@@ -274,7 +274,7 @@ Include errors in the results.
 
 === Use the Vale CLI
 
-If you install the https://vale.sh/docs/vale-cli/installation/[Vale CLI], you must specify the configuration file and the directory or list of files to scan:
+If you install the https://docs.vale.sh/topics/installation[Vale CLI], you must specify the configuration file and the directory or list of files to scan:
 
 [source,shell]
 ----
@@ -289,7 +289,7 @@ For more information, see the https://vale.sh/manual/[Vale CLI Manual].
 
 === Vale IDE plugins
 
-https://vale.sh/docs/integrations/guide/[Vale IDE integrations] require the Vale CLI to be installed.
+https://docs.vale.sh/guides/lsp[Vale IDE integrations] require the Vale CLI to be installed.
 
 Each IDE integration has its own configuration requirements. The Visual Studio Code IDE extension, for example, requires a definition of the Vale CLI path:
 
@@ -330,7 +330,7 @@ If you disagree with the Vale results, add the yellow PR label `needs-vale-rule-
 
 == Previewing doc changes on the Quarkus website
 
-After your PR is merged to `main` and the branch is synchronized with the link:https://github.com/quarkusio/quarkusio.github.io/tree/develop/_generated-doc[Quarkus.io] website repository, you can preview the resulting build output on the link:https://quarkus.io/version/main/guides/[Main branch (SNAPSHOT)] documentation page of the Quarkus site.
+After your PR is merged to `main` and the branch is synchronized with the link:https://github.com/quarkusio/quarkusio.github.io[Quarkus.io] website repository, you can preview the resulting build output on the link:https://quarkus.io/version/main/guides/[Main branch (SNAPSHOT)] documentation page of the Quarkus site.
 
 [IMPORTANT]
 ====

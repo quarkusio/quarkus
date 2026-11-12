@@ -16,7 +16,7 @@ This guide explains how to index entities and query the cluster using the Hibern
 [IMPORTANT]
 ====
 If you want to index Hibernate ORM entities,
-see xref:hibernate-search-orm-elasticsearch.adoc[this dedicated guide] instead.
+see xref:hibernate-search-orm-elasticsearch.adoc[Use Hibernate Search with Hibernate ORM and Elasticsearch/OpenSearch] instead.
 ====
 
 == Prerequisites
@@ -55,8 +55,8 @@ include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven structure importing the following extensions:
 
- * Hibernate Search Standalone + Elasticsearch,
- * Quarkus REST (formerly RESTEasy Reactive) and Jackson.
+* Hibernate Search Standalone + Elasticsearch,
+* Quarkus REST (formerly RESTEasy Reactive) and Jackson.
 
 If you already have your Quarkus project configured, you can add the `hibernate-search-standalone-elasticsearch` extension
 to your project by running the following command in your project base directory:
@@ -281,9 +281,9 @@ The annotations on the entities declare the following analyzers and normalizer:
 
 The example uses:
 
- * an analyzer called `name` for person names,
- * an analyzer called `english` for book titles,
- * a normalizer called `sort` for sort fields.
+* an analyzer called `name` for person names,
+* an analyzer called `english` for book titles,
+* a normalizer called `sort` for sort fields.
 
 Define them in a configurer.
 
@@ -451,7 +451,19 @@ Adding or deleting a book updates the author.
 
 The REST service provides basic CRUD operations through Hibernate Search APIs.
 
-Add a search endpoint to `LibraryResource` with the following method and imports:
+Add a search endpoint to `LibraryResource`.
+
+First, add the following imports:
+
+[source,java]
+----
+import java.util.List;
+import java.util.Optional;
+
+import org.jboss.resteasy.reactive.RestQuery;
+----
+
+Then, add the following method:
 
 [source,java]
 ----
@@ -481,7 +493,7 @@ Paging is also supported.
 
 [NOTE]
 ====
-The Hibernate Search DSL supports a significant subset of the Elasticsearch predicates (match, range, nested, phrase, spatial...).
+The Hibernate Search DSL supports a significant subset of the Elasticsearch predicates, such as match, range, nested, phrase, and spatial predicates.
 Feel free to explore the DSL using autocompletion.
 
 If the DSL is not sufficient, define a predicate directly with
@@ -492,7 +504,16 @@ link:{hibernate-search-docs-url}#search-dsl-predicate-extensions-elasticsearch-f
 
 Import an initial dataset for the example.
 
-Add the following methods to `LibraryResource`:
+Add the following imports to `LibraryResource`:
+
+[source,java]
+----
+import jakarta.enterprise.event.Observes;
+
+import io.quarkus.runtime.StartupEvent;
+----
+
+Then, add the following methods:
 
 [source,java]
 ----
@@ -624,7 +645,7 @@ include::{includes}/devtools/build-native.adoc[]
 ====
 Native executable compilation consumes a large amount of memory.
 
-Consider stopping the two containers while building the native executable and restarting them afterward.
+Consider stopping the Elasticsearch container while building the native executable and restarting it afterward.
 ====
 
 Run `./target/hibernate-search-standalone-elasticsearch-quickstart-1.0.0-SNAPSHOT-runner`.
@@ -633,10 +654,9 @@ Open `http://localhost:8080/` in a browser.
 
 [NOTE]
 ====
-Startup is slower because the application drops and re-creates the Elasticsearch mapping each time it starts.
-It also indexes initial data.
+Startup is slower because the application indexes initial data.
 
-Production applications typically do not perform these operations at every startup.
+Production applications typically do not perform this operation at every startup.
 ====
 
 [[dev-services]]
@@ -788,7 +808,7 @@ Scope: one or more per backend.
 +
 See <<analysis-configurer,this section of this guide>> for more information.
 `org.hibernate.search.backend.elasticsearch.index.layout.IndexLayoutStrategy`::
-A component used to configure the Elasticsearch layout: index names, index aliases, ...
+A component used to configure the Elasticsearch layout, such as index names and index aliases.
 +
 Scope: one per backend.
 +
@@ -844,9 +864,9 @@ Load entities from the other data store explicitly.
 For more information about configuring loading, see the Hibernate Search reference documentation:
 
 * To load entities from an external data source for reindexing,
-see https://docs.hibernate.org/stable/search/reference/en-US/html_single/#mapping-entitydefinition-loading-mass[Mass loading strategy].
+see link:{hibernate-search-docs-url}#mapping-entitydefinition-loading-mass[Mass loading strategy].
 * To load entities from an external data source when returning search hits,
-see https://docs.hibernate.org/stable/search/reference/en-US/html_single/#mapping-entitydefinition-loading-selection[Selection loading strategy].
+see link:{hibernate-search-docs-url}#mapping-entitydefinition-loading-selection[Selection loading strategy].
 
 [NOTE]
 ====
@@ -911,14 +931,15 @@ include the following information in the request body:
 ----
 {
   "filter": {
-    "types": ["EntityName1", "EntityName2", "EntityName3", ...], <1>
+    "types": ["EntityName1", "EntityName2"] <1>
   },
-  "massIndexer":{
-    "typesToIndexInParallel": 1, <2>
+  "massIndexer": {
+    "typesToIndexInParallel": 1 <2>
   }
 }
 ----
-<1> An array of entity names that should be re-indexed. If unspecified or empty, all entity types will be re-indexed.
+<1> An array of entity names that should be re-indexed.
+If unspecified or empty, all entity types will be re-indexed.
 <2> Sets the number of entity types to be indexed in parallel.
 
 The full list of possible filters and available mass indexer configurations is presented in the example below.
@@ -927,37 +948,33 @@ The full list of possible filters and available mass indexer configurations is p
 ----
 {
   "filter": { <1>
-    "types": ["EntityName1", "EntityName2", "EntityName3", ...], <2>
-    "tenants": ["tenant1", "tenant2", ...] <3>
+    "types": ["EntityName1", "EntityName2"], <2>
+    "tenants": ["tenant1", "tenant2"] <3>
   },
-  "massIndexer":{ <4>
+  "massIndexer": { <4>
     "typesToIndexInParallel": 1, <5>
-    "threadsToLoadObjects": 6,  <6>
+    "threadsToLoadObjects": 6, <6>
     "batchSizeToLoadObjects": 10, <7>
-    "cacheMode": "IGNORE", <8>
-    "mergeSegmentsOnFinish": false, <9>
-    "mergeSegmentsAfterPurge": true, <10>
-    "dropAndCreateSchemaOnStart": false, <11>
-    "purgeAllOnStart": true, <12>
-    "idFetchSize": 100, <13>
-    "transactionTimeout": 100000, <14>
+    "mergeSegmentsOnFinish": false, <8>
+    "mergeSegmentsAfterPurge": true, <9>
+    "dropAndCreateSchemaOnStart": false, <10>
+    "purgeAllOnStart": true <11>
   }
 }
 ----
 <1> Filter object that limits the scope of reindexing.
-<2> An array of entity names that should be re-indexed. If unspecified or empty, all entity types will be re-indexed.
-<3> An array of tenant ids, in case of multi-tenancy. If unspecified or empty, all tenants will be re-indexed.
+<2> An array of entity names that should be re-indexed.
+If unspecified or empty, all entity types will be re-indexed.
+<3> An array of tenant IDs, in case of multi-tenancy.
+If unspecified or empty, all tenants will be re-indexed.
 <4> Mass indexer configuration object.
 <5> Sets the number of entity types to be indexed in parallel.
 <6> Sets the number of threads to be used to load the root entities.
 <7> Sets the batch size used to load the root entities.
-<8> Sets the cache interaction mode for the data loading tasks.
-<9> Whether each index is merged into a single segment after indexing.
-<10> Whether each index is merged into a single segment after the initial index purge, just before indexing.
-<11> Whether the indexes and their schema (if they exist) should be dropped and re-created before indexing.
-<12> Whether all entities are removed from the indexes before indexing.
-<13> Specifies the fetch size to be used when loading primary keys if objects to be indexed.
-<14> Specifies the timeout of transactions for loading ids and entities to be re-indexed.
+<8> Whether each index is merged into a single segment after indexing.
+<9> Whether each index is merged into a single segment after the initial index purge, just before indexing.
+<10> Whether the indexes and their schema (if they exist) should be dropped and re-created before indexing.
+<11> Whether all entities are removed from the indexes before indexing.
 +
 All properties in the JSON are optional.
 Specify only the properties that are needed.

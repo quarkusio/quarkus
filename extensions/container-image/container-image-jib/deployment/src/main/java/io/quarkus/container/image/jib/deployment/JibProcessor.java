@@ -50,6 +50,7 @@ import com.google.cloud.tools.jib.api.JibContainerBuilder;
 import com.google.cloud.tools.jib.api.LogEvent;
 import com.google.cloud.tools.jib.api.RegistryException;
 import com.google.cloud.tools.jib.api.RegistryImage;
+import com.google.cloud.tools.jib.api.TarImage;
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath;
 import com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer;
 import com.google.cloud.tools.jib.api.buildplan.FileEntry;
@@ -177,6 +178,7 @@ public class JibProcessor {
         if (!buildContainerImage && !pushContainerImage) {
             return;
         }
+        validateBuildTar(containerImageConfig, pushContainerImage);
 
         JibContainerBuilder jibContainerBuilder;
         PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
@@ -196,7 +198,7 @@ public class JibProcessor {
         handleExtraFiles(outputTarget, jibContainerBuilder);
         log.info("Starting (local) container image build for jar using jib.");
         JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
-                pushRequest.isPresent());
+                outputTarget, pushRequest.isPresent());
         writeOutputFiles(container, jibConfig, outputTarget);
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
@@ -224,6 +226,7 @@ public class JibProcessor {
         if (!buildContainerImage && !pushContainerImage) {
             return;
         }
+        validateBuildTar(containerImageConfig, pushContainerImage);
 
         if (!NativeBinaryUtil.nativeIsLinuxBinary(nativeImage)) {
             throw new RuntimeException(
@@ -238,7 +241,7 @@ public class JibProcessor {
 
         log.info("Starting (local) container image build for native binary using jib.");
         JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
-                pushContainerImage);
+                outputTarget, pushContainerImage);
         writeOutputFiles(container, jibConfig, outputTarget);
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
@@ -247,12 +250,20 @@ public class JibProcessor {
         containerImageBuilder.produce(new ContainerImageBuilderBuildItem(JIB));
     }
 
+    private void validateBuildTar(ContainerImageConfig containerImageConfig, boolean pushRequested) {
+        if (containerImageConfig.tar().enabled() && pushRequested) {
+            throw new IllegalArgumentException(
+                    "'quarkus.container-image.tar.enabled' can only be used when the container image is built locally, but a push of the container image was requested. Either disable 'quarkus.container-image.tar.enabled' or the push of the container image.");
+        }
+    }
+
     private JibContainer containerize(ContainerImageConfig containerImageConfig,
             ContainerImageJibConfig jibConfig, ContainerImageInfoBuildItem containerImage,
-            JibContainerBuilder jibContainerBuilder,
+            JibContainerBuilder jibContainerBuilder, OutputTargetBuildItem outputTarget,
             boolean pushRequested) {
 
-        Containerizer containerizer = createContainerizer(containerImageConfig, jibConfig, containerImage, pushRequested);
+        Containerizer containerizer = createContainerizer(containerImageConfig, jibConfig, containerImage, outputTarget,
+                pushRequested);
         for (String additionalTag : containerImage.getAdditionalTags()) {
             containerizer.withAdditionalTag(additionalTag);
         }
@@ -276,7 +287,7 @@ public class JibProcessor {
 
     private Containerizer createContainerizer(ContainerImageConfig containerImageConfig,
             ContainerImageJibConfig jibConfig, ContainerImageInfoBuildItem containerImageInfo,
-            boolean pushRequested) {
+            OutputTargetBuildItem outputTarget, boolean pushRequested) {
         Containerizer containerizer;
         ImageReference imageReference = ImageReference.of(containerImageInfo.getRegistry().orElse(null),
                 containerImageInfo.getRepository(), containerImageInfo.getTag());
@@ -288,6 +299,11 @@ public class JibProcessor {
             RegistryImage registryImage = toRegistryImage(imageReference, containerImageConfig.username(),
                     containerImageConfig.password());
             containerizer = Containerizer.to(registryImage);
+        } else if (containerImageConfig.tar().enabled()) {
+            Path imageTarFile = resolveOutputPath(outputTarget,
+                    containerImageConfig.tar().file().orElseGet(() -> defaultTarFileName(imageReference)));
+            log.infof("The container image will be written to %s", imageTarFile);
+            containerizer = Containerizer.to(TarImage.at(imageTarFile).named(imageReference));
         } else {
             containerizer = dockerDaemonContainerizer(jibConfig, imageReference);
         }
@@ -361,14 +377,23 @@ public class JibProcessor {
 
     private void writeOutputFiles(JibContainer jibContainer, ContainerImageJibConfig jibConfig,
             OutputTargetBuildItem outputTarget) {
-        doWriteOutputFile(outputTarget, Paths.get(jibConfig.imageDigestFile()), jibContainer.getDigest().toString());
-        doWriteOutputFile(outputTarget, Paths.get(jibConfig.imageIdFile()), jibContainer.getImageId().toString());
+        doWriteOutputFile(resolveOutputPath(outputTarget, jibConfig.imageDigestFile()), jibContainer.getDigest().toString());
+        doWriteOutputFile(resolveOutputPath(outputTarget, jibConfig.imageIdFile()), jibContainer.getImageId().toString());
     }
 
-    private void doWriteOutputFile(OutputTargetBuildItem outputTarget, Path configPath, String output) {
-        if (!configPath.isAbsolute()) {
-            configPath = outputTarget.getOutputDirectory().resolve(configPath);
+    private static String defaultTarFileName(ImageReference imageReference) {
+        return imageReference.getRepository().replace('/', '-') + "-" + imageReference.getQualifier() + ".tar";
+    }
+
+    private Path resolveOutputPath(OutputTargetBuildItem outputTarget, String configuredPath) {
+        Path path = Paths.get(configuredPath);
+        if (!path.isAbsolute()) {
+            path = outputTarget.getOutputDirectory().resolve(path);
         }
+        return path;
+    }
+
+    private void doWriteOutputFile(Path configPath, String output) {
         try {
             Files.writeString(configPath, output);
         } catch (IOException e) {

@@ -406,7 +406,7 @@
       "codestart-data": {
         "dockerfile.jvm.from-template": "registry.access.redhat.com/ubi10/openjdk-{java.version}-runtime:1.24",
         "dockerfile.jvm.from": "registry.access.redhat.com/ubi10/openjdk-${recommended-java-version}-runtime:1.24",
-        "dockerfile.native.from": "registry.access.redhat.com/ubi10/ubi-minimal:10.2",
+        "dockerfile.native.from": "registry.access.redhat.com/ubi10/ubi-minimal:10.3",
         "dockerfile.native-micro": "quay.io/quarkus/ubi10-quarkus-micro-image:2.0"
       },
       "properties": {

@@ -2234,7 +2234,7 @@ The project generation provides a `Dockerfile.native` in the `src/main/docker` d
 
 [source,dockerfile]
 ----
-FROM registry.access.redhat.com/ubi10/ubi-minimal:10.2
+FROM registry.access.redhat.com/ubi10/ubi-minimal:10.3
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \

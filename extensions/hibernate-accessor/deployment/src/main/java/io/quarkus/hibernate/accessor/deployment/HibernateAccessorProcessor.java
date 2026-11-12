@@ -1,6 +1,8 @@
 package io.quarkus.hibernate.accessor.deployment;
 
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,6 +18,7 @@ import org.hibernate.accessor.asm.aot.AotMethodMetadata;
 import org.hibernate.accessor.asm.aot.AotTypeMetadata;
 import org.hibernate.accessor.asm.aot.GenerationUtil;
 
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.core.Phase;
 import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Feature;
@@ -32,6 +35,9 @@ import io.quarkus.hibernate.accessor.runtime.AccessorFactoryBootstrap;
 import io.quarkus.hibernate.accessor.runtime.HibernateAccessorBuildTimeConfig;
 import io.quarkus.hibernate.accessor.runtime.HibernateAccessorFactory;
 import io.quarkus.hibernate.accessor.runtime.HibernateAccessorStrategy;
+import io.quarkus.hibernate.accessor.runtime.QuarkusAccessContext;
+import io.quarkus.modular.spi.items.ClassAccessBuildItem;
+import io.quarkus.modular.spi.items.GeneratedClassPlacementBuildItem;
 
 /**
  * Generates bytecode accessors using the Hibernate Accessor library's AOT emitters.
@@ -67,10 +73,11 @@ import io.quarkus.hibernate.accessor.runtime.HibernateAccessorStrategy;
  * the host's dispatch method then uses the member-level switch to access the requested member.
  * <p>
  * Public dispatch methods expose access to registered private members to callers that can access the host or bridge.
- * Generated accessors do not establish module reads or package exports, so access across named-module boundaries
- * can fail unless those permissions are already configured. Public visibility alone does not bypass these boundaries.
- * TODO: Define and test JPMS support for generated accessors, including placement of bridges in the host's module,
- * required module reads and package exports, and whether dispatch access should be restricted.
+ * This processor's {@code placeGeneratedClasses} and {@code declareAccess} build steps declare placement and access
+ * requirements for modular packaging, using the same processed registrations as accessor generation.
+ * Bridges belong to their host's module, while shared implementations belong to the accessor runtime module.
+ * Generated strategies export host packages to the accessor module. Reflection and fallback strategies open registered
+ * members' declaring packages to that module. Public visibility alone does not bypass these module boundaries.
  *
  * <pre>
  * // Generated as Model$$HibernateAccessorBridge, in the same package as Model
@@ -159,7 +166,7 @@ import io.quarkus.hibernate.accessor.runtime.HibernateAccessorStrategy;
  * nor runtime creation hooks, allowing parent-loaded hosts to serve independent application classloaders.
  * </ol>
  *
- * An application-loaded bootstrap implements the runtime-visible
+ * A generated bootstrap implements the runtime-visible
  * {@link AccessorFactoryBootstrap} interface and directly calls the
  * generated factory's strategy-specific {@code create} overload. The static-init service constructs
  * the bootstrap through a captured constructor constant, invokes its interface and publishes
@@ -167,6 +174,12 @@ import io.quarkus.hibernate.accessor.runtime.HibernateAccessorStrategy;
  * nor a factory and continues to use the configured reflection access context.
  */
 class HibernateAccessorProcessor {
+
+    private static final List<String> SHARED_CLASSES = List.of(
+            HibernateAccessorGenerator.GENERATED_READER_IMPL,
+            HibernateAccessorGenerator.GENERATED_WRITER_IMPL,
+            HibernateAccessorGenerator.GENERATED_INSTANTIATOR_IMPL,
+            HibernateAccessorGenerator.QUARKUS_HIBERNATE_ACCESSOR_FACTORY);
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> features) {
@@ -182,16 +195,21 @@ class HibernateAccessorProcessor {
     }
 
     @BuildStep
+    ProcessedHostsBuildItem processRegistrations(List<HibernateAccessorRegistrationBuildItem> registrations) {
+        return new ProcessedHostsBuildItem(mergeRegistrations(registrations));
+    }
+
+    @BuildStep
     void generateDirectAccessors(
             HibernateAccessorBuildTimeConfig config,
-            List<HibernateAccessorRegistrationBuildItem> hibernateAccessorBuildItemList,
+            ProcessedHostsBuildItem processedHosts,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<BytecodeTransformerBuildItem> transformer) {
         if (config.strategy() == HibernateAccessorStrategy.REFLECTION) {
             return;
         }
 
-        List<ProcessedHostData> hosts = mergeRegistrations(hibernateAccessorBuildItemList);
+        List<ProcessedHostData> hosts = processedHosts.hosts;
         for (ProcessedHostData data : hosts) {
             transformer.produce(new BytecodeTransformerBuildItem.Builder()
                     .setClassToTransform(data.type().host())
@@ -209,6 +227,69 @@ class HibernateAccessorProcessor {
                 hosts.stream().map(ProcessedHostData::type).toList(), withFallback)
                 .forEach((name, bytes) -> generatedClasses.produce(new GeneratedClassBuildItem(true, name, bytes)));
         HibernateAccessorGenerator.generateBootstrap(generatedClasses, withFallback);
+    }
+
+    @BuildStep
+    void placeGeneratedClasses(HibernateAccessorBuildTimeConfig config,
+            ProcessedHostsBuildItem processedHosts,
+            BuildProducer<GeneratedClassPlacementBuildItem> placements) {
+        placeGeneratedClasses(config.strategy(), processedHosts, placements);
+    }
+
+    static void placeGeneratedClasses(HibernateAccessorStrategy strategy,
+            ProcessedHostsBuildItem processedHosts,
+            BuildProducer<GeneratedClassPlacementBuildItem> placements) {
+        if (strategy == HibernateAccessorStrategy.REFLECTION) {
+            return;
+        }
+        // Shared implementations and the bootstrap are generated even when no hosts are registered.
+        String accessorExtensionAnchorClass = QuarkusAccessContext.class.getName();
+        for (String generated : SHARED_CLASSES) {
+            placements.produce(GeneratedClassPlacementBuildItem.inModuleOf(generated, accessorExtensionAnchorClass));
+        }
+        placements.produce(GeneratedClassPlacementBuildItem.inModuleOf(HibernateAccessorGenerator.GENERATED_BOOTSTRAP,
+                accessorExtensionAnchorClass));
+
+        for (ProcessedHostData data : processedHosts.hosts) {
+            AotTypeMetadata type = data.type();
+            if (!type.dispatchTarget().equals(type.host())) {
+                placements.produce(GeneratedClassPlacementBuildItem.inModuleOf(type.dispatchTarget(), type.host()));
+            }
+        }
+    }
+
+    @BuildStep
+    void declareAccess(HibernateAccessorBuildTimeConfig config,
+            ProcessedHostsBuildItem processedHosts,
+            BuildProducer<ClassAccessBuildItem> accesses) {
+        declareAccess(config.strategy(), processedHosts, accesses);
+    }
+
+    // Describe access using class names; modularity resolves the modules and artifact ownership.
+    static void declareAccess(HibernateAccessorStrategy strategy,
+            ProcessedHostsBuildItem processedHosts,
+            BuildProducer<ClassAccessBuildItem> accesses) {
+        boolean generatedAccess = strategy != HibernateAccessorStrategy.REFLECTION;
+        boolean reflectiveAccess = strategy != HibernateAccessorStrategy.GENERATED;
+
+        Set<String> reflectiveTargets = new HashSet<>();
+
+        for (ProcessedHostData data : processedHosts.hosts) {
+            if (generatedAccess) {
+                for (String caller : SHARED_CLASSES) {
+                    accesses.produce(ClassAccessBuildItem.direct(caller, data.type().dispatchTarget()));
+                }
+            }
+            for (String declaring : data.declaringClasses()) {
+                // The injected dispatch methods invoke inherited members on their declaring type.
+                if (generatedAccess && !declaring.equals(data.type().host())) {
+                    accesses.produce(ClassAccessBuildItem.direct(data.type().host(), declaring));
+                }
+                if (reflectiveAccess && reflectiveTargets.add(declaring)) {
+                    accesses.produce(ClassAccessBuildItem.reflective(QuarkusAccessContext.class.getName(), declaring));
+                }
+            }
+        }
     }
 
     @BuildStep
@@ -274,7 +355,22 @@ class HibernateAccessorProcessor {
             data.writers().addAll(item.getSetters());
             data.constructors().addAll(item.getConstructors());
         }
-        return byType.values().stream().sorted(Comparator.comparing(ProcessedHostData::type)).toList();
+        return byType.values().stream().sorted(Comparator.comparing(ProcessedHostData::type))
+                .map(data -> new ProcessedHostData(
+                        data.type(),
+                        Collections.unmodifiableSet(data.readers()),
+                        Collections.unmodifiableSet(data.writers()),
+                        Collections.unmodifiableSet(data.constructors())))
+                .toList();
+    }
+
+    /** Merged once and shared by generation, placement and access declaration steps. */
+    static final class ProcessedHostsBuildItem extends SimpleBuildItem {
+        private final List<ProcessedHostData> hosts;
+
+        private ProcessedHostsBuildItem(List<ProcessedHostData> hosts) {
+            this.hosts = hosts;
+        }
     }
 
     record ProcessedHostData(AotTypeMetadata type,
@@ -284,6 +380,20 @@ class HibernateAccessorProcessor {
 
         private ProcessedHostData(AotTypeMetadata type) {
             this(type, new TreeSet<>(), new TreeSet<>(), new TreeSet<>());
+        }
+
+        Set<String> declaringClasses() {
+            Set<String> declaring = new TreeSet<>();
+            for (AotMemberMetadata reader : readers) {
+                declaring.add(reader.declaringClass());
+            }
+            for (AotMemberMetadata writer : writers) {
+                declaring.add(writer.declaringClass());
+            }
+            for (AotConstructorMetadata constructor : constructors) {
+                declaring.add(constructor.declaringClass());
+            }
+            return declaring;
         }
     }
 }

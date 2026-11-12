@@ -107,12 +107,16 @@ public final class GeneratedConfigClassBuildItem extends MultiBuildItem {
     }
 
     public static class ConfigClassImplementation {
-        private final GeneratedConfigClass generatedConfigClass;
         private final boolean isApplicationClass;
+        private final String name;
+        private final byte[] bytes;
+        private final Property[] properties;
 
         ConfigClassImplementation(final GeneratedConfigClass generatedConfigClass, final boolean isApplicationClass) {
-            this.generatedConfigClass = generatedConfigClass;
             this.isApplicationClass = isApplicationClass;
+            this.name = generatedConfigClass.getClassName();
+            this.bytes = generatedConfigClass.generateClassBytes();
+            this.properties = generatedConfigClass.getProperties();
         }
 
         public boolean isApplicationClass() {
@@ -120,15 +124,15 @@ public final class GeneratedConfigClassBuildItem extends MultiBuildItem {
         }
 
         public String getName() {
-            return generatedConfigClass.getClassName();
+            return name;
         }
 
         public byte[] getBytes() {
-            return generatedConfigClass.generateClassBytes();
+            return bytes;
         }
 
         public Property[] getProperties() {
-            return generatedConfigClass.getProperties();
+            return properties;
         }
     }
 }

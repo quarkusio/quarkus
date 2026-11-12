@@ -58,13 +58,13 @@ This command generates a Maven structure importing the following extensions:
 * Hibernate Search Standalone + Elasticsearch,
 * Quarkus REST (formerly RESTEasy Reactive) and Jackson.
 
-If you already have your Quarkus project configured, you can add the `hibernate-search-standalone-elasticsearch` extension
-to your project by running the following command in your project base directory:
+If you already have a Quarkus project, add the `hibernate-search-standalone-elasticsearch` extension to it.
+Run the following command in your project base directory:
 
 :add-extension-extensions: hibernate-search-standalone-elasticsearch
 include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This command adds the following dependency to your `pom.xml`:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -112,8 +112,7 @@ public class Author {
 ----
 <1> This example uses public fields to keep the data class concise.
 +
-Private fields with getters and setters also work when the methods follow the JavaBeans naming convention
-(`getSomething()`/`isSomething()`/`setSomething(...)`).
+Private fields with getters and setters also work when the methods follow the JavaBeans naming convention, such as `getSomething()`, `isSomething()`, and `setSomething(...)`.
 
 [source,java]
 ----
@@ -494,7 +493,7 @@ Paging is also supported.
 [NOTE]
 ====
 The Hibernate Search DSL supports a significant subset of the Elasticsearch predicates, such as match, range, nested, phrase, and spatial predicates.
-Feel free to explore the DSL using autocompletion.
+Explore the DSL by using autocompletion in your IDE.
 
 If the DSL is not sufficient, define a predicate directly with
 link:{hibernate-search-docs-url}#search-dsl-predicate-extensions-elasticsearch-from-json[JSON].
@@ -552,7 +551,7 @@ Then, add the following methods:
                                 new Book(UUID.randomUUID(), "4 3 2 1"))));
     }
 ----
-<1> Add a method that will get executed on application startup.
+<1> Add a method that runs when the application starts.
 <2> Check whether the index already contains data; if so, return.
 <3> Generate the initial dataset.
 <4> For each author, add it to the index.
@@ -913,7 +912,7 @@ quarkus.hibernate-search-standalone.management.root-path=custom-root-path <1>
 With the default management root path, the reindex path becomes `/q/custom-root-path/reindex`.
 
 This endpoint accepts `POST` requests with `application/json` content type only.
-All indexed entities will be re-indexed if an empty request body is submitted.
+If the request body is empty, all indexed entities are re-indexed.
 
 [NOTE]
 ====
@@ -939,7 +938,7 @@ include the following information in the request body:
 }
 ----
 <1> An array of entity names that should be re-indexed.
-If unspecified or empty, all entity types will be re-indexed.
+If unspecified or empty, all entity types are re-indexed.
 <2> Sets the number of entity types to be indexed in parallel.
 
 The full list of possible filters and available mass indexer configurations is presented in the example below.
@@ -964,9 +963,9 @@ The full list of possible filters and available mass indexer configurations is p
 ----
 <1> Filter object that limits the scope of reindexing.
 <2> An array of entity names that should be re-indexed.
-If unspecified or empty, all entity types will be re-indexed.
+If unspecified or empty, all entity types are re-indexed.
 <3> An array of tenant IDs, in case of multi-tenancy.
-If unspecified or empty, all tenants will be re-indexed.
+If unspecified or empty, all tenants are re-indexed.
 <4> Mass indexer configuration object.
 <5> Sets the number of entity types to be indexed in parallel.
 <6> Sets the number of threads to be used to load the root entities.

@@ -69,6 +69,8 @@ public class AccessorResource {
                 require(model.isOpen(type.getSuperclass().getPackageName(), accessor), "declaring package open to accessor");
                 // This unregistered field forces generated-with-fallback down its reflection path.
                 equal("fallback", factory.valueReader(type.getDeclaredField("fallback")).get(instance), "reflection fallback");
+            } else {
+                require(!model.isOpen(type.getPackageName(), accessor), "generated access must not require opens");
             }
             require(!model.isExported(type.getPackageName(), application), "no export to unrelated application code");
             require(!model.isOpen(type.getPackageName(), application), "no open to unrelated application code");

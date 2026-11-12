@@ -1,7 +1,9 @@
 package io.quarkus.deployment.pkg.steps;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -43,8 +45,20 @@ public abstract class NativeImageBuildRunner {
     public void build(List<String> args, String nativeImageName, String resultingExecutableName, Path outputDir,
             GraalVM.Version graalVMVersion, boolean debugSymbolsEnabled, boolean processInheritIODisabled)
             throws InterruptedException, IOException {
+        build(args, nativeImageName, resultingExecutableName, outputDir, graalVMVersion, debugSymbolsEnabled,
+                processInheritIODisabled, false);
+    }
+
+    public void build(List<String> args, String nativeImageName, String resultingExecutableName, Path outputDir,
+            GraalVM.Version graalVMVersion, boolean debugSymbolsEnabled, boolean processInheritIODisabled,
+            boolean keepLogs) throws InterruptedException, IOException {
         preBuild(outputDir, args);
-        try {
+        try (BufferedWriter stdoutLog = keepLogs
+                ? Files.newBufferedWriter(outputDir.resolveSibling(resultingExecutableName + "-build-stdout.log"))
+                : null;
+                BufferedWriter stderrLog = keepLogs
+                        ? Files.newBufferedWriter(outputDir.resolveSibling(resultingExecutableName + "-build-stderr.log"))
+                        : null) {
             final String[] buildCommand = getBuildCommand(outputDir, args);
             log.info(String.join(" ", buildCommand).replace("$", "\\$"));
             ProcessBuilder<Void> pb = ProcessBuilder.newBuilder(buildCommand[0])
@@ -70,6 +84,10 @@ public abstract class NativeImageBuildRunner {
                     Runtime.getRuntime().removeShutdownHook(hook);
                 }
             });
+            if (keepLogs) {
+                pb.output().copyAndTransferTo(stdoutLog);
+                pb.error().copyAndTransferTo(stderrLog);
+            }
             pb.output().consumeLinesWith(8192, System.out::println);
             // Why logOnSuccess(false) and then consumeWith? Because we get the stdErr twice otherwise.
             pb.error().logOnSuccess(false)

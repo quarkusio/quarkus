@@ -61,7 +61,8 @@ To map a Java class to a database table:
 - Write a class.
 - Annotate it with link:{jakarta-persistence-javadocs-url}jakarta/persistence/Entity.html[`@Entity`].
 - Optionally, make it extend `ManagedEntity` or `RecordEntity` (see <<session-and-access-models,Session and access models>>).
-- Make its fields `public`. <<entity-field-access,Getters and setters are not necessary thanks to bytecode enhancement>>.
+- Optionally, make its fields `public`.
+Bytecode enhancement removes the need for getters and setters, see <<entity-field-access,Entity field access>>.
 
 [source,java]
 ----
@@ -266,7 +267,7 @@ xref:quarkus-data-hibernate-sql.adoc[native SQL guide].
 The Hibernate documentation contains the complete
 link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/introduction/html_single/#generated-finder-methods[generated finder method reference].
 
-.A few common examples
+.Common examples
 [source,java]
 ----
 import jakarta.data.repository.Find;
@@ -343,9 +344,10 @@ long renameCats(String name, String newName);
 long deleteByName(String name);
 ----
 
-Generated finder and HQL query methods are type-checked at build time. They are validated for entity names, fields,
-HQL syntax, and parameter names. Native SQL is validated by the database when the query is executed; see the
-xref:quarkus-data-hibernate-sql.adoc[native SQL tutorial].
+Generated finder and HQL query methods are type-checked at build time.
+They are validated for entity names, fields, HQL syntax, and parameter names.
+The database validates native SQL when the query is executed at runtime.
+For more information, see the xref:quarkus-data-hibernate-sql.adoc[native SQL tutorial].
 
 === Obtaining and using a repository
 
@@ -582,10 +584,10 @@ and `RecordRepository` for its repository. Compared with a managed entity:
 - Changes to entity fields must be explicitly pushed to the database by calling `update()` on the entity or repository.
 - Call `insert()` instead of `persist()` to insert the entity.
 - The session type is `StatelessSession` instead of `Session`.
-- Accessing an unfetched lazy association throws an exception. Fetch the associations you need as part
-of a repository query, using a `join fetch` clause in `@Query`. Alternatively, fetch an association explicitly with
-`repo.getSession().fetch(association)`. Managed blocking sessions can load lazy associations automatically while the
-session is open.
+- Accessing an unfetched lazy association throws an exception.
+Fetch the associations you need as part of a repository query, using a `join fetch` clause in `@Query`.
+Alternatively, fetch an association explicitly with `repo.getSession().fetch(association)`.
+Managed blocking sessions can load lazy associations automatically while the session is open.
 
 Queries and the way you obtain entities remain the same. Stateless sessions can also use <<jakarta-data,Jakarta Data repositories>>.
 
@@ -610,7 +612,7 @@ For reactive access:
 - The repository extends `ManagedRepository.Reactive`.
 - Operations return `Uni<T>` instead of `T`, which is the standard Mutiny reactive type.
 - Use `jakarta.transaction.Transactional` for transaction boundaries and compose operations as usual with Mutiny.
-  For reactive methods, only `Transactional.TxType.REQUIRED` (the default) is supported.
+  Reactive methods support only `Transactional.TxType.REQUIRED`, the default transaction type.
 
 The following example defines a reactive managed entity and a companion repository:
 
@@ -929,8 +931,8 @@ The `totalElements` and `totalPages` fields are only included when the `PageRequ
 
 === Example endpoint
 
-Here is an example of a REST endpoint that uses `PageRequest` and `Order` to return a paginated, sorted
-list of cats. Paging and sorting are configured on the `BlockingDataQuery` returned by `findAll()`:
+Here is an example of a REST endpoint that uses `PageRequest` and `Order` to return a paginated, sorted list of cats.
+Paging and sorting are configured on the `BlockingDataQuery` returned by `findAll()`:
 
 [source,java]
 ----
@@ -957,7 +959,7 @@ public class CatResource {
 <1> `PageRequest` is populated from `page`, `size`, and `requestTotal` query parameters.
 `Order` is populated from repeating `sort` query parameters.
 
-A client can then call:
+A client can then call the following GET command:
 
 [source,http]
 ----

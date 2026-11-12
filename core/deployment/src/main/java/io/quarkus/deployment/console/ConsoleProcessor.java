@@ -66,9 +66,9 @@ public class ConsoleProcessor {
             return ConsoleInstalledBuildItem.INSTANCE;
         }
         consoleInstalled = true;
+        ConsoleHelper.installConsole(config, consoleConfig, launchModeBuildItem.isTest());
+        ConsoleStateManager.init(QuarkusConsole.INSTANCE, launchModeBuildItem.getDevModeType().get());
         if (consoleConfig.enabled()) {
-            ConsoleHelper.installConsole(config, consoleConfig, launchModeBuildItem.isTest());
-            ConsoleStateManager.init(QuarkusConsole.INSTANCE, launchModeBuildItem.getDevModeType().get());
             //note that this bit needs to be refactored so it is no longer tied to continuous testing
             if (TestSupport.instance().isEmpty() || config.continuousTesting() == TestConfig.Mode.DISABLED
                     || config.flatClassPath()) {

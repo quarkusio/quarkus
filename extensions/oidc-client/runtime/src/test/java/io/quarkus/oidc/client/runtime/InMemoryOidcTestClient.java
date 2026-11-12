@@ -201,6 +201,6 @@ final class InMemoryOidcTestClient implements OidcClient {
             grantResponse.put(param.getKey(), param.getValue());
         }
         return new Tokens(accessToken, accessTokenExpiresAt, refreshTokenTimeSkew, refreshToken, refreshTokenExpiresAt,
-                grantResponse, CLIENT_ID);
+                grantResponse, CLIENT_ID, null);
     }
 }

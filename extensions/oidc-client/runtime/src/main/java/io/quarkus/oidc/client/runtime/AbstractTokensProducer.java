@@ -68,7 +68,8 @@ public abstract class AbstractTokensProducer {
             oidcClients.registerTokenRefresh(oidcClient, new Supplier<Uni<Tokens>>() {
                 @Override
                 public Uni<Tokens> get() {
-                    return getTokens();
+                    // the periodic refresh waits for the refresh it starts so that it is notified about its failures
+                    return tokensHelper.getTokens(oidcClient, additionalParameters(), false, true);
                 }
             });
         }

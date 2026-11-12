@@ -68,11 +68,17 @@ public class TokensHelper {
     }
 
     public Uni<Tokens> getTokens(OidcClient oidcClient, Map<String, String> additionalParameters, boolean forceNewTokens) {
-        return getTokens(oidcClient, additionalParameters, forceNewTokens, tokenRequestStateHolder(additionalParameters));
+        return getTokens(oidcClient, additionalParameters, forceNewTokens, false);
+    }
+
+    Uni<Tokens> getTokens(OidcClient oidcClient, Map<String, String> additionalParameters, boolean forceNewTokens,
+            boolean waitForRefresh) {
+        return getTokens(oidcClient, additionalParameters, forceNewTokens, waitForRefresh,
+                tokenRequestStateHolder(additionalParameters));
     }
 
     private Uni<Tokens> getTokens(OidcClient oidcClient, Map<String, String> additionalParameters,
-            boolean forceNewTokens, TokenRequestStateHolder holder) {
+            boolean forceNewTokens, boolean waitForRefresh, TokenRequestStateHolder holder) {
         TokenRequestState currentState = null;
         TokenRequestState newState = null;
         //if the tokens are expired we refresh them in an async manner
@@ -87,31 +93,65 @@ public class TokensHelper {
                     return newState.tokenUni;
                 }
                 //rerun the CAS loop
-            } else if (currentState.tokenUni != null) {
-                return currentState.tokenUni;
             } else if (forceNewTokens) {
-                LOG.debugf("Forcing acquisition of new tokens for client %s", currentState.tokens.getClientId());
+                if (currentState.tokenUni != null) {
+                    // A request is already in flight, wait for it instead of starting another one
+                    if (currentState.tokensBeingRefreshed == null) {
+                        return currentState.tokenUni;
+                    }
+                    // Stop serving the old tokensBeingRefreshed and make clients wait for the refresh in flight
+                    newState = new TokenRequestState(currentState.tokenUni);
+                } else {
+                    LOG.debugf("Forcing acquisition of new tokens for client %s", currentState.tokens.getClientId());
 
-                newState = new TokenRequestState(prepareUni(oidcClient.getTokens(additionalParameters), holder));
+                    newState = new TokenRequestState(prepareUni(oidcClient.getTokens(additionalParameters), holder));
+                }
                 if (tokenRequestStateUpdater.compareAndSet(holder, currentState, newState)) {
                     return newState.tokenUni;
                 }
                 //rerun the CAS loop
+            } else if (currentState.tokenUni != null) {
+                // Serve token getting refreshed if it has enough lifespan left
+                final Tokens tokensBeingRefreshed = currentState.tokensBeingRefreshed;
+                if (tokensBeingRefreshed != null && !waitForRefresh) {
+                    if (tokensBeingRefreshed.hasMinRemainingAccessTokenLifespan()) {
+                        return Uni.createFrom().item(tokensBeingRefreshed);
+                    }
+                    if (tokensBeingRefreshed.getMinRemainingAccessTokenLifespan() != null) {
+                        LOG.debugf("Access token being refreshed for client %s will not be reused because less than"
+                                + " %d seconds of its lifespan is left, waiting for the refreshed tokens instead",
+                                tokensBeingRefreshed.getClientId(), tokensBeingRefreshed.getMinRemainingAccessTokenLifespan());
+                    }
+                }
+                return currentState.tokenUni;
             } else {
-                Tokens tokens = currentState.tokens;
-
-                if (tokens.isAccessTokenExpired() || tokens.isAccessTokenWithinRefreshInterval()) {
+                final Tokens tokens = currentState.tokens;
+                final boolean accessTokenExpired = tokens.isAccessTokenExpired();
+                if (accessTokenExpired || tokens.isAccessTokenWithinRefreshInterval()) {
                     LOG.debugf("Starting refreshing the tokens for client %s", tokens.getClientId());
                     final boolean refreshTokenValid = tokens.getRefreshToken() != null && !tokens.isRefreshTokenExpired();
                     if (!refreshTokenValid) {
                         LOG.debugf("Refresh token is not available or has expired, "
                                 + "acquiring new tokens instead for client %s", tokens.getClientId());
                     }
+                    final Tokens tokensBeingRefreshed = accessTokenExpired ? null : tokens;
                     newState = new TokenRequestState(
                             prepareUni(refreshTokenValid
                                     ? oidcClient.refreshTokens(tokens.getRefreshToken(), additionalParameters)
-                                    : oidcClient.getTokens(additionalParameters), holder));
+                                    : oidcClient.getTokens(additionalParameters), holder),
+                            tokensBeingRefreshed);
                     if (tokenRequestStateUpdater.compareAndSet(holder, currentState, newState)) {
+                        if (tokensBeingRefreshed != null && !waitForRefresh
+                                && tokensBeingRefreshed.hasMinRemainingAccessTokenLifespan()) {
+                            // Refresh the tokens in the background and serve the tokens being refreshed meanwhile,
+                            // the refreshed tokens or the failure are recorded in the state when the refresh completes
+                            newState.tokenUni.subscribe().with(
+                                    refreshedTokens -> {
+                                    },
+                                    failure -> LOG.warnf(failure, "Background refresh of the tokens for client %s has failed",
+                                            tokensBeingRefreshed.getClientId()));
+                            return Uni.createFrom().item(tokensBeingRefreshed);
+                        }
                         return newState.tokenUni;
                     }
                     //rerun the CAS loop
@@ -201,15 +241,22 @@ public class TokensHelper {
     static final class TokenRequestState {
         final Tokens tokens;
         final Uni<Tokens> tokenUni;
+        final Tokens tokensBeingRefreshed;
 
         TokenRequestState(Tokens tokens) {
             this.tokens = tokens;
             this.tokenUni = null;
+            this.tokensBeingRefreshed = null;
         }
 
         TokenRequestState(Uni<Tokens> tokensUni) {
+            this(tokensUni, null);
+        }
+
+        TokenRequestState(Uni<Tokens> tokensUni, Tokens tokensBeingRefreshed) {
             this.tokens = null;
             this.tokenUni = tokensUni;
+            this.tokensBeingRefreshed = tokensBeingRefreshed;
         }
     }
 

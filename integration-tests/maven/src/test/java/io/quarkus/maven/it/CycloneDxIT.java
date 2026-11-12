@@ -210,6 +210,42 @@ public class CycloneDxIT extends MojoTestBase {
         });
     }
 
+    /**
+     * Builds a single module of a multi-module project with {@code -pl}, which leaves the parent POM
+     * out of the Maven reactor while it is not installed in any repository either. The SBOM generator
+     * still has to be able to resolve the effective model of the application module.
+     *
+     * @see <a href="https://github.com/quarkusio/quarkus/issues/57217">#57217</a>
+     */
+    @Test
+    public void testSingleModuleOfModularProject() throws Exception {
+        testDir = initProject("projects/cyclonedx-modular");
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(
+                List.of("clean", "package", "-DskipTests", "-pl", "app"),
+                Map.of());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+
+        final Bom bom = parseSbom(new File(testDir, "app"), "quarkus-run-cyclonedx.json");
+
+        final List<Component> components = bom.getComponents();
+        assertThat(components).isNotEmpty();
+        assertComponent(components, "io.quarkus", "quarkus-cyclonedx", "runtime", "lib/main/");
+
+        final Component appComponent = components.stream()
+                .filter(c -> "org.acme".equals(c.getGroup()) && "cyclonedx-modular-app".equals(c.getName()))
+                .findFirst()
+                .orElse(null);
+        assertThat(appComponent)
+                .as("Expected component org.acme:cyclonedx-modular-app in SBOM")
+                .isNotNull();
+        assertThat(appComponent.getPurl())
+                .isEqualTo("pkg:maven/org.acme/cyclonedx-modular-app@1.0-SNAPSHOT?type=jar");
+        // the description originates from the effective model of the module, which is what used to fail to resolve
+        assertThat(appComponent.getDescription()).isEqualTo("CycloneDX modular project test application");
+    }
+
     @Test
     public void testDisabledExtension() throws Exception {
         testDir = initProject("projects/cyclonedx-sbom", "projects/cyclonedx-sbom-disabled");

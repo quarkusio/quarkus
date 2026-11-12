@@ -15,7 +15,6 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.version;
 
 import java.io.File;
-import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -33,7 +32,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -91,6 +89,7 @@ import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 
+import io.quarkus.analytics.util.InterruptibleLineReader;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.app.ConfiguredClassLoading;
@@ -532,13 +531,9 @@ public class DevMojo extends AbstractMojo {
 
         analyticsProvider.buildAnalyticsUserInput((String prompt) -> {
             System.out.print(prompt);
-            try (Scanner scanner = new Scanner(new FilterInputStream(System.in) {
-                @Override
-                public void close() throws IOException {
-                    //don't close System.in!
-                }
-            })) {
-                return scanner.nextLine();
+            try {
+                // don't block on System.in: the read must stop when the prompt times out
+                return InterruptibleLineReader.readLine(System.in);
             } catch (Exception e) {
                 getLog().debug("Failed to collect user input for analytics", e);
                 return "";

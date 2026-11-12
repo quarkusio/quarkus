@@ -3,7 +3,6 @@ package io.quarkus.amazon.lambda.deployment;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import org.jboss.logging.Logger;
 
@@ -98,7 +97,6 @@ public class DevServicesLambdaProcessor {
                 .serviceName(Feature.AMAZON_LAMBDA.getName())
                 .serviceConfig(config)
                 .startable(() -> new StartableEventServer(server, propName, isTest, overridePort))
-                .highPriorityConfig(Set.of(propName)) // Pass through the external config for the port, so that it can be overridden if it's an ephemeral port
                 .configProvider(s -> Map.of(
                         propName, String.valueOf(s.getExposedPort()),
                         AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, s.getConnectionInfo()))

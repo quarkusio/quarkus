@@ -135,7 +135,7 @@ public class ComposeDevServicesProcessor {
 
         RunningService service = new RunningService(
                 Feature.COMPOSE.getName(), "Compose project: " + result.projectName,
-                result.configs, Map.of(), null,
+                result.configs, null,
                 result.isOwner ? result.compose::stop : () -> {
                 }, false);
         devServicesRegistry.addRunningService(Feature.COMPOSE.getName(), null, configuration, service);

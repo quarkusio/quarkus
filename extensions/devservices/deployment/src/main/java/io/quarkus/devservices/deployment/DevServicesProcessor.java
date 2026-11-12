@@ -65,7 +65,6 @@ import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devservice.runtime.config.DevServicesConfigBuilder;
-import io.quarkus.devservice.runtime.config.DevServicesOverrideConfigBuilder;
 import io.quarkus.devservices.common.ContainerUtil;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.StartableContainer;
@@ -204,9 +203,7 @@ public class DevServicesProcessor {
     @BuildStep
     public void registerDevResourcesConfigSource(BuildProducer<RunTimeConfigBuilderBuildItem> runtimeConfigBuilders) {
         // Once all the dev services are registered, we can share config
-        runtimeConfigBuilders
-                .produce(new RunTimeConfigBuilderBuildItem(DevServicesConfigBuilder.class));
-        runtimeConfigBuilders.produce(new RunTimeConfigBuilderBuildItem(DevServicesOverrideConfigBuilder.class));
+        runtimeConfigBuilders.produce(new RunTimeConfigBuilderBuildItem(DevServicesConfigBuilder.class));
     }
 
     @BuildStep(onlyIf = { IsDevelopment.class, DevServicesConfig.Enabled.class })

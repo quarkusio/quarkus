@@ -80,7 +80,8 @@ public class QuarkusBootstrapProvider implements Closeable {
     static void setProjectModels(BootstrapMavenContextConfig<?> config, List<MavenProject> allProjects, Set<File> reloadPoms) {
         if (allProjects != null) {
             for (MavenProject mp : allProjects) {
-                if (reloadPoms.contains(mp.getFile())) {
+                // apparently it can happen that a project could have no file https://github.com/quarkusio/quarkus/issues/52863
+                if (mp.getFile() == null || reloadPoms.contains(mp.getFile())) {
                     continue;
                 }
                 final Model model = getRawModel(mp);

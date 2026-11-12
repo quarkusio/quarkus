@@ -19,6 +19,17 @@ import java.lang.reflect.WildcardType;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.MonthDay;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.ZonedDateTime;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -817,11 +828,18 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     return value;
                 }
             };
-        } else if (param instanceof Duration) {
+        } else if (param instanceof Duration || param instanceof Instant || param instanceof LocalDate
+                || param instanceof LocalDateTime || param instanceof LocalTime || param instanceof MonthDay
+                || param instanceof OffsetDateTime || param instanceof OffsetTime || param instanceof Period
+                || param instanceof Year || param instanceof YearMonth || param instanceof ZonedDateTime) {
+            // These types are all immutable, have an unambiguous String form, and can be recreated from it with a
+            // static parse(CharSequence) method that returns an instance of the same type
+            Class<?> javaTimeClass = param.getClass();
             return new DeferredParameter() {
                 @Override
                 ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
-                    return method.invokeStaticMethod(ofMethod(Duration.class, "parse", Duration.class, CharSequence.class),
+                    return method.invokeStaticMethod(
+                            ofMethod(javaTimeClass, "parse", javaTimeClass, CharSequence.class),
                             method.load(param.toString()));
                 }
             };

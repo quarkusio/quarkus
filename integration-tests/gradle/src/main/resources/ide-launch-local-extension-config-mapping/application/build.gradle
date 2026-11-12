@@ -1,0 +1,18 @@
+plugins {
+    id 'io.quarkus'
+}
+
+dependencies {
+    implementation project(":runtime")
+    implementation 'io.quarkus:quarkus-arc'
+
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+}
+
+// Runs the application main class directly, which makes Quarkus bootstrap itself the same way it does
+// when the main class is launched from an IDE.
+tasks.register('runFromMain', JavaExec) {
+    dependsOn ':deployment:classes'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'org.acme.app.Main'
+}

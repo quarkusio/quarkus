@@ -13,6 +13,9 @@ include::_attributes.adoc[]
 
 This document describes the build items that extension authors use to integrate with the xref:modularity.adoc[Quarkus modularity] system.
 Extensions can declare boot modules, add inter-module dependencies, and consume the completed module model.
+Explicit module descriptors retain their declared package access, including qualified exports and opens.
+When the optional `ModulePackages` attribute is absent, Quarkus discovers package names from class files while preserving the descriptor's access rules.
+For the dynamic module loader, an open module is represented by opening each packaged package; boot module descriptors retain the open-module flag.
 
 include::{includes}/extension-status.adoc[]
 

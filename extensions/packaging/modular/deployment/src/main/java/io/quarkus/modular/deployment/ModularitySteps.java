@@ -175,10 +175,10 @@ public final class ModularitySteps {
         Map<ResolvedDependency, ClassModel> moduleInfoClassModels = knownNamedModules.values().stream()
                 .map(d -> {
                     PathTree contentTree = d.getContentTree();
-                    ClassModel cm = findModuleInfoClass(contentTree, "module-info.class");
+                    ClassModel cm = findModuleInfoClass(d, contentTree, "module-info.class");
                     if (cm == null) {
                         // slf4j...
-                        cm = findModuleInfoClass(contentTree, "META-INF/versions/9/module-info.class");
+                        cm = findModuleInfoClass(d, contentTree, "META-INF/versions/9/module-info.class");
                     }
                     return cm == null ? null : Map.entry(d, cm);
                 })
@@ -860,17 +860,24 @@ public final class ModularitySteps {
     /***
      * Try to locate a {@code module-info} model in a content tree by path.
      *
+     * @param dependency the artifact containing the descriptor (must not be {@code null})
      * @param contentTree the content tree (must not be {@code null})
      * @param pathName the path name (must not be {@code null})
      * @return the parsed {@code module-info} model.
      */
-    private static ClassModel findModuleInfoClass(final PathTree contentTree, final String pathName) {
+    private static ClassModel findModuleInfoClass(final ResolvedDependency dependency, final PathTree contentTree,
+            final String pathName) {
         return contentTree.apply(pathName, v -> {
             if (v == null) {
                 return null;
             }
             try (InputStream is = v.getUrl().openStream()) {
-                return ClassFile.of().parse(is.readAllBytes());
+                ClassModel model = ClassFile.of().parse(is.readAllBytes());
+                if (model.findAttribute(Attributes.module()).isEmpty()) {
+                    throw new IllegalArgumentException("Invalid module descriptor " + pathName + " in " + dependency
+                            + ": missing Module attribute");
+                }
+                return model;
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -1024,41 +1031,46 @@ public final class ModularitySteps {
                     .map(Utf8Entry::stringValue)
                     .map(n -> n.replace('/', '.'))
                     .orElse(null);
-            // figure out which packages we open to everyone
-            Set<String> openedPackages = cm.findAttribute(Attributes.module()).map(ModuleAttribute::opens)
-                    .map(l -> l.stream()
-                            .filter(ei -> ei.opensTo().isEmpty())
-                            .map(ei -> ei.openedPackage().name().stringValue().replace('/', '.'))
-                            .collect(Collectors.toSet()))
-                    .orElse(Set.of());
-            // figure out which packages we export to everyone
-            Set<String> exportedPackages = cm.findAttribute(Attributes.module()).map(ModuleAttribute::exports)
-                    .map(l -> l.stream()
-                            .filter(ei -> ei.exportsTo().isEmpty())
-                            .map(ei -> ei.exportedPackage().name().stringValue().replace('/', '.'))
-                            .collect(Collectors.toSet()))
-                    .orElse(Set.of());
-            // Compute package access using the shared package inventory.
-            contentIndex.packages(dependency).forEach(pn -> {
-                PackageInfo info = openedPackages.contains(pn) ? PackageInfo.OPEN
-                        : exportedPackages.contains(pn) ? PackageInfo.EXPORTED : PackageInfo.PRIVATE;
-                packages.compute(pn, (ignored, previous) -> PackageInfo.merge(info, previous));
-            });
+            ModuleAttribute moduleAttribute = cm.findAttribute(Attributes.module()).orElseThrow();
+            boolean openModule = moduleAttribute.has(AccessFlag.OPEN);
+            if (openModule) {
+                flags = flags.with(ModuleDescriptor.Modifier.OPEN);
+            }
+            // Record both unqualified and qualified opens; an empty target set means access for everyone.
+            Map<String, Set<String>> openedPackages = moduleAttribute.opens().stream()
+                    .collect(Collectors.toMap(e -> e.openedPackage().name().stringValue().replace('/', '.'),
+                            e -> e.opensTo().stream().map(target -> target.name().stringValue()).collect(Collectors.toSet())));
+            // Record both unqualified and qualified exports.
+            Map<String, Set<String>> exportedPackages = moduleAttribute.exports().stream()
+                    .collect(Collectors.toMap(e -> e.exportedPackage().name().stringValue().replace('/', '.'),
+                            e -> e.exportsTo().stream().map(target -> target.name().stringValue())
+                                    .collect(Collectors.toSet())));
+            Function<String, PackageInfo> packageInfo = pn -> {
+                Set<String> openTargets = openedPackages.get(pn);
+                Set<String> exportTargets = exportedPackages.get(pn);
+                PackageAccess access = openModule || openTargets != null && openTargets.isEmpty() ? PackageAccess.OPEN
+                        : exportTargets != null && exportTargets.isEmpty() ? PackageAccess.EXPORTED : PackageAccess.PRIVATE;
+                return PackageInfo.of(access, exportTargets == null ? Set.of() : exportTargets,
+                        openTargets == null ? Set.of() : openTargets);
+            };
+            // Compute a PackageInfo for every package, merging in exported and opened package information.
+            // javac need not emit ModulePackages: discover those packages from classes, but retain descriptor access.
+            contentIndex.packages(dependency).forEach(pn -> packages.merge(pn, packageInfo.apply(pn), PackageInfo::merge));
             // find the set of used services
-            uses = cm.findAttribute(Attributes.module()).map(ModuleAttribute::uses).orElse(List.of()).stream()
+            uses = moduleAttribute.uses().stream()
                     .map(ClassEntry::name)
                     .map(Utf8Entry::stringValue)
                     .map(c -> c.replace('/', '.'))
                     .collect(Collectors.toUnmodifiableSet());
             // find the set of provided services
-            provides = cm.findAttribute(Attributes.module()).map(ModuleAttribute::provides).orElse(List.of()).stream()
+            provides = moduleAttribute.provides().stream()
                     .map(mpi -> Map.entry(
                             mpi.provides().name().stringValue().replace('/', '.'),
                             mpi.providesWith().stream().map(ClassEntry::name).map(Utf8Entry::stringValue)
                                     .map(e -> e.replace('/', '.')).toList()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             // find the dependency set, marking things `optional` if they are missing
-            cm.findAttribute(Attributes.module()).map(ModuleAttribute::requires).orElse(List.of()).stream()
+            moduleAttribute.requires().stream()
                     .map(mri -> Map.entry(
                             mri.requires().name().stringValue(),
                             mri.requiresFlags()))

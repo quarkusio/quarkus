@@ -41,7 +41,7 @@ public class VertxCoreRecorderConfigurationTest {
             ThreadPoolConfig threadPoolConfig) {
         AtomicReference<VertxOptions> captured = new AtomicReference<>();
         VertxCustomizer customizer = new VertxCustomizer(List.of(), List.of(captured::set));
-        VertxCoreRecorder.initialize(config, customizer, threadPoolConfig, null, LaunchMode.TEST,
+        VertxCoreRecorder.initialize(config, customizer, threadPoolConfig, LaunchMode.TEST,
                 List.of(), List.of());
         return captured.get();
     }
@@ -134,7 +134,7 @@ public class VertxCoreRecorderConfigurationTest {
         VertxCustomizer customizer = new VertxCustomizer(
                 List.of(bootstrapConsumer), List.of(captured::set));
         VertxCoreRecorder.initialize(VertxCoreProducerTest.vertxConfiguration().build(),
-                customizer, VertxCoreProducerTest.threadPoolConfig().build(), null,
+                customizer, VertxCoreProducerTest.threadPoolConfig().build(),
                 LaunchMode.TEST, List.of(), List.of());
 
         Assertions.assertTrue(bootstrapCustomized.get());

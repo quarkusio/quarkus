@@ -226,8 +226,8 @@ public class ArcRecorder {
 
     /**
      * Perform application-level shutdown by firing the {@link ShutdownEvent}. Arc container destruction
-     * (and the subsequent synthetic bean provider cleanup, see {@link #clearSyntheticBeans()}) is handled
-     * separately via the static-init service's {@code onStop} handler.
+     * is handled via the runtime {@code io.quarkus.arc.container-shutdown} service's {@code onStop} handler,
+     * and synthetic bean provider cleanup is handled via the static-init service's {@code onStop} handler.
      *
      * @param mockBeanClasses bean classes whose observers should be mocked (from {@link #computeMockBeanClasses})
      */

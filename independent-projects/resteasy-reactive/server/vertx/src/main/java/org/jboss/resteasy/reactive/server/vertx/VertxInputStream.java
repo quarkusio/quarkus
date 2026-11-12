@@ -186,6 +186,7 @@ public class VertxInputStream extends InputStream {
             this.request = request;
             this.timeout = timeout;
             final HttpConnection connection = request.connection();
+            boolean needsFetch = false;
             // Lock before registering handlers: a buffer arriving immediately after fetch(1) must not race with initialization.
             lock.lock();
             try {
@@ -235,17 +236,22 @@ public class VertxInputStream extends InputStream {
                             }
                         }
                     });
-                    request.fetch(1);
+                    needsFetch = true;
                 } else {
                     eof = true;
                 }
             } finally {
                 lock.unlock();
             }
+            if (needsFetch) {
+                request.fetch(1);
+            }
         }
 
         protected ByteBuf readBlocking() throws IOException {
             long expire = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout);
+            ByteBuf result;
+            boolean needsFetch = false;
             // Lock to guard input1/eof/readException while waiting for the event loop to deliver data.
             lock.lock();
             try {
@@ -280,15 +286,19 @@ public class VertxInputStream extends InputStream {
                 if (inputOverflow != null) {
                     input1 = inputOverflow.poll();
                     if (input1 == null) {
-                        request.fetch(1);
+                        needsFetch = true;
                     }
                 } else if (!eof) {
-                    request.fetch(1);
+                    needsFetch = true;
                 }
-                return ret == null ? null : ((BufferInternal) ret).getByteBuf();
+                result = ret == null ? null : ((BufferInternal) ret).getByteBuf();
             } finally {
                 lock.unlock();
             }
+            if (needsFetch) {
+                request.fetch(1);
+            }
+            return result;
         }
 
         @Override

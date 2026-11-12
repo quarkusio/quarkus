@@ -15,6 +15,7 @@ public class TypeErrorTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(HelloResource.class)
                     .addAsResource("templates/HelloResource/hello.txt")
+                    .addAsResource("templates/HelloResource/czech.txt")
                     .addAsResource("templates/HelloResource/typeError.txt")
                     .addAsResource("templates/HelloResource/typedTemplate.txt")
                     .addAsResource("templates/HelloResource/typedTemplatePrimitives.txt")

@@ -90,8 +90,41 @@ This is how you decide whether a method is to be running within or outside a tra
 Make sure to check the JavaDoc for the precise semantic.
 
 The transaction context is propagated to all calls nested in the `@Transactional` method as you would expect (in this example `childDAO.addToGiftList()` and `santaDAO.addToSantaTodoList()`).
-The transaction will commit unless a runtime exception crosses the method boundary.
+The transaction will commit unless an exception crosses the method boundary.
 You can override whether an exception forces the rollback or not by using `@Transactional(dontRollbackOn=SomeException.class)` (or `rollbackOn`).
+
+[[rollback-on-checked-exceptions]]
+==== Rollback on checked exceptions
+
+The Jakarta Transactions specification only mandates a rollback for unchecked exceptions: a checked exception crossing the boundary of a `@Transactional` method leaves the transaction alone, and the work done so far is committed.
+
+Since Quarkus 4, Quarkus deviates from the specification and rolls back on checked exceptions too.
+
+Set `quarkus.transactional.checked-exceptions` to restore the behavior mandated by the specification:
+
+[source,properties]
+----
+# roll back on any exception (default)
+quarkus.transactional.checked-exceptions=rollback
+# do not roll back on checked exceptions, and warn every time this happens
+quarkus.transactional.checked-exceptions=no-rollback
+# do not roll back on checked exceptions, silently
+quarkus.transactional.checked-exceptions=no-rollback-quiet
+----
+
+This setting is only a default.
+It is ignored whenever the application states its intent explicitly, either with `rollbackOn`/`dontRollbackOn` on `@Transactional`, or by annotating the exception class itself:
+
+[source,java]
+----
+import io.quarkus.transaction.annotations.Rollback;
+
+@Rollback(false) // this exception never rolls the transaction back
+public class GiftOutOfStockException extends Exception {
+}
+----
+
+Unchecked exceptions are unaffected by `quarkus.transactional.checked-exceptions`: they always roll back the transaction unless `dontRollbackOn` or `@Rollback(false)` says otherwise.
 
 You can also programmatically ask for a transaction to be marked for rollback.
 Inject a `TransactionManager` for this.
@@ -524,4 +557,6 @@ The end result is that the difficulties of running Hibernate ORM + CDI + a trans
 [[configuration-reference]]
 == Configuration Reference for Transactions
 
-include::{generated-dir}/config/quarkus-narayana-jta.adoc[opts=optional, leveloffset=+2]
+include::{generated-dir}/config/quarkus-narayana-jta_quarkus.transaction-manager.adoc[opts=optional, leveloffset=+2]
+
+include::{generated-dir}/config/quarkus-narayana-jta_quarkus.transactional.adoc[opts=optional, leveloffset=+2]

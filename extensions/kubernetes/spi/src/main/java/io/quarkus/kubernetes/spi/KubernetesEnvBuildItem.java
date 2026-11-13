@@ -45,17 +45,34 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
     private final String field;
     private final EnvType type;
     private final String prefix;
+    private final boolean optional;
 
     public static KubernetesEnvBuildItem createFromField(String name, String targetField, String target) {
         return create(name, null, null, null, targetField, target, null);
     }
 
     public static KubernetesEnvBuildItem createFromConfigMap(String configMapName, String target, String prefix) {
-        return create(configMapName, null, null, configMapName, null, target, prefix);
+        return createFromConfigMap(configMapName, target, prefix, false);
+    }
+
+    /**
+     * @param optional whether the ConfigMap may be missing without preventing the container from starting
+     */
+    public static KubernetesEnvBuildItem createFromConfigMap(String configMapName, String target, String prefix,
+            boolean optional) {
+        return create(configMapName, null, null, configMapName, null, target, prefix, optional);
     }
 
     public static KubernetesEnvBuildItem createFromSecret(String secretName, String target, String prefix) {
-        return create(secretName, null, secretName, null, null, target, prefix);
+        return createFromSecret(secretName, target, prefix, false);
+    }
+
+    /**
+     * @param optional whether the Secret may be missing without preventing the container from starting
+     */
+    public static KubernetesEnvBuildItem createFromSecret(String secretName, String target, String prefix,
+            boolean optional) {
+        return create(secretName, null, secretName, null, null, target, prefix, optional);
     }
 
     public static KubernetesEnvBuildItem createSimpleVar(String name, String value, String target) {
@@ -80,6 +97,11 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
 
     public static KubernetesEnvBuildItem create(String name, String value, String secret, String configmap, String field,
             String target, String prefix) throws IllegalArgumentException {
+        return create(name, value, secret, configmap, field, target, prefix, false);
+    }
+
+    public static KubernetesEnvBuildItem create(String name, String value, String secret, String configmap, String field,
+            String target, String prefix, boolean optional) throws IllegalArgumentException {
         final boolean secretPresent = secret != null;
         final boolean configmapPresent = configmap != null;
         final boolean valuePresent = value != null;
@@ -124,11 +146,16 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
         } else {
             type = EnvType.var;
         }
-        return new KubernetesEnvBuildItem(name, value, configmap, secret, field, type, target, prefix);
+        return new KubernetesEnvBuildItem(name, value, configmap, secret, field, type, target, prefix, optional);
     }
 
     KubernetesEnvBuildItem(String name, String value, String configmap, String secret, String field, EnvType type,
             String target, String prefix) {
+        this(name, value, configmap, secret, field, type, target, prefix, false);
+    }
+
+    KubernetesEnvBuildItem(String name, String value, String configmap, String secret, String field, EnvType type,
+            String target, String prefix, boolean optional) {
         super(target);
         this.name = name;
         this.value = value;
@@ -137,6 +164,7 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
         this.field = field;
         this.type = type;
         this.prefix = prefix;
+        this.optional = optional;
     }
 
     public String getConfigMap() {
@@ -167,10 +195,17 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
         return prefix;
     }
 
+    /**
+     * @return whether the referenced Secret or ConfigMap may be missing without preventing the container from starting
+     */
+    public boolean isOptional() {
+        return optional;
+    }
+
     @SuppressWarnings("unused")
     public KubernetesEnvBuildItem newWithTarget(String newTarget) {
         return new KubernetesEnvBuildItem(this.name, this.value, this.configmap, this.secret, this.field, this.type, newTarget,
-                this.prefix);
+                this.prefix, this.optional);
     }
 
     public String toString() {
@@ -207,6 +242,8 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
             return false;
         if (!Objects.equals(prefix, that.prefix))
             return false;
+        if (optional != that.optional)
+            return false;
         return type == that.type;
     }
 
@@ -219,6 +256,7 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
         result = 31 * result + (field != null ? field.hashCode() : 0);
         result = 31 * result + type.hashCode();
         result = 31 * result + (prefix != null ? prefix.hashCode() : 0);
+        result = 31 * result + (optional ? 1 : 0);
         return result;
     }
 }

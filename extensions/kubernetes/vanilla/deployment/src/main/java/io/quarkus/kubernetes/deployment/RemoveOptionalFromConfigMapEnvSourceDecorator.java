@@ -18,7 +18,7 @@ public class RemoveOptionalFromConfigMapEnvSourceDecorator extends ApplicationCo
 
     @Override
     public Class<? extends Decorator>[] after() {
-        return new Class[] { AddEnvVarDecorator.class,
+        return new Class[] { AddEnvVarDecorator.class, ApplyOptionalToConfigMapEnvSourceDecorator.class,
                 AddSecretVolumeDecorator.class, AddSecretVolumeToRevisionDecorator.class,
                 AddConfigMapVolumeToRevisionDecorator.class, AddConfigMapVolumeDecorator.class };
     }

@@ -153,6 +153,11 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         return null;
     }
 
+    @Override
+    public ClassTransformer getClientClassTransformer(PersistenceUnitInfo info, Map<?, ?> properties) {
+        return null;
+    }
+
     @SuppressWarnings("rawtypes")
     public EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(PersistenceUnitInfo info, Map integration) {
         return getEntityManagerFactoryBuilder(info.getPersistenceUnitName(), integration);

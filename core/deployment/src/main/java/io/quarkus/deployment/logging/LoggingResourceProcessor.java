@@ -86,6 +86,7 @@ import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.LogNamedHandlerFormatBuildItem;
 import io.quarkus.deployment.builditem.LogSocketFormatBuildItem;
 import io.quarkus.deployment.builditem.LogSyslogFormatBuildItem;
+import io.quarkus.deployment.builditem.NamedLogHandlersBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.StreamingLogHandlerBuildItem;
@@ -258,6 +259,7 @@ public final class LoggingResourceProcessor {
             final LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
             final Optional<StreamingLogHandlerBuildItem> streamingLogStreamHandlerBuildItem,
             final List<LogHandlerBuildItem> handlerBuildItems,
+            final List<NamedLogHandlersBuildItem> namedHandlerBuildItems,
             final List<LogConsoleFormatBuildItem> consoleFormatItems,
             final List<LogFileFormatBuildItem> fileFormatItems,
             final List<LogSyslogFormatBuildItem> syslogFormatItems,
@@ -344,8 +346,12 @@ public final class LoggingResourceProcessor {
                     .stream().map(LogNamedHandlerFormatBuildItem::getNamedFormattersValue).collect(Collectors.toList());
             List<RuntimeValue<Optional<Handler>>> additionalHandlerValues = handlerBuildItems.stream()
                     .map(LogHandlerBuildItem::getHandlerValue).collect(Collectors.toList());
+            List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlerValues = namedHandlerBuildItems.stream()
+                    .map(NamedLogHandlersBuildItem::getNamedHandlersMap).collect(Collectors.toList());
             reg.aliasRecorderValue(LoggingCompatBridge.class,
-                    compat.buildBridge(streamingRv, bannerRv, namedFormatterValues, additionalHandlerValues), Phase.LOGGING);
+                    compat.buildBridge(streamingRv, bannerRv, namedFormatterValues, additionalHandlerValues,
+                            additionalNamedHandlerValues),
+                    Phase.LOGGING);
 
             // ── console: raw build (exposes the local error manager), shared error manager, wrapped handler ──
             reg.forService(LoggingSetup.ConsoleHandlerResult.class)
@@ -444,7 +450,8 @@ public final class LoggingResourceProcessor {
                             cleanup, errorManager, config, consoleRt) -> {
                         LoggingSetup.configureRuntimeLogging(buildTimeConfig,
                                 config, consoleRt, categoryDefaultMinLevels, notifier, cleanup, errorManager, namedFilters,
-                                handlers.values(), bridge.additionalHandlers(), bridge.streaming(),
+                                handlers.values(), bridge.additionalHandlers(), bridge.additionalNamedHandlers(),
+                                bridge.streaming(),
                                 consoleFmt.orElse(null), fileFmt.orElse(null), syslogFmt.orElse(null),
                                 socketFmt.orElse(null), bridge.namedHandlerFormatters(), bridge.banner(), launchMode,
                                 alwaysEnableLogStream, includeFilters);

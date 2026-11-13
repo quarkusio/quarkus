@@ -40,6 +40,7 @@ import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
+import io.quarkus.deployment.builditem.NamedLogHandlersBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
@@ -98,6 +99,17 @@ public final class TestProcessor {
     @Record(RUNTIME_INIT)
     LogHandlerBuildItem registerAdditionalLogHandler(final AdditionalLogHandlerValueFactory factory) {
         return new LogHandlerBuildItem(factory.create());
+    }
+
+    /**
+     * Register an additional named log handler
+     *
+     * @return NamedLogHandlersBuildItem
+     */
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    NamedLogHandlersBuildItem registerAdditionalNamedLogHandler(final AdditionalLogHandlerValueFactory factory) {
+        return new NamedLogHandlersBuildItem(factory.createNamed());
     }
 
     @BuildStep

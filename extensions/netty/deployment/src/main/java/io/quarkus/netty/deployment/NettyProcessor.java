@@ -293,10 +293,11 @@ class NettyProcessor {
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpContentCompressor");
             // Zstd is an optional dependency, runtime initialize to avoid IllegalStateException when zstd is not
             // available. This will result in a runtime ClassNotFoundException if the user tries to use zstd.
-            if (!QuarkusClassLoader.isClassPresentAtRuntime("com.github.luben.zstd.Zstd")) {
-                builder.addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdOptions")
-                        .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdConstants");
-            }
+            // When zstd-jni is available, it is runtime initialized (see ZstdJniBuildStep) so these classes, whose
+            // static initializers call into zstd-jni, have to be runtime initialized too.
+            builder.addRuntimeInitializedClass("io.netty.handler.codec.compression.Zstd")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdOptions")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdConstants");
             // Brotli is an optional dependency, we should only runtime initialize BrotliOptions when it is available
             // (e.g. com.aayushatharva.brotli4j.Brotli4jLoader is present): BrotliOptions references Brotli4j and its
             // static initializer fails without it. It is cut from the native image otherwise.

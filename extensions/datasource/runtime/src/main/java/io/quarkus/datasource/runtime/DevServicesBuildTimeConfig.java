@@ -49,6 +49,23 @@ public interface DevServicesBuildTimeConfig {
     Optional<@WithConverter(TrimmedStringConverter.class) String> imageName();
 
     /**
+     * When to pull the container image for container-based Dev Service providers.
+     *
+     * * `always`: pull the image every time the container is started, to get the latest version of a moving tag such as
+     * `latest`.
+     * * `missing`: only pull the image if it is not available locally.
+     * * `never`: never pull the image; the container fails to start if the image is not available locally.
+     *
+     * If not set, the Testcontainers pull policy is used, which pulls the image only if it is not available locally
+     * unless `pull.policy` is set in `testcontainers.properties`.
+     *
+     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     *
+     * @asciidoclet
+     */
+    Optional<ImagePullPolicy> imagePullPolicy();
+
+    /**
      * Environment variables that are passed to the container.
      */
     @ConfigDocMapKey("environment-variable-name")
@@ -160,5 +177,20 @@ public interface DevServicesBuildTimeConfig {
      */
     @WithDefault("false")
     boolean showLogs();
+
+    enum ImagePullPolicy {
+        /**
+         * Pull the image every time the container is started.
+         */
+        ALWAYS,
+        /**
+         * Only pull the image if it is not available locally.
+         */
+        MISSING,
+        /**
+         * Never pull the image; fail if it is not available locally.
+         */
+        NEVER
+    }
 
 }

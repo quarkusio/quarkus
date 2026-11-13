@@ -81,6 +81,7 @@ public class MSSQLDevServicesProcessor {
                 // Defining the database name and the username is not supported by this container yet
                 container.withPassword(effectivePassword)
                         .withReuse(containerConfig.isReuse());
+                containerConfig.getImagePullPolicy().ifPresent(container::withImagePullPolicy);
                 Labels.addDataSourceLabel(container, datasourceName);
                 Volumes.addVolumes(container, containerConfig.getVolumes());
 

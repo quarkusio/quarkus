@@ -77,6 +77,7 @@ public class OracleDevServicesProcessor {
                         .withPassword(effectivePassword)
                         .withDatabaseName(effectiveDbName)
                         .withReuse(containerConfig.isReuse());
+                containerConfig.getImagePullPolicy().ifPresent(container::withImagePullPolicy);
                 Labels.addDataSourceLabel(container, datasourceName);
                 Volumes.addVolumes(container, containerConfig.getVolumes());
 

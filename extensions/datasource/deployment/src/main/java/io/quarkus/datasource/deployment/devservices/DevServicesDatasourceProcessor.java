@@ -12,6 +12,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
+import org.testcontainers.images.AbstractImagePullPolicy;
+import org.testcontainers.images.ImageData;
+import org.testcontainers.images.ImagePullPolicy;
+import org.testcontainers.images.PullPolicy;
+import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.spi.DataSourceDefinedBuildItem;
@@ -20,6 +25,7 @@ import io.quarkus.datasource.deployment.spi.DatabaseFeature;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import io.quarkus.datasource.runtime.DevServicesBuildTimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
@@ -140,6 +146,7 @@ public class DevServicesDatasourceProcessor {
             res.put(name + ".devservices.container-properties.", config.devservices().containerProperties());
             res.put(name + ".devservices.db-name", config.devservices().dbName());
             res.put(name + ".devservices.image-name", config.devservices().imageName());
+            res.put(name + ".devservices.image-pull-policy", config.devservices().imagePullPolicy());
             res.put(name + ".devservices.init-script-path", config.devservices().initScriptPath());
             res.put(name + ".devservices.init-privileged-script-path", config.devservices().initPrivilegedScriptPath());
             res.put(name + ".devservices.password", config.devservices().password());
@@ -406,6 +413,7 @@ public class DevServicesDatasourceProcessor {
             Set<DatabaseFeature> requiredFeatures) {
         return new DevServicesDatasourceContainerConfig(
                 dataSourceBuildTimeConfig.devservices().imageName(),
+                dataSourceBuildTimeConfig.devservices().imagePullPolicy().map(DevServicesDatasourceProcessor::imagePullPolicy),
                 dataSourceBuildTimeConfig.devservices().containerEnv(),
                 dataSourceBuildTimeConfig.devservices().containerProperties(),
                 dataSourceBuildTimeConfig.devservices().properties(),
@@ -421,6 +429,20 @@ public class DevServicesDatasourceProcessor {
                 dataSourceBuildTimeConfig.devservices().showLogs(),
                 datasourceName,
                 requiredFeatures);
+    }
+
+    private static ImagePullPolicy imagePullPolicy(DevServicesBuildTimeConfig.ImagePullPolicy imagePullPolicy) {
+        return switch (imagePullPolicy) {
+            case ALWAYS -> PullPolicy.alwaysPull();
+            // unlike PullPolicy.defaultPolicy(), this does not depend on the pull.policy set in testcontainers.properties
+            case MISSING -> new AbstractImagePullPolicy() {
+                @Override
+                protected boolean shouldPullCached(DockerImageName imageName, ImageData localImageData) {
+                    return false;
+                }
+            };
+            case NEVER -> imageName -> false;
+        };
     }
 
     private void setDataSourceProperties(Map<String, String> propertiesMap, String dbName, String propertyKeyRadical,

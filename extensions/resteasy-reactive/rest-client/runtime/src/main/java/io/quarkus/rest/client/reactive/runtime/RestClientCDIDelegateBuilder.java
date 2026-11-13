@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -36,6 +35,7 @@ import io.quarkus.rest.client.reactive.ParamStyle;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
+import io.quarkus.runtime.AddressResolver;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -444,13 +444,8 @@ public class RestClientCDIDelegateBuilder<T> {
             }
             throw new IllegalArgumentException(message);
         }
-        String baseUrl = propertyOptional.orElse(baseUriFromAnnotation);
 
-        try {
-            builder.baseUri(new URI(baseUrl));
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("The value of URL was invalid " + baseUrl, e);
-        }
+        builder.baseUri(AddressResolver.resolve(propertyOptional.orElse(baseUriFromAnnotation)));
     }
 
     private void configureDomainSocket(QuarkusRestClientBuilder builder) {

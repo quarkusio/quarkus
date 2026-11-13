@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -30,6 +29,7 @@ import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.restclient.NoopHostnameVerifier;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
+import io.quarkus.runtime.AddressResolver;
 import io.smallrye.config.Config;
 
 public class RestClientBase {
@@ -294,7 +294,7 @@ public class RestClientBase {
         String baseUrl = baseUrlOptional.orElse(baseUriFromAnnotation);
 
         try {
-            builder.baseUrl(new URL(baseUrl));
+            builder.baseUrl(AddressResolver.resolve(baseUrl).toURL());
         } catch (MalformedURLException e) {
             if (e.getMessage().contains(
                     "It must be enabled by adding the --enable-url-protocols=https option to the native-image command")) {

@@ -93,7 +93,7 @@ For more information about pool size adjustment properties, see the <<jdbc-confi
 ==== Read-only JDBC pools
 
 You can mark a JDBC pool as read-only so that connections are created with
-link:https://docs.oracle.com/en/java/javase/17/docs/api/java.sql/java/sql/Connection.html#setReadOnly(boolean)[`Connection.setReadOnly(true)`].
+link:{jdk-javadocs-url}/java.sql/java/sql/Connection.html#setReadOnly(boolean)[`Connection.setReadOnly(true)`].
 The JDBC driver is responsible for enforcing read-only mode.
 
 This is useful for secondary pools that target read replicas.

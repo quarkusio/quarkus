@@ -401,14 +401,14 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         return config != null && config.getId() != null && config.getUrl() != null;
     }
 
-    private static MavenArtifactResolver newResolver(MavenArtifactResolver resolver, List<RemoteRepository> aggregatedRepos,
+    static MavenArtifactResolver newResolver(MavenArtifactResolver resolver, List<RemoteRepository> aggregatedRepos,
             RegistryConfig config, MessageWriter log) {
         try {
             final LocalProject currentProject = resolver.getMavenContext().getCurrentProject();
             final BootstrapMavenContext mvnCtx = new BootstrapMavenContext(
                     BootstrapMavenContext.config()
                             .setRepositorySystem(resolver.getSystem())
-                            .setRepositorySystemSession(setRegistryTransferListener(config, log, resolver.getSession()))
+                            .setRepositorySystemSession(newRegistrySession(config, log, resolver.getSession()))
                             .setRemoteRepositoryManager(resolver.getRemoteRepositoryManager())
                             .setRemoteRepositories(aggregatedRepos)
                             .setLocalRepository(resolver.getMavenContext().getLocalRepo())
@@ -421,10 +421,17 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         }
     }
 
-    private static DefaultRepositorySystemSession setRegistryTransferListener(RegistryConfig config, MessageWriter log,
+    private static DefaultRepositorySystemSession newRegistrySession(RegistryConfig config, MessageWriter log,
             RepositorySystemSession session) {
         final DefaultRepositorySystemSession newSession = new DefaultRepositorySystemSession(session);
         newSession.setTransferListener(new RegistryCacheRefreshLogger(config, log, newSession.getTransferListener()));
+        // Registry catalogs are published as constantly re-deployed Maven snapshots. A client that reads
+        // maven-metadata.xml and its checksum while the registry is re-publishing will get them from different
+        // generations of the metadata and report a checksum mismatch for what is in fact a healthy download.
+        // The mismatch is not actionable for the user, so it's not worth logging a warning and a stacktrace for.
+        // This applies to the session used to resolve registry artifacts only, the repositories a project resolves
+        // its dependencies from keep validating checksums.
+        newSession.setChecksumPolicy(RepositoryPolicy.CHECKSUM_POLICY_IGNORE);
         return newSession;
     }
 

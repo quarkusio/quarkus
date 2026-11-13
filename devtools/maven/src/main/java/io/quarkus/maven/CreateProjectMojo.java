@@ -187,6 +187,13 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
     private RepositorySystemSession repoSession;
 
+    /**
+     * Whether to skip the check that the Maven version is supported by Quarkus.
+     * Using an unsupported Maven version is at your own risk.
+     */
+    @Parameter(defaultValue = "false", property = "quarkus.maven-version-check.skip")
+    boolean skipMavenVersionCheck;
+
     @Component
     private MavenVersionEnforcer mavenVersionEnforcer;
 
@@ -222,7 +229,7 @@ public class CreateProjectMojo extends AbstractMojo {
 
         // We detect the Maven version during the project generation to indicate the user immediately that the installed
         // version may not be supported.
-        mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
+        mavenVersionEnforcer.ensureMavenVersion(getLog(), session, skipMavenVersionCheck);
         try {
             Files.createDirectories(outputDirectory.toPath());
         } catch (IOException e) {

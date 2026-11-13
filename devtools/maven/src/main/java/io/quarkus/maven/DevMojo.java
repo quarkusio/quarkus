@@ -290,6 +290,13 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "TRUE")
     private boolean deleteDevJar;
 
+    /**
+     * Whether to skip the check that the Maven version is supported by Quarkus.
+     * Using an unsupported Maven version is at your own risk.
+     */
+    @Parameter(defaultValue = "false", property = "quarkus.maven-version-check.skip")
+    boolean skipMavenVersionCheck;
+
     @Component
     private MavenVersionEnforcer mavenVersionEnforcer;
 
@@ -501,7 +508,7 @@ public class DevMojo extends AbstractMojo {
             return;
         }
 
-        mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
+        mavenVersionEnforcer.ensureMavenVersion(getLog(), session, skipMavenVersionCheck);
 
         initToolchain();
 

@@ -55,6 +55,19 @@ public class ResultsCollectingTemplateInstanceTest {
     }
 
     @Test
+    public void testConsumeChunks() throws InterruptedException {
+        assertResults(t -> {
+            try {
+                ChunkWriterTest.CollectingChunkWriter writer = new ChunkWriterTest.CollectingChunkWriter();
+                t.consume(writer).toCompletableFuture().get();
+                return writer.asString();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Test
     public void testRemove() {
         Engine engine = Engine.builder().addDefaults().build();
         RenderedResults renderedResults = new RenderedResults();

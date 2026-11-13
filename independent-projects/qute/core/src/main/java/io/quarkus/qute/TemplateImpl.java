@@ -193,7 +193,7 @@ class TemplateImpl implements Template {
 
         @Override
         public Multi<String> createMulti() {
-            Multi<String> multi = Multi.createFrom().emitter(emitter -> renderData(data(), emitter::emit)
+            Multi<String> multi = Multi.createFrom().emitter(emitter -> renderData(data(), r -> r.process(emitter::emit))
                     .whenComplete((r, f) -> {
                         if (f == null) {
                             emitter.complete();
@@ -233,7 +233,17 @@ class TemplateImpl implements Template {
 
         @Override
         public CompletionStage<Void> consume(Consumer<String> resultConsumer) {
-            CompletionStage<Void> cs = renderData(data(), resultConsumer);
+            CompletionStage<Void> cs = renderData(data(), r -> r.process(resultConsumer));
+            return applyTimeout(cs);
+        }
+
+        @Override
+        public CompletionStage<Void> consume(ChunkWriter writer) {
+            CompletionStage<Void> cs = renderData(data(), r -> r.process(writer));
+            return applyTimeout(cs);
+        }
+
+        private CompletionStage<Void> applyTimeout(CompletionStage<Void> cs) {
             if (engine.useAsyncTimeout()) {
                 cs = cs.toCompletableFuture().orTimeout(getTimeout(), TimeUnit.MILLISECONDS);
             }
@@ -251,7 +261,7 @@ class TemplateImpl implements Template {
 
         private CompletionStage<String> renderAsyncNoTimeout() {
             StringBuilder builder = new StringBuilder(getCapacity());
-            return renderData(data(), builder::append).thenApply(v -> {
+            return renderData(data(), r -> r.process(builder::append)).thenApply(v -> {
                 String str = builder.toString();
                 capacity.update(str.length());
                 return str;
@@ -278,7 +288,7 @@ class TemplateImpl implements Template {
             return capacity.get();
         }
 
-        private CompletionStage<Void> renderData(Object data, Consumer<String> consumer) {
+        private CompletionStage<Void> renderData(Object data, Consumer<ResultNode> processor) {
             CompletableFuture<Void> result = new CompletableFuture<>();
             ResolutionContext rootContext = new ResolutionContextImpl(data,
                     engine.getEvaluator(), null, this);
@@ -295,7 +305,7 @@ class TemplateImpl implements Template {
                 } else {
                     // Sync processing of the result tree - build the output
                     try {
-                        r.process(consumer);
+                        processor.accept(r);
                         result.complete(null);
                     } catch (Throwable e) {
                         result.completeExceptionally(e);

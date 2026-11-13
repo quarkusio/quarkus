@@ -21,4 +21,11 @@ public final class MultiResultNode extends ResultNode {
         }
     }
 
+    @Override
+    public void process(ChunkWriter writer) {
+        for (Supplier<ResultNode> result : results) {
+            result.get().process(writer);
+        }
+    }
+
 }

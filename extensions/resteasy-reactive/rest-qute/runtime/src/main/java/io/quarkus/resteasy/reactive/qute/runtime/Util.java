@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.qute.runtime;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.Locale;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Request;
 
+import io.quarkus.qute.ChunkWriter;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateException;
@@ -20,8 +22,13 @@ final class Util {
     private Util() {
     }
 
-    static Uni<String> toUni(TemplateInstance instance, Engine engine) {
-        Uni<String> uni = instance.createUni();
+    static Uni<byte[]> toUni(TemplateInstance instance, Engine engine) {
+        Uni<byte[]> uni = Uni.createFrom().completionStage(() -> {
+            // Collect the chunks of the rendered template and build the resulting byte array in a single bulk copy;
+            // static text is handed over pre-encoded and never re-encoded
+            ChunkCollector collector = new ChunkCollector();
+            return instance.consume(collector).thenApply(unused -> collector.toByteArray());
+        });
         if (!engine.useAsyncTimeout()) {
             // Make sure the timeout is always used
             long timeout = instance.getTimeout();
@@ -29,6 +36,36 @@ final class Util {
                     .failWith(() -> new TemplateException(instance + " rendering timeout [" + timeout + "ms] occurred"));
         }
         return uni;
+    }
+
+    static final class ChunkCollector implements ChunkWriter {
+
+        private final List<byte[]> chunks = new ArrayList<>();
+        private int length;
+
+        @Override
+        public void write(String chunk) {
+            byte[] encoded = chunk.getBytes(StandardCharsets.UTF_8);
+            chunks.add(encoded);
+            length += encoded.length;
+        }
+
+        @Override
+        public void write(byte[] chunk) {
+            chunks.add(chunk);
+            length += chunk.length;
+        }
+
+        byte[] toByteArray() {
+            byte[] out = new byte[length];
+            int offset = 0;
+            for (byte[] chunk : chunks) {
+                System.arraycopy(chunk, 0, out, offset, chunk.length);
+                offset += chunk.length;
+            }
+            return out;
+        }
+
     }
 
     @SuppressWarnings("unchecked")

@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
@@ -11,6 +12,8 @@ public class TextNode extends ResultNode implements TemplateNode {
     private final CompletedStage<ResultNode> result;
     private final String value;
     private final Origin origin;
+    // Lazily encoded UTF-8 value; the volatile write publishes the array contents to concurrent readers
+    private volatile byte[] utf8Value;
 
     public TextNode(String value, Origin origin) {
         this.result = CompletedStage.of(this);
@@ -45,6 +48,21 @@ public class TextNode extends ResultNode implements TemplateNode {
     @Override
     public void process(Consumer<String> consumer) {
         consumer.accept(value);
+    }
+
+    @Override
+    public void process(ChunkWriter writer) {
+        if (writer.charset() == StandardCharsets.UTF_8) {
+            // Static text never changes - encode it once and reuse the byte array afterwards
+            byte[] encoded = utf8Value;
+            if (encoded == null) {
+                encoded = value.getBytes(StandardCharsets.UTF_8);
+                utf8Value = encoded;
+            }
+            writer.write(encoded);
+        } else {
+            writer.write(value);
+        }
     }
 
     @Override

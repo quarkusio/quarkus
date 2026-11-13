@@ -29,6 +29,7 @@ import jakarta.inject.Singleton;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.impl.LazyValue;
+import io.quarkus.qute.ChunkWriter;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Location;
@@ -394,6 +395,11 @@ public class TemplateProducer {
             @Override
             public CompletionStage<Void> consume(Consumer<String> consumer) {
                 return templateInstance().consume(consumer);
+            }
+
+            @Override
+            public CompletionStage<Void> consume(ChunkWriter writer) {
+                return templateInstance().consume(writer);
             }
 
             @Override

@@ -151,6 +151,19 @@ public interface TemplateInstance {
     }
 
     /**
+     * Triggers rendering.
+     * <p>
+     * The rendered template is consumed in chunks. Static text may be handed over to the writer pre-encoded, see
+     * {@link ChunkWriter#write(byte[])}.
+     *
+     * @param writer To consume chunks of the rendered template
+     * @return a completion stage that is completed once the rendering finished
+     */
+    default CompletionStage<Void> consume(ChunkWriter writer) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * @return the timeout
      * @see TemplateInstance#TIMEOUT
      */

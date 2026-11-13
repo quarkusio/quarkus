@@ -39,7 +39,7 @@ public class TemplateResponseFilter {
             mediaType = selectedMediaType;
         }
 
-        Uni<String> uni = toUni(instance, engine);
+        Uni<byte[]> uni = toUni(instance, engine);
         return uni.chain(r -> {
             if (mediaType != null) {
                 responseContext.setEntity(r, null, mediaType);

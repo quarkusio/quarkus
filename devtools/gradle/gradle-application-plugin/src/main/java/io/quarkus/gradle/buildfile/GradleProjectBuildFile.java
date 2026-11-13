@@ -1,4 +1,4 @@
-package io.quarkus.devtools.project.buildfile;
+package io.quarkus.gradle.buildfile;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,6 +13,7 @@ import org.gradle.api.attributes.Category;
 import org.gradle.api.plugins.JavaPlugin;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.devtools.project.buildfile.AbstractGradleBuildFile;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.util.PlatformArtifacts;

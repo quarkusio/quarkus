@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.acme.relocation</groupId>
+    <artifactId>relocated-deps-parent</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>new-api-2</module>
+        <module>new-api-3</module>
+        <module>next-api-1</module>
+        <module>next-api-2</module>
+        <module>old-api-1</module>
+        <module>old-api-reloc-version-prop-1</module>
+        <module>lib-opt-2</module>
+        <module>lib-prov-2</module>
+        <module>lib-req-2</module>
+        <module>lib-chain-2</module>
+        <module>lib-prop-2</module>
+    </modules>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+</project>

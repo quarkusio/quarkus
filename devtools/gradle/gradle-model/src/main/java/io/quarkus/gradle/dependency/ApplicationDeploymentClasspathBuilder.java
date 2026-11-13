@@ -286,7 +286,7 @@ public class ApplicationDeploymentClasspathBuilder {
         return platformDataDeps;
     }
 
-    private PlatformSpec resolvePlatformSpec() {
+    public PlatformSpec resolvePlatformSpec() {
         getPlatformConfiguration().resolve();
         return new PlatformSpec(platformConstraints, getPlatformConfiguration().getExcludeRules());
     }

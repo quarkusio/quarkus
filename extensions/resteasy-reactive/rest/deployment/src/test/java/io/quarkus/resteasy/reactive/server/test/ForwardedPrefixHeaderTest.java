@@ -3,17 +3,26 @@ package io.quarkus.resteasy.reactive.server.test;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 
+import java.net.URI;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
+import org.eclipse.microprofile.context.ThreadContext;
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.common.vertx.VertxContext;
+import io.vertx.core.Vertx;
 
 public class ForwardedPrefixHeaderTest {
 
@@ -69,8 +78,24 @@ public class ForwardedPrefixHeaderTest {
                 .header("Location", "http://backend:1234/prefix/new-path2");
     }
 
+    @Test
+    public void asyncRelativeLocation() {
+        given()
+                .header("X-Forwarded-Proto", "https")
+                .header("X-Forwarded-Host", "backend")
+                .header("X-Forwarded-Port", "1234")
+                .header("X-Forwarded-Prefix", "/prefix")
+                .post("/test/async-location")
+                .then()
+                .statusCode(201)
+                .header("Location", "https://backend:1234/prefix/items/42");
+    }
+
     @Path("test")
     public static class Resource {
+
+        @Inject
+        ThreadContext threadContext;
 
         @GET
         public String get(UriInfo uriInfo) {
@@ -93,6 +118,17 @@ public class ForwardedPrefixHeaderTest {
             return RestResponse.ResponseBuilder.create(Response.Status.FOUND)
                     .location(java.net.URI.create("/new-path2"))
                     .build();
+        }
+
+        @POST
+        @Path("async-location")
+        public CompletionStage<Response> create() {
+            CompletableFuture<String> future = new CompletableFuture<>();
+            CompletionStage<Response> response = threadContext.withContextCapture(future)
+                    .thenApply(id -> Response.created(URI.create("/items/" + id)).build());
+            // Complete on a root context, as an asynchronous client would, after attaching the callback.
+            VertxContext.getRootContext(Vertx.currentContext()).runOnContext(ignored -> future.complete("42"));
+            return response;
         }
     }
 

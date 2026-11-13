@@ -8,6 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Flow;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -15,6 +16,7 @@ import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.smallrye.reactivemessaging.config.DumbConnector;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.NonBlocking;
@@ -78,11 +80,17 @@ public class BlockingSignatureExecutionModeTest {
     public void testNonBlockingSignatureFromConnector() {
         await().until(() -> consumerFromConnector.list().size() == 2);
         List<String> threadNames = consumerFromConnector.threads().stream().distinct().toList();
-        assertThat(threadNames).containsOnly(Thread.currentThread().getName());
+        assertThat(threadNames).containsOnly(ConsumerFromConnector.startupThread);
     }
 
     @ApplicationScoped
     public static class ConsumerFromConnector {
+        public static volatile String startupThread;
+
+        void init(@Observes StartupEvent ev) {
+            startupThread = Thread.currentThread().getName();
+        }
+
         private final List<String> list = new CopyOnWriteArrayList<>();
         private final List<String> threads = new CopyOnWriteArrayList<>();
 
@@ -109,7 +117,7 @@ public class BlockingSignatureExecutionModeTest {
     public void testNonBlockingAnnotationFromConnector() {
         await().until(() -> nonBlockingConsumerFromConnector.list().size() == 2);
         List<String> threadNames = nonBlockingConsumerFromConnector.threads().stream().distinct().toList();
-        assertThat(threadNames).containsOnly(Thread.currentThread().getName());
+        assertThat(threadNames).containsOnly(ConsumerFromConnector.startupThread);
     }
 
     @ApplicationScoped
@@ -141,7 +149,7 @@ public class BlockingSignatureExecutionModeTest {
         await().until(() -> consumerFromInnerChannel.list().size() == 3);
         assertThat(consumerFromInnerChannel.list()).containsExactly("d", "e", "f");
         List<String> threadNames = consumerFromInnerChannel.threads().stream().distinct().toList();
-        assertThat(threadNames).containsOnly(Thread.currentThread().getName());
+        assertThat(threadNames).containsOnly(ConsumerFromConnector.startupThread);
     }
 
     @ApplicationScoped

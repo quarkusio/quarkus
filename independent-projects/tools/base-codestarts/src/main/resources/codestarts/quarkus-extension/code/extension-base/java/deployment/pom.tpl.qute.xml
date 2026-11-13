@@ -57,6 +57,20 @@
                     </execution>
                 </executions>
             </plugin>
+            {#if quarkus.version && quarkus.version.compareVersionTo("4.0.0") >= 0}
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <version>$\{quarkus.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>extension-structure</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            {/if}
         </plugins>
     </build>
 

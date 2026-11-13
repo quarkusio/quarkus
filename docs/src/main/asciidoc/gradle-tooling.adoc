@@ -890,6 +890,9 @@ The `quarkusAppPartsBuild` and `quarkusDependenciesBuild` tasks do nothing for `
 
 |===
 
+NOTE: When `quarkus.container-image.build` is enabled, the `quarkusAppPartsBuild` task is never cached, because the
+container image is built as a side effect of the task and is not one of its outputs.
+
 [NOTE]
 ====
 In a local development environment, the cost (think: time) of storing (and retrieving) even bigger cache artifacts is

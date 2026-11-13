@@ -28,7 +28,8 @@ public class GraphQLAutoTransactionTest extends AbstractGraphQLTest {
     @RegisterExtension
     static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((JavaArchive jar) -> jar
-                    .addClasses(TransactionCheckApi.class, Greeting.class)
+                    .addClasses(TransactionCheckApi.class, ClassLevelTransactionalApi.class,
+                            ClassLevelNonBlockingApi.class, Greeting.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-graphql.nonblocking.enabled=false"),
                             "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
@@ -111,6 +112,38 @@ public class GraphQLAutoTransactionTest extends AbstractGraphQLTest {
                 .statusCode(200)
                 .and()
                 .body("data.explicitTransactional", Matchers.is(false));
+    }
+
+    @Test
+    void classLevelTransactionalShouldBePreserved() {
+        String request = getPayload("{ classLevelTransactional }");
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("data.classLevelTransactional", Matchers.is(false));
+    }
+
+    @Test
+    void classLevelNonBlockingShouldNotHaveTransaction() {
+        String request = getPayload("{ classLevelNonBlocking }");
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("data.classLevelNonBlocking", Matchers.is(false));
     }
 
     @Test
@@ -253,6 +286,32 @@ public class GraphQLAutoTransactionTest extends AbstractGraphQLTest {
             } catch (Exception e) {
                 return false;
             }
+        }
+    }
+
+    @GraphQLApi
+    @jakarta.transaction.Transactional(jakarta.transaction.Transactional.TxType.NOT_SUPPORTED)
+    public static class ClassLevelTransactionalApi {
+
+        @Inject
+        TransactionManager tm;
+
+        @Query
+        public boolean classLevelTransactional() throws Exception {
+            return tm.getStatus() == jakarta.transaction.Status.STATUS_ACTIVE;
+        }
+    }
+
+    @GraphQLApi
+    @NonBlocking
+    public static class ClassLevelNonBlockingApi {
+
+        @Inject
+        TransactionManager tm;
+
+        @Query
+        public boolean classLevelNonBlocking() throws Exception {
+            return tm.getStatus() == jakarta.transaction.Status.STATUS_ACTIVE;
         }
     }
 }

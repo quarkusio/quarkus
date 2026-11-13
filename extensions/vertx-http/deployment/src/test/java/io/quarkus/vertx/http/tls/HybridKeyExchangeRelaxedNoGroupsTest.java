@@ -67,8 +67,8 @@ public class HybridKeyExchangeRelaxedNoGroupsTest extends AbstractHybridKeyExcha
 
     @Test
     @EnabledIf("isOpenSsl35Available")
-    //if jdk is 27 or later, server will have pqc groups by default
-    @DisabledIf("isJdk27OrLater")
+    // if the JDK supports PQC, the server will have PQC groups by default
+    @DisabledIf("isPqcSupported")
     void testPqcClientFails() {
         // Server uses classical TLS defaults — no PQC groups advertised.
         // A client that only offers X25519MLKEM768 has no common group and the handshake fails.

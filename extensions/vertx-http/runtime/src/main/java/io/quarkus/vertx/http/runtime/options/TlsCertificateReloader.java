@@ -13,6 +13,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -96,37 +97,49 @@ public class TlsCertificateReloader {
 
         boolean reloadFromRegistry = useRegistry;
         TlsConfiguration registryConfiguration = tlsConfiguration;
+        // The version of the registry content this server last applied. It is kept here, and not in the
+        // configuration, so that a reload triggered by someone else does not hide the change from this server.
+        AtomicLong appliedVersion = new AtomicLong(useRegistry ? tlsConfiguration.getContentVersion() : -1);
         Supplier<CompletionStage<Boolean>> task = new Supplier<>() {
             @Override
             public CompletionStage<Boolean> get() {
 
                 // We are reading files - must be done on a worker thread.
-                Future<Boolean> future = vertx.executeBlocking(new Callable<ServerSSLOptions>() {
+                Future<Boolean> future = vertx.executeBlocking(new Callable<ReloadedSslOptions>() {
                     @Override
-                    public ServerSSLOptions call() throws Exception {
+                    public ReloadedSslOptions call() throws Exception {
                         if (reloadFromRegistry) {
-                            if (registryConfiguration.reload()) {
-                                return createServerSslOptions(registryConfiguration, clientAuth);
-                            } else {
+                            if (!registryConfiguration.reload()) {
                                 return null;
                             }
+                            // The registry tracks the content of the stores, so there is nothing to compare here:
+                            // skip the update when the certificates we already applied are still the current ones.
+                            long version = registryConfiguration.getContentVersion();
+                            if (version >= 0 && version == appliedVersion.get()) {
+                                return null;
+                            }
+                            return new ReloadedSslOptions(createServerSslOptions(registryConfiguration, clientAuth),
+                                    version);
                         } else {
                             var c = reloadFileContent(currentSslOptions.get(), sslConfig);
                             if (c.equals(currentSslOptions.get())) { // No change, skip the update
                                 return null;
                             }
-                            return c;
+                            return new ReloadedSslOptions(c, -1);
                         }
                     }
                 }, true)
-                        .flatMap(new Function<ServerSSLOptions, Future<Boolean>>() {
+                        .flatMap(new Function<ReloadedSslOptions, Future<Boolean>>() {
                             @Override
-                            public Future<Boolean> apply(ServerSSLOptions res) {
+                            public Future<Boolean> apply(ReloadedSslOptions res) {
                                 if (res != null) {
-                                    return server.updateSSLOptions(res).onSuccess(new Handler<>() {
+                                    return server.updateSSLOptions(res.options()).onSuccess(new Handler<>() {
                                         @Override
                                         public void handle(Boolean event) {
-                                            currentSslOptions.set(res);
+                                            // Only recorded once the server accepted them, so a failed update is
+                                            // retried on the next period.
+                                            currentSslOptions.set(res.options());
+                                            appliedVersion.set(res.version());
                                         }
                                     });
                                 } else {
@@ -232,6 +245,13 @@ public class TlsCertificateReloader {
         }
 
         return copy;
+    }
+
+    /**
+     * The SSL options to apply, along with the version of the TLS registry content they were built from, or a
+     * negative version when the options were not built from the registry.
+     */
+    private record ReloadedSslOptions(ServerSSLOptions options, long version) {
     }
 
     static final class ReloadCertificateTask {

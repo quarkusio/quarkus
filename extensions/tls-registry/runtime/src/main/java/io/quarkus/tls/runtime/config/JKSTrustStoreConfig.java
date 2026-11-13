@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.Secret;
 
 @ConfigGroup
 public interface JKSTrustStoreConfig {
@@ -17,7 +18,7 @@ public interface JKSTrustStoreConfig {
      * Password of the trust store.
      * If not set, the password must be retrieved from the credential provider.
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * Alias of the key in the trust store.

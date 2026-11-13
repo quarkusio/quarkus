@@ -9,6 +9,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
@@ -47,7 +48,7 @@ public interface MPRealmRuntimeConfig {
      * See <a href="#embedded-users">Embedded Users</a>.
      */
     @ConfigDocDefault("none")
-    Map<@WithConverter(TrimmedStringConverter.class) String, @WithConverter(TrimmedStringConverter.class) String> users();
+    Map<@WithConverter(TrimmedStringConverter.class) String, @WithConverter(TrimmedStringConverter.class) Secret<String>> users();
 
     /**
      * The realm roles user1=role1,role2,...\nuser2=role1,role2,... mapping

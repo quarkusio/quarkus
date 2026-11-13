@@ -6,6 +6,7 @@ import java.util.Optional;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 
 /**
@@ -47,7 +48,7 @@ public interface AeshSshConfig {
      * quarkus.aesh.ssh.password=${SSH_PASSWORD}
      * </pre>
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * Path to an OpenSSH-format authorized_keys file for public key authentication.

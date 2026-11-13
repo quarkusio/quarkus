@@ -71,7 +71,7 @@ public class SshServerLifecycle implements TransportSessionInfo {
                 .setKeyPairProvider(keyProvider);
 
         if (config.password().isPresent()) {
-            String expectedPassword = config.password().get();
+            String expectedPassword = config.password().get().get();
             bootstrap.setPasswordAuthenticator(
                     (username, password, session) -> expectedPassword.equals(password));
         }

@@ -5,6 +5,7 @@ import java.util.Optional;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 
 /**
@@ -38,7 +39,7 @@ public interface KeycloakAdminClientConfig {
     /**
      * Client secret. Required with a `client_credentials` grant type.
      */
-    Optional<String> clientSecret();
+    Optional<Secret<String>> clientSecret();
 
     /**
      * Username. Required with a `password` grant type.
@@ -50,7 +51,7 @@ public interface KeycloakAdminClientConfig {
      * Password. Required with a `password` grant type.
      */
     @WithDefault("admin")
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * OAuth 2.0 <a href="https://datatracker.ietf.org/doc/html/rfc6749#section-3.3">Access Token Scope</a>.

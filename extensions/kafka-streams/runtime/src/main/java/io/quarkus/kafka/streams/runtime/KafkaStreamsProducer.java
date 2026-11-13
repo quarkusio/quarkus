@@ -41,6 +41,7 @@ import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.common.annotation.Identifier;
 import io.smallrye.config.Config;
+import io.smallrye.config.Secret;
 
 /**
  * Manages the lifecycle of a Kafka Streams pipeline. If there's a producer
@@ -268,7 +269,7 @@ public class KafkaStreamsProducer {
         if (tsc != null) {
             setProperty(tsc.type(), properties, SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG);
             setProperty(tsc.location(), properties, SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG);
-            setProperty(tsc.password(), properties, SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG);
+            setProperty(tsc.password().map(Secret::get), properties, SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG);
             setProperty(tsc.certificates(), properties, SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG);
         }
     }
@@ -277,15 +278,15 @@ public class KafkaStreamsProducer {
         if (ksc != null) {
             setProperty(ksc.type(), properties, SslConfigs.SSL_KEYSTORE_TYPE_CONFIG);
             setProperty(ksc.location(), properties, SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG);
-            setProperty(ksc.password(), properties, SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG);
-            setProperty(ksc.key(), properties, SslConfigs.SSL_KEYSTORE_KEY_CONFIG);
+            setProperty(ksc.password().map(Secret::get), properties, SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG);
+            setProperty(ksc.key().map(Secret::get), properties, SslConfigs.SSL_KEYSTORE_KEY_CONFIG);
             setProperty(ksc.certificateChain(), properties, SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG);
         }
     }
 
     private static void setKeyConfig(KeyConfig kc, Properties properties) {
         if (kc != null) {
-            setProperty(kc.password(), properties, SslConfigs.SSL_KEY_PASSWORD_CONFIG);
+            setProperty(kc.password().map(Secret::get), properties, SslConfigs.SSL_KEY_PASSWORD_CONFIG);
         }
     }
 

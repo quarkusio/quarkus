@@ -10,6 +10,7 @@ import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.proxy.ProxyConfiguration;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.proxy.runtime.config.ProxyConfig;
+import io.smallrye.config.Secret;
 
 /**
  * Factory for creating a {@link ProxyConfigurationRegistry} from runtime configuration.
@@ -87,7 +88,7 @@ public class ProxyConfigurationRecorder {
         Optional<String> password;
         if (config.username().isPresent() && config.password().isPresent()) {
             username = config.username();
-            password = config.password();
+            password = config.password().map(Secret::get);
         } else {
             ProxyConfig.ProxyCredentialProviderConfig providerConfig = config.credentialsProvider();
             if (providerConfig.name().isPresent()) {

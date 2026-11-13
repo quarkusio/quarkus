@@ -5,6 +5,7 @@ import java.util.Optional;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithConverter;
 
 @ConfigGroup
@@ -28,7 +29,7 @@ public interface DataSourceRuntimeConfig {
     /**
      * The datasource password
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * The credentials provider name

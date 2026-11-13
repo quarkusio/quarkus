@@ -1,6 +1,7 @@
 package io.quarkus.restclient.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,6 +18,7 @@ import io.quarkus.restclient.config.key.SharedThreeConfigKeyRestClient;
 import io.quarkus.restclient.config.key.SharedTwoConfigKeyRestClient;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.PropertiesConfigSource;
+import io.smallrye.config.SecretKeys;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
@@ -235,6 +237,46 @@ class RestClientConfigTest {
         RestClientConfig restClientConfig = restClientsConfig.getClient(MPConfigKeyRestClient.class);
         assertTrue(restClientConfig.uri().isPresent());
         assertThat(restClientConfig.uri().get()).isEqualTo("http://localhost:8082");
+    }
+
+    @Test
+    void restClientMicroProfileSecrets() {
+        String fullNamePassword = "io.quarkus.restclient.config.MPRestClient/mp-rest/trustStorePassword";
+        String configKeyPassword = "mp.key/mp-rest/keyStorePassword";
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
+                .withMapping(RestClientsConfig.class)
+                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                    @Override
+                    public void configBuilder(final SmallRyeConfigBuilder builder) {
+                        new AbstractRestClientConfigBuilder() {
+                            @Override
+                            public List<RegisteredRestClient> getRestClients() {
+                                return List.of(
+                                        new RegisteredRestClient(MPRestClient.class, null),
+                                        new RegisteredRestClient(MPConfigKeyRestClient.class, "mp.key"));
+                            }
+                        }.configBuilder(builder);
+                    }
+                })
+                .withSources(new PropertiesConfigSource(Map.of(
+                        fullNamePassword, "trust-secret",
+                        configKeyPassword, "key-secret"), "", 1000))
+                .build();
+
+        RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
+        assertThat(restClientsConfig.getClient(MPRestClient.class).trustStorePassword().get().get())
+                .isEqualTo("trust-secret");
+        assertThat(restClientsConfig.getClient(MPConfigKeyRestClient.class).keyStorePassword().get().get())
+                .isEqualTo("key-secret");
+
+        String quarkusFullNamePassword = "quarkus.rest-client.\"" + MPRestClient.class.getName() + "\".trust-store-password";
+        String quarkusConfigKeyPassword = "quarkus.rest-client.\"" + MPConfigKeyRestClient.class.getName()
+                + "\".key-store-password";
+        for (String name : List.of(fullNamePassword, configKeyPassword, quarkusFullNamePassword, quarkusConfigKeyPassword)) {
+            assertThatThrownBy(() -> config.getConfigValue(name)).isInstanceOf(SecurityException.class);
+            assertThat(SecretKeys.doUnlocked(() -> config.getConfigValue(name).isSecret())).isTrue();
+        }
+        assertThat(config.getPropertyNames()).doesNotContain(fullNamePassword, configKeyPassword);
     }
 
     @Test

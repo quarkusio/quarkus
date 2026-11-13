@@ -73,6 +73,7 @@ import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.smallrye.config.Secret;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.buffer.VertxByteBufAllocator;
 import io.vertx.core.internal.VertxInternal;
@@ -622,7 +623,7 @@ public class MongoClients {
             if (username == null) {
                 return null;
             }
-            char[] password = config.password().map(String::toCharArray).orElse(null);
+            char[] password = config.password().map(Secret::get).map(String::toCharArray).orElse(null);
             return new UsernamePassword(username, password);
         }
     }

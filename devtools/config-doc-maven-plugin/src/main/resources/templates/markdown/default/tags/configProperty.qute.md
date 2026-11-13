@@ -1,7 +1,7 @@
 <tr>
 <td>
 
-{#if configProperty.phase.fixedAtBuildTime}🔒 {/if}`{configProperty.path.property}`
+{#if configProperty.phase.fixedAtBuildTime}🔒 {/if}{#if configProperty.secret}🔑 {/if}`{configProperty.path.property}`
 {#for additionalPath in configProperty.additionalPaths}
 `{additionalPath.property}`
 {/for}

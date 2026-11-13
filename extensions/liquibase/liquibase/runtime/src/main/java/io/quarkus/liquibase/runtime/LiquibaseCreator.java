@@ -3,6 +3,7 @@ package io.quarkus.liquibase.runtime;
 import javax.sql.DataSource;
 
 import io.quarkus.liquibase.LiquibaseFactory;
+import io.smallrye.config.Secret;
 
 class LiquibaseCreator {
 
@@ -29,7 +30,7 @@ class LiquibaseCreator {
         }
         config.databaseChangeLogLockTableName = liquibaseRuntimeConfig.databaseChangeLogLockTableName();
         config.databaseChangeLogTableName = liquibaseRuntimeConfig.databaseChangeLogTableName();
-        config.password = liquibaseRuntimeConfig.password();
+        config.password = liquibaseRuntimeConfig.password().map(Secret::get);
         config.username = liquibaseRuntimeConfig.username();
         config.defaultSchemaName = liquibaseRuntimeConfig.defaultSchemaName();
         config.defaultCatalogName = liquibaseRuntimeConfig.defaultCatalogName();

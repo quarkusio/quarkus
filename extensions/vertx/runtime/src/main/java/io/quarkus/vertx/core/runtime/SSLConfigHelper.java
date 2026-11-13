@@ -43,7 +43,7 @@ public class SSLConfigHelper {
             jksOptions.setPath(configuration.path().get());
         }
         if (configuration.password().isPresent()) {
-            jksOptions.setPassword(configuration.password().get());
+            jksOptions.setPassword(configuration.password().get().get());
         }
         return jksOptions;
     }
@@ -61,7 +61,7 @@ public class SSLConfigHelper {
             pfxOptions.setPath(configuration.path().get());
         }
         if (configuration.password().isPresent()) {
-            pfxOptions.setPassword(configuration.password().get());
+            pfxOptions.setPassword(configuration.password().get().get());
         }
         return pfxOptions;
     }

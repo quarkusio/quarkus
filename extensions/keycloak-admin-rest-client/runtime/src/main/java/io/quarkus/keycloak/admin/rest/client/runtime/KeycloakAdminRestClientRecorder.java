@@ -6,6 +6,7 @@ import org.keycloak.admin.client.KeycloakBuilder;
 import io.quarkus.keycloak.admin.client.common.runtime.KeycloakAdminClientConfig;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.smallrye.config.Secret;
 
 public class KeycloakAdminRestClientRecorder {
 
@@ -32,10 +33,10 @@ public class KeycloakAdminRestClientRecorder {
         return KeycloakBuilder
                 .builder()
                 .clientId(config.clientId())
-                .clientSecret(config.clientSecret().orElse(null))
+                .clientSecret(config.clientSecret().map(Secret::get).orElse(null))
                 .grantType(config.grantType().asString())
                 .username(config.username().orElse(null))
-                .password(config.password().orElse(null))
+                .password(config.password().map(Secret::get).orElse(null))
                 .realm(config.realm())
                 .serverUrl(config.serverUrl().get())
                 .scope(config.scope().orElse(null))

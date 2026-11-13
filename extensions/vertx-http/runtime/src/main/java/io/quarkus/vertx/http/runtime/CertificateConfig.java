@@ -9,6 +9,7 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithConverter;
 
 /**
@@ -74,7 +75,7 @@ public interface CertificateConfig {
      *
      * @see CertificateConfig#credentialsProvider()
      */
-    Optional<String> keyStorePassword();
+    Optional<Secret<String>> keyStorePassword();
 
     /**
      * A parameter to specify a {@linkplain CredentialsProvider} property key,
@@ -99,7 +100,7 @@ public interface CertificateConfig {
      *
      * @see CertificateConfig#credentialsProvider()
      */
-    Optional<String> keyStoreAliasPassword();
+    Optional<Secret<String>> keyStoreAliasPassword();
 
     /**
      * A parameter to specify a {@linkplain CredentialsProvider} property key,
@@ -138,7 +139,7 @@ public interface CertificateConfig {
      *
      * @see CertificateConfig#credentialsProvider()
      */
-    Optional<String> trustStorePassword();
+    Optional<Secret<String>> trustStorePassword();
 
     /**
      * A parameter to specify a {@linkplain CredentialsProvider} property key,

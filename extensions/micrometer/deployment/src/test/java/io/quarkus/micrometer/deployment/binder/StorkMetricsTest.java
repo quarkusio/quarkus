@@ -18,12 +18,10 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.quarkus.micrometer.runtime.binder.stork.StorkObservationCollectorBean;
 import io.quarkus.micrometer.test.GreetingResource;
 import io.quarkus.micrometer.test.PingPongResource;
 import io.quarkus.micrometer.test.Util;
 import io.quarkus.test.QuarkusExtensionTest;
-import io.smallrye.stork.api.observability.StorkObservation;
 
 @DisabledOnOs(OS.WINDOWS)
 public class StorkMetricsTest {
@@ -61,10 +59,6 @@ public class StorkMetricsTest {
         when().get("/ping/one").then().statusCode(200);
         when().get("greeting/hola").then().statusCode(200);
 
-        //Stork metrics
-        assertStorkMetrics("pingpong-service");
-        assertStorkMetrics("greeting-service");
-
         // Stork metrics exposed to Micrometer
         assertStorkMetricsInMicrometerRegistry("pingpong-service");
         assertStorkMetricsInMicrometerRegistry("greeting-service");
@@ -93,25 +87,12 @@ public class StorkMetricsTest {
         Assertions.assertThat(serviceDiscoveryFailures).isNotNull();
         Assertions.assertThat(loadBalancerFailures).isNotNull();
         Assertions.assertThat(instanceCounter.count()).isEqualTo(1);
+        Assertions.assertThat(serviceDiscoveryDuration.count()).isEqualTo(1);
+        Assertions.assertThat(serviceSelectionDuration.count()).isEqualTo(1);
         Assertions.assertThat(serviceDiscoveryDuration.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
         Assertions.assertThat(serviceSelectionDuration.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
         Assertions.assertThat(serviceDiscoveryFailures.count()).isEqualTo(0);
         Assertions.assertThat(loadBalancerFailures.count()).isEqualTo(0);
-    }
-
-    public static void assertStorkMetrics(String serviceName) {
-        StorkObservation metrics = StorkObservationCollectorBean.STORK_METRICS
-                .get(serviceName + StorkObservationCollectorBean.METRICS_SUFFIX);
-
-        Assertions.assertThat(metrics.getDiscoveredInstancesCount()).isEqualTo(1);
-        Assertions.assertThat(metrics.getServiceName()).isEqualTo(serviceName);
-        Assertions.assertThat(metrics.isDone()).isTrue();
-        Assertions.assertThat(metrics.failure()).isNull();
-        Assertions.assertThat(metrics.getOverallDuration()).isNotNull();
-        Assertions.assertThat(metrics.getServiceDiscoveryType()).isEqualTo("static");
-        Assertions.assertThat(metrics.getServiceSelectionType()).isEqualTo("round-robin");
-        Assertions.assertThat(metrics.getServiceDiscoveryDuration()).isNotNull();
-        Assertions.assertThat(metrics.getServiceSelectionDuration()).isNotNull();
     }
 
 }

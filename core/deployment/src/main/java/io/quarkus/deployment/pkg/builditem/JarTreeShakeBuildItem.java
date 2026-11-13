@@ -51,7 +51,9 @@ public final class JarTreeShakeBuildItem extends SimpleBuildItem {
 
     /**
      * Collects JAR entry paths of unreachable classes from a dependency into the given set.
-     * Handles multi-release JAR entries and preserves inner classes whose outer class is reachable.
+     * Handles multi-release JAR entries. Nested classes are removed independently of their enclosing class:
+     * the analysis already keeps the enclosing class of every reachable nested class, and the member classes
+     * of a class whose {@link Class#getDeclaredClasses()} is called.
      *
      * @param dep the dependency to scan
      * @param removedEntries the set to add removed entry paths to
@@ -76,11 +78,7 @@ public final class JarTreeShakeBuildItem extends SimpleBuildItem {
                 if (ClassLoaderHelper.isClassEntry(classRel)) {
                     String className = classRel.substring(0, classRel.length() - 6).replace('/', '.');
                     if (!reachableClassNames.contains(className)) {
-                        int dollarIdx = className.indexOf('$');
-                        if (dollarIdx < 0
-                                || !reachableClassNames.contains(className.substring(0, dollarIdx))) {
-                            removedEntries.add(rel);
-                        }
+                        removedEntries.add(rel);
                     }
                 }
             });

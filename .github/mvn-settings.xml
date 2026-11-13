@@ -69,6 +69,45 @@
         </pluginRepository>
       </pluginRepositories>
     </profile>
+    <profile>
+      <id>ojdbc-ea</id>
+      <repositories>
+        <repository>
+          <id>google-maven-central</id>
+          <name>GCS Maven Central mirror EU</name>
+          <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </repository>
+        <repository>
+          <id>ojdbc-ea-repository</id>
+          <url>${env.ADDITIONAL_REPO_URL}</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>google-maven-central</id>
+          <name>GCS Maven Central mirror EU</name>
+          <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
   </profiles>
   <activeProfiles>
     <activeProfile>google-mirror</activeProfile>

@@ -511,6 +511,11 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     }
 
     @Override
+    public ClassTransformer getClientClassTransformer(PersistenceUnitInfo info, Map<?, ?> properties) {
+        return null;
+    }
+
+    @Override
     public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map map) {
         //Not supported by Hibernate Reactive: this should always delegate to Hibernate ORM, which will do its own
         //persistence provider name checks and possibly reject if it's not a suitable.

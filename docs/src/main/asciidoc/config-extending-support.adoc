@@ -11,6 +11,10 @@ include::_attributes.adoc[]
 :sectnumlevels: 4
 :topics: configuration
 
+Quarkus reads configuration through SmallRye Config, which exposes an SPI for extending it.
+This guide shows how to add your own configuration sources, convert configuration values into your own types, and
+intercept configuration lookups.
+
 [[custom-config-source]]
 == Custom `ConfigSource`
 

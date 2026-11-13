@@ -15,7 +15,7 @@ public class HelloResourceTest {
           .when().get("/hello")
           .then()
              .statusCode(200)
-             .body(is("hello common"));
+             .body(is("hello common library"));
     }
 
 }

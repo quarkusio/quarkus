@@ -82,6 +82,31 @@ public class TasksConfigurationCacheCompatibilityTest {
         assertTrue(secondBuild.getOutput().contains("Reusing configuration cache."));
     }
 
+    private static Stream<String> multiModuleCompatibleTasks() {
+        return Stream.of(
+                ":app:" + QUARKUS_GENERATE_CODE_TESTS_TASK_NAME,
+                ":app:" + QUARKUS_BUILD_TASK_NAME);
+    }
+
+    @ParameterizedTest
+    @MethodSource("multiModuleCompatibleTasks")
+    public void configurationCacheIsReusedInMultiModuleProjectTest(String taskName)
+            throws IOException, URISyntaxException {
+        URL url = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/configurationcache/multi-module");
+        FileUtils.copyDirectory(new File(url.toURI()), testProjectDir.toFile());
+        FileUtils.copyFile(new File("../gradle.properties"), testProjectDir.resolve("gradle.properties").toFile());
+
+        // Warm up: the first build creates the jar of the lib project, which invalidates
+        // the configuration cache entry (the jar is inspected at configuration time by the build)
+        buildResult(taskName, "--configuration-cache");
+
+        BuildResult firstBuild = buildResult(taskName, "--configuration-cache");
+        assertTrue(firstBuild.getOutput().contains("Configuration cache entry stored"));
+
+        BuildResult secondBuild = buildResult(taskName, "--configuration-cache");
+        assertTrue(secondBuild.getOutput().contains("Reusing configuration cache."));
+    }
+
     @ParameterizedTest
     @MethodSource("nonCompatibleQuarkusBuildTasks")
     public void quarkusBuildTasksNonCompatibleWithConfigurationCacheNotFail(String taskName)

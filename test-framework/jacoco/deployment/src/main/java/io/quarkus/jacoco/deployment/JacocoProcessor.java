@@ -8,7 +8,9 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -106,9 +108,26 @@ public class JacocoProcessor {
         Collection<IndexDependencyConfig> instrumentArtifacts = config.instrumentArtifacts().values();
         Set<ArtifactKey> instrumented = new HashSet<>();
 
+        // Workspace modules are the modules of the current project, as opposed to external dependencies
+        Map<ArtifactKey, ResolvedDependency> workspaceModules = new LinkedHashMap<>();
+        if (appModel.getApplicationModule() != null) {
+            workspaceModules.put(appModel.getAppArtifact().getKey(), appModel.getAppArtifact());
+        }
+        for (ResolvedDependency d : appModel.getRuntimeDependencies()) {
+            // in Gradle tests, project dependencies have the workspace module flag set but no workspace module
+            // (see QuarkusApplicationModelTask) so we need to check both
+            if (d.isWorkspaceModule() || d.getWorkspaceModule() != null) {
+                workspaceModules.put(d.getKey(), d);
+            }
+        }
+
         if (instrumentArtifacts.isEmpty()) {
-            // By default, instrument classes from all application archives
+            // By default, only instrument classes from the application archives that are part of the workspace,
+            // we don't want to instrument all the dependencies
             for (ApplicationArchive archive : appArchives) {
+                if (!workspaceModules.containsKey(archive.getKey())) {
+                    continue;
+                }
                 instrument(instrumenter, transformed, archive.getIndex(), bytecodeTransformers);
             }
         } else {
@@ -208,14 +227,15 @@ public class JacocoProcessor {
 
             // Add classes and sources for the current build
             if (instrumentArtifacts.isEmpty()) {
-                if (appModel.getApplicationModule() != null) {
-                    addDependency(appModel.getAppArtifact(), config, projectRoot, info, includes, excludes, null);
-                }
-                for (ResolvedDependency d : appModel.getRuntimeDependencies()) {
-                    // we can't use d.isWorkspaceModule() for now for some Gradle projects, which is why we check whether a workspace module is not null
-                    if (d.getWorkspaceModule() != null) {
-                        addDependency(d, config, projectRoot, info, includes, excludes, null);
+                for (ResolvedDependency workspaceModule : workspaceModules.values()) {
+                    if (workspaceModule.getWorkspaceModule() == null) {
+                        // we don't know where the sources and the build directory are,
+                        // the classes are instrumented but we can't add them to the report
+                        log.debugf("Workspace module %s has no workspace information, not including it in the report",
+                                workspaceModule.getKey());
+                        continue;
                     }
+                    addDependency(workspaceModule, config, projectRoot, info, includes, excludes, null);
                 }
             } else {
                 // For instrumented artifacts we always use the current data file when processing a dependency

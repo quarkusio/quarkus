@@ -1,0 +1,4 @@
+// a plain library, without the Quarkus plugin applied
+plugins {
+    id 'java-library'
+}

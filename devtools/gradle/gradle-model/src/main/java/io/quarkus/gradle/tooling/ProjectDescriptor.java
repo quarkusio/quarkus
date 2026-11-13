@@ -19,4 +19,12 @@ public interface ProjectDescriptor {
      * @return workspace module for a given module ID or null, if the requested module info is not available
      */
     WorkspaceModule.Mutable getWorkspaceModuleOrNull(WorkspaceModuleId moduleId);
+
+    /**
+     * Workspace module of another project of the same build (in a multi module project)
+     *
+     * @param projectPath Gradle project path, e.g. {@code :lib}
+     * @return workspace module for the given project or null, if the requested module info is not available
+     */
+    WorkspaceModule.Mutable getWorkspaceModuleForProjectOrNull(String projectPath);
 }

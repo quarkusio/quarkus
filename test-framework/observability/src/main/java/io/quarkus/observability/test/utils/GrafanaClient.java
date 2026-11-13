@@ -3,9 +3,11 @@ package io.quarkus.observability.test.utils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -107,7 +109,7 @@ public class GrafanaClient {
         AtomicReference<QueryResult> ref = new AtomicReference<>();
         handle(
                 prometheusUrl != null ? prometheusUrl : url,
-                "/api/v1/query?query=" + query,
+                "/api/v1/query?query=" + URLEncoder.encode(query, StandardCharsets.UTF_8),
                 HttpRequest.Builder::GET,
                 HttpResponse.BodyHandlers.ofString(),
                 (r, b) -> {

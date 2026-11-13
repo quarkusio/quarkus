@@ -184,6 +184,7 @@ public class VertxInputStream extends InputStream {
             this.request = request;
             this.timeout = timeout;
             final ConnectionBase connection = (ConnectionBase) request.connection();
+            boolean needsFetch = false;
             // Lock before registering handlers: a buffer arriving immediately after fetch(1) must not race with initialization.
             lock.lock();
             try {
@@ -233,17 +234,22 @@ public class VertxInputStream extends InputStream {
                             }
                         }
                     });
-                    request.fetch(1);
+                    needsFetch = true;
                 } else {
                     eof = true;
                 }
             } finally {
                 lock.unlock();
             }
+            if (needsFetch) {
+                request.fetch(1);
+            }
         }
 
         protected ByteBuf readBlocking() throws IOException {
             long expire = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout);
+            ByteBuf result;
+            boolean needsFetch = false;
             // Lock to guard input1/eof/readException while waiting for the event loop to deliver data.
             lock.lock();
             try {
@@ -278,15 +284,19 @@ public class VertxInputStream extends InputStream {
                 if (inputOverflow != null) {
                     input1 = inputOverflow.poll();
                     if (input1 == null) {
-                        request.fetch(1);
+                        needsFetch = true;
                     }
                 } else if (!eof) {
-                    request.fetch(1);
+                    needsFetch = true;
                 }
-                return ret == null ? null : ((BufferInternal) ret).getByteBuf();
+                result = ret == null ? null : ((BufferInternal) ret).getByteBuf();
             } finally {
                 lock.unlock();
             }
+            if (needsFetch) {
+                request.fetch(1);
+            }
+            return result;
         }
 
         @Override
@@ -294,8 +304,9 @@ public class VertxInputStream extends InputStream {
             // Lock to publish the buffer (or eof) and signal the blocked reader from the event loop.
             lock.lock();
             try {
-                if (event.length() == 0 && request.version() == HttpVersion.HTTP_2) {
-                    // When using HTTP/2 H2, this indicates that we won't receive anymore data.
+                if (event.length() == 0
+                        && (request.version() == HttpVersion.HTTP_2 || request.version() == HttpVersion.HTTP_3)) {
+                    // When using HTTP/2 or HTTP/3, this indicates that we won't receive further data.
                     eof = true;
                     if (waiting) {
                         dataAvailable.signalAll(); // HTTP/2 EOF marker; wake the blocked reader.
@@ -338,8 +349,12 @@ public class VertxInputStream extends InputStream {
             try {
                 return Integer.parseInt(length);
             } catch (NumberFormatException e) {
-                Long.parseLong(length); // ignore the value as can only return an int anyway
-                return Integer.MAX_VALUE;
+                try {
+                    Long.parseLong(length);
+                    return Integer.MAX_VALUE;
+                } catch (NumberFormatException e2) {
+                    return 0;
+                }
             }
         }
     }

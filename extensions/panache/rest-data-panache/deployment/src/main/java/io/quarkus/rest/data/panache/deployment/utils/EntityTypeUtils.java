@@ -10,13 +10,16 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
+import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.rest.data.panache.deployment.ResourceMethodListenerBuildItem;
 
 public final class EntityTypeUtils {
@@ -32,6 +35,7 @@ public final class EntityTypeUtils {
     private static final DotName JSON_IGNORE_PROPERTIES = DotName
             .createSimple("com.fasterxml.jackson.annotation.JsonIgnoreProperties");
     private static final DotName JSON_IGNORE_TYPE = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIgnoreType");
+    private static final DotName JSON_PROPERTY = DotName.createSimple("com.fasterxml.jackson.annotation.JsonProperty");
     private static final DotName SECURE_FIELD = DotName
             .createSimple("io.quarkus.resteasy.reactive.jackson.SecureField");
 
@@ -41,7 +45,8 @@ public final class EntityTypeUtils {
 
     public static Map<String, Type> getEntityFields(IndexView index, String entityTypeName) {
         Map<String, Type> fields = new HashMap<>();
-        ClassInfo currentEntityClass = index.getClassByName(entityTypeName);
+        ClassInfo entityClass = index.getClassByName(entityTypeName);
+        ClassInfo currentEntityClass = entityClass;
         Set<String> ignoredFieldNames = getJsonIgnorePropertiesFields(index, currentEntityClass);
 
         while (currentEntityClass != null) {
@@ -59,7 +64,7 @@ public final class EntityTypeUtils {
                     continue;
                 }
                 // skip fields not exposed for serialization
-                if (!isExposedForSerialization(index, field, ignoredFieldNames)) {
+                if (!isExposedForSerialization(index, entityClass, field, ignoredFieldNames)) {
                     continue;
                 }
 
@@ -81,11 +86,16 @@ public final class EntityTypeUtils {
     /**
      * Checks if a field is exposed for serialization (not hidden by Jackson, JSON-B, or JAXB annotations).
      */
-    private static boolean isExposedForSerialization(IndexView index, FieldInfo field, Set<String> ignoredFieldNames) {
+    private static boolean isExposedForSerialization(IndexView index, ClassInfo entityClass, FieldInfo field,
+            Set<String> ignoredFieldNames) {
         // Check field-level annotations
-        if (field.hasAnnotation(JSON_IGNORE)
-                || field.hasAnnotation(JSONB_TRANSIENT)
-                || field.hasAnnotation(XML_TRANSIENT)) {
+        if (hasIgnoreAnnotation(field)) {
+            return false;
+        }
+
+        // The same annotations can also be placed on the getter
+        MethodInfo getter = findGetter(index, entityClass, field);
+        if (getter != null && hasIgnoreAnnotation(getter)) {
             return false;
         }
 
@@ -103,6 +113,24 @@ public final class EntityTypeUtils {
         }
 
         return true;
+    }
+
+    private static boolean hasIgnoreAnnotation(AnnotationTarget target) {
+        return target.hasAnnotation(JSON_IGNORE)
+                || target.hasAnnotation(JSONB_TRANSIENT)
+                || target.hasAnnotation(XML_TRANSIENT)
+                || isWriteOnly(target.annotation(JSON_PROPERTY));
+    }
+
+    /**
+     * Write-only properties, i.e. {@code @JsonProperty(access = WRITE_ONLY)}, are never serialized.
+     */
+    private static boolean isWriteOnly(AnnotationInstance jsonProperty) {
+        if (jsonProperty == null) {
+            return false;
+        }
+        AnnotationValue access = jsonProperty.value("access");
+        return access != null && "WRITE_ONLY".equals(access.asEnum());
     }
 
     /**
@@ -138,7 +166,8 @@ public final class EntityTypeUtils {
      */
     public static Map<String, String> getSecureFields(IndexView index, String entityTypeName) {
         Map<String, String> secureFields = new HashMap<>();
-        ClassInfo currentEntityClass = index.getClassByName(entityTypeName);
+        ClassInfo entityClass = index.getClassByName(entityTypeName);
+        ClassInfo currentEntityClass = entityClass;
 
         while (currentEntityClass != null) {
             for (FieldInfo field : currentEntityClass.fields()) {
@@ -148,6 +177,13 @@ public final class EntityTypeUtils {
                 }
 
                 AnnotationInstance secureFieldAnnotation = field.annotation(SECURE_FIELD);
+                if (secureFieldAnnotation == null) {
+                    // @SecureField can also be placed on the getter
+                    MethodInfo getter = findGetter(index, entityClass, field);
+                    if (getter != null) {
+                        secureFieldAnnotation = getter.annotation(SECURE_FIELD);
+                    }
+                }
                 if (secureFieldAnnotation != null) {
                     AnnotationValue rolesValue = secureFieldAnnotation.value("rolesAllowed");
                     if (rolesValue != null) {
@@ -167,6 +203,28 @@ public final class EntityTypeUtils {
         }
 
         return secureFields;
+    }
+
+    /**
+     * Finds the getter of the given field, starting from the entity class as the getter may be declared in a subclass
+     * of the class declaring the field.
+     */
+    private static MethodInfo findGetter(IndexView index, ClassInfo entityClass, FieldInfo field) {
+        String getterName = JavaBeanUtil.getGetterName(field.name(), field.type().name());
+        ClassInfo currentClass = entityClass;
+        while (currentClass != null) {
+            MethodInfo getter = currentClass.method(getterName);
+            if (getter != null) {
+                return getter;
+            }
+
+            if (currentClass.superName() != null) {
+                currentClass = index.getClassByName(currentClass.superName());
+            } else {
+                currentClass = null;
+            }
+        }
+        return null;
     }
 
     public static List<ClassInfo> getListenersByEntityType(IndexView index,

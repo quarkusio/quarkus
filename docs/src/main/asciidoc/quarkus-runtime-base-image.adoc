@@ -47,7 +47,7 @@ Headless graphics, PDF documents, QR code images etc. manipulation is natively s
 [source, dockerfile]
 ----
 # First stage - install the dependencies in an intermediate container
-FROM registry.access.redhat.com/ubi10/ubi-minimal:10.2 as nativelibs
+FROM registry.access.redhat.com/ubi10/ubi-minimal:10.3 as nativelibs
 RUN microdnf install -y freetype fontconfig expat
 
 # Second stage - copy the dependencies
@@ -107,7 +107,7 @@ To use this base image, use the following `Dockerfile`:
 
 [source, dockerfile]
 ----
-FROM registry.access.redhat.com/ubi10/ubi-minimal:10.2
+FROM registry.access.redhat.com/ubi10/ubi-minimal:10.3
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \
@@ -124,7 +124,7 @@ To make documents processing, graphics, PDFs, etc. available for the application
 
 [source, dockerfile]
 ----
-FROM registry.access.redhat.com/ubi10/ubi-minimal:10.2
+FROM registry.access.redhat.com/ubi10/ubi-minimal:10.3
 RUN microdnf install -y freetype fontconfig \
     && microdnf clean all
 

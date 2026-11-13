@@ -4,8 +4,10 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.hibernate.Session;
+import org.hibernate.query.SelectionQuery;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractManagedJpaOperations;
+import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
 import io.quarkus.panache.common.Sort;
 
 public class JpaOperations extends AbstractManagedJpaOperations<PanacheQueryImpl<?>> {
@@ -20,6 +22,10 @@ public class JpaOperations extends AbstractManagedJpaOperations<PanacheQueryImpl
             Sort sort,
             Object paramsArrayOrMap) {
         return new PanacheQueryImpl<>(session, entityClass, query, originalQuery, sort, paramsArrayOrMap);
+    }
+
+    protected PanacheQueryImpl<?> createPanacheQuery(Session session, Class<?> entityClass, SelectionQuery<?> prebuiltQuery) {
+        return new PanacheQueryImpl<>(new CommonPanacheQueryImpl<>(session, entityClass, prebuiltQuery));
     }
 
     @Override

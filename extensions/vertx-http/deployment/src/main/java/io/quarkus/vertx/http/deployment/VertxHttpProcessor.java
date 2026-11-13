@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.deployment;
 
+import static io.quarkus.vertx.http.HttpServer.HTTP_SERVER;
 import static io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem.getBodyHandlerRequiredConditions;
 import static io.quarkus.vertx.http.deployment.RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
 
@@ -18,6 +19,8 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import jakarta.inject.Singleton;
+
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -25,9 +28,12 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
@@ -36,7 +42,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ApplicationStartBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -53,6 +58,8 @@ import io.quarkus.deployment.logging.LoggingDecorateBuildItem;
 import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
+import io.quarkus.runtime.Address;
+import io.quarkus.runtime.Application;
 import io.quarkus.runtime.ErrorPageAction;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LiveReloadConfig;
@@ -61,6 +68,7 @@ import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
+import io.quarkus.vertx.http.HttpServer;
 import io.quarkus.vertx.http.HttpServerConfigCustomizer;
 import io.quarkus.vertx.http.XForwardedForSelector;
 import io.quarkus.vertx.http.deployment.HttpSecurityProcessor.HttpSecurityConfigSetupCompleteBuildItem;
@@ -545,9 +553,15 @@ class VertxHttpProcessor {
         runtimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(VertxConfigBuilder.class));
     }
 
+    /**
+     * Binds the sockets after every service has started, so that no request is served before the application is
+     * initialized. It cannot wait for {@code ApplicationStartBuildItem}: the {@code StartupEvent} waits for the
+     * {@link Address} beans, which need the bound ports, so that would be a cycle.
+     */
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    HttpServerStartedBuildItem openSocket(ApplicationStartBuildItem start,
+    HttpServerStartedBuildItem openSocket(
+            List<ServiceStartBuildItem> serviceStarts, // ordering only
             LaunchModeBuildItem launchMode,
             CoreVertxBuildItem vertx,
             ShutdownContextBuildItem shutdown,
@@ -576,6 +590,64 @@ class VertxHttpProcessor {
                 !capabilities.isPresent(Capability.VERTX_WEBSOCKETS)
                         && !capabilities.isPresent(Capability.WEBSOCKETS_NEXT));
         return new HttpServerStartedBuildItem();
+    }
+
+    /**
+     * Registers the {@link HttpServer} as a service, and the {@link Address} of each of its ports as a named service:
+     * {@code vertx-http}, {@code vertx-https} and {@code vertx-management}.
+     * <p>
+     * Other services depend on them with {@code require(HttpServer.class)} or {@code request(Address.class, "vertx-http")}.
+     * The addresses are optional services, since a port may not be available.
+     * <p>
+     * Each address is also available as a CDI bean, and can be injected as {@code @Named("vertx-http") Address}.
+     */
+    @BuildStep
+    void httpServerAddresses(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar
+                .forService(HttpServer.class)
+                .atPhase(Phase.BINDING)
+                // the actual ports are only known once openSocket (still a recorder step) has bound the sockets
+                .afterBuildItem(HttpServerStartedBuildItem.class)
+                .onStart(ctx -> Application.currentApplication().getValueRegistry().get(HTTP_SERVER));
+
+        serviceRegistrar
+                .forService(Address.class, HttpServer.VERTX_HTTP)
+                .atPhase(Phase.BINDING)
+                .require(HttpServer.class)
+                .optional()
+                .onStart((ctx, httpServer) -> httpServer.getAddress());
+
+        serviceRegistrar
+                .forService(Address.class, HttpServer.VERTX_HTTPS)
+                .atPhase(Phase.BINDING)
+                .require(HttpServer.class)
+                .optional()
+                .onStart((ctx, httpServer) -> httpServer.getSecureAddress());
+
+        serviceRegistrar
+                .forService(Address.class, HttpServer.VERTX_MANAGEMENT)
+                .atPhase(Phase.BINDING)
+                .require(HttpServer.class)
+                .optional()
+                .onStart((ctx, httpServer) -> httpServer.getManagementAddress());
+    }
+
+    /**
+     * Exposes each {@link Address} as a {@code @Named} bean. This is a separate build step from
+     * {@link #httpServerAddresses} to avoid a circular dependency.
+     */
+    @BuildStep
+    void httpServerAddressBeans(BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+        List<String> serviceNames = List.of(HttpServer.VERTX_HTTP, HttpServer.VERTX_HTTPS, HttpServer.VERTX_MANAGEMENT);
+        for (String name : serviceNames) {
+            syntheticBeans.produce(SyntheticBeanBuildItem.configure(Address.class)
+                    .setRuntimeInit()
+                    .unremovable()
+                    .serviceValue(Address.class, name)
+                    .scope(Singleton.class)
+                    .addQualifier().annotation(DotNames.NAMED).addValue("value", name).done()
+                    .done());
+        }
     }
 
     @BuildStep

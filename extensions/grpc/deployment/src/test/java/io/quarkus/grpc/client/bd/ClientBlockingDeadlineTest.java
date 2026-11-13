@@ -34,6 +34,7 @@ public class ClientBlockingDeadlineTest {
         try {
             //noinspection ResultOfMethodCallIgnored
             stub.sayHello(HelloRequest.newBuilder().setName("Scaladar").build());
+            Assertions.fail("Expected StatusRuntimeException to be thrown");
         } catch (Exception e) {
             Assertions.assertInstanceOf(StatusRuntimeException.class, e);
             StatusRuntimeException sre = (StatusRuntimeException) e;

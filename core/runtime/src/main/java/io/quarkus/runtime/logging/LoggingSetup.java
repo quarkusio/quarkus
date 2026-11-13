@@ -1010,9 +1010,10 @@ public final class LoggingSetup {
      * @param namedHandlers the map of named handlers, keyed by handler name (must not be {@code null})
      * @param effectiveHandlers the list of effective root handlers to add to (must not be {@code null})
      * @param errorManager the error manager to report missing handler links to (must not be {@code null})
+     * @param checkHandlerLinks {@code true} if a missing handler link should be reported as an error
      */
     public static void addNamedHandlersToRootHandlers(Optional<List<String>> handlerNames, Map<String, Handler> namedHandlers,
-            ArrayList<Handler> effectiveHandlers, ErrorManager errorManager) {
+            ArrayList<Handler> effectiveHandlers, ErrorManager errorManager, boolean checkHandlerLinks) {
         if (handlerNames.isEmpty()) {
             return;
         }
@@ -1023,7 +1024,7 @@ public final class LoggingSetup {
             Handler handler = namedHandlers.get(namedHandler);
             if (handler != null) {
                 effectiveHandlers.add(handler);
-            } else {
+            } else if (checkHandlerLinks) {
                 errorManager.error(String.format("Handler with name '%s' is linked to a category but not configured.",
                         namedHandler), null, ErrorManager.GENERIC_FAILURE);
             }
@@ -1219,7 +1220,7 @@ public final class LoggingSetup {
                     namedHandlers, true);
         }
 
-        addNamedHandlersToRootHandlers(config.handlers(), namedHandlers, handlers, errorManager);
+        addNamedHandlersToRootHandlers(config.handlers(), namedHandlers, handlers, errorManager, true);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(LogContextInitializer.NO_HANDLERS));
     }

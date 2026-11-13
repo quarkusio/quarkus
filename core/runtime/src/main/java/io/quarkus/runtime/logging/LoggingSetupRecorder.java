@@ -290,7 +290,7 @@ public class LoggingSetupRecorder {
                 handlers.add(handler);
             }
         }
-        LoggingSetup.addNamedHandlersToRootHandlers(config.handlers(), namedHandlers, handlers, errorManager);
+        LoggingSetup.addNamedHandlersToRootHandlers(config.handlers(), namedHandlers, handlers, errorManager, true);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(LogContextInitializer.NO_HANDLERS));
         return shutdownNotifier;
@@ -345,7 +345,8 @@ public class LoggingSetupRecorder {
         LoggingSetup.setUpCategoryLoggers(buildConfig, categoryDefaultMinLevels, categories, logContext, errorManager,
                 namedHandlers, false);
 
-        LoggingSetup.addNamedHandlersToRootHandlers(config.handlers(), namedHandlers, handlers, errorManager);
+        // named handlers contributed by extensions are not available at build time
+        LoggingSetup.addNamedHandlersToRootHandlers(config.handlers(), namedHandlers, handlers, errorManager, false);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setBuildTimeHandlers(handlers.toArray(LogContextInitializer.NO_HANDLERS));
     }

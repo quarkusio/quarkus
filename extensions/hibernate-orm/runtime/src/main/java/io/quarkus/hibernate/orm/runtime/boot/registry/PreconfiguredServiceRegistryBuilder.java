@@ -13,6 +13,7 @@ import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.internal.BootstrapServiceRegistryImpl;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.bytecode.internal.ProxyFactoryFactoryInitiator;
+import org.hibernate.context.internal.MultiTenancyInitiator;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
 import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProviderInitiator;
@@ -182,6 +183,7 @@ public class PreconfiguredServiceRegistryBuilder {
 
         // Useful as-is
         serviceInitiators.add(ConfigurationServiceInitiator.INSTANCE);
+        serviceInitiators.add(MultiTenancyInitiator.INSTANCE);
 
         // TODO (optional): assume entities are already enhanced?
         serviceInitiators.add(PropertyAccessStrategyResolverInitiator.INSTANCE);

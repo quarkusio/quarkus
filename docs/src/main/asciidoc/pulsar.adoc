@@ -67,7 +67,8 @@ implementation("io.quarkus:quarkus-messaging-pulsar")
 
 [NOTE]
 ====
-The extension includes `pulsar-clients-original` version 3.0.0 as a transitive dependency and is compatible with Pulsar brokers version 2.10.x.
+The extension includes `pulsar-client-original` version {pulsar-client-version} as a transitive dependency.
+Pulsar 5.x clients require Java 17+ and Netty 4.2.x.
 ====
 
 == Configuring SmallRye Pulsar Connector
@@ -1130,6 +1131,14 @@ quarkus.tls.my-tls-config.key-store.p12.password=secret
 
 mp.messaging.incoming.prices.tls-configuration-name=my-tls-config
 ----
+
+[NOTE]
+====
+The Pulsar client verifies the broker hostname against its certificate.
+With a TLS configuration from the TLS registry, set `quarkus.tls.my-tls-config.hostname-verification-algorithm=NONE` to disable it.
+Starting with Pulsar 5, hostname verification is also enabled by default when TLS is configured with the Pulsar client properties, such as `tlsTrustCertsFilePath`.
+To disable it, set `tlsHostnameVerificationEnable=false`, for example `pulsar.client.tlsHostnameVerificationEnable=false`.
+====
 
 
 ==== Configuring access to Datastax Luna Streaming

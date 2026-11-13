@@ -2,6 +2,7 @@ package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.logging.Level;
@@ -10,6 +11,7 @@ import org.apache.pulsar.client.impl.conf.ClientConfigurationData;
 import org.apache.pulsar.client.impl.conf.ConsumerConfigurationData;
 import org.apache.pulsar.client.impl.conf.ProducerConfigurationData;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -204,11 +206,13 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(authPluginClass.name().toString())
                     .constructors().build());
         }
-        Collection<ClassInfo> sslFactoryClasses = combinedIndex.getIndex()
-                .getAllKnownImplementations(DotNames.PULSAR_SSL_FACTORY);
-        for (ClassInfo sslFactoryClass : sslFactoryClasses) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(sslFactoryClass.name().toString())
-                    .constructors().build());
+        // TLS factory plugins are instantiated reflectively. Pulsar 4.x uses PulsarSslFactory,
+        // Pulsar 5.x replaced it with PulsarTlsFactory; register implementations of both.
+        for (DotName tlsFactory : List.of(DotNames.PULSAR_SSL_FACTORY, DotNames.PULSAR_TLS_FACTORY)) {
+            for (ClassInfo tlsFactoryClass : combinedIndex.getIndex().getAllKnownImplementations(tlsFactory)) {
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(tlsFactoryClass.name().toString())
+                        .constructors().build());
+            }
         }
 
         NativeImageConfigBuildItem.Builder nativeImageConfig = NativeImageConfigBuildItem.builder()
@@ -250,12 +254,32 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
             nativeImageConfig
                     .addRuntimeInitializedClass("org.apache.pulsar.client.impl.Backoff");
         }
+        // Pulsar 5.x classes holding state that cannot be stored in the image heap:
+        // AutoShutdownExecutorService has a static java.lang.ref.Cleaner (daemon thread),
+        // JcaKeyStores has a static SecureRandom (seed must not be fixed at build time),
+        // KllSketch (Apache DataSketches, replaces com.yahoo.sketches for client stats) has a static Random,
+        // CompressionCodecProvider statically creates codecs that capture PulsarByteBufAllocator.DEFAULT.
+        for (String className : List.of("org.apache.pulsar.common.util.PulsarExecutors$AutoShutdownExecutorService",
+                "org.apache.pulsar.common.util.tls.JcaKeyStores",
+                "org.apache.datasketches.kll.KllSketch",
+                "org.apache.pulsar.common.compression.CompressionCodecProvider")) {
+            if (QuarkusClassLoader.isClassPresentAtRuntime(className)) {
+                nativeImageConfig.addRuntimeInitializedClass(className);
+            }
+        }
 
         return nativeImageConfig.build();
     }
 
     @BuildStep(onlyIf = NativeImageFutureDefault.RunTimeInitializeSecurityProvider.class)
-    RuntimeInitializedPackageBuildItem runtimeInitializedClasses() {
-        return new RuntimeInitializedPackageBuildItem("org.apache.pulsar.common.util.SecurityUtility");
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedPackageBuildItem> runtimeInitialized) {
+        // Classes that register JCA security providers. Pulsar 4.x uses SecurityUtility,
+        // Pulsar 5.x moved provider loading to JcaProviders.
+        for (String securityClass : List.of("org.apache.pulsar.common.util.SecurityUtility",
+                "org.apache.pulsar.common.util.tls.JcaProviders")) {
+            if (QuarkusClassLoader.isClassPresentAtRuntime(securityClass)) {
+                runtimeInitialized.produce(new RuntimeInitializedPackageBuildItem(securityClass));
+            }
+        }
     }
 }

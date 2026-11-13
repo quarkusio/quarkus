@@ -106,6 +106,9 @@ public class PulsarResource implements QuarkusTestResourceLifecycleManager {
     }
 
     private void configureCommonTls() {
+        // Pulsar 5.x enables TLS hostname verification by default. The standalone broker's internal
+        // admin client connects to its own advertised address, which must match the test certificate SAN.
+        addConf("advertisedAddress", "localhost");
         addConf("brokerServicePort", "");
         addConf("brokerServicePortTls", "6651");
         addConf("webServicePortTls", "8443");

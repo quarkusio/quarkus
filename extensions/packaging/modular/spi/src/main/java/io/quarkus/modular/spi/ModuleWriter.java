@@ -236,7 +236,7 @@ public final class ModuleWriter {
      * @param moduleInfo the module information (must not be {@code null})
      * @return the {@code module-info.class} bytes (not {@code null})
      */
-    private static byte[] getModuleInfoClass(final ModuleInfo moduleInfo) {
+    static byte[] getModuleInfoClass(final ModuleInfo moduleInfo) {
         return ClassFile.of().buildModule(ModuleAttribute.of(
                 ModuleDesc.of(moduleInfo.name()),
                 mab -> {
@@ -261,10 +261,13 @@ public final class ModuleWriter {
                             continue;
                         }
                         PackageInfo info = e.getValue();
-                        switch (info.packageAccess()) {
-                            case EXPORTED -> mab.exports(PackageDesc.of(pn), Set.of(),
+                        if (info.packageAccess() == PackageAccess.EXPORTED || !info.exportTargets().isEmpty()) {
+                            mab.exports(PackageDesc.of(pn), Set.of(),
                                     info.exportTargets().stream().map(ModuleDesc::of).toArray(ModuleDesc[]::new));
-                            case OPEN -> mab.opens(PackageDesc.of(pn), Set.of(),
+                        }
+                        // An open module must have an empty opens table; its flag already opens every package.
+                        if (!open && (info.packageAccess() == PackageAccess.OPEN || !info.openTargets().isEmpty())) {
+                            mab.opens(PackageDesc.of(pn), Set.of(),
                                     info.openTargets().stream().map(ModuleDesc::of).toArray(ModuleDesc[]::new));
                         }
                     }
@@ -405,9 +408,18 @@ public final class ModuleWriter {
         if (moduleInfo.modifiers().contains(ModuleDescriptor.Modifier.NATIVE_ACCESS)) {
             xml.writeAttribute("native-access", "true");
         }
-        if (moduleInfo.modifiers().contains(ModuleDescriptor.Modifier.OPEN)) {
-            xml.writeAttribute("open", "true");
-        }
+        // Work around SmallRye Modules 1.0.beta1 passing both the OPEN flag and per-package opens to the
+        // JDK ModuleDescriptor.Builder. The JDK rejects builder.opens(...) on an already open module with
+        // "Open or automatic modules cannot declare open packages".
+        // For dynamic module.xml output, omit the module-wide flag and mark every packaged package OPEN
+        // below, including generated packages. Keep this package metadata because the loader also uses it
+        // to decide which packages dependent class loaders can load.
+        // This preserves openness for every packaged package, but not the descriptor's OPEN flag:
+        // module.getDescriptor().isOpen() becomes false. Boot-module module-info.class output still retains
+        // the actual OPEN flag (and omits redundant opens entries).
+        // The upstream fix is to retain OPEN and the package metadata while skipping builder.opens(...)
+        // for an already open module. Once the loader supports that, remove this XML workaround.
+        boolean openModule = moduleInfo.modifiers().contains(ModuleDescriptor.Modifier.OPEN);
         if (moduleInfo.modifiers().contains(ModuleDescriptor.Modifier.UNNAMED)) {
             xml.writeAttribute("unnamed", "true");
         }
@@ -444,14 +456,14 @@ public final class ModuleWriter {
                     // skip default package
                     continue;
                 }
-                PackageInfo pi = packages.get(pkg);
+                PackageInfo pi = openModule ? PackageInfo.OPEN : packages.get(pkg);
                 switch (pi.packageAccess()) {
                     case PRIVATE -> {
                         if (pi.openTargets().isEmpty() && pi.exportTargets().isEmpty()) {
                             xml.writeEmptyElement("private");
                             xml.writeAttribute("package", pkg);
                         } else {
-                            xml.writeStartElement("export");
+                            xml.writeStartElement("private");
                             xml.writeAttribute("package", pkg);
                             for (String exportTarget : pi.exportTargets()) {
                                 xml.writeEmptyElement("export-to");

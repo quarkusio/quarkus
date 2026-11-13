@@ -25,6 +25,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-accessor</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-modular-spi</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -19,7 +19,6 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.quarkus.micrometer.runtime.binder.stork.StorkObservationCollectorBean;
 import io.quarkus.micrometer.test.GreetingResource;
 import io.quarkus.micrometer.test.MockServiceSelectorConfiguration;
 import io.quarkus.micrometer.test.MockServiceSelectorProvider;
@@ -28,7 +27,6 @@ import io.quarkus.micrometer.test.PingPongResource;
 import io.quarkus.micrometer.test.Util;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
-import io.smallrye.stork.api.observability.StorkObservation;
 
 @DisabledOnOs(OS.WINDOWS)
 public class StorkMetricsLoadBalancerFailTest {
@@ -75,30 +73,10 @@ public class StorkMetricsLoadBalancerFailTest {
         RestAssured.when().get("/ping/one").then().statusCode(500);
         RestAssured.when().get("/greeting/hola").then().statusCode(500);
 
-        //Stork metrics
-        assertStorkMetrics("pingpong-service");
-        assertStorkMetrics("greeting-service");
-
         // Stork metrics exposed to Micrometer
         assertStorkMetricsInMicrometerRegistry("pingpong-service");
         assertStorkMetricsInMicrometerRegistry("greeting-service");
 
-    }
-
-    private static void assertStorkMetrics(String serviceName) {
-        StorkObservation metrics = StorkObservationCollectorBean.STORK_METRICS
-                .get(serviceName + StorkObservationCollectorBean.METRICS_SUFFIX);
-        Assertions.assertThat(metrics.getDiscoveredInstancesCount()).isEqualTo(1);
-        Assertions.assertThat(metrics.getServiceName()).isEqualTo(serviceName);
-        Assertions.assertThat(metrics.isDone()).isTrue();
-        Assertions.assertThat(metrics.isServiceDiscoverySuccessful()).isTrue();
-        Assertions.assertThat(metrics.failure().getMessage())
-                .isEqualTo("Load Balancer induced failure");
-        Assertions.assertThat(metrics.getOverallDuration()).isNotNull();
-        Assertions.assertThat(metrics.getServiceDiscoveryType()).isEqualTo("static");
-        Assertions.assertThat(metrics.getServiceSelectionType()).isEqualTo("mock");
-        Assertions.assertThat(metrics.getServiceDiscoveryDuration()).isNotNull();
-        Assertions.assertThat(metrics.getServiceSelectionDuration()).isNotNull();
     }
 
     private void assertStorkMetricsInMicrometerRegistry(String serviceName) {

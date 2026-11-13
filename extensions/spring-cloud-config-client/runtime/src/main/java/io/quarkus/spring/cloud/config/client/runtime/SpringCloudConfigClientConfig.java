@@ -79,6 +79,38 @@ public interface SpringCloudConfigClientConfig {
     Optional<String> password();
 
     /**
+     * OpenID Connect / OAuth2 authentication with the Config Server: a bearer token is obtained from the configured
+     * token endpoint with the {@code client_credentials} grant before the configuration is requested from the
+     * Config Server. The token is requested directly, without the {@code quarkus-oidc-client} extension, because the
+     * configuration is fetched before the application starts.
+     */
+    Optional<OidcConfig> oidc();
+
+    interface OidcConfig {
+
+        /**
+         * The URL of the token endpoint of the OpenID Connect provider, for example
+         * {@code https://keycloak.example.com/realms/quarkus/protocol/openid-connect/token}
+         */
+        String tokenUrl();
+
+        /**
+         * The client id used to authenticate with the token endpoint
+         */
+        String clientId();
+
+        /**
+         * The client secret used to authenticate with the token endpoint
+         */
+        Optional<String> clientSecret();
+
+        /**
+         * The scope(s) to request, space separated
+         */
+        Optional<String> scope();
+    }
+
+    /**
      * TrustStore to be used containing the SSL certificate used by the Config server
      * Can be either a classpath resource or a file system path
      */

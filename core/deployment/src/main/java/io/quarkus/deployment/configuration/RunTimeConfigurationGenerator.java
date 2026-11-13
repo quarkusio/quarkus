@@ -7,9 +7,9 @@ import static io.smallrye.config.common.utils.StringUtil.skewer;
 
 import java.util.ArrayDeque;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.objectweb.asm.Opcodes;
@@ -53,23 +53,15 @@ public final class RunTimeConfigurationGenerator {
             "runtimeConfig", void.class, ValueRegistry.class);
 
     static final MethodDescriptor CD_REPORT_UNKNOWN = ofMethod(ConfigDiagnostic.class,
-            "reportUnknown", void.class, Set.class);
+            "reportUnknown", void.class, SmallRyeConfigBuilder.class, Set.class, Predicate.class);
     static final MethodDescriptor CD_REPORT_UNKNOWN_RUNTIME = ofMethod(ConfigDiagnostic.class,
-            "reportUnknownRuntime", void.class, Set.class);
+            "reportUnknownRuntime", void.class, SmallRyeConfigBuilder.class, Set.class, Predicate.class);
 
-    static final MethodDescriptor ITRA_ITERATOR = ofMethod(Iterable.class, "iterator", Iterator.class);
-    static final MethodDescriptor ITR_HAS_NEXT = ofMethod(Iterator.class, "hasNext", boolean.class);
-    static final MethodDescriptor ITR_NEXT = ofMethod(Iterator.class, "next", Object.class);
-
-    static final MethodDescriptor NI_NEW_STRING = ofConstructor(NameIterator.class, String.class);
     static final MethodDescriptor NI_HAS_NEXT = ofMethod(NameIterator.class, "hasNext", boolean.class);
     static final MethodDescriptor NI_NEXT = ofMethod(NameIterator.class, "next", void.class);
 
     static final MethodDescriptor QCF_SET_CONFIG = ofMethod(QuarkusConfigFactory.class,
             "setConfig", void.class, SmallRyeConfig.class);
-
-    static final MethodDescriptor SRC_GET_PROPERTY_NAMES = ofMethod(SmallRyeConfig.class,
-            "getPropertyNames", Iterable.class);
 
     static final MethodDescriptor SRCB_NEW = ofConstructor(SmallRyeConfigBuilder.class);
     static final MethodDescriptor SRCB_WITH_CUSTOMIZER = ofMethod(AbstractConfigBuilder.class,
@@ -81,10 +73,6 @@ public final class RunTimeConfigurationGenerator {
 
     static final MethodDescriptor PU_IS_MAPPED = ofMethod(PropertiesUtil.class,
             "isMapped", boolean.class, NameIterator.class, String.class);
-    static final MethodDescriptor PU_IS_PROPERTY_QUARKUS_COMPOUND_NAME = ofMethod(PropertiesUtil.class,
-            "isPropertyQuarkusCompoundName", boolean.class, NameIterator.class);
-    static final MethodDescriptor PU_IS_PROPERTY_IN_ROOTS = ofMethod(PropertiesUtil.class,
-            "isPropertyInRoots", boolean.class, String.class, Set.class);
 
     static final MethodDescriptor HS_NEW = ofConstructor(HashSet.class);
     static final MethodDescriptor HS_ADD = ofMethod(HashSet.class, "add", boolean.class, Object.class);
@@ -105,7 +93,8 @@ public final class RunTimeConfigurationGenerator {
             launchMode = builder.getLaunchMode();
             buildTimeConfigResult = Assert.checkNotNullParam("buildTimeReadResult", builder.getBuildTimeReadResult());
             classOutput = Assert.checkNotNullParam("classOutput", builder.getClassOutput());
-            cc = ClassCreator.builder().classOutput(classOutput).className(CONFIG_CLASS_NAME).setFinal(true).build();
+            cc = ClassCreator.builder().classOutput(classOutput).className(CONFIG_CLASS_NAME).setFinal(true)
+                    .interfaces(Predicate.class).build();
 
             // Directly set the config resolver to avoid service loader. Test and Dev must set the resolver, so we cannot override it
             if (!launchMode.isDevOrTest()) {
@@ -140,20 +129,16 @@ public final class RunTimeConfigurationGenerator {
             MethodCreator mc = cc.getMethodCreator(C_STATIC_INIT_CONFIG);
             mc.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
 
-            // Set unknown = new HashSet();
-            ResultHandle unknownSet = mc.newInstance(HS_NEW);
             // SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
             ResultHandle configBuilder = mc.newInstance(SRCB_NEW);
             // AbstractConfigBuilder.withCustomizer(builder, "io.quarkus.runtime.generated.StaticInitConfig");
             mc.invokeStaticMethod(SRCB_WITH_CUSTOMIZER_BY_NAME, configBuilder, mc.load(CONFIG_STATIC_NAME));
+            // ConfigDiagnostic.reportUnknown(builder, roots, new Config());
+            reportUnknown(mc, CD_REPORT_UNKNOWN, configBuilder, getRegisteredRoots(BUILD_AND_RUN_TIME_FIXED));
             //SmallRyeConfig config = builder.build();
             ResultHandle config = mc.invokeVirtualMethod(SRCB_BUILD, configBuilder);
             // QuarkusConfigFactory.setConfig(var1);
             installConfiguration(config, mc);
-
-            // generate sweep for clinit
-            configSweepLoop(mc, config, getRegisteredRoots(BUILD_AND_RUN_TIME_FIXED), unknownSet);
-            mc.invokeStaticMethod(CD_REPORT_UNKNOWN, unknownSet);
 
             mc.returnValue(null);
             mc.close();
@@ -163,8 +148,6 @@ public final class RunTimeConfigurationGenerator {
             MethodCreator mc = cc.getMethodCreator(C_RUN_TIME_CONFIG);
             mc.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
 
-            // Set unknown = new HashSet();
-            ResultHandle unknownSet = mc.newInstance(HS_NEW);
             // SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
             ResultHandle configBuilder = mc.newInstance(SRCB_NEW);
 
@@ -177,73 +160,48 @@ public final class RunTimeConfigurationGenerator {
             mc.invokeStaticMethod(SRCB_WITH_CUSTOMIZER, configBuilder, customizer);
             // AbstractConfigBuilder.withCustomizer(builder, "io.quarkus.runtime.generated.RunTimeConfig");
             mc.invokeStaticMethod(SRCB_WITH_CUSTOMIZER_BY_NAME, configBuilder, mc.load(CONFIG_RUNTIME_NAME));
+            // ConfigDiagnostic.reportUnknownRuntime(builder, roots, new Config());
+            reportUnknown(mc, CD_REPORT_UNKNOWN_RUNTIME, configBuilder, getRegisteredRoots(RUN_TIME));
             //SmallRyeConfig config = builder.build();
             ResultHandle config = mc.invokeVirtualMethod(SRCB_BUILD, configBuilder);
             // QuarkusConfigFactory.setConfig(var1);
             installConfiguration(config, mc);
 
-            // generate sweep for clinit
-            configSweepLoop(mc, config, getRegisteredRoots(RUN_TIME), unknownSet);
-            mc.invokeStaticMethod(CD_REPORT_UNKNOWN_RUNTIME, unknownSet);
-
             mc.returnValue(null);
             mc.close();
         }
 
-        private void configSweepLoop(MethodCreator method, ResultHandle config, Set<String> registeredRoots,
-                ResultHandle unknown) {
-            ResultHandle propertyNames = method.invokeVirtualMethod(SRC_GET_PROPERTY_NAMES, config);
-            ResultHandle iterator = method.invokeInterfaceMethod(ITRA_ITERATOR, propertyNames);
-
+        private void reportUnknown(MethodCreator method, MethodDescriptor report, ResultHandle configBuilder,
+                Set<String> registeredRoots) {
             ResultHandle rootSet = method.newInstance(HS_NEW);
             for (String registeredRoot : registeredRoots) {
                 method.invokeVirtualMethod(HS_ADD, rootSet, method.load(registeredRoot));
             }
-
-            try (BytecodeCreator sweepLoop = method.createScope()) {
-                try (BytecodeCreator hasNext = sweepLoop.ifNonZero(sweepLoop.invokeInterfaceMethod(ITR_HAS_NEXT, iterator))
-                        .trueBranch()) {
-                    ResultHandle key = hasNext.checkCast(hasNext.invokeInterfaceMethod(ITR_NEXT, iterator), String.class);
-
-                    // NameIterator keyIter = new NameIterator(key);
-                    ResultHandle keyIter = hasNext.newInstance(NI_NEW_STRING, key);
-                    // if (!isMappedProperty(keyIter))
-                    ResultHandle isMappedName = hasNext.invokeStaticMethod(
-                            ofMethod(CONFIG_CLASS_NAME, "isMapped", boolean.class, NameIterator.class),
-                            keyIter);
-                    try (BytecodeCreator isMappedPropertyTrue = hasNext.ifTrue(isMappedName).trueBranch()) {
-                        isMappedPropertyTrue.continueScope(sweepLoop);
-                    }
-
-                    // if (PropertiesUtil.isPropertyQuarkusCompoundName(keyIter))
-                    BranchResult quarkusCompoundName = hasNext
-                            .ifNonZero(hasNext.invokeStaticMethod(PU_IS_PROPERTY_QUARKUS_COMPOUND_NAME, keyIter));
-                    try (BytecodeCreator trueBranch = quarkusCompoundName.trueBranch()) {
-                        trueBranch.invokeVirtualMethod(HS_ADD, unknown, key);
-                    }
-
-                    hasNext.ifNonZero(hasNext.invokeStaticMethod(PU_IS_PROPERTY_IN_ROOTS, key, rootSet)).falseBranch()
-                            .continueScope(sweepLoop);
-                    hasNext.invokeVirtualMethod(HS_ADD, unknown, key);
-
-                    hasNext.continueScope(sweepLoop);
-                }
-            }
+            method.invokeStaticMethod(report, configBuilder, rootSet, method.newInstance(ofConstructor(CONFIG_CLASS_NAME)));
         }
 
         private Set<String> getRegisteredRoots(ConfigPhase configPhase) {
             Set<String> registeredRoots = new HashSet<>();
             if (BUILD_AND_RUN_TIME_FIXED.equals(configPhase)) {
                 for (ConfigClass mapping : buildTimeConfigResult.getBuildTimeRunTimeMappings()) {
-                    registeredRoots.add(mapping.getPrefix());
+                    addRegisteredRoot(registeredRoots, mapping);
                 }
             }
             if (RUN_TIME.equals(configPhase)) {
                 for (ConfigClass mapping : buildTimeConfigResult.getRunTimeMappings()) {
-                    registeredRoots.add(mapping.getPrefix());
+                    addRegisteredRoot(registeredRoots, mapping);
                 }
             }
             return registeredRoots;
+        }
+
+        private void addRegisteredRoot(Set<String> registeredRoots, ConfigClass mapping) {
+            // Any other root is not ignored by SmallRye Config, which validates it and fails with unknown names
+            String prefix = mapping.getPrefix();
+            if (prefix.equals("quarkus") || prefix.startsWith("quarkus.")
+                    || buildTimeConfigResult.getMappingsIgnorePaths().contains(prefix + ".**")) {
+                registeredRoots.add(prefix);
+            }
         }
 
         private void installConfiguration(ResultHandle config, MethodCreator methodCreator) {
@@ -272,6 +230,13 @@ public final class RunTimeConfigurationGenerator {
                 }
             }
             isMapped("isMapped", patterns);
+
+            // public boolean test(Object name) { return isMapped((NameIterator) name); }
+            try (MethodCreator mc = cc.getMethodCreator(ofMethod(CONFIG_CLASS_NAME, "test", boolean.class, Object.class))) {
+                mc.setModifiers(Opcodes.ACC_PUBLIC);
+                mc.returnValue(mc.invokeStaticMethod(ofMethod(CONFIG_CLASS_NAME, "isMapped", boolean.class, NameIterator.class),
+                        mc.checkCast(mc.getMethodParam(0), NameIterator.class)));
+            }
         }
 
         private void isMapped(final String methodName, final ConfigPatternMap<Boolean> names) {

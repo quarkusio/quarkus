@@ -77,7 +77,7 @@ And we obtain the following result:
 
 So, yes, it appears it works out of the box and this guide is pretty useless.
 
-It's not. The magic happens when building the native executable:
+It's not. The magic happens when building the native executable.
 Quarkus automatically enables the `https` URL protocol handler in your native executable.
 You should not enable it manually, we have a nice configuration property for this purpose as described below.
 

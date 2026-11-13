@@ -102,7 +102,7 @@
              hibernate-search.version, antlr.version, bytebuddy.version -->
         <narayana.version>7.3.4.Final</narayana.version>
         <narayana-lra.version>2.0.1.Final</narayana-lra.version>
-        <agroal.version>3.2.1</agroal.version>
+        <agroal.version>3.3</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>9.4.9</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
@@ -4197,22 +4197,13 @@
                 <artifactId>h2</artifactId>
                 <version>${h2.version}</version>
             </dependency>
+            <!-- Agroal dependencies, imported as a BOM -->
             <dependency>
                 <groupId>io.agroal</groupId>
-                <artifactId>agroal-api</artifactId>
+                <artifactId>agroal-bom</artifactId>
                 <version>${agroal.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.agroal</groupId>
-                <artifactId>agroal-narayana</artifactId>
-                <version>${agroal.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.agroal</groupId>
-                <artifactId>agroal-pool</artifactId>
-                <version>${agroal.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>io.apicurio</groupId>

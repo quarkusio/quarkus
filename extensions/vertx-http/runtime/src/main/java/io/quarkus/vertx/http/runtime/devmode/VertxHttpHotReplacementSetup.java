@@ -96,14 +96,16 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                 }
             }
         }
-        ConnectionBase connectionBase = (ConnectionBase) routingContext.request().connection();
-        if (openConnections.add(connectionBase)) {
-            connectionBase.closeFuture().onComplete(new Handler<AsyncResult<Void>>() {
-                @Override
-                public void handle(AsyncResult<Void> event) {
-                    openConnections.remove(connectionBase);
-                }
-            });
+        var connection = routingContext.request().connection();
+        if (connection instanceof ConnectionBase connectionBase) {
+            if (openConnections.add(connectionBase)) {
+                connectionBase.closeFuture().onComplete(new Handler<AsyncResult<Void>>() {
+                    @Override
+                    public void handle(AsyncResult<Void> event) {
+                        openConnections.remove(connectionBase);
+                    }
+                });
+            }
         }
         if (tempDeploymentProblem != null) {
             handleDeploymentProblem(routingContext, tempDeploymentProblem);
@@ -191,7 +193,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                         //from holding onto the old deployment
                         Set<ConnectionBase> connections = new HashSet<>(openConnections);
                         for (ConnectionBase con : connections) {
-                            if (con != connectionBase) {
+                            if (con != connection) {
                                 con.close();
                             }
                         }

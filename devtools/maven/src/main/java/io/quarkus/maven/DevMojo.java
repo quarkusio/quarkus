@@ -294,7 +294,7 @@ public class DevMojo extends AbstractMojo {
      * Whether to skip the check that the Maven version is supported by Quarkus.
      * Using an unsupported Maven version is at your own risk.
      */
-    @Parameter(defaultValue = "false", property = "quarkus.maven-version-check.skip")
+    @Parameter(defaultValue = "false", property = "noMavenVersionCheck")
     boolean skipMavenVersionCheck;
 
     @Component

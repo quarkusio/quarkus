@@ -1,14 +1,15 @@
 package io.quarkus.it.rest;
 
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 /**
- * Disabled by default as it establishes external connections.
- * <p>
- * Uncomment when you want to test SSL support.
+ * Uses an https URL while native SSL support is disabled.
  */
-//@Path("/")
-//@RegisterRestClient
+@Path("/")
+@RegisterRestClient
 public interface SslRestInterface {
 
     @GET

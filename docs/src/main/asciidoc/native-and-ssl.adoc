@@ -166,7 +166,7 @@ The native executable tests will fail with the following error:
 
 [source]
 ----
-Caused by: java.lang.IllegalArgumentException: https://stage.code.quarkus.io/api requires SSL support but it is disabled. You probably have set quarkus.ssl.native to false.
+Caused by: java.lang.IllegalArgumentException: https://stage.code.quarkus.io/api requires SSL support, which is disabled in this native executable. Make sure the quarkus.ssl.native property is set to true, then rebuild the native executable.
 ----
 
 This error is the one you obtain when trying to use SSL while it was not explicitly enabled in your native executable.

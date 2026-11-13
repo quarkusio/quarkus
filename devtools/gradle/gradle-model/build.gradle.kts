@@ -9,6 +9,8 @@ plugins {
 dependencies {
     compileOnly(libs.kotlin.gradle.plugin.api)
     implementation("org.apache.maven:maven-core")
+    // Plexus XML 4, pulled in by Quarkus devtools dependencies, uses Maven 4's XmlService.
+    implementation(libs.maven.xml)
     gradleApi()
 }
 
@@ -32,6 +34,11 @@ sourceSets.named("main") {
 tasks.withType<Jar>().configureEach {
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true
+}
+
+tasks.test {
+    // Required by Gradle's ProjectBuilder on strongly encapsulated JDKs.
+    jvmArgs("--add-opens=java.base/java.lang=ALL-UNNAMED")
 }
 
 publishing {

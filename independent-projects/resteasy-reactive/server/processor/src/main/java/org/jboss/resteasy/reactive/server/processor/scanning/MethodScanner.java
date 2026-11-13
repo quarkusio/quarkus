@@ -38,9 +38,26 @@ public interface MethodScanner {
      * @param field If this is field injection
      * @param methodContext Context that can be used to pass information into {@link #scan(MethodInfo, ClassInfo, Map)}
      * @return
+     * @deprecated Use {@link #handleCustomParameter(Type, Map, boolean, String, Map)} instead
      */
+    @Deprecated
     default ParameterExtractor handleCustomParameter(Type paramType, Map<DotName, AnnotationInstance> annotations,
             boolean field, Map<String, Object> methodContext) {
+        return handleCustomParameter(paramType, annotations, field, null, methodContext);
+    }
+
+    /**
+     * Method that is called when a parameter of an unknown type is discovered.
+     *
+     * @param paramType The parameter type
+     * @param annotations The annotations
+     * @param field If this is field injection
+     * @param sourceName The Java parameter name (may be null if compiled without -parameters)
+     * @param methodContext Context that can be used to pass information into {@link #scan(MethodInfo, ClassInfo, Map)}
+     * @return
+     */
+    default ParameterExtractor handleCustomParameter(Type paramType, Map<DotName, AnnotationInstance> annotations,
+            boolean field, String sourceName, Map<String, Object> methodContext) {
         return null;
     }
 

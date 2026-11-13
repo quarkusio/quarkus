@@ -21,11 +21,32 @@ import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
  */
 public class LimitParamExtractor implements ParameterExtractor {
 
+    public final String parameterName;
+
+    public LimitParamExtractor(String parameterName) {
+        this.parameterName = parameterName;
+    }
+
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
-        String limitStr = (String) context.getQueryParameter("limit", true, false);
-        String startAtStr = (String) context.getQueryParameter("startAt", true, false);
-        String endAtStr = (String) context.getQueryParameter("endAt", true, false);
+        String limitStr = (String) context.getQueryParameter(parameterName, true, false);
+
+        // Support both prefixed and unprefixed auxiliary parameters for backward compatibility
+        // Prefixed: "maxRows_startAt", "maxRows_endAt" when parameterName is "maxRows"
+        // Unprefixed: "startAt", "endAt" (for default "limit" parameter name)
+        String startAtParam = parameterName.equals("limit") ? "startAt" : parameterName + "_startAt";
+        String endAtParam = parameterName.equals("limit") ? "endAt" : parameterName + "_endAt";
+
+        String startAtStr = (String) context.getQueryParameter(startAtParam, true, false);
+        String endAtStr = (String) context.getQueryParameter(endAtParam, true, false);
+
+        // Fallback to unprefixed parameters if prefixed ones are not found (for backward compatibility)
+        if (startAtStr == null && !parameterName.equals("limit")) {
+            startAtStr = (String) context.getQueryParameter("startAt", true, false);
+        }
+        if (endAtStr == null && !parameterName.equals("limit")) {
+            endAtStr = (String) context.getQueryParameter("endAt", true, false);
+        }
 
         if (limitStr == null && endAtStr == null) {
             return null;

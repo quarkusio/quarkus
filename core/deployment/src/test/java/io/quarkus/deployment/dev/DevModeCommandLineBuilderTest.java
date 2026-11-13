@@ -12,6 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 import io.quarkus.bootstrap.model.ExtensionDevModeConfig;
 import io.quarkus.bootstrap.model.JvmOptions;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.smallrye.common.os.OS;
 
 public class DevModeCommandLineBuilderTest {
 
@@ -43,7 +44,19 @@ public class DevModeCommandLineBuilderTest {
                 Set.of());
 
         var args = getCliArguments(acmeMagic);
-        assertThat(args).contains("--enable-native-access=ALL-UNNAMED");
+        assertThat(args).containsOnlyOnce("--enable-native-access=ALL-UNNAMED");
+    }
+
+    @Test
+    public void nativeAccessEnabledByDefault() throws Exception {
+        // the dev mode console (aesh) calls restricted java.lang.foreign methods on Windows,
+        // so native access is only enabled by default there
+        var args = getCliArguments();
+        if (OS.WINDOWS.isCurrent()) {
+            assertThat(args).containsOnlyOnce("--enable-native-access=ALL-UNNAMED");
+        } else {
+            assertThat(args).doesNotContain("--enable-native-access=ALL-UNNAMED");
+        }
     }
 
     @Test

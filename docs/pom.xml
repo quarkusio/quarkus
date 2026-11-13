@@ -25,6 +25,7 @@
 
         <assembly-maven-plugin.version>3.8.0</assembly-maven-plugin.version>
         <asciidoctor-maven-plugin.version>3.2.0</asciidoctor-maven-plugin.version>
+        <asciidoctorj.version>3.0.1</asciidoctorj.version>
         <asciidoctorj-pdf.version>2.3.23</asciidoctorj-pdf.version>
         <asciidoctor.fail-if>WARN</asciidoctor.fail-if>
         <javaparser.version>3.28.2</javaparser.version>
@@ -88,6 +89,13 @@
         <dependency>
             <groupId>org.asciidoctor</groupId>
             <artifactId>asciidoctorj</artifactId>
+            <version>${asciidoctorj.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.annotation</groupId>
+                    <artifactId>javax.annotation-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jgit</groupId>

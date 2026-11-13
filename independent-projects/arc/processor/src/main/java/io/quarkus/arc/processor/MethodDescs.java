@@ -194,6 +194,7 @@ final class MethodDescs {
             "hasDependentInstances", boolean.class);
 
     static final MethodDesc THREAD_GET_TCCL = MethodDesc.of(Thread.class, "getContextClassLoader", ClassLoader.class);
+    static final MethodDesc CLASS_GET_CLASS_LOADER = MethodDesc.of(Class.class, "getClassLoader", ClassLoader.class);
 
     static final MethodDesc CL_FOR_NAME = MethodDesc.of(Class.class,
             "forName", Class.class, String.class, boolean.class, ClassLoader.class);

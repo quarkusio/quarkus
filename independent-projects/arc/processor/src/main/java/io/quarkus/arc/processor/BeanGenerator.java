@@ -1434,14 +1434,18 @@ public class BeanGenerator extends AbstractGenerator {
         } else {
             // Initialize injected references
             injectedReferences = b0.localVar("injectedReferences", b0.new_(HashMap.class));
-            LocalVar tccl = b0.localVar("tccl", b0.invokeVirtual(MethodDescs.THREAD_GET_TCCL, b0.currentThread()));
+            // the bean may be created lazily on a thread whose TCCL is not the application class loader (e.g. a thread
+            // created by a third-party library), so we load the required types with the class loader of the bean class;
+            // the creator looks them up with classes from that class loader
+            LocalVar beanClassLoader = b0.localVar("beanClassLoader",
+                    b0.invokeVirtual(MethodDescs.CLASS_GET_CLASS_LOADER, Const.of(cc.type())));
             IndexView index = bean.getDeployment().getBeanArchiveIndex();
             for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
                 b0.try_(tc -> {
                     tc.body(b1 -> {
                         LocalVar requiredType;
                         try {
-                            requiredType = RuntimeTypeCreator.of(b1).withTCCL(tccl).withIndex(index)
+                            requiredType = RuntimeTypeCreator.of(b1).withTCCL(beanClassLoader).withIndex(index)
                                     .create(injectionPoint.getType());
                         } catch (IllegalArgumentException e) {
                             throw new IllegalStateException("Unable to construct type for " + injectionPoint.getType()

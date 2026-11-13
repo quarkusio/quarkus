@@ -61,6 +61,14 @@ public class HibernateValidatorFunctionalityTest {
     }
 
     @Test
+    public void testBeanResolver() {
+        RestAssured.given().queryParam("password", "letters").get("/bean-resolver")
+                .then().statusCode(200).body(is("valid"));
+        RestAssured.given().queryParam("password", "12345").get("/bean-resolver")
+                .then().statusCode(200).body(is("invalid"));
+    }
+
+    @Test
     public void testBasicFeatures() throws Exception {
         StringBuilder expected = new StringBuilder();
         expected.append("failed: additionalEmails[0].<list element> (must be a well-formed email address)").append(", ")

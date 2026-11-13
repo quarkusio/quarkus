@@ -1,11 +1,15 @@
 package io.quarkus.grpc.runtime;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -41,6 +45,7 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.QuarkusErrorHandler;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -50,7 +55,12 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.grpc.common.GrpcMessageDecoder;
+import io.vertx.grpc.common.GrpcMessageEncoder;
+import io.vertx.grpc.common.ServiceMethod;
 import io.vertx.grpc.server.GrpcServerOptions;
+import io.vertx.grpc.server.GrpcServerRequest;
+import io.vertx.grpc.transcoding.TranscodingServiceMethod;
 import io.vertx.grpcio.server.GrpcIoServer;
 import io.vertx.grpcio.server.GrpcIoServiceBridge;
 
@@ -61,7 +71,6 @@ public class GrpcServerRecorder {
     private static volatile List<GrpcServiceDefinition> services = Collections.emptyList();
 
     private static final Pattern GRPC_CONTENT_TYPE = Pattern.compile("^application/grpc.*");
-
     private final RuntimeValue<GrpcConfiguration> runtimeConfig;
 
     public GrpcServerRecorder(final RuntimeValue<GrpcConfiguration> runtimeConfig) {
@@ -99,7 +108,8 @@ public class GrpcServerRecorder {
             ShutdownContext shutdown,
             Map<String, List<String>> blockingMethodsPerService,
             Map<String, List<String>> virtualMethodsPerService,
-            LaunchMode launchMode, boolean securityPresent, Map<Integer, Handler<RoutingContext>> securityHandlers) {
+            LaunchMode launchMode, boolean securityPresent, Map<Integer, Handler<RoutingContext>> securityHandlers,
+            Set<String> transcodingClasses) {
         if (hasNoBindableServiceBeans && LaunchMode.current() != LaunchMode.DEVELOPMENT) {
             LOGGER.error("Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
             return;
@@ -109,7 +119,8 @@ public class GrpcServerRecorder {
         GrpcServerConfiguration configuration = runtimeConfig.getValue().server();
 
         buildGrpcServer(vertx, configuration, routerSupplier, shutdown, blockingMethodsPerService, virtualMethodsPerService,
-                beanContainer.beanInstance(GrpcContainer.class), launchMode, securityPresent, securityHandlers);
+                beanContainer.beanInstance(GrpcContainer.class), launchMode, securityPresent, securityHandlers,
+                transcodingClasses);
     }
 
     // TODO -- handle XDS
@@ -117,7 +128,35 @@ public class GrpcServerRecorder {
             ShutdownContext shutdown, Map<String, List<String>> blockingMethodsPerService,
             Map<String, List<String>> virtualMethodsPerService,
             GrpcContainer grpcContainer, LaunchMode launchMode, boolean securityPresent,
-            Map<Integer, Handler<RoutingContext>> securityHandlers) {
+            Map<Integer, Handler<RoutingContext>> securityHandlers, Set<String> transcodingClasses) {
+
+        HashSet<String> transcodingPaths = new HashSet<>();
+        List<? extends Class<?>> transcodingClassesLoaded = transcodingClasses.stream().map(name -> {
+            try {
+                return Thread.currentThread().getContextClassLoader().loadClass(name);
+            } catch (ClassNotFoundException e) {
+                return null;
+            }
+        }).filter(Objects::nonNull).toList();
+
+        HashMap<String, List<TranscodingServiceMethod<?, ?>>> transcodingMethodsPerService = new HashMap<>();
+        for (Class<?> aClass : transcodingClassesLoaded) {
+            for (Field field : aClass.getFields()) {
+                try {
+                    var transcodingServiceMethod = (TranscodingServiceMethod<?, ?>) field.get(null);
+                    var path = transcodingServiceMethod.options().getPath();
+                    int delimiter = path.indexOf("{");
+                    var prefix = delimiter == -1 ? path : path.substring(0, delimiter);
+                    transcodingPaths.add(prefix);
+                    transcodingMethodsPerService
+                            .computeIfAbsent(transcodingServiceMethod.serviceName().fullyQualifiedName(),
+                                    s -> new ArrayList<>())
+                            .add(transcodingServiceMethod);
+                } catch (IllegalAccessException e) {
+                    //wasn't a transcoding method
+                }
+            }
+        }
 
         GrpcServerOptions options = new GrpcServerOptions();
 
@@ -155,15 +194,24 @@ public class GrpcServerRecorder {
             String serviceName = service.definition.definition.getServiceDescriptor().getName();
 
             try {
+
                 GrpcIoServiceBridge bridge = GrpcIoServiceBridge.bridge(serviceDefinition);
+                var transcodingMethods = transcodingMethodsPerService.get(serviceName);
+                if (transcodingMethods != null) {
+                    for (TranscodingServiceMethod method : transcodingMethods) {
+                        server.callHandler(method,
+                                new MethodCallHandler(method, method.decoder(), method.encoder(),
+                                        bridge.handler(method)));
+                    }
+                }
                 bridge.bind(server);
                 LOGGER.debugf("Registered gRPC service '%s'", serviceName);
+
             } catch (IllegalArgumentException e) {
                 LOGGER.warnf("gRPC service '%s' does not have a proto service descriptor and cannot be registered"
                         + " with the gRPC server - skipping", serviceName);
             }
         }
-
         boolean reflectionServiceEnabled = configuration.enableReflectionService() || launchMode == LaunchMode.DEVELOPMENT;
 
         if (reflectionServiceEnabled) {
@@ -190,7 +238,9 @@ public class GrpcServerRecorder {
                 Route route = router.route().order(e.getKey()).handler(new Handler<RoutingContext>() {
                     @Override
                     public void handle(RoutingContext ctx) {
-                        if (!isGrpc(ctx)) {
+                        // Transcoding requests arrive in plain HTTP, so isGrpc(ctx) will return false.
+                        // We must hence check isGrpcTranscoding to make sure authentication is not skipped
+                        if (!isGrpc(ctx) && !isGrpcTranscoding(ctx, transcodingPaths)) {
                             ctx.next();
                         } else if (isAuthenticationHandler && ctx.get(HttpAuthenticator.class.getName()) != null) {
                             // this IF branch shouldn't be invoked with current implementation
@@ -224,9 +274,7 @@ public class GrpcServerRecorder {
 
         Route route = router.route()
                 .handler(ctx -> {
-                    if (!isGrpc(ctx)) {
-                        ctx.next();
-                    } else {
+                    if (isGrpc(ctx) || isGrpcTranscoding(ctx, transcodingPaths)) {
                         if (securityPresent) {
                             GrpcSecurityInterceptor.propagateSecurityIdentityWithDuplicatedCtx(ctx);
                         }
@@ -243,6 +291,8 @@ public class GrpcServerRecorder {
                             }
                         }
                         routingContextAware(server, ctx);
+                    } else {
+                        ctx.next();
                     }
                 });
         shutdown.addShutdownTask(route::remove); // remove this route at shutdown, this should reset it
@@ -270,6 +320,25 @@ public class GrpcServerRecorder {
         }
         String header = request.getHeader("content-type");
         return header != null && GRPC_CONTENT_TYPE.matcher(header.toLowerCase(Locale.ROOT)).matches();
+    }
+
+    private static boolean isGrpcTranscoding(RoutingContext rc, Set<String> transcodingPaths) {
+        String path = HttpSecurityUtils.normalizePath(rc.normalizedPath());
+        return matchesTranscodingPath(path, transcodingPaths);
+    }
+
+    static boolean matchesTranscodingPath(String path, Set<String> transcodingPaths) {
+        return transcodingPaths.stream().anyMatch(prefix -> {
+            if (!path.startsWith(prefix)) {
+                return false;
+            }
+            // The prefix either ends on:
+            // - '/' if it was built from a parameterized URI such as /vi/items/{id};
+            // - An arbitrary character if it wasn't built from a parameterized URI, in which case it is the full URI.
+            // We need to check both
+
+            return prefix.endsWith("/") || path.length() == prefix.length();
+        });
     }
 
     private void initHealthStorage() {
@@ -378,4 +447,28 @@ public class GrpcServerRecorder {
         return ServerInterceptors.intercept(service.definition, interceptors);
     }
 
+    static class MethodCallHandler<Req, Resp> implements Handler<GrpcServerRequest<Req, Resp>> {
+
+        final ServiceMethod<Req, Resp> method;
+        final GrpcMessageDecoder<Req> messageDecoder;
+        final GrpcMessageEncoder<Resp> messageEncoder;
+        final Handler<GrpcServerRequest<Req, Resp>> invoker;
+
+        MethodCallHandler(ServiceMethod<Req, Resp> method, GrpcMessageDecoder<Req> messageDecoder,
+                GrpcMessageEncoder<Resp> messageEncoder, Handler<GrpcServerRequest<Req, Resp>> handler) {
+            this.method = method;
+            this.messageDecoder = messageDecoder;
+            this.messageEncoder = messageEncoder;
+            this.invoker = handler;
+        }
+
+        @Override
+        public void handle(GrpcServerRequest<Req, Resp> grpcRequest) {
+            try {
+                invoker.handle(grpcRequest);
+            } catch (Exception e) {
+                grpcRequest.response().fail(e);
+            }
+        }
+    }
 }

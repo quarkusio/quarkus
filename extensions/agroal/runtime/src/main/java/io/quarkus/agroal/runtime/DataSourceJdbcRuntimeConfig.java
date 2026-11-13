@@ -149,6 +149,27 @@ public interface DataSourceJdbcRuntimeConfig {
     boolean validateOnBorrow();
 
     /**
+     * The number of connections that must fail validation in the same background validation run
+     * (see `background-validation-interval`) for the pool to be considered stale -- for instance after a database
+     * failover -- and flushed. Below this number, only the connections that failed validation are removed.
+     * <p>
+     * Set to {@code 1} to flush the whole pool as soon as a single connection fails validation, or to {@code 0} to never
+     * flush the pool and only remove the connections that failed validation.
+     * <p>
+     * Connections commonly become invalid a few at a time: idle sessions dropped by a firewall or killed by the database
+     * after an idle timeout, sessions killed by an administrator, or a validation that timed out under load. A value
+     * greater than {@code 1} keeps the rest of the pool in these cases, while a database failover, where all idle
+     * connections fail in the same run, still flushes the pool.
+     * <p>
+     * Connections that fail validation on acquisition (see `validate-on-borrow` and `foreground-validation-interval`)
+     * are removed and do not count towards this threshold.
+     * <p>
+     * This value must not be negative, nor greater than `max-size`.
+     */
+    @WithDefault("1")
+    int validationFailureFlushThreshold();
+
+    /**
      * Disable pooling to prevent reuse of Connections. Use this when an external pool manages the life-cycle
      * of Connections.
      */

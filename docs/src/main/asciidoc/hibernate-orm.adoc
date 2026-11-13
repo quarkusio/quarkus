@@ -2550,6 +2550,8 @@ public interface MyRepository {
 ----
 ====
 
+include::{includes}/hibernate-accessor.adoc[]
+
 [[configuration-reference]]
 == Configuration Reference for Hibernate ORM
 

@@ -56,8 +56,8 @@ public class CliJwtGenerateKeyTest {
         String config = Files.readString(appProps);
         Assertions.assertTrue(config.contains("mp.jwt.verify.publickey.location=publicKey.pem"));
         Assertions.assertTrue(config.contains("smallrye.jwt.sign.key.location=privateKey.pem"));
-        Assertions.assertTrue(config.contains("smallrye.jwt.encrypt.key.location=publicKey.pem"));
-        Assertions.assertTrue(config.contains("mp.jwt.decrypt.key.location=privateKey.pem"));
+        Assertions.assertFalse(config.contains("smallrye.jwt.encrypt.key.location"));
+        Assertions.assertFalse(config.contains("mp.jwt.decrypt.key.location"));
         Assertions.assertTrue(config.contains("quarkus.native.resources.includes=publicKey.pem,privateKey.pem"));
 
         // now run it again, it should complain but leave the files alone
@@ -116,6 +116,44 @@ public class CliJwtGenerateKeyTest {
         // verify that --force overrides the config check
         result = CliDriver.execute(workspaceRoot, "jwt", "generate-key", "--force");
         Assertions.assertTrue(Files.exists(privateKey), "Should generate keys with --force despite conflicting config");
+    }
+
+    @Test
+    public void testCommandEncryption() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "jwt", "generate-key", "--encryption");
+        Assertions.assertTrue(Files.exists(privateKey));
+        Assertions.assertTrue(Files.exists(publicKey));
+        Assertions.assertTrue(result.stdout.contains("Public and private keys created in"));
+        String config = Files.readString(appProps);
+        Assertions.assertTrue(config.contains("mp.jwt.decrypt.key.location=privateKey.pem"));
+        Assertions.assertTrue(config.contains("smallrye.jwt.encrypt.key.location=publicKey.pem"));
+        Assertions.assertFalse(config.contains("mp.jwt.verify.publickey.location"));
+        Assertions.assertFalse(config.contains("smallrye.jwt.sign.key.location"));
+        Assertions.assertTrue(config.contains("quarkus.native.resources.includes=publicKey.pem,privateKey.pem"));
+
+        // verify that a decryption key location pointing to a different key prevents generation only with --enc
+        Files.delete(privateKey);
+        Files.delete(publicKey);
+        Files.writeString(appProps, "mp.jwt.decrypt.key.location=other-key.pem\n");
+        result = CliDriver.execute(workspaceRoot, "jwt", "generate-key", "--enc");
+        Assertions.assertFalse(Files.exists(privateKey), "Should not generate keys when config points to different files");
+        Assertions.assertTrue(result.stdout.contains("already points to"),
+                "Should warn about conflicting config, got: " + result.stdout);
+        result = CliDriver.execute(workspaceRoot, "jwt", "generate-key");
+        Assertions.assertTrue(Files.exists(privateKey), "Should ignore the decryption key location without --enc");
+    }
+
+    @Test
+    public void testCommandEncryptionWithExistingKeys() throws Exception {
+        CliDriver.execute(workspaceRoot, "jwt", "generate-key");
+        List<String> privateKeyContents = Files.readAllLines(privateKey);
+        String config = Files.readString(appProps);
+
+        // now run it again with --encryption, it should not configure the signing keys for encryption
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "jwt", "generate-key", "--encryption");
+        Assertions.assertTrue(result.stdout.contains("Public and private keys already exist in"));
+        Assertions.assertEquals(privateKeyContents, Files.readAllLines(privateKey));
+        Assertions.assertEquals(config, Files.readString(appProps));
     }
 
     private void verifyKeyParameters(List<String> privateKeyContents, String algo, int keySize) {

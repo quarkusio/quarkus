@@ -370,6 +370,8 @@ public class DataSources {
                     timeout.isZero() ? null : timeout.plusSeconds(5L)));
         }
         poolConfiguration.validateOnBorrow(dataSourceJdbcRuntimeConfig.validateOnBorrow());
+        poolConfiguration
+                .validationFailureFlushThreshold(dataSourceJdbcRuntimeConfig.validationFailureFlushThreshold());
         poolConfiguration.reapTimeout(dataSourceJdbcRuntimeConfig.idleRemovalInterval());
         if (dataSourceJdbcRuntimeConfig.leakDetectionInterval().isPresent()) {
             poolConfiguration.leakTimeout(dataSourceJdbcRuntimeConfig.leakDetectionInterval().get());

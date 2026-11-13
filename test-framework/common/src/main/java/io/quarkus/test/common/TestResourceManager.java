@@ -35,6 +35,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -48,6 +49,8 @@ import io.quarkus.value.registry.ValueRegistry;
 public class TestResourceManager implements Closeable {
     private static final DotName QUARKUS_TEST_RESOURCE = DotName.createSimple(QuarkusTestResource.class);
     private static final DotName WITH_TEST_RESOURCE = DotName.createSimple(WithTestResource.class);
+    private static final DotName QUARKUS_TEST_RESOURCE_LIST = DotName.createSimple(QuarkusTestResource.List.class);
+    private static final DotName WITH_TEST_RESOURCE_LIST = DotName.createSimple(WithTestResource.List.class);
     public static final String CLOSEABLE_NAME = TestResourceManager.class.getName() + ".closeable";
 
     private final List<TestResourceStartInfo> sequentialTestResources;
@@ -392,10 +395,11 @@ public class TestResourceManager implements Closeable {
         if (afterMetaAnnotationAction != null) {
             afterMetaAnnotationAction.accept(uniqueEntries);
         }
-        for (AnnotationInstance annotation : findTestResourceInstancesOfClass(testClass,
-                TestClassIndexer.readIndex(testClassLocation, testClass))) {
+        IndexView testClassesIndex = TestClassIndexer.readIndex(testClassLocation, testClass);
+        for (AnnotationInstance annotation : findTestResourceInstancesOfClass(testClass, testClassesIndex)) {
             uniqueEntries.add(TestResourceClassEntryHandler.produceEntry(annotation));
         }
+        collectIndexedMetaAnnotations(testClassFromTCCL, testClassesIndex, uniqueEntries);
         return uniqueEntries;
     }
 
@@ -455,6 +459,126 @@ public class TestResourceManager implements Closeable {
         }
     }
 
+    /**
+     * Discovers test resources declared through meta-annotations used outside of the test class hierarchy, for
+     * example a custom {@code @MyTestResource} annotation carrying {@link WithTestResource} placed on a plain holder
+     * class of the test folder. The meta-annotation declarations come from test extensions, so they are not part of
+     * the test folder index; whether an annotation type carries a test resource annotation is therefore determined
+     * with reflection (TCCL), while the usages are taken from the index.
+     * <p/>
+     * Only entries with {@link TestResourceScope#GLOBAL} scope are collected from classes outside of the test class
+     * hierarchy, mirroring how direct usages are filtered in {@link #findTestResourceInstancesOfClass}. Entries for
+     * targets inside the test class hierarchy are equal to the ones produced by {@link #collectMetaAnnotations},
+     * so they are deduplicated by the {@code uniqueEntries} set.
+     */
+    private static void collectIndexedMetaAnnotations(Class<?> testClass, IndexView index,
+            Set<TestResourceClassEntry> uniqueEntries) {
+        Set<String> testClassHierarchy = testClassHierarchyOf(testClass);
+        Map<DotName, Boolean> examinedAnnotationTypes = new HashMap<>();
+        for (ClassInfo knownClass : index.getKnownClasses()) {
+            for (AnnotationInstance instance : knownClass.annotations()) {
+                DotName annotationName = instance.name();
+                if (QUARKUS_TEST_RESOURCE.equals(annotationName) || WITH_TEST_RESOURCE.equals(annotationName)
+                        || QUARKUS_TEST_RESOURCE_LIST.equals(annotationName)
+                        || WITH_TEST_RESOURCE_LIST.equals(annotationName)) {
+                    // direct usages are handled by findTestResourceInstancesOfClass
+                    continue;
+                }
+                if (!examinedAnnotationTypes.computeIfAbsent(annotationName, name -> {
+                    Class<? extends Annotation> annotationType = loadAnnotationTypeFromTCCL(name);
+                    if (annotationType == null) {
+                        return false;
+                    }
+                    try {
+                        return isTestResourceMetaAnnotation(annotationType);
+                    } catch (LinkageError | TypeNotPresentException e) {
+                        return false;
+                    }
+                })) {
+                    continue;
+                }
+                if (instance.target().kind() != AnnotationTarget.Kind.CLASS) {
+                    continue;
+                }
+                ClassInfo targetClassInfo = instance.target().asClass();
+                if (targetClassInfo.isAnnotation()) {
+                    // a test resource annotation applied to another annotation declaration would need deeper
+                    // meta-annotation resolution, which neither this method nor collectMetaAnnotations performs
+                    continue;
+                }
+                String targetClassName = targetClassInfo.name().toString('.');
+                Class<?> targetClassFromTCCL = loadClassFromTCCL(targetClassName);
+                if (targetClassFromTCCL == null) {
+                    continue;
+                }
+                Set<TestResourceClassEntry> targetEntries = new LinkedHashSet<>();
+                try {
+                    // reuse the reflective extraction with a single-class walk; `next` returning null ends it
+                    collectMetaAnnotations(targetClassFromTCCL, c -> null, targetEntries);
+                } catch (LinkageError | TypeNotPresentException e) {
+                    // a target carrying annotations that cannot be loaded must not break discovery for the
+                    // whole module; such targets are skipped as they cannot be examined safely
+                    continue;
+                }
+                for (TestResourceClassEntry targetEntry : targetEntries) {
+                    if (targetEntry.getScope() == GLOBAL || testClassHierarchy.contains(targetClassName)) {
+                        uniqueEntries.add(targetEntry);
+                    }
+                }
+            }
+        }
+    }
+
+    private static boolean isTestResourceMetaAnnotation(Class<? extends Annotation> annotationType) {
+        for (Annotation declared : annotationType.getAnnotations()) {
+            Class<? extends Annotation> declaredType = declared.annotationType();
+            if (declaredType == WithTestResource.class || declaredType == WithTestResource.List.class
+                    || declaredType == QuarkusTestResource.class || declaredType == QuarkusTestResource.List.class
+                    || declaredType == WithTestResourceRepeatable.class
+                    || declaredType == QuarkusTestResourceRepeatable.class) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Class<? extends Annotation> loadAnnotationTypeFromTCCL(DotName name) {
+        try {
+            Class<?> clazz = Class.forName(name.toString(), false, Thread.currentThread().getContextClassLoader());
+            return clazz.isAnnotation() ? (Class<? extends Annotation>) clazz : null;
+        } catch (ClassNotFoundException | LinkageError e) {
+            return null;
+        }
+    }
+
+    private static Class<?> loadClassFromTCCL(String className) {
+        try {
+            return Class.forName(className, false, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException | LinkageError e) {
+            return null;
+        }
+    }
+
+    private static Set<String> testClassHierarchyOf(Class<?> testClass) {
+        Set<String> testClassHierarchy = new HashSet<>();
+        Class<?> current = testClass;
+        // If this gets called for an @interface, the superclass will be null.
+        while (current != Object.class && current != null) {
+            testClassHierarchy.add(current.getName());
+            current = current.getSuperclass();
+            if (current == null) {
+                throw new RuntimeException("Internal error: The class " + testClass
+                        + " is not a descendant of Object.class, so cannot be a Quarkus test.");
+            }
+        }
+        for (Class<?> enclosing = testClass.getEnclosingClass(); enclosing != null; enclosing = enclosing
+                .getEnclosingClass()) {
+            testClassHierarchy.add(enclosing.getName());
+        }
+        return testClassHierarchy;
+    }
+
     private static void addTestResourceEntry(Class<? extends QuarkusTestResourceLifecycleManager> testResourceClass,
             ResourceArg[] argsAnnotationValue, Annotation originalAnnotation,
             boolean parallel, TestResourceScope scope, Set<TestResourceClassEntry> uniqueEntries) {
@@ -486,23 +610,7 @@ public class TestResourceManager implements Closeable {
 
     private static Collection<AnnotationInstance> findTestResourceInstancesOfClass(Class<?> testClass, IndexView index) {
         // collect all test supertypes for matching per-test targets
-        Set<String> currentTestClassHierarchy = new HashSet<>();
-        Class<?> current = testClass;
-        // If this gets called for an @interface, the superclass will be null.
-        while (current != Object.class && current != null) {
-            currentTestClassHierarchy.add(current.getName());
-            // @interface objects may not have a superclass
-            current = current.getSuperclass();
-            if (current == null) {
-                throw new RuntimeException("Internal error: The class " + testClass
-                        + " is not a descendant of Object.class, so cannot be a Quarkus test.");
-            }
-        }
-        current = testClass.getEnclosingClass();
-        while (current != null) {
-            currentTestClassHierarchy.add(current.getName());
-            current = current.getEnclosingClass();
-        }
+        Set<String> currentTestClassHierarchy = testClassHierarchyOf(testClass);
 
         Set<AnnotationInstance> testResourceAnnotations = new LinkedHashSet<>();
 
@@ -514,8 +622,7 @@ public class TestResourceManager implements Closeable {
             }
         }
 
-        for (DotName testResourceListClasses : List.of(DotName.createSimple(WithTestResource.List.class.getName()),
-                DotName.createSimple(QuarkusTestResource.List.class.getName()))) {
+        for (DotName testResourceListClasses : List.of(WITH_TEST_RESOURCE_LIST, QUARKUS_TEST_RESOURCE_LIST)) {
             for (AnnotationInstance annotation : index.getAnnotations(testResourceListClasses)) {
                 for (AnnotationInstance nestedAnnotation : annotation.value().asNestedArray()) {
                     // keep the list target
@@ -533,7 +640,8 @@ public class TestResourceManager implements Closeable {
     private static boolean keepTestResourceAnnotation(AnnotationInstance annotation, ClassInfo targetClass,
             Set<String> currentTestClassHierarchy) {
         if (targetClass.isAnnotation()) {
-            // meta-annotations have already been handled in collectMetaAnnotations
+            // annotation declarations are not usages; usages of meta-annotations are collected by
+            // collectMetaAnnotations and collectIndexedMetaAnnotations
             return false;
         }
 

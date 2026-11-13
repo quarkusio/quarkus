@@ -20,6 +20,7 @@ public class TestResourceManagerInjectorTest {
     @ValueSource(classes = { UsingInjectorTest.class, UsingInjectorTest2.class })
     void testTestInjector(Class<?> clazz) {
         TestResourceManager manager = new TestResourceManager(clazz);
+        manager.init("test");
         manager.start();
 
         Foo foo = new Foo();

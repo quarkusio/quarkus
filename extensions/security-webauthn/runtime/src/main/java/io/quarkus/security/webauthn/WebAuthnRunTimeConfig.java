@@ -322,6 +322,19 @@ public interface WebAuthnRunTimeConfig {
     Optional<Attestation> attestation();
 
     /**
+     * The name of the TLS configuration whose trust store provides the trust anchors used to verify the attestation
+     * certificates of authenticators. Only useful for attestations different from {@code NONE}. When
+     * {@link #loadMetadata()} is enabled, these trust anchors verify the FIDO metadata instead.
+     * <p>
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}.
+     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * <p>
+     * If no name is configured, the TLS configuration named {@code webauthn} is used if it exists. Otherwise, the root
+     * certificates of the Android Keystore, Apple WebAuthn and FIDO Metadata Service attestations are trusted.
+     */
+    Optional<String> tlsConfigurationName();
+
+    /**
      * Allowed Public Key Credential algorithms by preference order. Webauthn mandates that all authenticators must
      * support at least the following 2 algorithms: {@code ES256} and {@code RS256}.
      *

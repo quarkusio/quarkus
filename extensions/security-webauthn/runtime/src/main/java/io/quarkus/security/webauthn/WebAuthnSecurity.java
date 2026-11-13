@@ -82,6 +82,12 @@ import io.vertx.ext.web.RoutingContext;
 @ApplicationScoped
 public class WebAuthnSecurity {
 
+    /**
+     * The TLS configuration providing the attestation trust anchors when
+     * {@link WebAuthnRunTimeConfig#tlsConfigurationName()} is not set.
+     */
+    private static final String DEFAULT_TLS_CONFIGURATION_NAME = "webauthn";
+
     /*
      * Android Keystore Root is not published anywhere.
      * This certificate was extracted from one of the attestations
@@ -176,9 +182,6 @@ public class WebAuthnSecurity {
             "WD9f";
 
     @Inject
-    TlsConfigurationRegistry certificates;
-
-    @Inject
     WebAuthnAuthenticationMechanism authMech;
 
     @Inject
@@ -205,7 +208,8 @@ public class WebAuthnSecurity {
 
     private Attestation attestation;
 
-    public WebAuthnSecurity(WebAuthnRunTimeConfig config, Vertx vertx, WebAuthnAuthenticatorStorage database) {
+    public WebAuthnSecurity(WebAuthnRunTimeConfig config, Vertx vertx, WebAuthnAuthenticatorStorage database,
+            TlsConfigurationRegistry tlsConfigurationRegistry) {
         // apply config defaults
         this.rpId = config.relyingParty().id().orElse(null);
         this.rpName = config.relyingParty().name();
@@ -232,7 +236,7 @@ public class WebAuthnSecurity {
         this.residentKey = config.residentKey().orElse(ResidentKey.REQUIRED);
         this.attestation = config.attestation().orElse(Attestation.NONE);
         // create the webauthn4j manager
-        this.webAuthn = makeWebAuthn(vertx, config);
+        this.webAuthn = makeWebAuthn(vertx, config, tlsConfigurationRegistry);
         this.random = VertxContextPRNG.current(vertx);
     }
 
@@ -242,27 +246,12 @@ public class WebAuthnSecurity {
         return Base64UrlUtil.encodeToString(buff);
     }
 
-    private WebAuthnAsyncManager makeWebAuthn(Vertx vertx, WebAuthnRunTimeConfig config) {
+    private WebAuthnAsyncManager makeWebAuthn(Vertx vertx, WebAuthnRunTimeConfig config,
+            TlsConfigurationRegistry tlsConfigurationRegistry) {
         if (config.attestation().isPresent()
                 && config.attestation().get() != WebAuthnRunTimeConfig.Attestation.NONE) {
             TrustAnchorAsyncRepository something;
-            // FIXME: make config name configurable?
-            Optional<TlsConfiguration> webauthnTlsConfiguration = certificates.get("webauthn");
-            KeyStore trustStore;
-            if (webauthnTlsConfiguration.isPresent()) {
-                trustStore = webauthnTlsConfiguration.get().getTrustStore();
-            } else {
-                try {
-                    trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-                    trustStore.load(null, null);
-                    addCert(trustStore, ANDROID_KEYSTORE_ROOT);
-                    addCert(trustStore, APPLE_WEBAUTHN_ROOT_CA);
-                    addCert(trustStore, FIDO_MDS3_ROOT_CERTIFICATE);
-                    addCert(trustStore, GSR1);
-                } catch (CertificateException | KeyStoreException | NoSuchAlgorithmException | IOException e) {
-                    throw new RuntimeException("Failed to configure default WebAuthn certificates", e);
-                }
-            }
+            KeyStore trustStore = attestationTrustStore(config, tlsConfigurationRegistry);
             Set<TrustAnchor> trustAnchors = new HashSet<>();
             try {
                 Enumeration<String> aliases = trustStore.aliases();
@@ -295,6 +284,35 @@ public class WebAuthnSecurity {
 
         } else {
             return WebAuthnAsyncManager.createNonStrictWebAuthnAsyncManager(objectConverter);
+        }
+    }
+
+    private KeyStore attestationTrustStore(WebAuthnRunTimeConfig config,
+            TlsConfigurationRegistry tlsConfigurationRegistry) {
+        String tlsConfigurationName = config.tlsConfigurationName().orElse(DEFAULT_TLS_CONFIGURATION_NAME);
+        Optional<TlsConfiguration> tlsConfiguration = tlsConfigurationRegistry.get(tlsConfigurationName);
+        if (tlsConfiguration.isPresent()) {
+            KeyStore trustStore = tlsConfiguration.get().getTrustStore();
+            if (trustStore == null) {
+                throw new IllegalStateException("The TLS configuration " + tlsConfigurationName
+                        + " used for the WebAuthn attestation trust anchors has no trust store.");
+            }
+            return trustStore;
+        }
+        if (config.tlsConfigurationName().isPresent()) {
+            throw new IllegalStateException("Unable to find the TLS configuration " + tlsConfigurationName
+                    + " for the WebAuthn attestation trust anchors.");
+        }
+        try {
+            KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            trustStore.load(null, null);
+            addCert(trustStore, ANDROID_KEYSTORE_ROOT);
+            addCert(trustStore, APPLE_WEBAUTHN_ROOT_CA);
+            addCert(trustStore, FIDO_MDS3_ROOT_CERTIFICATE);
+            addCert(trustStore, GSR1);
+            return trustStore;
+        } catch (CertificateException | KeyStoreException | NoSuchAlgorithmException | IOException e) {
+            throw new RuntimeException("Failed to configure default WebAuthn certificates", e);
         }
     }
 

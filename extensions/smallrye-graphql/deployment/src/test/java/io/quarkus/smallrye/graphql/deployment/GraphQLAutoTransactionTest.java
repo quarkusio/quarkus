@@ -20,6 +20,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Uni;
 
@@ -28,7 +29,9 @@ public class GraphQLAutoTransactionTest extends AbstractGraphQLTest {
     @RegisterExtension
     static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((JavaArchive jar) -> jar
-                    .addClasses(TransactionCheckApi.class, Greeting.class)
+                    .addClasses(TransactionCheckApi.class, ClassLevelTransactionalApi.class,
+                            ClassLevelNonBlockingApi.class, TransactionalBase.class, SuperclassTransactionalApi.class,
+                            Greeting.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-graphql.nonblocking.enabled=false"),
                             "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
@@ -111,6 +114,70 @@ public class GraphQLAutoTransactionTest extends AbstractGraphQLTest {
                 .statusCode(200)
                 .and()
                 .body("data.explicitTransactional", Matchers.is(false));
+    }
+
+    @Test
+    void classLevelTransactionalShouldBePreserved() {
+        String request = getPayload("{ classLevelTransactional }");
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("data.classLevelTransactional", Matchers.is(false));
+    }
+
+    @Test
+    void classLevelNonBlockingShouldNotHaveTransaction() {
+        String request = getPayload("{ classLevelNonBlocking }");
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("data.classLevelNonBlocking", Matchers.is(false));
+    }
+
+    @Test
+    void blockingMethodInClassLevelNonBlockingShouldHaveTransaction() {
+        String request = getPayload("{ classLevelNonBlockingButMethodBlocking }");
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("data.classLevelNonBlockingButMethodBlocking", Matchers.is(true));
+    }
+
+    @Test
+    void superclassTransactionalShouldBePreserved() {
+        String request = getPayload("{ superclassTransactional }");
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("data.superclassTransactional", Matchers.is(false));
     }
 
     @Test
@@ -253,6 +320,54 @@ public class GraphQLAutoTransactionTest extends AbstractGraphQLTest {
             } catch (Exception e) {
                 return false;
             }
+        }
+    }
+
+    @GraphQLApi
+    @jakarta.transaction.Transactional(jakarta.transaction.Transactional.TxType.NOT_SUPPORTED)
+    public static class ClassLevelTransactionalApi {
+
+        @Inject
+        TransactionManager tm;
+
+        @Query
+        public boolean classLevelTransactional() throws Exception {
+            return tm.getStatus() == jakarta.transaction.Status.STATUS_ACTIVE;
+        }
+    }
+
+    @GraphQLApi
+    @NonBlocking
+    public static class ClassLevelNonBlockingApi {
+
+        @Inject
+        TransactionManager tm;
+
+        @Query
+        public boolean classLevelNonBlocking() throws Exception {
+            return tm.getStatus() == jakarta.transaction.Status.STATUS_ACTIVE;
+        }
+
+        @Blocking
+        @Query
+        public boolean classLevelNonBlockingButMethodBlocking() throws Exception {
+            return tm.getStatus() == jakarta.transaction.Status.STATUS_ACTIVE;
+        }
+    }
+
+    @jakarta.transaction.Transactional(jakarta.transaction.Transactional.TxType.NOT_SUPPORTED)
+    public abstract static class TransactionalBase {
+    }
+
+    @GraphQLApi
+    public static class SuperclassTransactionalApi extends TransactionalBase {
+
+        @Inject
+        TransactionManager tm;
+
+        @Query
+        public boolean superclassTransactional() throws Exception {
+            return tm.getStatus() == jakarta.transaction.Status.STATUS_ACTIVE;
         }
     }
 }

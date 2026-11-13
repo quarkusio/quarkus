@@ -2,6 +2,7 @@ package io.quarkus.arc.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.lang.constant.ClassDesc;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -97,6 +98,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
@@ -541,6 +543,7 @@ public class ArcProcessor {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             LiveReloadBuildItem liveReloadBuildItem,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer,
@@ -620,6 +623,10 @@ public class ArcProcessor {
                             resource.getFullyQualifiedName());
                     generatedClass.produce(new GeneratedClassBuildItem(resource.isApplicationClass(), resource.getName(),
                             resource.getData(), resource.getSource()));
+                    for (ResourceOutput.Resource.BootstrapMethod bootstrap : resource.getBootstrapMethods()) {
+                        constantBootstraps.produce(new ConstantBootstrapBuildItem(null,
+                                ClassDesc.of(resource.getFullyQualifiedName()), bootstrap.name(), bootstrap.type()));
+                    }
                     if (!resource.isApplicationClass()) {
                         existingClasses.existingClasses.add(resource.getName());
                     }

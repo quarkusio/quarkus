@@ -18,6 +18,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.runtime.ssl.SslContextConfiguration;
@@ -38,7 +39,8 @@ class NativeImageConfigBuildStep {
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxy,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
-            BuildProducer<NativeImageSystemPropertyBuildItem> nativeImage) {
+            BuildProducer<NativeImageSystemPropertyBuildItem> nativeImage,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
         for (NativeImageConfigBuildItem nativeImageConfigBuildItem : nativeImageConfigBuildItems) {
             for (String i : nativeImageConfigBuildItem.getRuntimeInitializedClasses()) {
                 runtimeInit.produce(new RuntimeInitializedClassBuildItem(i));
@@ -63,6 +65,7 @@ class NativeImageConfigBuildStep {
 
         Boolean sslNativeEnabled = isSslNativeEnabled(sslNativeConfig, extensionSslNativeSupport);
         nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
+        registerUrlProtocolHandlers(nativeConfig, sslNativeEnabled, reflectiveMethods);
 
         if (!inlineBeforeAnalysisBuildItems.isEmpty()) {
             nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.inline-before-analysis", "true"));
@@ -77,6 +80,32 @@ class NativeImageConfigBuildStep {
         if (!nativeImageEnableAllCharsetsBuildItems.isEmpty()) {
             nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-charsets", "true"));
         }
+    }
+
+    /**
+     * Makes the JDK {@code http} and {@code https} URL protocol handlers available in the native executable, so that
+     * {@code java.net.URL} can be used with these protocols.
+     * <p>
+     * Since GraalVM 25.1, URL protocol handlers are enabled through reachability metadata: the
+     * {@code sun.net.www.protocol.<protocol>.Handler} class and its no-arg constructor must be registered for reflection.
+     * This replaces the {@code --enable-url-protocols} option, deprecated in GraalVM 25.1. Older GraalVM versions ignore
+     * this metadata and still need that option, which {@code NativeImageBuildStep} adds for them.
+     */
+    static void registerUrlProtocolHandlers(NativeConfig nativeConfig, boolean sslNativeEnabled,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
+        if (nativeConfig.enableHttpUrlHandler()) {
+            registerUrlProtocolHandler("http", reflectiveMethods);
+        }
+        // same conditions as the --enable-url-protocols option in NativeImageBuildStep
+        if (nativeConfig.enableHttpsUrlHandler() || sslNativeEnabled) {
+            registerUrlProtocolHandler("https", reflectiveMethods);
+        }
+    }
+
+    private static void registerUrlProtocolHandler(String protocol,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
+        reflectiveMethods.produce(new ReflectiveMethodBuildItem("Enable the " + protocol + " URL protocol handler",
+                "sun.net.www.protocol." + protocol + ".Handler", "<init>"));
     }
 
     @BuildStep

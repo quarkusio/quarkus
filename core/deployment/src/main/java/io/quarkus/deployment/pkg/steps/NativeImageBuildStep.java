@@ -1087,20 +1087,25 @@ public class NativeImageBuildStep {
                 if (nativeConfig.nativeImageXmx().isPresent()) {
                     nativeImageArgs.add("-J-Xmx" + nativeConfig.nativeImageXmx().get());
                 }
-                List<String> protocols = new ArrayList<>(2);
-                if (nativeConfig.enableHttpUrlHandler()) {
-                    protocols.add("http");
-                }
-                if (enableHttpsUrlHandler) {
-                    protocols.add("https");
-                }
                 if (addAllCharsets) {
                     nativeImageArgs.add("-H:+AddAllCharsets");
                 } else {
                     nativeImageArgs.add("-H:-AddAllCharsets");
                 }
-                if (!protocols.isEmpty()) {
-                    nativeImageArgs.add("--enable-url-protocols=" + String.join(",", protocols));
+                // Option deprecated in GraalVM 25.1, which enables URL protocol handlers through the reachability
+                // metadata registered by NativeImageConfigBuildStep instead: avoid using it to prevent warnings.
+                // The enabled protocols must match NativeImageConfigBuildStep#registerUrlProtocolHandlers
+                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_1_0) < 0) {
+                    List<String> protocols = new ArrayList<>(2);
+                    if (nativeConfig.enableHttpUrlHandler()) {
+                        protocols.add("http");
+                    }
+                    if (enableHttpsUrlHandler) {
+                        protocols.add("https");
+                    }
+                    if (!protocols.isEmpty()) {
+                        nativeImageArgs.add("--enable-url-protocols=" + String.join(",", protocols));
+                    }
                 }
                 if (!pie.isEmpty()) {
                     nativeImageArgs.add("-H:NativeLinkerOption=" + pie);

@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.common.headers;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.ws.rs.core.CacheControl;
@@ -19,32 +20,30 @@ public class CacheControlDelegate implements RuntimeDelegate.HeaderDelegate<Cach
         ExtendedCacheControl result = new ExtendedCacheControl();
         result.setNoTransform(false);
 
-        String[] directives = value.split(",");
-        for (String directive : directives) {
+        for (String directive : splitDirectives(value)) {
             directive = directive.trim();
+            if (directive.isEmpty()) {
+                continue;
+            }
 
-            String[] nv = directive.split("=");
-            String name = nv[0].trim();
+            // Split on the first '=' only so that values containing '=' are preserved.
+            int eq = directive.indexOf('=');
+            String name;
             String val = null;
-            if (nv.length > 1) {
-                val = nv[1].trim();
-                if (val.startsWith("\""))
-                    val = val.substring(1);
-                if (val.endsWith("\""))
-                    val = val.substring(0, val.length() - 1);
+            if (eq == -1) {
+                name = directive;
+            } else {
+                name = directive.substring(0, eq).trim();
+                val = unquote(directive.substring(eq + 1).trim());
             }
 
             String lowercase = name.toLowerCase();
             if ("no-cache".equals(lowercase)) {
                 result.setNoCache(true);
-                if (val != null && !"".equals(val)) {
-                    result.getNoCacheFields().add(val);
-                }
+                addFieldNames(val, result.getNoCacheFields());
             } else if ("private".equals(lowercase)) {
                 result.setPrivate(true);
-                if (val != null && !"".equals(val)) {
-                    result.getPrivateFields().add(val);
-                }
+                addFieldNames(val, result.getPrivateFields());
             } else if ("no-store".equals(lowercase)) {
                 result.setNoStore(true);
             } else if ("max-age".equals(lowercase)) {
@@ -70,6 +69,50 @@ public class CacheControlDelegate implements RuntimeDelegate.HeaderDelegate<Cach
             }
         }
         return result;
+    }
+
+    /**
+     * Splits a Cache-Control header value into its directives, ignoring commas that appear inside a
+     * quoted string. A quoted directive such as {@code private="Set-Cookie, Authorization"} carries a
+     * comma-separated field list (see RFC 7234 section 5.2) and must stay in a single directive.
+     */
+    private static List<String> splitDirectives(String value) {
+        List<String> directives = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '"') {
+                inQuotes = !inQuotes;
+                current.append(c);
+            } else if (c == ',' && !inQuotes) {
+                directives.add(current.toString());
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+        directives.add(current.toString());
+        return directives;
+    }
+
+    private static String unquote(String value) {
+        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
+            return value.substring(1, value.length() - 1);
+        }
+        return value;
+    }
+
+    private static void addFieldNames(String value, List<String> fields) {
+        if (value == null || value.isEmpty()) {
+            return;
+        }
+        for (String field : value.split(",")) {
+            field = field.trim();
+            if (!field.isEmpty()) {
+                fields.add(field);
+            }
+        }
     }
 
     private static StringBuilder addDirective(String directive, StringBuilder buffer) {

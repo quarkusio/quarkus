@@ -27,7 +27,7 @@ This means you can use your favorite logging API with Quarkus, provided you add 
 | link:https://github.com/jboss-logging/jboss-logging[JBoss Logging]
 | Built-in
 
-| link:https://docs.oracle.com/en/java/javase/17/docs/api/java.logging/java/util/logging/package-summary.html[JDK `java.util.logging` (JUL)]
+| link:{jdk-javadocs-url}/java.logging/java/util/logging/package-summary.html[JDK `java.util.logging` (JUL)]
 | Built-in
 
 | link:https://www.slf4j.org/[SLF4J]
@@ -786,7 +786,7 @@ For an example configuration, see the xref:centralized-log-management.adoc[Centr
 
 == Add a logging filter to your log handler
 
-You can attach a link:https://docs.oracle.com/en/java/javase/17/docs/api/java.logging/java/util/logging/Filter.html[filter] to a log handler such as the console handler.
+You can attach a link:{jdk-javadocs-url}/java.logging/java/util/logging/Filter.html[filter] to a log handler such as the console handler.
 The filter determines whether the handler logs a given log record.
 
 To register a logging filter:

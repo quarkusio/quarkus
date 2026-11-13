@@ -365,7 +365,7 @@ include::{generated-dir}/config/quarkus-core_quarkus.package.jar.aot.adoc[opts=o
 [#appcds-legacy]
 == AppCDS (Legacy)
 
-For JDK versions prior to 24, Quarkus supports link:https://docs.oracle.com/en/java/javase/17/docs/specs/man/java.html#application-class-data-sharing[Application Class Data Sharing (AppCDS)] as a fallback.
+For JDK versions prior to 24, Quarkus supports link:{jdk-docs-url}/specs/man/java.html#application-class-data-sharing[Application Class Data Sharing (AppCDS)] as a fallback.
 AppCDS provides more modest startup improvements compared to Leyden AOT, but works on older JDKs.
 
 === Generating AppCDS archive

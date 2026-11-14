@@ -78,7 +78,7 @@ The above configuration will lead to two new client registrations created in you
 
 You or may not need to acquire an initial registration access token. If you don't, then you will have to enable one or more client registration policies in your OIDC provider's dashboard. For example, see https://www.keycloak.org/securing-apps/client-registration[Keycloak client registration policies].
 
-The next step is to inject either `quarkus.oidc.client.registration.OidcClientRegistration` if only a single default client registration is done, or `quarkus.oidc.client.registration.OidcClientRegistrations` if more than one registration is configured, and use metadata of the clients registered with these configurations.
+The next step is to inject either `io.quarkus.oidc.client.registration.OidcClientRegistration` if only a single default client registration is done, or `io.quarkus.oidc.client.registration.OidcClientRegistrations` if more than one registration is configured, and use metadata of the clients registered with these configurations.
 
 For example:
 

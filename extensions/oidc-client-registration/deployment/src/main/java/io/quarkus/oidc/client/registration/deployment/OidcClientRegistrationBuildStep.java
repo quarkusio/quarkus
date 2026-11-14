@@ -1,24 +1,27 @@
 package io.quarkus.oidc.client.registration.deployment;
 
+import java.io.IOException;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 import jakarta.inject.Singleton;
 
-import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.oidc.client.registration.OidcClientRegistration;
 import io.quarkus.oidc.client.registration.OidcClientRegistrations;
+import io.quarkus.oidc.client.registration.runtime.DefaultOidcClientRegistrationActiveCheck;
 import io.quarkus.oidc.client.registration.runtime.OidcClientRegistrationRecorder;
-import io.quarkus.proxy.deployment.ProxyRegistryBuildItem;
-import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
-import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.quarkus.oidc.client.registration.runtime.OidcClientRegistrationsConfig;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
+import io.quarkus.tls.TlsConfigurationRegistry;
+import io.vertx.core.Vertx;
 
 @BuildSteps(onlyIf = OidcClientRegistrationBuildStep.IsEnabled.class)
 public class OidcClientRegistrationBuildStep {
@@ -28,32 +31,50 @@ public class OidcClientRegistrationBuildStep {
         return new ExtensionSslNativeSupportBuildItem(Feature.OIDC_CLIENT_REGISTRATION);
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    public void setup(
-            OidcClientRegistrationRecorder recorder,
-            CoreVertxBuildItem vertxBuildItem,
-            TlsRegistryBuildItem tlsRegistry,
-            ProxyRegistryBuildItem proxyRegistryBuildItem,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBean) {
+    void setup(ServiceRegistrar serviceRegistrar, BuildProducer<SyntheticBeanBuildItem> syntheticBean) {
+        serviceRegistrar
+                .forService(OidcClientRegistrations.class)
+                .atPhase(Phase.DATA)
+                .require(ProxyConfigurationRegistry.class)
+                .require(TlsConfigurationRegistry.class)
+                .require(Vertx.class)
+                .require(OidcClientRegistrationsConfig.class)
+                .onStart((ctx, proxyConfigurationRegistry, tlsConfigurationRegistry, vertx, runtimeConfig) -> {
+                    OidcClientRegistrations oidcClientRegistrations = OidcClientRegistrationRecorder.setup(vertx,
+                            tlsConfigurationRegistry, proxyConfigurationRegistry, runtimeConfig);
+                    ctx.onStop(() -> {
+                        try {
+                            oidcClientRegistrations.close();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                    return oidcClientRegistrations;
+                });
 
-        OidcClientRegistrations oidcClientRegistrations = recorder.setup(vertxBuildItem.getVertx(),
-                tlsRegistry.registry(), proxyRegistryBuildItem.registry());
+        serviceRegistrar
+                .forService(OidcClientRegistration.class)
+                .atPhase(Phase.DATA)
+                .require(OidcClientRegistrations.class)
+                .optional()
+                .onStart((ctx, oidcClientRegistrations) -> Optional
+                        .ofNullable(oidcClientRegistrations.getClientRegistration()));
 
+        // this bean is inactive when the default client registration is not configured
         syntheticBean.produce(SyntheticBeanBuildItem.configure(OidcClientRegistration.class).unremovable()
                 .types(OidcClientRegistration.class)
-                .supplier(recorder.createOidcClientRegistrationBean(oidcClientRegistrations))
+                .serviceValue(OidcClientRegistration.class)
+                .checkActive(DefaultOidcClientRegistrationActiveCheck.class)
                 .scope(Singleton.class)
                 .setRuntimeInit()
-                .destroyer(BeanDestroyer.CloseableDestroyer.class)
                 .done());
 
         syntheticBean.produce(SyntheticBeanBuildItem.configure(OidcClientRegistrations.class).unremovable()
                 .types(OidcClientRegistrations.class)
-                .supplier(recorder.createOidcClientRegistrationsBean(oidcClientRegistrations))
+                .serviceValue(OidcClientRegistrations.class)
                 .scope(Singleton.class)
                 .setRuntimeInit()
-                .destroyer(BeanDestroyer.CloseableDestroyer.class)
                 .done());
     }
 

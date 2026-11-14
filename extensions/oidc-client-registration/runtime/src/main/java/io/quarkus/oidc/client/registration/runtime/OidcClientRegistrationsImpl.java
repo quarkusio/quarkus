@@ -11,15 +11,12 @@ import io.quarkus.oidc.client.registration.OidcClientRegistrationConfig;
 import io.quarkus.oidc.client.registration.OidcClientRegistrations;
 import io.smallrye.mutiny.Uni;
 
-public class OidcClientRegistrationsImpl implements OidcClientRegistrations, Closeable {
+final class OidcClientRegistrationsImpl implements OidcClientRegistrations, Closeable {
     private OidcClientRegistration defaultClientReg;
     private Map<String, OidcClientRegistration> staticOidcClientRegs;
     Function<OidcClientRegistrationConfig, Uni<OidcClientRegistration>> newOidcClientReg;
 
-    public OidcClientRegistrationsImpl() {
-    }
-
-    public OidcClientRegistrationsImpl(OidcClientRegistration defaultClientReg,
+    OidcClientRegistrationsImpl(OidcClientRegistration defaultClientReg,
             Map<String, OidcClientRegistration> staticOidcClientRegs,
             Function<OidcClientRegistrationConfig, Uni<OidcClientRegistration>> newOidcClientReg) {
         this.defaultClientReg = defaultClientReg;
@@ -48,9 +45,14 @@ public class OidcClientRegistrationsImpl implements OidcClientRegistrations, Clo
 
     @Override
     public void close() throws IOException {
-        defaultClientReg.close();
+        // a client registration is null when its configuration is not available
+        if (defaultClientReg != null) {
+            defaultClientReg.close();
+        }
         for (OidcClientRegistration clientReg : staticOidcClientRegs.values()) {
-            clientReg.close();
+            if (clientReg != null) {
+                clientReg.close();
+            }
         }
     }
 }

@@ -69,6 +69,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
                 ":ext-t:deployment:publishToMavenLocal",
                 ":ext-u:runtime:publishToMavenLocal",
                 ":ext-u:deployment:publishToMavenLocal",
+                ":extension-transitive-dependency:publishToMavenLocal",
                 ":dev-mode-only-lib:publishToMavenLocal");
     }
 
@@ -204,6 +205,9 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
                 acmeArtifacts.add(d.getArtifactId());
             }
         }
+        assertThat(acmeArtifacts)
+                .as("deployment artifact of an extension declared directly and reachable through an API dependency")
+                .contains("ext-t-deployment");
         assertThat(acmeArtifacts).containsExactlyInAnyOrder(
                 "ext-a", "ext-a-deployment",
                 "ext-b", "ext-b-deployment",
@@ -214,7 +218,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
                 "ext-s", "ext-s-deployment",
                 "ext-u", "ext-u-deployment",
                 "ext-t", "ext-t-deployment",
-                "simple-dependency", "transitive-dependency",
+                "simple-dependency", "transitive-dependency", "extension-transitive-dependency",
                 "dev-mode-only-lib");
     }
 
@@ -243,7 +247,7 @@ public class ConditionalDependenciesTest extends QuarkusGradleWrapperTestBase {
                 "ext-c", "ext-c-deployment",
                 "ext-e", "ext-e-deployment",
                 "ext-t", "ext-t-deployment",
-                "simple-dependency", "transitive-dependency");
+                "simple-dependency", "transitive-dependency", "extension-transitive-dependency");
     }
 
 }

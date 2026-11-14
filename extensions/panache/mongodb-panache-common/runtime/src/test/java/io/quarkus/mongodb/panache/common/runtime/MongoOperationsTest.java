@@ -443,6 +443,15 @@ class MongoOperationsTest {
         result = operations.bindFilter(Object.class, "field like ?1", new Object[] { "/uppercase.*/i" });
         assertBsonEquals(Filters.regex("field", "uppercase.*", "i"), result);
 
+        result = operations.bindFilter(Object.class, "field not like ?1", new Object[] { "a value" });
+        assertBsonEquals(Filters.not(Filters.regex("field", "a value")), result);
+
+        result = operations.bindFilter(Object.class, "field not like ?1", new Object[] { "/uppercase.*/i" });
+        assertBsonEquals(Filters.not(Filters.regex("field", "uppercase.*", "i")), result);
+
+        result = operations.bindFilter(Object.class, "not (field = ?1 or isOk = ?2)", new Object[] { "a value", true });
+        assertBsonEquals(Filters.nor(Filters.or(Filters.eq("field", "a value"), Filters.eq("isOk", true))), result);
+
         result = operations.bindFilter(Object.class, "field is not null", new Object[] {});
         assertBsonEquals(Filters.exists("field", true), result);
 
@@ -457,6 +466,9 @@ class MongoOperationsTest {
         List<Object> list = Arrays.asList("f1", "f2");
         result = operations.bindFilter(DemoObj.class, "field in ?1", new Object[] { list });
         assertBsonEquals(Filters.in("field", list), result);
+
+        result = operations.bindFilter(DemoObj.class, "field not in ?1", new Object[] { list });
+        assertBsonEquals(Filters.nin("field", list), result);
 
         result = operations.bindFilter(DemoObj.class, "field in ?1 and isOk = ?2", new Object[] { list, true });
         assertBsonEquals(Filters.and(Filters.in("field", list), Filters.eq("isOk", true)), result);

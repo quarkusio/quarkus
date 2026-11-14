@@ -574,7 +574,7 @@ MongoDB with Panache will then map it to a MongoDB native query.
 If your query does not start with `{`, we will consider it a PanacheQL query:
 
 - `<singlePropertyName>` (and single parameter) which will expand to `{'singleColumnName': '?1'}`
-- `<query>` will expand to `{<query>}` where we will map the PanacheQL query to MongoDB native query form. We support the following operators that will be mapped to the corresponding MongoDB operators: 'and', 'or' ( mixing 'and' and 'or' is not currently supported), '=', '>', '>=', '<', '<=', '!=', 'is null', 'is not null', and 'like' that is mapped to the MongoDB `$regex` operator (both String and JavaScript patterns are supported).
+- `<query>` will expand to `{<query>}` where we will map the PanacheQL query to MongoDB native query form. We support the following operators that will be mapped to the corresponding MongoDB operators: 'and', 'or' ( mixing 'and' and 'or' is not currently supported), '=', '>', '>=', '<', '<=', '!=', 'is null', 'is not null', 'in', 'not in', 'like' that is mapped to the MongoDB `$regex` operator (both String and JavaScript patterns are supported), 'not like', and 'not' to negate a condition.
 
 Here are some query examples:
 
@@ -583,6 +583,8 @@ Here are some query examples:
 - `lastname like ?1` will be mapped to `{'lastname': {'$regex': ?1}}`. Be careful that this will be link:https://docs.mongodb.com/manual/reference/operator/query/regex/#op._S_regex[MongoDB regex] support and not SQL like pattern.
 - `lastname is not null` will be mapped to `{'lastname':{'$exists': true}}`
 - `status in ?1` will be mapped to `{'status':{$in: ?1}}`
+- `status not in ?1` will be mapped to `{'status':{$nin: ?1}}`
+- `not (status = ?1 or amount > ?2)` will be mapped to `{'$nor': [{'$or': [{'status': ?1}, {'amount': {'$gt': ?2}}]}]}`
 
 WARNING: MongoDB queries must be valid JSON documents,
 using the same field multiple times in a query is not allowed using PanacheQL as it would generate an invalid JSON

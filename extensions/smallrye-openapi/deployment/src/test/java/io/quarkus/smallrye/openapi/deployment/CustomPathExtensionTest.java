@@ -52,4 +52,27 @@ class CustomPathExtensionTest {
         assertEquals(expected, contextRoot);
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "'/root', 'app-from-config'  , '/root'",
+            "'/'    , '/app-from-config/', ",
+            "''     , 'app-from-config'  , ",
+    })
+    void testContextPathIgnoresAppPathForVertxRoutes(String rootPath, String appPath, String expected) throws IOException {
+        class TestRoute {
+            @io.quarkus.vertx.web.Route(path = "/hello")
+            void hello() {
+            }
+        }
+
+        @io.quarkus.vertx.web.RouteBase(path = "base")
+        class TestRouteBase {
+        }
+
+        CustomPathExtension ext = new CustomPathExtension(rootPath, appPath);
+        assertEquals(expected, ext.resolveContextRoot(List.of(Index.of(TestRoute.class).getClassByName(TestRoute.class))));
+        assertEquals(expected,
+                ext.resolveContextRoot(List.of(Index.of(TestRouteBase.class).getClassByName(TestRouteBase.class))));
+    }
+
 }

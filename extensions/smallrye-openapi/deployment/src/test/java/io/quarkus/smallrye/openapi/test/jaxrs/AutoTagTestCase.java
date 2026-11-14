@@ -12,7 +12,8 @@ class AutoTagTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiResourceWithNoTag.class, AutoTagResource.class, AutoTagFetchableResource.class,
-                            AbstractAutoTagResource.class));
+                            AbstractAutoTagResource.class, AutoTagInterfaceResource.class,
+                            AutoTagInterfaceResourceImpl.class));
 
     @Test
     void testTagInOpenApi() {
@@ -27,7 +28,8 @@ class AutoTagTestCase {
                 .body("paths.'/tagged/{id}'.get.tags", Matchers.hasItem("Auto Tag Resource"))
                 .body("paths.'/resource/annotated'.get.tags", Matchers.hasItem("From Annotation"))
                 .body("paths.'/resource/auto'.get.tags", Matchers.hasItem("Open Api Resource With No Tag"))
-                .body("paths.'/resource/auto'.post.tags", Matchers.hasItem("Open Api Resource With No Tag"));
+                .body("paths.'/resource/auto'.post.tags", Matchers.hasItem("Open Api Resource With No Tag"))
+                .body("paths.'/interface'.get.tags", Matchers.hasItem("Auto Tag Interface Resource Impl"));
     }
 
 }

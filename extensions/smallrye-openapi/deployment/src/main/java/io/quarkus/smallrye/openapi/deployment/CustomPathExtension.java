@@ -15,6 +15,8 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
+import io.smallrye.openapi.vertx.VertxConstants;
+
 /**
  * This adds support for the quarkus.http.root-path config option
  */
@@ -33,6 +35,12 @@ public class CustomPathExtension {
     }
 
     public String resolveContextRoot(Collection<ClassInfo> applications) {
+        if (applications.stream().anyMatch(CustomPathExtension::isVertxRoute)) {
+            // The REST application path does not apply to Vert.x routes
+            String contextRoot = buildContextRoot(rootPath);
+            return "/".equals(contextRoot) ? null : contextRoot;
+        }
+
         Optional<String> appPathAnnotationValue = applications.stream()
                 .flatMap(app -> APPLICATION_PATH.stream().map(app::declaredAnnotation))
                 .filter(Objects::nonNull)
@@ -48,6 +56,11 @@ public class CustomPathExtension {
                 .orElseGet(() -> buildContextRoot(rootPath, this.appPath));
 
         return "/".equals(contextRoot) ? null : contextRoot;
+    }
+
+    private static boolean isVertxRoute(ClassInfo classInfo) {
+        // hasAnnotation (not declaredAnnotation) so that @Route on a method of the class is found
+        return classInfo.hasAnnotation(VertxConstants.ROUTE) || classInfo.hasAnnotation(VertxConstants.ROUTE_BASE);
     }
 
     static String buildContextRoot(String... segments) {

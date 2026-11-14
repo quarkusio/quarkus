@@ -376,7 +376,11 @@ public class IfSectionHelper implements SectionHelper {
 
         CompletionStage<Object> evaluateNext(SectionResolutionContext context, Object previousValue,
                 Iterator<Condition> iter) {
-            Condition next = iter.next();
+            return evaluateNext(context, previousValue, iter.next(), iter);
+        }
+
+        CompletionStage<Object> evaluateNext(SectionResolutionContext context, Object previousValue, Condition next,
+                Iterator<Condition> iter) {
             Boolean shortResult = null;
             Operator operator = next.getOperator();
             if (operator != null && operator.isShortCircuiting()) {
@@ -384,6 +388,14 @@ public class IfSectionHelper implements SectionHelper {
             }
             if (shortResult != null) {
                 // There is no need to continue with the next operand
+                if (operator == Operator.AND) {
+                    while (iter.hasNext()) {
+                        Condition following = iter.next();
+                        if (following.getOperator() != Operator.AND) {
+                            return evaluateNext(context, shortResult, following, iter);
+                        }
+                    }
+                }
                 return CompletedStage.of(shortResult);
             } else {
                 Object literalVal = next.getLiteralValue();

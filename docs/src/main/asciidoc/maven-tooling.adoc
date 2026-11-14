@@ -345,6 +345,17 @@ You can also additionally set the `watchedFiles` parameter to the set of files t
 include::{includes}/devtools/dev-parameters.adoc[]
 :!dev-additional-parameters:
 
+=== Running with an unsupported Maven version
+
+`quarkus:dev` and `quarkus:create` fail if the Maven version is not supported by Quarkus.
+If you cannot choose the Maven version, for example because it is provided by your environment,
+you can skip this check with the `noMavenVersionCheck` property, at your own risk:
+
+[source,bash]
+----
+mvn quarkus:dev -DnoMavenVersionCheck=true
+----
+
 == Debugging
 
 In development mode, Quarkus starts by default with debug mode enabled, listening to port `5005` without suspending the JVM.

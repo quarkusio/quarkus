@@ -16,7 +16,11 @@ import org.apache.maven.plugin.logging.Log;
 @Named
 public class MavenVersionEnforcer {
 
-    public void ensureMavenVersion(Log log, MavenSession session) throws MojoExecutionException {
+    public void ensureMavenVersion(Log log, MavenSession session, boolean skip) throws MojoExecutionException {
+        if (skip) {
+            log.debug("Skipping the Maven version check");
+            return;
+        }
         final String supported;
         try {
             supported = getSupportedMavenVersions();

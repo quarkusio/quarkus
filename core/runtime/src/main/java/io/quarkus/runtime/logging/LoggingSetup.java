@@ -675,7 +675,7 @@ public final class LoggingSetup {
      */
     public static boolean shouldCreateNamedHandlers(
             LogRuntimeConfig logRuntimeConfig,
-            List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers) {
+            List<Map<String, Handler>> additionalNamedHandlers) {
         if (!logRuntimeConfig.categories().isEmpty()) {
             return true;
         }
@@ -814,7 +814,7 @@ public final class LoggingSetup {
      */
     public static Map<String, Handler> createNamedHandlers(
             LogRuntimeConfig config, ConsoleRuntimeConfig consoleRuntimeConfig,
-            List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
+            List<Map<String, Handler>> additionalNamedHandlers,
             Map<NamedHandlerType, Map<String, Optional<Formatter>>> namedHandlerFormatters,
             List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters,
             List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
@@ -886,8 +886,8 @@ public final class LoggingSetup {
             additionalNamedHandlersMap = Map.of();
         } else {
             additionalNamedHandlersMap = new HashMap<>();
-            for (RuntimeValue<Map<String, Handler>> runtimeValue : additionalNamedHandlers) {
-                runtimeValue.getValue().forEach(
+            for (Map<String, Handler> namedHandlersMap : additionalNamedHandlers) {
+                namedHandlersMap.forEach(
                         new AdditionalNamedHandlersConsumer(additionalNamedHandlersMap, errorManager,
                                 cleanupFilter.filterElements.values(), shutdownHandler));
             }
@@ -1010,9 +1010,10 @@ public final class LoggingSetup {
      * @param namedHandlers the map of named handlers, keyed by handler name (must not be {@code null})
      * @param effectiveHandlers the list of effective root handlers to add to (must not be {@code null})
      * @param errorManager the error manager to report missing handler links to (must not be {@code null})
+     * @param checkHandlerLinks {@code true} if a missing handler link should be reported as an error
      */
     public static void addNamedHandlersToRootHandlers(Optional<List<String>> handlerNames, Map<String, Handler> namedHandlers,
-            ArrayList<Handler> effectiveHandlers, ErrorManager errorManager) {
+            ArrayList<Handler> effectiveHandlers, ErrorManager errorManager, boolean checkHandlerLinks) {
         if (handlerNames.isEmpty()) {
             return;
         }
@@ -1023,7 +1024,7 @@ public final class LoggingSetup {
             Handler handler = namedHandlers.get(namedHandler);
             if (handler != null) {
                 effectiveHandlers.add(handler);
-            } else {
+            } else if (checkHandlerLinks) {
                 errorManager.error(String.format("Handler with name '%s' is linked to a category but not configured.",
                         namedHandler), null, ErrorManager.GENERIC_FAILURE);
             }
@@ -1104,8 +1105,8 @@ public final class LoggingSetup {
      * <p>
      * The individual root handlers (console, file, syslog, socket, and the dev/test exception-reporting
      * handler) are produced by their own services and passed in via {@code serviceRootHandlers}; they are
-     * already fully configured. Extension-contributed handlers, the streaming handler, and the per-named-handler
-     * formatters are passed in via the {@code // RECORDER COMPAT} bridge wrappers.
+     * already fully configured. Extension-contributed root and named handlers, the streaming handler, and the
+     * per-named-handler formatters are passed in via the {@code // RECORDER COMPAT} bridge wrappers.
      *
      * @param buildConfig the log build-time configuration (must not be {@code null})
      * @param config the log runtime configuration (must not be {@code null})
@@ -1117,6 +1118,8 @@ public final class LoggingSetup {
      * @param namedFilters the map of named filters, keyed by filter name (must not be {@code null})
      * @param serviceRootHandlers the enabled root handlers produced by the handler services (must not be {@code null})
      * @param additionalHandlers extension-contributed root handlers (must not be {@code null})
+     * @param additionalNamedHandlers extension-contributed named handler maps, keyed by handler name (must not be
+     *        {@code null})
      * @param streamingHandler the Dev UI streaming handler, or {@code null} if none
      * @param consoleFormatter the global console formatter for named-handler fallback, or {@code null}
      * @param fileFormatter the global file formatter for named-handler fallback, or {@code null}
@@ -1139,6 +1142,7 @@ public final class LoggingSetup {
             final Map<String, Filter> namedFilters,
             final Collection<Handler> serviceRootHandlers,
             final Collection<AdditionalLogHandler> additionalHandlers,
+            final List<Map<String, Handler>> additionalNamedHandlers,
             final StreamingLogHandler streamingHandler,
             final Formatter consoleFormatter,
             final Formatter fileFormatter,
@@ -1204,8 +1208,8 @@ public final class LoggingSetup {
                 ? Map.of()
                 : namedHandlerFormatters.formatters();
 
-        Map<String, Handler> namedHandlers = shouldCreateNamedHandlers(config, List.of())
-                ? createNamedHandlers(config, consoleRuntimeConfig, List.of(), mergedNamedHandlerFormatters,
+        Map<String, Handler> namedHandlers = shouldCreateNamedHandlers(config, additionalNamedHandlers)
+                ? createNamedHandlers(config, consoleRuntimeConfig, additionalNamedHandlers, mergedNamedHandlerFormatters,
                         toFormatterList(consoleFormatter), toFormatterList(fileFormatter), toFormatterList(syslogFormatter),
                         toFormatterList(socketFormatter), errorManager, cleanupFilter, namedFilters, launchMode, notifier,
                         includeFilters)
@@ -1216,7 +1220,7 @@ public final class LoggingSetup {
                     namedHandlers, true);
         }
 
-        addNamedHandlersToRootHandlers(config.handlers(), namedHandlers, handlers, errorManager);
+        addNamedHandlersToRootHandlers(config.handlers(), namedHandlers, handlers, errorManager, true);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(LogContextInitializer.NO_HANDLERS));
     }

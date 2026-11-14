@@ -250,8 +250,11 @@ public class LoggingSetupRecorder {
         Map<NamedHandlerType, Map<String, Optional<Formatter>>> mergedNamedHandlerFormatters = LoggingSetup
                 .mergeNamedHandlerFormatters(namedHandlerFormatters);
 
-        Map<String, Handler> namedHandlers = LoggingSetup.shouldCreateNamedHandlers(config, additionalNamedHandlers)
-                ? LoggingSetup.createNamedHandlers(config, consoleRuntimeConfig.getValue(), additionalNamedHandlers,
+        List<Map<String, Handler>> additionalNamedHandlerMaps = additionalNamedHandlers.stream()
+                .map(RuntimeValue::getValue)
+                .toList();
+        Map<String, Handler> namedHandlers = LoggingSetup.shouldCreateNamedHandlers(config, additionalNamedHandlerMaps)
+                ? LoggingSetup.createNamedHandlers(config, consoleRuntimeConfig.getValue(), additionalNamedHandlerMaps,
                         mergedNamedHandlerFormatters,
                         possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters, possibleSocketFormatters,
                         errorManager, cleanupFiler, namedFilters, launchMode,
@@ -287,7 +290,7 @@ public class LoggingSetupRecorder {
                 handlers.add(handler);
             }
         }
-        LoggingSetup.addNamedHandlersToRootHandlers(config.handlers(), namedHandlers, handlers, errorManager);
+        LoggingSetup.addNamedHandlersToRootHandlers(config.handlers(), namedHandlers, handlers, errorManager, true);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(LogContextInitializer.NO_HANDLERS));
         return shutdownNotifier;
@@ -342,7 +345,8 @@ public class LoggingSetupRecorder {
         LoggingSetup.setUpCategoryLoggers(buildConfig, categoryDefaultMinLevels, categories, logContext, errorManager,
                 namedHandlers, false);
 
-        LoggingSetup.addNamedHandlersToRootHandlers(config.handlers(), namedHandlers, handlers, errorManager);
+        // named handlers contributed by extensions are not available at build time
+        LoggingSetup.addNamedHandlersToRootHandlers(config.handlers(), namedHandlers, handlers, errorManager, false);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setBuildTimeHandlers(handlers.toArray(LogContextInitializer.NO_HANDLERS));
     }

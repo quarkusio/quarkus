@@ -1,6 +1,8 @@
 package io.quarkus.mongodb.panache.common.binder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -107,17 +109,18 @@ class MongoParserVisitor extends HqlParserBaseVisitor<Object> {
         String field = (String) ctx.expression(0).accept(this);
         Object parameter = ctx.expression(1).accept(this);
         String pattern = parameter.toString();
+        Bson regex;
         // In case we have something like '/.*/.*' we are in a JavaScript regex, so we must unescape the parameter.
         // We do this here instead of inside visitParameterExpression to avoid unescaping for non-regex parameters.
         if (pattern.startsWith("/") && pattern.lastIndexOf('/') > 0) {
             int lastSlash = pattern.lastIndexOf('/');
             String options = pattern.substring(lastSlash + 1);
             pattern = pattern.substring(1, lastSlash);
-            if (!options.isEmpty()) {
-                return Filters.regex(field, pattern, options);
-            }
+            regex = options.isEmpty() ? Filters.regex(field, pattern) : Filters.regex(field, pattern, options);
+        } else {
+            regex = Filters.regex(field, pattern);
         }
-        return Filters.regex(field, pattern);
+        return ctx.NOT() != null ? Filters.not(regex) : regex;
     }
 
     @Override
@@ -193,12 +196,20 @@ class MongoParserVisitor extends HqlParserBaseVisitor<Object> {
     public Object visitInPredicate(HqlParser.InPredicateContext ctx) {
         String field = (String) ctx.expression().accept(this);
         Object inValue = ctx.inList().accept(this);
+        Iterable<?> values;
         if (inValue instanceof Iterable) {
-            return Filters.in(field, (Iterable<?>) inValue);
+            values = (Iterable<?>) inValue;
         } else if (inValue != null && inValue.getClass().isArray()) {
-            return Filters.in(field, (Object[]) inValue);
+            values = Arrays.asList((Object[]) inValue);
+        } else {
+            values = Collections.singletonList(inValue);
         }
-        return Filters.in(field, inValue);
+        return ctx.NOT() != null ? Filters.nin(field, values) : Filters.in(field, values);
+    }
+
+    @Override
+    public Object visitNegatedPredicate(HqlParser.NegatedPredicateContext ctx) {
+        return Filters.nor((Bson) ctx.predicate().accept(this));
     }
 
     // Turn new date functions such as instant into regular fields, to not break existing queries

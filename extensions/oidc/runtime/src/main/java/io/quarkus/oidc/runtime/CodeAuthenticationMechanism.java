@@ -81,6 +81,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final String NO_OIDC_COOKIES_AVAILABLE = "no_oidc_cookies";
     static final String HTTP_SCHEME = "http";
+    static final String APPLICATION_LOGIN_REDIRECT_PARAM = "redirect";
+    static final String APPLICATION_LOGIN_MARKER_PARAM = "q_login";
 
     private static final String INTERNAL_IDTOKEN_HEADER = "internal";
     private static final Logger LOG = Logger.getLogger(CodeAuthenticationMechanism.class);
@@ -680,6 +682,21 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     @Override
                     public Uni<ChallengeData> apply(Void t) {
 
+                        Optional<String> applicationLoginPath = configContext.oidcConfig().authentication()
+                                .applicationLoginPath();
+                        if (isApplicationLoginPageRequest(context, configContext.oidcConfig())) {
+                            if (context.get(NO_OIDC_COOKIES_AVAILABLE) != null) {
+                                LOG.errorf("Application login path %s of the tenant %s requires authentication but it must"
+                                        + " be public, completing the authentication challenge with HTTP status 401",
+                                        applicationLoginPath.get(), configContext.oidcConfig().tenantId().get());
+                            } else {
+                                LOG.debugf("Authentication of the application login path %s request has failed,"
+                                        + " completing the authentication challenge with HTTP status 401",
+                                        applicationLoginPath.get());
+                            }
+                            return Uni.createFrom().item(new ChallengeData(401, "WWW-Authenticate", "OIDC"));
+                        }
+
                         if (context.get(NO_OIDC_COOKIES_AVAILABLE) != null
                                 && isRedirectFromProvider(context, configContext)) {
                             LOG.warn(
@@ -699,6 +716,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 challenge = new ChallengeData(499, "WWW-Authenticate", "OIDC");
                             }
                             return Uni.createFrom().item(challenge);
+                        }
+
+                        if (applicationLoginPath.isPresent()
+                                && !context.queryParams().contains(APPLICATION_LOGIN_MARKER_PARAM)) {
+                            return Uni.createFrom().item(
+                                    createApplicationLoginPageRedirect(context, configContext, applicationLoginPath.get()));
                         }
 
                         StringBuilder codeFlowParams = new StringBuilder(168); // experimentally determined to be a good size for preventing resizing and not wasting space
@@ -741,6 +764,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     requestQueryParams.remove(forwardedParam);
                                 }
                             }
+                        }
+                        if (applicationLoginPath.isPresent()) {
+                            if (requestQueryParams == null) {
+                                requestQueryParams = context.queryParams();
+                            }
+                            requestQueryParams.remove(APPLICATION_LOGIN_MARKER_PARAM);
                         }
 
                         // redirect_uri
@@ -845,6 +874,35 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         LOG.debugf("Code flow redirect to: %s", authorizationURL);
 
         return new ChallengeData(HttpResponseStatus.FOUND.code(), HttpHeaders.LOCATION, authorizationURL);
+    }
+
+    private ChallengeData createApplicationLoginPageRedirect(RoutingContext context, TenantConfigContext configContext,
+            String applicationLoginPath) {
+        StringBuilder redirect = new StringBuilder(forwardedPrefix(context)).append(context.request().path())
+                .append(QUESTION_MARK);
+        if (context.request().query() != null) {
+            redirect.append(context.request().query()).append(AMP);
+        }
+        redirect.append(APPLICATION_LOGIN_MARKER_PARAM).append(EQ).append("true");
+
+        String loginPageUri = prepareRedirectPathBuilder(context, configContext.oidcConfig(),
+                OidcCommonUtils.prependSlash(applicationLoginPath)).append(QUESTION_MARK)
+                .append(APPLICATION_LOGIN_REDIRECT_PARAM).append(EQ)
+                .append(OidcCommonUtils.urlEncode(redirect.toString())).toString();
+        loginPageUri = filterRedirect(context, configContext, loginPageUri, Redirect.Location.APPLICATION_LOGIN_PAGE);
+        LOG.debugf("Application login page redirect to: %s", loginPageUri);
+
+        return new ChallengeData(HttpResponseStatus.FOUND.code(), HttpHeaders.LOCATION, loginPageUri);
+    }
+
+    private static boolean isApplicationLoginPageRequest(RoutingContext context, OidcTenantConfig oidcTenantConfig) {
+        Optional<String> applicationLoginPath = oidcTenantConfig.authentication().applicationLoginPath();
+        return applicationLoginPath.isPresent()
+                && context.request().path().equals(OidcCommonUtils.prependSlash(applicationLoginPath.get()));
+    }
+
+    private static String withoutTrailingSlash(String path) {
+        return path.length() > 1 && path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
     }
 
     private boolean isRedirectFromProvider(RoutingContext context, TenantConfigContext configContext) {
@@ -1324,30 +1382,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         Authentication authentication = configContext.oidcConfig().authentication();
         boolean restorePath = isRestorePath(authentication);
+        String requestQuery = getRestoreQuery(context, requestQueryWithoutForwardedParams);
         if (restorePath || pkceCodeVerifier != null || nonce != null) {
             CodeAuthenticationStateBean extraStateValue = new CodeAuthenticationStateBean();
             if (restorePath) {
-                String requestQuery = context.request().query();
                 String requestPath = !redirectPath.equals(context.request().path()) || requestQuery != null
                         ? context.request().path()
                         : "";
                 if (requestQuery != null) {
-                    requestPath += "?";
-                    if (requestQueryWithoutForwardedParams == null) {
-                        requestPath += requestQuery;
-                    } else {
-                        StringBuilder sb = new StringBuilder();
-                        for (String requestQueryParam : requestQueryWithoutForwardedParams.names()) {
-                            for (String requestQueryParamValue : requestQueryWithoutForwardedParams.getAll(requestQueryParam)) {
-                                if (sb.length() > 0) {
-                                    sb.append(AMP);
-                                }
-                                sb.append(requestQueryParam).append(EQ)
-                                        .append(OidcCommonUtils.urlEncode(requestQueryParamValue));
-                            }
-                        }
-                        requestPath += sb.toString();
-                    }
+                    requestPath += QUESTION_MARK + requestQuery;
                 }
                 if (!requestPath.isEmpty()) {
                     extraStateValue.setRestorePath(requestPath);
@@ -1358,9 +1401,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             if (!extraStateValue.isEmpty()) {
                 cookieValue += (COOKIE_DELIM + encodeExtraStateValue(extraStateValue, configContext));
             }
-        } else if (context.request().query() != null) {
+        } else if (requestQuery != null) {
             CodeAuthenticationStateBean extraStateValue = new CodeAuthenticationStateBean();
-            extraStateValue.setRestorePath("?" + context.request().query());
+            extraStateValue.setRestorePath(QUESTION_MARK + requestQuery);
             cookieValue += (COOKIE_DELIM + encodeExtraStateValue(extraStateValue, configContext));
         }
         String stateCookieNameSuffix = configContext.oidcConfig().authentication().allowMultipleCodeFlows() ? "_" + uuid : "";
@@ -1375,6 +1418,22 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private boolean isRestorePath(Authentication auth) {
         return auth.restorePathAfterRedirect() || !auth.redirectPath().isPresent();
+    }
+
+    private static String getRestoreQuery(RoutingContext context, MultiMap requestQueryWithoutForwardedParams) {
+        if (requestQueryWithoutForwardedParams == null) {
+            return context.request().query();
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String name : requestQueryWithoutForwardedParams.names()) {
+            for (String value : requestQueryWithoutForwardedParams.getAll(name)) {
+                if (sb.length() > 0) {
+                    sb.append(AMP);
+                }
+                sb.append(name).append(EQ).append(OidcCommonUtils.urlEncode(value));
+            }
+        }
+        return sb.isEmpty() ? null : sb.toString();
     }
 
     private String encodeExtraStateValue(CodeAuthenticationStateBean extraStateValue, TenantConfigContext configContext) {
@@ -1430,17 +1489,17 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private String buildUri(RoutingContext context, boolean forceHttps, String authority, String path) {
         final String scheme = forceHttps ? "https" : context.request().scheme();
-        String forwardedPrefix = "";
+        return buildUri(scheme, authority, forwardedPrefix(context), path);
+    }
+
+    private String forwardedPrefix(RoutingContext context) {
         if (resolver.isEnableHttpForwardedPrefix()) {
             String forwardedPrefixHeader = context.request().getHeader("X-Forwarded-Prefix");
             if (forwardedPrefixHeader != null && !forwardedPrefixHeader.equals("/") && !forwardedPrefixHeader.equals("//")) {
-                forwardedPrefix = forwardedPrefixHeader;
-                if (forwardedPrefix.endsWith("/")) {
-                    forwardedPrefix = forwardedPrefix.substring(0, forwardedPrefix.length() - 1);
-                }
+                return withoutTrailingSlash(forwardedPrefixHeader);
             }
         }
-        return buildUri(scheme, authority, forwardedPrefix, path);
+        return "";
     }
 
     private static String buildUri(String scheme, String authority, String forwardedPrefix, String path) {

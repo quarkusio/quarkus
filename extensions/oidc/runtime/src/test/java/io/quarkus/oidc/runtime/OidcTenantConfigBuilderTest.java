@@ -143,6 +143,7 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(authentication.removeRedirectParameters());
         assertTrue(authentication.errorPath().isEmpty());
         assertTrue(authentication.sessionExpiredPath().isEmpty());
+        assertTrue(authentication.applicationLoginPath().isEmpty());
         assertFalse(authentication.verifyAccessToken());
         assertTrue(authentication.forceRedirectHttpsScheme().isEmpty());
         assertTrue(authentication.scopes().isEmpty());
@@ -385,6 +386,7 @@ public class OidcTenantConfigBuilderTest {
                 .removeRedirectParameters(false)
                 .errorPath("/error-path-auth-yep")
                 .sessionExpiredPath("/session-expired-path-auth-yep")
+                .applicationLoginPath("/application-login-path-auth-yep")
                 .verifyAccessToken()
                 .forceRedirectHttpsScheme()
                 .scopes(List.of("scope-one", "scope-two", "scope-three"))
@@ -542,6 +544,7 @@ public class OidcTenantConfigBuilderTest {
         assertEquals("scope-separator-654456", authentication.scopeSeparator().orElseThrow());
         assertEquals(QUERY, authentication.responseMode().orElseThrow());
         assertEquals("/session-expired-path-auth-yep", authentication.sessionExpiredPath().orElseThrow());
+        assertEquals("/application-login-path-auth-yep", authentication.applicationLoginPath().orElseThrow());
         assertEquals("/error-path-auth-yep", authentication.errorPath().orElseThrow());
         assertEquals("/redirect-path-auth-yep", authentication.redirectPath().orElseThrow());
         assertFalse(authentication.removeRedirectParameters());
@@ -1396,6 +1399,7 @@ public class OidcTenantConfigBuilderTest {
                 .removeRedirectParameters(false)
                 .errorPath("/error-path-auth-yep")
                 .sessionExpiredPath("/session-expired-path-auth-yep")
+                .applicationLoginPath("/application-login-path-auth-yep")
                 .verifyAccessToken()
                 .forceRedirectHttpsScheme()
                 .scopes(List.of("scope-one", "scope-two", "scope-three"))
@@ -1446,6 +1450,7 @@ public class OidcTenantConfigBuilderTest {
         assertEquals("scope-separator-654456", builtFirst.scopeSeparator().orElseThrow());
         assertEquals(QUERY, builtFirst.responseMode().orElseThrow());
         assertEquals("/session-expired-path-auth-yep", builtFirst.sessionExpiredPath().orElseThrow());
+        assertEquals("/application-login-path-auth-yep", builtFirst.applicationLoginPath().orElseThrow());
         assertEquals("/error-path-auth-yep", builtFirst.errorPath().orElseThrow());
         assertEquals("/redirect-path-auth-yep", builtFirst.redirectPath().orElseThrow());
         assertFalse(builtFirst.removeRedirectParameters());

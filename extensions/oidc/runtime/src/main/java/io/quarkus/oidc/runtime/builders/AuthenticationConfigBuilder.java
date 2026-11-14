@@ -35,6 +35,7 @@ public final class AuthenticationConfigBuilder {
     private boolean removeRedirectParameters;
     private Optional<String> errorPath;
     private Optional<String> sessionExpiredPath;
+    private Optional<String> applicationLoginPath;
     private boolean verifyAccessToken;
     private Optional<Boolean> forceRedirectHttpsScheme;
     private Optional<String> scopeSeparator;
@@ -82,6 +83,7 @@ public final class AuthenticationConfigBuilder {
         this.removeRedirectParameters = authentication.removeRedirectParameters();
         this.errorPath = authentication.errorPath();
         this.sessionExpiredPath = authentication.sessionExpiredPath();
+        this.applicationLoginPath = authentication.applicationLoginPath();
         this.verifyAccessToken = authentication.verifyAccessToken();
         this.forceRedirectHttpsScheme = authentication.forceRedirectHttpsScheme();
         this.scopeSeparator = authentication.scopeSeparator();
@@ -181,6 +183,15 @@ public final class AuthenticationConfigBuilder {
      */
     public AuthenticationConfigBuilder sessionExpiredPath(String sessionExpiredPath) {
         this.sessionExpiredPath = Optional.ofNullable(sessionExpiredPath);
+        return this;
+    }
+
+    /**
+     * @param applicationLoginPath {@link Authentication#applicationLoginPath()}
+     * @return this builder
+     */
+    public AuthenticationConfigBuilder applicationLoginPath(String applicationLoginPath) {
+        this.applicationLoginPath = Optional.ofNullable(applicationLoginPath);
         return this;
     }
 
@@ -655,6 +666,7 @@ public final class AuthenticationConfigBuilder {
                 .with(Authentication::removeRedirectParameters, removeRedirectParameters)
                 .with(Authentication::errorPath, errorPath)
                 .with(Authentication::sessionExpiredPath, sessionExpiredPath)
+                .with(Authentication::applicationLoginPath, applicationLoginPath)
                 .with(Authentication::verifyAccessToken, verifyAccessToken)
                 .with(Authentication::forceRedirectHttpsScheme, forceRedirectHttpsScheme)
                 .with(Authentication::scopes, optionalScopes)

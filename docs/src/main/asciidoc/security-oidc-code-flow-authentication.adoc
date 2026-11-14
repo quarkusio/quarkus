@@ -815,10 +815,98 @@ For example, if it is set to '/error' and the current request URI is `https://lo
 To prevent re-authentication after the user is redirected to this page, ensure that this error endpoint is publicly accessible.
 ====
 
+[[application-login-page]]
+==== Showing an application login page
+
+Quarkus redirects the user straight to the OIDC provider by default.
+Set the `quarkus.oidc.authentication.application-login-path` property to show a public page of your application first.
+This page typically carries your branding and a button that starts the login.
+Most OIDC providers support custom login themes.
+A theme applies to every application that uses the same provider.
+Use an application login page when several applications share one provider and each needs its own login screen.
+
+[source,properties]
+----
+quarkus.oidc.authentication.application-login-path=/login
+----
+
+When an unauthenticated user requests a secured resource, Quarkus redirects to the login page and adds a `redirect` query parameter.
+The parameter value is the original request path and query with an added `q_login` query parameter.
+The login page must link to this value.
+Following the link returns the user to the original resource and Quarkus, which now finds the `q_login` parameter, redirects to the OIDC provider.
+The state cookie is created at this point, so the user can stay on the login page as long as needed.
+The `q_login` parameter is not part of the URL that the user returns to after the authentication.
+
+For example, the user requests `http://localhost:8080/service`.
+Quarkus redirects to `http://localhost:8080/login?redirect=%2Fservice%3Fq_login%3Dtrue`.
+The login page links to `/service?q_login=true`.
+When the user follows the link, Quarkus redirects to the OIDC provider with the `redirect_uri` parameter set to `http://localhost:8080/service` and creates the state cookie.
+After the authentication the user returns to `http://localhost:8080/service`.
+
+The following Quarkus REST resource renders such a page with a xref:qute-reference.adoc[Qute] template.
+It checks that the `redirect` value is a relative path before linking to it, which prevents open redirects to other sites.
+
+[source,java]
+----
+package org.acme.security;
+
+import io.quarkus.qute.Template;
+import io.quarkus.qute.TemplateInstance;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import org.jboss.resteasy.reactive.RestQuery;
+
+@Path("/login")
+public class LoginResource {
+
+    @Inject
+    Template login;
+
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance login(@RestQuery String redirect) {
+        if (redirect == null) {
+            redirect = "/";
+        } else if (!redirect.startsWith("/") || redirect.startsWith("//")) {
+            throw new BadRequestException();
+        }
+        return login.data("redirect", redirect);
+    }
+}
+----
+
+[source,html]
+----
+<html>
+<body>
+  <h1>Welcome</h1>
+  <a href="{redirect}">Sign in with Keycloak</a>
+</body>
+</html>
+----
+
+The login page must be public.
+Allow it with an HTTP permission policy.
+
+[source,properties]
+----
+quarkus.http.auth.permission.authenticated.paths=/*
+quarkus.http.auth.permission.authenticated.policy=authenticated
+quarkus.http.auth.permission.login.paths=/login
+quarkus.http.auth.permission.login.policy=permit
+----
+
+A redirect filter registered for the `APPLICATION_LOGIN_PAGE` location can customize the redirect to the login page.
+See the <<oidc-redirect-filters>> section for more information.
+
 [[oidc-redirect-filters]]
 === OIDC redirect filters
 
-You can register one or more `io.quarkus.oidc.OidcRedirectFilter` implementations to filter OIDC redirects to OIDC authorization and logout endpoints, and also local redirects to custom error and session-expired pages.
+You can register one or more `io.quarkus.oidc.OidcRedirectFilter` implementations to filter OIDC redirects to OIDC authorization and logout endpoints, and also local redirects to custom error, session-expired and application login pages.
 A custom `OidcRedirectFilter` can add additional query parameters and response headers, and set new cookies.
 
 For example, the following simple custom `OidcRedirectFilter` adds an additional query parameter and a custom response header for all redirect requests that Quarkus OIDC can do:

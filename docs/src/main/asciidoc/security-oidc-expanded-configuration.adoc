@@ -413,6 +413,7 @@ An initial stage (first leg) of the authorization code flow requires Quarkus OID
 |Property | Default |Description
 
 |quarkus.oidc.authentication.redirect-path || OIDC callback URL
+|quarkus.oidc.authentication.application-login-path || Application login page
 |quarkus.oidc.authentication.response-mode |query| OIDC response mode
 |quarkus.oidc.authentication.scopes |openid| Required OIDC scopes
 |quarkus.oidc.authentication.add-openid-scope |true| Add `openid` scope
@@ -424,6 +425,8 @@ An initial stage (first leg) of the authorization code flow requires Quarkus OID
 |====
 
 `quarkus.oidc.authentication.redirect-path` relative path points to the Quarkus endpoint where the user is redirected to by OIDC provider, after the user completed the authentication challenge. The absolute address of this endpoint is the one you set during the OIDC application registration as a callback URL. For example, if the Quarkus endpoint is running at `https://myservice.com` and you have the `quarkus.oidc.authentication.redirect-path=service` redirect path then `https://myservice.com/service` is an absolute callback URL.
+
+`quarkus.oidc.authentication.application-login-path` points to a public page of the application which is shown before the user is redirected to the OIDC provider. Quarkus OIDC adds a `redirect` query parameter to the redirect to this page and the page links to the parameter value. Following the link starts the redirect to the OIDC provider. See the xref:security-oidc-code-flow-authentication.adoc#application-login-page[Showing an application login page] section for more information.
 
 `quarkus.oidc.authentication.response-mode` defines how the OIDC provider returns the authorization code flow properties such as `code`. Usually, these parameters are returned as query parameters, for example, `https://myservice.com/service?code=somecode&state=somestate`. It is a `query` response mode which is supported by default.
 

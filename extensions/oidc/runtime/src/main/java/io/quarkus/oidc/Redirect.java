@@ -42,7 +42,13 @@ public @interface Redirect {
          * Applies to the local redirect to the callback resource which is done after successful authorization
          * code flow completion in order to drop the code and state parameters from the callback URL.
          */
-        LOCAL_ENDPOINT_CALLBACK
+        LOCAL_ENDPOINT_CALLBACK,
+
+        /**
+         * Applies to the local redirect to the application login page configured with
+         * `quarkus.oidc.authentication.application-login-path`.
+         */
+        APPLICATION_LOGIN_PAGE
     }
 
     /**

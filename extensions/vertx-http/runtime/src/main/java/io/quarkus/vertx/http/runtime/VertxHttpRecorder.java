@@ -54,8 +54,10 @@ import org.jboss.logging.Logger;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
+import io.netty.handler.codec.compression.CompressionOptions;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
@@ -124,6 +126,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.ClientAuth;
+import io.vertx.core.http.CompressionConfig;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.Http1ServerConfig;
@@ -139,6 +142,7 @@ import io.vertx.core.http.QueryParamDecoderConfig;
 import io.vertx.core.http.WebSocketServerConfig;
 import io.vertx.core.http.impl.HttpServerConnection;
 import io.vertx.core.http.impl.http1.Http1ServerConnection;
+import io.vertx.core.http.impl.http1.HttpChunkContentCompressor;
 import io.vertx.core.impl.Utils;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.VertxInternal;
@@ -388,7 +392,8 @@ public class VertxHttpRecorder {
 
         VertxHttpConfig httpConfiguration = this.httpConfig.getValue();
         if (startVirtual) {
-            initializeVirtual(vertx.get(), httpConfiguration.limits());
+            initializeVirtual(vertx.get(), httpConfiguration.limits(), HttpServerOptionsUtils
+                    .createCompressionConfig(httpBuildTimeConfig, httpConfiguration.compressionContentSizeThreshold()));
             shutdown.addShutdownTask(() -> {
                 try {
                     virtualBootstrapChannel.channel().close().sync();
@@ -1681,11 +1686,14 @@ public class VertxHttpRecorder {
     protected static ChannelFuture virtualBootstrapChannel;
     public static VirtualAddress VIRTUAL_HTTP = new VirtualAddress("netty-virtual-http");
 
-    private static void initializeVirtual(Vertx vertxRuntime, ServerLimitsConfig limits) {
+    private static void initializeVirtual(Vertx vertxRuntime, ServerLimitsConfig limits, CompressionConfig compression) {
         if (virtualBootstrap != null) {
             return;
         }
 
+        List<CompressionOptions> compressors = compression.getCompressors();
+        CompressionOptions[] compressionOptions = compression.isCompressionEnabled() && compressors != null
+                && !compressors.isEmpty() ? compressors.toArray(new CompressionOptions[0]) : null;
         VertxInternal vertx = (VertxInternal) vertxRuntime;
         virtualBootstrap = new ServerBootstrap();
         virtualBootstrap.group(vertx.eventLoopGroup())
@@ -1736,6 +1744,12 @@ public class VertxHttpRecorder {
                             return conn;
                         });
 
+                        if (compressionOptions != null) {
+                            ch.pipeline().addLast("deflater", new HttpChunkContentCompressor(
+                                    compression.getContentSizeThreshold(), compressionOptions));
+                            // with a compressor in the pipeline, files are sent as a ChunkedInput instead of a FileRegion
+                            ch.pipeline().addLast("chunkedWriter", new ChunkedWriteHandler());
+                        }
                         ch.pipeline().addLast("handler", handler);
                     }
 

@@ -20,7 +20,7 @@ public class MultipleDataInitScriptsAsZipFileTestCase {
                     """);
 
     @Test
-    public void testMultipleLoadScriptFilesAsZipFile() {
+    public void testMultipleDataInitScriptsAsZipFile() {
         String name1 = "import-1.sql load script entity";
         String name2 = "import-2.sql load script entity";
 

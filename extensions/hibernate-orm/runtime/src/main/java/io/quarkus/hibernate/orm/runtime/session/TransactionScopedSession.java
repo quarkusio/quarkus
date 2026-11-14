@@ -17,7 +17,6 @@ import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
 
 import org.hibernate.LockMode;
-import org.hibernate.LockOptions;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -290,11 +289,6 @@ public class TransactionScopedSession extends SessionLazyDelegator {
     }
 
     @Override
-    public void lock(Object object, LockOptions lockOptions) {
-        getDelegateForMutation().lock(object, lockOptions);
-    }
-
-    @Override
     public LockModeType getLockMode(Object entity) {
         return getDelegateForMutation().getLockMode(entity);
     }
@@ -317,10 +311,5 @@ public class TransactionScopedSession extends SessionLazyDelegator {
     @Override
     public void refresh(Object entity, RefreshOption... options) {
         getDelegateForMutation().refresh(entity, options);
-    }
-
-    @Override
-    public void refresh(Object object, LockOptions lockOptions) {
-        getDelegateForMutation().refresh(object, lockOptions);
     }
 }

@@ -7,11 +7,14 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 
+import org.testcontainers.images.ImagePullPolicy;
+
 import io.quarkus.datasource.deployment.spi.DatabaseFeature;
 
 public class DevServicesDatasourceContainerConfig {
 
     private final Optional<String> imageName;
+    private final Optional<ImagePullPolicy> imagePullPolicy;
     private final Map<String, String> containerEnv;
     private final Map<String, String> containerProperties;
     private final Map<String, String> additionalJdbcUrlProperties;
@@ -29,6 +32,7 @@ public class DevServicesDatasourceContainerConfig {
     private final Set<DatabaseFeature> requiredFeatures;
 
     public DevServicesDatasourceContainerConfig(Optional<String> imageName,
+            Optional<ImagePullPolicy> imagePullPolicy,
             Map<String, String> containerEnv,
             Map<String, String> containerProperties,
             Map<String, String> additionalJdbcUrlProperties,
@@ -45,6 +49,7 @@ public class DevServicesDatasourceContainerConfig {
             String datasourceName,
             Set<DatabaseFeature> requiredFeatures) {
         this.imageName = imageName;
+        this.imagePullPolicy = imagePullPolicy;
         this.containerEnv = containerEnv;
         this.containerProperties = containerProperties;
         this.additionalJdbcUrlProperties = additionalJdbcUrlProperties;
@@ -64,6 +69,10 @@ public class DevServicesDatasourceContainerConfig {
 
     public Optional<String> getImageName() {
         return imageName;
+    }
+
+    public Optional<ImagePullPolicy> getImagePullPolicy() {
+        return imagePullPolicy;
     }
 
     public Map<String, String> getContainerEnv() {

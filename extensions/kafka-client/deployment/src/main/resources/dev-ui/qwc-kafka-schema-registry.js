@@ -2,9 +2,9 @@ import { LitElement, html, css} from 'lit';
 import { msg, updateWhenLocaleChanges } from 'localization';
 
 /**
- * This component shows the Kafka Scheme Registry
+ * This component shows the Kafka Schema Registry
  */
-export class QwcKafkaSchemeRegistry extends LitElement { 
+export class QwcKafkaSchemaRegistry extends LitElement { 
 
     static styles = css``;
 
@@ -18,8 +18,8 @@ export class QwcKafkaSchemeRegistry extends LitElement {
     }
 
     render() { 
-        return html`<span>${msg('TODO: Scheme Registry', { id: 'quarkus-kafka-client-schema-registry-todo' })}</span>`;
+        return html`<span>${msg('TODO: Schema Registry', { id: 'quarkus-kafka-client-schema-registry-todo' })}</span>`;
     }
 }
 
-customElements.define('qwc-kafka-schema-registry', QwcKafkaSchemeRegistry);
+customElements.define('qwc-kafka-schema-registry', QwcKafkaSchemaRegistry);

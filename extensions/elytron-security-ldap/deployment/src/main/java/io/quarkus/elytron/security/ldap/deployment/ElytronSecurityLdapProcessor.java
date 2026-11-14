@@ -4,6 +4,7 @@ import java.util.function.BooleanSupplier;
 
 import org.wildfly.security.auth.server.SecurityRealm;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.core.Phase;
 import io.quarkus.core.deployment.service.ServiceRegistrar;
@@ -15,9 +16,12 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
 import io.quarkus.elytron.security.ldap.LdapRecorder;
+import io.quarkus.elytron.security.ldap.LdapTlsConfigurationObserver;
 import io.quarkus.elytron.security.ldap.QuarkusDirContextFactory;
+import io.quarkus.elytron.security.ldap.QuarkusLdapSocketFactory;
 import io.quarkus.elytron.security.ldap.config.LdapSecurityRealmRuntimeConfig;
 import io.quarkus.elytron.security.ldap.deployment.config.LdapSecurityRealmBuildTimeConfig;
+import io.quarkus.tls.TlsConfigurationRegistry;
 
 class ElytronSecurityLdapProcessor {
 
@@ -43,7 +47,13 @@ class ElytronSecurityLdapProcessor {
                 .atPhase(Phase.DATA)
                 .after(BeanContainer.class)
                 .require(LdapSecurityRealmRuntimeConfig.class)
-                .onStart((ctx, runtimeConfig) -> LdapRecorder.createRealm(runtimeConfig));
+                .require(TlsConfigurationRegistry.class)
+                .onStart((ctx, runtimeConfig, tlsRegistry) -> LdapRecorder.createRealm(runtimeConfig, tlsRegistry));
+    }
+
+    @BuildStep(onlyIf = IsLdapSecurityEnabled.class)
+    AdditionalBeanBuildItem tlsConfigurationObserver() {
+        return new AdditionalBeanBuildItem(LdapTlsConfigurationObserver.class);
     }
 
     @BuildStep(onlyIf = IsLdapSecurityEnabled.class)
@@ -61,6 +71,7 @@ class ElytronSecurityLdapProcessor {
                 ReflectiveClassBuildItem.builder("com.sun.jndi.dns.DnsContextFactory").build());
         reflection.produce(ReflectiveClassBuildItem.builder("com.sun.jndi.rmi.registry.RegistryContextFactory")
                 .build());
+        reflection.produce(ReflectiveClassBuildItem.builder(QuarkusLdapSocketFactory.class).methods().build());
     }
 
     static final class IsLdapSecurityEnabled implements BooleanSupplier {

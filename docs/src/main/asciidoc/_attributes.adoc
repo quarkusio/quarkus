@@ -110,10 +110,9 @@ endif::[]
 :jdk-version-all: 21 or 25
 :openshift-long: OpenShift
 :openshift: OpenShift
-:name-image-ubi10-open-jdk-21: registry.access.redhat.com/ubi10/openjdk-21
-:name-image-ubi10-open-jdk-21-short: ubi10/openjdk-21
-:name-image-ubi10-open-jdk-25: registry.access.redhat.com/ubi10/openjdk-25
-:name-image-ubi10-open-jdk-25-short: ubi10/openjdk-25
+// Image name prefixes: append a hyphen and the Java version, for example {name-image-open-jdk}-{jdk-version-latest}.
+:name-image-open-jdk: registry.access.redhat.com/ubi10/openjdk
+:name-image-open-jdk-short: ubi10/openjdk
 // .
 // JDK documentation. Defined after jdk-version-latest rather than next to the other doc URLs above,
 // because an attribute reference is resolved when the attribute is defined.

@@ -1,5 +1,7 @@
 package io.quarkus.annotation.processor.documentation.config.formatter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -11,8 +13,10 @@ import org.jsoup.nodes.TextNode;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.javadoc.Javadoc;
+import com.github.javaparser.javadoc.description.JavadocDescription;
 import com.github.javaparser.javadoc.description.JavadocDescriptionElement;
 import com.github.javaparser.javadoc.description.JavadocInlineTag;
+import com.github.javaparser.javadoc.description.JavadocSnippet;
 
 import io.quarkus.annotation.processor.documentation.config.model.JavadocFormat;
 import io.quarkus.annotation.processor.documentation.config.util.ConfigNamingUtil;
@@ -104,7 +108,7 @@ public final class JavadocToAsciidocTransformer {
         StringBuilder sb = new StringBuilder();
         Map<Integer, String> inlineTagsReplacements = new TreeMap<>();
 
-        for (JavadocDescriptionElement javadocDescriptionElement : parsedJavadoc.getDescription().getElements()) {
+        for (JavadocDescriptionElement javadocDescriptionElement : parseInlineTags(parsedJavadoc.getDescription().toText())) {
             if (javadocDescriptionElement instanceof JavadocInlineTag inlineTag) {
                 String content = inlineTag.getContent().trim();
                 switch (inlineTag.getType()) {
@@ -153,6 +157,39 @@ public final class JavadocToAsciidocTransformer {
         }
 
         return asciidoc.isBlank() ? null : asciidoc;
+    }
+
+    private static List<JavadocDescriptionElement> parseInlineTags(String text) {
+        // JavaParser stops at the first closing brace, even inside code or literal text.
+        List<JavadocDescriptionElement> elements = new ArrayList<>();
+        int index = 0;
+        int tagStart;
+        while ((tagStart = text.indexOf("{@", index)) != -1) {
+            int depth = 1;
+            int tagEnd = tagStart + 2;
+            while (tagEnd < text.length() && depth > 0) {
+                char ch = text.charAt(tagEnd++);
+                if (ch == '{') {
+                    depth++;
+                } else if (ch == '}') {
+                    depth--;
+                }
+            }
+            if (depth != 0) {
+                // Preserve JavaParser's handling of incomplete tags.
+                elements.addAll(JavadocDescription.parseText(text.substring(index)).getElements());
+                return elements;
+            }
+            if (tagStart > index) {
+                elements.add(new JavadocSnippet(text.substring(index, tagStart)));
+            }
+            elements.add(JavadocInlineTag.fromText(text.substring(tagStart, tagEnd)));
+            index = tagEnd;
+        }
+        if (index < text.length()) {
+            elements.add(new JavadocSnippet(text.substring(index)));
+        }
+        return elements;
     }
 
     private static void htmlToAsciidoc(StringBuilder sb, Node node, boolean inlineMacroMode, Context context) {

@@ -1250,6 +1250,9 @@ the Javadoc comments, but it needs to be explicitly included in each guide.
 
 Each configuration property, requires a Javadoc explaining its purpose.
 
+When generating an AsciiDoc configuration reference, Javadoc inline tags support balanced braces.
+For example, `{@code \{name}}` renders `\{name}` as inline code.
+
 [TIP]
 ====
 The first sentence should be meaningful and self-contained as it is included in the summary table.

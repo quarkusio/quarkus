@@ -106,11 +106,10 @@ export class QwcKafkaStreamsTopology extends observeState(QwcHotReloadElement) {
      		cnv.getContext("2d").drawImage(img, 0, 0);
      		cnv.toBlob((blob) => {
      			let lnk = document.createElement('a');
-                        const dnd = lnk.download;
      			lnk.href = URL.createObjectURL(blob);
      			lnk.download = "Topology-" + devuiState.applicationInfo.applicationName + "-" + new Date().toISOString().replace(/\D/g,'') + ".png";
      			lnk.click();
-     			notifier.showSuccessMessage(msg(str`${dnd} downloaded.`, { id: 'quarkus-kafka-streams-downloaded' }), 'bottom-end');
+     			notifier.showSuccessMessage(msg(str`${lnk.download} downloaded.`, { id: 'quarkus-kafka-streams-downloaded' }), 'bottom-end');
      		});
      	};
      }

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -195,7 +196,7 @@ public class JibProcessor {
         };
         setUser(jibConfig, jibContainerBuilder);
         setPlatforms(jibConfig, jibContainerBuilder);
-        handleExtraFiles(outputTarget, jibContainerBuilder);
+        handleExtraFiles(jibConfig, outputTarget, jibContainerBuilder);
         log.info("Starting (local) container image build for jar using jib.");
         JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
                 outputTarget, pushRequest.isPresent());
@@ -237,7 +238,7 @@ public class JibProcessor {
                 nativeImage, containerImageLabels);
         setUser(jibConfig, jibContainerBuilder);
         setPlatforms(jibConfig, jibContainerBuilder);
-        handleExtraFiles(outputTarget, jibContainerBuilder);
+        handleExtraFiles(jibConfig, outputTarget, jibContainerBuilder);
 
         log.info("Starting (local) container image build for native binary using jib.");
         JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
@@ -904,25 +905,51 @@ public class JibProcessor {
      * Allow users to have custom files in {@code src/main/jib} that will be copied into the built container's file system
      * in same manner as the Jib Maven and Gradle plugins do.
      * For example, {@code src/main/jib/foo/bar} would add {@code /foo/bar} into the container filesystem.
+     * The files of the directories configured with {@code quarkus.jib.extra-directories} are added as well.
      *
      * See: https://github.com/GoogleContainerTools/jib/blob/v0.15.0-core/docs/faq.md#can-i-add-a-custom-directory-to-the-image
      */
-    private void handleExtraFiles(OutputTargetBuildItem outputTarget, JibContainerBuilder jibContainerBuilder) {
+    private void handleExtraFiles(ContainerImageJibConfig jibConfig, OutputTargetBuildItem outputTarget,
+            JibContainerBuilder jibContainerBuilder) {
         Path outputDirectory = outputTarget.getOutputDirectory();
         Map.Entry<Path, Path> mainSourcesRoot = findMainSourcesRoot(outputDirectory);
         if (mainSourcesRoot == null) { // this should never happen
+            if (!jibConfig.extraDirectories().isEmpty()) {
+                throw new IllegalStateException("Unable to determine the project directory from the output directory '"
+                        + outputDirectory.toAbsolutePath() + "', so 'quarkus.jib.extra-directories' cannot be applied");
+            }
             return;
         }
         Path jibFilesRoot = mainSourcesRoot.getKey().resolve("jib");
-        if (!jibFilesRoot.toFile().exists()) {
-            return;
+        if (jibFilesRoot.toFile().exists()) {
+            addExtraDirectory(jibFilesRoot, AbsoluteUnixPath.get("/"), jibContainerBuilder);
         }
 
+        Path projectRoot = mainSourcesRoot.getValue();
+        for (Map.Entry<String, ContainerImageJibConfig.ExtraDirectory> entry : new TreeMap<>(jibConfig.extraDirectories())
+                .entrySet()) {
+            String propertyPrefix = "quarkus.jib.extra-directories.\"" + entry.getKey() + "\".";
+            Path from = projectRoot.resolve(entry.getValue().from());
+            if (!Files.isDirectory(from)) {
+                throw new IllegalArgumentException("The directory '" + from.toAbsolutePath() + "' configured by '"
+                        + propertyPrefix + "from' does not exist or is not a directory");
+            }
+            String into = entry.getValue().into();
+            if (!into.startsWith("/")) {
+                throw new IllegalArgumentException(
+                        "'" + propertyPrefix + "into' must be an absolute path, but was '" + into + "'");
+            }
+            addExtraDirectory(from, AbsoluteUnixPath.get(into), jibContainerBuilder);
+        }
+    }
+
+    private void addExtraDirectory(Path sourceDirectory, AbsoluteUnixPath targetDirectory,
+            JibContainerBuilder jibContainerBuilder) {
         FileEntriesLayer extraFilesLayer;
         try {
             extraFilesLayer = ContainerBuilderHelper.extraDirectoryLayerConfiguration(
-                    jibFilesRoot,
-                    AbsoluteUnixPath.get("/"),
+                    sourceDirectory,
+                    targetDirectory,
                     Collections.emptyMap(),
                     (localPath, ignored2) -> {
                         try {
@@ -935,7 +962,8 @@ public class JibProcessor {
                     extraFilesLayer);
         } catch (IOException e) {
             throw new UncheckedIOException(
-                    "Unable to add extra files in '" + jibFilesRoot.toAbsolutePath().toString() + "' to the container", e);
+                    "Unable to add extra files in '" + sourceDirectory.toAbsolutePath().toString() + "' to the container",
+                    e);
         }
     }
 

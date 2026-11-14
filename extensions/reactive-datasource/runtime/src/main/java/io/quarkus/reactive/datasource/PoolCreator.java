@@ -5,6 +5,7 @@ import java.util.function.Supplier;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.net.NetClientOptions;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.SqlConnectOptions;
@@ -56,6 +57,7 @@ public interface PoolCreator {
          * <pre>{@code
          * return PgBuilder.pool()
          *         .with(input.poolOptions())
+         *         .with(input.netClientOptions())
          *         .connectingTo(input.dynamicConnectOptionsList())
          *         .using(input.vertx())
          *         .build();
@@ -64,5 +66,15 @@ public interface PoolCreator {
          * @return the dynamic connect-options supplier; never {@code null}
          */
         Supplier<Future<SqlConnectOptions>> dynamicConnectOptionsList();
+
+        /**
+         * The TCP options configured with the {@code tcp-keep-alive*} properties.
+         * <p>
+         * Pass them to the client builder ({@code with(NetClientOptions)}) so that the created pool honours these
+         * properties.
+         */
+        default NetClientOptions netClientOptions() {
+            return new NetClientOptions();
+        }
     }
 }

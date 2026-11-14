@@ -897,7 +897,7 @@ public class ArcContainerImpl implements ArcContainer {
     /**
      * The returned list is cached and must not be modified.
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings("unchecked")
     <T> List<InjectableObserverMethod<? super T>> resolveObserverMethods(Type eventType,
             Set<Annotation> eventQualifiers) {
         registeredQualifiers.verify(eventQualifiers);
@@ -905,7 +905,8 @@ public class ArcContainerImpl implements ArcContainer {
             return Collections.emptyList();
         }
         // The set of observers is fixed once the container is created
-        return (List) resolvedObservers.getValue(new TypeAndQualifiers(eventType, Set.copyOf(eventQualifiers)));
+        return (List<InjectableObserverMethod<? super T>>) (List<?>) resolvedObservers
+                .getValue(new TypeAndQualifiers(eventType, Set.copyOf(eventQualifiers)));
     }
 
     private List<InjectableObserverMethod<?>> doResolveObserverMethods(TypeAndQualifiers typeAndQualifiers) {
@@ -920,7 +921,7 @@ public class ArcContainerImpl implements ArcContainer {
             }
         }
         // Observers with smaller priority values are called first
-        Collections.sort((List) resolvedObservers);
+        resolvedObservers.sort(null);
         return List.copyOf(resolvedObservers);
     }
 

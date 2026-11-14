@@ -930,6 +930,9 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                             .endSpec()
                             .endTemplate()
                             .endSpec();
+
+                    item.getTtlSecondsAfterFinished()
+                            .ifPresent(ttl -> builder.editOrNewSpec().withTtlSecondsAfterFinished(ttl).endSpec());
                 }
 
                 @Override

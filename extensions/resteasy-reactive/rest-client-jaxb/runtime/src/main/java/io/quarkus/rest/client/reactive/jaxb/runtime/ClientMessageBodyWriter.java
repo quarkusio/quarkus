@@ -37,9 +37,12 @@ public class ClientMessageBodyWriter implements MessageBodyWriter<Object> {
         marshal(o, entityStream);
     }
 
+    /**
+     * The {@code Content-Type} of a client request is decided before the writer runs, from the entity variant or from a
+     * header set by the user; it is only filled in here when it is missing.
+     */
     private void setContentTypeIfNecessary(MultivaluedMap<String, Object> httpHeaders) {
-        Object contentType = httpHeaders.getFirst(HttpHeaders.CONTENT_TYPE);
-        if (isNotXml(contentType)) {
+        if (httpHeaders.getFirst(HttpHeaders.CONTENT_TYPE) == null) {
             httpHeaders.putSingle(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_XML);
         }
     }
@@ -60,9 +63,5 @@ public class ClientMessageBodyWriter implements MessageBodyWriter<Object> {
         } catch (JAXBException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private boolean isNotXml(Object contentType) {
-        return contentType == null || !contentType.toString().contains("xml");
     }
 }

@@ -1,5 +1,7 @@
 package io.quarkus.observability.runtime;
 
+import java.util.Optional;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -7,17 +9,20 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 public class ObservabilityJsonRPCService {
 
     @ConfigProperty(name = "otel-collector.url")
-    String otelEndpoint;
+    Optional<String> otelEndpoint;
 
     @ConfigProperty(name = "grafana.endpoint")
-    String grafanaEndpoint;
+    Optional<String> grafanaEndpoint;
 
     public String getGrafanaEndpoint() {
-        return Strings.CS.prependIfMissing(grafanaEndpoint, "http://");
+        return grafanaEndpoint
+                .map(e -> Strings.CS.prependIfMissing(e, "http://"))
+                .orElse("");
     }
 
     public String getOtelEndpoint() {
-        return StringUtils
-                .substringAfterLast(otelEndpoint, ":");
+        return otelEndpoint
+                .map(e -> StringUtils.substringAfterLast(e, ":"))
+                .orElse("");
     }
 }

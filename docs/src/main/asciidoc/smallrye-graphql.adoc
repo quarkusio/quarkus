@@ -534,9 +534,10 @@ following are true:
 * The method returns a blocking type. Reactive return types (`Uni`, `Multi`,
   `CompletionStage`, `CompletableFuture` or `Publisher`) are never made
   transactional.
-* The method is not annotated with `@NonBlocking`.
-* The method is not already annotated with `@Transactional` (an explicit
-  annotation always wins).
+* The method and its class are not annotated with `@NonBlocking`.
+* The method and its class are not already annotated with `@Transactional`
+  (an explicit annotation always wins).
+* `quarkus.smallrye-graphql.auto-transactional` is not set to `false`.
 
 To opt a specific operation out of this behavior - for example when the
 resolver calls a library that manages its own JDBC transactions - annotate it
@@ -554,6 +555,17 @@ with `@Transactional(Transactional.TxType.NOT_SUPPORTED)`:
 You can also use any other `TxType` (such as `REQUIRES_NEW`) to control how the
 operation participates in transactions, since an explicit `@Transactional`
 takes precedence over the implicit one.
+
+The same applies to an explicit `@Transactional` on the `@GraphQLApi` class: it
+then applies to all operations of that class, and none of them receive the
+implicit annotation.
+
+To disable the implicit `@Transactional` for the whole application, set:
+
+[source,properties]
+----
+quarkus.smallrye-graphql.auto-transactional=false
+----
 
 == Abstract Types
 

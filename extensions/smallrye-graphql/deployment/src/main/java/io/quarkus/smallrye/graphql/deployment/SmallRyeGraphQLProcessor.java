@@ -213,9 +213,9 @@ public class SmallRyeGraphQLProcessor {
     }
 
     @BuildStep
-    void autoTransactional(Capabilities capabilities,
+    void autoTransactional(Capabilities capabilities, SmallRyeGraphQLConfig graphQLConfig,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
-        if (!capabilities.isPresent(Capability.TRANSACTIONS)) {
+        if (!graphQLConfig.autoTransactional() || !capabilities.isPresent(Capability.TRANSACTIONS)) {
             return;
         }
 
@@ -263,11 +263,13 @@ public class SmallRyeGraphQLProcessor {
                     return;
                 }
 
-                if (method.hasAnnotation(transactional)) {
+                // An explicit @Transactional or @NonBlocking, on the method or its class, always wins
+                if (method.hasAnnotation(transactional) || method.declaringClass().hasDeclaredAnnotation(transactional)) {
                     return;
                 }
 
-                if (method.hasAnnotation(Annotations.NON_BLOCKING)) {
+                if (method.hasAnnotation(Annotations.NON_BLOCKING)
+                        || method.declaringClass().hasDeclaredAnnotation(Annotations.NON_BLOCKING)) {
                     return;
                 }
 

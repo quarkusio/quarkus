@@ -2,7 +2,6 @@ package io.quarkus.logging;
 
 import static io.quarkus.logging.LoggingTestsHelper.getHandler;
 import static io.smallrye.common.net.HostName.getQualifiedHostName;
-import static io.smallrye.common.os.Process.getProcessName;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.logging.Formatter;
@@ -37,7 +36,7 @@ public class SyslogHandlerTest {
 
         SyslogHandler syslogHandler = (SyslogHandler) handler;
         assertThat(syslogHandler.getPort()).isEqualTo(5140);
-        assertThat(syslogHandler.getAppName()).isEqualTo(getProcessName());
+        assertThat(syslogHandler.getAppName()).isEqualTo("java");
         assertThat(syslogHandler.getHostname()).isEqualTo(getQualifiedHostName());
         assertThat(syslogHandler.getFacility()).isEqualTo(SyslogHandler.Facility.USER_LEVEL);
         assertThat(syslogHandler.getSyslogType()).isEqualTo(SyslogHandler.SyslogType.RFC5424);

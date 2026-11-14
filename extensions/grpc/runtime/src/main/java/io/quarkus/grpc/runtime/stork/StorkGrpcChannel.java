@@ -6,10 +6,7 @@ import static io.quarkus.grpc.runtime.stork.StorkMeasuringCollector.STORK_SERVIC
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,7 +39,6 @@ import io.vertx.grpcio.client.GrpcIoClientChannel;
 public class StorkGrpcChannel extends Channel implements AutoCloseable {
     private static final Logger log = LoggerFactory.getLogger(StorkGrpcChannel.class);
 
-    private final Map<Long, ServiceInstance> services = new ConcurrentHashMap<>();
     private final Map<Long, Channel> channels = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler;
 
@@ -118,12 +114,10 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
             long serviceId = instance.getId();
             Channel channel = c.channel;
             try {
-                services.put(serviceId, instance);
                 channels.put(serviceId, channel);
                 return channel.newCall(methodDescriptor, callOptions);
             } catch (Exception ex) {
                 // remove, no good
-                services.remove(serviceId);
                 channels.remove(serviceId);
                 throw new IllegalStateException(ex);
             }
@@ -147,13 +141,12 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
 
     private void refresh() {
         // any better way to know which are OK / bad?
-        services.clear();
         channels.clear();
     }
 
     private Uni<Context> pickServiceInstanceWithChannel(Context context) {
-        Uni<ServiceInstance> uni = pickServerInstance(context.service, context.measureTime);
-        return uni
+        // Stork runs discovery and selection, and records both observations
+        return context.service.selectInstanceAndRecordStart(context.measureTime)
                 .map(si -> {
                     context.instance = si;
                     if (si.gatherStatistics() && context.ref != null) {
@@ -172,25 +165,6 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
                 });
     }
 
-    private Uni<ServiceInstance> pickServerInstance(Service service, boolean measureTime) {
-        return Uni.createFrom()
-                .deferred(() -> {
-                    if (services.isEmpty()) {
-                        return service.getInstances()
-                                .invoke(l -> l.forEach(s -> services.put(s.getId(), s)));
-                    } else {
-                        List<ServiceInstance> list = new ArrayList<>(services.values());
-                        return Uni.createFrom().item(list);
-                    }
-                })
-                .map(ArrayList::new) // make it mutable
-                .invoke(list -> {
-                    // list should not be empty + sort by id
-                    list.sort(Comparator.comparing(ServiceInstance::getId));
-                })
-                .map(list -> service.selectInstanceAndRecordStart(list, measureTime));
-    }
-
     private void checkSocketAddress(Context context) {
         ServiceInstance instance = context.instance;
         Set<InetSocketAddress> socketAddresses = new HashSet<>();
@@ -205,9 +179,7 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
         if (!socketAddresses.isEmpty()) {
             context.address = socketAddresses.iterator().next(); // pick first
         } else {
-            long serviceId = instance.getId();
-            services.remove(serviceId);
-            channels.remove(serviceId);
+            channels.remove(instance.getId());
             throw new IllegalStateException("Failed to determine working socket addresses for service-name: " + serviceName);
         }
     }

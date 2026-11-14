@@ -19,6 +19,16 @@ import io.vertx.ext.web.Router;
 public class HttpLoadShedding {
     public static final int PRIORITY = -1_000_000_000;
 
+    /**
+     * The {@code RoutingContext} key that tells this handler not to record a latency sample for
+     * the request. Any admission control that rejects a request after this handler admitted it
+     * sets the key to {@code true} before writing its terminal response, whatever the status.
+     * The end handler still runs exactly once per request, on completion or disconnect, and then
+     * only releases the request's slot instead of feeding the overload detection with the
+     * latency of a request that was never served.
+     */
+    public static final String SKIP_SAMPLE_KEY = "io.quarkus.load.shedding.skip-sample";
+
     public void init(@Observes @Priority(PRIORITY) Router router, OverloadDetector detector,
             PriorityLoadShedding priority, ExemptPaths exemptPaths, LoadSheddingCounter counter,
             LoadSheddingRuntimeConfig config) {
@@ -46,6 +56,10 @@ public class HttpLoadShedding {
                 ctx.addEndHandler(new Handler<AsyncResult<Void>>() {
                     @Override
                     public void handle(AsyncResult<Void> ignored) {
+                        if (Boolean.TRUE.equals(ctx.get(SKIP_SAMPLE_KEY))) {
+                            detector.requestAborted();
+                            return;
+                        }
                         long end = System.nanoTime();
                         detector.requestEnd((end - start) / 1_000);
                     }

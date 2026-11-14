@@ -419,6 +419,7 @@ categories:
         guides:
           - smallrye-fault-tolerance.adoc
           - load-shedding-reference.adoc
+          - http-rate-limit-reference.adoc
 
   - id: serialization
     title: Serialization

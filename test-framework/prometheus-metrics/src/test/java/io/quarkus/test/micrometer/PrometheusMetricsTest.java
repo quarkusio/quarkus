@@ -318,6 +318,24 @@ class PrometheusMetricsTest {
     }
 
     @Test
+    void assertHasMetricWithLabelsAndValueLessThanOrEqualTo() {
+        assertMetrics(toStream(SAMPLE_OUTPUT))
+                .hasMetricWithLabelsAndValueLessThanOrEqualTo(
+                        "http_server_requests_seconds_count", 5.0, entry("method", "GET"))
+                .hasMetricWithLabelsAndValueLessThanOrEqualTo(
+                        "http_server_requests_seconds_count", 100.0, entry("method", "GET"));
+    }
+
+    @Test
+    void assertHasMetricWithLabelsAndValueLessThanOrEqualToFails() {
+        assertThatThrownBy(() -> assertMetrics(toStream(SAMPLE_OUTPUT))
+                .hasMetricWithLabelsAndValueLessThanOrEqualTo(
+                        "http_server_requests_seconds_count", 3.0, entry("method", "GET")))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("<= <3.0>");
+    }
+
+    @Test
     void findByNameContaining() {
         PrometheusMetrics metrics = PrometheusMetrics.parse(toStream(SAMPLE_OUTPUT));
         assertThat(metrics.findByNameContaining("http_client")).hasSize(2);

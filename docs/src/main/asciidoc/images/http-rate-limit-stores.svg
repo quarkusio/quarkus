@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 790 300" width="790" height="300" font-family="sans-serif" font-size="12">
+<title>With the local store each instance counts on its own; with the redis store all instances share one count</title>
+<rect width="790" height="300" fill="#ffffff"/>
+<text x="10" y="24" text-anchor="start" fill="#222" font-size="13" font-weight="600">local store (default)</text>
+<rect x="130" y="44" width="140" height="36" rx="4" fill="#f6f6f3" stroke="#c3c2b7" stroke-width="1"/>
+<text x="200.0" y="66.0" text-anchor="middle" fill="#222" font-weight="600">load balancer</text>
+<line x1="200" y1="80" x2="81.7" y2="116.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="75.0,118.0 81.9,112.2 84.0,118.9" fill="#666"/>
+<rect x="20" y="120" width="110" height="54" rx="4" fill="#e8f1fc" stroke="#2a78d6" stroke-width="1"/>
+<text x="75.0" y="144.0" text-anchor="middle" fill="#222" font-weight="600">instance 1</text>
+<text x="75.0" y="160.0" text-anchor="middle" fill="#666" font-size="11" font-family="monospace">own count: 100/min</text>
+<line x1="200" y1="80" x2="200.0" y2="111.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="200.0,118.0 196.5,109.7 203.5,109.7" fill="#666"/>
+<rect x="145" y="120" width="110" height="54" rx="4" fill="#e8f1fc" stroke="#2a78d6" stroke-width="1"/>
+<text x="200.0" y="144.0" text-anchor="middle" fill="#222" font-weight="600">instance 2</text>
+<text x="200.0" y="160.0" text-anchor="middle" fill="#666" font-size="11" font-family="monospace">own count: 100/min</text>
+<line x1="200" y1="80" x2="318.3" y2="116.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="325.0,118.0 316.0,118.9 318.1,112.2" fill="#666"/>
+<rect x="270" y="120" width="110" height="54" rx="4" fill="#e8f1fc" stroke="#2a78d6" stroke-width="1"/>
+<text x="325.0" y="144.0" text-anchor="middle" fill="#222" font-weight="600">instance 3</text>
+<text x="325.0" y="160.0" text-anchor="middle" fill="#666" font-size="11" font-family="monospace">own count: 100/min</text>
+<text x="10" y="200" text-anchor="start" fill="#d03b3b" font-size="12">Each instance admits 100 a minute from the same client,</text>
+<text x="10" y="216" text-anchor="start" fill="#d03b3b" font-size="12">so three instances admit up to 300.</text>
+<text x="10" y="240" text-anchor="start" fill="#666" font-size="12">A restart forgets the counts of that instance.</text>
+<text x="405" y="24" text-anchor="start" fill="#222" font-size="13" font-weight="600">redis store</text>
+<rect x="525" y="44" width="140" height="36" rx="4" fill="#f6f6f3" stroke="#c3c2b7" stroke-width="1"/>
+<text x="595.0" y="66.0" text-anchor="middle" fill="#222" font-weight="600">load balancer</text>
+<line x1="595" y1="80" x2="476.7" y2="116.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="470.0,118.0 476.9,112.2 479.0,118.9" fill="#666"/>
+<rect x="415" y="120" width="110" height="54" rx="4" fill="#ffffff" stroke="#c3c2b7" stroke-width="1"/>
+<text x="470.0" y="151.0" text-anchor="middle" fill="#222" font-weight="600">instance 1</text>
+<line x1="470" y1="174" x2="588.3" y2="211.9" stroke="#666" stroke-width="1.5"/>
+<polygon points="595.0,214.0 586.0,214.8 588.2,208.1" fill="#666"/>
+<line x1="595" y1="80" x2="595.0" y2="111.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="595.0,118.0 591.5,109.7 598.5,109.7" fill="#666"/>
+<rect x="540" y="120" width="110" height="54" rx="4" fill="#ffffff" stroke="#c3c2b7" stroke-width="1"/>
+<text x="595.0" y="151.0" text-anchor="middle" fill="#222" font-weight="600">instance 2</text>
+<line x1="595" y1="174" x2="595.0" y2="207.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="595.0,214.0 591.5,205.7 598.5,205.7" fill="#666"/>
+<line x1="595" y1="80" x2="713.3" y2="116.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="720.0,118.0 711.0,118.9 713.1,112.2" fill="#666"/>
+<rect x="665" y="120" width="110" height="54" rx="4" fill="#ffffff" stroke="#c3c2b7" stroke-width="1"/>
+<text x="720.0" y="151.0" text-anchor="middle" fill="#222" font-weight="600">instance 3</text>
+<line x1="720" y1="174" x2="601.7" y2="211.9" stroke="#666" stroke-width="1.5"/>
+<polygon points="595.0,214.0 601.8,208.1 604.0,214.8" fill="#666"/>
+<rect x="515" y="216" width="160" height="44" rx="4" fill="#e8f1fc" stroke="#2a78d6" stroke-width="1.5"/>
+<text x="595.0" y="235.0" text-anchor="middle" fill="#222" font-weight="600">Redis</text>
+<text x="595.0" y="251.0" text-anchor="middle" fill="#666" font-size="11" font-family="monospace">one count: 100/min</text>
+<text x="405" y="290" text-anchor="start" fill="#0ca30c" font-size="12">A client gets 100 requests a minute in all.</text>
+<line x1="395" y1="36" x2="395" y2="290" stroke="#e4e4e4" stroke-width="1"/>
+</svg>

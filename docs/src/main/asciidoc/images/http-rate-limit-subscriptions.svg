@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="330" viewBox="0 0 800 330" role="img" aria-labelledby="title description">
+  <title id="title">A resolver selects a quota while each user keeps an independent allowance</title>
+  <desc id="description">For the api rule, request-key=principal identifies Alice, Bob, and Carol separately. The subscription resolver selects the paid quota for Alice and Carol, who each get 1000 requests per minute, and the free quota for Bob, who gets 100 requests per minute.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#526477"/>
+    </marker>
+  </defs>
+  <rect width="800" height="330" fill="#fff"/>
+  <g font-family="sans-serif" font-size="15" fill="#243746" text-anchor="middle">
+    <text x="400" y="26" font-family="monospace">rules.api: paths=/api/*, request-key=principal</text>
+    <text x="112" y="59" font-weight="bold">Authenticated user</text>
+    <text x="400" y="59" font-weight="bold">Choose a quota</text>
+    <text x="684" y="59" font-weight="bold">User's own allowance</text>
+
+    <g fill="#edf5ff" stroke="#2a78b8">
+      <rect x="24" y="78" width="176" height="56" rx="8"/>
+      <rect x="24" y="154" width="176" height="56" rx="8"/>
+      <rect x="24" y="230" width="176" height="56" rx="8"/>
+    </g>
+    <text x="112" y="102">Alice</text>
+    <text x="112" y="123" font-size="13">Has the paid role</text>
+    <text x="112" y="178">Bob</text>
+    <text x="112" y="199" font-size="13">No paid role</text>
+    <text x="112" y="254">Carol</text>
+    <text x="112" y="275" font-size="13">Has the paid role</text>
+
+    <rect x="256" y="78" width="288" height="208" rx="8" fill="#f3edff" stroke="#7855a3"/>
+    <text x="400" y="118" font-family="monospace" font-weight="bold">subscription</text>
+    <text x="400" y="145">Your RateLimitResolver</text>
+    <text x="400" y="185">paid role → limits.paid</text>
+    <text x="400" y="212">otherwise → limits.free</text>
+    <text x="400" y="259" font-size="13">Selects values for each request</text>
+
+    <g fill="none" stroke="#526477" stroke-width="2" marker-end="url(#arrow)">
+      <path d="M 200 106 L 252 106"/>
+      <path d="M 200 182 L 252 182"/>
+      <path d="M 200 258 L 252 258"/>
+      <path d="M 544 106 L 588 106"/>
+      <path d="M 544 182 L 588 182"/>
+      <path d="M 544 258 L 588 258"/>
+    </g>
+    <g fill="#f4f7f9" stroke="#8595a3">
+      <rect x="592" y="78" width="184" height="56" rx="8"/>
+      <rect x="592" y="154" width="184" height="56" rx="8"/>
+      <rect x="592" y="230" width="184" height="56" rx="8"/>
+    </g>
+    <text x="684" y="102">Alice: paid quota</text>
+    <text x="684" y="123">1000 requests/min</text>
+    <text x="684" y="178">Bob: free quota</text>
+    <text x="684" y="199">100 requests/min</text>
+    <text x="684" y="254">Carol: paid quota</text>
+    <text x="684" y="275">1000 requests/min</text>
+    <text x="400" y="316" font-size="13">Alice and Carol use the same plan, but neither consumes the other's allowance.</text>
+  </g>
+</svg>

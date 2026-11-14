@@ -351,6 +351,7 @@
                 <module>quartz-deferred-datasource</module>
                 <module>redis-client</module>
                 <module>redis-cache</module>
+                <module>http-rate-limit-redis</module>
                 <module>logging-gelf</module>
                 <module>cache</module>
                 <module>cache-multiple-backends</module>

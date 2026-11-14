@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 790 170" width="790" height="170" font-family="sans-serif" font-size="12">
+<title>Two rules on the same path: the shorter window is checked first, and the first refusal answers the request</title>
+<rect width="790" height="170" fill="#ffffff"/>
+<rect x="10" y="50" width="110" height="50" rx="4" fill="#f6f6f3" stroke="#c3c2b7" stroke-width="1"/>
+<text x="65.0" y="72.0" text-anchor="middle" fill="#222" font-weight="600">request</text>
+<text x="65.0" y="88.0" text-anchor="middle" fill="#666" font-size="11" font-family="monospace">/login</text>
+<rect x="170" y="50" width="160" height="50" rx="4" fill="#e8f1fc" stroke="#2a78d6" stroke-width="1.5"/>
+<text x="250.0" y="72.0" text-anchor="middle" fill="#222" font-weight="600">login-burst</text>
+<text x="250.0" y="88.0" text-anchor="middle" fill="#666" font-size="11" font-family="monospace">5 per 10 s</text>
+<rect x="390" y="50" width="160" height="50" rx="4" fill="#e8f1fc" stroke="#2a78d6" stroke-width="1.5"/>
+<text x="470.0" y="72.0" text-anchor="middle" fill="#222" font-weight="600">login-day</text>
+<text x="470.0" y="88.0" text-anchor="middle" fill="#666" font-size="11" font-family="monospace">200 per day</text>
+<rect x="610" y="50" width="160" height="50" rx="4" fill="#f6f6f3" stroke="#c3c2b7" stroke-width="1"/>
+<text x="690.0" y="79.0" text-anchor="middle" fill="#222" font-weight="600">endpoint</text>
+<line x1="120" y1="75" x2="161.0" y2="75.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="168.0,75.0 159.7,78.5 159.7,71.5" fill="#666"/>
+<line x1="330" y1="75" x2="381.0" y2="75.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="388.0,75.0 379.7,78.5 379.7,71.5" fill="#666"/>
+<text x="359.0" y="68" text-anchor="middle" fill="#666" font-size="11" font-family="monospace">admitted</text>
+<line x1="550" y1="75" x2="601.0" y2="75.0" stroke="#666" stroke-width="1.5"/>
+<polygon points="608.0,75.0 599.7,78.5 599.7,71.5" fill="#666"/>
+<text x="579.0" y="68" text-anchor="middle" fill="#666" font-size="11" font-family="monospace">admitted</text>
+<line x1="250" y1="100" x2="250.0" y2="125.0" stroke="#d03b3b" stroke-width="1.5"/>
+<polygon points="250.0,132.0 246.5,123.7 253.5,123.7" fill="#d03b3b"/>
+<text x="250" y="150" text-anchor="middle" fill="#d03b3b" font-size="11">429; the daily limit is not touched</text>
+<line x1="470" y1="100" x2="470.0" y2="125.0" stroke="#d03b3b" stroke-width="1.5"/>
+<polygon points="470.0,132.0 466.5,123.7 473.5,123.7" fill="#d03b3b"/>
+<text x="470" y="150" text-anchor="middle" fill="#d03b3b" font-size="11">429; one 10 s permit is used</text>
+<text x="10" y="26" text-anchor="start" fill="#222" font-size="13">Rules are checked shortest window first; the first refusal answers the request.</text>
+</svg>

@@ -1,0 +1,7 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "HTTP Rate Limit - Redis"
+description: "The built-in Redis store of the HTTP rate limiter; included automatically next to quarkus-http-rate-limit when quarkus-redis-client is present"
+metadata:
+  unlisted: true
+  status: "experimental"

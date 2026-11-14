@@ -448,7 +448,8 @@ public final class HttpSecurityConfiguration {
         return true;
     }
 
-    RolesMapping rolesMapping() {
+    // not a public API — this class is subject to change
+    public RolesMapping rolesMapping() {
         return rolesMapping;
     }
 
@@ -464,7 +465,8 @@ public final class HttpSecurityConfiguration {
         return formPostLocation;
     }
 
-    CORSConfig getCorsConfig() {
+    // not a public API — this class is subject to change
+    public CORSConfig getCorsConfig() {
         return corsConfig;
     }
 

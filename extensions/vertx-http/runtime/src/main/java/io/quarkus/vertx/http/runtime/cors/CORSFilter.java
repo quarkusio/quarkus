@@ -92,7 +92,7 @@ public class CORSFilter implements Handler<RoutingContext> {
         return list.isEmpty() || (list.size() == 1 && "*".equals(list.get(0)));
     }
 
-    static boolean isOriginConfiguredWithWildcard(Optional<List<String>> origins) {
+    public static boolean isOriginConfiguredWithWildcard(Optional<List<String>> origins) {
         if (origins.isEmpty() || origins.get().size() != 1) {
             return false;
         }

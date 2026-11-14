@@ -46,7 +46,6 @@ import org.jboss.jandex.TypeVariable;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
@@ -54,8 +53,8 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.builder.item.EmptyBuildItem;
-import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.core.Phase;
 import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
@@ -71,7 +70,6 @@ import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassTransformer;
@@ -90,13 +88,14 @@ import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.security.spi.SecurityTransformer;
 import io.quarkus.security.spi.SecurityTransformerBuildItem;
 import io.quarkus.security.spi.runtime.MethodDescription;
-import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.vertx.core.deployment.IgnoredContextLocalDataKeysBuildItem;
 import io.quarkus.vertx.core.runtime.security.VertxBlockingSecurityExecutor;
 import io.quarkus.vertx.http.runtime.RouteHandler;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.cors.CORSConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.AuthMechanismSelectionInterceptorCreator;
 import io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.DuplicatedContextSecurityIdentityAssociation;
@@ -128,6 +127,9 @@ public class HttpSecurityProcessor {
     private static final String KOTLIN_SUSPEND_IMPL_SUFFIX = "$suspendImpl";
     static final DotName AUTHORIZATION_POLICY = DotName.createSimple(AuthorizationPolicy.class);
 
+    // This step stays a bytecode recorder until the Vert.x routers are available as services: a service action
+    // cannot capture the RuntimeValue<Router> recorder proxy. Consuming HttpSecurityConfigSetupCompleteBuildItem
+    // orders this recorder after the HttpSecurityConfiguration service.
     @Consume(HttpSecurityConfigSetupCompleteBuildItem.class)
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
@@ -151,13 +153,12 @@ public class HttpSecurityProcessor {
 
     // NOTE: registering the synthetic bean and defining its service action are deliberately kept in two
     // separate build steps (this one and defineFormAuthService below); they must not be merged.
-    // This step produces a SyntheticBeanBuildItem, which ARC's synthetic-bean pipeline consumes to build
-    // the bean container, so it is *upstream* of BeanContainerBuildItem. defineFormAuthService consumes
-    // HttpSecurityInitCompleteBuildItem, which initializeHttpSecurity produces after consuming
-    // BeanContainerBuildItem, so it is *downstream* of the container. A single step doing both would be
-    // both upstream and downstream of the container build, forming a build-step cycle through the synthetic
-    // bean pipeline. The basic-auth path (initBasicAuth / defineBasicAuthService) is split for the same
-    // reason. See HttpSecurityInitCompleteBuildItem.
+    // The runtime-init synthetic beans are still initialized by a bytecode recorder, which is started after
+    // every service defined by a build step that produces a SyntheticBeanBuildItem. The service defined by
+    // defineFormAuthService requires the HttpSecurityConfiguration service, which in turn is started after
+    // the runtime-init synthetic beans are initialized. A single step doing both would form a cycle in
+    // the service graph. The basic-auth path (initBasicAuth / defineBasicAuthService) is split for the same
+    // reason.
     @BuildStep
     void registerFormAuthMechanism(BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
             VertxHttpBuildTimeConfig buildTimeConfig) {
@@ -173,16 +174,16 @@ public class HttpSecurityProcessor {
         }
     }
 
-    // Kept separate from registerFormAuthMechanism to avoid a build-step cycle through ARC's synthetic bean
-    // pipeline; see the note on registerFormAuthMechanism above.
-    @Consume(HttpSecurityInitCompleteBuildItem.class) // service ordering: remove when bytecode recorders are removed
+    // Kept separate from registerFormAuthMechanism to avoid a cycle in the service graph;
+    // see the note on registerFormAuthMechanism above.
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
     void defineFormAuthService(ServiceRegistrar reg, VertxHttpBuildTimeConfig buildTimeConfig) {
         if (buildTimeConfig.auth().form()) {
             reg
                     .forService(FormAuthenticationMechanism.class)
-                    .onStart(ctx -> HttpSecurityConfiguration.get().getFormAuthenticationMechanism());
+                    .require(HttpSecurityConfiguration.class)
+                    .onStart((ctx, httpSecurityConfiguration) -> httpSecurityConfiguration.getFormAuthenticationMechanism());
         }
     }
 
@@ -195,26 +196,27 @@ public class HttpSecurityProcessor {
         return null;
     }
 
-    @Consume(HttpSecurityConfigSetupCompleteBuildItem.class)
     @BuildStep
     void setMtlsCertificateRoleProperties(ServiceRegistrar reg, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.SECURITY)) {
             reg
                     .forService("io.quarkus.vertx.http.security.mtls-cert-roles")
-                    .require(io.quarkus.vertx.http.runtime.VertxHttpConfig.class)
-                    .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
-                    .onStart((ctx, httpConfig) -> HttpSecurityRecorder.setMtlsCertificateRoleProperties(httpConfig));
+                    .require(VertxHttpConfig.class)
+                    .require(HttpSecurityConfiguration.class)
+                    .onStart((ctx, httpConfig, httpSecurityConfiguration) -> HttpSecurityRecorder
+                            .setMtlsCertificateRoleProperties(httpConfig, httpSecurityConfiguration));
         }
     }
 
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
     void detectBasicAuthImplicitlyRequired(
+            Capabilities capabilities,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem,
             ApplicationIndexBuildItem applicationIndexBuildItem,
             BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
             List<EagerSecurityInterceptorBindingBuildItem> eagerSecurityInterceptorBindings) {
-        if (makeBasicAuthMechDefaultBean(httpBuildTimeConfig)) {
+        if (capabilities.isPresent(Capability.SECURITY) && makeBasicAuthMechDefaultBean(httpBuildTimeConfig)) {
             var appIndex = applicationIndexBuildItem.getIndex();
             boolean noCustomAuthMechanismsDetected = beanRegistrationPhaseBuildItem
                     .getContext()
@@ -245,8 +247,13 @@ public class HttpSecurityProcessor {
 
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
     SyntheticBeanBuildItem initBasicAuth(
+            Capabilities capabilities,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
+
+        if (capabilities.isMissing(Capability.SECURITY)) {
+            return null;
+        }
 
         if (httpBuildTimeConfig.auth().basic().isPresent() && httpBuildTimeConfig.auth().basic().get()) {
             securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
@@ -260,22 +267,22 @@ public class HttpSecurityProcessor {
                 .setRuntimeInit()
                 .unremovable();
         if (makeBasicAuthMechDefaultBean(httpBuildTimeConfig)) {
-            configurator.defaultBean();
+            configurator.reserve(true).priority(0);
         }
 
         return configurator.done();
     }
 
-    @Consume(HttpSecurityInitCompleteBuildItem.class) // service ordering: remove when bytecode recorders are removed
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
     void defineBasicAuthService(ServiceRegistrar reg, VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
-        if (applicationBasicAuthRequired(httpBuildTimeConfig, managementBuildTimeConfig)) {
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.SECURITY)
+                && applicationBasicAuthRequired(httpBuildTimeConfig, managementBuildTimeConfig)) {
             reg
                     .forService(BasicAuthenticationMechanism.class)
-                    .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
-                    .onStart(ctx -> HttpSecurityConfiguration.get().getBasicAuthenticationMechanism());
+                    .require(HttpSecurityConfiguration.class)
+                    .onStart((ctx, httpSecurityConfiguration) -> httpSecurityConfiguration.getBasicAuthenticationMechanism());
         }
     }
 
@@ -306,7 +313,6 @@ public class HttpSecurityProcessor {
             ServiceRegistrar reg,
             BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> beanProducer,
-            Optional<HttpAuthenticationHandlerBuildItem> authenticationHandlerBuildItem,
             Capabilities capabilities,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
@@ -348,8 +354,7 @@ public class HttpSecurityProcessor {
 
     @BuildStep
     void createHttpAuthenticationHandler(ServiceRegistrar reg, Capabilities capabilities,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            BuildProducer<HttpAuthenticationHandlerBuildItem> authenticationHandlerProducer) {
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         if (capabilities.isPresent(Capability.SECURITY)) {
             boolean proactive = httpBuildTimeConfig.auth().proactive();
             boolean propagateSecurityIdentity = httpBuildTimeConfig.auth().propagateSecurityIdentity();
@@ -357,8 +362,6 @@ public class HttpSecurityProcessor {
                     .forService(AuthenticationHandler.class)
                     .atPhase(Phase.STATIC_INIT)
                     .onStart(ctx -> new AuthenticationHandler(proactive, propagateSecurityIdentity));
-            authenticationHandlerProducer.produce(new HttpAuthenticationHandlerBuildItem(
-                    reg.staticInitServiceAsRuntimeValue(AuthenticationHandler.class)));
         }
     }
 
@@ -391,24 +394,35 @@ public class HttpSecurityProcessor {
         }
     }
 
-    @Consume(TlsRegistryBuildItem.class) // we may need to register a TLS configuration for the mTLS
-    // the mTLS auth event fired from prepareHttpSecurityConfiguration reads the TlsConfigurationRegistry
-    // synthetic bean, which is initialized during RUNTIME_INIT; ensure that init has run first
-    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    // The router is still finalized by a bytecode recorder, which is started after every service defined by
+    // a build step it depends on. Producing PreRouterFinalizationBuildItem therefore guarantees that the
+    // HttpSecurityConfiguration service is started before the router is finalized. When the router finalization
+    // becomes a service, it needs to declare the dependency on the HttpSecurityConfiguration service instead.
     @Produce(PreRouterFinalizationBuildItem.class)
-    @Produce(HttpSecurityInitCompleteBuildItem.class) // service ordering: remove when bytecode recorders are removed
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @Produce(HttpSecurityConfigSetupCompleteBuildItem.class)
     @BuildStep
-    HttpSecurityConfigSetupCompleteBuildItem initializeHttpSecurity(
-            Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
-            HttpSecurityRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
-            ShutdownContextBuildItem shutdown) {
-        if (authenticationHandler.isPresent()) {
-            RuntimeValue<CORSConfig> programmaticCorsConfig = recorder.prepareHttpSecurityConfiguration(shutdown);
-            recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler, beanContainerBuildItem.getValue());
-            return new HttpSecurityConfigSetupCompleteBuildItem(programmaticCorsConfig);
+    void initializeHttpSecurity(ServiceRegistrar serviceRegistrar,
+            Capabilities capabilities, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            serviceRegistrar.forService(HttpSecurityConfiguration.class)
+                    .require(AuthenticationHandler.class)
+                    .require(BeanContainer.class)
+                    .require(VertxHttpConfig.class)
+                    .after(TlsConfigurationRegistry.class) // we may need to register a TLS configuration for the mTLS
+                    // this service fires the HttpSecurity event; when an observer configures the mTLS with a TLS
+                    // configuration, we register it in the TlsConfigurationRegistry, which we look up as a synthetic
+                    // bean initialized during RUNTIME_INIT; the observers and custom HttpSecurityPolicy beans created
+                    // by this service can inject other such beans as well (like the Vert.x instance),
+                    // therefore ensure that init has run first
+                    .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                    .onStart((ctx, authHandler, beanContainer, httpConfig) -> {
+                        HttpSecurityConfiguration httpSecurityConfiguration = HttpSecurityRecorder
+                                .prepareHttpSecurityConfiguration(httpConfig, httpBuildTimeConfig, ctx::onStop);
+                        authHandler.init(beanContainer.beanInstance(PathMatchingHttpSecurityPolicy.class),
+                                httpSecurityConfiguration.rolesMapping());
+                        return httpSecurityConfiguration;
+                    });
         }
-        return new HttpSecurityConfigSetupCompleteBuildItem(null);
     }
 
     @BuildStep
@@ -436,9 +450,8 @@ public class HttpSecurityProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void registerAuthMechanismSelectionInterceptor(Capabilities capabilities, VertxHttpBuildTimeConfig buildTimeConfig,
-            BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer, HttpSecurityRecorder recorder,
+            BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer, ServiceRegistrar serviceRegistrar,
             BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredMethodsProducer,
             BuildProducer<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckProducer,
             List<ClassSecurityAnnotationBuildItem> classSecurityAnnotations,
@@ -503,8 +516,10 @@ public class HttpSecurityProcessor {
                     .collect(Collectors.toUnmodifiableMap(item -> item.annotationName.toString(),
                             item -> item.authMechanismScheme));
             bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(
-                    recorder.authMechanismSelectionInterceptorCreator(), knownBindingValues, mechNames));
-            recorder.selectAuthMechanismViaAnnotation();
+                    new AuthMechanismSelectionInterceptorCreator(), knownBindingValues, mechNames));
+            serviceRegistrar.forService("io.quarkus.vertx.http.security.select-auth-mechanism-via-annotation")
+                    .atPhase(Phase.STATIC_INIT)
+                    .onStart(ctx -> HttpSecurityRecorder.selectAuthMechanismViaAnnotation());
 
             // make all @HttpAuthenticationMechanism annotation targets authenticated by default
             if (!methodsWithoutRbacAnnotations.isEmpty()) {
@@ -1025,14 +1040,6 @@ public class HttpSecurityProcessor {
         }
     }
 
-    static final class HttpAuthenticationHandlerBuildItem extends SimpleBuildItem {
-        private final RuntimeValue<AuthenticationHandler> handler;
-
-        private HttpAuthenticationHandlerBuildItem(RuntimeValue<AuthenticationHandler> handler) {
-            this.handler = handler;
-        }
-    }
-
     static final class AlwaysPropagateSecurityIdentity implements BooleanSupplier {
 
         private final boolean alwaysPropagateSecurityIdentity;
@@ -1047,26 +1054,11 @@ public class HttpSecurityProcessor {
         }
     }
 
-    static final class HttpSecurityConfigSetupCompleteBuildItem extends SimpleBuildItem {
-
-        final RuntimeValue<CORSConfig> programmaticCorsConfig;
-
-        private HttpSecurityConfigSetupCompleteBuildItem(RuntimeValue<CORSConfig> programmaticCorsConfig) {
-            this.programmaticCorsConfig = programmaticCorsConfig;
-        }
-    }
-
     /**
-     * Ordering-only build item produced by {@link #initializeHttpSecurity} to signal that
-     * {@link HttpSecurityConfiguration} is initialized and service actions that depend on it
-     * may now safely run.
-     * <p>
-     * This is separate from {@link HttpSecurityConfigSetupCompleteBuildItem} to avoid creating
-     * a build-step cycle through ARC's synthetic bean pipeline.
-     * <p>
-     * This build item should be removed once bytecode recorders are removed and service
-     * dependency ordering is used instead.
+     * Ordering-only build item produced by {@link #initializeHttpSecurity}. Bytecode recorders that consume it
+     * run after the {@link HttpSecurityConfiguration} service.
      */
-    static final class HttpSecurityInitCompleteBuildItem extends EmptyBuildItem {
+    static final class HttpSecurityConfigSetupCompleteBuildItem extends EmptyBuildItem {
     }
+
 }

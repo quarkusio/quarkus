@@ -763,14 +763,14 @@ Users may install plugins as long as they provide the URL or the Maven coordinat
 
 You can install an executable jar as a plugin via Maven coordinates.
 
-For instance, let's use `io.quarkiverse.authzed:quarkus-authzed-cli:runner:jar:0.2.0` which is a real executable jar that provides a CLI utility for the `quarkus-authzed` extension.
+For instance, let's use `io.quarkiverse.authzed:quarkus-authzed-cli:0.2.0` which is a real executable jar that provides a CLI utility for the `quarkus-authzed` extension.
 
 [source, shell]
 ----
-quarkus plugin add io.quarkiverse.authzed:quarkus-authzed-cli:runner:jar:0.2.0 -d "Authzed CLI"
+quarkus plugin add io.quarkiverse.authzed:quarkus-authzed-cli:0.2.0 -d "Authzed CLI"
 Added plugin:
     Name    	 Type  	 Location                                                    	 Description
- *  authzed 	 maven 	 io.quarkiverse.authzed:quarkus-authzed-cli:runner:jar:0.2.0 	 Authzed CLI
+ *  authzed 	 maven 	 io.quarkiverse.authzed:quarkus-authzed-cli:0.2.0 	 Authzed CLI
 ----
 
 NOTE: It is also possible to set a description that will appear in the help output.

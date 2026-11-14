@@ -10,6 +10,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.config.Config;
+import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.stork.Stork;
@@ -19,7 +20,6 @@ import io.smallrye.stork.api.config.ServiceConfig;
 public class SmallRyeStorkRegistrationRecorder {
 
     private static final Logger LOGGER = Logger.getLogger(SmallRyeStorkRegistrationRecorder.class.getName());
-    private static final Duration REGISTRATION_TIMEOUT = Duration.ofSeconds(10);
 
     private final RuntimeValue<StorkConfiguration> runtimeConfig;
 
@@ -29,6 +29,7 @@ public class SmallRyeStorkRegistrationRecorder {
 
     public void registerServiceInstance() {
         List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(runtimeConfig.getValue());
+        Duration timeout = runtimeConfig.getValue().registrationTimeout();
         Config quarkusConfig = Config.get();
         for (ServiceConfig serviceConfig : serviceConfigs) {
             String serviceName = serviceConfig.serviceName();
@@ -46,7 +47,7 @@ public class SmallRyeStorkRegistrationRecorder {
                 int port = StorkConfigUtil.getOrDefaultPort(parameters, quarkusConfig);
                 Uni<Void> registration = Stork.getInstance().getService(serviceName)
                         .registerInstance(serviceName, host, port);
-                awaitOrSubscribe(registration, serviceName, "registration");
+                awaitOrSubscribe(registration, serviceName, "registration", timeout);
             }
 
         }
@@ -63,27 +64,36 @@ public class SmallRyeStorkRegistrationRecorder {
 
     /**
      * Waits for the given {@link Uni} to complete if the caller thread can be blocked,
-     * otherwise subscribes and logs on failure. In both cases, a timeout is applied to
+     * otherwise subscribes and logs on failure. In both cases, the given timeout is applied to
      * avoid hanging indefinitely if the registrar is unreachable.
      *
      * @param uni the operation to execute
      * @param serviceName the service name, used for logging
      * @param action a description of the action (e.g. "registration", "deregistration"), used for logging
+     * @param timeout the maximum time to wait for the operation to complete
      */
-    private void awaitOrSubscribe(Uni<Void> uni, String serviceName, String action) {
+    private void awaitOrSubscribe(Uni<Void> uni, String serviceName, String action, Duration timeout) {
         if (Infrastructure.canCallerThreadBeBlocked()) {
             try {
-                uni.await().atMost(REGISTRATION_TIMEOUT);
+                uni.await().atMost(timeout);
                 LOGGER.debugf("'%s' successfully completed for service '%s'", action, serviceName);
             } catch (Exception failure) {
-                LOGGER.warnf("Failed to complete %s for service '%s': %s", action, serviceName, failure.getMessage());
+                logFailure(failure, serviceName, action, timeout);
             }
         } else {
-            uni.ifNoItem().after(REGISTRATION_TIMEOUT).fail()
+            uni.ifNoItem().after(timeout).fail()
                     .subscribe().with(
                             success -> LOGGER.debugf("'%s' successfully completed for service '%s'", action, serviceName),
-                            failure -> LOGGER.warnf("Failed to complete %s for service '%s': %s", action, serviceName,
-                                    failure.getMessage()));
+                            failure -> logFailure(failure, serviceName, action, timeout));
+        }
+    }
+
+    private static void logFailure(Throwable failure, String serviceName, String action, Duration timeout) {
+        if (failure instanceof TimeoutException) {
+            LOGGER.warnf("Failed to complete %s for service '%s' within %d ms. The timeout can be configured with"
+                    + " 'quarkus.stork.registration-timeout'", action, serviceName, timeout.toMillis());
+        } else {
+            LOGGER.warnf("Failed to complete %s for service '%s': %s", action, serviceName, failure.getMessage());
         }
     }
 
@@ -100,7 +110,7 @@ public class SmallRyeStorkRegistrationRecorder {
                 Uni<Void> deregistration = Stork.getInstance()
                         .getService(serviceName)
                         .deregisterServiceInstance(serviceName);
-                awaitOrSubscribe(deregistration, serviceName, "deregistration");
+                awaitOrSubscribe(deregistration, serviceName, "deregistration", configuration.registrationTimeout());
             }
         }
     }

@@ -115,6 +115,18 @@ quarkus.stork.my-service.service-registrar.ip-address=203.0.113.25
 quarkus.stork.my-service.service-registrar.port=80
 ----
 
+== Registration timeout
+
+When the application starts, Quarkus waits for each service instance to be registered, and when it stops, for each service instance to be deregistered.
+If the service registry does not respond within 10 seconds, a warning is logged and the application continues to start or stop.
+
+You can change this timeout, for example when the service registry takes longer to respond:
+
+[source,properties]
+----
+quarkus.stork.registration-timeout=30s
+----
+
 == IP detection
 
 By default, Quarkus attempts to determine the IP address using the first available, non-loopback network interface.

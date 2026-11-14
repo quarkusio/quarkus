@@ -296,7 +296,9 @@ public class StorkConfigUtilTest {
         for (Map.Entry<String, ServiceConfiguration> entry : entries) {
             map.put(entry.getKey(), entry.getValue());
         }
-        return () -> map;
+        return ConfigInstanceBuilder.forInterface(StorkConfiguration.class)
+                .with(StorkConfiguration::serviceConfiguration, map)
+                .build();
     }
 
     private static ServiceConfiguration buildServiceConfig(StorkServiceDiscoveryConfiguration discovery,

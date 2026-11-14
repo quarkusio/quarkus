@@ -1,0 +1,4 @@
+---
+artifact: org.acme:acme-ext:1.0-SNAPSHOT
+metadata: {}
+name: "Acme Ext - Runtime"

@@ -61,6 +61,12 @@ public class IDELauncherImpl implements Closeable {
                         .setTargetDirectory(quarkusModel.getApplicationModule().getBuildDir().toPath());
 
                 for (ResolvedDependency dep : quarkusModel.getDependencies()) {
+                    // extension artifacts from the workspace are not reloadable, they must be loaded only once
+                    // by the augmentation class loader, otherwise the classes shared between their runtime
+                    // and deployment modules would end up being loaded by different class loaders
+                    if (!dep.isReloadable() || dep.isRuntimeExtensionArtifact()) {
+                        continue;
+                    }
                     final WorkspaceModule module = dep.getWorkspaceModule();
                     if (module != null) {
                         addAdditionalArchives(module.getSources(dep.getClassifier()), builder);

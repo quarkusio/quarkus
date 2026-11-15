@@ -6,13 +6,15 @@ import org.keycloak.admin.client.KeycloakBuilder;
 import io.quarkus.keycloak.admin.client.common.runtime.KeycloakAdminClientConfig;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import tools.jackson.databind.json.JsonMapper;
 
 public class KeycloakAdminRestClientRecorder {
 
-    public static void setClientProvider(TlsConfigurationRegistry registry, KeycloakAdminClientConfig config) {
+    public static void setClientProvider(TlsConfigurationRegistry registry, KeycloakAdminClientConfig config,
+            JsonMapper jsonMapper) {
         var namedTlsConfig = TlsConfiguration.from(registry, config.tlsConfigurationName());
         if (namedTlsConfig.isPresent()) {
-            Keycloak.setClientProvider(new KeycloakAdminRestClientProvider(namedTlsConfig.get()));
+            Keycloak.setClientProvider(new KeycloakAdminRestClientProvider(namedTlsConfig.get(), jsonMapper));
         } else {
             final boolean trustAll;
             if (registry.getDefault().isPresent()) {
@@ -20,7 +22,7 @@ public class KeycloakAdminRestClientRecorder {
             } else {
                 trustAll = false;
             }
-            Keycloak.setClientProvider(new KeycloakAdminRestClientProvider(trustAll));
+            Keycloak.setClientProvider(new KeycloakAdminRestClientProvider(trustAll, jsonMapper));
         }
     }
 
@@ -40,12 +42,5 @@ public class KeycloakAdminRestClientRecorder {
                 .serverUrl(config.serverUrl().get())
                 .scope(config.scope().orElse(null))
                 .build();
-    }
-
-    public static void avoidRuntimeInitIssueInClientBuilderWrapper() {
-        // we set our provider at runtime, it is not used before that
-        // however org.keycloak.admin.client.Keycloak.CLIENT_PROVIDER is initialized during
-        // static init with org.keycloak.admin.client.ClientBuilderWrapper that is not compatible with native mode
-        Keycloak.setClientProvider(null);
     }
 }

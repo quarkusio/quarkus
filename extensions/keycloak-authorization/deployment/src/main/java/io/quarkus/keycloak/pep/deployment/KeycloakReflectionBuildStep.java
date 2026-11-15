@@ -10,8 +10,12 @@ import org.keycloak.common.crypto.CryptoProvider;
 import org.keycloak.jose.jwk.JSONWebKeySet;
 import org.keycloak.jose.jwk.JWK;
 import org.keycloak.jose.jws.JWSHeader;
+import org.keycloak.json.Jackson2JsonMapper;
+import org.keycloak.json.KeycloakJsonMapper;
+import org.keycloak.json.ResourceTypeMapDeserializer;
 import org.keycloak.json.StringListMapDeserializer;
 import org.keycloak.json.StringOrArrayDeserializer;
+import org.keycloak.json.StringOrArraySerializer;
 import org.keycloak.protocol.oidc.client.authentication.ClientCredentialsProvider;
 import org.keycloak.protocol.oidc.client.authentication.ClientIdAndSecretCredentialsProvider;
 import org.keycloak.protocol.oidc.client.authentication.JWTClientCredentialsProvider;
@@ -67,6 +71,8 @@ public class KeycloakReflectionBuildStep {
                 ResourceOwnerRepresentation.class.getName(),
                 StringListMapDeserializer.class.getName(),
                 StringOrArrayDeserializer.class.getName(),
+                StringOrArraySerializer.class.getName(),
+                ResourceTypeMapDeserializer.class.getName(),
                 MTLSEndpointAliases.class.getName(),
                 OIDCConfigurationRepresentation.class.getName()).methods().fields().build());
     }
@@ -82,6 +88,9 @@ public class KeycloakReflectionBuildStep {
                 ClaimsInformationPointProviderFactory.class.getName()));
         serviceProvider.produce(new ServiceProviderBuildItem(CryptoProvider.class.getName(),
                 AuthzClientCryptoProvider.class.getName()));
+        // the Keycloak tokens, JWS and JWE utilities resolve their JSON mapper through the ServiceLoader
+        serviceProvider.produce(new ServiceProviderBuildItem(KeycloakJsonMapper.class.getName(),
+                Jackson2JsonMapper.class.getName()));
     }
 
     @BuildStep

@@ -7,11 +7,13 @@ import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.representations.idm.ClientProfilesRepresentation;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -65,6 +67,23 @@ public class AdminClientResource {
         newRealm.getUsers().add(createUser("alice", "user"));
         keycloak.realms().create(newRealm);
         return keycloak.realm("quarkus2").toRepresentation().getRealm();
+    }
+
+    @PUT
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("empty-realm-client-profiles")
+    public String putEmptyRealmClientProfiles() {
+        // the Jackson 2 variant of the Keycloak representations (used by the Keycloak policy enforcer) wins over
+        // the Jackson 3 variant in this application, so the client profiles are a Jackson 2 JsonNode that
+        // the Jackson 3 based admin client must bridge when it (de)serializes the realm
+        RealmRepresentation realm = keycloak.realm("quarkus").toRepresentation();
+        realm.setParsedClientProfiles(new ClientProfilesRepresentation());
+        keycloak.realm("quarkus").update(realm);
+        ClientProfilesRepresentation profiles = realm.getParsedClientProfiles();
+        int profilesCount = profiles == null ? -1 : profiles.getProfiles().size();
+        boolean hasGlobalProfiles = !keycloak.realm("quarkus").clientPoliciesProfilesResource().getProfiles(true)
+                .getGlobalProfiles().isEmpty();
+        return realm.getRealm() + ":" + profilesCount + ":" + hasGlobalProfiles;
     }
 
     private static RealmRepresentation createRealm(String name) {

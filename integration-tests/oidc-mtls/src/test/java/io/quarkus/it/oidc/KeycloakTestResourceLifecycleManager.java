@@ -5,10 +5,10 @@ import java.net.URL;
 import java.util.Map;
 
 import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.util.JsonSerialization;
 
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.keycloak.client.KeycloakJson;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.quarkus.test.keycloak.client.KeycloakTestClient.Tls;
 
@@ -31,7 +31,7 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
         try {
             URL realmPathUrl = Thread.currentThread().getContextClassLoader().getResource("quarkus-realm.json");
             try (InputStream is = realmPathUrl.openStream()) {
-                return JsonSerialization.readValue(is, RealmRepresentation.class);
+                return KeycloakJson.readRealm(is);
             }
         } catch (Exception ex) {
             throw new RuntimeException(ex);

@@ -1,6 +1,5 @@
 package io.quarkus.oidc.client;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -14,9 +13,9 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.keycloak.util.JsonSerialization;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
 
 public class KeycloakRealmUserPasswordManager implements QuarkusTestResourceLifecycleManager {
@@ -26,26 +25,15 @@ public class KeycloakRealmUserPasswordManager implements QuarkusTestResourceLife
 
     @Override
     public Map<String, String> start() {
-        try {
-            RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
+        RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
 
-            realm.getClients().add(createClient("quarkus-app"));
-            realm.getClients().add(createClient("quarkus-app-long-lived-tokens", 60));
-            realm.getClients().add(createPublicClient("quarkus-public-app"));
-            realm.getUsers().add(createUser("alice", "user"));
-            realm.getUsers().add(createUser("bob", "user"));
+        realm.getClients().add(createClient("quarkus-app"));
+        realm.getClients().add(createClient("quarkus-app-long-lived-tokens", 60));
+        realm.getClients().add(createPublicClient("quarkus-public-app"));
+        realm.getUsers().add(createUser("alice", "user"));
+        realm.getUsers().add(createUser("bob", "user"));
 
-            RestAssured
-                    .given()
-                    .auth().oauth2(getAdminAccessToken())
-                    .contentType("application/json")
-                    .body(JsonSerialization.writeValueAsBytes(realm))
-                    .when()
-                    .post(KEYCLOAK_SERVER_URL + "/admin/realms").then()
-                    .statusCode(201);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        new KeycloakTestClient(KEYCLOAK_SERVER_URL + "/realms/master").createRealm(realm);
         return Collections.emptyMap();
     }
 

@@ -18,19 +18,14 @@ import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
 import org.keycloak.admin.client.spi.ResteasyClientProvider;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.keycloak.admin.client.common.runtime.Jackson2JsonNodeModule;
 import io.quarkus.rest.client.reactive.jackson.runtime.serialisers.ClientJacksonMessageBodyWriter;
 import io.quarkus.tls.TlsConfiguration;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.TrustOptions;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 public class KeycloakAdminRestClientProvider implements ResteasyClientProvider {
@@ -41,15 +36,20 @@ public class KeycloakAdminRestClientProvider implements ResteasyClientProvider {
 
     private final boolean tlsTrustAll;
     private final TlsConfig tlsConfig;
+    // the mapper selected at build time for the Keycloak representations; this ensures we don't customize
+    // the managed (shared) ObjectMapper available in the CDI container
+    private final JsonMapper jsonMapper;
 
-    public KeycloakAdminRestClientProvider(boolean tlsTrustAll) {
+    public KeycloakAdminRestClientProvider(boolean tlsTrustAll, JsonMapper jsonMapper) {
         this.tlsTrustAll = tlsTrustAll;
         this.tlsConfig = null;
+        this.jsonMapper = jsonMapper;
     }
 
-    public KeycloakAdminRestClientProvider(TlsConfiguration tlsConfiguration) {
-        tlsTrustAll = tlsConfiguration.isTrustAll();
+    public KeycloakAdminRestClientProvider(TlsConfiguration tlsConfiguration, JsonMapper jsonMapper) {
+        this.tlsTrustAll = tlsConfiguration.isTrustAll();
         this.tlsConfig = createTlsConfig(tlsConfiguration);
+        this.jsonMapper = jsonMapper;
     }
 
     @Override
@@ -70,12 +70,11 @@ public class KeycloakAdminRestClientProvider implements ResteasyClientProvider {
         if (arcContainer == null) {
             throw new IllegalStateException(this.getClass().getName() + " should only be used in a Quarkus application");
         } else {
-            ObjectMapper newObjectMapper = newKeycloakAdminClientObjectMapper();
             clientBuilder = clientBuilder
-                    .registerMessageBodyReader(new JacksonBasicMessageBodyReader(newObjectMapper), Object.class,
+                    .registerMessageBodyReader(new JacksonBasicMessageBodyReader(jsonMapper), Object.class,
                             HANDLED_MEDIA_TYPES, true,
                             READER_PROVIDER_PRIORITY)
-                    .registerMessageBodyWriter(new ClientJacksonMessageBodyWriter(newObjectMapper), Object.class,
+                    .registerMessageBodyWriter(new ClientJacksonMessageBodyWriter(jsonMapper), Object.class,
                             HANDLED_MEDIA_TYPES, true, WRITER_PROVIDER_PRIORITY);
             InstanceHandle<ClientLogger> clientLogger = arcContainer.instance(ClientLogger.class);
             if (clientLogger.isAvailable()) {
@@ -83,17 +82,6 @@ public class KeycloakAdminRestClientProvider implements ResteasyClientProvider {
             }
         }
         return clientBuilder;
-    }
-
-    // creates new ObjectMapper compatible with Keycloak Admin Client
-    private ObjectMapper newKeycloakAdminClientObjectMapper() {
-        // Same like JSONSerialization class. Makes it possible to use admin-client against older versions of Keycloak server where the properties on representations might be different
-        // The client must work with the newer versions of Keycloak server, which might contain the JSON fields not yet known by the client. So unknown fields will be ignored.
-        return JsonMapper.builder()
-                .changeDefaultPropertyInclusion(v -> v.withValueInclusion(JsonInclude.Include.NON_NULL))
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .addModule(new Jackson2JsonNodeModule())
-                .build();
     }
 
     @Override

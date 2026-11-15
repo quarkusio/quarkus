@@ -528,14 +528,6 @@ final class PersistenceUnitProcessor {
                 dbKindMetadataBuildItems,
                 puPropertiesCollector);
 
-        if ((dbKind.isPresent() && DatabaseKind.isPostgreSQL(dbKind.get())
-                || (dialect.isPresent() && dialect.get().toLowerCase(Locale.ROOT).contains("postgres")))) {
-            // Workaround for https://hibernate.atlassian.net/browse/HHH-19063
-            reflectiveMethods.produce(new ReflectiveMethodBuildItem(
-                    "Accessed in org.hibernate.engine.jdbc.env.internal.DefaultSchemaNameResolver.determineAppropriateResolverDelegate",
-                    "org.postgresql.jdbc.PgConnection", "getSchema"));
-        }
-
         return supportedDatabaseKind;
     }
 

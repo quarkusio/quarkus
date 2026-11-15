@@ -14,9 +14,9 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.keycloak.util.JsonSerialization;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.keycloak.client.KeycloakJson;
 import io.restassured.RestAssured;
 import io.restassured.specification.RequestSpecification;
 
@@ -53,7 +53,7 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
         try {
             createRequestSpec().auth().oauth2(getAdminAccessToken())
                     .contentType("application/json")
-                    .body(JsonSerialization.writeValueAsBytes(realm))
+                    .body(KeycloakJson.writeRealm(realm))
                     .when()
                     .post(keycloak.getServerUrl() + "/admin/realms").then()
                     .statusCode(201);

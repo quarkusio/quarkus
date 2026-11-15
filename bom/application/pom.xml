@@ -185,7 +185,7 @@
         <mockito.version>5.24.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <quarkus-security.version>2.3.2</quarkus-security.version>
-        <keycloak-client.version>26.0.12</keycloak-client.version>
+        <keycloak-client.version>26.0.13</keycloak-client.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>4.3.1</checker-qual.version>
         <error-prone-annotations.version>2.52.0</error-prone-annotations.version>
@@ -6588,7 +6588,7 @@
 
             <dependency>
                 <groupId>org.keycloak</groupId>
-                <artifactId>keycloak-admin-client</artifactId>
+                <artifactId>keycloak-admin-client-jackson3</artifactId>
                 <version>${keycloak-client.version}</version>
             </dependency>
             <dependency>
@@ -6604,6 +6604,11 @@
             <dependency>
                 <groupId>org.keycloak</groupId>
                 <artifactId>keycloak-client-common-synced</artifactId>
+                <version>${keycloak-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-client-common-synced-jackson3</artifactId>
                 <version>${keycloak-client.version}</version>
             </dependency>
             <dependency>

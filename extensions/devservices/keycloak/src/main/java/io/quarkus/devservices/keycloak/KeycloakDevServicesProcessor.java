@@ -47,7 +47,6 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.keycloak.util.JsonSerialization;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
@@ -668,7 +667,7 @@ public class KeycloakDevServicesProcessor {
         private static Optional<RealmRepresentation> readRealmFile(URL url, String realmPath, List<String> errors) {
             try {
                 try (InputStream is = url.openStream()) {
-                    return Optional.of(JsonSerialization.readValue(is, RealmRepresentation.class));
+                    return Optional.of(KeycloakJson.readRealm(is));
                 }
             } catch (IOException ex) {
                 errors.add(String.format("Realm %s resource can not be opened: %s", realmPath, ex.getMessage()));
@@ -803,7 +802,7 @@ public class KeycloakDevServicesProcessor {
             HttpResponse<Buffer> createRealmResponse = post(client, httpTarget, httpTarget.path("/admin/realms"))
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
                     .putHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + token)
-                    .sendBuffer(Buffer.buffer().appendString(JsonSerialization.writeValueAsString(realm)))
+                    .sendBuffer(Buffer.buffer().appendString(KeycloakJson.writeRealm(realm)))
                     .await().atMost(config.webClientTimeout());
 
             if (createRealmResponse.statusCode() > 299) {

@@ -143,6 +143,7 @@ public interface Capability {
     String OIDC_CLIENT_REGISTRATION = QUARKUS_PREFIX + ".oidc-client-registration";
 
     String KEYCLOAK_AUTHORIZATION = QUARKUS_PREFIX + ".keycloak.authorization";
+    String KEYCLOAK_ADMIN_CLIENT = QUARKUS_PREFIX + ".keycloak.admin-client";
 
     String SCHEDULER = QUARKUS_PREFIX + ".scheduler";
 

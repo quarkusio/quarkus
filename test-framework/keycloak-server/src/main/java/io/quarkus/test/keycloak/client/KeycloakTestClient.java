@@ -11,7 +11,6 @@ import java.util.List;
 
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.util.JsonSerialization;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.common.DevServicesContext;
@@ -364,7 +363,7 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
             getSpec()
                     .auth().oauth2(getAdminAccessToken())
                     .contentType("application/json")
-                    .body(JsonSerialization.writeValueAsBytes(realm))
+                    .body(KeycloakJson.writeRealm(realm))
                     .when()
                     .post(getAuthServerBaseUrl() + "/admin/realms").then()
                     .statusCode(201);
@@ -407,7 +406,7 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
     public RealmRepresentation readRealmFile(URL url, String realmPath) {
         try {
             try (InputStream is = url.openStream()) {
-                return JsonSerialization.readValue(is, RealmRepresentation.class);
+                return KeycloakJson.readRealm(is);
             }
         } catch (IOException ex) {
             throw new RuntimeException("Realm " + realmPath + " resource can not be opened", ex);

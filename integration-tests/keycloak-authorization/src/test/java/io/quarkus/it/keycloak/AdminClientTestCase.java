@@ -25,4 +25,14 @@ public class AdminClientTestCase {
                 .statusCode(200)
                 .body(equalTo("quarkus2"));
     }
+
+    @Test
+    public void testRealmClientProfiles() {
+        // the realm representation is served by the Jackson 2 Keycloak representations in this application,
+        // exercises the Jackson 2 JsonNode bridge of the Jackson 3 based admin client
+        when().put("/admin-client/empty-realm-client-profiles")
+                .then()
+                .statusCode(200)
+                .body(equalTo("quarkus:0:true"));
+    }
 }

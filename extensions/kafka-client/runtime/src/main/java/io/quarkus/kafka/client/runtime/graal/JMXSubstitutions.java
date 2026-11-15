@@ -50,37 +50,6 @@ final class RemoveJMXAccess {
 
 }
 
-@TargetClass(value = AppInfoParser.class, onlyWith = RemoveJMXAccessPre42.Enabled.class)
-final class RemoveJMXAccessPre42 {
-    static final class Enabled implements BooleanSupplier {
-        @Override
-        public boolean getAsBoolean() {
-            int[] version = Arrays.stream(AppInfoParser.getVersion().split("\\."))
-                    .filter(s -> s.matches("\\d+"))
-                    .mapToInt(Integer::parseInt)
-                    .toArray();
-            return version[0] < 4 || (version[0] == 4 && version[1] < 2);
-        }
-    }
-
-    @Substitute
-    public static synchronized void registerAppInfo(String prefix, String id, Metrics metrics, long nowMs) {
-        registerMetrics(metrics, new AppInfoParser.AppInfo(nowMs));
-    }
-
-    @Substitute
-    public static synchronized void unregisterAppInfo(String prefix, String id, Metrics metrics) {
-        unregisterMetrics(metrics);
-    }
-
-    @Alias
-    private static native void registerMetrics(Metrics metrics, AppInfoParser.AppInfo appInfo);
-
-    @Alias
-    private static native void unregisterMetrics(Metrics metrics);
-
-}
-
 @TargetClass(value = JmxReporter.class)
 final class JMXReporting {
 

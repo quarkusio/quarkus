@@ -149,7 +149,10 @@ public enum VertxMDC implements MDCProvider {
      */
     public Object putObject(String key, Object value, Context vertxContext) {
         Objects.requireNonNull(key);
-        Objects.requireNonNull(value);
+        if (value == null) {
+            // SLF4J allows null MDC values when the implementation supports it; treat null as removal
+            return removeObject(key, vertxContext);
+        }
         return contextualDataMap(vertxContext).put(key, value);
     }
 

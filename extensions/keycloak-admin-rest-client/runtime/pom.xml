@@ -28,8 +28,9 @@
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-admin-client</artifactId>
+            <artifactId>keycloak-admin-client-jackson3</artifactId>
             <exclusions>
+                <!-- RESTEasy Classic, the client is created with the Quarkus REST client instead -->
                 <exclusion>
                     <groupId>org.jboss.resteasy</groupId>
                     <artifactId>resteasy-client</artifactId>
@@ -40,27 +41,11 @@
                 </exclusion>
                 <exclusion>
                     <groupId>org.jboss.resteasy</groupId>
-                    <artifactId>resteasy-jackson2-provider</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jboss.resteasy</groupId>
                     <artifactId>resteasy-jaxb-provider</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.jakarta.rs</groupId>
-                    <artifactId>jackson-jakarta-rs-yaml-provider</artifactId>
+                    <groupId>dev.resteasy.providers</groupId>
+                    <artifactId>resteasy-jackson-provider</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -87,8 +72,11 @@
                 <configuration>
                     <removedResources>
                         <artifact>
-                            <key>org.keycloak:keycloak-admin-client</key>
-                            <resources>org/keycloak/admin/client/JacksonProvider.class</resources>
+                            <!-- Keycloak's providers require RESTEasy Classic (excluded above), so they and their service file
+                                 are removed; Keycloak then loads KeycloakAdminRestClientProviderPlaceholder from the service
+                                 file of this extension -->
+                            <key>org.keycloak:keycloak-admin-client-jackson3</key>
+                            <resources>org/keycloak/admin/client/jackson3/JacksonProvider3.class,org/keycloak/admin/client/jackson3/ResteasyClientClassicProvider3.class,org/keycloak/admin/client/jackson3/StreamMessageBodyReader3.class,META-INF/services/org.keycloak.admin.client.spi.ResteasyClientProvider</resources>
                         </artifact>
                     </removedResources>
                 </configuration>

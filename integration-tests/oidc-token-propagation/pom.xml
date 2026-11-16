@@ -24,11 +24,6 @@
         </dependency>
         <!-- test dependencies -->
         <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-client-common-synced</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-keycloak-server</artifactId>
             <scope>test</scope>

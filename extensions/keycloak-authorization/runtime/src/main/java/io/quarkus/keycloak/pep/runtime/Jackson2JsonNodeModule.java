@@ -1,4 +1,4 @@
-package io.quarkus.keycloak.admin.client.common.runtime;
+package io.quarkus.keycloak.pep.runtime;
 
 import java.util.Map;
 import java.util.Set;
@@ -19,14 +19,17 @@ import tools.jackson.databind.module.SimpleModule;
  * Bridge module that teaches Jackson 3 how to serialize and deserialize
  * Jackson 2's {@code com.fasterxml.jackson.databind.JsonNode}.
  * <p>
- * Needed because Keycloak's representation classes (e.g. RealmRepresentation)
- * use Jackson 2 JsonNode as field types, but Quarkus now uses Jackson 3.
+ * The Keycloak admin client extensions use Jackson 3 and the Jackson 3 variant of the Keycloak representations, which
+ * does not use Jackson 2 types. This extension brings the Jackson 2 variant of the representations, which wins over the
+ * Jackson 3 variant (see {@code KeycloakAdminClientSupportProcessor}) and whose representations (e.g. RealmRepresentation)
+ * use Jackson 2 JsonNode as field types, so this module is registered in the mapper of the admin client.
  * <p>
- * TODO: Remove once Keycloak ships a Jackson 3 compatible version.
+ * TODO: Remove once the Jackson 2 variant of the Keycloak representations stops using JsonNode (the keycloak-client
+ * sync script reverts the upstream RawJsonValue to JsonNode in the Jackson 2 variant until keycloak-client 27.x).
  */
-public class Jackson2JsonNodeModule extends SimpleModule {
+class Jackson2JsonNodeModule extends SimpleModule {
 
-    public Jackson2JsonNodeModule() {
+    Jackson2JsonNodeModule() {
         super("jackson2-jsonnode-bridge");
         addSerializer(com.fasterxml.jackson.databind.JsonNode.class, new Jackson2JsonNodeSerializer());
         addDeserializer(com.fasterxml.jackson.databind.JsonNode.class, new Jackson2JsonNodeDeserializer());

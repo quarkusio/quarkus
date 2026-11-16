@@ -376,6 +376,8 @@ public class ResteasyReactiveCommonProcessor {
                 LEGACY_READER_PRIORITY, true));
         readers.produce(new MessageBodyReaderOverrideBuildItem("org.keycloak.admin.client.JacksonProvider",
                 LEGACY_READER_PRIORITY, true));
+        readers.produce(new MessageBodyReaderOverrideBuildItem("org.keycloak.admin.client.jackson3.JacksonProvider3",
+                LEGACY_READER_PRIORITY, true));
 
         writers.produce(new MessageBodyWriterOverrideBuildItem(
                 "org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider", LEGACY_WRITER_PRIORITY, true));
@@ -384,6 +386,8 @@ public class ResteasyReactiveCommonProcessor {
         writers.produce(new MessageBodyWriterOverrideBuildItem("com.fasterxml.jackson.jakarta.rs.json.JacksonJaxbJsonProvider",
                 LEGACY_WRITER_PRIORITY, true));
         writers.produce(new MessageBodyWriterOverrideBuildItem("org.keycloak.admin.client.JacksonProvider",
+                LEGACY_WRITER_PRIORITY, true));
+        writers.produce(new MessageBodyWriterOverrideBuildItem("org.keycloak.admin.client.jackson3.JacksonProvider3",
                 LEGACY_WRITER_PRIORITY, true));
     }
 

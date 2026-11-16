@@ -5,6 +5,7 @@ import static io.quarkus.qute.Booleans.isFalsy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -170,11 +171,7 @@ public class IfSectionHelper implements SectionHelper {
             if (MAIN_BLOCK_NAME.equals(block.getLabel())) {
                 params = parseParams(new ArrayList<>(block.getParameters().values()), block);
             } else if (ELSE.equals(block.getLabel())) {
-                params = parseParams(new ArrayList<>(block.getParameters().values()), block);
-                if (!params.isEmpty()) {
-                    // else if <-- remove "if"
-                    params.remove(0);
-                }
+                params = parseParams(elseIfParams(block.getParameters().values()), block);
             }
             addExpressions(params, block);
             // {#if} never changes the scope
@@ -203,9 +200,11 @@ public class IfSectionHelper implements SectionHelper {
 
         public ConditionBlock(SectionBlock block, SectionInitContext context) {
             this.section = block;
-            List<Object> params = parseParams(new ArrayList<>(block.parameters.values()), block);
-            if (!params.isEmpty() && !SectionHelperFactory.MAIN_BLOCK_NAME.equals(block.label)) {
-                params = params.subList(1, params.size());
+            List<Object> params;
+            if (SectionHelperFactory.MAIN_BLOCK_NAME.equals(block.label)) {
+                params = parseParams(new ArrayList<>(block.parameters.values()), block);
+            } else {
+                params = parseParams(elseIfParams(block.parameters.values()), block);
             }
             this.condition = createCondition(params, block, null, context);
         }
@@ -585,8 +584,20 @@ public class IfSectionHelper implements SectionHelper {
 
     }
 
+    /**
+     * The params of an {@code else if} block start with the {@code if} label, which is not part of the condition.
+     */
+    private static List<Object> elseIfParams(Collection<String> params) {
+        List<Object> ret = new ArrayList<>(params);
+        if (!ret.isEmpty()) {
+            ret.remove(0);
+        }
+        return ret;
+    }
+
     static <B extends ErrorInitializer & WithOrigin> List<Object> parseParams(List<Object> params, B block) {
 
+        params = collapseInfixOperands(params);
         replaceOperatorsAndCompositeParams(params, block);
         int highestPrecedence = getHighestPrecedence(params);
 
@@ -643,6 +654,60 @@ public class IfSectionHelper implements SectionHelper {
             }
         }
         return parseParams(ret, block);
+    }
+
+    /**
+     * A value expression with infix notation, such as {@code count - 1} or {@code name ?: 'x'}, is split into
+     * separate params by the section parser. Join such a run of params back into a single operand so that the
+     * expression parser applies the infix notation, as it does for output expressions and section parameter values.
+     * A run is joined when it consists of operands and infix method names alternating, i.e. it has an odd number of
+     * at least three params, and none of them is a section operator, a logical complement or a composite param.
+     */
+    private static List<Object> collapseInfixOperands(List<Object> params) {
+        List<Object> ret = new ArrayList<>(params.size());
+        List<String> run = new ArrayList<>();
+        for (Object param : params) {
+            if (param instanceof String str && !isSectionOperatorOrComposite(str)) {
+                run.add(str);
+            } else {
+                addRun(run, ret);
+                ret.add(param);
+            }
+        }
+        addRun(run, ret);
+        return ret.size() != params.size() ? ret : params;
+    }
+
+    private static void addRun(List<String> run, List<Object> ret) {
+        if (run.size() >= 3 && run.size() % 2 == 1 && isInfixNotation(run)) {
+            ret.add(String.join(" ", run));
+        } else {
+            ret.addAll(run);
+        }
+        run.clear();
+    }
+
+    private static boolean isSectionOperatorOrComposite(String param) {
+        return Operator.from(param) != null
+                || param.startsWith(LOGICAL_COMPLEMENT)
+                || param.charAt(0) == Parser.START_COMPOSITE_PARAM;
+    }
+
+    private static boolean isInfixNotation(List<String> run) {
+        for (int i = 1; i < run.size(); i += 2) {
+            if (!isInfixMethodName(run.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isInfixMethodName(String param) {
+        if (param.indexOf('.') != -1 || param.indexOf('(') != -1 || param.indexOf('[') != -1
+                || LiteralSupport.isStringLiteralSeparator(param.charAt(0))) {
+            return false;
+        }
+        return Results.isNotFound(LiteralSupport.getLiteralValue(param));
     }
 
     private static boolean isGroupingNeeded(List<Object> params) {

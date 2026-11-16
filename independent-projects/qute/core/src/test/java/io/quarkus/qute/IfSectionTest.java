@@ -118,6 +118,45 @@ public class IfSectionTest {
     }
 
     @Test
+    public void testInfixOperands() {
+        Engine engine = Engine.builder().addDefaults().build();
+        Template template = engine.parse("{#if index == count - 1}last{#else}no{/if}");
+        assertEquals("last", template.data("index", 4, "count", 5).render());
+        assertEquals("no", template.data("index", 3, "count", 5).render());
+        template = engine.parse("{#if index == (count - 1)}last{#else}no{/if}");
+        assertEquals("last", template.data("index", 4, "count", 5).render());
+        assertEquals("no", template.data("index", 3, "count", 5).render());
+        assertEquals("OK", engine.parse("{#if (count - 1) > 3 && active}OK{#else}NOK{/if}")
+                .data("count", 5, "active", true).render());
+        assertEquals("OK", engine.parse("{#if count - 1 > 3 || !active}OK{#else}NOK{/if}")
+                .data("count", 5, "active", true).render());
+        assertEquals("NOK", engine.parse("{#if count - 1 > 3 || !active}OK{#else}NOK{/if}")
+                .data("count", 2, "active", true).render());
+        assertEquals("OK", engine.parse("{#if (name ?: 'x') == 'x'}OK{#else}NOK{/if}")
+                .data("name", null).render());
+        assertEquals("OK", engine.parse("{#if false}NOK{#else if count - 1 == 4}OK{#else}NOK{/if}")
+                .data("count", 5).render());
+        assertEquals("OK", engine.parse("{#if 10 - count == 5}OK{#else}NOK{/if}")
+                .data("count", 5).render());
+    }
+
+    @Test
+    public void testInfixOperandParsing() {
+        List<Object> params = IfSectionHelper
+                .parseParams(Arrays.asList("item.index", "==", "item.count", "-", "1"), null);
+        assertEquals(Arrays.asList("item.index", Operator.EQ, "item.count - 1"), params);
+
+        params = IfSectionHelper.parseParams(Arrays.asList("item.index", "==", "(item.count - 1)"), null);
+        assertEquals(Arrays.asList("item.index", Operator.EQ, Arrays.asList("item.count - 1")), params);
+
+        params = IfSectionHelper.parseParams(Arrays.asList("item.count", "-", "1", ">", "3", "&&", "active"), null);
+        assertEquals(3, params.size());
+        assertEquals(Arrays.asList("item.count - 1", Operator.GT, "3"), params.get(0));
+        assertEquals(Operator.AND, params.get(1));
+        assertEquals("active", params.get(2));
+    }
+
+    @Test
     public void testParserErrors() {
         // Missing operand
         ParserTest.assertParserError("{#if foo >}{/}", IfSectionHelper.Code.BINARY_OPERATOR_MISSING_SECOND_OPERAND,

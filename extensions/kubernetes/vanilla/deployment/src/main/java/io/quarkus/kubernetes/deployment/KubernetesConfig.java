@@ -48,6 +48,11 @@ public interface KubernetesConfig extends PlatformConfiguration, ReplicasAware {
     OptionalInt nodePort();
 
     /**
+     * Service configuration
+     */
+    ServiceConfig service();
+
+    /**
      * Ingress configuration
      */
     IngressConfig ingress();

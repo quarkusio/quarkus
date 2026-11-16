@@ -33,6 +33,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.specs.Spec;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
@@ -289,6 +290,9 @@ public class QuarkusPlugin implements Plugin<Project> {
                                     return !q.isCachedByDefault() && !cacheLargeArtifacts.get();
                                 }
                             });
+                    task.getOutputs().doNotCacheIf(
+                            "The container image is not part of the task outputs, a cache hit would skip building it.",
+                            t -> ((QuarkusBuildCacheableAppParts) t).isContainerImageBuild());
                 });
 
         TaskProvider<QuarkusBuild> quarkusBuild = tasks.register(QUARKUS_BUILD_TASK_NAME, QuarkusBuild.class, build -> {
@@ -444,6 +448,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                         intTestTask.setGroup("verification");
                         intTestTask.setDescription("Runs Quarkus integration tests");
                         intTestTask.dependsOn(quarkusBuild);
+                        intTestTask.getInputs().files(quarkusBuild).withPropertyName("quarkusBuildOutputs")
+                                .withPathSensitivity(PathSensitivity.RELATIVE);
                         intTestTask.shouldRunAfter(testTask);
                         intTestTask.setClasspath(intTestClasspath);
                         intTestTask.setTestClassesDirs(intTestSourceOutputClasses);
@@ -470,6 +476,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                         testNative.setDescription("Runs native image tests");
                         testNative.setGroup("verification");
                         testNative.dependsOn(quarkusBuild);
+                        testNative.getInputs().files(quarkusBuild).withPropertyName("quarkusBuildOutputs")
+                                .withPathSensitivity(PathSensitivity.RELATIVE);
                         testNative.shouldRunAfter(testTask);
                         testNative.setClasspath(nativeTestClasspath);
                         testNative.setTestClassesDirs(nativeTestClassesDirs);

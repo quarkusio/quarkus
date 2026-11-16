@@ -1,5 +1,7 @@
 package io.quarkus.gradle.tasks;
 
+import static io.quarkus.gradle.tasks.ImageCheckRequirementsTask.QUARKUS_CONTAINER_IMAGE_BUILD;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -36,6 +38,11 @@ public abstract class QuarkusBuildCacheableAppParts extends QuarkusBuildTask {
             case FAST_JAR, LEGACY_JAR, AOT_JAR -> true;
             default -> false;
         };
+    }
+
+    @Internal
+    public boolean isContainerImageBuild() {
+        return Boolean.parseBoolean(getCachingRelevantInput().get().get(QUARKUS_CONTAINER_IMAGE_BUILD));
     }
 
     /**

@@ -1671,6 +1671,31 @@ class MyBean {
 <2> The `Location` qualifier instructs the container to inject a template from a path relative from `src/main/resources/templates`. In this case, the full path is `src/main/resources/templates/detail/items2_v1.html`.
 <3> Inject the configured `Engine` instance.
 
+[[templates-from-dependencies]]
+=== Templates from dependencies
+
+Qute templates can also be provided by a dependency or another non-root application archive.
+The `quarkus.qute.alt-expr-syntax` configuration property applies to the application's own templates only; it does not affect templates provided by dependencies.
+By default, those templates use the `{foo}` output expression syntax.
+
+To use the alternative output expression syntax (`{=foo}`) for all templates in a specific template root of a dependency, add a `.qute` file to that root.
+The `.qute` file is a Java properties file that Qute reads during the build.
+Currently, the only recognized property is `alt-expr-syntax`.
+
+For example, a library that stores its templates in `src/main/resources/templates` must package `templates/.qute` with the following content:
+
+[source,properties]
+----
+alt-expr-syntax=true
+----
+
+In the library project, this file is located at `src/main/resources/templates/.qute`.
+The setting applies to all templates in that specific template root.
+If a dependency provides multiple template roots, each root can have its own `.qute` file.
+
+NOTE: A `.qute` file in the application's own template root is ignored.
+Use `quarkus.qute.alt-expr-syntax=true` to enable the alternative syntax for application templates.
+
 === Engine Customization
 
 Additional components can be registered manually via `EngineBuilder` methods in a CDI observer method at runtime:

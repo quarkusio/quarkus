@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using Hibernate ORM and Jakarta Persistence
+= Advanced Hibernate ORM and Jakarta Persistence Reference Guide
 include::_attributes.adoc[]
 :summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It works beautifully in Quarkus.
 :config-file: application.properties

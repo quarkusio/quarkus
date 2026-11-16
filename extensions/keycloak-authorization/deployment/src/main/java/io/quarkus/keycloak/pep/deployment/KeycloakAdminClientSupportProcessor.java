@@ -51,10 +51,24 @@ public class KeycloakAdminClientSupportProcessor {
                 removedResources.produce(new RemovedResourceBuildItem(jackson3Representations.getKey(), duplicatedClasses));
             }
         }
-        serviceRegistrar
-                .forService(KeycloakAdminClientJsonMapper.class)
-                .atPhase(Phase.INIT)
-                .onStart(ctx -> KeycloakAdminClientJackson2Bridge.jsonMapper());
+        AdminClientJsonMapperService.register(serviceRegistrar);
+    }
+
+    /**
+     * Registers the {@link KeycloakAdminClientJsonMapper} service and must only be used when the Keycloak admin client
+     * extensions, which are optional dependencies of this extension, are present.
+     * <p>
+     * This code must stay out of the build step class: Quarkus loads all the methods of a build step class, including
+     * the one the compiler generates for the lambda below, whose return type is {@link KeycloakAdminClientJsonMapper}.
+     */
+    private static final class AdminClientJsonMapperService {
+
+        private static void register(ServiceRegistrar serviceRegistrar) {
+            serviceRegistrar
+                    .forService(KeycloakAdminClientJsonMapper.class)
+                    .atPhase(Phase.INIT)
+                    .onStart(ctx -> KeycloakAdminClientJackson2Bridge.jsonMapper());
+        }
     }
 
     private static ResolvedDependency findRuntimeDependency(ApplicationModel applicationModel, String artifactId) {

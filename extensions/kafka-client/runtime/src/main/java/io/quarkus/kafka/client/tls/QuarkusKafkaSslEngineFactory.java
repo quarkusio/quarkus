@@ -11,14 +11,13 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
-import jakarta.enterprise.inject.Instance;
-import jakarta.enterprise.inject.spi.CDI;
-
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SslEngineFactory;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 
@@ -48,12 +47,24 @@ public class QuarkusKafkaSslEngineFactory implements SslEngineFactory {
             SslConfigs.SSL_TRUSTMANAGER_ALGORITHM_CONFIG,
             SslConfigs.SSL_SECURE_RANDOM_IMPLEMENTATION_CONFIG);
 
-    private TlsConfiguration configuration;
-    private SSLContext sslContext;
+    private String tlsConfigName;
+    private String clientId;
+    private volatile TlsConfiguration configuration;
+    /**
+     * Rebuilt when the TLS registry reloads the configuration, see {@link #reload(TlsConfiguration)}.
+     * Kafka calls {@link #createClientSslEngine} for each new connection, so connections opened after a reload
+     * use the new key material while established connections are left untouched.
+     */
+    private volatile SSLContext sslContext;
+    private volatile Runnable unregister;
 
     @Override
     public SSLEngine createClientSslEngine(String peerHost, int peerPort, String endpointIdentification) {
-        SSLEngine sslEngine = sslContext.createSSLEngine(peerHost, peerPort);
+        SSLContext context = sslContext;
+        if (context == null) {
+            throw new IllegalStateException("The Kafka SSL engine factory is not configured or has been closed");
+        }
+        SSLEngine sslEngine = context.createSSLEngine(peerHost, peerPort);
         sslEngine.setUseClientMode(true);
         SSLParameters sslParameters = sslEngine.getSSLParameters();
         sslParameters.setEndpointIdentificationAlgorithm(endpointIdentification);
@@ -78,18 +89,29 @@ public class QuarkusKafkaSslEngineFactory implements SslEngineFactory {
 
     @Override
     public KeyStore keystore() {
-        return configuration.getKeyStore();
+        TlsConfiguration config = configuration;
+        return config != null ? config.getKeyStore() : null;
     }
 
     @Override
     public KeyStore truststore() {
-        return configuration.getTrustStore();
+        TlsConfiguration config = configuration;
+        return config != null ? config.getTrustStore() : null;
     }
 
     @Override
     public void close() throws IOException {
-        this.sslContext = null;
-        this.configuration = null;
+        Runnable unregister;
+        // synchronized with reload() so a concurrent reload cannot resurrect the context after close
+        synchronized (this) {
+            unregister = this.unregister;
+            this.unregister = null;
+            this.sslContext = null;
+            this.configuration = null;
+        }
+        if (unregister != null) {
+            unregister.run();
+        }
     }
 
     @Override
@@ -100,22 +122,66 @@ public class QuarkusKafkaSslEngineFactory implements SslEngineFactory {
                     "The 'tls-configuration-name' property is required for Kafka Quarkus TLS Registry integration.");
         }
 
-        Instance<TlsConfigurationRegistry> tlsConfig = CDI.current().getBeanManager().createInstance()
-                .select(TlsConfigurationRegistry.class);
-        if (!tlsConfig.isUnsatisfied()) {
-            TlsConfigurationRegistry registry = tlsConfig.get();
-            configuration = registry.get(tlsConfigName)
-                    .orElseThrow(() -> new IllegalArgumentException("No TLS configuration found for name " + tlsConfigName));
-            try {
-                sslContext = configuration.createSSLContext();
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to create SSLContext", e);
-            }
-            String clientId = (String) configs.get(CommonClientConfigs.CLIENT_ID_CONFIG);
-            log.debugf("Configured Kafka client '%s' QuarkusKafkaSslEngineFactory with TLS configuration : %s",
-                    clientId, tlsConfigName);
-        }
+        TlsConfigurationRegistry registry = Arc.container().instance(TlsConfigurationRegistry.class).get();
+        TlsConfiguration tlsConfiguration = registry.get(tlsConfigName)
+                .orElseThrow(() -> new IllegalArgumentException("No TLS configuration found for name " + tlsConfigName));
+        InstanceHandle<KafkaCertificateUpdateEventListener> listener = Arc.container()
+                .instance(KafkaCertificateUpdateEventListener.class);
+        String clientId = (String) configs.get(CommonClientConfigs.CLIENT_ID_CONFIG);
+        configure(tlsConfigName, clientId, tlsConfiguration, listener.isAvailable() ? listener.get() : null);
+    }
 
+    void configure(String tlsConfigName, String clientId, TlsConfiguration tlsConfiguration,
+            KafkaCertificateUpdateEventListener listener) {
+        this.tlsConfigName = tlsConfigName;
+        this.clientId = clientId;
+        this.sslContext = createSslContext(tlsConfiguration);
+        this.configuration = tlsConfiguration;
+        if (listener != null) {
+            this.unregister = listener.register(this);
+        }
+        log.debugf("Configured Kafka client '%s' QuarkusKafkaSslEngineFactory with TLS configuration : %s",
+                clientId, tlsConfigName);
+    }
+
+    String tlsConfigName() {
+        return tlsConfigName;
+    }
+
+    /**
+     * Rebuilds the {@link SSLContext} from the reloaded TLS configuration.
+     * <p>
+     * Called when a {@link io.quarkus.tls.CertificateUpdatedEvent} is fired for the TLS configuration used by this
+     * client. If the new context cannot be created, the previous one is kept so the client can still open connections.
+     *
+     * @param updatedConfiguration the reloaded TLS configuration
+     * @return {@code true} if the context has been replaced
+     */
+    synchronized boolean reload(TlsConfiguration updatedConfiguration) {
+        if (sslContext == null) {
+            // closed
+            return false;
+        }
+        try {
+            SSLContext updated = createSslContext(updatedConfiguration);
+            this.configuration = updatedConfiguration;
+            this.sslContext = updated;
+            log.infof("The TLS configuration '%s' used by the Kafka client '%s' has been reloaded; it applies to new"
+                    + " connections", tlsConfigName, clientId);
+            return true;
+        } catch (RuntimeException e) {
+            log.warnf(e, "Failed to reload the TLS configuration '%s' for the Kafka client '%s', keeping the previous one",
+                    tlsConfigName, clientId);
+            return false;
+        }
+    }
+
+    private static SSLContext createSslContext(TlsConfiguration tlsConfiguration) {
+        try {
+            return tlsConfiguration.createSSLContext();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create SSLContext", e);
+        }
     }
 
     /**

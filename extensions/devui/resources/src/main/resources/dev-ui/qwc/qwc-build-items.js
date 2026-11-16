@@ -162,7 +162,7 @@ export class QwcBuildItems extends QwcHotReloadElement {
                           all-rows-visible
                           theme="no-border">
                                         <vaadin-grid-column auto-width resizable flex-grow="0"
-                                            header="${msg('Build step', { id: 'buildmetrics-buildstep' })}"
+                                            header="${msg('Build step', { id: 'buildmetrics-step' })}"
                                             ${columnBodyRenderer(this._renderBuildStep, [])}>
                                         </vaadin-grid-column>
                                         <vaadin-grid-column auto-width resizable flex-grow="0"

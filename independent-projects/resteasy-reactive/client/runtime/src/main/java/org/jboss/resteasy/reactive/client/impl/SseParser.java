@@ -46,6 +46,10 @@ public class SseParser implements Handler<Buffer> {
      */
     private boolean startedEvent = false;
     /**
+     * True if the last chunk ended with a CR that ended a line, so that a LF at the start of the next chunk belongs to it
+     */
+    private boolean skipLineFeed = false;
+    /**
      * The event type we're reading. Defaults to "message" and changes with "event" fields
      */
     private String eventType;
@@ -96,6 +100,12 @@ public class SseParser implements Handler<Buffer> {
             bytes = newBytes;
         }
         i = 0;
+        if (skipLineFeed && hasByte()) {
+            skipLineFeed = false;
+            if (peekByte() == LF) {
+                i++;
+            }
+        }
 
         while (hasByte()) {
             boolean lastFirstByte = firstByte;
@@ -125,6 +135,7 @@ public class SseParser implements Handler<Buffer> {
             if (needsMoreData) {
                 // save the remaining bytes for later
                 i = lastEventStart;
+                skipLineFeed = false;
                 // be ready to rescan the BOM, but only if we didn't already see it in a previous event
                 firstByte = lastFirstByte;
                 return;
@@ -275,9 +286,10 @@ public class SseParser implements Handler<Buffer> {
 
     private boolean isEofWithSideEffect(int c) {
         if (c == CR) {
-            // eat a LF if there's one left
-            // FIXME: if our buffer cuts here that's a bad spot
-            if (hasByte() && peekByte() == LF) {
+            // eat a LF if there's one left, or the one at the start of the next chunk
+            if (!hasByte()) {
+                skipLineFeed = true;
+            } else if (peekByte() == LF) {
                 i++;
             }
             // we're done

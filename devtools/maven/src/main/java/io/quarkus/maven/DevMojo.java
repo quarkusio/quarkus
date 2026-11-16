@@ -1836,7 +1836,6 @@ public class DevMojo extends AbstractMojo {
 
         getLog().debug("Maven compiler plugin found, looking for annotation processors");
 
-        List<String> options = new ArrayList<>();
         Xpp3Dom compilerPluginConfiguration = (Xpp3Dom) compilerMavenPlugin.getConfiguration();
         try {
             Set<File> processorPaths = this.readAnnotationProcessorPaths(compilerPluginConfiguration);
@@ -1852,7 +1851,6 @@ public class DevMojo extends AbstractMojo {
         if (!processors.isEmpty()) {
             builder.annotationProcessors(processors);
         }
-        builder.compilerPluginOptions(options);
     }
 
     protected void modifyDevModeContext(DevModeCommandLineBuilder builder) {

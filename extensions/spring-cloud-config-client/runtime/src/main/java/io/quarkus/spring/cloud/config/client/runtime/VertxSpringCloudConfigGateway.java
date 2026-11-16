@@ -4,6 +4,8 @@ import static io.vertx.core.impl.SysProps.DISABLE_DNS_RESOLVER;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -200,6 +202,53 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
 
     @Override
     public Uni<Response> exchange(String applicationName, String profile) {
+        if (config.oidc().isPresent()) {
+            return acquireToken(config.oidc().get()).flatMap(token -> exchange(applicationName, profile, token));
+        }
+        return exchange(applicationName, profile, null);
+    }
+
+    /**
+     * Obtains a bearer token from the token endpoint with the {@code client_credentials} grant. The configuration is
+     * fetched once, when the application starts, so the token is used right after it is issued and is not cached.
+     */
+    private Uni<String> acquireToken(SpringCloudConfigClientConfig.OidcConfig oidc) {
+        URI tokenUri = URI.create(oidc.tokenUrl());
+        StringBuilder form = new StringBuilder("grant_type=client_credentials");
+        if (oidc.scope().isPresent()) {
+            form.append("&scope=").append(URLEncoder.encode(oidc.scope().get(), StandardCharsets.UTF_8));
+        }
+        HttpRequest<Buffer> request = webClient
+                .post(UrlUtility.getPort(tokenUri), tokenUri.getHost(), tokenUri.getRawPath())
+                .ssl(UrlUtility.isHttps(tokenUri))
+                .putHeader("Content-Type", "application/x-www-form-urlencoded")
+                .putHeader("Accept", "application/json");
+        if (oidc.clientSecret().isPresent()) {
+            request.basicAuthentication(oidc.clientId(), oidc.clientSecret().get());
+        } else {
+            form.append("&client_id=").append(URLEncoder.encode(oidc.clientId(), StandardCharsets.UTF_8));
+        }
+        log.debug("Requesting a bearer token from '" + oidc.tokenUrl() + "'.");
+        return request.sendBuffer(Buffer.buffer(form.toString())).map(r -> {
+            if (r.statusCode() != 200) {
+                throw new RuntimeException("Got unexpected HTTP response code " + r.statusCode()
+                        + " from the token endpoint " + oidc.tokenUrl());
+            }
+            try {
+                String accessToken = OBJECT_MAPPER.readTree(r.bodyAsString()).path("access_token").asString(null);
+                if (accessToken == null || accessToken.isEmpty()) {
+                    throw new RuntimeException("The response of the token endpoint " + oidc.tokenUrl()
+                            + " does not contain an access_token");
+                }
+                return accessToken;
+            } catch (JacksonException e) {
+                throw new RuntimeException("Got unexpected error " + e.getOriginalMessage()
+                        + " when reading the response of the token endpoint " + oidc.tokenUrl());
+            }
+        });
+    }
+
+    private Uni<Response> exchange(String applicationName, String profile, String bearerToken) {
         final ConfigServerUrl requestURI = toConfigServerUrl(applicationName, profile);
         HttpRequest<Buffer> request = webClient
                 .get(requestURI.port(), requestURI.host(), requestURI.completeURLString())
@@ -207,6 +256,9 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
                 .putHeader("Accept", "application/json");
         if (config.usernameAndPasswordSet()) {
             request.basicAuthentication(config.username().get(), config.password().get());
+        }
+        if (bearerToken != null) {
+            request.bearerTokenAuthentication(bearerToken);
         }
         for (Map.Entry<String, String> entry : config.headers().entrySet()) {
             request.putHeader(entry.getKey(), entry.getValue());

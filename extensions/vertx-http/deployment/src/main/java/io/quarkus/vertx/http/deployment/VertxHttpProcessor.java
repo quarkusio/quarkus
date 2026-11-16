@@ -28,6 +28,7 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
@@ -57,13 +58,13 @@ import io.quarkus.runtime.ErrorPageAction;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.http.HttpServerConfigCustomizer;
 import io.quarkus.vertx.http.XForwardedForSelector;
-import io.quarkus.vertx.http.deployment.HttpSecurityProcessor.HttpSecurityConfigSetupCompleteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem;
@@ -74,16 +75,19 @@ import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HostValidationRecorder;
 import io.quarkus.vertx.http.runtime.HttpCertificateUpdateEventListener;
 import io.quarkus.vertx.http.runtime.HttpStaticDirConfig;
+import io.quarkus.vertx.http.runtime.RouteHandler;
 import io.quarkus.vertx.http.runtime.VertxConfigBuilder;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig.InsecureRequests;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder;
 import io.quarkus.vertx.http.runtime.cors.CORSConfig;
-import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
+import io.quarkus.vertx.http.runtime.cors.CORSFilter;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.smallrye.config.Config;
 import io.vertx.core.http.impl.http1.Http1ServerRequest;
@@ -94,6 +98,7 @@ class VertxHttpProcessor {
 
     private static final String META_INF_SERVICES_EXCHANGE_ATTRIBUTE_BUILDER = "META-INF/services/io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder";
     private static final Logger logger = Logger.getLogger(VertxHttpProcessor.class);
+    private static final String CORS_FILTER = "io.quarkus.vertx.http.cors-filter";
 
     // For enabling HTTPS port in Kubernetes
     private static final String HTTP_SSL_PREFIX = "quarkus.http.ssl.certificate.";
@@ -155,14 +160,40 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    FilterBuildItem cors(CORSRecorder recorder,
-            Optional<HttpSecurityConfigSetupCompleteBuildItem> httpSecurityConfigSetupCompleteBuildItem,
-            Capabilities capabilities) {
-        RuntimeValue<CORSConfig> programmaticCorsConfig = httpSecurityConfigSetupCompleteBuildItem
-                .map(i -> i.programmaticCorsConfig).orElse(null);
-        return new FilterBuildItem(
-                recorder.corsHandler(programmaticCorsConfig, capabilities.isPresent(Capability.SECURITY)),
+    FilterBuildItem cors(ServiceRegistrar serviceRegistrar, Capabilities capabilities) {
+        final boolean securityPresent = capabilities.isPresent(Capability.SECURITY);
+        serviceRegistrar.forService(RouteHandler.class, CORS_FILTER)
+                .request(HttpSecurityConfiguration.class)
+                .require(VertxHttpConfig.class)
+                .optional()
+                .onStart((ctx, optionalHttpSecurityConfig, vertxHttpConfig) -> {
+                    CORSConfig corsConfig = optionalHttpSecurityConfig.map(HttpSecurityConfiguration::getCorsConfig)
+                            .orElseGet(vertxHttpConfig::cors);
+                    if (!corsConfig.enabled()) {
+                        return Optional.empty();
+                    }
+                    if (!corsConfig.returnExactOrigins()) {
+                        if (!CORSFilter.isOriginConfiguredWithWildcard(corsConfig.origins())) {
+                            throw new ConfigurationException(
+                                    "'quarkus.http.cors.return-exact-origins=false' can only be used when "
+                                            + "'quarkus.http.cors.origins' is set to '*'.");
+                        }
+                        if (corsConfig.accessControlAllowCredentials().orElse(false)) {
+                            throw new ConfigurationException(
+                                    "'quarkus.http.cors.return-exact-origins=false' is incompatible with "
+                                            + "'quarkus.http.cors.access-control-allow-credentials=true' because the CORS "
+                                            + "specification does not allow credentials when 'Access-Control-Allow-Origin' "
+                                            + "is '*'.");
+                        }
+                        if (securityPresent) {
+                            throw new ConfigurationException(
+                                    "'quarkus.http.cors.return-exact-origins=false' can't be used when "
+                                            + "a Quarkus Security capability is detected.");
+                        }
+                    }
+                    return Optional.of(new CORSFilter(corsConfig)::handle);
+                });
+        return new FilterBuildItem(serviceRegistrar.getRecorderProxy(RouteHandler.class, CORS_FILTER),
                 SecurityHandlerPriorities.CORS);
     }
 

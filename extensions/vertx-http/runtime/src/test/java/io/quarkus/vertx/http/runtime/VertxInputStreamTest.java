@@ -312,6 +312,34 @@ class VertxInputStreamTest {
         assertThat(input.readBytesAvailable()).isEqualTo(Integer.MAX_VALUE);
     }
 
+    @Test
+    void readBytesAvailableWithNonNumericContentLength() {
+        when(request.getHeader(HttpHeaders.CONTENT_LENGTH)).thenReturn("abc");
+
+        VertxInputStream.VertxBlockingInput input = new VertxInputStream.VertxBlockingInput(request, 10000);
+
+        assertThat(input.readBytesAvailable()).isEqualTo(0);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void http3EmptyFrameTriggersEof() throws IOException {
+        when(request.isEnded()).thenReturn(false);
+        when(request.pause()).thenReturn(request);
+        when(request.handler(any())).thenReturn(request);
+        when(request.endHandler(any())).thenReturn(request);
+        when(request.exceptionHandler(any())).thenReturn(request);
+        when(request.fetch(1)).thenReturn(request);
+        when(request.version()).thenReturn(HttpVersion.HTTP_3);
+
+        VertxInputStream.VertxBlockingInput input = new VertxInputStream.VertxBlockingInput(request, 10000);
+
+        input.handle(Buffer.buffer(new byte[0]));
+
+        io.netty.buffer.ByteBuf result = input.readBlocking();
+        assertThat(result).isNull();
+    }
+
     @SuppressWarnings("unchecked")
     @Test
     void multipleChunksViaHandle() throws IOException {

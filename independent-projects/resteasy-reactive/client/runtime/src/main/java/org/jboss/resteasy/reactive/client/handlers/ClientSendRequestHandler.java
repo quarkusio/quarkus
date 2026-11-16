@@ -414,7 +414,10 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                 }
 
                                 if (loggingScope != LoggingScope.NONE) {
-                                    clientLogger.logResponse(clientResponse, false);
+                                    // never call `logResponse` while an `endHandler` is registered, Vert.x replays
+                                    // the end event on an ended response, causing stack overflow
+                                    clientResponse.endHandler(null);
+                                    clientLogger.logResponse(clientResponse, combined, false);
                                 }
 
                                 requestContext.resume();
@@ -489,10 +492,10 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         } else {
                             clientResponse.body().onComplete(ar -> {
                                 if (ar.succeeded()) {
-                                    if (loggingScope != LoggingScope.NONE) {
-                                        clientLogger.logResponse(clientResponse, false);
-                                    }
                                     Buffer buffer = ar.result();
+                                    if (loggingScope != LoggingScope.NONE) {
+                                        clientLogger.logResponse(clientResponse, buffer, false);
+                                    }
                                     try {
                                         if (buffer.length() > 0) {
                                             requestContext.setResponseEntityStream(

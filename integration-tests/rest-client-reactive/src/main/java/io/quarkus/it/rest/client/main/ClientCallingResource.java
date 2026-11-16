@@ -5,6 +5,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -27,6 +28,7 @@ import io.quarkus.it.rest.client.main.wronghost.WrongHostRejectedClient;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Future;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -74,6 +76,23 @@ public class ClientCallingResource {
             rc.response().end("Hello World!");
         });
 
+        router.get("/client-logger/multipart").handler(rc -> {
+            String boundary = "boundary_" + UUID.randomUUID();
+
+            Buffer body = Buffer.buffer();
+
+            body.appendString("--" + boundary + "\r\n");
+            body.appendString("Content-Disposition: form-data; name=\"name\"\r\n");
+            body.appendString("Content-Type: text/plain\r\n\r\n");
+            body.appendString("hello\r\n");
+            body.appendString("--" + boundary + "--\r\n");
+
+            rc.response()
+                    .putHeader("Content-Type", "multipart/form-data; boundary=" + boundary)
+                    .end(body);
+
+        });
+
         router.get("/correlation").handler(rc -> {
             rc.response().end(rc.request().getHeader(CorrelationIdClient.CORRELATION_ID_HEADER_NAME));
         });
@@ -112,6 +131,31 @@ public class ClientCallingResource {
                 success(rc, "global client logger was used");
             } else {
                 fail(rc, "global client logger was not used");
+            }
+        });
+
+        router.post("/call-client-multipart").blockingHandler(rc -> {
+            String url = rc.body().asString();
+            ClientWithClientLogger client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .build(ClientWithClientLogger.class);
+            Arc.container().instance(MyClientLogger.class).get().reset();
+            Payload payload = client.callMultipart();
+            if ("hello".equals(payload.name)) {
+                int timesUsed = Arc.container().instance(MyClientLogger.class).get().timesUsed();
+                success(rc, "logger was used " + timesUsed + " times");
+            } else {
+                fail(rc, "unexpected multipart response");
+            }
+        });
+
+        router.post("/call-cdi-client-multipart").blockingHandler(rc -> {
+            Arc.container().instance(MyClientLogger.class).get().reset();
+            Payload payload = clientWithClientLogger.callMultipart();
+            if ("hello".equals(payload.name)) {
+                int timesUsed = Arc.container().instance(MyClientLogger.class).get().timesUsed();
+                success(rc, "logger was used " + timesUsed + " times");
+            } else {
+                fail(rc, "unexpected multipart response");
             }
         });
 

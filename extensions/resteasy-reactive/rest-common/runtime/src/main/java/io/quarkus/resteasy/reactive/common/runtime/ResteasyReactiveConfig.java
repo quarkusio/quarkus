@@ -37,7 +37,11 @@ public interface ResteasyReactiveConfig {
 
     /**
      * The size of the output stream response buffer. If a response is larger than this and no content-length
-     * is provided then the request will be chunked.
+     * is provided then the response will be chunked.
+     * <p>
+     * This only applies to responses written through the output stream, such as {@code InputStream},
+     * {@code StreamingOutput} or a streaming message body writer. An entity that is serialized in a single write,
+     * such as a {@code String}, a {@code byte[]} or a JSON object, is always sent with a {@code Content-Length}.
      * <p>
      * Larger values may give slight performance increases for large responses, at the expense of more memory usage.
      */

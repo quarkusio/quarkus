@@ -437,6 +437,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.ListIndexJdbcType"),
             createConstant("org.hibernate.annotations.ListIndexJdbcTypeCode"),
             createConstant("org.hibernate.annotations.ManyToAny"),
+            createConstant("org.hibernate.annotations.MapKeyFormula"),
             createConstant("org.hibernate.annotations.MapKeyJavaType"),
             createConstant("org.hibernate.annotations.MapKeyJdbcType"),
             createConstant("org.hibernate.annotations.MapKeyJdbcTypeCode"),

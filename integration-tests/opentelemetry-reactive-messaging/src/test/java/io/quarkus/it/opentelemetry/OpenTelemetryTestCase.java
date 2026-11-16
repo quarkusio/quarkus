@@ -3,6 +3,7 @@ package io.quarkus.it.opentelemetry;
 import static io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessageOperation.PUBLISH;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
+import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -18,7 +19,9 @@ import java.util.function.Predicate;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.awaitility.Awaitility;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.trace.SpanId;
@@ -38,16 +41,23 @@ public class OpenTelemetryTestCase {
     @TestHTTPResource("direct")
     URL directUrl;
 
+    @TestHTTPResource("uni")
+    URL uniUrl;
+
     @InjectKafkaCompanion
     KafkaCompanion companion;
 
-    private void resetExporter() {
+    @BeforeEach
+    @AfterEach
+    void reset() {
         await().atMost(5, SECONDS).until(() -> {
-            given()
-                    .when().get("/export/clear")
-                    .then()
-                    .statusCode(204);
-            return getSpans().size() == 0;
+            List<Map<String, Object>> spans = getSpans();
+            if (spans.size() == 0) {
+                return true;
+            } else {
+                given().get("/export/clear").then().statusCode(HTTP_NO_CONTENT);
+                return false;
+            }
         });
     }
 
@@ -68,8 +78,6 @@ public class OpenTelemetryTestCase {
 
     @Test
     void testProducerConsumerTracing() {
-        resetExporter();
-
         given()
                 .contentType("application/json")
                 .when().get("/direct")
@@ -95,8 +103,6 @@ public class OpenTelemetryTestCase {
 
     @Test
     void testProcessorTracing() {
-        resetExporter();
-
         companion.produceStrings().fromRecords(new ProducerRecord<>("traces2", "1"));
 
         Awaitility.await().atMost(Duration.ofMinutes(1)).until(() -> getSpans().size() == 3);
@@ -110,6 +116,51 @@ public class OpenTelemetryTestCase {
 
         Map<String, Object> producerSpan = findSpan(spans, m -> SpanKind.PRODUCER.name().equals(m.get("kind")));
         verifyProducer(producerSpan, consumerSpan, "traces-processed");
+    }
+
+    /**
+     * Otel Context was propagated regardless of "@CurrentThreadContext(propagated = {})"
+     */
+    @Test
+    void testUniContextCleared() {
+        given().body("rose").post("/uni").then()
+                .statusCode(204);
+
+        await().atMost(Duration.ofMinutes(1)).until(() -> getSpans().size() == 4);
+        List<Map<String, Object>> spans = getSpans();
+
+        Map<String, Object> serverSpan = findSpan(spans, m -> SpanKind.SERVER.name().equals(m.get("kind")));
+        Assertions.assertNotNull(serverSpan.get("spanId"));
+        verifyResource(serverSpan, null);
+
+        Assertions.assertEquals("POST /uni", serverSpan.get("name"));
+        Assertions.assertEquals(SpanKind.SERVER.toString(), serverSpan.get("kind"));
+        Assertions.assertTrue((Boolean) serverSpan.get("ended"));
+        Assertions.assertFalse((Boolean) serverSpan.get("parent_remote"));
+
+        Assertions.assertEquals("POST", serverSpan.get("attr_http.request.method"));
+        Assertions.assertEquals("/uni", serverSpan.get("attr_url.path"));
+        assertEquals(uniUrl.getHost(), serverSpan.get("attr_server.address"));
+        assertEquals(uniUrl.getPort(), Integer.valueOf((String) serverSpan.get("attr_server.port")));
+        Assertions.assertEquals("http", serverSpan.get("attr_url.scheme"));
+        Assertions.assertEquals("204", serverSpan.get("attr_http.response.status_code"));
+        Assertions.assertNotNull(serverSpan.get("attr_client.address"));
+        Assertions.assertNotNull(serverSpan.get("attr_user_agent.original"));
+
+        // Producer OTel context was cleared by using @CurrentThreadContext(propagated = {}). No parent.
+        Map<String, Object> producerSpan = findSpan(spans, m -> SpanKind.PRODUCER.name().equals(m.get("kind")));
+        verifyProducer(producerSpan, null, "traces");
+
+        Map<String, Object> consumerSpan = findSpan(spans, m -> SpanKind.CONSUMER.name().equals(m.get("kind")));
+        verifyConsumer(consumerSpan, producerSpan, true, "traces", "traces-in");
+
+        Map<String, Object> internalSpan = findSpan(spans, m -> SpanKind.INTERNAL.name().equals(m.get("kind")));
+        verifyInternal(internalSpan, consumerSpan);
+    }
+
+    private static void verifyInternal(Map<String, Object> internalSpan, Map<String, Object> consumerSpan) {
+        assertEquals("TracedService.call", internalSpan.get("name"));
+        assertEquals(consumerSpan.get("spanId"), internalSpan.get("parent_spanId"));
     }
 
     private void verifyServer(Map<String, Object> spanData, Map<String, Object> parentSpanData, URL url) {
@@ -166,7 +217,6 @@ public class OpenTelemetryTestCase {
         Assertions.assertEquals("opentelemetry-integration-test", spanData.get("attr_messaging.consumer.group.name"));
         Assertions.assertEquals("0", spanData.get("attr_messaging.destination.partition.id"));
         Assertions.assertEquals("kafka-consumer-" + channel, spanData.get("attr_messaging.client_id"));
-        Assertions.assertEquals("0", spanData.get("attr_messaging.kafka.offset"));
     }
 
     private void verifyCdiCall(Map<String, Object> spanData, Map<String, Object> parentSpanData) {

@@ -138,6 +138,11 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
                             .withServicePortNumber(rule.servicePortNumber().orElse(-1))
                             .build()));
         }
+
+        config.ingress().pathType().ifPresent(pathType -> context.add(new ApplyIngressPathTypeDecorator(context.name(),
+                config.ingress().host().orElse(null),
+                optionalPort(ports).map(Port::getPath).orElse("/"),
+                pathType)));
     }
 
     protected void service(DecoratorsContext context, KubernetesConfig config) {

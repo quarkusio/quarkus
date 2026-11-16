@@ -113,6 +113,24 @@ public class BasicTest {
     }
 
     @Test
+    void shouldLogExactlyOnceWithMultipart() {
+        with().body(baseUrl).post("/call-client-multipart")
+                .then()
+                .statusCode(200)
+                // 1 the request + 1 the response
+                .body(equalTo("logger was used 2 times"));
+    }
+
+    @Test
+    void shouldLogExactlyOnceCdiWithMultipart() {
+        with().body(baseUrl).post("/call-cdi-client-multipart")
+                .then()
+                .statusCode(200)
+                // 1 the request + 1 the response
+                .body(equalTo("logger was used 2 times"));
+    }
+
+    @Test
     void shouldMapException() {
         with().body(baseUrl).post("/call-client-with-exception-mapper")
                 .then()

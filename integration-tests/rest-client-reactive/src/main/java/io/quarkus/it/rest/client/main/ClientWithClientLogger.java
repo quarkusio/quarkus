@@ -10,4 +10,8 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 public interface ClientWithClientLogger {
     @GET
     String call();
+
+    @GET
+    @Path("/multipart")
+    Payload callMultipart();
 }

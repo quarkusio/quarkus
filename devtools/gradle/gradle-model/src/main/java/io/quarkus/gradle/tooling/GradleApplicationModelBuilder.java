@@ -128,7 +128,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         final DependencyDataCollector collector = new DependencyDataCollector(project);
         // we only collect from deployment config, since it is a superset of the runtime config.
         final Map<ArtifactKey, DependencyDataCollector.DeclaredDepsResult> declaredDeps = collector
-                .collectDeclaredDependencies(project, deploymentConfig);
+                .collectDeclaredDependencies(project, deploymentConfig, classpathBuilder.resolvePlatformSpec());
         final ResolvedDependencyBuilder appArtifact = getProjectArtifact(project, workspaceDiscovery);
         final ApplicationModelBuilder modelBuilder = new ApplicationModelBuilder()
                 .setAppArtifact(appArtifact)

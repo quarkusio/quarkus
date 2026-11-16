@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.client.impl.multipart;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.List;
@@ -35,6 +36,13 @@ public class QuarkusMultipartForm extends ClientMultipartForm implements Iterabl
             MultivaluedMap<String, String> headers = new MultivaluedTreeMap<>();
 
             Object entityObject = pojo.entity;
+            if (entityObject instanceof InputStream && context.getConfiguration().getWriterInterceptors().isEmpty()) {
+                // stream the part instead of reading the whole stream into memory, which would also block the
+                // event loop (and deadlock if the stream is fed by a connection handled by the same event loop)
+                parts.set(pojo.position, new QuarkusMultipartFormDataPart(pojo.name, pojo.filename, (InputStream) entityObject,
+                        pojo.mediaType, false));
+                continue;
+            }
             Entity<?> entity = Entity.entity(entityObject, pojo.mediaType);
             Class<?> entityClass;
             Type entityType;

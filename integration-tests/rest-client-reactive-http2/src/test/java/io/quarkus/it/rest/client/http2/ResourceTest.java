@@ -3,6 +3,8 @@ package io.quarkus.it.rest.client.http2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.AfterEach;
@@ -29,6 +31,12 @@ public class ResourceTest {
     @TestHTTPResource(value = "/client2/ping")
     URL client2Url;
 
+    @TestHTTPResource(value = "/client/empty-path")
+    URL emptyPathClientUrl;
+
+    @TestHTTPResource(value = "/client/empty-path-http1")
+    URL emptyPathHttp1ClientUrl;
+
     private WebClient webClient;
 
     @BeforeEach
@@ -48,6 +56,26 @@ public class ResourceTest {
         HttpResponse<?> response = call(sslUrl);
         assertEquals("pong", response.bodyAsString());
         assertEquals("HTTP_2", response.version().name());
+    }
+
+    @Test
+    public void shouldReachTheRootWithAnEmptyPathOverHttp2() throws Exception {
+        // three sequential requests through one client: all over HTTP/2, all on the same connection
+        String[] answers = call(emptyPathClientUrl).bodyAsString().split(";");
+        assertEquals(3, answers.length);
+        Set<String> ports = new HashSet<>();
+        for (String answer : answers) {
+            String[] versionAndPort = answer.split(" ");
+            assertEquals("HTTP_2", versionAndPort[0]);
+            ports.add(versionAndPort[1]);
+        }
+        assertEquals(1, ports.size(), "the client should reuse its HTTP/2 connection, got ports " + ports);
+    }
+
+    @Test
+    public void shouldReachTheRootWithAnEmptyPathOverHttp1() throws Exception {
+        String answer = call(emptyPathHttp1ClientUrl).bodyAsString();
+        assertEquals("HTTP_1_1", answer.split(" ")[0]);
     }
 
     @Test

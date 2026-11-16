@@ -61,7 +61,7 @@ implementation("io.quarkus:quarkus-messaging-kafka")
 
 [NOTE]
 ====
-The extension includes `kafka-clients` version 4.1.1 as a transitive dependency and is compatible with Kafka brokers version 2.x and above.
+The extension includes `kafka-clients` version {kafka-version} as a transitive dependency and is compatible with Kafka brokers version 2.x and above.
 ====
 
 == Configuring SmallRye Kafka Connector

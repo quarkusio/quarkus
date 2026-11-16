@@ -70,6 +70,7 @@
              in the BOM as well as other POMs (build-parent/pom.xml, docs/pom.xml, ...) -->
         <h2.version>2.5.252</h2.version> <!-- When updating, the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml - see https://github.com/h2database/h2database/blob/master/h2/pom.xml -->
         <jacoco.version>0.8.16</jacoco.version>
+        <kafka.version>4.2.2</kafka.version>
         <kubernetes-client.version>8.0.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>6.3.0</rest-assured.version>
         <hibernate-orm.version>8.0.0.CR1</hibernate-orm.version> <!-- WARNING when updating, also align the versions below; checked by maven-enforcer-plugin in bom -->

@@ -111,7 +111,18 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
                         @Override
                         public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
-                            return reAuthenticate(sessionCookieValue, context, identityProviderManager, tenantContext);
+                            Uni<SecurityIdentity> identity = reAuthenticate(sessionCookieValue, context,
+                                    identityProviderManager, tenantContext);
+                            if (!oidcTenantConfig.authentication().allowMultipleCodeFlows()) {
+                                return identity;
+                            }
+                            return identity.onItem().transformToUni(
+                                    new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+                                        @Override
+                                        public Uni<? extends SecurityIdentity> apply(SecurityIdentity identity) {
+                                            return completePendingCodeFlow(context, tenantContext, identity);
+                                        }
+                                    });
                         }
                     });
         }
@@ -146,6 +157,50 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     }
 
+    /**
+     * Completes, for a verified session, a code flow that was started in another browser tab before the session
+     * existed: the state cookie is removed, the authorization code is not used, and the request is redirected to the
+     * path saved when that flow was started. Any other request goes on with the identity of the session.
+     */
+    private Uni<SecurityIdentity> completePendingCodeFlow(RoutingContext context, TenantConfigContext configContext,
+            SecurityIdentity identity) {
+        OidcTenantConfig oidcTenantConfig = configContext.oidcConfig();
+        List<String> state = context.queryParams().getAll(OidcConstants.CODE_FLOW_STATE);
+        if (state.size() != 1 || !context.queryParams().contains(OidcConstants.CODE_FLOW_CODE)
+                || !context.request().path().equals(getRedirectPath(oidcTenantConfig, context))) {
+            return Uni.createFrom().item(identity);
+        }
+        String[] parsedStateCookieValue = removeMatchingStateCookie(oidcTenantConfig, context, state.get(0));
+        if (parsedStateCookieValue == null || !parsedStateCookieValue[0].equals(state.get(0))) {
+            return Uni.createFrom().item(identity);
+        }
+        LOG.debug("Code flow started in another tab completed with the existing session, not using its code");
+        CodeAuthenticationStateBean stateBean = getCodeAuthenticationBean(parsedStateCookieValue, configContext);
+        if (stateBean == null || stateBean.getRestorePath() == null
+                || !isRestorePath(oidcTenantConfig.authentication())) {
+            return Uni.createFrom().item(identity);
+        }
+        String finalRedirectUri = buildUri(context, isForceHttps(oidcTenantConfig), stateBean.getRestorePath());
+        LOG.debugf("Redirecting to the path saved when the code flow was started: %s", finalRedirectUri);
+        return Uni.createFrom().failure(new AuthenticationRedirectException(
+                filterRedirect(context, configContext, finalRedirectUri, Redirect.Location.LOCAL_ENDPOINT_CALLBACK)));
+    }
+
+    /**
+     * Removes the state cookie created for the given state parameter and returns its parsed value, or {@code null}
+     * when there is no such cookie.
+     */
+    private String[] removeMatchingStateCookie(OidcTenantConfig oidcTenantConfig, RoutingContext context, String state) {
+        String stateCookieNameSuffix = oidcTenantConfig.authentication().allowMultipleCodeFlows() ? "_" + state : "";
+        Cookie stateCookie = context.request().getCookie(getStateCookieName(oidcTenantConfig) + stateCookieNameSuffix);
+        if (stateCookie == null) {
+            return null;
+        }
+        String[] parsedStateCookieValue = COOKIE_PATTERN.split(stateCookie.getValue());
+        OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
+        return parsedStateCookieValue;
+    }
+
     private boolean isStateCookieAvailable(Map<String, Cookie> cookies) {
         for (String name : cookies.keySet()) {
             if (name.startsWith(OidcUtils.STATE_COOKIE_NAME)) {
@@ -174,17 +229,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             return stateParamIsMissing(oidcTenantConfig, context, cookies, stateQueryParam.size() > 1);
         }
 
-        String stateCookieNameSuffix = oidcTenantConfig.authentication().allowMultipleCodeFlows() ? "_" + stateQueryParam.get(0)
-                : "";
-        final Cookie stateCookie = context.request().getCookie(
-                getStateCookieName(oidcTenantConfig) + stateCookieNameSuffix);
-
-        if (stateCookie == null) {
+        String[] parsedStateCookieValue = removeMatchingStateCookie(oidcTenantConfig, context, stateQueryParam.get(0));
+        if (parsedStateCookieValue == null) {
             return stateCookieIsMissing(oidcTenantConfig, context, cookies);
         }
-
-        String[] parsedStateCookieValue = COOKIE_PATTERN.split(stateCookie.getValue());
-        OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
         if (!parsedStateCookieValue[0].equals(stateQueryParam.get(0))) {
             final String error = "State cookie value does not match the state query parameter value, "
                     + "completing the code flow with HTTP status 401";
@@ -207,7 +255,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         }
                     });
         } else if (requestParams.contains(OidcConstants.CODE_FLOW_ERROR)) {
-            OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
             String error = requestParams.get(OidcConstants.CODE_FLOW_ERROR);
             String errorDescription = requestParams.get(OidcConstants.CODE_FLOW_ERROR_DESCRIPTION);
 

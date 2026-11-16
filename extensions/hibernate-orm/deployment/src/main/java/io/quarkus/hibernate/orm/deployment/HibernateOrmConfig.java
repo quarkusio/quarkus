@@ -110,7 +110,7 @@ public interface HibernateOrmConfig {
      *             property will be removed in a future version.
      * @asciidoclet
      */
-    @Deprecated(since = "4.0", forRemoval = true)
+    @Deprecated(since = "3.40", forRemoval = true)
     Optional<Boolean> logSessionMetrics();
 
     /**

@@ -102,6 +102,28 @@ public class GetResourceNamesTest {
     }
 
     @Test
+    public void jarPathTreeDoesNotContainEmpty() {
+        var tree = PathTree.ofDirectoryOrArchive(testJar);
+        assertThat(tree.getResourceNames()).containsExactlyInAnyOrder(
+                "org",
+                "org/acme",
+                "org/acme/Foo.class",
+                "org/acme/Bar.class");
+        assertThat(tree.getResourceNames()).doesNotContain("");
+    }
+
+    @Test
+    public void multiRootPathTreeOnlyJarsDoesNotContainEmpty() {
+        var multi = new MultiRootPathTree(PathTree.ofDirectoryOrArchive(testJar));
+        assertThat(multi.getResourceNames()).containsExactlyInAnyOrder(
+                "org",
+                "org/acme",
+                "org/acme/Foo.class",
+                "org/acme/Bar.class");
+        assertThat(multi.getResourceNames()).doesNotContain("");
+    }
+
+    @Test
     public void getResourceNamesMatchesWalk() {
         var tree = PathTree.ofDirectoryOrArchive(dir1);
         var resourceNames = tree.getResourceNames();

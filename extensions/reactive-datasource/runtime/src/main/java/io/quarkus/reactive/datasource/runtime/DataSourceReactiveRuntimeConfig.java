@@ -180,6 +180,48 @@ public interface DataSourceReactiveRuntimeConfig {
     Optional<Duration> maxLifetime();
 
     /**
+     * Whether TCP keep-alive ({@code SO_KEEPALIVE}) should be enabled on the connections to the database.
+     * <p>
+     * Keep-alive lets the operating system detect a database host that disappeared without closing the connection
+     * (for example after a network failure or a firewall dropping the connection), so that the client stops waiting
+     * on a dead connection.
+     * <p>
+     * Not supported by the Oracle client, which does not use the Vert.x network stack.
+     */
+    @WithDefault("false")
+    boolean tcpKeepAlive();
+
+    /**
+     * How long a connection must stay idle before the first TCP keep-alive probe is sent ({@code TCP_KEEPIDLE}).
+     * <p>
+     * Only effective when {@code tcp-keep-alive} is enabled and a Linux native transport (epoll or io_uring) is used.
+     * With the NIO or kqueue transports, the operating system settings apply.
+     * The value is rounded down to whole seconds and must be at least one second.
+     */
+    @ConfigDocDefault("operating system setting")
+    Optional<Duration> tcpKeepAliveIdle();
+
+    /**
+     * The interval between TCP keep-alive probes ({@code TCP_KEEPINTVL}).
+     * <p>
+     * Only effective when {@code tcp-keep-alive} is enabled and a Linux native transport (epoll or io_uring) is used.
+     * With the NIO or kqueue transports, the operating system settings apply.
+     * The value is rounded down to whole seconds and must be at least one second.
+     */
+    @ConfigDocDefault("operating system setting")
+    Optional<Duration> tcpKeepAliveInterval();
+
+    /**
+     * The number of unanswered TCP keep-alive probes after which the connection is considered dead
+     * ({@code TCP_KEEPCNT}).
+     * <p>
+     * Only effective when {@code tcp-keep-alive} is enabled and a Linux native transport (epoll or io_uring) is used.
+     * With the NIO or kqueue transports, the operating system settings apply.
+     */
+    @ConfigDocDefault("operating system setting")
+    OptionalInt tcpKeepAliveCount();
+
+    /**
      * Set to true to share the pool among datasources.
      * There can be multiple shared pools distinguished by <name>name</name>, when no specific name is set,
      * the <code>__vertx.DEFAULT</code> name is used.

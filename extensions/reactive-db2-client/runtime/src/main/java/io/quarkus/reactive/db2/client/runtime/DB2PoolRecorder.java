@@ -22,6 +22,7 @@ import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.internal.VertxInternal;
+import io.vertx.core.net.NetClientOptions;
 import io.vertx.db2client.DB2Builder;
 import io.vertx.db2client.DB2ConnectOptions;
 import io.vertx.sqlclient.Pool;
@@ -63,7 +64,8 @@ public final class DB2PoolRecorder {
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveDB2Config, tlsRegistry);
         Supplier<Future<SqlConnectOptions>> databasesSupplier = ReactivePoolUtil.toDatabasesSupplier(
                 List.of(db2ConnectOptions), dataSourceRuntimeConfig, DB2ConnectOptions::new);
-        return createPool(vertx, poolOptions, db2ConnectOptions, dataSourceName, databasesSupplier);
+        NetClientOptions netClientOptions = ReactivePoolUtil.toNetClientOptions(dataSourceReactiveRuntimeConfig);
+        return createPool(vertx, poolOptions, netClientOptions, db2ConnectOptions, dataSourceName, databasesSupplier);
     }
 
     private static DB2ConnectOptions toConnectOptions(String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
@@ -110,14 +112,16 @@ public final class DB2PoolRecorder {
         return connectOptions;
     }
 
-    private static Pool createPool(Vertx vertx, PoolOptions poolOptions, DB2ConnectOptions db2ConnectOptions,
+    private static Pool createPool(Vertx vertx, PoolOptions poolOptions, NetClientOptions netClientOptions,
+            DB2ConnectOptions db2ConnectOptions,
             String dataSourceName, Supplier<Future<SqlConnectOptions>> databases) {
         Instance<PoolCreator> instance = Arc.container().select(PoolCreator.class, qualifier(dataSourceName));
         if (instance.isResolvable()) {
-            DB2PoolCreator.Input input = new DefaultInput(vertx, poolOptions, db2ConnectOptions, databases);
+            DB2PoolCreator.Input input = new DefaultInput(vertx, poolOptions, netClientOptions, db2ConnectOptions, databases);
             return instance.get().create(input);
         }
         return DB2Builder.pool().with(poolOptions)
+                .with(netClientOptions)
                 .connectingTo(databases)
                 .using(vertx).build();
     }
@@ -125,13 +129,16 @@ public final class DB2PoolRecorder {
     private static class DefaultInput implements DB2PoolCreator.Input {
         private final Vertx vertx;
         private final PoolOptions poolOptions;
+        private final NetClientOptions netClientOptions;
         private final DB2ConnectOptions connectOptions;
         private final Supplier<Future<SqlConnectOptions>> databases;
 
-        public DefaultInput(Vertx vertx, PoolOptions poolOptions, DB2ConnectOptions connectOptions,
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, NetClientOptions netClientOptions,
+                DB2ConnectOptions connectOptions,
                 Supplier<Future<SqlConnectOptions>> databases) {
             this.vertx = vertx;
             this.poolOptions = poolOptions;
+            this.netClientOptions = netClientOptions;
             this.connectOptions = connectOptions;
             this.databases = databases;
         }
@@ -144,6 +151,11 @@ public final class DB2PoolRecorder {
         @Override
         public PoolOptions poolOptions() {
             return poolOptions;
+        }
+
+        @Override
+        public NetClientOptions netClientOptions() {
+            return netClientOptions;
         }
 
         @Override

@@ -321,18 +321,18 @@ quarkus.grpc.clients.hello.ssl.trust-store=tls/ca.pem
 
 === Client Stub Deadlines
 
-If you need to configure a deadline for a gRPC stub, i.e. to specify a duration of time after which the stub will always return the status error `DEADLINE_EXCEEDED`.
-You can specify the deadline via the `quarkus.grpc.clients."service-name".deadline` configuration property, e.g.:
+If you need to configure a deadline for the calls made through a gRPC stub, i.e. a duration of time after which a call that has not completed fails with the status error `DEADLINE_EXCEEDED`,
+you can specify it via the `quarkus.grpc.clients."service-name".deadline` configuration property, e.g.:
 
 [source,properties]
 ----
 quarkus.grpc.clients.hello.host=localhost
 quarkus.grpc.clients.hello.deadline=2s <1>
 ----
-<1> Set the  deadline for all injected stubs.
+<1> Set the deadline of every call made through the injected stubs and clients of this service.
 
-IMPORTANT: Do not use this feature to implement an RPC timeout.
-To implement an RPC timeout, either use Mutiny `call.ifNoItem().after(...)` or Fault Tolerance `@Timeout`.
+The deadline is computed when each call starts, and it is propagated to the server.
+A call that sets its own deadline, for example with `stub.withDeadlineAfter(...)`, keeps that deadline.
 
 [[grpc-headers]]
 == gRPC Headers

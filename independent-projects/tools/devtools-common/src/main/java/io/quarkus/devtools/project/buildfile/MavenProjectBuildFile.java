@@ -273,7 +273,7 @@ public class MavenProjectBuildFile extends BuildFile {
         d.setGroupId(coords.getGroupId());
         d.setArtifactId(coords.getArtifactId());
         if (!managed) {
-            d.setVersion(coords.getVersion());
+            d.setVersion(resolveIndependentVersion(coords));
         }
         // When classifier is empty, you get  <classifier></classifier> in the pom.xml
         if (coords.getClassifier() != null && !coords.getClassifier().isEmpty()) {
@@ -314,6 +314,27 @@ public class MavenProjectBuildFile extends BuildFile {
             return true;
         }
         return false;
+    }
+
+    /**
+     * For a non-platform-managed (independent) extension, instead of hard-coding the resolved version
+     * directly in the {@code <version>} element, expose it as a {@code <properties>} entry named
+     * {@code <artifactId>.version} and reference that property from the dependency. This mirrors how
+     * platform-managed versions are exposed (e.g. {@code ${quarkus.platform.version}}) and makes it easier
+     * for users to bump the version of an independent extension in one place.
+     * <p>
+     * If a property with that name already exists with a different value, the resolved version is used
+     * as-is to avoid silently overwriting an unrelated property.
+     */
+    private String resolveIndependentVersion(ArtifactCoords coords) {
+        final String versionProperty = coords.getArtifactId() + ".version";
+        final Properties properties = model().getProperties();
+        final String existing = properties.getProperty(versionProperty);
+        if (existing != null && !existing.equals(coords.getVersion())) {
+            return coords.getVersion();
+        }
+        properties.setProperty(versionProperty, coords.getVersion());
+        return "${" + versionProperty + "}";
     }
 
     @Override

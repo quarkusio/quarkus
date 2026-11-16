@@ -26,8 +26,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.apache.maven.shared.utils.cli.CommandLineUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
@@ -528,14 +531,17 @@ public class PackageIT extends MojoTestBase {
         assertZipEntriesCanBeOpenedAndClosed(runnerJar);
     }
 
-    @Test
-    public void testNativeSourcesPackage() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = { "hello", "hello world" })
+    public void testNativeSourcesPackage(String propertyValue) throws Exception {
         testDir = initProject("projects/uberjar-check", "projects/project-native-sources");
 
         running = new RunningInvoker(testDir, false);
+        Properties properties = new Properties();
+        properties.setProperty("quarkus.native.additional-build-args", "-Dnative.sources.space=" + propertyValue);
         final MavenProcessInvocationResult result = running.execute(
                 Arrays.asList("package", "-Dquarkus.native.enabled=true", "-Dquarkus.native.sources-only=true"),
-                Collections.emptyMap());
+                Collections.emptyMap(), properties);
 
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
@@ -545,6 +551,9 @@ public class PackageIT extends MojoTestBase {
         assertThat(nativeSourcesDir).exists()
                 .isDirectoryContaining(p -> "native-image.args".equals(p.getFileName().toString()))
                 .isDirectoryContaining(p -> "acme-1.0-SNAPSHOT-runner.jar".equals(p.getFileName().toString()));
+
+        assertThat(CommandLineUtils.translateCommandline(Files.readString(nativeSourcesDir.resolve("native-image.args"))))
+                .contains("-Dnative.sources.space=" + propertyValue);
 
     }
 

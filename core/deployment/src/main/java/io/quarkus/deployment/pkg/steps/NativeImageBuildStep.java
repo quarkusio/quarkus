@@ -62,6 +62,7 @@ import io.quarkus.runtime.graal.GraalVM.Distribution;
 import io.quarkus.runtime.graal.GraalVM.Version;
 import io.quarkus.runtime.graal.JVMChecksFeature;
 import io.quarkus.runtime.graal.SkipConsoleServiceProvidersFeature;
+import io.quarkus.runtime.util.CommandLineQuoting;
 import io.quarkus.sbom.CoreSbomContributionConfig;
 import io.quarkus.sbom.Purl;
 import io.smallrye.common.os.OS;
@@ -177,7 +178,10 @@ public class NativeImageBuildStep {
                 : Optional.empty();
 
         try {
-            Files.writeString(outputDir.resolve("native-image.args"), String.join(" ", command));
+            // Use argument-file quoting, not shell quoting: native-image consumes this file with @native-image.args.
+            Files.writeString(outputDir.resolve("native-image.args"), command.stream()
+                    .map(CommandLineQuoting::quoteForArgumentFile)
+                    .collect(Collectors.joining(" ")));
             Files.writeString(outputDir.resolve("graalvm.version"), graalVMVersion);
             if (builderImage.isPresent()) {
                 Files.writeString(outputDir.resolve("native-builder.image"), builderImage.get());

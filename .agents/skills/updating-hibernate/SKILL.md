@@ -91,17 +91,34 @@ not necessarily describe Quarkus's effective behavior.
 
 ## Build and test
 
+**Ask whether to run local tests before executing them.** Offer to run the
+relevant Hibernate tests or skip them and leave execution to CI. Briefly state
+the proposed scope, including database/container and native-test requirements.
+Honor an explicit choice already made for this upgrade; otherwise wait for the
+answer. No answer is not consent to run tests. Continue independent dependency
+and migration-guide work while the choice is pending.
+
+If the user skips local tests, continue preparing the upgrade and PR. Do not
+run JVM, integration, or native tests, including indirectly through a build;
+use the appropriate test-skipping options for any necessary build. State
+"Local tests not run at the user's request" in the PR and final response.
+Do not report skipped tests as passing. This choice concerns test execution;
+still add or update regression coverage when the code change requires it.
+
 Follow [building-and-testing](../building-and-testing/SKILL.md) for Maven
 commands, build flags, and evidence that tests actually ran.
 
-1. Build Quarkus and check the Hibernate BOM dependency-alignment rules.
-2. Run the affected ORM and Reactive extension tests, including annotation
+1. Build Quarkus and check the Hibernate BOM dependency-alignment rules,
+   skipping tests unless the user has chosen to run them.
+2. If the user chose to run local tests, run the affected ORM and Reactive
+   extension tests within the agreed scope, including annotation
    coverage, and relevant integration tests for JPA, Panache, XML mappings,
    converters, and database behavior changed by the upgrade.
-3. When Search changes, run the affected ORM and standalone Search extension
-   and integration tests, including Dev Services coverage for changed images.
-4. Run relevant native integration tests for service registrations or other
-   native-mode changes.
+3. When Search changes and local tests were selected, run the affected ORM and
+   standalone Search extension and integration tests within the agreed scope,
+   including Dev Services coverage for changed images.
+4. Include relevant native integration tests for service registrations or
+   other native-mode changes when these are part of the agreed scope.
 
 Run test modules sequentially. Investigate failures before reporting success;
 distinguish upgrade regressions from existing failures using the target base

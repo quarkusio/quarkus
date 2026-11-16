@@ -9,6 +9,7 @@ import io.quarkus.grpc.context.proto.CheckRequest;
 import io.quarkus.grpc.context.proto.MutinyContextCheckGrpc;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 @GrpcService
@@ -50,6 +51,16 @@ public class ContextCheckService extends MutinyContextCheckGrpc.ContextCheckImpl
     @RunOnVirtualThread
     @Override
     public Uni<CheckReply> checkSlowVirtual(CheckRequest request) {
+        return slowReply();
+    }
+
+    @Override
+    public Uni<CheckReply> checkStreaming(Multi<CheckRequest> request) {
+        return request.collect().last().map(last -> contextReply());
+    }
+
+    @Override
+    public Uni<CheckReply> checkSlowEventLoopResponding(CheckRequest request) {
         return slowReply();
     }
 

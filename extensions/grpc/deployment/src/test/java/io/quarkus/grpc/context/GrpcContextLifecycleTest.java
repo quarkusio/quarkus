@@ -156,6 +156,38 @@ public class GrpcContextLifecycleTest {
     }
 
     @Test
+    void grpcContextIsAttachedInListenerOnMessageAndHalfCloseForSlowEventLoopCall() throws Exception {
+        stub.checkSlowEventLoopResponding(CheckRequest.getDefaultInstance());
+
+        assertThat(watcher.getContextAtOnMessage())
+                .as("gRPC context must be non-ROOT in onMessage on the slow event-loop path")
+                .isNotNull()
+                .isNotSameAs(io.grpc.Context.ROOT);
+        assertThat(watcher.getContextAtOnHalfClose())
+                .as("gRPC context must be non-ROOT in onHalfClose on the slow event-loop path")
+                .isNotNull()
+                .isNotSameAs(io.grpc.Context.ROOT);
+    }
+
+    @Test
+    void grpcContextIsCorrectAtCloseForSlowEventLoopCall() throws Exception {
+        // checkSlowEventLoopResponding delays its response by 2 s, so forwardingCall.close()
+        // fires long after handleClose.Context.run() has finished and cleared dc.
+        stub.checkSlowEventLoopResponding(CheckRequest.getDefaultInstance());
+
+        assertThat(watcher.awaitClose(5, TimeUnit.SECONDS))
+                .as("close() must have fired within 5s on the slow event-loop path")
+                .isTrue();
+        assertThat(watcher.getContextAtClose())
+                .as("gRPC context must be non-ROOT at close() on the slow event-loop path")
+                .isNotNull()
+                .isNotSameAs(io.grpc.Context.ROOT);
+        assertThat(watcher.readContextOnDuplicatedContext().get(5, TimeUnit.SECONDS))
+                .as("gRPC context must be ROOT on the duplicated context after close() on the slow event-loop path")
+                .isSameAs(io.grpc.Context.ROOT);
+    }
+
+    @Test
     void grpcContextIsCleanedUpAfterCloseOnBlockingWorker() throws Exception {
         stub.checkBlocking(CheckRequest.getDefaultInstance());
 

@@ -1,5 +1,7 @@
 package io.quarkus.grpc.context;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -44,6 +46,7 @@ public class ContextWatcherInterceptor {
 
     private volatile Context capturedDuplicatedContext;
     private volatile io.grpc.Context contextAtOnMessage;
+    private final List<io.grpc.Context> contextsAtOnMessage = new ArrayList<>();
     private volatile io.grpc.Context contextAtOnHalfClose;
     private volatile io.grpc.Context contextAtOnCancel;
     private volatile io.grpc.Context contextAtClose;
@@ -58,6 +61,7 @@ public class ContextWatcherInterceptor {
     public void reset() {
         capturedDuplicatedContext = null;
         contextAtOnMessage = null;
+        contextsAtOnMessage.clear();
         contextAtOnHalfClose = null;
         contextAtOnCancel = null;
         contextAtClose = null;
@@ -73,10 +77,19 @@ public class ContextWatcherInterceptor {
 
     public void setContextAtOnMessage(io.grpc.Context ctx) {
         contextAtOnMessage = ctx;
+        synchronized (contextsAtOnMessage) {
+            contextsAtOnMessage.add(ctx);
+        }
     }
 
     public io.grpc.Context getContextAtOnMessage() {
         return contextAtOnMessage;
+    }
+
+    public List<io.grpc.Context> getContextsAtOnMessage() {
+        synchronized (contextsAtOnMessage) {
+            return new ArrayList<>(contextsAtOnMessage);
+        }
     }
 
     public void setContextAtOnHalfClose(io.grpc.Context ctx) {

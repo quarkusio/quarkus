@@ -78,11 +78,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
                     try {
                         super.close(status, trailers);
                     } finally {
-                        Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(dc);
-                        if (cleanup != null) {
-                            GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(dc);
-                            cleanup.run();
-                        }
+                        runCleanup(dc);
                     }
                 }
             };
@@ -93,6 +89,22 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
     @Override
     public int getPriority() {
         return Interceptors.DUPLICATE_CONTEXT;
+    }
+
+    static void runCleanup(Context dc) {
+        Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(dc);
+        if (cleanup != null) {
+            GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(dc);
+        }
+        java.util.concurrent.atomic.AtomicBoolean workerActive = GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.get(dc);
+        if (workerActive != null && workerActive.get()) {
+            // Worker is active on dc: skip removal, the worker handles it.
+            return;
+        }
+        if (cleanup != null) {
+            cleanup.run();
+        }
+        GrpcContextLocalsProvider.GRPC_CONTEXT_LOCAL.remove(dc);
     }
 
     static class ListenedOnDuplicatedContext<ReqT, RespT> extends ServerCall.Listener<ReqT> {
@@ -193,11 +205,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
                 // onCancel() handlers, then clean up because close() may never be called
                 // when the client cancels.
                 listener.onCancel();
-                Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(context);
-                if (cleanup != null) {
-                    GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(context);
-                    cleanup.run();
-                }
+                runCleanup(context);
             });
         }
 
@@ -205,11 +213,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
         public void onComplete() {
             invoke(listener -> {
                 listener.onComplete();
-                Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(context);
-                if (cleanup != null) {
-                    GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(context);
-                    cleanup.run();
-                }
+                runCleanup(context);
             });
         }
     }

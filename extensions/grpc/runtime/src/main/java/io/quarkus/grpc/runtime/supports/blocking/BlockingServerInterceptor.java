@@ -168,6 +168,11 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             // that should always be called before this interceptor
             ContextState state = requestContext.getState();
             boolean deferHalfCloseUntilMessage = deferHalfCloseUntilMessage(call.getMethodDescriptor().getType());
+            io.vertx.core.Context dc = Vertx.currentContext();
+            if (dc != null) {
+                io.quarkus.grpc.runtime.GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.put(dc,
+                        new java.util.concurrent.atomic.AtomicBoolean(false));
+            }
             VirtualReplayListener<ReqT> replay = new VirtualReplayListener<>(state, deferHalfCloseUntilMessage);
             virtualThreadExecutor.execute(() -> {
                 ServerCall.Listener<ReqT> listener;
@@ -187,6 +192,11 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             // that should always be called before this interceptor
             ContextState state = requestContext.getState();
             boolean deferHalfCloseUntilMessage = deferHalfCloseUntilMessage(call.getMethodDescriptor().getType());
+            io.vertx.core.Context dc = Vertx.currentContext();
+            if (dc != null) {
+                io.quarkus.grpc.runtime.GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.put(dc,
+                        new java.util.concurrent.atomic.AtomicBoolean(false));
+            }
             ReplayListener<ReqT> replay = new ReplayListener<>(state, deferHalfCloseUntilMessage);
             vertx.executeBlocking(() -> {
                 ServerCall.Listener<ReqT> listener;

@@ -117,6 +117,41 @@ public class GrpcContextCancelLifecycleTest {
     }
 
     /**
+     * Sends several messages with delays between them on a client-streaming call, simulating a slow
+     * network where frames arrive one at a time. Verifies that every onMessage() invocation sees a
+     * non-ROOT gRPC context — each frame gets its own handleMessage.Context.run() so the context is
+     * re-attached for each message regardless of timing.
+     */
+    @Test
+    void grpcContextIsCorrectForEachOnMessageOnEventLoop() throws Exception {
+        ClientCall<CheckRequest, CheckReply> call = channel.newCall(
+                ContextCheckGrpc.getCheckStreamingMethod(), CallOptions.DEFAULT);
+        CountDownLatch done = new CountDownLatch(1);
+        call.start(new ClientCall.Listener<>() {
+            @Override
+            public void onClose(Status status, Metadata trailers) {
+                done.countDown();
+            }
+        }, new Metadata());
+        call.request(1);
+
+        // Send 4 messages with 50 ms gaps to ensure each arrives in a separate frame processing
+        // cycle, so dc is definitely null between messages.
+        for (int i = 0; i < 4; i++) {
+            call.sendMessage(CheckRequest.getDefaultInstance());
+            Thread.sleep(50);
+        }
+        call.halfClose();
+
+        done.await(5, SECONDS);
+
+        assertThat(watcher.getContextsAtOnMessage())
+                .as("every onMessage() must see a non-ROOT gRPC context on the event-loop path")
+                .hasSizeGreaterThanOrEqualTo(4)
+                .allSatisfy(ctx -> assertThat(ctx).isNotSameAs(io.grpc.Context.ROOT));
+    }
+
+    /**
      * Starts a call for the given method, waits 150 ms for the server handler to reach a stable
      * state, then sends RST_STREAM via {@code ClientCall.cancel()}. Using cancel() rather than
      * {@code stub.withDeadlineAfter()} avoids creating a {@code CancellableContext} on the server,

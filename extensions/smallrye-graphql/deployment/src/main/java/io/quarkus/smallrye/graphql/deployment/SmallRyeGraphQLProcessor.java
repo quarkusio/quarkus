@@ -213,9 +213,10 @@ public class SmallRyeGraphQLProcessor {
     }
 
     @BuildStep
-    void autoTransactional(Capabilities capabilities,
+    void autoTransactional(Capabilities capabilities, SmallRyeGraphQLConfig graphQLConfig,
+            CombinedIndexBuildItem combinedIndex,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
-        if (!capabilities.isPresent(Capability.TRANSACTIONS)) {
+        if (!graphQLConfig.autoTransactional() || !capabilities.isPresent(Capability.TRANSACTIONS)) {
             return;
         }
 
@@ -263,17 +264,41 @@ public class SmallRyeGraphQLProcessor {
                     return;
                 }
 
-                if (method.hasAnnotation(transactional)) {
+                // An explicit @Transactional, on the method, its class or a superclass, always wins
+                // (@Transactional is @Inherited, so ArC applies it from superclasses as well)
+                if (method.hasAnnotation(transactional)
+                        || hasClassLevelAnnotation(combinedIndex.getIndex(), method.declaringClass(), transactional)) {
                     return;
                 }
 
+                // Methods that run non-blocking don't get a transaction. This mirrors how SmallRye GraphQL
+                // decides the execution model: a method-level annotation wins over a class-level one.
                 if (method.hasAnnotation(Annotations.NON_BLOCKING)) {
+                    return;
+                }
+                if (method.declaringClass().hasDeclaredAnnotation(Annotations.NON_BLOCKING)
+                        && !method.hasAnnotation(Annotations.BLOCKING)
+                        && !method.hasAnnotation(Annotations.RUN_ON_VIRTUAL_THREAD)) {
                     return;
                 }
 
                 ctx.transform().add(transactional).done();
             }
         }));
+    }
+
+    private static boolean hasClassLevelAnnotation(IndexView index, ClassInfo clazz, DotName annotation) {
+        while (clazz != null) {
+            if (clazz.hasDeclaredAnnotation(annotation)) {
+                return true;
+            }
+            DotName superName = clazz.superName();
+            if (superName == null || superName.equals(DotName.OBJECT_NAME)) {
+                return false;
+            }
+            clazz = index.getClassByName(superName);
+        }
+        return false;
     }
 
     @BuildStep

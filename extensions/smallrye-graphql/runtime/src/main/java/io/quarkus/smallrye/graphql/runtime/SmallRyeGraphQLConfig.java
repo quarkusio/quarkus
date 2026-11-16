@@ -60,6 +60,15 @@ public interface SmallRyeGraphQLConfig {
     Optional<Boolean> nonBlockingEnabled();
 
     /**
+     * Make blocking GraphQL operations transactional, as if they were annotated with `@Transactional`.
+     * Only applies when a JTA extension is present and Hibernate Reactive is not.
+     * Operations (or their declaring classes) explicitly annotated with `@Transactional` or `@NonBlocking` are never
+     * modified.
+     */
+    @WithDefault("true")
+    boolean autoTransactional();
+
+    /**
      * Change the type naming strategy.
      * All possible strategies are: default, merge-inner-class, full
      */

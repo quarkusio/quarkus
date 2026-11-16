@@ -39,6 +39,7 @@ public class DeploymentInfo {
     private List<HandlerChainCustomizer> globalHandlerCustomizers = new ArrayList<>();
     private boolean developmentMode;
     private boolean servletPresent = false;
+    private boolean resumeOn404 = false;
 
     public ResourceInterceptors getInterceptors() {
         return interceptors;
@@ -199,6 +200,19 @@ public class DeploymentInfo {
 
     public DeploymentInfo setServletPresent(boolean servletPresent) {
         this.servletPresent = servletPresent;
+        return this;
+    }
+
+    public boolean isResumeOn404() {
+        return resumeOn404;
+    }
+
+    /**
+     * @param resumeOn404 if {@code true}, a request that does not match any resource is passed to the next handler instead
+     *        of being handled by an exception mapper for {@code NotFoundException}
+     */
+    public DeploymentInfo setResumeOn404(boolean resumeOn404) {
+        this.resumeOn404 = resumeOn404;
         return this;
     }
 }

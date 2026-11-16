@@ -6,7 +6,10 @@
 # according to the rules defined in test-plan-rules.json:
 # - "ignored" is a list of regular expressions applied to the path of the module:
 #   a matching module is not tested by any of the jobs relying on the test plan.
-# - "rules" is an ordered list of regular expressions applied to the path of the module, the first match wins.
+# - "rules" is an ordered list of rules, the first match wins. A rule matches a module either with "pattern",
+#   a regular expression applied to the path of the module, or with "modules", an explicit list of paths.
+#   The explicit lists are used to isolate the modules having the longest test suites in their own job:
+#   they have to be rebalanced from time to time, from the durations reported by the builds.
 # - "matrix-categories" maps the categories of matrix-jvm-tests.json to the groups they have to run,
 #   see filter-jvm-tests-json.sh.
 #
@@ -40,6 +43,19 @@ TEST_PLAN="${OUTPUT_DIR}/test-plan.json"
 
 mkdir -p "${OUTPUT_DIR}"
 
+# Make sure the modules explicitly listed in the rules exist: a module might have been moved or removed
+INVALID_MODULES=()
+while IFS= read -r MODULE; do
+  if [ ! -f "${PRG_PATH}/../${MODULE}/pom.xml" ]; then
+    INVALID_MODULES+=("${MODULE}")
+  fi
+done < <(jq -r '.rules[] | select(.modules != null) | .modules[]' "${PRG_PATH}/test-plan-rules.json")
+if (( ${#INVALID_MODULES[@]} > 0 )); then
+  echo "The following modules listed in test-plan-rules.json do not exist:" >&2
+  printf '  %s\n' "${INVALID_MODULES[@]}" >&2
+  exit 1
+fi
+
 jq -n --rawfile modules "${MODULES_FILE}" --slurpfile config "${PRG_PATH}/test-plan-rules.json" '
   $config[0].rules as $rules
   | $config[0].ignored as $ignored
@@ -51,7 +67,9 @@ jq -n --rawfile modules "${MODULES_FILE}" --slurpfile config "${PRG_PATH}/test-p
       | {
           module: $module,
           group: (
-            (first($rules[] | select(.pattern as $pattern | $module | test($pattern)))
+            (first($rules[] | select(
+                if .modules != null then (.modules | index($module)) != null
+                else (.pattern as $pattern | $module | test($pattern)) end))
               // error("No rule matching module: " + $module))
             | .group
           )

@@ -606,7 +606,6 @@ jobs:
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
-      JAVA_VERSION_GRADLE: ${{ matrix.java.java-version-gradle || matrix.java.java-version }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     strategy:
       fail-fast: false
@@ -639,21 +638,6 @@ jobs:
       - name: Print disk usage before build
         if: ${{ !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos') }}
         run: .github/ci-disk-usage.sh
-
-      - name: Set up JDK ${{ env.JAVA_VERSION_GRADLE }} for Gradle (if needed)
-        if: env.JAVA_VERSION_GRADLE != matrix.java.java-version
-        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
-        with:
-          distribution: temurin
-          java-version: ${{ matrix.java.java-version-gradle }}
-          architecture: ${{ matrix.java.architecture || 'x64' }}
-
-      - name: Set up GRADLE_JAVA_HOME (if needed)
-        if: ${{ env.JAVA_VERSION_GRADLE != matrix.java.java-version }}
-        run: |
-          JAVA_HOME_ARCHITECTURE=$(echo "${{ matrix.java.architecture || 'x64' }}" | tr [:lower:] [:upper:])
-          GRADLE_JAVA_HOME_VARIABLE="JAVA_HOME_${JAVA_VERSION_GRADLE}_${JAVA_HOME_ARCHITECTURE}"
-          echo "GRADLE_JAVA_HOME=${!GRADLE_JAVA_HOME_VARIABLE}" >> "$GITHUB_ENV"
 
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
@@ -708,9 +692,6 @@ jobs:
           # we push it to a file because it can exceed the cmd.exe command line limit on Windows
           cat "target/test-plan/${TEST_PLAN_GROUP}.maven-config" >> .mvn/maven.config
           ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS clean install -Dsurefire.timeout=1200 -Dno-test-kubernetes ${{ matrix.java.maven_args }}
-      - name: Clean Gradle temp directory
-        if: always()
-        run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp
       - name: Print disk usage after build
         if: always() && !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')
         run: .github/ci-disk-usage.sh
@@ -987,8 +968,10 @@ jobs:
     if: contains(fromJson(needs.initial-build.outputs.test_plan_groups), 'devtools')
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
+      # the Gradle plugins (devtools/gradle) might have to be built with a different JDK
+      JAVA_VERSION_GRADLE: ${{ matrix.java.java-version-gradle || matrix.java.java-version }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -996,6 +979,7 @@ jobs:
           - {
             name: "25",
             java-version: 25,
+            java-version-gradle: 21,
             java-distribution: "temurin",
             os-name: "ubuntu-latest",
             tag: "devtools-jdk-25",
@@ -1039,6 +1023,19 @@ jobs:
         with:
           name: test-plan
           path: target/test-plan
+      - name: Set up JDK ${{ env.JAVA_VERSION_GRADLE }} for Gradle (if needed)
+        if: env.JAVA_VERSION_GRADLE != matrix.java.java-version
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java.java-version-gradle }}
+          architecture: ${{ matrix.java.architecture || 'x64' }}
+      - name: Set up GRADLE_JAVA_HOME (if needed)
+        if: ${{ env.JAVA_VERSION_GRADLE != matrix.java.java-version }}
+        run: |
+          JAVA_HOME_ARCHITECTURE=$(echo "${{ matrix.java.architecture || 'x64' }}" | tr [:lower:] [:upper:])
+          GRADLE_JAVA_HOME_VARIABLE="JAVA_HOME_${JAVA_VERSION_GRADLE}_${JAVA_HOME_ARCHITECTURE}"
+          echo "GRADLE_JAVA_HOME=${!GRADLE_JAVA_HOME_VARIABLE}" >> "$GITHUB_ENV"
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
@@ -1060,6 +1057,9 @@ jobs:
           # the -pl selection comes from the test plan computed in the initial build
           cat target/test-plan/devtools.maven-config >> .mvn/maven.config
           ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install
+      - name: Clean Gradle temp directory
+        if: always()
+        run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -

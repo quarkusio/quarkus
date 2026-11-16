@@ -6,13 +6,46 @@
         { "pattern": "^tcks(/.*)?$", "group": "tcks" },
         { "pattern": "^integration-tests/(maven|devmode)(/.*)?$", "group": "maven" },
         { "pattern": "^integration-tests/gradle(/.*)?$", "group": "gradle" },
-        { "pattern": "^integration-tests/devtools(/.*)?$", "group": "devtools" },
+        { "pattern": "^(devtools|integration-tests/devtools)(/.*)?$", "group": "devtools" },
         { "pattern": "^integration-tests/kubernetes(/.*)?$", "group": "kubernetes" },
-        { "pattern": "^integration-tests(/.+)?$", "group": "jvm-integration" },
+        { "pattern": "^integration-tests(/[a-l].*)?$", "group": "jvm-integration-1" },
+        { "pattern": "^integration-tests/.+$", "group": "jvm-integration-2" },
+        {
+            "modules": [
+                "extensions/devui/deployment",
+                "extensions/flyway/deployment",
+                "extensions/grpc/deployment",
+                "extensions/hibernate-orm/deployment",
+                "extensions/hibernate-reactive/deployment",
+                "extensions/micrometer/deployment",
+                "extensions/mongodb-client/deployment",
+                "extensions/oidc/deployment",
+                "extensions/oidc-client/deployment",
+                "extensions/oidc-client-graphql/deployment",
+                "extensions/opentelemetry/deployment",
+                "extensions/panache/hibernate-orm-rest-data-panache/deployment",
+                "extensions/qute/deployment",
+                "extensions/reactive-oracle-client/deployment",
+                "extensions/resteasy-classic/resteasy/deployment",
+                "extensions/resteasy-reactive/rest/deployment",
+                "extensions/resteasy-reactive/rest-client/deployment",
+                "extensions/smallrye-graphql/deployment",
+                "extensions/smallrye-reactive-messaging/deployment",
+                "extensions/vertx-http/deployment",
+                "extensions/websockets-next/deployment"
+            ],
+            "group": "jvm-heavy"
+        },
         { "pattern": "^.*$", "group": "jvm-main" }
     ],
     "matrix-categories": {
-        "Runtime": [ "jvm-main" ],
-        "Integration": [ "jvm-integration" ]
+        "Runtime": [
+            { "group": "jvm-heavy", "name-suffix": " - Heavy modules" },
+            { "group": "jvm-main", "name-suffix": " - Other modules" }
+        ],
+        "Integration": [
+            { "group": "jvm-integration-1", "name-suffix": " - A-L" },
+            { "group": "jvm-integration-2", "name-suffix": " - M-Z" }
+        ]
     }
 }

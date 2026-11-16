@@ -2,7 +2,9 @@
 
 # Purpose: Prints the matrix of the JVM tests jobs: the entries of matrix-jvm-tests.json,
 #          combined with the groups of the test plan (see compute-test-plan.sh) they have to run.
-#          The groups an entry has to run are defined by its category, see "matrix-categories" in test-plan-rules.json.
+#          The groups an entry has to run are defined by its category, see "matrix-categories" in test-plan-rules.json:
+#          a job is created for each group that is part of the test plan, its name is the name of the entry
+#          followed by the "name-suffix" of the group.
 #          An entry is dropped if none of its groups is part of the test plan.
 #          Nothing is printed if there is no entry left.
 # Note: This script is only for CI and does therefore not aim to be compatible with BSD/macOS.
@@ -35,8 +37,8 @@ JSON=$(echo -n "$JSON" | jq -c --slurpfile plan "${TEST_PLAN}" --slurpfile confi
   | map(
       . as $entry
       | ($categories[$entry.category] // error("No groups defined for category: " + $entry.category))[]
-      | select($plan[0][.] != null)
-      | $entry + { group: . }
+      | select($plan[0][.group] != null)
+      | $entry + { name: ($entry.name + (.["name-suffix"] // "")), group: .group }
     )
   | map(
       . + {

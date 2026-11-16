@@ -121,12 +121,22 @@ public interface PathTree {
     /**
      * Returns a set of resource names provided by this path tree.
      * The set may include both directories and files.
+     * <p>
+     * For archive-backed trees (where {@link #isArchiveOrigin()} is {@code true}),
+     * the empty string {@code ""} is not considered a resource and will not be included
+     * in the returned set. For directory-backed trees, {@code ""} represents the root
+     * directory itself and will be included.
      *
      * @return a set of resource names provided by this path tree
      */
     default Set<String> getResourceNames() {
         Set<String> names = new HashSet<>();
-        walk(visit -> names.add(visit.getResourceName()));
+        walk(visit -> {
+            final String name = visit.getResourceName();
+            if (!name.isEmpty() || !isArchiveOrigin()) {
+                names.add(name);
+            }
+        });
         return names;
     }
 
@@ -135,6 +145,10 @@ public interface PathTree {
      * <p/>
      * This method will make sure the relevant multi release content
      * is associated with the expected resource name paths for the current Java version.
+     * <p>
+     * Note that walking visits the tree root itself as the first element, whose
+     * {@link PathVisit#getResourceName()} is {@code ""}, regardless of whether this tree
+     * represents an archive or a directory.
      *
      * @param visitor path visitor
      */
@@ -163,6 +177,10 @@ public interface PathTree {
      * Applies a function to a given resource in the tree.
      * If the resource isn't found in the tree, the {@link PathVisit} argument
      * passed to the function will be {@code null}.
+     * <p>
+     * An empty {@code resourceName} ({@code ""}) refers to the root directory for
+     * directory-backed trees. Archives do not contain an empty resource name, so passing
+     * {@code ""} to an archive-backed tree will result in a {@code null} {@link PathVisit}.
      *
      * @param <T> resulting type
      * @param resourceName resource to process
@@ -175,6 +193,10 @@ public interface PathTree {
      * Consumes a given resource from the tree.
      * If the resource isn't found in the tree, the {@link PathVisit} argument
      * passed to the consumer will be {@code null}.
+     * <p>
+     * An empty {@code resourceName} ({@code ""}) refers to the root directory for
+     * directory-backed trees. Archives do not contain an empty resource name, so passing
+     * {@code ""} to an archive-backed tree will result in a {@code null} {@link PathVisit}.
      *
      * @param resourceName resource to consume
      * @param consumer path consumer
@@ -197,6 +219,10 @@ public interface PathTree {
 
     /**
      * Checks whether the tree contains a resource.
+     * <p>
+     * For directory-backed trees, checking {@code ""} returns {@code true} representing
+     * the root directory. Archive-backed trees do not contain an empty resource name, so
+     * checking {@code ""} on an archive always returns {@code false}.
      *
      * @param resourceName resource name to check
      * @return true, in case the tree contains the path, otherwise - false

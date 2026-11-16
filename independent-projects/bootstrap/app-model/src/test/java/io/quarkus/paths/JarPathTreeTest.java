@@ -10,6 +10,8 @@ import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -139,8 +141,32 @@ public class JarPathTreeTest {
     @Test
     public void getResourceNames() {
         final PathTree tree = PathTree.ofDirectoryOrArchive(root);
-        assertThat(tree.getResourceNames())
-                .containsExactlyInAnyOrderElementsOf(DirectoryPathTreeTest.getMultiReleaseMappedPaths().keySet());
+        final Set<String> expected = new HashSet<>(DirectoryPathTreeTest.getMultiReleaseMappedPaths().keySet());
+        expected.remove("");
+        assertThat(tree.getResourceNames()).containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(tree.getResourceNames()).doesNotContain("");
+    }
+
+    @Test
+    public void emptyResourceNameNotContained() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        assertThat(tree.contains("")).isFalse();
+        tree.apply("", visit -> {
+            assertThat(visit).isNull();
+            return null;
+        });
+        tree.accept("", visit -> assertThat(visit).isNull());
+
+        try (OpenPathTree open = tree.open()) {
+            assertThat(open.contains("")).isFalse();
+            assertThat(open.getPath("")).isNull();
+            assertThat(open.getResourceNames()).doesNotContain("");
+            open.apply("", visit -> {
+                assertThat(visit).isNull();
+                return null;
+            });
+            open.accept("", visit -> assertThat(visit).isNull());
+        }
     }
 
     @Test

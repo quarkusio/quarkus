@@ -98,7 +98,7 @@ public class MultiRootPathTree implements OpenPathTree {
         if (trees.length > 0) {
             Set<String> result = new HashSet<>();
             for (PathTree t : trees) {
-                t.walk(visit -> result.add(visit.getResourceName()));
+                result.addAll(t.getResourceNames());
             }
             return result;
         }

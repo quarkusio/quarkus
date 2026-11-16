@@ -50,8 +50,10 @@ public class PqcKeyExchangeTest {
             .overrideConfigKey("quarkus.tls.rest-client.pqc-enforcement-policy", "client-negotiated")
             .overrideConfigKey("quarkus.rest-client.rc.url", "https://localhost:${quarkus.http.test-ssl-port:8444}")
             .overrideConfigKey("quarkus.rest-client.rc.tls-configuration-name", "rest-client")
-            // Default REST client: trust store only, no PQC groups configured
+            // Default REST client: trust store only, classical groups explicitly to ensure it
+            // cannot negotiate PQC regardless of JDK version (JDK 25+ has PQC groups by default)
             .overrideConfigKey("quarkus.tls.no-pqc.trust-store.pem.certs", "server-ca.pem")
+            .overrideConfigKey("quarkus.tls.no-pqc.key-exchange-groups", "x25519")
             .overrideConfigKey("quarkus.rest-client.rc-no-pqc.url",
                     "https://localhost:${quarkus.http.test-ssl-port:8444}")
             .overrideConfigKey("quarkus.rest-client.rc-no-pqc.tls-configuration-name", "no-pqc");

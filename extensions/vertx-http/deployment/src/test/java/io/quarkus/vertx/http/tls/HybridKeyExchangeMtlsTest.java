@@ -56,6 +56,7 @@ public class HybridKeyExchangeMtlsTest extends AbstractHybridKeyExchangeTest {
         options.setSsl(true);
         options.setSslEngineOptions(new OpenSSLEngineOptions());
         options.setTrustAll(true);
+        options.setVerifyHost(false);
         options.getSslOptions().setKeyExchangeGroups(List.of("X25519MLKEM768"));
         options.setKeyCertOptions(new JksOptions()
                 .setPath("target/certs/mtls-hybrid-test-client-keystore.jks")

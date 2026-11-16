@@ -51,6 +51,7 @@ public class HybridKeyExchangeClientNegotiatedNoGroupsTest extends AbstractHybri
         options.setSsl(true);
         options.setSslEngineOptions(new OpenSSLEngineOptions());
         options.setTrustAll(true);
+        options.setVerifyHost(false);
         options.getSslOptions().setKeyExchangeGroups(List.of("X25519MLKEM768"));
 
         WebClient client = WebClient.create(vertx, options);

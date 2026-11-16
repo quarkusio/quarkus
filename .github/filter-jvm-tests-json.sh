@@ -45,6 +45,7 @@ fi
 
 RUNTIME_MODULES=$(echo -n "$1" | grep -Pv '^(integration-tests|tcks|docs)($|/.*)' || echo '')
 INTEGRATION_TESTS=$(echo -n "$1" | grep -Po '^integration-tests/.+' | grep -Pv '^integration-tests/(devtools|gradle|maven|devmode|kubernetes)($|/.*)' || echo '')
+IPV6_MODULES=$(echo -n "$1" | grep -P '^extensions/(devservices/(common|mariadb)|jdbc/jdbc-mariadb)($|/.*)' || echo '')
 
 if [ -z "$RUNTIME_MODULES" ] && [ -z "$INTEGRATION_TESTS" ]; then
   echo -n ''
@@ -69,6 +70,10 @@ else
     INTEGRATION_TESTS_COMMAND+="${INTEGRATION_TEST},"
   done
   JSON=$(echo -n $JSON | jq --arg category Integration --arg modules "${INTEGRATION_TESTS_COMMAND}" '( .[] | select(.category == $category) ).modules = $modules')
+fi
+
+if [ -z "$IPV6_MODULES" ]; then
+  JSON=$(echo -n $JSON | jq --arg category IPv6 'del( .[] | select(.category == $category) )')
 fi
 
 echo \{java: ${JSON}\}

@@ -1,0 +1,18 @@
+{
+    "ignored": [
+        { "pattern": "^docs(/.*)?$", "reason": "tested by the Quarkus Documentation CI workflow" }
+    ],
+    "rules": [
+        { "pattern": "^tcks(/.*)?$", "group": "tcks" },
+        { "pattern": "^integration-tests/(maven|devmode)(/.*)?$", "group": "maven" },
+        { "pattern": "^integration-tests/gradle(/.*)?$", "group": "gradle" },
+        { "pattern": "^integration-tests/devtools(/.*)?$", "group": "devtools" },
+        { "pattern": "^integration-tests/kubernetes(/.*)?$", "group": "kubernetes" },
+        { "pattern": "^integration-tests(/.+)?$", "group": "jvm-integration" },
+        { "pattern": "^.*$", "group": "jvm-main" }
+    ],
+    "matrix-categories": {
+        "Runtime": [ "jvm-main" ],
+        "Integration": [ "jvm-integration" ]
+    }
+}

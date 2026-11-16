@@ -118,15 +118,12 @@ env:
   LANG: en_US.UTF-8
   COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
   # Scalpel is only run in the initial build (report mode, on the full reactor): the resulting list of impacted modules
-  # is passed to the test jobs as explicit -pl selections. Scalpel must not run again in these jobs: it would only see
-  # the reactor of the job and not the changes made to modules outside of it (e.g. core/ when building integration-tests/).
+  # is dispatched to the test jobs by the test plan, as explicit -pl selections (see .github/compute-test-plan.sh).
+  # Scalpel must not run again in these jobs: it would only see the reactor of the job and not the changes made
+  # to modules outside of it (e.g. core/ when building integration-tests/).
   COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation -Dscalpel.enabled=false"
   NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=6g -Dnative -Dnative.surefire.skip -Dno-descriptor-tests clean install -DskipDocs"
   JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.test.hang-detection-timeout=300"
-  # Important: keep these selectors in sync with the grep commands in the calc_run_flags job!
-  # This may be a lot better with maven 4, but with maven 3, excluding a project does not exclude its children, and it's not possible to include a project and explicitly exclude some children; compensate by doing excludes the low-tech way, at the shell level
-  JVM_TEST_INTEGRATION_TESTS_SELECTOR: "-f integration-tests -pl !gradle -pl !maven -pl !devmode -pl !devtools"
-  JVM_TEST_NORMAL_TESTS_SELECTOR: "-pl !docs -Dno-test-modules"
   #PTS_MAVEN_ARGS: "-Ddevelocity.pts.enabled=${{ github.event_name == 'pull_request' && github.base_ref == 'main' && 'true' || 'false' }}"
   PTS_MAVEN_ARGS: ""
   PULL_REQUEST_NUMBER: ${{ github.event.number }}
@@ -343,6 +340,9 @@ jobs:
     outputs:
       scalpel_impacted: ${{ steps.get-scalpel-config.outputs.impacted_modules }}
       scalpel_impacted_gav: ${{ steps.get-scalpel-config.outputs.impacted_modules_gav }}
+      # the groups of the test plan having modules to test, as a JSON array: a job is skipped if its group is not listed
+      test_plan_groups: ${{ steps.compute-test-plan.outputs.groups }}
+      jvm_matrix: ${{ steps.compute-test-plan.outputs.jvm_matrix }}
     steps:
       - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
       - name: Gradle Enterprise environment
@@ -478,6 +478,33 @@ jobs:
           echo 'impacted_modules_gav<<EOF' >> $GITHUB_OUTPUT
           echo "${SCALPEL_IMPACTED_GAV}" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
+      - name: Compute test plan
+        id: compute-test-plan
+        env:
+          SCALPEL_IMPACTED: ${{ steps.get-scalpel-config.outputs.impacted_modules }}
+        run: |
+          # The test plan defines which test job tests which modules, see .github/compute-test-plan.sh
+          # It always contains explicit lists of modules: for a full build, all the modules of the reactor are dispatched
+          mkdir -p target
+          if [ "$SCALPEL_IMPACTED" == '_all_' ]; then
+            origin='Full build: all the modules of the reactor are tested.'
+            .github/list-reactor-modules.sh $COMMON_MAVEN_ARGS > target/modules-to-test.txt
+          else
+            origin='Incremental build: only the modules impacted by the changes, as reported by Scalpel, are tested.'
+            echo "$SCALPEL_IMPACTED" > target/modules-to-test.txt
+          fi
+          .github/compute-test-plan.sh target/modules-to-test.txt target/test-plan "$origin"
+          groups=$(jq -c 'keys' target/test-plan/test-plan.json)
+          jvm_matrix=$(.github/filter-jvm-tests-json.sh target/test-plan/test-plan.json)
+          echo "groups=${groups}, jvm_matrix=${jvm_matrix}"
+          echo "groups=${groups}" >> $GITHUB_OUTPUT
+          echo "jvm_matrix=${jvm_matrix}" >> $GITHUB_OUTPUT
+      - name: Upload test plan pushed to subsequent jobs
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-plan
+          path: target/test-plan
+          retention-days: 7
       - name: Print disk usage after build
         run: .github/ci-disk-usage.sh
       - name: Tar .m2 content pushed to subsequent jobs
@@ -519,17 +546,10 @@ jobs:
       SCALPEL_IMPACTED_MODULES: ${{ needs.initial-build.outputs.scalpel_impacted }}
     outputs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
-      jvm_matrix: ${{ steps.calc-jvm-matrix.outputs.matrix }}
       virtual_threads_matrix: ${{ steps.calc-virtual-threads-matrix.outputs.matrix }}
       otp_jvm_matrix: ${{ steps.calc-otp-jvm-matrix.outputs.matrix }}
       otp_native_matrix: ${{ steps.calc-otp-native-matrix.outputs.matrix }}
-      run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
-      run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
-      run_kubernetes: ${{ steps.calc-run-flags.outputs.run_kubernetes }}
       run_quickstarts: ${{ steps.calc-run-flags.outputs.run_quickstarts }}
-      # -pl selections for the Maven tests and TCKs jobs, an empty value means the job is skipped
-      maven_modules: ${{ steps.calc-run-flags.outputs.maven_modules }}
-      tcks_modules: ${{ steps.calc-run-flags.outputs.tcks_modules }}
     steps:
       - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -538,12 +558,6 @@ jobs:
         run: |
           echo "SCALPEL_IMPACTED_MODULES: ${SCALPEL_IMPACTED_MODULES}"
           json=$(.github/filter-integration-tests-json.sh native "${SCALPEL_IMPACTED_MODULES}" | tr -d '\n')
-          echo "${json}"
-          echo "matrix=${json}" >> $GITHUB_OUTPUT
-      - name: Calculate matrix from matrix-jvm-tests.json
-        id: calc-jvm-matrix
-        run: |
-          json=$(.github/filter-jvm-tests-json.sh "${SCALPEL_IMPACTED_MODULES}")
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate matrix from virtual-threads-tests.json
@@ -570,42 +584,24 @@ jobs:
       - name: Calculate run flags
         id: calc-run-flags
         run: |
-          run_devtools=true; run_gradle=true; run_kubernetes=true; run_quickstarts=true;
-          # -pl selections for the jobs building a subset of the impacted modules, an empty value means the job is skipped
-          # Scalpel is not run in the jobs (it would not see the changes outside of the reactor of the job) so we need the exact list of modules
-          maven_modules="-pl integration-tests/maven -pl integration-tests/devmode"
-          tcks_modules="-pl tcks -amd"
+          # the other test jobs rely on the test plan computed in the initial build
+          run_quickstarts=true;
           if [ -z "${SCALPEL_IMPACTED_MODULES}" ]
           then
-            run_devtools=false; run_gradle=false; run_kubernetes=false; run_quickstarts=false
-            maven_modules=''; tcks_modules=''
+            run_quickstarts=false
           elif [ "${SCALPEL_IMPACTED_MODULES}" != '_all_' ]
           then
-            # Important: keep -pl ... in actual jobs in sync with the following grep commands!
             # do not use grep -q as it can exit before echo has finished outputting and cause broken pipes
-            if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep 'integration-tests/devtools' > /dev/null); then run_devtools=false; fi
-            if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep 'integration-tests/gradle' > /dev/null); then run_gradle=false; fi
-            if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -P 'integration-tests/kubernetes/.*' > /dev/null); then run_kubernetes=false; fi
             if ! (echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -Pv '(docs|integration-tests|tcks)/.*' > /dev/null); then run_quickstarts=false; fi
-            maven_modules=$(echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -P '^integration-tests/(maven|devmode)$' | paste -sd, || echo '')
-            if [ -n "${maven_modules}" ]; then maven_modules="-pl ${maven_modules}"; fi
-            tcks_modules=$(echo -n "${SCALPEL_IMPACTED_MODULES}" | grep -P '^tcks(/.*)?$' | paste -sd, || echo '')
-            if [ -n "${tcks_modules}" ]; then tcks_modules="-pl ${tcks_modules}"; fi
           fi
-          echo "run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_kubernetes=${run_kubernetes}, run_quickstarts=${run_quickstarts}"
-          echo "maven_modules=${maven_modules}, tcks_modules=${tcks_modules}"
-          echo "run_devtools=${run_devtools}" >> $GITHUB_OUTPUT
-          echo "run_gradle=${run_gradle}" >> $GITHUB_OUTPUT
-          echo "run_kubernetes=${run_kubernetes}" >> $GITHUB_OUTPUT
+          echo "run_quickstarts=${run_quickstarts}"
           echo "run_quickstarts=${run_quickstarts}" >> $GITHUB_OUTPUT
-          echo "maven_modules=${maven_modules}" >> $GITHUB_OUTPUT
-          echo "tcks_modules=${tcks_modules}" >> $GITHUB_OUTPUT
 
   jvm-tests:
     name: ${{ matrix.java.name }}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
     needs: [configure, initial-build, calculate-test-jobs]
-    if: needs.calculate-test-jobs.outputs.jvm_matrix
+    if: needs.initial-build.outputs.jvm_matrix
     timeout-minutes: 400
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
@@ -614,7 +610,7 @@ jobs:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.jvm_matrix) }}
+      matrix: ${{ fromJson(needs.initial-build.outputs.jvm_matrix) }}
 
     steps:
       - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
@@ -681,6 +677,11 @@ jobs:
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
+      - name: Download test plan
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: test-plan
+          path: target/test-plan
       - name: Cache Develocity local cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: github.event_name == 'pull_request' || github.event_name == 'push' && github.repository != 'quarkusio/quarkus'
@@ -701,13 +702,11 @@ jobs:
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
-          MATRIX_JAVA_MODULES: ${{ matrix.java.modules }}
+          TEST_PLAN_GROUP: ${{ matrix.java.group }}
         run: |
-          # we push the arguments to a file because it can exceed the cmd.exe command line limit on Windows
-          # the format of this file is specific: it's one option per line, thus the weird formatting in matrix-jvm-tests.json
-          # see https://maven.apache.org/configure.html#a.mvn.2Fmaven.config_file.3A
-          # IMPORTANT: we cannot simply replace all spaces with new lines as we have a module with spaces in the name (to test spaces are supported)
-          echo -e "$MATRIX_JAVA_MODULES" >> .mvn/maven.config
+          # the -pl selection comes from the test plan computed in the initial build
+          # we push it to a file because it can exceed the cmd.exe command line limit on Windows
+          cat "target/test-plan/${TEST_PLAN_GROUP}.maven-config" >> .mvn/maven.config
           ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS clean install -Dsurefire.timeout=1200 -Dno-test-kubernetes ${{ matrix.java.maven_args }}
       - name: Clean Gradle temp directory
         if: always()
@@ -769,7 +768,7 @@ jobs:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.maven_modules != ''
+    if: contains(fromJson(needs.initial-build.outputs.test_plan_groups), 'maven')
     timeout-minutes: 130
     strategy:
       fail-fast: false
@@ -816,6 +815,11 @@ jobs:
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
+      - name: Download test plan
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: test-plan
+          path: target/test-plan
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
@@ -833,8 +837,10 @@ jobs:
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
-        # the -pl selection is computed in "Calculate run flags" from the impacted modules
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install ${{ needs.calculate-test-jobs.outputs.maven_modules }}
+        run: |
+          # the -pl selection comes from the test plan computed in the initial build
+          cat target/test-plan/maven.maven-config >> .mvn/maven.config
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
@@ -879,7 +885,7 @@ jobs:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.run_gradle == 'true'
+    if: contains(fromJson(needs.initial-build.outputs.test_plan_groups), 'gradle')
     timeout-minutes: 120
     strategy:
       fail-fast: false
@@ -924,6 +930,11 @@ jobs:
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
+      - name: Download test plan
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: test-plan
+          path: target/test-plan
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
@@ -946,8 +957,10 @@ jobs:
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
-        # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl integration-tests/gradle
+        run: |
+          # the -pl selection comes from the test plan computed in the initial build
+          cat target/test-plan/gradle.maven-config >> .mvn/maven.config
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install
       - name: Prepare build reports archive
         if: always()
         run: |
@@ -971,7 +984,7 @@ jobs:
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'small')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'small')].runsOn, matrix.java.tag) || matrix.java.os-name }}
     needs: [configure, initial-build, calculate-test-jobs]
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.run_devtools == 'true'
+    if: contains(fromJson(needs.initial-build.outputs.test_plan_groups), 'devtools')
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
@@ -1021,6 +1034,11 @@ jobs:
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
+      - name: Download test plan
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: test-plan
+          path: target/test-plan
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
@@ -1038,8 +1056,10 @@ jobs:
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
-        # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/devtools'
+        run: |
+          # the -pl selection comes from the test plan computed in the initial build
+          cat target/test-plan/devtools.maven-config >> .mvn/maven.config
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
@@ -1072,7 +1092,7 @@ jobs:
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
     needs: [configure, initial-build, calculate-test-jobs]
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.run_kubernetes == 'true'
+    if: contains(fromJson(needs.initial-build.outputs.test_plan_groups), 'kubernetes')
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
@@ -1114,6 +1134,11 @@ jobs:
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
+      - name: Download test plan
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: test-plan
+          path: target/test-plan
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
@@ -1131,8 +1156,10 @@ jobs:
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
-        # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -f 'integration-tests/kubernetes'
+        run: |
+          # the -pl selection comes from the test plan computed in the initial build
+          cat target/test-plan/kubernetes.maven-config >> .mvn/maven.config
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
@@ -1460,7 +1487,7 @@ jobs:
     name: MicroProfile TCKs Tests
     needs: [configure, initial-build, calculate-test-jobs]
     # Skip main in forks
-    if: needs.calculate-test-jobs.outputs.tcks_modules != ''
+    if: contains(fromJson(needs.initial-build.outputs.test_plan_groups), 'tcks')
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn, 'microprofile-tcks') || 'ubuntu-latest' }}
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
@@ -1495,6 +1522,11 @@ jobs:
           path: .
       - name: Extract previously uploaded .m2 content
         run: tar -xzf m2-content.tgz -C ~
+      - name: Download test plan
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: test-plan
+          path: target/test-plan
       - name: Setup Develocity Build Scan capture
         uses: gradle/develocity-actions/setup-maven@b8f7a85ff7bd4e08e804f3e5331e5c48b2e6eb17 # v2.6
         with:
@@ -1507,8 +1539,10 @@ jobs:
       - name: Verify
         env:
           CAPTURE_BUILD_SCAN: true
-        # the -pl selection is computed in "Calculate run flags" from the impacted modules
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -Dtcks ${{ needs.calculate-test-jobs.outputs.tcks_modules }} clean install
+        run: |
+          # the -pl selection comes from the test plan computed in the initial build
+          cat target/test-plan/tcks.maven-config >> .mvn/maven.config
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -Dtcks clean install
       - name: Verify resteasy-reative dependencies
         # note: ideally, this would be run _before_ mvnw but that would required building tcks/resteasy-reactive in two steps
         run: ./tcks/resteasy-reactive/update-dependencies.sh $COMMON_MAVEN_ARGS

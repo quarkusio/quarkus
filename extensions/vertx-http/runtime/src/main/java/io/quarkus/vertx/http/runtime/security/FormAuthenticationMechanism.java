@@ -351,6 +351,32 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         return postLocation;
     }
 
+    /**
+     * Persists an identity that was authenticated outside of this mechanism, for example by a programmatic
+     * {@code HttpServletRequest#login(String, String)} call, by writing the form authentication credential cookie.
+     * Subsequent requests are then authenticated by this mechanism exactly as if the user had posted the login form.
+     *
+     * @param identity the authenticated identity
+     * @param context the current routing context
+     */
+    public void persistLogin(SecurityIdentity identity, RoutingContext context) {
+        Objects.requireNonNull(identity);
+        Objects.requireNonNull(context);
+        loginManager.save(identity, context, null, context.request().isSSL());
+        // used for logout
+        context.put(LOGIN_MANAGER, loginManager);
+    }
+
+    /**
+     * Clears the form authentication credential cookie, for example after a programmatic
+     * {@code HttpServletRequest#logout()} call.
+     *
+     * @param context the current routing context
+     */
+    public void clearLogin(RoutingContext context) {
+        loginManager.clear(Objects.requireNonNull(context));
+    }
+
     public static void logout(SecurityIdentity securityIdentity) {
         RoutingContext routingContext = HttpSecurityUtils.getRoutingContextAttribute(securityIdentity);
         logout(routingContext);

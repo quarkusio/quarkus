@@ -773,20 +773,30 @@ public final class LoggingSetup {
     /**
      * Resolve the candidate formatters for a named handler, preferring a formatter configured specifically for
      * that handler and falling back to the global formatters for the handler type.
+     * A named handler that configures a format other than the default does not fall back to the global
+     * formatters, so its pattern formatter is used.
      * <p>
      * RECORDER COMPAT: returns {@link RuntimeValue}-wrapped candidate formatters for the legacy recorder scheme.
      *
      * @param handlerName the named handler name (must not be {@code null})
      * @param namedFormatters the formatters configured per named handler (must not be {@code null})
      * @param globalFormatters the global formatters for the handler type (must not be {@code null})
+     * @param format the format configured on the named handler (must not be {@code null})
+     * @param defaultFormat the default format for the handler type (must not be {@code null})
      * @return the candidate formatters to use for the named handler (not {@code null})
      */
     public static List<RuntimeValue<Optional<Formatter>>> resolveFormatters(
             String handlerName,
             Map<String, Optional<Formatter>> namedFormatters,
-            List<RuntimeValue<Optional<Formatter>>> globalFormatters) {
+            List<RuntimeValue<Optional<Formatter>>> globalFormatters,
+            String format,
+            String defaultFormat) {
         if (namedFormatters.containsKey(handlerName)) {
             return List.of(new RuntimeValue<>(namedFormatters.get(handlerName)));
+        }
+        // A named handler with a custom format uses it instead of inheriting the global formatter.
+        if (!defaultFormat.equals(format)) {
+            return List.of();
         }
         // Fall back to the global formatter (e.g. JSON enabled globally applies to named handlers too).
         return globalFormatters;
@@ -840,7 +850,8 @@ public final class LoggingSetup {
             }
             final Handler consoleHandler = configureConsoleHandler(namedConsoleConfig, consoleRuntimeConfig,
                     errorManager, cleanupFilter, namedFilters,
-                    resolveFormatters(consoleConfigEntry.getKey(), namedConsoleFormatters, possibleConsoleFormatters),
+                    resolveFormatters(consoleConfigEntry.getKey(), namedConsoleFormatters, possibleConsoleFormatters,
+                            namedConsoleConfig.format(), ConsoleConfig.DEFAULT_FORMAT),
                     null, launchMode, includeFilters);
             addToNamedHandlers(namedHandlers, consoleHandler, consoleConfigEntry.getKey());
         }
@@ -851,7 +862,9 @@ public final class LoggingSetup {
             }
             final Handler fileHandler = configureFileHandler(namedFileConfig, errorManager, cleanupFilter,
                     namedFilters,
-                    resolveFormatters(fileConfigEntry.getKey(), namedFileFormatters, possibleFileFormatters), includeFilters);
+                    resolveFormatters(fileConfigEntry.getKey(), namedFileFormatters, possibleFileFormatters,
+                            namedFileConfig.format(), FileConfig.DEFAULT_FORMAT),
+                    includeFilters);
             addToNamedHandlers(namedHandlers, fileHandler, fileConfigEntry.getKey());
         }
         for (Entry<String, LogRuntimeConfig.SyslogConfig> sysLogConfigEntry : config.syslogHandlers().entrySet()) {
@@ -861,7 +874,8 @@ public final class LoggingSetup {
             }
             final Handler syslogHandler = configureSyslogHandler(namedSyslogConfig, errorManager, cleanupFilter,
                     namedFilters,
-                    resolveFormatters(sysLogConfigEntry.getKey(), namedSyslogFormatters, possibleSyslogFormatters),
+                    resolveFormatters(sysLogConfigEntry.getKey(), namedSyslogFormatters, possibleSyslogFormatters,
+                            namedSyslogConfig.format(), LogRuntimeConfig.SyslogConfig.DEFAULT_FORMAT),
                     includeFilters);
             if (syslogHandler != null) {
                 addToNamedHandlers(namedHandlers, syslogHandler, sysLogConfigEntry.getKey());
@@ -874,7 +888,8 @@ public final class LoggingSetup {
             }
             final Handler socketHandler = configureSocketHandler(namedSocketConfig, errorManager, cleanupFilter,
                     namedFilters,
-                    resolveFormatters(socketConfigEntry.getKey(), namedSocketFormatters, possibleSocketFormatters),
+                    resolveFormatters(socketConfigEntry.getKey(), namedSocketFormatters, possibleSocketFormatters,
+                            namedSocketConfig.format(), SocketConfig.DEFAULT_FORMAT),
                     includeFilters);
             if (socketHandler != null) {
                 addToNamedHandlers(namedHandlers, socketHandler, socketConfigEntry.getKey());

@@ -578,6 +578,24 @@ When you use xref:opentelemetry-tracing.adoc[OpenTelemetry], Quarkus flattens tr
 Google Cloud requires the `trace` field to follow the `"projects/<my-trace-project>/traces/12345"` format.
 `<my-trace-project>` uses the value of the `quarkus.application.name` configuration property.
 
+[id="json-named-handlers"]
+==== JSON format for named handlers
+
+A named handler, such as `quarkus.log.handler.file.<name>`, uses the JSON format when `quarkus.log.handler.file.<name>.json.enabled=true`, and the plain text `format` when `quarkus.log.handler.file.<name>.json.enabled=false`.
+
+When `json.enabled` is not set on the named handler, the handler inherits the JSON configuration of its handler type, for example `quarkus.log.file.json.*` for a named file handler, unless it sets its own `format`.
+A named handler with a custom `format` uses that format:
+
+[source,properties]
+----
+quarkus.log.file.json.enabled=true
+
+# Uses its own plain text format, not JSON
+quarkus.log.handler.file.my-file-handler.enabled=true
+quarkus.log.handler.file.my-file-handler.path=/tmp/my-file.log
+quarkus.log.handler.file.my-file-handler.format=%d{yyyy-MM-dd HH:mm:ss} [%p] %s%e%n
+----
+
 
 [id="json-provider"]
 ==== Custom JSON fields with JsonProvider

@@ -31,6 +31,7 @@ import io.quarkus.restclient.NoopHostnameVerifier;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
 import io.smallrye.config.Config;
+import io.smallrye.config.Secret;
 
 public class RestClientBase {
 
@@ -172,7 +173,8 @@ public class RestClientBase {
             Optional<String> keyStoreType = oneOf(restClientConfig.keyStoreType(), configRoot.keyStoreType());
             KeyStore keyStore = KeyStore.getInstance(keyStoreType.orElse("JKS"));
 
-            Optional<String> keyStorePassword = oneOf(restClientConfig.keyStorePassword(), configRoot.keyStorePassword());
+            Optional<String> keyStorePassword = oneOf(restClientConfig.keyStorePassword(), configRoot.keyStorePassword())
+                    .map(Secret::get);
             if (keyStorePassword.isEmpty()) {
                 throw new IllegalArgumentException("No password provided for keystore");
             }
@@ -196,7 +198,8 @@ public class RestClientBase {
             Optional<String> trustStoreType = oneOf(restClientConfig.trustStoreType(), configRoot.trustStoreType());
             KeyStore trustStore = KeyStore.getInstance(trustStoreType.orElse("JKS"));
 
-            Optional<String> trustStorePassword = oneOf(restClientConfig.trustStorePassword(), configRoot.trustStorePassword());
+            Optional<String> trustStorePassword = oneOf(restClientConfig.trustStorePassword(),
+                    configRoot.trustStorePassword()).map(Secret::get);
             if (trustStorePassword.isEmpty()) {
                 throw new IllegalArgumentException("No password provided for truststore");
             }

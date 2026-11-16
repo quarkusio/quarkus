@@ -16,11 +16,13 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 import io.smallrye.config.Config;
 import io.smallrye.config.ConfigValue;
+import io.smallrye.config.SecretKeys;
 
 @Recorder
 public class ConfigDevUIRecorder {
     private static final String QUOTED_DOT = "\".\"";
     private static final String QUOTED_DOT_KEY = "$$QUOTED_DOT$$";
+    private static final String SECRET_MASK = "***";
 
     private static List<ConfigDescription> configDescriptions;
     private static Set<String> devServicesConfig;
@@ -39,7 +41,8 @@ public class ConfigDevUIRecorder {
         return new Supplier<>() {
             @Override
             public ConfigDescriptionBean get() {
-                return new ConfigDescriptionBean(calculate(configDescriptions, devServicesConfig),
+                // secret values are masked in getConfigValue
+                return new ConfigDescriptionBean(SecretKeys.doUnlocked(() -> calculate(configDescriptions, devServicesConfig)),
                         extensionConfigFilters != null ? extensionConfigFilters : Map.of());
             }
         };
@@ -243,7 +246,11 @@ public class ConfigDevUIRecorder {
 
     private ConfigValue getConfigValue(Config config, String name) {
         try {
-            return config.getConfigValue(name);
+            ConfigValue configValue = config.getConfigValue(name);
+            if (configValue.isSecret() && configValue.getValue() != null) {
+                return configValue.from().withValue(SECRET_MASK).withRawValue(SECRET_MASK).build();
+            }
+            return configValue;
         } catch (java.util.NoSuchElementException nse) {
             return null;
         }

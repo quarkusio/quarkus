@@ -9,6 +9,7 @@ import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 import io.vertx.redis.client.ProtocolVersion;
 import io.vertx.redis.client.RedisClientType;
@@ -95,7 +96,7 @@ public interface RedisClientConfig {
      * <p>
      * If not set, it will try to extract the value from the {@code hosts}.
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * The maximum size of the connection pool.

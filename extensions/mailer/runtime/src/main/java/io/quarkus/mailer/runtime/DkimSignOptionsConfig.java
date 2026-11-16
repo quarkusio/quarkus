@@ -6,6 +6,7 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 
 @ConfigGroup
@@ -20,7 +21,7 @@ public interface DkimSignOptionsConfig {
     /**
      * Configures the PKCS#8 format private key used to sign the email.
      */
-    Optional<String> privateKey();
+    Optional<Secret<String>> privateKey();
 
     /**
      * Configures the PKCS#8 format private key file path.

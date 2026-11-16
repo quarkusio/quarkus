@@ -32,6 +32,7 @@ import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.smallrye.common.annotation.Identifier;
+import io.smallrye.config.Secret;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.ProxyOptions;
@@ -176,7 +177,7 @@ public class VertxRedisClientFactory {
      */
     static void configureCredentials(RedisOptions options, RedisClientConfig config) {
         options.setUser(config.username().orElse(null));
-        options.setPassword(config.password().orElse(null));
+        options.setPassword(config.password().map(Secret::get).orElse(null));
     }
 
     private static void customize(String name, RedisOptions options) {

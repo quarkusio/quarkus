@@ -12,6 +12,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.runtime.configuration.PathConverter;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
@@ -76,7 +77,7 @@ public interface SpringCloudConfigClientConfig {
     /**
      * The password to be used if the Config Server has BASIC Auth enabled
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * TrustStore to be used containing the SSL certificate used by the Config server
@@ -87,7 +88,7 @@ public interface SpringCloudConfigClientConfig {
     /**
      * Password of TrustStore to be used containing the SSL certificate used by the Config server
      */
-    Optional<String> trustStorePassword();
+    Optional<Secret<String>> trustStorePassword();
 
     /**
      * KeyStore to be used containing the SSL certificate for authentication with the Config server
@@ -98,13 +99,13 @@ public interface SpringCloudConfigClientConfig {
     /**
      * Password of KeyStore to be used containing the SSL certificate for authentication with the Config server
      */
-    Optional<String> keyStorePassword();
+    Optional<Secret<String>> keyStorePassword();
 
     /**
      * Password to recover key from KeyStore for SSL client authentication with the Config server
      * If no value is provided, the key-store-password will be used
      */
-    Optional<String> keyPassword();
+    Optional<Secret<String>> keyPassword();
 
     /**
      * When using HTTPS and no keyStore has been specified, whether to trust all certificates

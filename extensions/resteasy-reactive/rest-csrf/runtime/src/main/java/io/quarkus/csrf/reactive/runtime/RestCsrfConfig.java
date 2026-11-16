@@ -8,6 +8,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.vertx.http.security.CSRF;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 
 /**
@@ -81,7 +82,7 @@ public interface RestCsrfConfig extends CSRF {
     /**
      * CSRF token HMAC signature key, if this key is set then it must be at least 32 characters long.
      */
-    Optional<String> tokenSignatureKey();
+    Optional<Secret<String>> tokenSignatureKey();
 
     /**
      * Verify CSRF token in the CSRF filter.

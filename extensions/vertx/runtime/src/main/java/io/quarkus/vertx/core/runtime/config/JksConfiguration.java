@@ -3,6 +3,7 @@ package io.quarkus.vertx.core.runtime.config;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithParentName;
 
@@ -24,5 +25,5 @@ public interface JksConfiguration {
     /**
      * Password of the key file.
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 }

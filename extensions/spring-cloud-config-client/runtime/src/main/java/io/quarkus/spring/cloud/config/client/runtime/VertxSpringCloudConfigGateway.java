@@ -21,6 +21,7 @@ import io.quarkus.spring.cloud.config.client.runtime.eureka.EurekaClient;
 import io.quarkus.spring.cloud.config.client.runtime.eureka.EurekaResponseMapper;
 import io.quarkus.spring.cloud.config.client.runtime.eureka.RandomEurekaInstanceSelector;
 import io.quarkus.spring.cloud.config.client.runtime.util.UrlUtility;
+import io.smallrye.config.Secret;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
@@ -106,7 +107,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
             if (config.trustStore().isPresent()) {
                 Path trustStorePath = config.trustStore().get();
                 String type = determineStoreType(trustStorePath);
-                KeyStoreOptionsBase storeOptions = storeOptions(trustStorePath, config.trustStorePassword(),
+                KeyStoreOptionsBase storeOptions = storeOptions(trustStorePath, config.trustStorePassword().map(Secret::get),
                         createStoreOptions(type));
                 if (isPfx(type)) {
                     webClientOptions.setTrustOptions(storeOptions);
@@ -119,7 +120,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
             if (config.keyStore().isPresent()) {
                 Path keyStorePath = config.keyStore().get();
                 String type = determineStoreType(keyStorePath);
-                KeyStoreOptionsBase storeOptions = storeOptions(keyStorePath, config.keyStorePassword(),
+                KeyStoreOptionsBase storeOptions = storeOptions(keyStorePath, config.keyStorePassword().map(Secret::get),
                         createStoreOptions(type));
                 if (isPfx(type)) {
                     webClientOptions.setKeyCertOptions(storeOptions);
@@ -206,7 +207,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
                 .ssl(UrlUtility.isHttps(requestURI.baseURI()))
                 .putHeader("Accept", "application/json");
         if (config.usernameAndPasswordSet()) {
-            request.basicAuthentication(config.username().get(), config.password().get());
+            request.basicAuthentication(config.username().get(), config.password().get().get());
         }
         for (Map.Entry<String, String> entry : config.headers().entrySet()) {
             request.putHeader(entry.getKey(), entry.getValue());

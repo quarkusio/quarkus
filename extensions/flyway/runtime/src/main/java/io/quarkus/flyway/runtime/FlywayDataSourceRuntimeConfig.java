@@ -9,6 +9,7 @@ import java.util.OptionalInt;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
@@ -67,7 +68,7 @@ public interface FlywayDataSourceRuntimeConfig {
      * The password that Flyway uses to connect to the database.
      * If no specific JDBC URL is configured, falls back to the datasource password if not specified.
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * Comma-separated case-sensitive list of schemas managed by Flyway.

@@ -38,6 +38,7 @@ import io.quarkus.vertx.http.runtime.VertxHttpConfig.InsecureRequests;
 import io.quarkus.vertx.http.runtime.WebsocketServerConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.smallrye.config.Secret;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.CompressionConfig;
@@ -522,10 +523,10 @@ public class HttpServerOptionsUtils {
         config.setWriteIdleTimeout(Duration.ofMillis(managementConfig.writeIdleTimeout().toMillis()));
     }
 
-    public static Optional<String> getCredential(Optional<String> password, Map<String, String> credentials,
+    public static Optional<String> getCredential(Optional<Secret<String>> password, Map<String, String> credentials,
             Optional<String> passwordKey) {
         if (password.isPresent()) {
-            return password;
+            return password.map(Secret::get);
         }
 
         if (passwordKey.isPresent()) {

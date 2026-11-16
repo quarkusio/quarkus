@@ -38,7 +38,7 @@ public class OAuth2Recorder {
 
         OAuth2IntrospectValidator.Builder validatorBuilder = OAuth2IntrospectValidator.builder()
                 .clientId(runtimeConfig.clientId().get())
-                .clientSecret(runtimeConfig.clientSecret().get())
+                .clientSecret(runtimeConfig.clientSecret().get().get())
                 .tokenIntrospectionUrl(URI.create(runtimeConfig.introspectionUrl().get()).toURL());
 
         if (runtimeConfig.caCertFile().isPresent()) {

@@ -8,6 +8,7 @@ import java.util.OptionalInt;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.Secret;
 
 @ConfigMapping(prefix = "quarkus.kubernetes-client")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
@@ -72,7 +73,7 @@ public interface KubernetesClientConfig {
     /**
      * Client key passphrase
      */
-    Optional<String> clientKeyPassphrase();
+    Optional<Secret<String>> clientKeyPassphrase();
 
     /**
      * Kubernetes auth username
@@ -82,12 +83,12 @@ public interface KubernetesClientConfig {
     /**
      * Kubernetes auth password
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * Kubernetes oauth token
      */
-    Optional<String> token();
+    Optional<Secret<String>> token();
 
     /**
      * Watch reconnect interval
@@ -138,7 +139,7 @@ public interface KubernetesClientConfig {
     /**
      * Proxy password
      */
-    Optional<String> proxyPassword();
+    Optional<Secret<String>> proxyPassword();
 
     /**
      * IP addresses or hosts to exclude from proxying

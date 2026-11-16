@@ -17,6 +17,7 @@ import io.quarkus.tls.runtime.config.P12KeyStoreConfig;
 import io.quarkus.tls.runtime.config.P12TrustStoreConfig;
 import io.quarkus.tls.runtime.config.TrustStoreConfig;
 import io.quarkus.tls.runtime.config.TrustStoreCredentialProviderConfig;
+import io.smallrye.config.Secret;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.PfxOptions;
@@ -55,7 +56,7 @@ public class P12KeyStores {
         PfxOptions options = new PfxOptions();
         try {
             options.setValue(Buffer.buffer(read(config.path())));
-            String password = CredentialProviders.getKeyStorePassword(config.password(), pc)
+            String password = CredentialProviders.getKeyStorePassword(config.password().map(Secret::get), pc)
                     .orElse(null);
             if (password == null) {
                 throw new IllegalStateException("Invalid P12 key store configuration for certificate '" + name
@@ -65,7 +66,7 @@ public class P12KeyStores {
             if (config.alias().isPresent()) {
                 options.setAlias(config.alias().get());
             }
-            String ap = CredentialProviders.getAliasPassword(config.aliasPassword(), pc).orElse(null);
+            String ap = CredentialProviders.getAliasPassword(config.aliasPassword().map(Secret::get), pc).orElse(null);
             options.setAliasPassword(ap);
         } catch (UncheckedIOException e) {
             throw new IllegalStateException("Invalid P12 key store configuration for certificate '" + name
@@ -80,7 +81,7 @@ public class P12KeyStores {
         PfxOptions options = new PfxOptions();
         try {
             options.setValue(Buffer.buffer(read(config.path())));
-            String password = CredentialProviders.getTrustStorePassword(config.password(), cp)
+            String password = CredentialProviders.getTrustStorePassword(config.password().map(Secret::get), cp)
                     .orElse(null);
             if (password == null) {
                 throw new IllegalStateException("Invalid P12 trust store configuration for certificate '" + name

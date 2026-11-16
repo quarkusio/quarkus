@@ -3,6 +3,7 @@ package io.quarkus.runtime.configuration;
 import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime;
 import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime.fail;
 import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime.warn;
+import static io.smallrye.config.Expressions.withoutExpansion;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +18,7 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.config.Config;
 import io.smallrye.config.ConfigValue;
+import io.smallrye.config.SecretKeys;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 @Recorder
@@ -38,7 +40,10 @@ public class ConfigRecorder {
         List<String> mismatches = new ArrayList<>();
         for (ConfigValue buildTimeRuntimeValue : buildTimeRuntimeValues) {
             String propertyName = buildTimeRuntimeValue.getName();
-            ConfigValue currentValue = config.getConfigValue(propertyName);
+            // secret keys can only be read unlocked; the value is flagged as secret, so we do not expose it
+            // the check only compares raw values, so expressions are not expanded to avoid resolving and exposing their values
+            ConfigValue currentValue = SecretKeys
+                    .doUnlocked(() -> withoutExpansion(() -> config.getConfigValue(propertyName)));
             // Check for changes:
             // - the config source position check tell us if the value is actually present in the config even if null
             // - compare the ordinals of the recorded to the current value, if higher or equals there is a tentative override
@@ -46,11 +51,17 @@ public class ConfigRecorder {
             if (currentValue.getConfigSourcePosition() > 0
                     && currentValue.getSourceOrdinal() >= buildTimeRuntimeValue.getSourceOrdinal()
                     && !Objects.equals(buildTimeRuntimeValue.getRawValue(), currentValue.getRawValue())) {
-                mismatches.add(
-                        " - " + propertyName + " is set to '" + currentValue.getValue()
-                                + "' but it is build time fixed to '"
-                                + buildTimeRuntimeValue.getValue() + "'. Did you change the property " + propertyName
-                                + " after building the application?");
+                if (currentValue.isSecret()) {
+                    mismatches.add(
+                            " - " + propertyName + " is set to a value different from the build time fixed value."
+                                    + " Did you change the property " + propertyName + " after building the application?");
+                } else {
+                    mismatches.add(
+                            " - " + propertyName + " is set to '" + currentValue.getRawValue()
+                                    + "' but it is build time fixed to '"
+                                    + buildTimeRuntimeValue.getRawValue() + "'. Did you change the property " + propertyName
+                                    + " after building the application?");
+                }
             }
         }
 

@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-oidc-token-propagation-graphql</artifactId>
-    <name>Quarkus - OIDC - Token Propagation - GraphQL client - Runtime</name>
+    <name>Quarkus - OpenID Connect Token Propagation - GraphQL client - Runtime</name>
     <description>Use SmallRye GraphQL typesafe client to propagate the incoming Bearer access token or token acquired from Authorization Code Flow as HTTP Authorization Bearer token</description>
     <dependencies>
         <dependency>

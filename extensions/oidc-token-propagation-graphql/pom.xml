@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-oidc-token-propagation-graphql-parent</artifactId>
-    <name>Quarkus - OIDC - Token Propagation - GraphQL</name>
+    <name>Quarkus - OpenID Connect Token Propagation - GraphQL client</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

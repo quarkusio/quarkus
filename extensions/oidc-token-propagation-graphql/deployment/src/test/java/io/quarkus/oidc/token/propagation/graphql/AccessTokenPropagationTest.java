@@ -2,41 +2,42 @@ package io.quarkus.oidc.token.propagation.graphql;
 
 import static org.hamcrest.Matchers.equalTo;
 
-import jakarta.inject.Inject;
-
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
-import io.smallrye.config.Config;
 
 public class AccessTokenPropagationTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(ProtectedGraphQLApi.class, PropagationTypesafeGraphQLClient.class, FrontendResource.class)
-                    .addAsResource(
-                            new StringAsset(
-                                    """
-                                            quarkus.smallrye-graphql-client.propagation-client.url=http://localhost:${quarkus.http.test-port}/graphql
-                                            """),
-                            "application.properties"));
+                    .addClasses(ProtectedGraphQLApi.class, PropagationTypesafeGraphQLClient.class, FrontendResource.class))
+            .overrideRuntimeConfigKey("quarkus.smallrye-graphql-client.propagation-client.url",
+                    "http://localhost:${quarkus.http.test-port:8081}/graphql");
 
-    @Inject
-    Config config;
+    private final KeycloakTestClient keycloakClient = new KeycloakTestClient();
 
     @Test
     public void propagatesInboundToken() {
-        System.out.println(config.getConfigValue("quarkus.oidc.auth-server-url"));
-        KeycloakTestClient keycloakClient = new KeycloakTestClient(
-                config.getConfigValue("quarkus.oidc.auth-server-url").getValue());
-        String token = keycloakClient.getAccessToken("alice");
-        RestAssured.given().auth().oauth2(token)
+        RestAssured.given().auth().oauth2(keycloakClient.getAccessToken("alice"))
                 .when().get("/frontend/me")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice"));
+        RestAssured.given().auth().oauth2(keycloakClient.getAccessToken("bob"))
+                .when().get("/frontend/me")
+                .then()
+                .statusCode(200)
+                .body(equalTo("bob"));
+    }
+
+    @Test
+    public void propagatesInboundTokenWhenClientIsAsynchronous() {
+        RestAssured.given().auth().oauth2(keycloakClient.getAccessToken("alice"))
+                .when().get("/frontend/me-async")
                 .then()
                 .statusCode(200)
                 .body(equalTo("alice"));

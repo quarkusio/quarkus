@@ -1039,7 +1039,7 @@ Providers might also restrict how many times a refresh token can be used.
 
 `OidcClientRequestReactiveFilter`, `OidcClientRequestFilter`, `TokenProvider`, and `Tokens` producers always cache the tokens they acquire with the configured grant.
 Tokens acquired with additional grant parameters, for example, with `tokenProvider.getAccessToken(Map.of("scope", "openid"))` or by a custom filter, are cached per set of such parameters, because the parameters, for example, a requested `scope` or a subject token which has to be exchanged, can affect which tokens are issued.
-The token propagation filters, `AccessTokenRequestReactiveFilter` and `AccessTokenRequestFilter`, cache the tokens they exchange the same way, with the incoming access token being the additional grant parameter, see <<token-propagation-rest>> and <<token-propagation-resteasy>>.
+The token propagation filters, `AccessTokenRequestReactiveFilter` and `AccessTokenRequestFilter`, and the GraphQL clients annotated with the `@AccessToken` annotation cache the tokens they exchange the same way, with the incoming access token being the additional grant parameter, see <<token-propagation-rest>>, <<token-propagation-resteasy>> and <<token-propagation-graphql>>.
 By default, each filter and each token producer caches the tokens of up to 15 sets of additional grant parameters.
 This limit is approximate, the cache can briefly exceed it when tokens are requested concurrently.
 When the limit is reached, the tokens which are least likely to be needed again, for example, expired or least recently used tokens, are evicted.
@@ -2028,27 +2028,11 @@ The first endpoint uses the injected MP REST client with a registered token prop
 To learn how it can be done, follow the xref:security-openid-connect-client.adoc[OpenID Connect client and token propagation] quickstart, and its xref:security-openid-connect-client.adoc#testing[Testing] section in particular.
 
 [[token-propagation-graphql]]
-== Token Propagation for SmallRye GraphQL
+== Token Propagation for SmallRye GraphQL client
 
-The `quarkus-oidc-token-propagation-graphql` extension provides token propagation support for xref:smallrye-graphql-client.adoc[SmallRye GraphQL typesafe clients], similar to the token propagation mechanism available for REST clients.
+The `quarkus-oidc-token-propagation-graphql` extension lets xref:smallrye-graphql-client.adoc[typesafe GraphQL clients] propagate the xref:security-oidc-bearer-token-authentication.adoc[bearer token] present in the currently active request or the token acquired from the xref:security-oidc-code-flow-authentication.adoc[authorization code flow mechanism] as the HTTP `Authorization` header's `Bearer` scheme value.
 
-This extension allows a `@GraphQLClientApi` typesafe client to automatically propagate the current session's access token as an HTTP `Authorization` header with the `Bearer` scheme.
-
-=== Add dependency
-
-Add the following dependency to enable OIDC token propagation for GraphQL clients:
-
-[source,xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-oidc-token-propagation-graphql</artifactId>
-</dependency>
-----
-
-=== Propagate access token
-
-To propagate the current xref:security-oidc-bearer-token-authentication.adoc[bearer token] or the token acquired from the xref:security-oidc-code-flow-authentication.adoc[authorization code flow mechanism], annotate your `@GraphQLClientApi` interface with `io.quarkus.oidc.token.propagation.common.AccessToken`:
+To propagate the access token, annotate the `@GraphQLClientApi` interface with the `io.quarkus.oidc.token.propagation.common.AccessToken` annotation:
 
 [source,java]
 ----
@@ -2058,15 +2042,17 @@ import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 @GraphQLClientApi(configKey = "my-graphql-client")
 @AccessToken
 public interface MyGraphQLClient {
-    // ...
+    // Queries and mutations go here.
 }
 ----
 
+The propagated access token is the token of the current `io.quarkus.security.credential.TokenCredential`, which is provided by the `quarkus-oidc` and `quarkus-smallrye-jwt` extensions for the requests authenticated with a token.
+A GraphQL client request fails if there is no access token to propagate.
+
 === Exchange token before propagation
 
-Similar to REST client token propagation, you can configure the GraphQL client to exchange the current access token before propagating it.
-
-If you work with link:https://www.keycloak.org/securing-apps/token-exchange[Keycloak] or another OpenID Connect provider that supports a link:https://tools.ietf.org/html/rfc8693[Token Exchange] token grant, you can configure the token exchange by setting the `exchangeTokenClient` attribute on the `@AccessToken` annotation:
+A GraphQL client can exchange the access token before propagating it.
+To activate the token exchange, select the `OidcClient` which exchanges the tokens with the `exchangeTokenClient` attribute of the `@AccessToken` annotation:
 
 [source,java]
 ----
@@ -2074,13 +2060,14 @@ import io.quarkus.oidc.token.propagation.common.AccessToken;
 import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 
 @GraphQLClientApi(configKey = "my-graphql-client")
-@AccessToken(exchangeTokenClient = "exchange-client")
+@AccessToken(exchangeTokenClient = "exchange-client") <1>
 public interface MyGraphQLClient {
-    // ...
+    // Queries and mutations go here.
 }
 ----
+<1> Use the `Default` value to select the default `OidcClient`.
 
-Then configure the named OIDC client for token exchange:
+The selected `OidcClient` must use either the link:https://tools.ietf.org/html/rfc8693[Token Exchange] or the link:https://www.rfc-editor.org/rfc/rfc7523#section-2.1[JWT bearer] token grant, for example:
 
 [source,properties]
 ----
@@ -2091,44 +2078,24 @@ quarkus.oidc-client.exchange-client.grant.type=exchange
 quarkus.oidc-client.exchange-client.grant-options.exchange.audience=quarkus-app-exchange
 ----
 
-Alternatively, use `exchangeTokenClient = "Default"` to use the default OIDC client for token exchange.
+The token exchange can only be activated with the `exchangeTokenClient` attribute, the `exchange-token` and `client-name` configuration properties described in <<token-propagation-rest>> do not apply to GraphQL clients.
 
-If the `exchangeTokenClient` attribute is not set, the current access token is propagated directly without exchange.
+Each GraphQL client caches the exchanged tokens, see <<additional-grant-parameters-token-cache>>.
+An incoming access token is exchanged once and the exchanged token is propagated until it expires, even if the incoming access token is revoked in the meantime.
+Set the `quarkus.oidc-client.token-cache-max-size` property of the `OidcClient` which exchanges the tokens to `0` to exchange the incoming access token on every request.
 
-If you work with providers such as `Azure` that link:https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow#example[require using] link:https://www.rfc-editor.org/rfc/rfc7523#section-2.1[JWT bearer token grant] to exchange the current token, you can configure the OIDC client accordingly:
+=== Limitations
 
-[source,properties]
-----
-quarkus.oidc-client.exchange-client.auth-server-url=${azure.provider.url}
-quarkus.oidc-client.exchange-client.client-id=quarkus-app
-quarkus.oidc-client.exchange-client.credentials.secret=secret
-quarkus.oidc-client.exchange-client.grant.type=jwt
-quarkus.oidc-client.exchange-client.grant-options.jwt.requested_token_use=on_behalf_of
-quarkus.oidc-client.exchange-client.scopes=https://graph.microsoft.com/user.read,offline_access
-----
-
-=== Limitations and usage notes
-
-When using the `quarkus-oidc-token-propagation-graphql` extension, keep the following limitations in mind:
-
-* The `@AccessToken` annotation is only supported at the TYPE level on `@GraphQLClientApi` interfaces. Placing it on an individual method fails the build.
-
-* Do not combine the `quarkus-oidc-token-propagation-graphql` extension's `@AccessToken` annotation with the `quarkus-oidc-client-graphql` extension's `@OidcClientFilter` annotation on the same GraphQL client interface. Both mechanisms set the `Authorization` header, so combining them on the same client fails the build.
-
-* The key difference between these two approaches:
-** `@AccessToken` (from `quarkus-oidc-token-propagation-graphql`) *propagates* the access token held by the current `TokenCredential`, as populated by the `quarkus-oidc` bearer token or authorization code flow mechanisms, or by `quarkus-smallrye-jwt`.
-** `@OidcClientFilter` (from `quarkus-oidc-client-graphql`) *acquires* a fresh token directly from the OpenID Connect provider using client credentials or other configured grant types.
-
-=== Configuration
-
-You can disable token propagation for GraphQL clients globally using the following configuration property:
-
-[source,properties]
-----
-quarkus.smallrye-graphql-client-oidc-token-propagation.enabled=false
-----
-
-By default, token propagation is enabled when the extension is present.
+* The `@AccessToken` annotation must be placed on the `@GraphQLClientApi` interface of a typesafe GraphQL client.
+The build fails if a method or a parent interface of the GraphQL client is annotated instead.
+* The access token is only propagated with the operations executed over HTTP.
+Therefore, the build fails if the annotated GraphQL client declares a subscription, and the application fails to start if the `quarkus.smallrye-graphql-client."client-name".execute-single-result-operations-over-websocket` configuration property is enabled for the annotated GraphQL client.
+* GraphQL clients with the same configuration key share the `Authorization` header.
+The build fails unless all `@GraphQLClientApi` interfaces with the same `configKey` have the same `@AccessToken` annotation, and a dynamic GraphQL client with this configuration key also propagates the access token.
+ifndef::no-quarkus-oidc-client-graphql[]
+* If the <<quarkus-oidc-client-graphql,`quarkus-oidc-client-graphql`>> extension is present, the GraphQL clients annotated with the `@AccessToken` annotation propagate the access token and all other GraphQL clients use the `OidcClient` to acquire a new access token.
+The build fails if you also select the `OidcClient` for a GraphQL client annotated with the `@AccessToken` annotation, either with the `@OidcClientFilter` annotation or with the `quarkus.oidc-client-graphql."graphql-client".client-name` configuration property.
+endif::no-quarkus-oidc-client-graphql[]
 
 ifndef::no-quarkus-oidc-client-graphql[]
 [[quarkus-oidc-client-graphql]]
@@ -2138,6 +2105,7 @@ The `quarkus-oidc-client-graphql` extension provides a way to integrate an OIDC 
 
 When this extension is active, any GraphQL client configured through properties, rather than programmatically by the builder, uses the OIDC client to acquire an access token, which it then sets as the `Authorization` header value.
 The OIDC client also refreshes expired access tokens.
+The GraphQL clients which <<token-propagation-graphql,propagate the access token>> are the exception, they do not use the OIDC client to acquire an access token.
 
 To configure which OIDC client the GraphQL client should use, select one of the configured OIDC clients with the `quarkus.oidc-client-graphql.client-name` property, for example:
 
@@ -2246,6 +2214,10 @@ include::{generated-dir}/config/quarkus-oidc-client.adoc[opts=optional, leveloff
 === OIDC token propagation
 
 include::{generated-dir}/config/quarkus-rest-client-oidc-token-propagation.adoc[opts=optional, leveloffset=+1]
+
+=== OIDC token propagation for GraphQL clients
+
+include::{generated-dir}/config/quarkus-oidc-token-propagation-graphql.adoc[opts=optional, leveloffset=+1]
 
 == References
 

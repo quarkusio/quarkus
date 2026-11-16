@@ -1,5 +1,6 @@
 package io.quarkus.oidc.token.propagation.graphql;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import jakarta.enterprise.inject.spi.DeploymentException;
@@ -18,7 +19,10 @@ public class AccessTokenAndOidcClientFilterConflictTest {
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(ConflictingTypesafeGraphQLClient.class))
-            .setExpectedException(DeploymentException.class);
+            .assertException(t -> assertThat(t)
+                    .isInstanceOf(DeploymentException.class)
+                    .hasMessageContaining(ConflictingTypesafeGraphQLClient.class.getName())
+                    .hasMessageContaining("is annotated with both @AccessToken and @OidcClientFilter"));
 
     @Test
     public void shouldNotBeInvoked() {

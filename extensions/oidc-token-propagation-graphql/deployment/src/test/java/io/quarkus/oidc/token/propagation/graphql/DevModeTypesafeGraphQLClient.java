@@ -1,13 +1,13 @@
-package io.quarkus.it.oidc.propagation.graphql;
+package io.quarkus.oidc.token.propagation.graphql;
 
 import org.eclipse.microprofile.graphql.Query;
 
 import io.quarkus.oidc.token.propagation.common.AccessToken;
 import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 
-@GraphQLClientApi(configKey = "propagation-client")
+@GraphQLClientApi(configKey = "dev-mode-client")
 @AccessToken
-public interface PropagationTypesafeGraphQLClient {
+public interface DevModeTypesafeGraphQLClient {
 
     @Query
     String me();

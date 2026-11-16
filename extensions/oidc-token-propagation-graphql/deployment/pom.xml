@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-oidc-token-propagation-graphql-deployment</artifactId>
-    <name>Quarkus - OIDC - Token Propagation - GraphQL - Deployment</name>
+    <name>Quarkus - OpenID Connect Token Propagation - GraphQL client - Deployment</name>
 
     <dependencies>
         <dependency>
@@ -53,6 +53,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-deployment</artifactId>
             <scope>test</scope>
@@ -77,15 +82,38 @@
             <artifactId>quarkus-test-oidc-server</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Build-order-only dependencies: some tests force these deployment artifacts onto their classpath,
+             so they must be built before this module. Transitive dependencies are excluded so that the artifacts
+             are not added to the test classpath of the other tests. -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc-client-graphql-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client-oidc-token-propagation-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
-        <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
-                <filtering>true</filtering>
-            </testResource>
-        </testResources>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -126,10 +154,6 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
-                            <reuseForks>false</reuseForks>
-                            <systemPropertyVariables>
-                                <keycloak.use.https>false</keycloak.use.https>
-                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>

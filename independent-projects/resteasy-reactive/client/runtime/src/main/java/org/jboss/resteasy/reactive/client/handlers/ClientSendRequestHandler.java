@@ -7,6 +7,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -347,7 +348,15 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         QuarkusMultipartResponseDecoder multipartDecoder = new QuarkusMultipartResponseDecoder(
                                 clientResponse);
 
-                        clientResponse.handler(multipartDecoder::offer);
+                        // Collect raw buffers so that the response body can be logged,
+                        // since the Netty decoder consumes the data
+                        List<Buffer> rawBuffers = loggingScope != LoggingScope.NONE ? new ArrayList<>() : null;
+                        clientResponse.handler(buffer -> {
+                            if (rawBuffers != null) {
+                                rawBuffers.add(buffer.copy());
+                            }
+                            multipartDecoder.offer(buffer);
+                        });
 
                         clientResponse.endHandler(new Handler<>() {
                             @Override
@@ -358,7 +367,14 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                 requestContext.setResponseMultipartParts(datas);
 
                                 if (loggingScope != LoggingScope.NONE) {
-                                    clientLogger.logResponse(clientResponse, false);
+                                    Buffer combined = Buffer.buffer();
+                                    for (Buffer b : rawBuffers) {
+                                        combined.appendBuffer(b);
+                                    }
+                                    // never call `logResponse` while an `endHandler` is registered, Vert.x replays
+                                    // the end event on an ended response, causing stack overflow
+                                    clientResponse.endHandler(null);
+                                    clientLogger.logResponse(clientResponse, combined, false);
                                 }
 
                                 requestContext.resume();
@@ -444,10 +460,10 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                 @Override
                                 public void handle(AsyncResult<Buffer> ar) {
                                     if (ar.succeeded()) {
-                                        if (loggingScope != LoggingScope.NONE) {
-                                            clientLogger.logResponse(clientResponse, false);
-                                        }
                                         Buffer buffer = ar.result();
+                                        if (loggingScope != LoggingScope.NONE) {
+                                            clientLogger.logResponse(clientResponse, buffer, false);
+                                        }
                                         try {
                                             if (buffer.length() > 0) {
                                                 requestContext.setResponseEntityStream(

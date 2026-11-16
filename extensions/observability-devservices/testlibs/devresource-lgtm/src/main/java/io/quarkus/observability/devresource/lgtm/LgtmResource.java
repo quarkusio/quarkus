@@ -1,9 +1,14 @@
 package io.quarkus.observability.devresource.lgtm;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -230,9 +235,55 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
 
     @Override
     public void logInfo() {
-        // move here, so we see it logged
         for (String dashboard : container.getCustomDashboards()) {
             log.infof("Adding custom Grafana dashboard config: %s", dashboard);
+        }
+        dumpGcxConfig();
+    }
+
+    private String buildGcxConfig() {
+        String host = container.getHost();
+        int grafanaPort = container.getGrafanaPort();
+        String username = config != null ? config.username() : "admin";
+        String password = config != null ? config.password() : "admin";
+
+        return "current-context: lgtm-local\n" +
+                "stacks:\n" +
+                "  lgtm-local:\n" +
+                "    grafana:\n" +
+                "      server: http://" + host + ":" + grafanaPort + "\n" +
+                "      org-id: 1\n" +
+                "      auth-method: basic\n" +
+                "      user: " + username + "\n" +
+                "      password: " + password + "\n" +
+                "contexts:\n" +
+                "  lgtm-local:\n" +
+                "    stack: lgtm-local\n" +
+                "    datasources:\n" +
+                "      prometheus: prometheus\n" +
+                "      loki: loki\n" +
+                "      tempo: tempo\n" +
+                "      pyroscope: pyroscope\n";
+    }
+
+    private void dumpGcxConfig() {
+        String gcxConfig = buildGcxConfig();
+        Optional<String> gcxFilePath = config != null ? config.gcxFilePath() : Optional.empty();
+
+        if (gcxFilePath.isPresent()) {
+            Path path = Path.of(gcxFilePath.get());
+            try {
+                Files.createDirectories(path.getParent());
+                Files.writeString(path, gcxConfig);
+                log.infof("GCX config written to: %s", path);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Failed to write GCX config to: " + path, e);
+            }
+        } else {
+            String delimiter = "###### LGTM GCX config ######";
+            System.out.println(delimiter);
+            System.out.print(gcxConfig);
+            System.out.println(delimiter);
         }
     }
 

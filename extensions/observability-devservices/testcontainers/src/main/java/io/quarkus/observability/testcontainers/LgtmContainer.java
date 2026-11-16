@@ -430,6 +430,11 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         }
 
         @Override
+        public Optional<String> gcxFilePath() {
+            return Optional.empty();
+        }
+
+        @Override
         public String otelMetricExportInterval() {
             return ContainerConstants.OTEL_METRIC_EXPORT_INTERVAL;
         }

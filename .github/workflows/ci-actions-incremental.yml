@@ -494,7 +494,7 @@ jobs:
             echo "$SCALPEL_IMPACTED" > target/modules-to-test.txt
           fi
           .github/compute-test-plan.sh target/modules-to-test.txt target/test-plan "$origin"
-          groups=$(jq -c 'keys' target/test-plan/test-plan.json)
+          groups=$(jq -c 'keys_unsorted' target/test-plan/test-plan.json)
           jvm_matrix=$(.github/filter-jvm-tests-json.sh target/test-plan/test-plan.json)
           echo "groups=${groups}, jvm_matrix=${jvm_matrix}"
           echo "groups=${groups}" >> $GITHUB_OUTPUT

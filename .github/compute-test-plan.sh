@@ -16,6 +16,8 @@
 # The following files are written to the output directory:
 # - test-plan.json: a JSON object, the keys are the groups and the values are the lists of modules.
 #   A group with no module to test is not part of the test plan.
+#   The groups are sorted: first the groups of "matrix-categories", then the other ones in the order of "rules".
+#   The modules of a group are sorted alphabetically.
 # - <group>.maven-config: the selection of the modules of the group, to append to .mvn/maven.config.
 #   Using .mvn/maven.config is required as the list of modules can exceed the cmd.exe command line limit on Windows.
 #   The format of this file is specific: it's one option per line,
@@ -76,6 +78,9 @@ jq -n --rawfile modules "${MODULES_FILE}" --slurpfile config "${PRG_PATH}/test-p
         }
     )
   | reduce .[] as $entry ({}; .[$entry.group] += [$entry.module])
+  | . as $plan
+  | reduce ([ $config[0]["matrix-categories"][][].group, $rules[].group ] | map(select($plan[.] != null))[]) as $group
+      ({}; .[$group] = $plan[$group])
 ' > "${TEST_PLAN}"
 
 # IMPORTANT: we have a module with spaces in the name (to test spaces are supported) so we have to be careful with the separators

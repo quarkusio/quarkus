@@ -4,7 +4,10 @@
 #          combined with the groups of the test plan (see compute-test-plan.sh) they have to run.
 #          The groups an entry has to run are defined by its category, see "matrix-categories" in test-plan-rules.json:
 #          a job is created for each group that is part of the test plan, its name is the name of the entry
-#          followed by the "name-suffix" of the group.
+#          with the "name-qualifier" of the group inserted after the first element of the name,
+#          e.g. "JVM Tests - JDK 21" becomes "JVM Tests - Heavy modules - JDK 21".
+#          The qualifier has to be before the JDK: the build reporter considers what is before the JDK
+#          as the label of the job and uses it to group the jobs testing the same thing on various platforms.
 #          An entry is dropped if none of its groups is part of the test plan.
 #          Nothing is printed if there is no entry left.
 # Note: This script is only for CI and does therefore not aim to be compatible with BSD/macOS.
@@ -38,7 +41,11 @@ JSON=$(echo -n "$JSON" | jq -c --slurpfile plan "${TEST_PLAN}" --slurpfile confi
       . as $entry
       | ($categories[$entry.category] // error("No groups defined for category: " + $entry.category))[]
       | select($plan[0][.group] != null)
-      | $entry + { name: ($entry.name + (.["name-suffix"] // "")), group: .group }
+      | .["name-qualifier"] as $qualifier
+      | $entry + {
+          name: (if $qualifier != null then ($entry.name | sub(" - "; " - " + $qualifier + " - ")) else $entry.name end),
+          group: .group
+        }
     )
   | map(
       . + {

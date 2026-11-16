@@ -3,11 +3,11 @@
         { "pattern": "^docs(/.*)?$", "reason": "tested by the Quarkus Documentation CI workflow" }
     ],
     "rules": [
-        { "pattern": "^tcks(/.*)?$", "group": "tcks" },
         { "pattern": "^integration-tests/(maven|devmode)(/.*)?$", "group": "maven" },
         { "pattern": "^integration-tests/gradle(/.*)?$", "group": "gradle" },
         { "pattern": "^(devtools|integration-tests/devtools)(/.*)?$", "group": "devtools" },
         { "pattern": "^integration-tests/kubernetes(/.*)?$", "group": "kubernetes" },
+        { "pattern": "^tcks(/.*)?$", "group": "tcks" },
         { "pattern": "^integration-tests(/[a-l].*)?$", "group": "jvm-integration-1" },
         { "pattern": "^integration-tests/.+$", "group": "jvm-integration-2" },
         {
@@ -40,12 +40,12 @@
     ],
     "matrix-categories": {
         "Runtime": [
-            { "group": "jvm-heavy", "name-suffix": " - Heavy modules" },
-            { "group": "jvm-main", "name-suffix": " - Other modules" }
+            { "group": "jvm-heavy", "name-qualifier": "Heavy modules" },
+            { "group": "jvm-main", "name-qualifier": "Other modules" }
         ],
         "Integration": [
-            { "group": "jvm-integration-1", "name-suffix": " - A-L" },
-            { "group": "jvm-integration-2", "name-suffix": " - M-Z" }
+            { "group": "jvm-integration-1", "name-qualifier": "A-L" },
+            { "group": "jvm-integration-2", "name-qualifier": "M-Z" }
         ]
     }
 }

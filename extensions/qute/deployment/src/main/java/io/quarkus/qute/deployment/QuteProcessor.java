@@ -1471,7 +1471,7 @@ public class QuteProcessor {
                 if (member == null) {
                     // No member found - incorrect expression
                     incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                            info.value, match.type().toString(), expression.getOrigin()));
+                            info.value, match.type().toString(), PartOrigin.of(expression, info.part)));
                     match.clearValues();
                     break;
                 } else {
@@ -2026,7 +2026,7 @@ public class QuteProcessor {
                 // Fail unless a safe expression
                 // Note that foo.val?? becomes foo.val.or(null) during parsing
                 incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                        beanName, null, expression.getOrigin()));
+                        beanName, null, PartOrigin.of(expression, firstPart)));
             }
             return null;
         }

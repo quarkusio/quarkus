@@ -9,16 +9,18 @@
 #          The qualifier has to be before the JDK: the build reporter considers what is before the JDK
 #          as the label of the job and uses it to group the jobs testing the same thing on various platforms.
 #          An entry is dropped if none of its groups is part of the test plan.
+#          The groups flagged with "gate" are tested by a specific job, the other test jobs only run if it passes:
+#          the second parameter selects either the jobs of these groups (gate) or the other ones (main).
 #          Nothing is printed if there is no entry left.
 # Note: This script is only for CI and does therefore not aim to be compatible with BSD/macOS.
 
 set -e -u -o pipefail
 shopt -s failglob
 
-if (( $# != 1 ))
+if (( $# != 2 )) || [[ "$2" != 'gate' && "$2" != 'main' ]]
 then
   echo 'Invalid parameters' >&2
-  echo "Usage: $0 <path to test-plan.json>" >&2
+  echo "Usage: $0 <path to test-plan.json> <gate|main>" >&2
   exit 1
 fi
 
@@ -26,6 +28,7 @@ fi
 PRG_PATH=$( cd "$(dirname "$0")" ; pwd -P )
 
 TEST_PLAN="$1"
+JOBS="$2"
 
 JSON=$(cat ${PRG_PATH}/matrix-jvm-tests.json)
 if [[ "${GITHUB_REPOSITORY:-DEFINED_ON_CI}" != "quarkusio/quarkus" ]]; then
@@ -35,12 +38,13 @@ if [[ "${GITHUB_REPOSITORY:-DEFINED_ON_CI}" != "quarkusio/quarkus" ]]; then
   JSON=$(echo -n "$JSON" | jq 'map(. | select(.["os-name"]!="macos-arm64-latest"))')
 fi
 
-JSON=$(echo -n "$JSON" | jq -c --slurpfile plan "${TEST_PLAN}" --slurpfile config "${PRG_PATH}/test-plan-rules.json" '
+JSON=$(echo -n "$JSON" | jq -c --arg jobs "${JOBS}" --slurpfile plan "${TEST_PLAN}" --slurpfile config "${PRG_PATH}/test-plan-rules.json" '
   $config[0]["matrix-categories"] as $categories
   | map(
       . as $entry
       | ($categories[$entry.category] // error("No groups defined for category: " + $entry.category))[]
       | select($plan[0][.group] != null)
+      | select((.gate // false) == ($jobs == "gate"))
       | .["name-qualifier"] as $qualifier
       | $entry + {
           name: (if $qualifier != null then ($entry.name | sub(" - "; " - " + $qualifier + " - ")) else $entry.name end),

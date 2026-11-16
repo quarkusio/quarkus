@@ -10,6 +10,7 @@
         { "pattern": "^tcks(/.*)?$", "group": "tcks" },
         { "pattern": "^integration-tests(/[a-l].*)?$", "group": "jvm-integration-1" },
         { "pattern": "^integration-tests/.+$", "group": "jvm-integration-2" },
+        { "pattern": "^(independent-projects|core|test-framework)(/.*)?$", "group": "jvm-core-infra" },
         {
             "modules": [
                 "extensions/devui/deployment",
@@ -40,6 +41,7 @@
     ],
     "matrix-categories": {
         "Runtime": [
+            { "group": "jvm-core-infra", "name-qualifier": "Core infra", "gate": true },
             { "group": "jvm-heavy", "name-qualifier": "Heavy modules" },
             { "group": "jvm-main", "name-qualifier": "Other modules" }
         ],

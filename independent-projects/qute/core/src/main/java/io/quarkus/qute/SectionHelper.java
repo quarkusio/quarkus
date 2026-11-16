@@ -86,9 +86,14 @@ public interface SectionHelper {
         CompletionStage<ResultNode> execute(SectionBlock block, ResolutionContext context);
 
         /**
-         * Parameters for a specific resolution.
+         * Returns the resolution parameters, i.e. parameters passed by the caller of
+         * {@link SectionNode#resolve(ResolutionContext, java.util.Map)}.
+         * <p>
+         * Note that these are <em>not</em> the parsed section tag parameters. Use
+         * {@link SectionInitContext#getParameter(String)} to access the parsed parameters during
+         * {@link SectionHelperFactory#initialize(SectionInitContext)}.
          *
-         * @return the immutable map of parameters, never {@code null}
+         * @return the immutable map of resolution parameters, never {@code null}
          */
         Map<String, Object> getParameters();
 

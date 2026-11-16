@@ -9,6 +9,7 @@ import java.security.KeyStoreException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.UUID;
+import java.util.logging.Level;
 
 import jakarta.inject.Inject;
 
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.tls.runtime.VertxCertificateHolder;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -50,7 +52,15 @@ public class ReloadFailureTest {
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-            });
+            })
+            .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.SEVERE.intValue()
+                    && VertxCertificateHolder.class.getName().equals(record.getLoggerName()))
+            .assertLogRecords(records -> assertThat(records)
+                    .as("the cause of a failed reload must be logged")
+                    .anySatisfy(record -> {
+                        assertThat(record.getMessage()).contains("Unable to reload the key store");
+                        assertThat(record.getThrown()).isNotNull();
+                    }));
 
     @Inject
     TlsConfigurationRegistry registry;

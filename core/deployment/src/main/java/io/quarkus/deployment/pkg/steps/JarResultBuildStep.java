@@ -27,6 +27,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
+import io.quarkus.deployment.builditem.RemovedResourcesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
@@ -110,6 +111,7 @@ public class JarResultBuildStep {
             ResolvedJVMRequirements jvmRequirements,
             OutputTargetBuildItem outputTargetBuildItem,
             TransformedClassesBuildItem transformedClasses,
+            RemovedResourcesBuildItem removedResourcesBuildItem,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             ApplicationInfoBuildItem applicationInfo,
             PackageConfig packageConfig,
@@ -137,6 +139,8 @@ public class JarResultBuildStep {
         Set<ArtifactKey> removedArtifactKeys = getRemovedArtifactKeys(classLoadingConfig);
         Set<ArtifactKey> parentFirstArtifactKeys = getParentFirstArtifactKeys(curateOutcomeBuildItem, classLoadingConfig);
 
+        Map<ArtifactKey, Set<String>> removedResources = removedResourcesBuildItem.getRemovedResources();
+
         return switch (packageConfig.jar().type()) {
             case UBER_JAR -> new UberJarBuilder(curateOutcomeBuildItem,
                     outputTargetBuildItem,
@@ -145,6 +149,7 @@ public class JarResultBuildStep {
                     mainClassBuildItem,
                     applicationArchivesBuildItem,
                     transformedClasses,
+                    removedResources,
                     generatedClasses,
                     allResources,
                     generatedServiceProviders,
@@ -161,6 +166,7 @@ public class JarResultBuildStep {
                     mainClassBuildItem,
                     applicationArchivesBuildItem,
                     transformedClasses,
+                    removedResources,
                     generatedClasses,
                     allResources,
                     generatedServiceProviders,
@@ -176,6 +182,7 @@ public class JarResultBuildStep {
                     applicationArchivesBuildItem,
                     additionalApplicationArchiveBuildItems,
                     transformedClasses,
+                    removedResources,
                     generatedClasses,
                     allResources,
                     generatedServiceProviders,
@@ -192,6 +199,7 @@ public class JarResultBuildStep {
                     applicationArchivesBuildItem,
                     additionalApplicationArchiveBuildItems,
                     transformedClasses,
+                    removedResources,
                     generatedClasses,
                     allResources,
                     generatedServiceProviders,
@@ -210,6 +218,7 @@ public class JarResultBuildStep {
     public NativeImageSourceJarBuildItem buildNativeImageJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             TransformedClassesBuildItem transformedClasses,
+            RemovedResourcesBuildItem removedResourcesBuildItem,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             ApplicationInfoBuildItem applicationInfo,
             PackageConfig packageConfig,
@@ -231,6 +240,7 @@ public class JarResultBuildStep {
                 mainClassBuildItem,
                 applicationArchivesBuildItem,
                 transformedClasses,
+                removedResourcesBuildItem.getRemovedResources(),
                 generatedClasses,
                 mergeResources(generatedResources, sbomResources),
                 generatedServiceProviders,

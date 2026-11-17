@@ -401,10 +401,6 @@ class NettyProcessor {
                 // - org.jboss.netty.tryUnsafe
                 // - io.netty.tryReflectionSetAccessible
                 .addRuntimeInitializedClass("io.netty.util.internal.PlatformDependent0")
-                // Runtime initialize classes to allow netty to use the field offset for testing if unsafe is available or not
-                // See https://github.com/quarkusio/quarkus/issues/47903#issuecomment-2890924970
-                .addRuntimeInitializedClass("io.netty.util.AbstractReferenceCounted")
-                .addRuntimeInitializedClass("io.netty.buffer.AbstractReferenceCountedByteBuf")
                 // Runtime initialize to respect the run-time number of processors, which it caches on first use
                 // (respecting the run-time provided value of the io.netty.availableProcessors property)
                 .addRuntimeInitializedClass("io.netty.util.NettyRuntime")

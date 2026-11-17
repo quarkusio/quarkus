@@ -68,6 +68,10 @@ public class CommonPanacheQueryImpl<Entity> {
      * Otherwise we do not use this, and rely on ORM to generate count queries
      */
     protected String customCountQueryForSpring;
+    /**
+     * Pre-built selection query (e.g., from Criteria API). When set, this takes precedence over HQL string query.
+     */
+    private SelectionQuery<?> prebuiltQuery;
     private Sort sort;
     private SharedSessionContract session;
     private Class<?> entityClass;
@@ -95,6 +99,15 @@ public class CommonPanacheQueryImpl<Entity> {
         this.originalQuery = originalQuery;
         this.sort = sort;
         this.paramsArrayOrMap = paramsArrayOrMap;
+    }
+
+    /**
+     * Constructor for pre-built queries (e.g., from Criteria API)
+     */
+    public CommonPanacheQueryImpl(SharedSessionContract session, Class<?> entityClass, SelectionQuery<?> prebuiltQuery) {
+        this.session = session;
+        this.entityClass = entityClass;
+        this.prebuiltQuery = prebuiltQuery;
     }
 
     private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, String newQueryString,
@@ -441,7 +454,10 @@ public class CommonPanacheQueryImpl<Entity> {
     @SuppressWarnings("unchecked")
     private SelectionQuery createBaseQuery() {
         SelectionQuery hibernateQuery;
-        if (PanacheJpaUtil.isNamedQuery(query)) {
+
+        if (prebuiltQuery != null) {
+            hibernateQuery = prebuiltQuery;
+        } else if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
             hibernateQuery = session.createNamedSelectionQuery(namedQuery, projectionType);
         } else {
@@ -453,10 +469,12 @@ public class CommonPanacheQueryImpl<Entity> {
             }
         }
 
-        if (paramsArrayOrMap instanceof Map) {
-            AbstractJpaOperations.bindParameters(hibernateQuery, (Map<String, Object>) paramsArrayOrMap);
-        } else {
-            AbstractJpaOperations.bindParameters(hibernateQuery, (Object[]) paramsArrayOrMap);
+        if (prebuiltQuery == null) {
+            if (paramsArrayOrMap instanceof Map) {
+                AbstractJpaOperations.bindParameters(hibernateQuery, (Map<String, Object>) paramsArrayOrMap);
+            } else if (paramsArrayOrMap != null) {
+                AbstractJpaOperations.bindParameters(hibernateQuery, (Object[]) paramsArrayOrMap);
+            }
         }
 
         if (this.lockModeType != null) {

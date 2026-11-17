@@ -38,15 +38,11 @@ import com.oracle.svm.core.annotate.RecomputeFieldValue.Kind;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-import io.netty.bootstrap.AbstractBootstrapConfig;
-import io.netty.bootstrap.ChannelFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.compression.Brotli;
 import io.netty.handler.codec.compression.BrotliDecoder;
@@ -55,16 +51,13 @@ import io.netty.handler.codec.compression.ZlibCodecFactory;
 import io.netty.handler.codec.compression.ZlibWrapper;
 import io.netty.handler.codec.http2.Http2Exception;
 import io.netty.handler.ssl.ApplicationProtocolConfig;
-import io.netty.handler.ssl.ApplicationProtocolConfig.SelectorFailureBehavior;
 import io.netty.handler.ssl.CipherSuiteFilter;
 import io.netty.handler.ssl.ClientAuth;
-import io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator;
 import io.netty.handler.ssl.JdkApplicationProtocolNegotiator;
 import io.netty.handler.ssl.OpenSslCredential;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextOption;
 import io.netty.handler.ssl.SslProvider;
-import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.JdkLoggerFactory;
 import io.quarkus.netty.runtime.EmptyByteBufStub;
@@ -324,137 +317,6 @@ final class Target_io_netty_handler_ssl_SslContext {
                 resumptionController);
     }
 
-}
-
-@TargetClass(className = "io.netty.handler.ssl.JdkDefaultApplicationProtocolNegotiator")
-final class Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator {
-
-    @Alias
-    public static Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator INSTANCE;
-}
-
-@TargetClass(className = "io.netty.handler.ssl.JdkSslContext")
-final class Target_io_netty_handler_ssl_JdkSslContext {
-
-    @Substitute
-    static JdkApplicationProtocolNegotiator toNegotiator(ApplicationProtocolConfig config, boolean isServer) {
-        if (config == null) {
-            return (JdkApplicationProtocolNegotiator) (Object) Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator.INSTANCE;
-        }
-
-        switch (config.protocol()) {
-            case NONE:
-                return (JdkApplicationProtocolNegotiator) (Object) Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator.INSTANCE;
-            case ALPN:
-                if (isServer) {
-                    // GRAAL RC9 bug: https://github.com/oracle/graal/issues/813
-                    //                switch(config.selectorFailureBehavior()) {
-                    //                case FATAL_ALERT:
-                    //                    return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
-                    //                case NO_ADVERTISE:
-                    //                    return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
-                    //                default:
-                    //                    throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
-                    //                    .append(config.selectorFailureBehavior()).append(" failure behavior").toString());
-                    //                }
-                    SelectorFailureBehavior behavior = config.selectorFailureBehavior();
-                    if (behavior == SelectorFailureBehavior.FATAL_ALERT) {
-                        return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
-                    } else if (behavior == SelectorFailureBehavior.NO_ADVERTISE) {
-                        return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
-                    } else {
-                        throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
-                                .append(config.selectorFailureBehavior()).append(" failure behavior").toString());
-                    }
-                } else {
-                    switch (config.selectedListenerFailureBehavior()) {
-                        case ACCEPT:
-                            return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
-                        case FATAL_ALERT:
-                            return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
-                        default:
-                            throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
-                                    .append(config.selectedListenerFailureBehavior()).append(" failure behavior")
-                                    .toString());
-                    }
-                }
-            default:
-                throw new UnsupportedOperationException(
-                        new StringBuilder("JDK provider does not support ").append(config.protocol())
-                                .append(" protocol")
-                                .toString());
-        }
-    }
-
-}
-
-@TargetClass(className = "io.netty.bootstrap.FailedChannel")
-final class Target_io_netty_bootstrap_FailedChannel {
-
-    @Alias
-    Target_io_netty_bootstrap_FailedChannel() {
-    }
-}
-
-/*
- * This one only prints exceptions otherwise we get a useless bogus
- * exception message: https://github.com/eclipse-vertx/vert.x/issues/1657
- */
-@TargetClass(className = "io.netty.bootstrap.AbstractBootstrap")
-final class Target_io_netty_bootstrap_AbstractBootstrap {
-
-    @Alias
-    private ChannelFactory channelFactory;
-
-    @Alias
-    void init(Channel channel) throws Throwable {
-    }
-
-    @Alias
-    public AbstractBootstrapConfig config() {
-        return null;
-    }
-
-    @Substitute
-    final ChannelFuture initAndRegister() {
-        Channel channel = null;
-        try {
-            channel = channelFactory.newChannel();
-            init(channel);
-        } catch (Throwable t) {
-            // THE FIX IS HERE:
-            t.printStackTrace();
-            if (channel != null) {
-                // channel can be null if newChannel crashed (eg SocketException("too many open files"))
-                channel.unsafe().closeForcibly();
-                // as the Channel is not registered yet, we need to force the usage of the GlobalEventExecutor
-                return new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE).setFailure(t);
-            }
-            return new DefaultChannelPromise(
-                    (Channel) (Object) new Target_io_netty_bootstrap_FailedChannel(),
-                    GlobalEventExecutor.INSTANCE).setFailure(t);
-        }
-
-        ChannelFuture regFuture = config().group().register(channel);
-        if (regFuture.cause() != null) {
-            if (channel.isRegistered()) {
-                channel.close();
-            } else {
-                channel.unsafe().closeForcibly();
-            }
-        }
-
-        // If we are here and the promise is not failed, it's one of the following cases:
-        // 1) If we attempted registration from the event loop, the registration has been completed at this point.
-        //    i.e. It's safe to attempt bind() or connect() now because the channel has been registered.
-        // 2) If we attempted registration from the other thread, the registration request has been successfully
-        //    added to the event loop's task queue for later execution.
-        //    i.e. It's safe to attempt bind() or connect() now:
-        //         because bind() or connect() will be executed *after* the scheduled registration task is executed
-        //         because register(), bind(), and connect() are all bound to the same thread.
-
-        return regFuture;
-    }
 }
 
 // This class is runtime-initialized by NettyProcessor

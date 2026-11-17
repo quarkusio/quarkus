@@ -72,6 +72,12 @@ public class TransactionalTest {
         Assertions.assertEquals(1, txAssertionData.getRollback());
     }
 
+    /**
+     * Since Quarkus 4, a checked exception rolls back the transaction by default which deviates from the
+     * Jakarta Transactions specification.
+     *
+     * @see TransactionalCheckedExceptionRollbackTest
+     */
     @Test
     public void transactionalThrowApplicationException() {
         assertTransactionInactive();
@@ -81,8 +87,10 @@ public class TransactionalTest {
         } catch (Throwable expected) {
         }
         assertTransactionInactive();
-        Assertions.assertEquals(1, txAssertionData.getCommit());
-        Assertions.assertEquals(0, txAssertionData.getRollback());
+        Assertions.assertEquals(0, txAssertionData.getCommit(),
+                "Since Quarkus 4, a checked exception rolls back by default");
+        Assertions.assertEquals(1, txAssertionData.getRollback(),
+                "Since Quarkus 4, a checked exception rolls back by default");
     }
 
     @Test

@@ -33,6 +33,7 @@ import com.arjuna.ats.jta.logging.jtaLogger;
 import io.quarkus.arc.runtime.InterceptorBindings;
 import io.quarkus.narayana.jta.runtime.NotifyingTransactionManager;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
+import io.quarkus.narayana.jta.runtime.TransactionalAnnotationConfiguration;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
 import io.quarkus.transaction.annotations.Rollback;
@@ -47,10 +48,14 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     private static final long serialVersionUID = 1L;
     protected static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
+    private static final String CHECKED_EXCEPTIONS_PROPERTY = "quarkus.transactional.checked-exceptions";
     private final Map<Method, Integer> methodTransactionTimeoutDefinedByPropertyCache = new ConcurrentHashMap<>();
 
     @Inject
     TransactionManager transactionManager;
+
+    @Inject
+    TransactionalAnnotationConfiguration transactionalConfiguration;
 
     private final boolean userTransactionAvailable;
 
@@ -415,6 +420,26 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         if (t instanceof RuntimeException || t instanceof Error) {
             safeSetRollbackOnly(tx);
             return;
+        }
+
+        // It's a checked exception. The Jakarta Transactions specification mandates that the transaction is left
+        // untouched, however to improve usability Quarkus allows the behaviour to be configured differently.
+        handleCheckedException(ic, t, tx);
+    }
+
+    private void handleCheckedException(InvocationContext ic, Throwable t, Transaction tx) throws SystemException {
+        switch (transactionalConfiguration.checkedExceptions()) {
+            case ROLLBACK -> safeSetRollbackOnly(tx);
+            case NO_ROLLBACK -> log.warnf(
+                    "The transaction %s was not marked for rollback even though method %s threw %s, because"
+                            + " property '%s' is set to 'no-rollback'. Since Quarkus 4, a checked exception rolls back"
+                            + " the transaction by default; to recover the specification behaviour"
+                            + " set '%s' to 'rollback' or to 'no-rollback-quiet'."
+                            + " See https://quarkus.io/guides/transaction#rollback-on-checked-exceptions.",
+                    tx, ic.getMethod(), t.getClass().getName(), CHECKED_EXCEPTIONS_PROPERTY, CHECKED_EXCEPTIONS_PROPERTY);
+            case NO_ROLLBACK_QUIET -> {
+                // the application wants the Jakarta Transactions specified behaviour without any warnings
+            }
         }
     }
 

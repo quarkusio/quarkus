@@ -506,6 +506,11 @@
                 <version>${crac.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.fasterxml.woodstox</groupId>
+                <artifactId>woodstox-core</artifactId>
+                <version>${woodstox-core.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.smallrye.beanbag</groupId>
                 <artifactId>smallrye-beanbag-maven</artifactId>
                 <version>${smallrye-beanbag.version}</version>

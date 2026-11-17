@@ -8,6 +8,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URL;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.MonthDay;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -396,6 +407,14 @@ public class BytecodeRecorderTestCase {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.object(duration);
         }, duration);
+        for (Object javaTimeValue : List.of(Instant.now(), LocalDate.now(), LocalDateTime.now(), LocalTime.now(),
+                MonthDay.now(), OffsetDateTime.now(), OffsetTime.now(), Period.ofDays(5), Year.now(), YearMonth.now(),
+                ZonedDateTime.now())) {
+            runTest(generator -> {
+                TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+                recorder.object(javaTimeValue);
+            }, javaTimeValue);
+        }
     }
 
     // Boxed booleans whose getter starts with `is`, in particular, used to be ignored.

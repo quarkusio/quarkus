@@ -23,7 +23,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.UUID;
 
 import org.apache.maven.model.MailingList;
@@ -33,6 +32,7 @@ import org.cyclonedx.Version;
 import org.cyclonedx.exception.GeneratorException;
 import org.cyclonedx.generators.BomGeneratorFactory;
 import org.cyclonedx.model.Bom;
+import org.cyclonedx.model.BomReference;
 import org.cyclonedx.model.Component;
 import org.cyclonedx.model.Dependency;
 import org.cyclonedx.model.Evidence;
@@ -50,9 +50,6 @@ import org.cyclonedx.model.metadata.ToolInformation;
 import org.cyclonedx.util.BomUtils;
 import org.cyclonedx.util.LicenseResolver;
 import org.jboss.logging.Logger;
-
-import com.github.packageurl.MalformedPackageURLException;
-import com.github.packageurl.PackageURL;
 
 import io.quarkus.bootstrap.app.SbomResult;
 import io.quarkus.bootstrap.resolver.maven.EffectiveModelResolver;
@@ -298,18 +295,14 @@ public class CycloneDxSbomGenerator {
         for (ComponentDependencies dep : allDependencies) {
             // "provides" is a CycloneDX 1.6 construct; on older schema versions the provided refs
             // are represented as plain dependsOn relationships instead.
-            boolean provides = providesSupported && !dep.getProvides().isEmpty();
-            if (provides) {
-                ProvidesDependency d = new ProvidesDependency(dep.getBomRef());
-                addDependsOn(d, dep.getDependsOn(), excludedBomRefs);
+            Dependency d = new Dependency(dep.getBomRef());
+            addDependsOn(d, dep.getDependsOn(), excludedBomRefs);
+            if (providesSupported) {
                 addProvides(d, dep.getProvides(), excludedBomRefs);
-                dependencyMap.put(dep.getBomRef(), d);
             } else {
-                Dependency d = new Dependency(dep.getBomRef());
-                addDependsOn(d, dep.getDependsOn(), excludedBomRefs);
                 addDependsOn(d, dep.getProvides(), excludedBomRefs);
-                dependencyMap.put(dep.getBomRef(), d);
             }
+            dependencyMap.put(dep.getBomRef(), d);
         }
 
         // Link top-level extension components to the main component
@@ -328,8 +321,8 @@ public class CycloneDxSbomGenerator {
             if (d.getDependencies() != null) {
                 d.getDependencies().sort(Comparator.comparing(Dependency::getRef));
             }
-            if (d instanceof ProvidesDependency pd) {
-                pd.getProvides().sort(Comparator.naturalOrder());
+            if (d.getProvides() != null) {
+                d.getProvides().sort(Comparator.comparing(BomReference::getRef));
             }
             bom.addDependency(d);
         }
@@ -363,10 +356,10 @@ public class CycloneDxSbomGenerator {
      * @param refs the bom-refs to add
      * @param excludedBomRefs refs that must not appear in the output
      */
-    private static void addProvides(ProvidesDependency d, Collection<String> refs, Set<String> excludedBomRefs) {
+    private static void addProvides(Dependency d, Collection<String> refs, Set<String> excludedBomRefs) {
         for (String ref : refs) {
             if (!excludedBomRefs.contains(ref)) {
-                d.addProvides(ref);
+                d.addProvides(new BomReference(ref));
             }
         }
     }
@@ -443,18 +436,6 @@ public class CycloneDxSbomGenerator {
                 && (descriptor.getPath() != null || descriptor.getDistributionPath() != null);
     }
 
-    private static PackageURL toCycloneDxPurl(Purl purl) {
-        try {
-            TreeMap<String, String> qualifiers = purl.getQualifiers().isEmpty()
-                    ? null
-                    : new TreeMap<>(purl.getQualifiers());
-            return new PackageURL(purl.getType(), purl.getNamespace(), purl.getName(),
-                    purl.getVersion(), qualifiers, purl.getSubpath());
-        } catch (MalformedPackageURLException e) {
-            throw new RuntimeException("Failed to convert Purl to PackageURL: " + purl, e);
-        }
-    }
-
     private static ArtifactCoords toArtifactCoords(Purl purl) {
         return ArtifactCoords.of(
                 purl.getNamespace(),
@@ -485,7 +466,7 @@ public class CycloneDxSbomGenerator {
     private String generateSerialNumber(Bom bom) {
         final String content;
         try {
-            content = new ProvidesAwareBomJsonGenerator(bom, getSchemaVersion()).toJsonString(false);
+            content = BomGeneratorFactory.createJson(getSchemaVersion(), bom).toJsonString(false);
         } catch (Throwable e) {
             throw new RuntimeException("Failed to serialize the SBOM to compute its serial number", e);
         }
@@ -603,8 +584,7 @@ public class CycloneDxSbomGenerator {
 
         // Identity from Purl
         Purl purl = descriptor.getPurl();
-        PackageURL cdxPurl = toCycloneDxPurl(purl);
-        c.setPurl(cdxPurl);
+        c.setPurl(purl.toString());
         c.setBomRef(descriptor.getBomRef());
         c.setName(descriptor.getName());
         c.setVersion(descriptor.getVersion());
@@ -960,7 +940,7 @@ public class CycloneDxSbomGenerator {
         final String sbomContent;
         if (format.equalsIgnoreCase("json")) {
             try {
-                sbomContent = new ProvidesAwareBomJsonGenerator(bom, specVersion).toJsonString(prettyPrint);
+                sbomContent = BomGeneratorFactory.createJson(specVersion, bom).toJsonString(prettyPrint);
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to generate an SBOM in JSON format", e);
             }
@@ -1114,10 +1094,10 @@ public class CycloneDxSbomGenerator {
         c.setGroup(coords.getGroupId());
         c.setName(coords.getArtifactId());
         c.setVersion(coords.getVersion());
-        PackageURL purl = toCycloneDxPurl(Purl.maven(coords.getGroupId(), coords.getArtifactId(), coords.getVersion(),
-                coords.getType(), coords.getClassifier().isEmpty() ? null : coords.getClassifier()));
+        String purl = Purl.maven(coords.getGroupId(), coords.getArtifactId(), coords.getVersion(),
+                coords.getType(), coords.getClassifier().isEmpty() ? null : coords.getClassifier()).toString();
         c.setPurl(purl);
-        c.setBomRef(purl.toString());
+        c.setBomRef(purl);
         c.setType(Component.Type.LIBRARY);
     }
 

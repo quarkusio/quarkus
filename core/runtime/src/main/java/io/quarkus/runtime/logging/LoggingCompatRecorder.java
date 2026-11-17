@@ -49,13 +49,15 @@ public class LoggingCompatRecorder {
      * @param banner the console banner supplier value, or {@code null} if none
      * @param namedHandlerFormatters the contributed named-handler formatter maps (must not be {@code null})
      * @param additionalHandlers the contributed root handler values (must not be {@code null})
+     * @param additionalNamedHandlers the contributed named handler maps (must not be {@code null})
      * @return the bundled bridge holder (never {@code null})
      */
     public LoggingCompatBridge buildBridge(
             RuntimeValue<Optional<Handler>> streamingHandler,
             RuntimeValue<Optional<Supplier<String>>> banner,
             List<RuntimeValue<Map<NamedHandlerType, Map<String, Optional<Formatter>>>>> namedHandlerFormatters,
-            List<RuntimeValue<Optional<Handler>>> additionalHandlers) {
+            List<RuntimeValue<Optional<Handler>>> additionalHandlers,
+            List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers) {
         StreamingLogHandler streaming = streamingHandler == null ? null
                 : streamingHandler.getValue().map(StreamingLogHandler::new).orElse(null);
         LogBanner logBanner = banner == null ? null
@@ -66,6 +68,11 @@ public class LoggingCompatRecorder {
         for (RuntimeValue<Optional<Handler>> handler : additionalHandlers) {
             handler.getValue().ifPresent(h -> additional.add(new AdditionalLogHandler(h)));
         }
-        return new LoggingCompatBridge.Impl(streaming, logBanner, formatters, List.copyOf(additional));
+        List<Map<String, Handler>> additionalNamed = new ArrayList<>(additionalNamedHandlers.size());
+        for (RuntimeValue<Map<String, Handler>> namedHandlers : additionalNamedHandlers) {
+            additionalNamed.add(namedHandlers.getValue());
+        }
+        return new LoggingCompatBridge.Impl(streaming, logBanner, formatters, List.copyOf(additional),
+                List.copyOf(additionalNamed));
     }
 }

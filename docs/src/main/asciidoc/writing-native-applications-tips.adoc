@@ -282,7 +282,7 @@ public class MyReflectionConfiguration {
 
 [WARNING]
 ====
-Note that the order of the specified proxy interfaces is significant. For more information, see link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/reflect/Proxy.html[Proxy javadoc].
+Note that the order of the specified proxy interfaces is significant. For more information, see link:{jdk-javadocs-url}/java.base/java/lang/reflect/Proxy.html[Proxy javadoc].
 ====
 
 === Registering resource bundles and resource files

@@ -30,7 +30,7 @@
         <jandex.version>3.6.1</jandex.version>
         <jandex-gradle-plugin.version>2.3.0</jandex-gradle-plugin.version>
 
-        <asciidoctorj.version>3.0.0</asciidoctorj.version>
+        <asciidoctorj.version>3.0.1</asciidoctorj.version>
         <htmlunit.version>5.6.0</htmlunit.version>
         <javaparser-core.version>3.28.2</javaparser-core.version>
         <jdeparser2.version>2.1.0</jdeparser2.version>
@@ -134,10 +134,10 @@
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.8.1</keycloak.server.version>
+        <keycloak.server.version>26.8.2</keycloak.server.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
 
-        <unboundid-ldap.version>7.0.5</unboundid-ldap.version>
+        <unboundid-ldap.version>7.0.6</unboundid-ldap.version>
 
         <assertj.version>3.27.7</assertj.version>
         <!-- Keep in sync with VineflowerDecompiler.DEFAULT_VINEFLOWER_VERSION -->

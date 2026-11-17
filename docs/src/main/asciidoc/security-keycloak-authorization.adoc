@@ -543,13 +543,13 @@ The time required to pre-load resources from Keycloak during startup depends on 
 
 In the default configuration, Keycloak manages the roles and decides who can access which routes.
 
-To configure the protected routes by using the `@RolesAllowed` annotation or the `application.properties` file, check the xref:security-oidc-bearer-token-authentication.adoc[OpenID Connect (OIDC) Bearer token authentication] and xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints] guides.
+To configure the protected routes by using the `@RolesAllowed` annotation or the `application.properties` file, check the xref:security-oidc-bearer-token-authentication.adoc[OpenID Connect (OIDC) Bearer token authentication] and xref:security-authorize-web-endpoints-reference.adoc[Authorize access to web endpoints] guides.
 For more details, check the xref:security-overview.adoc[Quarkus Security overview].
 
 == Access to public resources
 
 To allow access to a public resource without applying `quarkus-keycloak-authorization` policies, define a `permit` HTTP policy in the `application.properties` file.
-For more information, see the xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints] guide.
+For more information, see the xref:security-authorize-web-endpoints-reference.adoc[Authorize access to web endpoints] guide.
 
 You do not need to disable policy checks for a Keycloak Authorization Policy when using configurations like the following:
 
@@ -655,7 +655,7 @@ public class ProtectedResource {
 <2> The `/programmatic-way` sub-path checks only for the `Scope Permission Resource` permission by default.
 However, you can enforce additional constraints, such as scope requirements, by using `SecurityIdentity#checkPermission`.
 <3> The `@PermissionsAllowed` annotation at `/annotation-way` restricts access to requests that have the `Scope Permission Resource` permission along with the `read` scope.
-For more information, see the section xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Authorization using annotations] of the Authorization of web endpoints guide.
+For more information, see the section xref:security-authorize-web-endpoints-reference.adoc#permission-annotation[Authorize with permissions] of the Authorize access to web endpoints guide.
 
 == Multi-tenancy
 

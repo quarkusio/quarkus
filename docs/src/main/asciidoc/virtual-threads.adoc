@@ -11,7 +11,7 @@ include::_attributes.adoc[]
 :runonvthread: https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/latest/io/smallrye/common/annotation/RunOnVirtualThread.html
 :blockingannotation: https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/latest/io/smallrye/common/annotation/Blocking.html
 :vthreadjep: https://openjdk.org/jeps/425
-:thread: https://docs.oracle.com/en/java/javase/18/docs/api/java.base/java/lang/Thread.html
+:thread: {jdk-javadocs-url}/java.base/java/lang/Thread.html
 :pgsql-driver: https://javadoc.io/doc/org.postgresql/postgresql/latest/index.html
 :topics: virtual-threads
 

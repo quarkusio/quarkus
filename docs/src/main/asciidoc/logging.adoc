@@ -27,7 +27,7 @@ This means you can use your favorite logging API with Quarkus, provided you add 
 | link:https://github.com/jboss-logging/jboss-logging[JBoss Logging]
 | Built-in
 
-| link:https://docs.oracle.com/en/java/javase/17/docs/api/java.logging/java/util/logging/package-summary.html[JDK `java.util.logging` (JUL)]
+| link:{jdk-javadocs-url}/java.logging/java/util/logging/package-summary.html[JDK `java.util.logging` (JUL)]
 | Built-in
 
 | link:https://www.slf4j.org/[SLF4J]
@@ -578,6 +578,24 @@ When you use xref:opentelemetry-tracing.adoc[OpenTelemetry], Quarkus flattens tr
 Google Cloud requires the `trace` field to follow the `"projects/<my-trace-project>/traces/12345"` format.
 `<my-trace-project>` uses the value of the `quarkus.application.name` configuration property.
 
+[id="json-named-handlers"]
+==== JSON format for named handlers
+
+A named handler, such as `quarkus.log.handler.file.<name>`, uses the JSON format when `quarkus.log.handler.file.<name>.json.enabled=true`, and the plain text `format` when `quarkus.log.handler.file.<name>.json.enabled=false`.
+
+When `json.enabled` is not set on the named handler, the handler inherits the JSON configuration of its handler type, for example `quarkus.log.file.json.*` for a named file handler, unless it sets its own `format`.
+A named handler with a custom `format` uses that format:
+
+[source,properties]
+----
+quarkus.log.file.json.enabled=true
+
+# Uses its own plain text format, not JSON
+quarkus.log.handler.file.my-file-handler.enabled=true
+quarkus.log.handler.file.my-file-handler.path=/tmp/my-file.log
+quarkus.log.handler.file.my-file-handler.format=%d{yyyy-MM-dd HH:mm:ss} [%p] %s%e%n
+----
+
 
 [id="json-provider"]
 ==== Custom JSON fields with JsonProvider
@@ -786,7 +804,7 @@ For an example configuration, see the xref:centralized-log-management.adoc[Centr
 
 == Add a logging filter to your log handler
 
-You can attach a link:https://docs.oracle.com/en/java/javase/17/docs/api/java.logging/java/util/logging/Filter.html[filter] to a log handler such as the console handler.
+You can attach a link:{jdk-javadocs-url}/java.logging/java/util/logging/Filter.html[filter] to a log handler such as the console handler.
 The filter determines whether the handler logs a given log record.
 
 To register a logging filter:

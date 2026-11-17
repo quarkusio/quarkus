@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
@@ -96,6 +97,12 @@ public interface ContainerImageConfig {
     @WithDefault("-aot")
     Optional<String> aotImageSuffix();
 
+    /**
+     * Options to write the container image to a tarball instead of loading it into a container runtime.
+     * Currently only supported by the Jib extension.
+     */
+    Tar tar();
+
     default String effectiveAotImageSuffix() {
         return aotImageSuffix().orElse("").strip();
     }
@@ -114,5 +121,27 @@ public interface ContainerImageConfig {
 
     default boolean isPushExplicitlyDisabled() {
         return push().isPresent() && !push().get();
+    }
+
+    interface Tar {
+
+        /**
+         * Whether the container image is written to a tarball instead of being loaded into the Docker or Podman daemon.
+         * This can only be used when the container image is built locally.
+         * Combining it with a push to a registry fails the build.
+         *
+         * No container runtime is needed in this mode. The tarball can later be loaded with {@code docker load} or
+         * {@code podman load}.
+         */
+        @WithDefault("false")
+        boolean enabled();
+
+        /**
+         * The path of the tarball the container image is written to when {@code quarkus.container-image.tar.enabled}
+         * is set.
+         * If the path is relative, the base path is the output directory of the build tool.
+         */
+        @ConfigDocDefault("<group>-<name>-<tag>.tar, the name of the container image that is built")
+        Optional<String> file();
     }
 }

@@ -48,6 +48,7 @@ endif::[]
 :infinispan-image: ${infinispan.image}
 :jandex-version: ${jandex.version}
 :jandex-gradle-plugin-version: ${jandex-gradle-plugin.version}
+:kafka-version: ${kafka.version}
 :kotlin-version: ${kotlin.version}
 :grpc-version: ${grpc.version}
 :protoc-version: ${protoc.version}
@@ -114,5 +115,10 @@ endif::[]
 :name-image-ubi10-open-jdk-21-short: ubi10/openjdk-21
 :name-image-ubi10-open-jdk-25: registry.access.redhat.com/ubi10/openjdk-25
 :name-image-ubi10-open-jdk-25-short: ubi10/openjdk-25
+// .
+// JDK documentation. Defined after jdk-version-latest rather than next to the other doc URLs above,
+// because an attribute reference is resolved when the attribute is defined.
+:jdk-docs-url: https://docs.oracle.com/en/java/javase/{jdk-version-latest}/docs
+:jdk-javadocs-url: {jdk-docs-url}/api
 // .
 include::_attributes-local.adoc[]

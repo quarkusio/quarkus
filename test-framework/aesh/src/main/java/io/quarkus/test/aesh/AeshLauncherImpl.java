@@ -186,9 +186,35 @@ public class AeshLauncherImpl implements AeshLauncher {
         // have advanced instead). A skipped post-completion re-arm would
         // otherwise surface one command later as an undebuggable hang
         // (see https://github.com/aeshell/aesh/issues/634).
+        //
+        // The check cannot assert synchronously on the completion signal:
+        // CommandJob fires onCommandComplete right after requesting the
+        // drain turn, while the re-arm (console.read()) lands whenever the
+        // turn runs — possibly on another thread, after this thread wakes.
+        // Healthy runs therefore show a delta of 1 or 2 depending on the
+        // race, so wait briefly for the re-arm to land instead of asserting
+        // immediately (see https://github.com/aeshell/aesh/issues/694).
+        // The threshold stays at 2: the submit stub alone yields 1, so
+        // relaxing to >= 1 would mask a genuine #634-style skip.
         AeshTestThread testThread = (AeshTestThread) replThread;
         long armNow = testThread.armCount().get();
         long closeNow = testThread.connectionCloseNanos().get();
+        if (lastExitCode == 0 && armNow - armCountAtLastCompletion < 2
+                && closeNow == closeNanosAtLastCompletion) {
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+            do {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+                armNow = testThread.armCount().get();
+                closeNow = testThread.connectionCloseNanos().get();
+            } while (armNow - armCountAtLastCompletion < 2
+                    && closeNow == closeNanosAtLastCompletion
+                    && System.nanoTime() < deadline);
+        }
         if (lastExitCode == 0 && armNow - armCountAtLastCompletion < 2
                 && closeNow == closeNanosAtLastCompletion) {
             throw new AssertionError(

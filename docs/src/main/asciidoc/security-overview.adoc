@@ -25,7 +25,7 @@ endif::no-webauthn-authentication[]
 Authentication mechanisms depend on xref:security-identity-providers.adoc[Identity providers] to verify the authentication credentials and map them to a `SecurityIdentity` instance with the username, roles, original authentication credentials, and other attributes.
 
 {project-name} also includes built-in security to allow for role-based access control (RBAC) based on the common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAll` on REST endpoints, and Contexts and Dependency Injection (CDI) beans.
-For more information, see the Quarkus xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints] guide.
+For more information, see the Quarkus xref:security-authorize-web-endpoints-reference.adoc[Authorize access to web endpoints] guide.
 
 Quarkus Security also supports the following features:
 

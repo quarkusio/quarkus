@@ -27,7 +27,6 @@ import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.ConfigValue;
-import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.Expressions;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
@@ -162,8 +161,6 @@ public final class EffectiveConfig {
         propagateSources.add("PropertiesConfigSource[source=projectProperties]");
         propagateSources.add("PropertiesConfigSource[source=platformProperties]");
         propagateSources.add(SysPropConfigSource.NAME);
-        // It may look weird to include default values, but we do it because of EffectiveConfigProvider#buildEffectiveConfiguration
-        propagateSources.add(DefaultValuesConfigSource.NAME);
         return Expressions.withoutExpansion(new Supplier<Map<String, String>>() {
             @Override
             public Map<String, String> get() {

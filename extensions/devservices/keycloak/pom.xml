@@ -38,7 +38,37 @@
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-admin-client-jackson3</artifactId>
+            <!-- only the Keycloak representations and their Jackson 3 support are used -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jboss.resteasy</groupId>
+                    <artifactId>resteasy-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jboss.resteasy</groupId>
+                    <artifactId>resteasy-multipart-provider</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jboss.resteasy</groupId>
+                    <artifactId>resteasy-jaxb-provider</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>dev.resteasy.providers</groupId>
+                    <artifactId>resteasy-jackson-provider</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <!-- Compile only: the Jackson 2 variant of the Keycloak representations is used instead of the Jackson 3 one
+             when it is on the classpath (brought by quarkus-keycloak-authorization), see KeycloakJson -->
+        <dependency>
+            <groupId>org.keycloak</groupId>
             <artifactId>keycloak-client-common-synced</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
     <build>

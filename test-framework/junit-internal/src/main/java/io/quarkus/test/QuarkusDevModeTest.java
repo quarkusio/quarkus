@@ -62,6 +62,7 @@ import io.quarkus.deployment.dev.testing.TestConfigCustomizer;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.testing.TestScanningLock;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
@@ -147,6 +148,7 @@ public class QuarkusDevModeTest
     private String[] commandLineArgs = new String[0];
     private final Map<String, String> buildSystemProperties = new HashMap<>();
     private boolean allowFailedStart = false;
+    private List<Dependency> forcedDependencies = Collections.emptyList();
 
     private static final List<CompilationProvider> compilationProviders;
 
@@ -490,7 +492,7 @@ public class QuarkusDevModeTest
                         .setTestResourcesOutputPath(testClasses.toAbsolutePath().toString());
             }
 
-            final ApplicationModel originalAppModel = resolveOriginalAppModel();
+            final ApplicationModel originalAppModel = resolveOriginalAppModel(forcedDependencies);
             var testArtifact = originalAppModel.getAppArtifact();
 
             context.setApplicationRoot(moduleBuilder.setArtifactKey(testArtifact.getKey()).build());
@@ -513,14 +515,16 @@ public class QuarkusDevModeTest
     /**
      * Resolves an {@link ApplicationModel} for the current module running the test.
      *
+     * @param forcedDependencies dependencies to add to the application, or whose version to override
      * @return application model for the module runnign the test
      */
-    private static ApplicationModel resolveOriginalAppModel() {
+    private static ApplicationModel resolveOriginalAppModel(List<Dependency> forcedDependencies) {
         try {
             return BootstrapAppModelFactory.newInstance()
                     .setTest(true)
                     .setDevMode(true)
                     .setProjectRoot(Path.of("").normalize().toAbsolutePath())
+                    .setForcedDependencies(forcedDependencies)
                     .resolveAppModel()
                     .getApplicationModel();
         } catch (BootstrapException e) {
@@ -893,6 +897,15 @@ public class QuarkusDevModeTest
 
     public QuarkusDevModeTest setAllowFailedStart(boolean allowFailedStart) {
         this.allowFailedStart = allowFailedStart;
+        return this;
+    }
+
+    /**
+     * Provides a convenient way to either add additional dependencies to the application (if it doesn't already contain a
+     * dependency), or override a version (if the dependency already exists)
+     */
+    public QuarkusDevModeTest setForcedDependencies(List<Dependency> forcedDependencies) {
+        this.forcedDependencies = forcedDependencies;
         return this;
     }
 

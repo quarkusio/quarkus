@@ -232,6 +232,20 @@ class RestClientProcessor {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(iName).methods().build());
         }
 
+        // the interfaces returned by sub-resource locators are proxied by RESTEasy at runtime as well
+        Set<DotName> subResources = new HashSet<>();
+        Set<DotName> visited = new HashSet<>();
+        for (ClassInfo iface : interfaces.values()) {
+            collectSubResources(index, iface, subResources, visited);
+        }
+        for (DotName subResource : subResources) {
+            if (!interfaces.containsKey(subResource)) {
+                String iName = subResource.toString();
+                proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(iName, ResteasyClientProxy.class.getName()));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(iName).methods().build());
+            }
+        }
+
         // Incoming headers
         // required for the non-arg constructor of DCHFImpl to be included in the native image
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(DefaultClientHeadersFactoryImpl.class.getName()).methods()
@@ -419,6 +433,42 @@ class RestClientProcessor {
                 }
             }
         }
+    }
+
+    /**
+     * Collects the interfaces returned by the sub-resource locators of the given interface, recursively: the methods
+     * annotated with {@code @Path} without an HTTP method annotation and returning an interface, like RESTEasy does.
+     */
+    private static void collectSubResources(IndexView index, ClassInfo iface, Set<DotName> subResources,
+            Set<DotName> visited) {
+        if (!visited.add(iface.name())) {
+            return;
+        }
+        for (MethodInfo method : iface.methods()) {
+            if (!method.hasDeclaredAnnotation(PATH) || hasHttpMethodAnnotation(method)) {
+                continue;
+            }
+            ClassInfo returnType = index.getClassByName(method.returnType().name());
+            if (returnType != null && returnType.isInterface()) {
+                subResources.add(returnType.name());
+                collectSubResources(index, returnType, subResources, visited);
+            }
+        }
+        for (Type interfaceType : iface.interfaceTypes()) {
+            ClassInfo parent = index.getClassByName(interfaceType.name());
+            if (parent != null) {
+                collectSubResources(index, parent, subResources, visited);
+            }
+        }
+    }
+
+    private static boolean hasHttpMethodAnnotation(MethodInfo method) {
+        for (DotName httpMethod : ResteasyDotNames.JAXRS_METHOD_ANNOTATIONS) {
+            if (method.hasDeclaredAnnotation(httpMethod)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void processInterfaceReturnTypes(ClassInfo classInfo, Set<Type> returnTypes) {

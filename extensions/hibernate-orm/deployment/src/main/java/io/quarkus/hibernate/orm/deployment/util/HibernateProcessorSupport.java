@@ -204,7 +204,10 @@ public final class HibernateProcessorSupport {
         if (supportedDatabaseKind.isPresent()
                 && (supportedDatabaseKind.get() == SupportedDatabaseKind.MARIADB ||
                         supportedDatabaseKind.get() == SupportedDatabaseKind.MYSQL)) {
-            if (mariaDbStorageEngine != null) {
+            // The setting for the actual database takes precedence; the other one is only used as a fallback
+            if (supportedDatabaseKind.get() == SupportedDatabaseKind.MYSQL && mysqlDbStorageEngine != null) {
+                addStorageEngine(mysqlDbStorageEngine, puPropertiesCollector);
+            } else if (mariaDbStorageEngine != null) {
                 addStorageEngine(mariaDbStorageEngine, puPropertiesCollector);
             } else if (mysqlDbStorageEngine != null) {
                 addStorageEngine(mysqlDbStorageEngine, puPropertiesCollector);
@@ -215,11 +218,11 @@ public final class HibernateProcessorSupport {
             if (mariaDbStorageEngine != null) {
                 storageEngine = mariaDbStorageEngine;
                 storageEngineSource = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName,
-                        "dialect.storage-engine");
+                        "dialect.mariadb.storage-engine");
             } else if (mysqlDbStorageEngine != null) {
                 storageEngine = mysqlDbStorageEngine;
                 storageEngineSource = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName,
-                        "dialect.storage-engine");
+                        "dialect.mysql.storage-engine");
             } else {
                 storageEngine = null;
                 storageEngineSource = null;
@@ -424,6 +427,18 @@ public final class HibernateProcessorSupport {
             if (memory.weigherClass().isPresent() && memory.maximumWeight().isEmpty()) {
                 throw new IllegalStateException(
                         "Cache region '" + cacheName + "': 'weigher-class' requires 'maximum-weight' to be set.");
+            }
+            if (memory.maximumWeight().isPresent() && memory.weigherClass().isEmpty()) {
+                throw new IllegalStateException(
+                        "Cache region '" + cacheName + "': 'maximum-weight' requires 'weigher-class' to be set.");
+            }
+            if (memory.objectCount().isPresent() && memory.objectCount().getAsLong() < 0) {
+                throw new IllegalStateException(
+                        "Cache region '" + cacheName + "': 'object-count' must not be negative.");
+            }
+            if (memory.maximumWeight().isPresent() && memory.maximumWeight().getAsLong() < 0) {
+                throw new IllegalStateException(
+                        "Cache region '" + cacheName + "': 'maximum-weight' must not be negative.");
             }
 
             caches.put(cacheName, new QuarkusPersistenceUnitCacheConfiguration.Cache(

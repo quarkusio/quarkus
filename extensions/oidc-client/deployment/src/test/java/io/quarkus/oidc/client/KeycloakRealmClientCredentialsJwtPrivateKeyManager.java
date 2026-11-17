@@ -10,9 +10,9 @@ import java.util.Map;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.util.JsonSerialization;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
@@ -23,22 +23,15 @@ public class KeycloakRealmClientCredentialsJwtPrivateKeyManager implements Quark
 
     @Override
     public Map<String, String> start() {
+        RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
+
         try {
-            RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
-
             realm.getClients().add(createClient("quarkus-app"));
-
-            RestAssured
-                    .given()
-                    .auth().oauth2(getAdminAccessToken())
-                    .contentType("application/json")
-                    .body(JsonSerialization.writeValueAsBytes(realm))
-                    .when()
-                    .post(KEYCLOAK_SERVER_URL + "/admin/realms").then()
-                    .statusCode(201);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+        new KeycloakTestClient(KEYCLOAK_SERVER_URL + "/realms/master").createRealm(realm);
         return Collections.emptyMap();
     }
 

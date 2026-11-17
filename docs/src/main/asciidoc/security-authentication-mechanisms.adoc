@@ -1283,4 +1283,4 @@ For more information, see the Quarkus xref:security-proactive-authentication.ado
 * xref:security-overview.adoc[Quarkus Security overview]
 * xref:security-architecture.adoc[Quarkus Security architecture]
 * xref:security-identity-providers.adoc[Identity providers]
-* xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints]
+* xref:security-authorize-web-endpoints-reference.adoc[Authorize access to web endpoints]

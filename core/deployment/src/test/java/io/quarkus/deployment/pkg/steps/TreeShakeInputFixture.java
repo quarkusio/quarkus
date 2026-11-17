@@ -16,6 +16,7 @@ import io.smallrye.classfile.Annotation;
 import io.smallrye.classfile.AnnotationElement;
 import io.smallrye.classfile.ClassBuilder;
 import io.smallrye.classfile.ClassFile;
+import io.smallrye.classfile.attribute.EnclosingMethodAttribute;
 import io.smallrye.classfile.attribute.InnerClassInfo;
 import io.smallrye.classfile.attribute.InnerClassesAttribute;
 import io.smallrye.classfile.attribute.RuntimeVisibleAnnotationsAttribute;
@@ -165,15 +166,79 @@ final class TreeShakeInputFixture {
      * Generates a class declaring the given member classes in its {@code InnerClasses} attribute.
      */
     static byte[] classWithMembers(String name, String... memberClasses) {
+        return classWithMembers(name, null, List.of(memberClasses), List.of());
+    }
+
+    /**
+     * Generates a class with the given superclass ({@code null} for {@code Object}), declaring the given public
+     * and private member classes in its {@code InnerClasses} attribute.
+     */
+    static byte[] classWithMembers(String name, String superName, List<String> publicMembers,
+            List<String> privateMembers) {
         return ClassFile.of().build(ClassDesc.of(name), classBuilder -> {
             classBuilder.withFlags(ClassFile.ACC_PUBLIC);
-            List<InnerClassInfo> members = new ArrayList<>(memberClasses.length);
-            for (String member : memberClasses) {
-                members.add(InnerClassInfo.of(ClassDesc.of(member), Optional.of(ClassDesc.of(name)),
-                        Optional.of(member.substring(member.lastIndexOf('$') + 1)),
-                        ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC));
+            if (superName != null) {
+                classBuilder.withSuperclass(ClassDesc.of(superName));
             }
+            List<InnerClassInfo> members = new ArrayList<>(publicMembers.size() + privateMembers.size());
+            addMembers(members, name, publicMembers, ClassFile.ACC_PUBLIC);
+            addMembers(members, name, privateMembers, ClassFile.ACC_PRIVATE);
             classBuilder.with(InnerClassesAttribute.of(members));
+        });
+    }
+
+    private static void addMembers(List<InnerClassInfo> members, String name, List<String> memberClasses, int access) {
+        for (String member : memberClasses) {
+            members.add(InnerClassInfo.of(ClassDesc.of(member), Optional.of(ClassDesc.of(name)),
+                    Optional.of(member.substring(member.lastIndexOf('$') + 1)),
+                    access | ClassFile.ACC_STATIC));
+        }
+    }
+
+    /**
+     * Generates a class whose static method calls the given {@link Class} method, such as
+     * {@code getDeclaredClasses}, on the class literal of the given target class.
+     */
+    static byte[] classCallingClassMethod(String name, String classMethod, String targetClass) {
+        return ClassFile.of().build(ClassDesc.of(name), classBuilder -> {
+            classBuilder.withFlags(ClassFile.ACC_PUBLIC);
+            classBuilder.withMethodBody("call", MethodTypeDesc.of(ConstantDescs.CD_void),
+                    ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC, code -> {
+                        code.loadConstant(ClassDesc.of(targetClass));
+                        code.invokevirtual(ConstantDescs.CD_Class, classMethod,
+                                MethodTypeDesc.of(ConstantDescs.CD_Class.arrayType()));
+                        code.pop();
+                        code.return_();
+                    });
+        });
+    }
+
+    /**
+     * Generates a member class declaring itself a member of the given enclosing class in its {@code InnerClasses}
+     * attribute, whose static method loads a class literal of each of the referenced classes.
+     */
+    static byte[] nestedClass(String name, String enclosingClass, String... referencedClasses) {
+        return ClassFile.of().build(ClassDesc.of(name), classBuilder -> {
+            classBuilder.withFlags(ClassFile.ACC_PUBLIC);
+            classBuilder.with(InnerClassesAttribute.of(List.of(InnerClassInfo.of(ClassDesc.of(name),
+                    Optional.of(ClassDesc.of(enclosingClass)),
+                    Optional.of(name.substring(name.lastIndexOf('$') + 1)),
+                    ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC))));
+            addReferencingMethod(classBuilder, referencedClasses);
+        });
+    }
+
+    /**
+     * Generates an anonymous class, which names its enclosing class in its {@code EnclosingMethod} attribute and
+     * has no outer class in its {@code InnerClasses} attribute.
+     */
+    static byte[] anonymousClass(String name, String enclosingClass, String enclosingMethod) {
+        return ClassFile.of().build(ClassDesc.of(name), classBuilder -> {
+            classBuilder.withFlags(ClassFile.ACC_PUBLIC);
+            classBuilder.with(EnclosingMethodAttribute.of(ClassDesc.of(enclosingClass),
+                    Optional.of(enclosingMethod), Optional.of(MethodTypeDesc.of(ConstantDescs.CD_void))));
+            classBuilder.with(InnerClassesAttribute.of(List.of(InnerClassInfo.of(ClassDesc.of(name),
+                    Optional.empty(), Optional.empty(), ClassFile.ACC_PUBLIC))));
         });
     }
 

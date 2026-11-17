@@ -897,7 +897,7 @@ quarkus.oidc.b.tenant-paths=/*/hello <3>
 <2> The wildcard placed at the end of the path represents any number of path segments. However the path is less specific than the `/api/hello`, therefore the `hr` tenant will be used to secure the `sayHello` endpoint.
 <3> The wildcard in the `/*/hello` represents exactly one path segment. Nevertheless, the wildcard is less specific than the `api`, therefore the `hr` tenant will be used.
 
-TIP: Path-matching mechanism works exactly same as in the xref:security-authorize-web-endpoints-reference.adoc#authorization-using-configuration[Authorization using configuration].
+TIP: Path-matching mechanism works exactly same as in the xref:security-authorize-web-endpoints-reference.adoc#path-matching-rules[Path-matching rules] section.
 
 [[issuer-based-tenant-resolver]]
 ==== Resolve tenants with a token issuer claim

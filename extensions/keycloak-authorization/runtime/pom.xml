@@ -48,6 +48,13 @@
             <groupId>org.jboss.logging</groupId>
             <artifactId>commons-logging-jboss-logging</artifactId>
         </dependency>
+        <!-- Support for the Keycloak admin client extensions, which use the Jackson 3 variant of the Keycloak
+             representations while this extension brings the Jackson 2 variant, see KeycloakAdminClientJackson2Bridge -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-keycloak-admin-client-common</artifactId>
+            <optional>true</optional>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit-internal</artifactId>
@@ -64,6 +71,12 @@
                     <capabilities>
                         <provides>io.quarkus.keycloak.authorization</provides>
                     </capabilities>
+                    <lesserPriorityArtifacts>
+                        <!-- The Jackson 2 variant of the Keycloak representations (keycloak-client-common-synced) must win
+                             against the Jackson 3 variant used by the Keycloak admin client extensions when both are on the
+                             classpath, see KeycloakAdminClientSupportProcessor -->
+                        <lesserPriorityArtifact>org.keycloak:keycloak-client-common-synced-jackson3</lesserPriorityArtifact>
+                    </lesserPriorityArtifacts>
                 </configuration>
             </plugin>
             <plugin>

@@ -30,7 +30,6 @@ import org.hibernate.accessor.AccessorFactory;
 import org.hibernate.validator.HibernateValidatorFactory;
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
-import org.hibernate.validator.internal.engine.AbstractConfigurationImpl;
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolver;
 import org.hibernate.validator.spi.nodenameprovider.PropertyNodeNameProvider;
 import org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy;
@@ -211,15 +210,12 @@ public class HibernateValidatorRecorder {
                 }
 
                 configuration.accessorFactory(accessorFactory.getValue());
+                configuration.beanProvider(new ArcBeanProvider(Arc.container()));
 
                 Instance<ValidatorFactoryCustomizer> validatorFactoryCustomizers = context
                         .getInjectedReference(INSTANCE_VALIDATOR_FACTORY_CUSTOMER_TYPE_LITERAL);
                 for (ValidatorFactoryCustomizer validatorFactoryCustomizer : validatorFactoryCustomizers) {
                     validatorFactoryCustomizer.customize(configuration);
-                }
-                if (configuration instanceof AbstractConfigurationImpl<?> configurationWithProgrammaticMappings) {
-                    configurationWithProgrammaticMappings.getProgrammaticMappings()
-                            .forEach(mapping -> classesToBeValidated.addAll(mapping.getConfiguredTypes()));
                 }
                 // Filter out classes with incomplete hierarchy
                 filterIncompleteClasses(classesToBeValidated);

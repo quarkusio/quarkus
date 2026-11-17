@@ -975,7 +975,7 @@ public class CustomHttpSecurityPolicy implements HttpSecurityPolicy {
 ----
 <1> The `custom` name must match the name specified with the `io.quarkus.vertx.http.security.AuthorizationPolicy#name` attribute.
 
-See also the xref:security-authorize-web-endpoints-reference.adoc#custom-http-security-policy[Custom HttpSecurityPolicy] section of the Authorization of web endpoints guide for more information about custom policies.
+See also the xref:security-authorize-web-endpoints-reference.adoc#custom-http-security-policy[Write a custom HTTP security policy] section of the Authorize access to web endpoints guide for more information about custom policies.
 
 [[secure-callback-methods]]
 ==== Secure WebSocket endpoint callback methods

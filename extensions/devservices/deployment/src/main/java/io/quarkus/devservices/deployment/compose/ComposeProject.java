@@ -127,8 +127,7 @@ public class ComposeProject {
             String serviceName = definition.getServiceName();
             Map<String, Object> labels = definition.getLabels();
             // Skip the service if profiles doesn't match
-            if (!definition.getProfiles().isEmpty() &&
-                    definition.getProfiles().stream().noneMatch(profiles::contains)) {
+            if (!isActiveInProfiles(definition)) {
                 continue;
             }
             // Add wait for health check
@@ -166,6 +165,23 @@ public class ComposeProject {
         }
     }
 
+    private boolean isActiveInProfiles(ComposeServiceDefinition definition) {
+        return definition.getProfiles().isEmpty() || definition.getProfiles().stream().anyMatch(profiles::contains);
+    }
+
+    /**
+     * Services that expect Quarkus to copy a file with their port mappings into the container.
+     * Such services may only become healthy once that file is present.
+     */
+    private List<String> getServicesWithExposedPorts() {
+        return composeFiles.getServiceDefinitions().values().stream()
+                .filter(this::isActiveInProfiles)
+                .filter(definition -> definition.getLabels().containsKey(COMPOSE_EXPOSED_PORTS))
+                .map(ComposeServiceDefinition::getServiceName)
+                .sorted()
+                .toList();
+    }
+
     /**
      * @return the project name
      */
@@ -186,15 +202,15 @@ public class ComposeProject {
 
     public void waitUntilServicesReady(Executor waitOn) {
         checkServicesStarted();
-        copyExposedPortsToContainers();
+        copyExposedPortsToContainers(serviceInstances);
         CompletableFuture.allOf(serviceInstances.stream()
                 .map(srv -> waitOnThread(srv, waitOn))
                 .toArray(CompletableFuture[]::new))
                 .join();
     }
 
-    private void copyExposedPortsToContainers() {
-        for (ComposeServiceWaitStrategyTarget instance : serviceInstances) {
+    void copyExposedPortsToContainers(List<ComposeServiceWaitStrategyTarget> instances) {
+        for (ComposeServiceWaitStrategyTarget instance : instances) {
             InspectContainerResponse inspectContainer = instance.get();
             Map<String, String> labels = inspectContainer.getConfig().getLabels();
             if (labels != null) {
@@ -275,6 +291,8 @@ public class ComposeProject {
             }
         }
 
+        startServicesWithExposedPorts(command);
+
         if (!StringUtil.isNullOrEmpty(scalingOptions)) {
             command += " " + scalingOptions;
         }
@@ -283,17 +301,24 @@ public class ComposeProject {
         runWithCompose(command, env);
     }
 
+    /**
+     * Starts the services that expect the exposed ports file, and copies it, before the rest of the project is started.
+     * Otherwise {@code up -d} blocks on a {@code depends_on} with {@code condition: service_healthy} on a service that
+     * cannot become healthy until the file is present.
+     */
+    private void startServicesWithExposedPorts(String upCommand) {
+        List<String> services = getServicesWithExposedPorts();
+        if (services.isEmpty()) {
+            return;
+        }
+        runWithCompose(upCommand + " " + String.join(" ", services), env);
+        copyExposedPortsToContainers(listRunningServiceInstances(false));
+    }
+
     public synchronized void discoverServiceInstances(boolean checkForRequiredServices) {
         Set<String> servicesToWaitFor = new HashSet<>(waitStrategies.keySet());
-        List<ComposeServiceWaitStrategyTarget> serviceInstances = new ArrayList<>();
-        for (Container container : listChildContainers()) {
-            String state = container.getState();
-            if ("running".equalsIgnoreCase(state) || "restarting".equalsIgnoreCase(state)) {
-                ComposeServiceWaitStrategyTarget instance = createServiceInstance(container, followContainerLogs);
-                serviceInstances.add(instance);
-                servicesToWaitFor.remove(instance.getServiceName());
-            }
-        }
+        List<ComposeServiceWaitStrategyTarget> serviceInstances = listRunningServiceInstances(followContainerLogs);
+        serviceInstances.forEach(instance -> servicesToWaitFor.remove(instance.getServiceName()));
 
         if (checkForRequiredServices && !servicesToWaitFor.isEmpty()) {
             throw new IllegalStateException("Services named " + servicesToWaitFor +
@@ -302,6 +327,17 @@ public class ComposeProject {
 
         this.networks = listChildNetworks();
         this.serviceInstances = serviceInstances;
+    }
+
+    List<ComposeServiceWaitStrategyTarget> listRunningServiceInstances(boolean followLogs) {
+        List<ComposeServiceWaitStrategyTarget> instances = new ArrayList<>();
+        for (Container container : listChildContainers()) {
+            String state = container.getState();
+            if ("running".equalsIgnoreCase(state) || "restarting".equalsIgnoreCase(state)) {
+                instances.add(createServiceInstance(container, followLogs));
+            }
+        }
+        return instances;
     }
 
     private List<Container> listChildContainers() {

@@ -10,7 +10,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationStartBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.runtime.Application;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.StartupEvent;
 
@@ -54,18 +53,12 @@ public class LifecycleEventsBuildStep {
         });
 
         reg
-                .forService("io.quarkus.arc.shutdown-gateway")
+                .forService("io.quarkus.arc.container-shutdown")
                 .atPhase(Phase.INFRASTRUCTURE)
                 .after("io.quarkus.core.last-runtime-shutdown-tasks")
+                .after("io.quarkus.arc.executor")
                 .before("io.quarkus.arc.startup-event")
-                .onStart(ctx -> {
-                    ctx.onStop(() -> {
-                        Application app = Application.currentApplication();
-                        if (app == null || !app.hasStaticGraph()) {
-                            Arc.shutdown();
-                        }
-                    });
-                });
+                .onStart(ctx -> ctx.onStop(Arc::shutdown));
 
         return new ApplicationStartBuildItem();
     }

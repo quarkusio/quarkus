@@ -51,7 +51,6 @@ import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.PreInitRunnableBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ThreadFactoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -241,7 +240,6 @@ class VertxCoreProcessor {
             VertxCoreRecorder recorder,
             ServiceRegistrar reg,
             LaunchModeBuildItem launchMode,
-            ShutdownContextBuildItem shutdown,
             List<VertxBootstrapConsumerBuildItem> vertxBootstrapConsumers,
             List<VertxOptionsConsumerBuildItem> vertxOptionsConsumers,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
@@ -265,7 +263,8 @@ class VertxCoreProcessor {
         List<String> vertxServiceProviderClassNames = loadServiceClassNames(VertxServiceProvider.class);
         List<String> verticleFactoryClassNames = loadServiceClassNames(VerticleFactory.class);
 
-        VertxSupplier vertx = recorder.configureVertx(launchMode.getLaunchMode(), shutdown, bootstrapCustomizer,
+        LaunchMode mode = launchMode.getLaunchMode();
+        VertxSupplier vertx = recorder.configureVertx(mode, bootstrapCustomizer,
                 optionsCustomizer,
                 vertxServiceProviderClassNames, verticleFactoryClassNames, executorBuildItem.getExecutorProxy());
         reg.aliasRecorderValue(VertxSupplier.class, vertx, Phase.INFRASTRUCTURE);
@@ -273,7 +272,10 @@ class VertxCoreProcessor {
                 .forService(Vertx.class)
                 .atPhase(Phase.INFRASTRUCTURE)
                 .require(VertxSupplier.class)
-                .onStart((ctx, supplier) -> supplier.get());
+                .onStart((ctx, supplier) -> {
+                    ctx.onStop(() -> VertxCoreRecorder.stopVertx(mode));
+                    return supplier.get();
+                });
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Vertx.class)
                 .types(Vertx.class)
                 .scope(Singleton.class)

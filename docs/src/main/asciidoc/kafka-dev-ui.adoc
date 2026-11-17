@@ -21,8 +21,22 @@ With the *Kafka Dev UI*, you can directly manage your Kafka cluster and perform 
 * Visualizing records
 * Publishing new records
 * Inspecting the list of consumer groups and their consumption lag
+* Viewing, creating and deleting access control lists (ACLs)
 
 image::kafka-dev-ui-records.png[alt=Kafka Dev UI records, width=80%, align=center]
 
 IMPORTANT: Kafka Dev UI is part of the Quarkus Dev UI and is only available in development mode.
 
+== Managing ACLs
+
+The *Access control list* page lists the ACLs defined on the broker: principal, host, operation, permission, and resource (type, name, pattern type).
+
+Use the *Create ACL* icon to add an ACL.
+The host defaults to `*`.
+Use the *Delete ACL* icon on a row to remove that ACL.
+
+If an operation fails, the page or a notification shows the cause. Typical causes are:
+
+* The broker has no authorizer enabled, so it does not support ACLs.
+* The Kafka client lacks permission. Listing ACLs requires `DESCRIBE` on the `Cluster` resource. Creating or deleting them requires `ALTER`.
+* The broker rejected the request, for example because of an invalid resource name.

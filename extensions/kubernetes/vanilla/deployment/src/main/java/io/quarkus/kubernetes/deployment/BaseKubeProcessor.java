@@ -18,6 +18,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jboss.logging.Logger;
+
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.JobCompletionMode;
 import io.dekorate.kubernetes.annotation.JobRestartPolicy;
@@ -99,6 +101,8 @@ import io.smallrye.config.Config;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
+
+    private static final Logger log = Logger.getLogger(BaseKubeProcessor.class);
 
     protected abstract int priority();
 
@@ -676,7 +680,23 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                         ? managementPort
                         : containerPort;
 
-                final String scrapeScheme = config.prometheus().scrapeScheme();
+                // Before scrape-scheme existed, quarkus.kubernetes.prometheus.scheme=https was the way to scrape over
+                // HTTPS. Keep that meaning when scrape-scheme is not set, so such applications keep using TLS.
+                final Optional<PrometheusConfig.ScrapeScheme> legacyScheme = config.prometheus().scheme()
+                        .flatMap(PrometheusConfig.ScrapeScheme::of);
+                if (legacyScheme.isPresent() && config.prometheus().scrapeScheme().isEmpty()) {
+                    log.warnf("quarkus.kubernetes.prometheus.scheme=%1$s is read as the scrape scheme. "
+                            + "Set quarkus.kubernetes.prometheus.scrape-scheme=%1$s instead: "
+                            + "quarkus.kubernetes.prometheus.scheme names the scheme annotation.",
+                            legacyScheme.get().value());
+                }
+                final String scrapeScheme = config.prometheus().scrapeScheme()
+                        .or(() -> legacyScheme)
+                        .orElse(PrometheusConfig.ScrapeScheme.HTTP)
+                        .value();
+                final String schemeAnnotation = legacyScheme.isPresent()
+                        ? prefix + "/scheme"
+                        : config.prometheus().scheme().orElse(prefix + "/scheme");
                 if (config.prometheus().generateServiceMonitor()) {
                     context.add(new AddServiceMonitorResourceDecorator(
                             scrapeScheme,
@@ -696,7 +716,7 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                             config.prometheus().port().orElse(prefix + "/port"), "" + prometheusPort,
                             PROMETHEUS_ANNOTATION_TARGETS));
                     context.add(new AddAnnotationDecorator(name,
-                            config.prometheus().scheme().orElse(prefix + "/scheme"), scrapeScheme,
+                            schemeAnnotation, scrapeScheme,
                             PROMETHEUS_ANNOTATION_TARGETS));
                 }
             }

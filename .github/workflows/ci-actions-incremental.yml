@@ -383,6 +383,14 @@ jobs:
           restore-keys: |
             ${{ needs.configure.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.configure.outputs.m2-monthly-cache-key }}-
+      - name: Check formatting
+        run: |
+          # The formatting and the order of the imports are checked before the build, to fail fast.
+          # The goals are invoked directly as running the lifecycle up to process-sources requires some artifacts
+          # of the project to be installed: they only need the configuration of the formatter.
+          # They have to be run on the whole reactor.
+          ./mvnw $COMMON_MAVEN_ARGS -Dscalpel.enabled=false -Dscan=false -q -f independent-projects/ide-config install
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -Dscalpel.enabled=false -Dscan=false -Dno-format -Dtcks --fail-at-end net.revelc.code.formatter:formatter-maven-plugin:validate net.revelc.code:impsort-maven-plugin:check
       - name: Populate the .m2 repository (for cache and for shipping to follow-up builds)
         run: |
           ./mvnw -T2C $COMMON_MAVEN_ARGS -Dscalpel.enabled=false -q dependency:go-offline -Dgo-offline

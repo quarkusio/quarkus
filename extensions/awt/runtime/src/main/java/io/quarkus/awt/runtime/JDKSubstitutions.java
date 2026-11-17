@@ -27,7 +27,6 @@ import com.oracle.svm.core.annotate.TargetClass;
 import io.quarkus.runtime.util.IsLinux;
 import io.quarkus.runtime.util.IsMac;
 import io.quarkus.runtime.util.IsWindows;
-import io.quarkus.runtime.util.JavaVersionLessThan25;
 
 /**
  * Getting .pfb/.pfa files to work would require additional runtime re-init adjustments.
@@ -373,34 +372,6 @@ final class Target_sun_java2d_windows_WindowsFlags {
     @Substitute
     private static boolean initNativeFlags() {
         return false;
-    }
-}
-
-/**
- * This is needed for JDK 21, it's not necessary for JDK 25.
- * We don't need to go down the Swing route initialization of popup menus
- * for server-side headless mode.
- * TODO: If an extension in Quarkiverse complains, we revisit it here.
- */
-@TargetClass(className = "sun.awt.im.ExecutableInputMethodManager", onlyWith = { IsWindows.class, JavaVersionLessThan25.class })
-final class Target_sun_awt_im_ExecutableInputMethodManager {
-    @Substitute
-    private void run() {
-        // No-op
-    }
-}
-
-/**
- * This is needed for JDK 21, it's not necessary for JDK 25.
- * We don't need to go down the Swing route initialization of the composition area
- * for server-side headless mode.
- * TODO: If an extension in Quarkiverse complains, we revisit it here.
- */
-@TargetClass(className = "sun.awt.im.CompositionAreaHandler", onlyWith = { IsWindows.class, JavaVersionLessThan25.class })
-final class Target_sun_awt_im_CompositionAreaHandler {
-    @Substitute
-    private void createCompositionArea() {
-        // No-op
     }
 }
 

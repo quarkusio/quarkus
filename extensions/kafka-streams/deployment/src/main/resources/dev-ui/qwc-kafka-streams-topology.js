@@ -109,6 +109,7 @@ export class QwcKafkaStreamsTopology extends observeState(QwcHotReloadElement) {
      			lnk.href = URL.createObjectURL(blob);
      			lnk.download = "Topology-" + devuiState.applicationInfo.applicationName + "-" + new Date().toISOString().replace(/\D/g,'') + ".png";
      			lnk.click();
+                URL.revokeObjectURL(lnk.href);
      			notifier.showSuccessMessage(msg(str`${lnk.download} downloaded.`, { id: 'quarkus-kafka-streams-downloaded' }), 'bottom-end');
      		});
      	};

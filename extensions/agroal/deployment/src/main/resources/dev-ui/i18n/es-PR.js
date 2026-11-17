@@ -8,7 +8,6 @@ export const templates = {
     'quarkus-agroal-generating-data': 'Quarkus Assistant está generando datos... por favor espera.',
     'quarkus-agroal-file-saved': 'Archivo guardado exitosamente',
     'quarkus-agroal-copied-to-clipboard': '¡Copiado al portapapeles exitosamente!',
-    'quarkus-agroal-create-import-sql': 'Crea un import.sql a partir de los datos actuales.',
     'quarkus-agroal-fetching-tables': 'Obteniendo tablas...',
     'quarkus-agroal-generate-er-diagram-title': 'Genera un diagrama ER para las tablas.',
     'quarkus-agroal-stop-watching': 'Dejar de vigilar',

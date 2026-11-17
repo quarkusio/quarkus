@@ -39,9 +39,15 @@
         },
         { "pattern": "^.*$", "group": "jvm-main" }
     ],
+    "modified-modules": {
+        "group": "jvm-modified",
+        "eligible-groups": [ "jvm-heavy", "jvm-main" ],
+        "max-modules": 3
+    },
     "matrix-categories": {
         "Runtime": [
             { "group": "jvm-core-infra", "name-qualifier": "Core infra", "gate": true },
+            { "group": "jvm-modified", "name-qualifier": "Modified modules", "gate": true, "entries": [ "JVM Tests - JDK 21" ] },
             { "group": "jvm-heavy", "name-qualifier": "Heavy modules" },
             { "group": "jvm-main", "name-qualifier": "Other modules" }
         ],

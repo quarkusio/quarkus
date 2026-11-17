@@ -342,7 +342,7 @@ jobs:
       scalpel_impacted_gav: ${{ steps.get-scalpel-config.outputs.impacted_modules_gav }}
       # the groups of the test plan having modules to test, as a JSON array: a job is skipped if its group is not listed
       test_plan_groups: ${{ steps.compute-test-plan.outputs.groups }}
-      jvm_core_infra_matrix: ${{ steps.compute-test-plan.outputs.jvm_core_infra_matrix }}
+      jvm_early_matrix: ${{ steps.compute-test-plan.outputs.jvm_early_matrix }}
       jvm_matrix: ${{ steps.compute-test-plan.outputs.jvm_matrix }}
     steps:
       - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
@@ -493,13 +493,16 @@ jobs:
           else
             origin='Incremental build: only the modules impacted by the changes, as reported by Scalpel, are tested.'
             echo "$SCALPEL_IMPACTED" > target/modules-to-test.txt
+            # The modules modified by the changes, as opposed to the modules that are only impacted by them
+            jq -r '.affectedModules[] | select(.category == "DIRECT") | .path' target/scalpel-report.json > target/modified-modules.txt
           fi
-          .github/compute-test-plan.sh target/modules-to-test.txt target/test-plan "$origin"
+          touch target/modified-modules.txt
+          .github/compute-test-plan.sh target/modules-to-test.txt target/test-plan "$origin" target/modified-modules.txt
           groups=$(jq -c 'keys_unsorted' target/test-plan/test-plan.json)
-          jvm_core_infra_matrix=$(.github/filter-jvm-tests-json.sh target/test-plan/test-plan.json gate)
+          jvm_early_matrix=$(.github/filter-jvm-tests-json.sh target/test-plan/test-plan.json gate)
           jvm_matrix=$(.github/filter-jvm-tests-json.sh target/test-plan/test-plan.json main)
-          echo "groups=${groups}, jvm_core_infra_matrix=${jvm_core_infra_matrix}, jvm_matrix=${jvm_matrix}"
-          echo "jvm_core_infra_matrix=${jvm_core_infra_matrix}" >> $GITHUB_OUTPUT
+          echo "groups=${groups}, jvm_early_matrix=${jvm_early_matrix}, jvm_matrix=${jvm_matrix}"
+          echo "jvm_early_matrix=${jvm_early_matrix}" >> $GITHUB_OUTPUT
           echo "groups=${groups}" >> $GITHUB_OUTPUT
           echo "jvm_matrix=${jvm_matrix}" >> $GITHUB_OUTPUT
       - name: Upload test plan pushed to subsequent jobs
@@ -600,13 +603,14 @@ jobs:
           echo "run_quickstarts=${run_quickstarts}"
           echo "run_quickstarts=${run_quickstarts}" >> $GITHUB_OUTPUT
 
-  # The tests of the core infrastructure (see the jvm-core-infra group in .github/test-plan-rules.json) are run first:
-  # the other test jobs depend on the result of this job, through the core-infra-gate job.
-  jvm-core-infra-tests:
+  # The groups flagged with "gate" in .github/test-plan-rules.json are tested first: the core infrastructure
+  # and, when only a few modules are modified, these modules (on a single JDK, to catch the obvious errors early).
+  # The other test jobs depend on the result of this job, through the early-tests-gate job.
+  jvm-early-tests:
     name: ${{ matrix.java.name }}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
     needs: [configure, initial-build]
-    if: needs.initial-build.outputs.jvm_core_infra_matrix
+    if: needs.initial-build.outputs.jvm_early_matrix
     timeout-minutes: 120
     env: &jvm-tests-env
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
@@ -614,7 +618,7 @@ jobs:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.initial-build.outputs.jvm_core_infra_matrix) }}
+      matrix: ${{ fromJson(needs.initial-build.outputs.jvm_early_matrix) }}
 
     steps: &jvm-tests-steps
       - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
@@ -745,29 +749,29 @@ jobs:
             **/build.log
           retention-days: 7
 
-  # This job always runs, even if there is no core infrastructure module to test, so that the other test jobs can
-  # simply depend on it: it passes if the core infrastructure tests passed or were skipped, and fails otherwise,
+  # This job always runs, even if there is no early test to run, so that the other test jobs can
+  # simply depend on it: it passes if the early tests passed or were skipped, and fails otherwise,
   # which skips all the test jobs depending on it.
-  core-infra-gate:
-    name: Core infra gate
+  early-tests-gate:
+    name: Early tests gate
     runs-on: ubuntu-slim
-    needs: [initial-build, jvm-core-infra-tests]
+    needs: [initial-build, jvm-early-tests]
     if: ${{ !cancelled() && needs.initial-build.result == 'success' }}
     steps:
-      - name: Check the result of the core infrastructure tests
+      - name: Check the result of the early tests
         env:
-          CORE_INFRA_RESULT: ${{ needs.jvm-core-infra-tests.result }}
+          EARLY_TESTS_RESULT: ${{ needs.jvm-early-tests.result }}
         run: |
-          echo "Result of the core infrastructure tests: ${CORE_INFRA_RESULT}"
-          if [[ "${CORE_INFRA_RESULT}" != 'success' && "${CORE_INFRA_RESULT}" != 'skipped' ]]; then
-            echo "::error::The core infrastructure tests did not pass, the other test jobs are skipped."
+          echo "Result of the early tests: ${EARLY_TESTS_RESULT}"
+          if [[ "${EARLY_TESTS_RESULT}" != 'success' && "${EARLY_TESTS_RESULT}" != 'skipped' ]]; then
+            echo "::error::The early tests (core infrastructure, modified modules) did not pass, the other test jobs are skipped."
             exit 1
           fi
 
   jvm-tests:
     name: ${{ matrix.java.name }}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, initial-build, core-infra-gate]
+    needs: [configure, initial-build, early-tests-gate]
     if: needs.initial-build.outputs.jvm_matrix
     timeout-minutes: 400
     env: *jvm-tests-env
@@ -780,7 +784,7 @@ jobs:
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, initial-build, core-infra-gate]
+    needs: [configure, initial-build, early-tests-gate]
     env:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
@@ -896,7 +900,7 @@ jobs:
   gradle-tests:
     name: Gradle Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, initial-build, core-infra-gate]
+    needs: [configure, initial-build, early-tests-gate]
     env:
       # leave more space for the actual gradle execution (which is just wrapped by maven)
       MAVEN_OPTS: -Xmx1g
@@ -1000,7 +1004,7 @@ jobs:
   devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'small')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'small')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, initial-build, core-infra-gate]
+    needs: [configure, initial-build, early-tests-gate]
     # Skip main in forks
     if: contains(fromJson(needs.initial-build.outputs.test_plan_groups), 'devtools')
     env:
@@ -1127,7 +1131,7 @@ jobs:
   kubernetes-tests:
     name: Kubernetes Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, initial-build, core-infra-gate]
+    needs: [configure, initial-build, early-tests-gate]
     # Skip main in forks
     if: contains(fromJson(needs.initial-build.outputs.test_plan_groups), 'kubernetes')
     env:
@@ -1227,7 +1231,7 @@ jobs:
   quickstarts-tests:
     name: Quickstarts - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, initial-build, calculate-test-jobs, core-infra-gate]
+    needs: [configure, initial-build, calculate-test-jobs, early-tests-gate]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_quickstarts == 'true'
     env:
@@ -1343,7 +1347,7 @@ jobs:
   platform-tests:
     name: Platform Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.runs-on && fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.java.os-name, 'large')].runsOn, matrix.java.tag) || matrix.java.os-name }}
-    needs: [configure, initial-build, core-infra-gate]
+    needs: [configure, initial-build, early-tests-gate]
     # Skip main in forks
     if: ${{ contains( github.event.pull_request.labels.*.name, 'ci/test-platform') }}
     env:
@@ -1442,7 +1446,7 @@ jobs:
   virtual-thread-native-tests:
     name: Native Tests - Virtual Thread - ${{matrix.category}}
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn, matrix.tag) || matrix.os-name }}
-    needs: [configure, initial-build, calculate-test-jobs, core-infra-gate]
+    needs: [configure, initial-build, calculate-test-jobs, early-tests-gate]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.virtual_threads_matrix != '{}'
     env:
@@ -1522,7 +1526,7 @@ jobs:
 
   tcks-test:
     name: MicroProfile TCKs Tests
-    needs: [configure, initial-build, core-infra-gate]
+    needs: [configure, initial-build, early-tests-gate]
     # Skip main in forks
     if: contains(fromJson(needs.initial-build.outputs.test_plan_groups), 'tcks')
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners['ubuntu-latest-large'].runsOn, 'microprofile-tcks') || 'ubuntu-latest' }}
@@ -1613,7 +1617,7 @@ jobs:
 
   native-tests:
     name: Native Tests - ${{matrix.category}}
-    needs: [configure, initial-build, calculate-test-jobs, core-infra-gate]
+    needs: [configure, initial-build, calculate-test-jobs, early-tests-gate]
     runs-on: ${{ fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[format('{0}-{1}', matrix.os-name, 'large')].runsOn, matrix.tag) || matrix.os-name }}
     env:
       # leave more space for the actual native compilation and execution
@@ -1820,7 +1824,7 @@ jobs:
     # Shared environment: make extra sure not to leak a GitHub token with any permission.
     permissions:
       contents: read
-    needs: [configure, initial-build, calculate-test-jobs, core-infra-gate]
+    needs: [configure, initial-build, calculate-test-jobs, early-tests-gate]
     if: github.repository == 'quarkusio/quarkus' && needs.calculate-test-jobs.outputs.otp_jvm_matrix != '{}'
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
@@ -1930,7 +1934,7 @@ jobs:
     # Shared environment: make extra sure not to leak a GitHub token with any permission.
     permissions:
       contents: read
-    needs: [configure, initial-build, calculate-test-jobs, core-infra-gate]
+    needs: [configure, initial-build, calculate-test-jobs, early-tests-gate]
     if: github.repository == 'quarkusio/quarkus' && needs.calculate-test-jobs.outputs.otp_native_matrix != '{}'
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
@@ -2050,7 +2054,7 @@ jobs:
     name: "PQC Tests"
     runs-on: ubuntu-latest
     container: ubuntu:26.04
-    needs: [configure, initial-build, core-infra-gate]
+    needs: [configure, initial-build, early-tests-gate]
     if: needs.configure.outputs.run-ci-build == 'true'
     timeout-minutes: 60
     env:
@@ -2120,7 +2124,7 @@ jobs:
     runs-on: ubuntu-slim
     name: Build report
     # needs: [configure,initial-build,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests,oracle-test-pilot-jvm-tests,oracle-test-pilot-native-tests]
-    needs: [configure,initial-build,jvm-core-infra-tests,core-infra-gate,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests,oracle-test-pilot-jvm-tests,oracle-test-pilot-native-tests,pqc-tests]
+    needs: [configure,initial-build,jvm-early-tests,early-tests-gate,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests,oracle-test-pilot-jvm-tests,oracle-test-pilot-native-tests,pqc-tests]
     if: always() && needs.configure.outputs.run-ci-build == 'true'
     steps:
       - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0

@@ -8,8 +8,9 @@
 #          e.g. "JVM Tests - JDK 21" becomes "JVM Tests - Heavy modules - JDK 21".
 #          The qualifier has to be before the JDK: the build reporter considers what is before the JDK
 #          as the label of the job and uses it to group the jobs testing the same thing on various platforms.
+#          A group can be restricted to some of the entries of its category with "entries" (the names of the entries).
 #          An entry is dropped if none of its groups is part of the test plan.
-#          The groups flagged with "gate" are tested by a specific job, the other test jobs only run if it passes:
+#          The groups flagged with "gate" are tested first, the other test jobs only run if their tests pass:
 #          the second parameter selects either the jobs of these groups (gate) or the other ones (main).
 #          Nothing is printed if there is no entry left.
 # Note: This script is only for CI and does therefore not aim to be compatible with BSD/macOS.
@@ -44,6 +45,7 @@ JSON=$(echo -n "$JSON" | jq -c --arg jobs "${JOBS}" --slurpfile plan "${TEST_PLA
       . as $entry
       | ($categories[$entry.category] // error("No groups defined for category: " + $entry.category))[]
       | select($plan[0][.group] != null)
+      | select(.entries == null or (.entries | index($entry.name)) != null)
       | select((.gate // false) == ($jobs == "gate"))
       | .["name-qualifier"] as $qualifier
       | $entry + {

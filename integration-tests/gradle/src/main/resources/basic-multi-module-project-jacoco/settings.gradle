@@ -18,5 +18,6 @@ pluginManagement {
 rootProject.name = 'quarkus-basic-multi-module-build'
 
 include ':common'
+include ':library'
 include ':application'
 

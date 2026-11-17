@@ -224,7 +224,12 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
 
         Set<File> alreadyCollectedFiles = new HashSet<>(artifacts.size());
         final Set<ModuleVersionIdentifier> processedModules = new HashSet<>();
-        classpath.getRoot().get().getDependencies().forEach(d -> {
+        final ResolvedComponentResult root = classpath.getRoot().get();
+        // the workspace modules of the project descriptor only cover the projects of the current build
+        final String buildPath = root.getId() instanceof ProjectComponentIdentifier rootProjectId
+                ? rootProjectId.getBuild().getBuildPath()
+                : null;
+        root.getDependencies().forEach(d -> {
             if (d instanceof ResolvedDependencyResult resolved) {
                 byte flags = (byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS);
                 final LaunchMode launchMode = getLaunchMode().get();
@@ -232,7 +237,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                     flags |= COLLECT_RELOADABLE_MODULES;
                 }
                 collectDependencies(resolved, modelBuilder, artifacts, wsModule, alreadyCollectedFiles,
-                        processedModules, flags, projectDescriptor);
+                        processedModules, flags, projectDescriptor, buildPath);
             }
         });
         Set<File> fileDependencies = new HashSet<>(classpath.getAllResolvedFiles().getFiles());
@@ -285,13 +290,14 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             Set<File> collectedArtifactFiles,
             Set<ModuleVersionIdentifier> processedModules,
             byte flags,
-            ProjectDescriptor projectDescriptor) {
+            ProjectDescriptor projectDescriptor,
+            String buildPath) {
         final ModuleVersionIdentifier moduleId = getModuleVersion(resolvedDependency);
         if (!processedModules.add(moduleId)) {
             return;
         }
-        var projectModule = projectDescriptor
-                .getWorkspaceModuleOrNull(WorkspaceModuleId.of(moduleId.getGroup(), moduleId.getName(), moduleId.getVersion()));
+        final WorkspaceModule.Mutable projectModule = getProjectModule(resolvedDependency, moduleId, flags,
+                projectDescriptor, buildPath);
         final List<QuarkusResolvedArtifact> artifacts = getResolvedModuleArtifacts(resolvedArtifacts,
                 resolvedDependency.getSelected().getId());
         if (artifacts.isEmpty()) {
@@ -301,7 +307,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                     collectDependencies(result, modelBuilder, resolvedArtifacts,
                             projectModule,
                             collectedArtifactFiles,
-                            processedModules, finalFlags, projectDescriptor);
+                            processedModules, finalFlags, projectDescriptor, buildPath);
                 }
             });
             return;
@@ -347,11 +353,9 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             if (isFlagOn(flags, COLLECT_RELOADABLE_MODULES)) {
                 if (!depBuilder.isRuntimeExtensionArtifact()
                         && (projectModule != null
-                                // Checking whether current dependency is a project module is a temporary workaround,
-                                // that is required while projectModule for project dependencies is null (current
-                                // deficiency of this task).
-                                // That's why we set the workspace module flag explicitly via setWorkspaceModule().
-                                // Once we have projectModule set for project dependencies, we can remove this workaround.
+                                // projectModule may still be null for a project dependency if it couldn't be resolved
+                                // from the project descriptor (e.g. included builds or Isolated Projects),
+                                // in which case we still flag the dependency as a workspace module.
                                 || resolvedDependency.getSelected().getId() instanceof ProjectComponentIdentifier)) {
                     depBuilder.setReloadable().setWorkspaceModule();
                     modelBuilder.addReloadableWorkspaceModule(artifactKey);
@@ -367,9 +371,29 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             if (dependency instanceof ResolvedDependencyResult result) {
                 collectDependencies(result, modelBuilder, resolvedArtifacts, projectModule,
                         collectedArtifactFiles,
-                        processedModules, flags, projectDescriptor);
+                        processedModules, flags, projectDescriptor, buildPath);
             }
         }
+    }
+
+    private static WorkspaceModule.Mutable getProjectModule(ResolvedDependencyResult resolvedDependency,
+            ModuleVersionIdentifier moduleId, byte flags, ProjectDescriptor projectDescriptor, String buildPath) {
+        final WorkspaceModuleId workspaceModuleId = WorkspaceModuleId.of(moduleId.getGroup(), moduleId.getName(),
+                moduleId.getVersion());
+        WorkspaceModule.Mutable projectModule = projectDescriptor.getWorkspaceModuleOrNull(workspaceModuleId);
+        if (projectModule == null
+                && isFlagOn(flags, COLLECT_RELOADABLE_MODULES)
+                && resolvedDependency.getSelected().getId() instanceof ProjectComponentIdentifier projectId
+                && projectId.getBuild().getBuildPath().equals(buildPath)) {
+            // a dependency on another project of the same build
+            projectModule = projectDescriptor.getWorkspaceModuleForProjectOrNull(projectId.getProjectPath());
+            if (projectModule != null) {
+                // the group and version of the project may not have been set yet when the descriptor was created,
+                // so we use the resolved ones
+                projectModule.setModuleId(workspaceModuleId);
+            }
+        }
+        return projectModule;
     }
 
     private static boolean isApplicationRoot(ApplicationModelBuilder modelBuilder, ArtifactKey artifactKey) {

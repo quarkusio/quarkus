@@ -4,11 +4,14 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.gradle.api.Project;
 import org.gradle.api.internal.file.copy.DefaultCopySpec;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.SourceSetOutput;
@@ -24,10 +27,53 @@ import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 
 public class ProjectDescriptorBuilder {
 
+    private static final String ISOLATED_PROJECTS_PROPERTY = "org.gradle.unsafe.isolated-projects";
+
     public static Provider<DefaultProjectDescriptor> buildForApp(Project project) {
         final ProjectDescriptorBuilder builder = new ProjectDescriptorBuilder(project);
         project.afterEvaluate(evaluated -> ProjectDescriptorBuilder.initSourceDirs(evaluated, builder.moduleBuilder));
-        return project.getProviders().provider(() -> new DefaultProjectDescriptor(builder.moduleBuilder));
+        // Collecting the workspace modules of the other projects requires cross-project access,
+        // which is not allowed with Isolated Projects.
+        // In that case, dependencies on other projects of the build won't have workspace module information.
+        final boolean collectProjectModules = !isolatedProjectsEnabled(project.getProviders());
+        return project.getProviders().provider(() -> new DefaultProjectDescriptor(builder.moduleBuilder,
+                collectProjectModules ? builder.getProjectModules(project) : Map.of()));
+    }
+
+    private static boolean isolatedProjectsEnabled(ProviderFactory providers) {
+        return Boolean.parseBoolean(providers.systemProperty(ISOLATED_PROJECTS_PROPERTY)
+                .orElse(providers.gradleProperty(ISOLATED_PROJECTS_PROPERTY))
+                .getOrElse("false"));
+    }
+
+    /**
+     * Builds the workspace modules of the other Java projects of the build, keyed by project path.
+     * <p>
+     * This method is expected to be called lazily, once all the projects of the task graph have been evaluated,
+     * so that the source directories of the projects the application depends on are known.
+     * Projects that have not been evaluated at this point (e.g. with configuration on demand) are not part of
+     * the build and are skipped.
+     * <p>
+     * Only the projects the application actually depends on are used by the application model task,
+     * which matches them by project path.
+     */
+    private synchronized Map<String, WorkspaceModule.Mutable> getProjectModules(Project project) {
+        if (projectModules != null) {
+            return projectModules;
+        }
+        final Map<String, WorkspaceModule.Mutable> result = new HashMap<>();
+        for (Project p : project.getRootProject().getAllprojects()) {
+            if (p == project
+                    || !p.getState().getExecuted()
+                    || p.getExtensions().findByType(SourceSetContainer.class) == null) {
+                continue;
+            }
+            final WorkspaceModule.Mutable module = newModule(p);
+            initSourceDirs(p, module);
+            result.put(p.getPath(), module);
+        }
+        projectModules = result;
+        return result;
     }
 
     public static void initSourceDirs(Project project, WorkspaceModule.Mutable result) {
@@ -133,14 +179,23 @@ public class ProjectDescriptorBuilder {
         }
     }
 
-    private final WorkspaceModule.Mutable moduleBuilder;
-
-    private ProjectDescriptorBuilder(Project project) {
-        this.moduleBuilder = WorkspaceModule.builder()
+    private static WorkspaceModule.Mutable newModule(Project project) {
+        return WorkspaceModule.builder()
                 .setModuleId(WorkspaceModuleId.of(String.valueOf(project.getGroup()), project.getName(),
                         String.valueOf(project.getVersion())))
                 .setModuleDir(project.getLayout().getProjectDirectory().getAsFile().toPath())
                 .setBuildDir(project.getLayout().getBuildDirectory().get().getAsFile().toPath())
                 .setBuildFile(project.getBuildFile().toPath());
+    }
+
+    private final WorkspaceModule.Mutable moduleBuilder;
+
+    /**
+     * Workspace modules of the other projects of the build, initialized lazily
+     */
+    private Map<String, WorkspaceModule.Mutable> projectModules;
+
+    private ProjectDescriptorBuilder(Project project) {
+        this.moduleBuilder = newModule(project);
     }
 }

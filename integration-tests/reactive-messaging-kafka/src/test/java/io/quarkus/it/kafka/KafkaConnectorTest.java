@@ -6,6 +6,7 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.entry;
 import static org.awaitility.Awaitility.await;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -19,18 +20,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.KafkaCompanionResource;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
-@QuarkusTestResource(KafkaCompanionResource.class)
+@WithTestResource(KafkaCompanionResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-// this test class needs to be executed first, since it relies on number of kafka messages send
-// these messages are send during each test class execution and cannot be easily removed
-@Order(1)
 public class KafkaConnectorTest {
 
     protected static final TypeRef<List<Person>> TYPE_REF = new TypeRef<List<Person>>() {
@@ -41,7 +39,10 @@ public class KafkaConnectorTest {
     @Test
     @Order(1)
     public void testPets() {
-        await().untilAsserted(() -> Assertions.assertEquals(get("/kafka/pets").as(TYPE_REF).size(), 3));
+        given().post("/kafka/produce-pets").then().statusCode(204);
+
+        await().atMost(Duration.ofSeconds(30))
+                .untilAsserted(() -> Assertions.assertEquals(3, get("/kafka/pets").as(TYPE_REF).size()));
     }
 
     @Disabled("MultiSplitter yields flaky results, to investigate")
@@ -56,13 +57,16 @@ public class KafkaConnectorTest {
     @Order(3)
     public void testPrices() {
         KafkaRepeatableReceivers repeatableReceivers = Arc.container().instance(KafkaRepeatableReceivers.class).get();
-        await().untilAsserted(() -> Assertions.assertEquals(6, new HashSet<>(repeatableReceivers.getPrices()).size()));
+        await().atMost(Duration.ofSeconds(30))
+                .untilAsserted(() -> Assertions.assertEquals(6, new HashSet<>(repeatableReceivers.getPrices()).size()));
     }
 
     @Test
     @Order(4)
     public void testDataWithMetadata() {
-        await().untilAsserted(() -> {
+        given().post("/kafka/produce-data-with-metadata").then().statusCode(204);
+
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
             Map<String, String> map = get("/kafka/data-with-metadata").as(new TypeRef<Map<String, String>>() {
             });
             Assertions.assertEquals(3, map.size());
@@ -75,7 +79,9 @@ public class KafkaConnectorTest {
     @Test
     @Order(5)
     public void testDataForKeyed() {
-        await().untilAsserted(() -> {
+        given().post("/kafka/produce-data-for-keyed").then().statusCode(204);
+
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
             List<String> list = get("/kafka/data-for-keyed").as(new TypeRef<List<String>>() {
             });
             Assertions.assertEquals(3, new HashSet<>(list).size());
@@ -117,16 +123,17 @@ public class KafkaConnectorTest {
     @Test
     @Order(8)
     public void testExactlyOnceProcessing() {
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        given().post("/kafka/produce-exactly-once").then().statusCode(204);
+
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
             List<Integer> processed = get("/kafka/exactly-once-processed").as(new TypeRef<List<Integer>>() {
             });
             Assertions.assertTrue(processed.size() >= 6, "Expected at least 6 processed, got " + processed.size());
         });
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
             List<Integer> results = get("/kafka/exactly-once-results").as(new TypeRef<List<Integer>>() {
             });
             Assertions.assertTrue(results.size() >= 6, "Expected at least 6 results, got " + results.size());
-            // values should be original + 1
             Assertions.assertTrue(results.contains(1));
             Assertions.assertTrue(results.contains(2));
             Assertions.assertTrue(results.contains(3));
@@ -136,18 +143,17 @@ public class KafkaConnectorTest {
     @Test
     @Order(9)
     public void testExactlyOnceListProcessing() {
-        // Each input record produces 2 output records (value*10 and value*10+1)
-        // 4 input records -> 8 output records
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        given().post("/kafka/produce-exactly-once-list").then().statusCode(204);
+
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
             List<Integer> processed = get("/kafka/exactly-once-list-processed").as(new TypeRef<List<Integer>>() {
             });
             Assertions.assertTrue(processed.size() >= 4, "Expected at least 4 processed, got " + processed.size());
         });
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
             List<Integer> results = get("/kafka/exactly-once-list-results").as(new TypeRef<List<Integer>>() {
             });
             Assertions.assertTrue(results.size() >= 8, "Expected at least 8 results, got " + results.size());
-            // input 0 -> 0, 1; input 1 -> 10, 11; input 2 -> 20, 21; input 3 -> 30, 31
             Assertions.assertTrue(results.contains(0));
             Assertions.assertTrue(results.contains(1));
             Assertions.assertTrue(results.contains(10));
@@ -160,16 +166,17 @@ public class KafkaConnectorTest {
     @Test
     @Order(10)
     public void testExactlyOnceUniProcessing() {
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        given().post("/kafka/produce-exactly-once-uni").then().statusCode(204);
+
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
             List<Integer> processed = get("/kafka/exactly-once-uni-processed").as(new TypeRef<List<Integer>>() {
             });
             Assertions.assertTrue(processed.size() >= 6, "Expected at least 6 processed, got " + processed.size());
         });
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
             List<Integer> results = get("/kafka/exactly-once-uni-results").as(new TypeRef<List<Integer>>() {
             });
             Assertions.assertTrue(results.size() >= 6, "Expected at least 6 results, got " + results.size());
-            // values should be original + 1
             Assertions.assertTrue(results.contains(1));
             Assertions.assertTrue(results.contains(2));
             Assertions.assertTrue(results.contains(3));

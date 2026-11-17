@@ -4832,14 +4832,6 @@
                 <groupId>jakarta.interceptor</groupId>
                 <artifactId>jakarta.interceptor-api</artifactId>
                 <version>${jakarta.interceptor-api.version}</version>
-                <exclusions>
-                    <!-- There is a bug in 1.2.5 -->
-                    <!-- The dependency is removed in main: https://github.com/eclipse-ee4j/interceptor-api/commit/017aeb56849bbb448319aaf36df45a07ec54f451 -->
-                    <exclusion>
-                        <groupId>jakarta.ejb</groupId>
-                        <artifactId>jakarta.ejb-api</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>jakarta.json</groupId>
@@ -5374,15 +5366,6 @@
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-json-binding-provider</artifactId>
                 <version>${resteasy.version}</version>
-                <exclusions>
-                    <!-- This is needed until RESTEasy upgrades to Yasson 3.0.5 requiring the groupId change to
-                         org.eclipse.yasson.
-                    -->
-                    <exclusion>
-                        <groupId>org.eclipse</groupId>
-                        <artifactId>yasson</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>

@@ -1,7 +1,6 @@
 package io.quarkus.vertx.http.deployment;
 
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -10,8 +9,8 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorCreator;
 import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism;
-import io.vertx.ext.web.RoutingContext;
 
 /**
  * Provides a way for extensions to register eager security interceptor.
@@ -20,11 +19,14 @@ import io.vertx.ext.web.RoutingContext;
  * attribute.
  * With disabled proactive authentication, these interceptors are guaranteed to run before any other security code
  * of supported extensions (currently RESTEasy Classic and RESTEasy Reactive).
+ * <p>
+ * The interceptors are created by the {@link EagerSecurityInterceptorCreator}, which must be registered as a static-init
+ * service named with the {@link Class#getName() name} of the interceptor binding annotation, for each of the interceptor
+ * bindings.
  */
 public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildItem {
 
     private final DotName[] annotationBindings;
-    private final Function<String, Consumer<RoutingContext>> interceptorCreator;
     private final Map<String, String> bindingToValue;
     /**
      * If this interceptor is always accompanied by {@link io.quarkus.security.spi.runtime.SecurityCheck}.
@@ -37,28 +39,22 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
     /**
      *
      * @param interceptorBindings annotation names, 'value' attribute of annotation instances will be passed to the creator
-     * @param interceptorCreator accepts 'value' attribute of {@code interceptorBinding} instances and creates interceptor
      */
-    public EagerSecurityInterceptorBindingBuildItem(Function<String, Consumer<RoutingContext>> interceptorCreator,
-            DotName... interceptorBindings) {
-        this(interceptorCreator, null, false, interceptorBindings);
+    public EagerSecurityInterceptorBindingBuildItem(DotName... interceptorBindings) {
+        this(null, false, interceptorBindings);
     }
 
-    public EagerSecurityInterceptorBindingBuildItem(Function<String, Consumer<RoutingContext>> interceptorCreator,
-            Function<AnnotationInstance, String> bindingValueExtractor,
+    public EagerSecurityInterceptorBindingBuildItem(Function<AnnotationInstance, String> bindingValueExtractor,
             boolean requiresSecurityCheck, DotName... interceptorBindings) {
         this.annotationBindings = interceptorBindings;
-        this.interceptorCreator = interceptorCreator;
         this.bindingToValue = Map.of();
         this.requiresSecurityCheck = requiresSecurityCheck;
         this.bindingValueExtractor = bindingValueExtractor;
         this.allowToRepeatThisInterceptorBinding = false;
     }
 
-    EagerSecurityInterceptorBindingBuildItem(Function<String, Consumer<RoutingContext>> interceptorCreator,
-            Map<String, String> bindingToValue, DotName... interceptorBindings) {
+    EagerSecurityInterceptorBindingBuildItem(Map<String, String> bindingToValue, DotName... interceptorBindings) {
         this.annotationBindings = interceptorBindings;
-        this.interceptorCreator = interceptorCreator;
         this.bindingToValue = bindingToValue;
         this.requiresSecurityCheck = true;
         this.bindingValueExtractor = null;
@@ -67,10 +63,6 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
 
     public DotName[] getAnnotationBindings() {
         return annotationBindings;
-    }
-
-    Function<String, Consumer<RoutingContext>> getInterceptorCreator() {
-        return interceptorCreator;
     }
 
     public String getBindingValue(AnnotationInstance annotationInstance, DotName annotation,

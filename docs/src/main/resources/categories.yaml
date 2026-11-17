@@ -191,6 +191,10 @@ categories:
           - flyway.adoc
           - liquibase.adoc
           - liquibase-mongodb.adoc
+      - id: cdc
+        title: Change Data Capture
+        guides:
+          - debezium.adoc
 
   - id: messaging
     title: Messaging

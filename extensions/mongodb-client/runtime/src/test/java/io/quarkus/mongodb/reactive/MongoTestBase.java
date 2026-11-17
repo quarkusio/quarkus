@@ -51,8 +51,6 @@ public class MongoTestBase {
 
     @BeforeAll
     public static void startMongoDatabase() throws IOException {
-        fixIssue14424();
-
         String uri = getConfiguredConnectionString();
         // This switch allow testing against a running mongo database.
         if (uri == null) {
@@ -179,15 +177,5 @@ public class MongoTestBase {
         document.put("longval", 123456789L);
         document.put("dblval", 1.23);
         return document;
-    }
-
-    public static void fixIssue14424() {
-        try {
-            //JDK bug workaround
-            //https://github.com/quarkusio/quarkus/issues/14424
-            //force class init to prevent possible deadlock when done by mongo threads
-            Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
-        } catch (ClassNotFoundException e) {
-        }
     }
 }

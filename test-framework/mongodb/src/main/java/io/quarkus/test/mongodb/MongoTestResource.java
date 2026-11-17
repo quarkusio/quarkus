@@ -43,6 +43,13 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
                         .orElse(Version.Main.V7_0));
     }
 
+    /**
+     * Initializes {@code sun.net.ext.ExtendedSocketOptions} early, to prevent the class initialization deadlock of
+     * JDK-8260366. JDK 17 fixed it, so the test resources no longer call this method.
+     *
+     * @deprecated no longer needed on the supported JDKs
+     */
+    @Deprecated(forRemoval = true, since = "4.0")
     public static void forceExtendedSocketOptionsClassInit() {
         try {
             //JDK bug workaround
@@ -61,8 +68,6 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
 
     @Override
     public Map<String, String> start() {
-        forceExtendedSocketOptionsClassInit();
-
         LOGGER.infof("Starting Mongo %s on port %s", version, port);
 
         startedServer = Mongod.instance().withNet(Start.to(Net.class)

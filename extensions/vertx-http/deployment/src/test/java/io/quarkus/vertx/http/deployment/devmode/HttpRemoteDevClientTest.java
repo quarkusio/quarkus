@@ -29,15 +29,19 @@ class HttpRemoteDevClientTest {
         AtomicLong devLength = new AtomicLong(-1);
         AtomicReference<String> connectTransferEncoding = new AtomicReference<>();
         AtomicReference<String> devTransferEncoding = new AtomicReference<>();
+        AtomicReference<String> connectAccept = new AtomicReference<>();
+        AtomicReference<String> devAccept = new AtomicReference<>();
         HttpServer server = await(vertx.createHttpServer().requestHandler(request -> request.bodyHandler(ignored -> {
             if (request.path().endsWith(RemoteSyncHandler.CONNECT)) {
                 connectLength.set(parseContentLength(request.getHeader("Content-Length")));
                 connectTransferEncoding.set(request.getHeader("Transfer-Encoding"));
+                connectAccept.set(request.getHeader("Accept"));
                 request.response().putHeader(RemoteSyncHandler.QUARKUS_SESSION, "session").end();
             } else if (request.path().endsWith(RemoteSyncHandler.DEV)) {
                 int devRequest = devRequests.incrementAndGet();
                 devLength.set(parseContentLength(request.getHeader("Content-Length")));
                 devTransferEncoding.set(request.getHeader("Transfer-Encoding"));
+                devAccept.set(request.getHeader("Accept"));
                 if (devRequest == 1) {
                     request.response()
                             .putHeader(RemoteSyncHandler.QUARKUS_ERROR,
@@ -72,6 +76,9 @@ class HttpRemoteDevClientTest {
             assertThat(connectTransferEncoding).hasValue(null);
             assertThat(devTransferEncoding).hasValue(null);
             assertThat(devRequests).hasValue(2);
+            // the JDK default Accept header is valid since JDK-8163921, so the client keeps it
+            assertThat(connectAccept).hasValue("*/*");
+            assertThat(devAccept).hasValue("*/*");
         } finally {
             if (session != null) {
                 session.close();

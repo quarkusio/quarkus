@@ -296,13 +296,22 @@ public class RestClientBase {
         try {
             builder.baseUrl(new URL(baseUrl));
         } catch (MalformedURLException e) {
-            if (e.getMessage().contains(
-                    "It must be enabled by adding the --enable-url-protocols=https option to the native-image command")) {
+            if (isHttpsUrlHandlerDisabled(e)) {
                 throw new IllegalArgumentException(baseUrl
-                        + " requires SSL support but it is disabled. You probably have set quarkus.ssl.native to false.");
+                        + " requires SSL support, which is disabled in this native executable."
+                        + " Make sure the quarkus.ssl.native property is set to true, then rebuild the native executable.",
+                        e);
             }
             throw new IllegalArgumentException("The value of URL was invalid " + baseUrl, e);
         }
+    }
+
+    /**
+     * Whether the exception was thrown because the https URL protocol handler is not enabled in the native executable.
+     * The message wording differs between GraalVM versions: this matches the part they share.
+     */
+    static boolean isHttpsUrlHandlerDisabled(MalformedURLException e) {
+        return e.getMessage() != null && e.getMessage().contains("URL protocol https is supported but not enabled");
     }
 
     @SafeVarargs

@@ -229,7 +229,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          * For xref:datasource.adoc#extensions-and-database-drivers-reference[supported databases],
          * this property does not need to be set explicitly:
          * it is selected automatically based on the datasource,
-         * and configured using the xref:datasource.adoc#quarkus-datasource_quarkus.datasource.db-version[DB version set on the
+         * and configured using the xref:datasource.adoc#quarkus-datasource_quarkus-datasource-db-version[DB version set on the
          * datasource]
          * to benefit from the best performance and latest features.
          *

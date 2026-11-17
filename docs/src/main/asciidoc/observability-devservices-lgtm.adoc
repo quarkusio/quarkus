@@ -551,6 +551,53 @@ To set a custom dashboard as the Grafana home dashboard, point to a dashboard JS
 quarkus.observability.lgtm.grafana-home-dashboard-path=/otel-lgtm/grafana-dashboard-my-home.json
 ----
 
+=== GCX configuration
+
+The https://grafana.com/docs/grafana-cloud/developer-resources/infrastructure-as-code/gcx/[GCX CLI] (Grafana Cloud Experience) can connect to the local LGTM stack for diagnostics, querying, and AI-assisted analysis. When the LGTM container starts, a GCX-compatible YAML configuration is automatically generated with the correct Grafana endpoint, credentials, and datasource UIDs.
+
+By default, the configuration is printed to standard output between delimiters:
+
+[source, log]
+----
+###### LGTM GCX config ######
+current-context: lgtm-local
+stacks:
+  lgtm-local:
+    grafana:
+      server: http://localhost:42797
+      org-id: 1
+      auth-method: basic
+      user: admin
+      password: admin
+contexts:
+  lgtm-local:
+    stack: lgtm-local
+    datasources:
+      prometheus: prometheus
+      loki: loki
+      tempo: tempo
+      pyroscope: pyroscope
+###### LGTM GCX config ######
+----
+
+To write the configuration to a file instead, set the `gcx-file-path` property:
+
+[source,properties]
+----
+quarkus.observability.lgtm.gcx-file-path=${user.home}/.config/gcx/config.yaml
+----
+
+The file is overwritten on each container start because the mapped Grafana port changes between restarts.
+
+Once the config file is in place, you can use `gcx` to verify connectivity and query data:
+
+[source,bash]
+----
+gcx config check --config ~/.config/gcx/config.yaml --context lgtm-local
+gcx metrics query 'vector(1)' --datasource prometheus --config ~/.config/gcx/config.yaml --context lgtm-local
+gcx traces query '{ resource.service.name = "my-service" }' --datasource tempo --since 5m --limit 10 --config ~/.config/gcx/config.yaml --context lgtm-local
+----
+
 === Forward telemetry to external vendors
 
 The built-in OpenTelemetry Collector can forward telemetry data to external backends via OTLP/HTTP, enabling easy comparison between the local LGTM stack and a vendor backend.

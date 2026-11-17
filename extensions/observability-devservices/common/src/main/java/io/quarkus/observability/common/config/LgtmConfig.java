@@ -206,6 +206,13 @@ public interface LgtmConfig extends GrafanaConfig {
     Optional<String> vendorOtlpHeaders();
 
     /**
+     * File path to write the GCX (Grafana Cloud Experience) config file.
+     * When set, the GCX YAML config is written to this path after the container starts.
+     * When not set, the GCX config is printed to standard output with delimiters.
+     */
+    Optional<String> gcxFilePath();
+
+    /**
      * A way to override `quarkus.otel.metric.export.interval` property's default value.
      */
     @OverrideProperty("quarkus.otel.metric.export.interval")

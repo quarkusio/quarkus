@@ -220,7 +220,7 @@ public class KubernetesDeployer {
                 log.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");
             });
 
-            printExposeInformation(client, namespace, list, openshiftConfig, applicationInfo);
+            printExposeInformation(client, namespace, list, ResourceNameUtil.getResourceName(openshiftConfig, applicationInfo));
 
             HasMetadata m = list.getItems().stream()
                     .filter(r -> deploymentTarget.getDeploymentResourceKind().matches(r))
@@ -289,7 +289,11 @@ public class KubernetesDeployer {
                 .orElse("default");
     }
 
-    private Optional<GenericKubernetesResource> findConflictingResource(KubernetesClient clinet, String namespace,
+    /**
+     * Looks in the given namespace for a resource of another deployment kind that has the name of the generated
+     * deployment resource.
+     */
+    static Optional<GenericKubernetesResource> findConflictingResource(KubernetesClient clinet, String namespace,
             DeploymentTargetEntry deploymentTarget, List<HasMetadata> generated) {
         HasMetadata deploymentResource = generated.stream()
                 .filter(r -> deploymentTarget.getDeploymentResourceKind().matches(r))
@@ -347,10 +351,13 @@ public class KubernetesDeployer {
         return client.resource(metadata);
     }
 
-    private void printExposeInformation(KubernetesClient client, String namespace, KubernetesList list,
-            OpenShiftConfig openshiftConfig,
-            ApplicationInfoBuildItem applicationInfo) {
-        String generatedRouteName = ResourceNameUtil.getResourceName(openshiftConfig, applicationInfo);
+    /**
+     * Logs the URL of the generated route, read back from the cluster in the given namespace.
+     *
+     * @return the URL, or empty when the manifest has no route or the cluster did not return it
+     */
+    static Optional<String> printExposeInformation(KubernetesClient client, String namespace, KubernetesList list,
+            String generatedRouteName) {
         List<HasMetadata> items = list.getItems();
         for (HasMetadata item : items) {
             if (Constants.ROUTE_API_GROUP.equals(item.getApiVersion()) && Constants.ROUTE.equals(item.getKind())
@@ -362,14 +369,16 @@ public class KubernetesDeployer {
                         break;
                     }
                     boolean isTLS = (route.getSpec().getTls() != null);
-                    String host = route.getSpec().getHost();
-                    log.infov("The deployed application can be accessed at: http{0}://{1}", isTLS ? "s" : "", host);
+                    String url = "http" + (isTLS ? "s" : "") + "://" + route.getSpec().getHost();
+                    log.infov("The deployed application can be accessed at: {0}", url);
+                    return Optional.of(url);
                 } catch (KubernetesClientException ignored) {
 
                 }
                 break;
             }
         }
+        return Optional.empty();
     }
 
     /**

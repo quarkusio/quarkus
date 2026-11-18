@@ -7,12 +7,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.app.ArtifactResult;
 import io.quarkus.builder.BuildContext;
+import io.quarkus.runtime.util.CommandLineQuoting;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestBuildStep;
 import io.quarkus.test.ProdModeTestResults;
@@ -60,7 +62,9 @@ class NativeImageSourcesBuildItemTest {
 
         List<String> args = List.of(item.get("nativeImageArgs").split(ARGS_SEPARATOR));
         assertThat(args).endsWith("-o", item.get("nativeImageName"), "-jar", item.get("runnerJarName"));
-        assertThat(Files.readString(nativeSources.resolve("native-image.args"))).isEqualTo(String.join(" ", args));
+        assertThat(Files.readString(nativeSources.resolve("native-image.args"))).isEqualTo(args.stream()
+                .map(CommandLineQuoting::quoteForArgumentFile)
+                .collect(Collectors.joining(" ")));
 
         assertThat(item.get("graalVMVersion")).isNotBlank()
                 .isEqualTo(Files.readString(nativeSources.resolve("graalvm.version")));

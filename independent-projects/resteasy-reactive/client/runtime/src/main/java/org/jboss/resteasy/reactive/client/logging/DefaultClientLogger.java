@@ -37,12 +37,17 @@ public class DefaultClientLogger implements ClientLogger {
         response.bodyHandler(new Handler<>() {
             @Override
             public void handle(Buffer body) {
-                log.infof("%s: %s %s, Status[%d %s], Headers[%s], Body:\n%s",
-                        redirect ? "Redirect" : "Response",
-                        response.request().getMethod(), response.request().absoluteURI(), response.statusCode(),
-                        response.statusMessage(), formatHeaders(response.headers()), bodyToString(body));
+                logResponse(response, body, redirect);
             }
         });
+    }
+
+    @Override
+    public void logResponse(HttpClientResponse response, Buffer body, boolean redirect) {
+        log.infof("%s: %s %s, Status[%d %s], Headers[%s], Body:\n%s",
+                redirect ? "Redirect" : "Response",
+                response.request().getMethod(), response.request().absoluteURI(), response.statusCode(),
+                response.statusMessage(), formatHeaders(response.headers()), bodyToString(body));
     }
 
     @Override
@@ -65,8 +70,7 @@ public class DefaultClientLogger implements ClientLogger {
         } else if (bodySize <= 0) {
             return body.toString();
         } else {
-            String bodyAsString = body.toString();
-            return bodyAsString.substring(0, Math.min(bodySize, bodyAsString.length()));
+            return body.getString(0, Math.min(bodySize, body.length()));
         }
     }
 

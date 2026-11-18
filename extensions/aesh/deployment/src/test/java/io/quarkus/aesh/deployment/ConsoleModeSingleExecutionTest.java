@@ -22,6 +22,8 @@ import io.quarkus.test.QuarkusProdModeTest;
  */
 public class ConsoleModeSingleExecutionTest {
 
+    private static final String NAME = "Quarkus World";
+
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot(jar -> jar.addClasses(
@@ -32,12 +34,12 @@ public class ConsoleModeSingleExecutionTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .setExpectExit(true)
             .setRun(true)
-            .setCommandLineParameters("greet", "--name=Quarkus");
+            .setCommandLineParameters("greet", "--name=" + NAME);
 
     @Test
     public void testSingleCommandExecution() {
         Assertions.assertThat(config.getStartupConsoleOutput())
-                .containsOnlyOnce("Hello Quarkus from CDI!");
+                .containsOnlyOnce("Hello " + NAME + " from CDI!");
         Assertions.assertThat(config.getExitCode()).isZero();
     }
 

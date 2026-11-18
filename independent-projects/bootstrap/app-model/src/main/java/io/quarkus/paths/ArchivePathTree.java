@@ -139,6 +139,9 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     @Override
     protected <T> T apply(String resourceName, Function<PathVisit, T> func, boolean manifestEnabled) {
+        if (resourceName.isEmpty()) {
+            return func.apply(null);
+        }
         ensureResourcePath(resourceName);
         if (!PathFilter.isVisible(pathFilter, resourceName)) {
             return func.apply(null);
@@ -152,6 +155,10 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     @Override
     public void accept(String resourceName, Consumer<PathVisit> consumer) {
+        if (resourceName.isEmpty()) {
+            consumer.accept(null);
+            return;
+        }
         ensureResourcePath(resourceName);
         if (!PathFilter.isVisible(pathFilter, resourceName)) {
             consumer.accept(null);
@@ -166,6 +173,9 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     @Override
     public boolean contains(String resourceName) {
+        if (resourceName.isEmpty()) {
+            return false;
+        }
         ensureResourcePath(resourceName);
         if (!PathFilter.isVisible(pathFilter, resourceName)) {
             return false;
@@ -317,6 +327,9 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
          * Must be called under the read lock.
          */
         private String resolveEntryName(String resourceName) {
+            if (resourceName.isEmpty()) {
+                return null;
+            }
             PathTreeVisit.ensureResourcePath(fs, resourceName);
             if (!PathFilter.isVisible(pathFilter, resourceName)) {
                 return null;
@@ -395,7 +408,7 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
         @Override
         public Set<String> getResourceNames() {
-            return resourceNames == null ? resourceNames = super.getResourceNames() : resourceNames;
+            return ArchivePathTree.this.getResourceNames();
         }
 
         @Override

@@ -1,7 +1,5 @@
 package io.quarkus.micrometer.runtime.binder.stork;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -21,8 +19,6 @@ import io.smallrye.stork.api.observability.StorkObservation;
 @Typed(ObservationCollector.class)
 public class StorkObservationCollectorBean implements ObservationCollector, StorkEventHandler {
 
-    public static final String METRICS_SUFFIX = "-metrics";
-    public final static Map<String, StorkObservation> STORK_METRICS = new ConcurrentHashMap<>();
     private final Meter.MeterProvider<Counter> instanceCounter;
     private final Meter.MeterProvider<Timer> serviceDiscoveryTimer;
     private final Meter.MeterProvider<Timer> serviceSelectionTimer;
@@ -60,9 +56,8 @@ public class StorkObservationCollectorBean implements ObservationCollector, Stor
     @Override
     public StorkObservation create(String serviceName, String serviceDiscoveryType,
             String serviceSelectionType) {
-        return STORK_METRICS.computeIfAbsent(serviceName + METRICS_SUFFIX,
-                key -> new StorkObservation(serviceName, serviceDiscoveryType, serviceSelectionType,
-                        this));
+        // one observation per discovery/selection: it carries the start time of that operation
+        return new StorkObservation(serviceName, serviceDiscoveryType, serviceSelectionType, this);
     }
 
     @Override
@@ -71,9 +66,9 @@ public class StorkObservationCollectorBean implements ObservationCollector, Stor
 
         int count = observation.getDiscoveredInstancesCount();
         this.instanceCounter.withTags(tags).increment(Math.max(count, 0));
-        this.serviceDiscoveryTimer.withTags(tags).record(observation.getServiceDiscoveryDuration().getNano(),
+        this.serviceDiscoveryTimer.withTags(tags).record(observation.getServiceDiscoveryDuration().toNanos(),
                 TimeUnit.NANOSECONDS);
-        this.serviceSelectionTimer.withTags(tags).record(observation.getServiceSelectionDuration().getNano(),
+        this.serviceSelectionTimer.withTags(tags).record(observation.getServiceSelectionDuration().toNanos(),
                 TimeUnit.NANOSECONDS);
 
         Counter ssf = this.serviceSelectionFailures.withTags(tags);

@@ -27,6 +27,7 @@ import org.aesh.command.settings.SubCommandModeSettings;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.QuarkusApplication;
+import io.quarkus.runtime.util.CommandLineQuoting;
 
 /**
  * Quarkus application runner that uses AeshConsoleRunner for interactive shell mode.
@@ -277,9 +278,7 @@ public class CliRunner implements QuarkusApplication {
             } else if (arg.contains("\"") && !arg.contains("'")) {
                 sb.append("'").append(arg).append("'");
             } else {
-                sb.append('"').append(arg.replace("\\", "\\\\")
-                        .replace("\"", "\\\"")
-                        .replace("\n", "\\n")).append('"');
+                sb.append(CommandLineQuoting.quote(arg));
             }
         }
         return sb.toString();

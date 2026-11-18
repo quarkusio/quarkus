@@ -57,4 +57,22 @@ public class CacheControlDelegateTest {
         Assertions.assertTrue(cc.isPrivate());
         Assertions.assertEquals(List.of("Set-Cookie"), cc.getPrivateFields());
     }
+
+    @Test
+    public void escapedQuoteInsideQuotedValueDoesNotSwallowFollowingDirectives() {
+        CacheControl cc = parse("ext=\"a\\\"b\", no-store, max-age=60");
+
+        Assertions.assertEquals("a\"b", cc.getCacheExtension().get("ext"));
+        Assertions.assertTrue(cc.isNoStore());
+        Assertions.assertEquals(60, cc.getMaxAge());
+    }
+
+    @Test
+    public void escapedBackslashAtEndOfQuotedValueClosesTheQuote() {
+        CacheControl cc = parse("ext=\"a\\\\\", no-store, max-age=60");
+
+        Assertions.assertEquals("a\\", cc.getCacheExtension().get("ext"));
+        Assertions.assertTrue(cc.isNoStore());
+        Assertions.assertEquals(60, cc.getMaxAge());
+    }
 }

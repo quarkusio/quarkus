@@ -82,7 +82,10 @@ public class CacheControlDelegate implements RuntimeDelegate.HeaderDelegate<Cach
         boolean inQuotes = false;
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
-            if (c == '"') {
+            if (inQuotes && c == '\\' && i + 1 < value.length()) {
+                // quoted-pair (RFC 9110 section 5.6.4): keep the escape and the escaped character as is
+                current.append(c).append(value.charAt(++i));
+            } else if (c == '"') {
                 inQuotes = !inQuotes;
                 current.append(c);
             } else if (c == ',' && !inQuotes) {
@@ -97,10 +100,19 @@ public class CacheControlDelegate implements RuntimeDelegate.HeaderDelegate<Cach
     }
 
     private static String unquote(String value) {
-        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
-            return value.substring(1, value.length() - 1);
+        if (value.length() < 2 || !value.startsWith("\"") || !value.endsWith("\"")) {
+            return value;
         }
-        return value;
+        // Strip the quotes and decode quoted-pairs (RFC 9110 section 5.6.4).
+        StringBuilder result = new StringBuilder(value.length() - 2);
+        for (int i = 1; i < value.length() - 1; i++) {
+            char c = value.charAt(i);
+            if (c == '\\' && i + 1 < value.length() - 1) {
+                c = value.charAt(++i);
+            }
+            result.append(c);
+        }
+        return result.toString();
     }
 
     private static void addFieldNames(String value, List<String> fields) {

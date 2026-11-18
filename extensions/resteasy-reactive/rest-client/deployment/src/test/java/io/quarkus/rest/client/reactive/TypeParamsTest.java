@@ -28,7 +28,7 @@ public class TypeParamsTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(Client.class, Pojo.class, Foo.class))
-            .overrideRuntimeConfigKey("quarkus.rest-client.client.url", "http://localhost:${quarkus.http.test-port:8081}");
+            .overrideRuntimeConfigKey("quarkus.rest-client.client.url", "quarkus://vertx-http");
 
     @RestClient
     Client client;

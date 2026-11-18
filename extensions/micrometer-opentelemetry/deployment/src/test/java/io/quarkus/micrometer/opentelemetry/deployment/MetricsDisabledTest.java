@@ -43,7 +43,7 @@ public class MetricsDisabledTest {
                                     quarkus.otel.metric.export.interval=300ms\n
                                     quarkus.micrometer.binder.http-client.enabled=true\n
                                     quarkus.micrometer.binder.http-server.enabled=true\n
-                                    pingpong/mp-rest/url=${test.url}\n
+                                    pingpong/mp-rest/url=quarkus://vertx-http\n
                                     quarkus.redis.devservices.enabled=false\n
                                     """),
                                     "application.properties"));

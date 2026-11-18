@@ -422,7 +422,7 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureBaseUrl(QuarkusRestClientBuilder builder) {
-        Optional<String> propertyOptional = oneOf(restClientConfig.uriReload(), restClientConfig.urlReload());
+        Optional<String> propertyOptional = oneOf(restClientConfig.uri(), restClientConfig.url());
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
                 && propertyOptional.isEmpty()) {
             if (restClientConfig.domainSocket().isPresent()) {

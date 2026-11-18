@@ -23,7 +23,7 @@ public class RestClientQualifierOnInterfaceTest {
     @RegisterExtension
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class))
-            .overrideConfigKey("quarkus.rest-client.annotated.url", "http://localhost:${quarkus.http.test-port:8081}");
+            .overrideConfigKey("quarkus.rest-client.annotated.url", "quarkus://vertx-http");
 
     @Inject
     @RestClient

@@ -30,7 +30,7 @@ public class DuplicatedContextWithoutLocalsTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(Resource.class, Client.class))
             .overrideRuntimeConfigKey("quarkus.rest-client.client.url",
-                    "http://localhost:${quarkus.http.test-port:8081}");
+                    "quarkus://vertx-http");
 
     @Inject
     Vertx vertx;

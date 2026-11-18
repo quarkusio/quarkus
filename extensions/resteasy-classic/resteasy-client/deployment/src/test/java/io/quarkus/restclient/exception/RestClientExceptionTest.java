@@ -22,7 +22,7 @@ public class RestClientExceptionTest {
             .withApplicationRoot((jar) -> jar
                     .addAsResource(
                             new StringAsset(
-                                    "io.quarkus.restclient.exception.DownstreamServiceClient/mp-rest/url=${test.url}/downstream"),
+                                    "io.quarkus.restclient.exception.DownstreamServiceClient/mp-rest/url=quarkus://vertx-http/downstream"),
                             "application.properties")
                     .addClasses(RestClientExceptionTest.class, DownstreamServiceClient.class, FrontendService.class,
                             DownstreamServiceRedirectEndpoint.class));

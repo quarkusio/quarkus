@@ -121,7 +121,6 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         if (HTTP_PRESENT) {
             args.add("-Dquarkus.http.port=" + httpPort);
             args.add("-Dquarkus.http.ssl-port=" + httpsPort);
-            args.add("-Dtest.url=" + LauncherUtil.generateTestUrl());
         }
         args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath());
         args.add("-Dquarkus.log.file.enabled=true");
@@ -221,7 +220,6 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         if (HTTP_PRESENT) {
             command.add("-Dquarkus.http.port=" + httpPort);
             command.add("-Dquarkus.http.ssl-port=" + httpsPort);
-            command.add("-Dtest.url=" + LauncherUtil.generateTestUrl());
         }
         command.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath());
         command.add("-Dquarkus.log.file.enabled=true");

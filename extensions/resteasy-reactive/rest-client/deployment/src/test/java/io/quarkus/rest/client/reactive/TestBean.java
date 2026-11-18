@@ -1,23 +1,21 @@
 package io.quarkus.rest.client.reactive;
 
-import java.net.URL;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import io.quarkus.vertx.http.HttpServer;
+
 @ApplicationScoped
 public class TestBean {
-
-    @ConfigProperty(name = "test-url")
-    URL url;
-
+    @Inject
+    HttpServer httpServer;
     @RestClient
     HelloClient2 client2;
-
     @RestClient
     HelloNonSimpleClient clientNonSimple;
 
@@ -31,7 +29,7 @@ public class TestBean {
 
     String helloViaBuiltClient(String name) {
         HelloClient helloClient = RestClientBuilder.newBuilder()
-                .baseUrl(url)
+                .baseUri(httpServer.getLocalBaseUri())
                 .build(HelloClient.class);
         return helloClient.echo(name);
     }

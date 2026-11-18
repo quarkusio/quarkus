@@ -58,7 +58,7 @@ public class QuarkusConfigurationTest {
 
     void verifyClientConfig(RestClientsConfig.RestClientConfig clientConfig, boolean verifyNonStandardProperties) {
         assertTrue(clientConfig.url().isPresent());
-        assertThat(clientConfig.url().get()).contains("localhost");
+        assertThat(clientConfig.url().get()).contains("quarkus://vertx-http");
         assertTrue(clientConfig.providers().isPresent());
         assertThat(clientConfig.providers().get())
                 .isEqualTo("io.quarkus.restclient.configuration.MyResponseFilter");

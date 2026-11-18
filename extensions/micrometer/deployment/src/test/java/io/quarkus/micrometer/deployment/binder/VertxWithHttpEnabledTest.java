@@ -27,7 +27,7 @@ public class VertxWithHttpEnabledTest {
             .overrideConfigKey("quarkus.micrometer.binder.http-server.ignore-patterns", "/http,/two")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.http-server.match-patterns", "/one=/two")
-            .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
+            .overrideConfigKey("pingpong/mp-rest/url", "quarkus://vertx-http")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class));

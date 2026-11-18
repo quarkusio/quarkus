@@ -57,7 +57,7 @@ public class RestClientReadTimeoutOpenTelemetryTest {
             .overrideConfigKey("quarkus.log.console.format",
                     "%d{HH:mm:ss} %-5p traceId=%X{traceId}, spanId=%X{spanId} [%c{2.}] (%t) %s%e%n")
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.opentelemetry\".level", "DEBUG")
-            .overrideConfigKey("quarkus.rest-client.slow-client.url", "${test.url}")
+            .overrideConfigKey("quarkus.rest-client.slow-client.url", "quarkus://vertx-http")
             .overrideConfigKey("quarkus.rest-client.slow-client.read-timeout", "3000")
             .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
             .overrideConfigKey("quarkus.otel.logs.enabled", "false");

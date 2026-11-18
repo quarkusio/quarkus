@@ -40,7 +40,7 @@ public class RestClientBuildTimeConfigBuilderCustomizer implements SmallRyeConfi
                         return null;
                     }
 
-                    return "http://localhost:${quarkus.http.test-port:8081}";
+                    return "quarkus://vertx-http";
                 }
 
                 @Override

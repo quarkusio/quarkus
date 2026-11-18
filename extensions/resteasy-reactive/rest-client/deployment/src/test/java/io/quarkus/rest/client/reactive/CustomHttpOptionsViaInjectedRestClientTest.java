@@ -37,7 +37,7 @@ public class CustomHttpOptionsViaInjectedRestClientTest {
     static final QuarkusExtensionTest app = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(Client.class, CustomHttpClientOptionsWithLimit.class)
                     .addAsResource(new StringAsset(
-                            "custom-http-options/mp-rest/url=http://localhost:${quarkus.http.test-port:8081}"),
+                            "custom-http-options/mp-rest/url=quarkus://vertx-http"),
                             "application.properties"));
 
     @Test

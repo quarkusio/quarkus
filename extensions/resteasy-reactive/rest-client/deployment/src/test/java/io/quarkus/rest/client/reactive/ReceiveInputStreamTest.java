@@ -20,7 +20,7 @@ public class ReceiveInputStreamTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
-            .overrideConfigKey("quarkus.rest-client.test.url", "http://localhost:${quarkus.http.test-port:8081}");
+            .overrideConfigKey("quarkus.rest-client.test.url", "quarkus://vertx-http");
 
     @Test
     public void test() {

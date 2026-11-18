@@ -10,7 +10,7 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-test-spring</artifactId>
+    <artifactId>quarkus-spring-test</artifactId>
     <name>Quarkus - Test Framework - Spring</name>
 
     <dependencies>

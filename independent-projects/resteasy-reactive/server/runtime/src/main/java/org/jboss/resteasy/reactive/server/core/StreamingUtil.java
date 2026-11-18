@@ -35,9 +35,7 @@ public class StreamingUtil {
         try {
             data = serialiseEntity(context, entity);
         } catch (Exception e) {
-            CompletableFuture<?> ret = new CompletableFuture<>();
-            ret.completeExceptionally(e);
-            return ret;
+            return CompletableFuture.failedFuture(e);
         }
         setHeaders(context, response, customizers);
         if (prefix != null) {

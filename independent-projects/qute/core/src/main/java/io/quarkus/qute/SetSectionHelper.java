@@ -43,14 +43,19 @@ public class SetSectionHelper implements SectionHelper {
                 if (t != null) {
                     result.completeExceptionally(t);
                 } else {
-                    // Execute the main block with the params as the current context object
-                    context.execute(context.resolutionContext().createChild(Mapper.wrap(r), null)).whenComplete((r2, t2) -> {
-                        if (t2 != null) {
-                            result.completeExceptionally(t2);
-                        } else {
-                            result.complete(r2);
-                        }
-                    });
+                    try {
+                        // Execute the main block with the params as the current context object
+                        context.execute(context.resolutionContext().createChild(Mapper.wrap(r), null))
+                                .whenComplete((r2, t2) -> {
+                                    if (t2 != null) {
+                                        result.completeExceptionally(t2);
+                                    } else {
+                                        result.complete(r2);
+                                    }
+                                });
+                    } catch (Throwable e) {
+                        result.completeExceptionally(e);
+                    }
                 }
             });
         } else {
@@ -59,39 +64,47 @@ public class SetSectionHelper implements SectionHelper {
                 if (t != null) {
                     result.completeExceptionally(t);
                 } else {
-                    Map<String, Expression> toEval = new HashMap<>();
-                    for (Entry<String, Object> e : r.entrySet()) {
-                        // Identify the keys for which a value is not set (null or NotFound)
-                        if (e.getValue() == null || Results.isNotFound(e.getValue())) {
-                            toEval.put(e.getKey(), parameters.get(e.getKey()));
+                    try {
+                        Map<String, Expression> toEval = new HashMap<>();
+                        for (Entry<String, Object> e : r.entrySet()) {
+                            // Identify the keys for which a value is not set (null or NotFound)
+                            if (e.getValue() == null || Results.isNotFound(e.getValue())) {
+                                toEval.put(e.getKey(), parameters.get(e.getKey()));
+                            }
                         }
-                    }
-                    toEval.putAll(overridingKeys);
-                    if (toEval.isEmpty()) {
-                        // There is no need to evaluate the default values
-                        context.execute(context.resolutionContext()).whenComplete((r2, t2) -> {
-                            if (t2 != null) {
-                                result.completeExceptionally(t2);
-                            } else {
-                                result.complete(r2);
-                            }
-                        });
-                    } else {
-                        // Evaluate the default values
-                        context.evaluate(toEval).whenComplete((r2, t2) -> {
-                            if (t2 != null) {
-                                result.completeExceptionally(t2);
-                            } else {
-                                context.execute(context.resolutionContext().createChild(Mapper.wrap(r2), null))
-                                        .whenComplete((r3, t3) -> {
-                                            if (t3 != null) {
-                                                result.completeExceptionally(t3);
-                                            } else {
-                                                result.complete(r3);
-                                            }
-                                        });
-                            }
-                        });
+                        toEval.putAll(overridingKeys);
+                        if (toEval.isEmpty()) {
+                            // There is no need to evaluate the default values
+                            context.execute(context.resolutionContext()).whenComplete((r2, t2) -> {
+                                if (t2 != null) {
+                                    result.completeExceptionally(t2);
+                                } else {
+                                    result.complete(r2);
+                                }
+                            });
+                        } else {
+                            // Evaluate the default values
+                            context.evaluate(toEval).whenComplete((r2, t2) -> {
+                                if (t2 != null) {
+                                    result.completeExceptionally(t2);
+                                } else {
+                                    try {
+                                        context.execute(context.resolutionContext().createChild(Mapper.wrap(r2), null))
+                                                .whenComplete((r3, t3) -> {
+                                                    if (t3 != null) {
+                                                        result.completeExceptionally(t3);
+                                                    } else {
+                                                        result.complete(r3);
+                                                    }
+                                                });
+                                    } catch (Throwable e) {
+                                        result.completeExceptionally(e);
+                                    }
+                                }
+                            });
+                        }
+                    } catch (Throwable e) {
+                        result.completeExceptionally(e);
                     }
                 }
             });

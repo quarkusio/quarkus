@@ -16,9 +16,7 @@ import java.util.function.Supplier;
 class AsyncEventDeliveryStage<T> implements CompletionStage<T> {
 
     static <T> AsyncEventDeliveryStage<T> completed(T event, Executor executor) {
-        final CompletableFuture<T> delegate = new CompletableFuture<>();
-        delegate.complete(event);
-        return new AsyncEventDeliveryStage<>(delegate, executor);
+        return new AsyncEventDeliveryStage<>(CompletableFuture.completedFuture(event), executor);
     }
 
     private final Executor defaultExecutor;

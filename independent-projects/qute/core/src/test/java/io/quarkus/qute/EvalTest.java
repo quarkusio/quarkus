@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
@@ -88,6 +91,68 @@ public class EvalTest {
         // Note that the same literal is used as above but with a different variant, i.e. the variant must be a part of the cache key
         assertEquals("<p>",
                 engine.parse("{str:eval('{foo}')}").data("foo", "<p>").render());
+    }
+
+    @Test
+    public void testNullTemplateDoesNotHang() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addSectionHelper(new EvalSectionHelper.Factory())
+                .useAsyncTimeout(false)
+                .build();
+        CompletableFuture<String> rendered = engine.parse("A{#eval foo /}B")
+                .data("foo", null)
+                .renderAsync()
+                .toCompletableFuture();
+        assertThatExceptionOfType(ExecutionException.class)
+                .isThrownBy(() -> rendered.get(5, TimeUnit.SECONDS))
+                .withRootCauseInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    public void testNullTemplateWithParamsDoesNotHang() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addSectionHelper(new EvalSectionHelper.Factory())
+                .useAsyncTimeout(false)
+                .build();
+        CompletableFuture<String> rendered = engine.parse("A{#eval template=foo name='Foo' /}B")
+                .data("foo", null)
+                .renderAsync()
+                .toCompletableFuture();
+        assertThatExceptionOfType(ExecutionException.class)
+                .isThrownBy(() -> rendered.get(5, TimeUnit.SECONDS))
+                .withRootCauseInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    public void testStrEvalNullTemplateDoesNotHang() {
+        CompletableFuture<String> rendered = strEvalEngine().parse("A{str:eval(foo)}B")
+                .data("foo", null)
+                .renderAsync()
+                .toCompletableFuture();
+        assertThatExceptionOfType(ExecutionException.class)
+                .isThrownBy(() -> rendered.get(5, TimeUnit.SECONDS))
+                .withRootCauseInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    public void testStrEvalInvalidTemplateDoesNotHang() {
+        CompletableFuture<String> rendered = strEvalEngine().parse("A{str:eval(foo)}B")
+                .data("foo", "{unterminated")
+                .renderAsync()
+                .toCompletableFuture();
+        assertThatExceptionOfType(ExecutionException.class)
+                .isThrownBy(() -> rendered.get(5, TimeUnit.SECONDS))
+                .withRootCauseInstanceOf(TemplateException.class);
+    }
+
+    private static Engine strEvalEngine() {
+        return Engine.builder()
+                .addDefaults()
+                .addNamespaceResolver(new StrEvalNamespaceResolver())
+                .useAsyncTimeout(false)
+                .build();
     }
 
 }

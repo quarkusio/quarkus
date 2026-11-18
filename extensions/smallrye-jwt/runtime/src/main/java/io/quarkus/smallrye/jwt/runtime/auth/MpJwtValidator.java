@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -20,7 +20,6 @@ import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
 import io.smallrye.jwt.util.ResourceUtils;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -60,14 +59,10 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
             return Uni.createFrom().nullItem();
         }
         if (!blockingAuthentication) {
-            return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
+            return Uni.createFrom().item(new Supplier<SecurityIdentity>() {
                 @Override
-                public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
-                    try {
-                        uniEmitter.complete(createSecurityIdentity(request));
-                    } catch (AuthenticationFailedException e) {
-                        uniEmitter.fail(e);
-                    }
+                public SecurityIdentity get() {
+                    return createSecurityIdentity(request);
                 }
             });
         } else {

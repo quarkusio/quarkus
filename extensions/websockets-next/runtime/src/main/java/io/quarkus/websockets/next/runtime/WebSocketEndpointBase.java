@@ -207,34 +207,14 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                     VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
                         @Override
                         public void run() {
-                            Context context = Vertx.currentContext();
-                            contextSupport.start();
-                            action.apply(throwable).subscribe().with(
-                                    v -> {
-                                        context.runOnContext(contextSupportEnd);
-                                        promise.complete();
-                                    },
-                                    t -> {
-                                        context.runOnContext(contextSupportEnd);
-                                        promise.fail(t);
-                                    });
+                            subscribeAndBridge(action, throwable, contextSupportEnd, promise);
                         }
                     });
                 } else if (executionModel == ExecutionModel.WORKER_THREAD) {
                     Vertx.currentContext().executeBlocking(new Callable<Void>() {
                         @Override
                         public Void call() {
-                            Context context = Vertx.currentContext();
-                            contextSupport.start();
-                            action.apply(throwable).subscribe().with(
-                                    v -> {
-                                        context.runOnContext(contextSupportEnd);
-                                        promise.complete();
-                                    },
-                                    t -> {
-                                        context.runOnContext(contextSupportEnd);
-                                        promise.fail(t);
-                                    });
+                            subscribeAndBridge(action, throwable, contextSupportEnd, promise);
                             return null;
                         }
                     }, false);
@@ -242,23 +222,28 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                     Vertx.currentContext().runOnContext(new Handler<Void>() {
                         @Override
                         public void handle(Void event) {
-                            Context context = Vertx.currentContext();
-                            contextSupport.start();
-                            action.apply(throwable).subscribe().with(
-                                    v -> {
-                                        context.runOnContext(contextSupportEnd);
-                                        promise.complete();
-                                    },
-                                    t -> {
-                                        context.runOnContext(contextSupportEnd);
-                                        promise.fail(t);
-                                    });
+                            subscribeAndBridge(action, throwable, contextSupportEnd, promise);
                         }
                     });
                 }
             }
         });
         return Uni.createFrom().completionStage(() -> promise.future().toCompletionStage());
+    }
+
+    private void subscribeAndBridge(Function<Throwable, Uni<Void>> action, Throwable throwable,
+            Handler<Void> contextSupportEnd, Promise<Void> promise) {
+        Context context = Vertx.currentContext();
+        contextSupport.start();
+        action.apply(throwable).subscribe().with(
+                v -> {
+                    context.runOnContext(contextSupportEnd);
+                    promise.complete();
+                },
+                t -> {
+                    context.runOnContext(contextSupportEnd);
+                    promise.fail(t);
+                });
     }
 
     public Object beanInstance() {

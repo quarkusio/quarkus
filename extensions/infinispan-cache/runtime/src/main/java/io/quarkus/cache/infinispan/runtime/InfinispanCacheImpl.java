@@ -103,14 +103,7 @@ public class InfinispanCacheImpl extends AbstractCache implements Cache {
                 .emitOn(executor)
                 .flatMap(v1 -> {
                     if (v1 != null) {
-                        return Uni.createFrom()
-                                .completionStage(new Supplier<CompletionStage<V>>() {
-                                    @Override
-                                    public CompletionStage<V> get() {
-                                        return CompletableFuture.completedFuture(InfinispanCacheImpl.this.decodeNull(v1));
-                                    }
-                                })
-                                .emitOn(executor);
+                        return Uni.createFrom().item(InfinispanCacheImpl.this.<V> decodeNull(v1)).emitOn(executor);
                     }
 
                     CompletableFuture<V> resultAsync = new CompletableFuture<>();

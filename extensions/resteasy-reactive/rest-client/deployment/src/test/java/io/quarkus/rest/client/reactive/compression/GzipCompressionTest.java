@@ -45,9 +45,9 @@ public class GzipCompressionTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Endpoint.class, Client1.class, TestUtils.class))
-            .overrideRuntimeConfigKey("quarkus.rest-client.client1.url", "http://localhost:${quarkus.http.test-port:8081}")
+            .overrideRuntimeConfigKey("quarkus.rest-client.client1.url", "quarkus://vertx-http")
             .overrideRuntimeConfigKey("quarkus.rest-client.client1.enable-compression", "true")
-            .overrideRuntimeConfigKey("quarkus.rest-client.client2.url", "http://localhost:${quarkus.http.test-port:8081}")
+            .overrideRuntimeConfigKey("quarkus.rest-client.client2.url", "quarkus://vertx-http")
             .overrideRuntimeConfigKey("quarkus.rest-client.client2.enable-compression", "false");
 
     private static final String uncompressedString;

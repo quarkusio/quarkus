@@ -25,9 +25,9 @@ public class PerClientExceptionMapperDisabledTest {
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Client.class, Resource.class))
-            .overrideRuntimeConfigKey("quarkus.rest-client.test.url", "${test.url}")
+            .overrideRuntimeConfigKey("quarkus.rest-client.test.url", "quarkus://vertx-http")
             .overrideRuntimeConfigKey("quarkus.rest-client.test.disable-default-mapper", "true")
-            .overrideRuntimeConfigKey("quarkus.rest-client.test2.url", "${test.url}");
+            .overrideRuntimeConfigKey("quarkus.rest-client.test2.url", "quarkus://vertx-http");
 
     @RestClient
     Client client;

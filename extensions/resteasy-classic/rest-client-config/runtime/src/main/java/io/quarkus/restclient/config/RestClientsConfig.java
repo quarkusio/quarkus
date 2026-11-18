@@ -9,18 +9,14 @@ import java.util.Set;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
-import io.quarkus.runtime.annotations.ConfigDocIgnore;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
-import io.smallrye.config.Config;
 import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.ConfigValue;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithKeys;
-import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
 @ConfigMapping(prefix = "quarkus.rest-client")
@@ -372,38 +368,10 @@ public interface RestClientsConfig {
         Optional<String> url();
 
         /**
-         * Duplicate mapping of {@link RestClientConfig#url()} to keep a reference of the name used to retrieve the
-         * <code>url</code>. We need this to reload the <code>url</code> configuration in case it contains an expression
-         * to <code>${quarkus.http.port}</code>, which is only set after we load the config.
-         */
-        @ConfigDocIgnore
-        @WithName("url")
-        ConfigValue urlValue();
-
-        default Optional<String> urlReload() {
-            Config config = Config.get();
-            return config.getOptionalValue(urlValue().getName(), String.class);
-        }
-
-        /**
          * The base URI to use for this service. This property or the `url` property is considered required, unless
          * the `baseUri` attribute is configured in the `@RegisterRestClient` annotation.
          */
         Optional<String> uri();
-
-        /**
-         * Duplicate mapping of {@link RestClientConfig#uri()} to keep a reference of the name used to retrieve the
-         * <code>uri</code>. We need this to reload the <code>uri</code> configuration in case it contains an expression
-         * to <code>${quarkus.http.port}</code>, which is only set after we load the config.
-         */
-        @ConfigDocIgnore
-        @WithName("uri")
-        ConfigValue uriValue();
-
-        default Optional<String> uriReload() {
-            Config config = Config.get();
-            return config.getOptionalValue(uriValue().getName(), String.class);
-        }
 
         /**
          * This property is only meant to be set by advanced configurations to override whatever value was set for the uri or

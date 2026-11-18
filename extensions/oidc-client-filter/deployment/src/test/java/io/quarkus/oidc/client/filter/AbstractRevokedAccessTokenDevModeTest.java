@@ -36,10 +36,10 @@ public abstract class AbstractRevokedAccessTokenDevModeTest {
         return new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
                 .addAsResource(
                         new StringAsset("""
-                                %s/mp-rest/url=http://localhost:${quarkus.http.port}
-                                %s/mp-rest/url=http://localhost:${quarkus.http.port}
-                                %s/mp-rest/url=http://localhost:${quarkus.http.port}
-                                %s/mp-rest/url=http://localhost:${quarkus.http.port}
+                                %s/mp-rest/url=quarkus://vertx-http
+                                %s/mp-rest/url=quarkus://vertx-http
+                                %s/mp-rest/url=quarkus://vertx-http
+                                %s/mp-rest/url=quarkus://vertx-http
                                 quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus/
                                 quarkus.oidc.client-id=quarkus-service-app
                                 quarkus.oidc.credentials.secret=secret

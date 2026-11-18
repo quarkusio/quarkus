@@ -26,8 +26,8 @@ public class OidcClientRequestFilterRevokedTokenDevModeTest extends AbstractRevo
     @RegisterExtension
     static final QuarkusDevModeTest test = createQuarkusDevModeTest(
             """
-                    %s/mp-rest/url=http://localhost:${quarkus.http.port}
-                    %s/mp-rest/url=http://localhost:${quarkus.http.port}
+                    %s/mp-rest/url=quarkus://vertx-http
+                    %s/mp-rest/url=quarkus://vertx-http
                     """.formatted(MyDefaultClientMultipleProviders.class.getName(),
                     MyNamedClientMultipleProviders.class.getName()),
             MyDefaultClient.class, MyNamedClient.class,

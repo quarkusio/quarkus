@@ -33,7 +33,7 @@ public class TlsConfigFromPropertiesCdiTest {
             .overrideConfigKey("quarkus.tls.key-store.jks.path", "keystore.jks")
             .overrideConfigKey("quarkus.tls.key-store.jks.password", "secret")
 
-            .overrideConfigKey("quarkus.rest-client.rc.url", "https://localhost:${quarkus.http.test-ssl-port:8444}")
+            .overrideConfigKey("quarkus.rest-client.rc.url", "quarkus://vertx-https")
             .overrideConfigKey("quarkus.rest-client.rc.trust-store", "classpath:truststore.jks")
             .overrideConfigKey("quarkus.rest-client.rc.trust-store-password", "secret");
 

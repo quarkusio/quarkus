@@ -22,7 +22,7 @@ public class ClientResponseAsServerResponseTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(BackendResource.class, BackendClient.class, ProxyResource.class))
             .overrideRuntimeConfigKey("quarkus.rest-client.backend.url",
-                    "http://localhost:${quarkus.http.test-port:8081}");
+                    "quarkus://vertx-http");
 
     @Test
     void testClientResponseReturnedDirectlyFromServerEndpointIsRejected() {

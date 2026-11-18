@@ -91,7 +91,6 @@ import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.TlsConfig;
 import io.quarkus.value.registry.ValueRegistry;
-import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.http.DomainSocketServerStart;
@@ -460,8 +459,6 @@ public class VertxHttpRecorder {
         }
         if (binding.test()) {
             valueRegistry.register(HTTP_TEST_PORT, binding.port());
-            // Compatibility with test.url
-            valueRegistry.register(RuntimeKey.key("test.url"), binding.localBaseUri().toString());
         }
     }
 
@@ -473,7 +470,6 @@ public class VertxHttpRecorder {
         }
         if (binding.test()) {
             valueRegistry.register(HTTPS_TEST_PORT, binding.port());
-            // TODO - Should we register test.url.ssl? We don't use it, or have tests for it
         }
     }
 

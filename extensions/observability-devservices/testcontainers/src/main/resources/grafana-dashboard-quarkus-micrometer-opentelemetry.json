@@ -295,7 +295,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_used_bytes{ area = \"heap\", job = \"$instance\"}) * 100 / sum(jvm_memory_max_bytes{ area = \"heap\", job = \"$instance\" })",
+          "expr": "sum(jvm_memory_used_bytes{ area = \"heap\", job = \"$instance\" } or jvm_memory_used_bytes{ jvm_memory_type = \"heap\", job = \"$instance\" }) * 100 / sum(jvm_memory_max_bytes{ area = \"heap\", job = \"$instance\" } or jvm_memory_limit_bytes{ jvm_memory_type = \"heap\", job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "",
@@ -391,7 +391,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_used_bytes{ area = \"nonheap\", job = \"$instance\" }) * 100 / sum(jvm_memory_max_bytes{ area = \"nonheap\", job = \"$instance\" })",
+          "expr": "sum(jvm_memory_used_bytes{ area = \"nonheap\", job = \"$instance\" } or jvm_memory_used_bytes{ jvm_memory_type = \"non_heap\", job = \"$instance\" }) * 100 / sum(jvm_memory_max_bytes{ area = \"nonheap\", job = \"$instance\" } or jvm_memory_limit_bytes{ jvm_memory_type = \"non_heap\", job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "",
@@ -944,7 +944,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_max_bytes{ job = \"$instance\" })",
+          "expr": "sum(jvm_memory_max_bytes{ job = \"$instance\" } or jvm_memory_limit_bytes{ job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "max",
@@ -1047,7 +1047,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_used_bytes{ area = \"heap\", job = \"$instance\" })",
+          "expr": "sum(jvm_memory_used_bytes{ area = \"heap\", job = \"$instance\" } or jvm_memory_used_bytes{ jvm_memory_type = \"heap\", job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "used",
@@ -1060,7 +1060,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_committed_bytes{ area = \"heap\", job = \"$instance\" })",
+          "expr": "sum(jvm_memory_committed_bytes{ area = \"heap\", job = \"$instance\" } or jvm_memory_committed_bytes{ jvm_memory_type = \"heap\", job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "committed",
@@ -1072,7 +1072,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_max_bytes{ area = \"heap\", job = \"$instance\" })",
+          "expr": "sum(jvm_memory_max_bytes{ area = \"heap\", job = \"$instance\" } or jvm_memory_limit_bytes{ jvm_memory_type = \"heap\", job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "max",
@@ -1175,7 +1175,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_used_bytes{ area = \"nonheap\", job = \"$instance\" })",
+          "expr": "sum(jvm_memory_used_bytes{ area = \"nonheap\", job = \"$instance\" } or jvm_memory_used_bytes{ jvm_memory_type = \"non_heap\", job = \"$instance\" })",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1189,7 +1189,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_committed_bytes{ area=\"nonheap\", job = \"$instance\" })",
+          "expr": "sum(jvm_memory_committed_bytes{ area=\"nonheap\", job = \"$instance\" } or jvm_memory_committed_bytes{ jvm_memory_type = \"non_heap\", job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "committed",
@@ -1201,7 +1201,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(jvm_memory_max_bytes{ area=\"nonheap\", job = \"$instance\" })",
+          "expr": "sum(jvm_memory_max_bytes{ area=\"nonheap\", job = \"$instance\" } or jvm_memory_limit_bytes{ jvm_memory_type = \"non_heap\", job = \"$instance\" })",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "max",
@@ -2308,7 +2308,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_memory_used_bytes{ id =~ \"$jvm_memory_pool_heap\", job = \"$instance\" }",
+          "expr": "jvm_memory_used_bytes{ id =~ \"$jvm_memory_pool_heap\", job = \"$instance\" } or jvm_memory_used_bytes{ jvm_memory_pool_name =~ \"$jvm_memory_pool_heap\", job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2323,7 +2323,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_memory_committed_bytes{ id =~ \"$jvm_memory_pool_heap\", job = \"$instance\" }",
+          "expr": "jvm_memory_committed_bytes{ id =~ \"$jvm_memory_pool_heap\", job = \"$instance\" } or jvm_memory_committed_bytes{ jvm_memory_pool_name =~ \"$jvm_memory_pool_heap\", job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2338,7 +2338,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_memory_max_bytes{ id =~ \"$jvm_memory_pool_heap\", job = \"$instance\" }",
+          "expr": "jvm_memory_max_bytes{ id =~ \"$jvm_memory_pool_heap\", job = \"$instance\" } or jvm_memory_limit_bytes{ jvm_memory_pool_name =~ \"$jvm_memory_pool_heap\", job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2457,7 +2457,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_memory_used_bytes{ id =~ \"$jvm_memory_pool_nonheap\", job = \"$instance\" }",
+          "expr": "jvm_memory_used_bytes{ id =~ \"$jvm_memory_pool_nonheap\", job = \"$instance\" } or jvm_memory_used_bytes{ jvm_memory_pool_name =~ \"$jvm_memory_pool_nonheap\", job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2472,7 +2472,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_memory_committed_bytes{ id =~ \"$jvm_memory_pool_nonheap\", job = \"$instance\" }",
+          "expr": "jvm_memory_committed_bytes{ id =~ \"$jvm_memory_pool_nonheap\", job = \"$instance\" } or jvm_memory_committed_bytes{ jvm_memory_pool_name =~ \"$jvm_memory_pool_nonheap\", job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2487,7 +2487,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jvm_memory_max_bytes{ id =~ \"$jvm_memory_pool_nonheap\", job = \"$instance\" }",
+          "expr": "jvm_memory_max_bytes{ id =~ \"$jvm_memory_pool_nonheap\", job = \"$instance\" } or jvm_memory_limit_bytes{ jvm_memory_pool_name =~ \"$jvm_memory_pool_nonheap\", job = \"$instance\" }",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -3950,9 +3950,9 @@
         "label": "JVM Memory Pools Heap",
         "name": "jvm_memory_pool_heap",
         "options": [],
-        "query": "label_values(jvm_memory_used_bytes{  area=\"heap\"},id)",
+        "query": "query_result(jvm_memory_used_bytes{area=\"heap\", job=\"$instance\"} or jvm_memory_used_bytes{jvm_memory_type=\"heap\", job=\"$instance\"})",
         "refresh": 1,
-        "regex": "",
+        "regex": "/[{,]\\s*(?:id|jvm_memory_pool_name)=\"([^\"]+)\"/",
         "sort": 1,
         "type": "query"
       },
@@ -3970,9 +3970,9 @@
         "label": "JVM Memory Pools Non-Heap",
         "name": "jvm_memory_pool_nonheap",
         "options": [],
-        "query": "label_values(jvm_memory_used_bytes{  area=\"nonheap\"},id)",
+        "query": "query_result(jvm_memory_used_bytes{area=\"nonheap\", job=\"$instance\"} or jvm_memory_used_bytes{jvm_memory_type=\"non_heap\", job=\"$instance\"})",
         "refresh": 1,
-        "regex": "",
+        "regex": "/[{,]\\s*(?:id|jvm_memory_pool_name)=\"([^\"]+)\"/",
         "sort": 2,
         "type": "query"
       }

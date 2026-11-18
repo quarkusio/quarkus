@@ -63,9 +63,9 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
             Context dc) {
         // Must be sure to call next.startCall on the right context
         io.grpc.Context current = io.grpc.Context.current();
+        GrpcContextLocalsProvider.GRPC_CALL_IN_PROGRESS_LOCAL.put(dc, Boolean.TRUE);
         return onClose -> {
-            io.grpc.Context previous = current.attach();
-            GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.put(dc, () -> current.detach(previous));
+            current.attach();
             var forwardingCall = new ForwardingServerCall<ReqT, RespT>() {
                 @Override
                 protected ServerCall<ReqT, RespT> delegate() {
@@ -92,18 +92,12 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
     }
 
     static void runCleanup(Context dc) {
-        Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(dc);
-        if (cleanup != null) {
-            GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(dc);
-        }
-        java.util.concurrent.atomic.AtomicBoolean workerActive = GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.get(dc);
-        if (workerActive != null && workerActive.get()) {
-            // Worker is active on dc: skip removal, the worker handles it.
+        if (GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.get(dc) != null) {
+            // Blocking/virtual path: the worker removes everything
+            // in BlockingExecutionHandler.call() after each event.
             return;
         }
-        if (cleanup != null) {
-            cleanup.run();
-        }
+        GrpcContextLocalsProvider.GRPC_CALL_IN_PROGRESS_LOCAL.remove(dc);
         GrpcContextLocalsProvider.GRPC_CONTEXT_LOCAL.remove(dc);
     }
 
@@ -154,6 +148,11 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
                 Optional<Metadata> metadata = ExceptionHandlerProvider.toTrailers(nt);
                 log.warn("Closing gRPC call due to an error ...", t);
                 call.close(sre.getStatus(), metadata.orElse(new Metadata()));
+                // The call is dead: clear the worker marker so runCleanup proceeds.
+                // No worker can be running at this point because close() only fires when
+                // the interceptor chain failed before any event was dispatched to a worker.
+                GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.remove(context);
+                runCleanup(context);
             }
         }
 
@@ -201,19 +200,22 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
         @Override
         public void onCancel() {
             invoke(listener -> {
-                // Notify inner interceptors first so they can still read context keys in their
-                // onCancel() handlers, then clean up because close() may never be called
-                // when the client cancels.
-                listener.onCancel();
-                runCleanup(context);
+                try {
+                    listener.onCancel();
+                } finally {
+                    runCleanup(context);
+                }
             });
         }
 
         @Override
         public void onComplete() {
             invoke(listener -> {
-                listener.onComplete();
-                runCleanup(context);
+                try {
+                    listener.onComplete();
+                } finally {
+                    runCleanup(context);
+                }
             });
         }
     }

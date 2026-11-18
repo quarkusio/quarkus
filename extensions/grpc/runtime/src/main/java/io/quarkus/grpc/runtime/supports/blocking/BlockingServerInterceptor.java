@@ -27,6 +27,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.grpc.runtime.GrpcContextLocalsProvider;
 import io.quarkus.grpc.runtime.Interceptors;
 import io.vertx.core.Vertx;
 
@@ -161,18 +162,20 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         boolean isBlocking = blockingCache.computeIfAbsent(fullMethodName, this);
         boolean isVirtual = virtualCache.computeIfAbsent(fullMethodName, this::applyVirtual);
 
+        if (!(isVirtual || isBlocking)) {
+            return next.startCall(call, headers);
+        }
+        final ManagedContext requestContext = getRequestContext();
+        // context should always be active here
+        // it is initialized by io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor
+        // that should always be called before this interceptor
+        ContextState state = requestContext.getState();
+        boolean deferHalfCloseUntilMessage = deferHalfCloseUntilMessage(call.getMethodDescriptor().getType());
+        io.vertx.core.Context dc = Vertx.currentContext();
+        if (dc != null) {
+            GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.put(dc, Boolean.TRUE);
+        }
         if (isVirtual) {
-            final ManagedContext requestContext = getRequestContext();
-            // context should always be active here
-            // it is initialized by io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor
-            // that should always be called before this interceptor
-            ContextState state = requestContext.getState();
-            boolean deferHalfCloseUntilMessage = deferHalfCloseUntilMessage(call.getMethodDescriptor().getType());
-            io.vertx.core.Context dc = Vertx.currentContext();
-            if (dc != null) {
-                io.quarkus.grpc.runtime.GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.put(dc,
-                        new java.util.concurrent.atomic.AtomicBoolean(false));
-            }
             VirtualReplayListener<ReqT> replay = new VirtualReplayListener<>(state, deferHalfCloseUntilMessage);
             virtualThreadExecutor.execute(() -> {
                 ServerCall.Listener<ReqT> listener;
@@ -185,18 +188,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                 replay.setDelegate(listener);
             });
             return replay;
-        } else if (isBlocking) {
-            final ManagedContext requestContext = getRequestContext();
-            // context should always be active here
-            // it is initialized by io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor
-            // that should always be called before this interceptor
-            ContextState state = requestContext.getState();
-            boolean deferHalfCloseUntilMessage = deferHalfCloseUntilMessage(call.getMethodDescriptor().getType());
-            io.vertx.core.Context dc = Vertx.currentContext();
-            if (dc != null) {
-                io.quarkus.grpc.runtime.GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.put(dc,
-                        new java.util.concurrent.atomic.AtomicBoolean(false));
-            }
+        } else {
             ReplayListener<ReqT> replay = new ReplayListener<>(state, deferHalfCloseUntilMessage);
             vertx.executeBlocking(() -> {
                 ServerCall.Listener<ReqT> listener;
@@ -209,10 +201,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                 return listener;
             }, false)
                     .onComplete(event -> replay.setDelegate(event.result()));
-
             return replay;
-        } else {
-            return next.startCall(call, headers);
         }
     }
 

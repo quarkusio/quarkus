@@ -171,6 +171,24 @@ class ContextStorageOverrideTest {
     }
 
     @Test
+    void cancelledContextDoesNotLeakOnDuplicatedContext() throws Exception {
+        CompletableFuture<Context> result = new CompletableFuture<>();
+        io.vertx.core.Context dc = VertxContext.getOrCreateDuplicatedContext(vertx);
+
+        dc.runOnContext(v -> {
+            Context.CancellableContext cancellable = Context.current().withCancellation();
+            Context prev = cancellable.attach();
+            cancellable.cancel(null);
+            cancellable.detach(prev);
+            result.complete(storage.current());
+        });
+
+        assertThat(result.get(5, TimeUnit.SECONDS))
+                .as("cancelled context must not remain visible after detach")
+                .isSameAs(Context.ROOT);
+    }
+
+    @Test
     void duplicatedContextDoesNotLeakToNonVertxThread() throws Exception {
         Context ctx = Context.ROOT.withValue(Context.key("k"), "v");
         CompletableFuture<Void> attached = new CompletableFuture<>();

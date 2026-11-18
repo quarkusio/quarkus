@@ -29,12 +29,12 @@ import io.vertx.core.Vertx;
  * Uses two {@code @GlobalInterceptor}s to observe two distinct moments, both positioned
  * <em>after</em> {@code GrpcDuplicatedContextGrpcInterceptor} has acted:
  * <ul>
- * <li>{@link Outer} (MAX_VALUE−6) wraps {@code ServerCall.close()} — which propagates
+ * <li>{@link Outer} (MAX_VALUE-6) wraps {@code ServerCall.close()}, which propagates
  * outward through the chain, so {@code super.close()} calls into
  * {@code GrpcDuplicatedContextGrpcInterceptor}'s cleanup before the latch fires.
  * {@code contextAtClose} is captured before {@code super.close()} so it reflects
  * the gRPC context while it is still attached.</li>
- * <li>{@link Inner} (priority 0) wraps the listener — as the innermost interceptor it is
+ * <li>{@link Inner} (priority 0) wraps the listener: as the innermost interceptor it is
  * the last to process {@code onMessage} and {@code onHalfClose} before the service
  * handler on all paths: directly on the event-loop for non-blocking calls, and inside
  * {@code BlockingServerInterceptor}'s {@code ReplayListener} delegate chain for
@@ -144,7 +144,7 @@ public class ContextWatcherInterceptor {
     }
 
     /**
-     * Outer interceptor — runs on the event-loop thread, between
+     * Outer interceptor, runs on the event-loop thread, between
      * {@code GrpcDuplicatedContextGrpcInterceptor} and {@code BlockingServerInterceptor}.
      */
     @ApplicationScoped
@@ -163,7 +163,7 @@ public class ContextWatcherInterceptor {
             ServerCall<ReqT, RespT> forwardingCall = new ForwardingServerCall.SimpleForwardingServerCall<>(call) {
                 @Override
                 public void close(Status status, Metadata trailers) {
-                    // Capture context before super.close() — cleanup runs inside it
+                    // Capture context before super.close(): cleanup runs inside it
                     // (GrpcDuplicatedContextGrpcInterceptor's finally block), so this
                     // reflects the gRPC context while it is still attached.
                     watcher.setContextAtClose(io.grpc.Context.current());
@@ -184,7 +184,7 @@ public class ContextWatcherInterceptor {
         }
     }
 
-    /** Innermost interceptor — direct delegate of {@code BlockingServerInterceptor}'s {@code ReplayListener}. */
+    /** Innermost interceptor, direct delegate of {@code BlockingServerInterceptor}'s {@code ReplayListener}. */
     @ApplicationScoped
     @GlobalInterceptor
     public static class Inner implements ServerInterceptor, Prioritized {

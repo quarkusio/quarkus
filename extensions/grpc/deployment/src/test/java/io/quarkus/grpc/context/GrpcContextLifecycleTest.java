@@ -18,7 +18,7 @@ import io.quarkus.grpc.context.proto.ContextCheckGrpc;
 import io.quarkus.test.QuarkusExtensionTest;
 
 /**
- * Integration tests verifying that the gRPC context is correctly attached and cleaned up
+ * Tests verifying that the gRPC context is correctly attached and cleaned up
  * on all execution paths (event-loop, blocking worker, virtual thread).
  */
 public class GrpcContextLifecycleTest {
@@ -68,7 +68,7 @@ public class GrpcContextLifecycleTest {
     }
 
     // -------------------------------------------------------------------------
-    // Context available at the listener layer — onMessage (ContextWatcherInterceptor)
+    // Context available at the listener layer: onMessage (ContextWatcherInterceptor)
     // -------------------------------------------------------------------------
 
     @Test
@@ -102,7 +102,7 @@ public class GrpcContextLifecycleTest {
     }
 
     // -------------------------------------------------------------------------
-    // Context available at the listener layer — onHalfClose (ContextWatcherInterceptor)
+    // Context available at the listener layer: onHalfClose (ContextWatcherInterceptor)
     // -------------------------------------------------------------------------
 
     @Test
@@ -231,5 +231,20 @@ public class GrpcContextLifecycleTest {
                     .as("gRPC context must be non-ROOT on sequential call %d", i)
                     .isEqualTo("ok");
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Nested gRPC call: inner call's cleanup must not break outer call's context
+    // -------------------------------------------------------------------------
+
+    @Test
+    void grpcContextIsPreservedAcrossNestedCalls() {
+        String result = stub.checkNested(CheckRequest.getDefaultInstance()).getContextState();
+        // Format: "outerBefore,inner,outerAfter,sameCtx"
+        // outerBefore/inner/outerAfter must be "ok"; sameCtx shows if the outer context
+        // object survived the inner call (same) or was replaced (different)
+        assertThat(result)
+                .as("outer context must survive the inner call's full lifecycle")
+                .isEqualTo("ok,ok,ok,same");
     }
 }

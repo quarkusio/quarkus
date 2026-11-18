@@ -1,7 +1,6 @@
 package io.quarkus.grpc.runtime.supports.blocking;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import io.grpc.Context;
@@ -39,13 +38,6 @@ class BlockingExecutionHandler<ReqT> implements Callable<Void> {
          * The lock object is assumed to be the request's listener
          */
         synchronized (lock) {
-            io.vertx.core.Context vertxDc = Vertx.currentContext();
-            AtomicBoolean workerActive = vertxDc != null
-                    ? GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.get(vertxDc)
-                    : null;
-            if (workerActive != null) {
-                workerActive.set(true);
-            }
             Context previous = grpcContext.attach();
             try {
                 requestContext.activate(state);
@@ -57,12 +49,10 @@ class BlockingExecutionHandler<ReqT> implements Callable<Void> {
                 return null;
             } finally {
                 grpcContext.detach(previous);
-                // runCleanup skips removal while workerActive: do it here instead.
+                io.vertx.core.Context vertxDc = Vertx.currentContext();
                 if (vertxDc != null) {
+                    GrpcContextLocalsProvider.GRPC_CALL_IN_PROGRESS_LOCAL.remove(vertxDc);
                     GrpcContextLocalsProvider.GRPC_CONTEXT_LOCAL.remove(vertxDc);
-                }
-                if (workerActive != null) {
-                    workerActive.set(false);
                 }
             }
         }

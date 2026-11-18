@@ -15,6 +15,9 @@ service ContextCheck {
     rpc CheckSlowEventLoop (CheckRequest) returns (CheckReply) {}
     rpc CheckSlowEventLoopResponding (CheckRequest) returns (CheckReply) {}
     rpc CheckStreaming (stream CheckRequest) returns (CheckReply) {}
+    rpc CheckStreamingBlocking (stream CheckRequest) returns (CheckReply) {}
+    rpc CheckStreamingVirtual (stream CheckRequest) returns (CheckReply) {}
+    rpc CheckNested (CheckRequest) returns (CheckReply) {}
 }
 
 message CheckRequest {

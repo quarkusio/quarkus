@@ -45,13 +45,11 @@ public class ContextStorageOverride extends Context.Storage {
             if (dc != null && VertxContext.isDuplicatedContext(dc)) {
                 // vert.x-grpcio wraps every gRPC frame (headers, message, end-stream) in its own
                 // Context.run() and calls detach(C, ROOT) after each frame, which would clear the
-                // call context from GRPC_CONTEXT_LOCAL before onCancel() or a delayed close() fires.
-                // While Quarkus cleanup is still pending (GRPC_CONTEXT_CLEANUP_LOCAL non-null) we
-                // skip the removal: the cleanup lambda removes explicitly. Once cleanup has been
-                // consumed the removal is allowed, so BlockingExecutionHandler teardowns and the
-                // final ContextRunnable for closed() can still clean up after the call ends.
-                // detach(ROOT, ROOT) used by gRPC internals must always remove.
-                if (context == Context.ROOT || GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(dc) == null) {
+                // call context from GRPC_CONTEXT_LOCAL. While a gRPC call is in progress we block
+                // the removal; Quarkus cleanup removes explicitly when the call is truly done.
+                // Outside a gRPC call, detach works normally so user code can clean up.
+                if (context == Context.ROOT
+                        || GrpcContextLocalsProvider.GRPC_CALL_IN_PROGRESS_LOCAL.get(dc) == null) {
                     GrpcContextLocalsProvider.GRPC_CONTEXT_LOCAL.remove(dc);
                 }
             } else {

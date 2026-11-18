@@ -1,7 +1,5 @@
 package io.quarkus.grpc.runtime;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import io.grpc.Context;
 import io.vertx.core.internal.VertxBootstrap;
 import io.vertx.core.spi.VertxServiceProvider;
@@ -15,10 +13,12 @@ public class GrpcContextLocalsProvider implements VertxServiceProvider {
 
     public static final ContextLocal<Context> GRPC_CONTEXT_LOCAL = ContextLocal.registerLocal(Context.class);
     public static final ContextLocal<RoutingContext> ROUTING_CONTEXT_LOCAL = ContextLocal.registerLocal(RoutingContext.class);
-    public static final ContextLocal<Runnable> GRPC_CONTEXT_CLEANUP_LOCAL = ContextLocal.registerLocal(Runnable.class);
-    // Per-call flag: true while a blocking/virtual worker is between attach and consumer completion.
-    // Prevents the event-loop runCleanup from removing GRPC_CONTEXT_LOCAL while the worker reads it.
-    public static final ContextLocal<AtomicBoolean> GRPC_WORKER_ACTIVE_LOCAL = ContextLocal.registerLocal(AtomicBoolean.class);
+    // Set during interceptCall, cleared by cleanup. While present, ContextStorageOverride.detach()
+    // blocks detach(C, ROOT) on this dc so vert.x-grpcio frame teardowns cannot clear the call context.
+    public static final ContextLocal<Boolean> GRPC_CALL_IN_PROGRESS_LOCAL = ContextLocal.registerLocal(Boolean.class);
+    // Marker: a blocking/virtual worker will handle cleanup for this call.
+    // When present, runCleanup on the event loop skips removal entirely.
+    public static final ContextLocal<Boolean> GRPC_WORKER_ACTIVE_LOCAL = ContextLocal.registerLocal(Boolean.class);
 
     @Override
     public void init(VertxBootstrap builder) {

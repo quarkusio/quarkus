@@ -27,9 +27,10 @@ import io.quarkus.grpc.context.proto.ContextCheckGrpc;
 import io.quarkus.test.QuarkusExtensionTest;
 
 /**
- * Cancellation tests for the gRPC context lifecycle, kept in a separate class so that
- * the slow handlers required to trigger cancellation do not leave stale state that
- * interferes with the close()-path tests in {@link GrpcContextLifecycleTest}.
+ * Cancellation tests for the gRPC context lifecycle, kept in a separate class because
+ * the slow cancel calls (~20s total) would slow down the fast lifecycle tests, and
+ * lingering async server-side callbacks after cancellation could contaminate the
+ * shared {@link ContextWatcherInterceptor} state used by {@link GrpcContextLifecycleTest}.
  */
 public class GrpcContextCancelLifecycleTest {
 
@@ -119,7 +120,7 @@ public class GrpcContextCancelLifecycleTest {
     /**
      * Sends several messages with delays between them on a client-streaming call, simulating a slow
      * network where frames arrive one at a time. Verifies that every onMessage() invocation sees a
-     * non-ROOT gRPC context — each frame gets its own handleMessage.Context.run() so the context is
+     * non-ROOT gRPC context, since each frame gets its own handleMessage.Context.run() so the context is
      * re-attached for each message regardless of timing.
      */
     @Test
@@ -147,6 +148,42 @@ public class GrpcContextCancelLifecycleTest {
 
         assertThat(watcher.getContextsAtOnMessage())
                 .as("every onMessage() must see a non-ROOT gRPC context on the event-loop path")
+                .hasSizeGreaterThanOrEqualTo(4)
+                .allSatisfy(ctx -> assertThat(ctx).isNotSameAs(io.grpc.Context.ROOT));
+    }
+
+    @Test
+    void grpcContextIsCorrectForEachOnMessageOnBlockingWorker() throws Exception {
+        sendStreamingMessages(ContextCheckGrpc.getCheckStreamingBlockingMethod(), "blocking-worker");
+    }
+
+    @Test
+    void grpcContextIsCorrectForEachOnMessageOnVirtualThread() throws Exception {
+        sendStreamingMessages(ContextCheckGrpc.getCheckStreamingVirtualMethod(), "virtual-thread");
+    }
+
+    private void sendStreamingMessages(MethodDescriptor<CheckRequest, CheckReply> method, String path)
+            throws Exception {
+        ClientCall<CheckRequest, CheckReply> call = channel.newCall(method, CallOptions.DEFAULT);
+        CountDownLatch done = new CountDownLatch(1);
+        call.start(new ClientCall.Listener<>() {
+            @Override
+            public void onClose(Status status, Metadata trailers) {
+                done.countDown();
+            }
+        }, new Metadata());
+        call.request(1);
+
+        for (int i = 0; i < 4; i++) {
+            call.sendMessage(CheckRequest.getDefaultInstance());
+            Thread.sleep(50);
+        }
+        call.halfClose();
+
+        done.await(5, SECONDS);
+
+        assertThat(watcher.getContextsAtOnMessage())
+                .as("every onMessage() must see a non-ROOT gRPC context on the " + path + " path")
                 .hasSizeGreaterThanOrEqualTo(4)
                 .allSatisfy(ctx -> assertThat(ctx).isNotSameAs(io.grpc.Context.ROOT));
     }

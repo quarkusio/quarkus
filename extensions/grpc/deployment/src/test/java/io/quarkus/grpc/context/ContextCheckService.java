@@ -3,6 +3,7 @@ package io.quarkus.grpc.context;
 import java.time.Duration;
 
 import io.grpc.Context;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.context.proto.CheckReply;
 import io.quarkus.grpc.context.proto.CheckRequest;
@@ -14,6 +15,9 @@ import io.smallrye.mutiny.Uni;
 
 @GrpcService
 public class ContextCheckService extends MutinyContextCheckGrpc.ContextCheckImplBase {
+
+    @GrpcClient("context-check")
+    MutinyContextCheckGrpc.MutinyContextCheckStub nestedClient;
 
     @Override
     public Uni<CheckReply> check(CheckRequest request) {
@@ -59,6 +63,18 @@ public class ContextCheckService extends MutinyContextCheckGrpc.ContextCheckImpl
         return request.collect().last().map(last -> contextReply());
     }
 
+    @Blocking
+    @Override
+    public Uni<CheckReply> checkStreamingBlocking(Multi<CheckRequest> request) {
+        return request.collect().last().map(last -> contextReply());
+    }
+
+    @RunOnVirtualThread
+    @Override
+    public Uni<CheckReply> checkStreamingVirtual(Multi<CheckRequest> request) {
+        return request.collect().last().map(last -> contextReply());
+    }
+
     @Override
     public Uni<CheckReply> checkSlowEventLoopResponding(CheckRequest request) {
         return slowReply();
@@ -66,16 +82,28 @@ public class ContextCheckService extends MutinyContextCheckGrpc.ContextCheckImpl
 
     @Override
     public Uni<CheckReply> checkSlowEventLoop(CheckRequest request) {
-        // never emits — no write-side activity means the Mutiny bridge cannot
-        // call serverCall.close() proactively, so the runOnContext lambda that
-        // fires Inner.onCancel() wins Race 2 reliably
+        // Never emits: ensures the service does not respond before the client
+        // cancels, so onCancel() fires rather than onComplete().
         return Uni.createFrom().nothing();
     }
 
+    @Override
+    public Uni<CheckReply> checkNested(CheckRequest request) {
+        Context outerCtx = Context.current();
+        String outerBefore = outerCtx != Context.ROOT ? "ok" : "root";
+        return nestedClient.check(CheckRequest.getDefaultInstance())
+                .map(innerReply -> {
+                    String outerAfter = Context.current() != Context.ROOT ? "ok" : "root";
+                    String sameCtx = Context.current() == outerCtx ? "same" : "different";
+                    return CheckReply.newBuilder()
+                            .setContextState(
+                                    outerBefore + "," + innerReply.getContextState() + "," + outerAfter + "," + sameCtx)
+                            .build();
+                });
+    }
+
     private static Uni<CheckReply> slowReply() {
-        // Hold the call open for 2 s without blocking any thread. When the client
-        // cancels (deadline), Mutiny cancels the timer subscription before it fires,
-        // so no response is ever sent and "Headers already sent" is avoided.
+        // Hold the call open for 2 s without blocking any thread.
         return Uni.createFrom().item(ContextCheckService::contextReply)
                 .onItem().delayIt().by(Duration.ofSeconds(2));
     }

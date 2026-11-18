@@ -214,7 +214,7 @@ public class CachingTest extends BaseGradleTest {
                 .doesNotContainKey(":quarkusGenerateCodeDev")
                 .containsEntry(":quarkusAppPartsBuild", isFastOrLegacyJar ? TaskOutcome.FROM_CACHE : TaskOutcome.UP_TO_DATE)
                 .containsEntry(":quarkusDependenciesBuild", isFastOrLegacyJar ? TaskOutcome.SUCCESS : TaskOutcome.UP_TO_DATE)
-                .containsEntry(":quarkusBuild", simulateCI || isFastJar ? TaskOutcome.SUCCESS : TaskOutcome.FROM_CACHE);
+                .containsEntry(":quarkusBuild", simulateCI ? TaskOutcome.SUCCESS : TaskOutcome.FROM_CACHE);
 
         // A follow-up 'build' does nothing, everything's up-to-date
 

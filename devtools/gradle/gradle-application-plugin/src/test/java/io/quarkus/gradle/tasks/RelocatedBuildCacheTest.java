@@ -1,14 +1,21 @@
 package io.quarkus.gradle.tasks;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.SoftAssertions;
@@ -16,6 +23,7 @@ import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
+import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -87,6 +95,40 @@ public class RelocatedBuildCacheTest extends BaseGradleTest {
                 .contains(checkout.toRealPath().resolve("app/build/resources/main"));
     }
 
+    @Test
+    void quarkusBuildIsReusedWhenTheApplicationPartsComeFromTheCache() throws Exception {
+        Path cache = testProjectDir.resolve("cache");
+        Path checkout = prepareCheckout("checkout");
+        runner(checkout, cache, true, ":app:quarkusBuild").build();
+        runner(checkout, cache, true, "clean").build();
+
+        // quarkusAppPartsBuild restored from the cache leaves its scratch directory empty, which used to be an input
+        BuildResult result = runner(checkout, cache, true, ":app:quarkusBuild").build();
+
+        soft.assertThat(taskOutcomes(result))
+                .describedAs("after a clean: %s", result.getOutput())
+                .containsEntry(":app:quarkusAppPartsBuild", TaskOutcome.FROM_CACHE)
+                .containsEntry(":app:quarkusBuild", TaskOutcome.FROM_CACHE);
+    }
+
+    @Test
+    void changedSiblingModuleReachesTheBuiltApplication() throws Exception {
+        Path cache = testProjectDir.resolve("cache");
+        Path checkout = prepareCheckout("checkout");
+        runner(checkout, cache, true, ":app:quarkusBuild").build();
+        // Changes the content of the sibling's jar, but not the application model
+        replaceIn(checkout.resolve("common/src/main/java/org/acme/common/Greeting.java"), "\"hello\"", "\"bonjour\"");
+
+        BuildResult result = runner(checkout, cache, true, ":app:quarkusBuild").build();
+
+        soft.assertThat(taskOutcomes(result))
+                .describedAs("after changing the sibling module: %s", result.getOutput())
+                .containsEntry(":app:quarkusBuild", TaskOutcome.SUCCESS);
+        soft.assertThat(classInJar(checkout.resolve("app/build/quarkus-app/lib/main"), "org/acme/common/Greeting.class"))
+                .describedAs("Greeting.class in the built application")
+                .contains("bonjour");
+    }
+
     private static GradleRunner runner(Path checkout, Path cache, boolean configurationCache, String... tasks) {
         List<String> args = new ArrayList<>(List.of(tasks));
         args.add("--build-cache");
@@ -109,6 +151,26 @@ public class RelocatedBuildCacheTest extends BaseGradleTest {
         FileUtils.copyDirectory(new File(url.toURI()), checkout.toFile());
         FileUtils.copyFile(new File("../gradle.properties"), checkout.resolve("gradle.properties").toFile());
         return checkout;
+    }
+
+    private static void replaceIn(Path file, String target, String replacement) throws IOException {
+        String content = Files.readString(file);
+        assertThat(content).describedAs("%s", file).contains(target);
+        Files.writeString(file, content.replace(target, replacement));
+    }
+
+    private static String classInJar(Path dir, String entryName) throws IOException {
+        try (Stream<Path> jars = Files.list(dir)) {
+            for (Path jar : jars.filter(p -> p.getFileName().toString().endsWith(".jar")).toList()) {
+                try (JarFile jarFile = new JarFile(jar.toFile())) {
+                    JarEntry entry = jarFile.getJarEntry(entryName);
+                    if (entry != null) {
+                        return new String(jarFile.getInputStream(entry).readAllBytes(), StandardCharsets.ISO_8859_1);
+                    }
+                }
+            }
+        }
+        throw new AssertionError("no jar in " + dir + " contains " + entryName);
     }
 
     private static Path modelFile(Path checkout, String name) {

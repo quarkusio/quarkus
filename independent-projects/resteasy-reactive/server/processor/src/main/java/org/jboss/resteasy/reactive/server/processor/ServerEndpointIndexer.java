@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.server.processor;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.INSTANT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JAX_RS_ANNOTATIONS_FOR_FIELDS;
@@ -19,6 +20,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PERIOD;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRODUCES;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.YEAR;
@@ -44,6 +46,7 @@ import java.util.function.Supplier;
 import java.util.regex.PatternSyntaxException;
 
 import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.ws.rs.HttpMethod;
 import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.PathSegment;
@@ -110,6 +113,7 @@ public class ServerEndpointIndexer
     private static final DotName FILE_DOT_NAME = DotName.createSimple(File.class.getName());
     private static final DotName PATH_DOT_NAME = DotName.createSimple(Path.class.getName());
     private static final DotName FILEUPLOAD_DOT_NAME = DotName.createSimple(FileUpload.class.getName());
+    private static final Set<String> HTTP_METHODS_WITHOUT_BODY = Set.of(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.OPTIONS);
 
     private static final Set<DotName> SUPPORTED_MULTIPART_FILE_TYPES = Set.of(FILE_DOT_NAME, PATH_DOT_NAME,
             FILEUPLOAD_DOT_NAME);
@@ -331,9 +335,35 @@ public class ServerEndpointIndexer
         return true;
     }
 
+    /**
+     * Logs a warning for {@code @Consumes} and {@code @Produces} declared on the method itself where they have no effect:
+     * on a sub-resource locator, whose media types do not apply to the methods of the sub-resource, and {@code @Consumes}
+     * on a method whose HTTP method carries no request body, which only rejects requests that send a {@code Content-Type}
+     * header.
+     */
+    private void warnAboutIneffectiveMediaTypeAnnotations(ServerResourceMethod method, MethodInfo info,
+            AnnotationStore annotationStore) {
+        boolean consumes = annotationStore.getAnnotation(info, CONSUMES) != null;
+        boolean produces = annotationStore.getAnnotation(info, PRODUCES) != null;
+        if (method.getHttpMethod() == null) {
+            if (consumes || produces) {
+                log.warnf(
+                        "Method '%s' of Resource class '%s' is a sub-resource locator, so its %s annotation does not apply to the methods of the sub-resource. Offending method is '%s#%s'",
+                        info.name(), info.declaringClass().name(),
+                        consumes && produces ? "@Consumes and @Produces" : consumes ? "@Consumes" : "@Produces",
+                        info.declaringClass().name(), info);
+            }
+        } else if (consumes && HTTP_METHODS_WITHOUT_BODY.contains(method.getHttpMethod())) {
+            log.warnf(
+                    "Method '%s' of Resource class '%s' declares @Consumes but %s requests carry no request body, so the annotation only rejects requests that send a Content-Type header. Offending method is '%s#%s'",
+                    info.name(), info.declaringClass().name(), method.getHttpMethod(), info.declaringClass().name(), info);
+        }
+    }
+
     @Override
     protected void handleAdditionalMethodProcessing(ServerResourceMethod method, ClassInfo currentClassInfo, MethodInfo info,
             AnnotationStore annotationStore) {
+        warnAboutIneffectiveMediaTypeAnnotations(method, info, annotationStore);
         Supplier<EndpointInvoker> invokerSupplier = null;
         for (HandlerChainCustomizer i : method.getHandlerChainCustomizers()) {
             invokerSupplier = i.alternateInvoker(method);

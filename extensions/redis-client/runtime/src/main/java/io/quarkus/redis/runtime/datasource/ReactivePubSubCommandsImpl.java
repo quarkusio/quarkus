@@ -288,7 +288,9 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
         abstract Uni<Void> subscribeToRedis();
 
         public Uni<String> subscribe() {
-            Uni<Void> handled = Uni.createFrom().emitter(emitter -> {
+            Uni<Void> subscribed = Uni.createFrom().emitter(emitter -> {
+                // The handlers must be installed before sending (P)SUBSCRIBE: the client completes the send when the
+                // command is written, and a confirmation read before a handler is installed would be dropped
                 connection.handler(r -> runOnDuplicatedContext(() -> handleRedisEvent(emitter, r)));
                 if (onEnd != null) {
                     connection.endHandler(() -> runOnDuplicatedContext(onEnd));
@@ -296,12 +298,12 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
                 if (onException != null) {
                     connection.exceptionHandler(t -> runOnDuplicatedContext(() -> onException.accept(t)));
                 }
+                // completion is signaled by the confirmation received in handleRedisEvent
+                subscribeToRedis().subscribe().with(ignored -> {
+                }, emitter::fail);
             });
 
-            Uni<Void> subscribed = subscribeToRedis();
-
-            return subscribed.chain(() -> handled)
-                    .replaceWith(id);
+            return subscribed.replaceWith(id);
         }
 
         private void runOnDuplicatedContext(Runnable runnable) {

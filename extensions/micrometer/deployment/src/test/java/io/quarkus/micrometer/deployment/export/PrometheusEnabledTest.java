@@ -2,6 +2,7 @@ package io.quarkus.micrometer.deployment.export;
 
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 
 import java.util.Set;
 
@@ -68,6 +69,27 @@ public class PrometheusEnabledTest {
                 .get("/q/metrics")
                 .then()
                 .statusCode(200);
+    }
+
+    @Test
+    public void metricsEndpointNegotiatesByWeight() {
+        // The Accept header of a Prometheus 3 scrape: OpenMetrics preferred, text/plain as a fallback
+        given()
+                .accept("application/openmetrics-text;version=1.0.0;escaping=allow-utf-8;q=0.7,"
+                        + "application/openmetrics-text;version=0.0.1;q=0.6,"
+                        + "text/plain;version=1.0.0;escaping=allow-utf-8;q=0.5,"
+                        + "text/plain;version=0.0.4;q=0.4,*/*;q=0.3")
+                .get("/q/metrics")
+                .then()
+                .statusCode(200)
+                .header("Content-Type", startsWith("application/openmetrics-text"));
+
+        given()
+                .accept("application/openmetrics-text;q=0.5,text/plain;q=0.9")
+                .get("/q/metrics")
+                .then()
+                .statusCode(200)
+                .header("Content-Type", startsWith("text/plain"));
     }
 
     @Test

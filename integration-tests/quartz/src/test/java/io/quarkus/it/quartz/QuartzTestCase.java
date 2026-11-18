@@ -45,6 +45,15 @@ public class QuartzTestCase {
         assertCounter("/scheduler/programmatic/async", 1, Duration.ofSeconds(3));
     }
 
+    @Test
+    public void testOrphanedJobsRemoved() {
+        // the job of a scheduled method that does not exist anymore is removed
+        assertExpectedBodyString("/scheduler/jobs/removed-method/exists", "false");
+        // jobs of existing scheduled methods and jobs not created by Quarkus are kept
+        assertExpectedBodyString("/scheduler/jobs/counter/exists", "true");
+        assertExpectedBodyString("/scheduler/jobs/quartz-api-job/exists", "true");
+    }
+
     private void assertEmptyValueForDisabledMethod(String path) {
         assertExpectedBodyString(path, "");
     }

@@ -242,7 +242,7 @@ public interface ArcContainer {
      *
      * @param eventType
      * @param eventQualifiers
-     * @return an ordered list of observer methods
+     * @return an unmodifiable list of observer methods ordered by priority
      */
     <T> List<InjectableObserverMethod<? super T>> resolveObserverMethods(Type eventType, Annotation... eventQualifiers);
 }

@@ -95,6 +95,7 @@ public class ArcContainerImpl implements ArcContainer {
     private final Contexts contexts;
     private final ComputingCache<Resolvable, Set<InjectableBean<?>>> resolved;
     private final ComputingCache<String, Set<InjectableBean<?>>> beansByName;
+    private final ComputingCache<TypeAndQualifiers, List<InjectableObserverMethod<?>>> resolvedObservers;
 
     private final ArrayList<ResourceReferenceProvider> resourceProviders;
 
@@ -174,6 +175,7 @@ public class ArcContainerImpl implements ArcContainer {
 
         resolved = new ComputingCache<>(this::resolve);
         beansByName = new ComputingCache<>(this::resolve);
+        resolvedObservers = new ComputingCache<>(this::doResolveObserverMethods);
         resourceProviders = new ArrayList<>();
         for (ResourceReferenceProvider resourceProvider : ServiceLoader.load(ResourceReferenceProvider.class)) {
             resourceProviders.add(resourceProvider);
@@ -498,6 +500,7 @@ public class ArcContainerImpl implements ArcContainer {
     public void clear() {
         clearStaticCaches();
         resolved.clear();
+        resolvedObservers.clear();
         running.set(false);
         if (eventMocks != null) {
             eventMocks.clear();
@@ -891,6 +894,9 @@ public class ArcContainerImpl implements ArcContainer {
         return priority2.compareTo(priority1);
     }
 
+    /**
+     * The returned list is cached and must not be modified.
+     */
     @SuppressWarnings("unchecked")
     <T> List<InjectableObserverMethod<? super T>> resolveObserverMethods(Type eventType,
             Set<Annotation> eventQualifiers) {
@@ -898,19 +904,25 @@ public class ArcContainerImpl implements ArcContainer {
         if (observers.isEmpty()) {
             return Collections.emptyList();
         }
-        Set<Type> eventTypes = new HierarchyDiscovery(eventType).getTypeClosure();
-        List<InjectableObserverMethod<? super T>> resolvedObservers = new ArrayList<>();
+        // The set of observers is fixed once the container is created
+        return (List<InjectableObserverMethod<? super T>>) (List<?>) resolvedObservers
+                .getValue(new TypeAndQualifiers(eventType, Set.copyOf(eventQualifiers)));
+    }
+
+    private List<InjectableObserverMethod<?>> doResolveObserverMethods(TypeAndQualifiers typeAndQualifiers) {
+        Set<Type> eventTypes = new HierarchyDiscovery(typeAndQualifiers.requiredType()).getTypeClosure();
+        List<InjectableObserverMethod<?>> resolvedObservers = new ArrayList<>();
         for (InjectableObserverMethod<?> observer : observers) {
             if (EventTypeAssignabilityRules.instance().matches(observer.getObservedType(), eventTypes)) {
                 if (observer.getObservedQualifiers().isEmpty()
-                        || registeredQualifiers.isSubset(observer.getObservedQualifiers(), eventQualifiers)) {
-                    resolvedObservers.add((InjectableObserverMethod<? super T>) observer);
+                        || registeredQualifiers.isSubset(observer.getObservedQualifiers(), typeAndQualifiers.qualifiers())) {
+                    resolvedObservers.add(observer);
                 }
             }
         }
         // Observers with smaller priority values are called first
-        Collections.sort(resolvedObservers);
-        return resolvedObservers;
+        resolvedObservers.sort(null);
+        return List.copyOf(resolvedObservers);
     }
 
     List<Interceptor<?>> resolveInterceptors(InterceptionType type, Annotation... interceptorBindings) {

@@ -162,8 +162,6 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
 
     @Override
     public Map<String, String> start() {
-        MongoTestResource.forceExtendedSocketOptionsClassInit();
-
         startedServers = startReplicaSet(version, port, replicaSet);
 
         return Collections.singletonMap("quarkus.mongodb.hosts", String.format("127.0.0.1:%d", port));

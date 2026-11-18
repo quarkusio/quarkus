@@ -5,11 +5,13 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
 import java.lang.reflect.Type;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -303,6 +305,13 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
                 }, emitter::fail);
             });
 
+            Duration timeout = datasource.subscribeTimeout;
+            // null (data source built without config) or zero/negative (disabled by config) means no timeout
+            if (timeout != null && timeout.isPositive()) {
+                subscribed = subscribed.ifNoItem().after(timeout)
+                        .failWith(() -> new TimeoutException("No subscription confirmation received from Redis within "
+                                + timeout));
+            }
             return subscribed.replaceWith(id);
         }
 

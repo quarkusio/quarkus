@@ -56,6 +56,15 @@ public interface RedisClientConfig {
     Duration timeout();
 
     /**
+     * The maximum delay to wait for the Redis server to confirm a pub/sub subscription ({@code SUBSCRIBE} or
+     * {@code PSUBSCRIBE}).
+     * If the confirmation is not received in time, the subscription fails and its connection is closed.
+     * Set to {@code 0} to disable the timeout.
+     */
+    @WithDefault("10s")
+    Duration subscribeTimeout();
+
+    /**
      * The Redis client type.
      * Accepted values are: {@code STANDALONE} (default), {@code CLUSTER}, {@code REPLICATION}, {@code SENTINEL}.
      */

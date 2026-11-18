@@ -27,6 +27,8 @@ public class DevServicesDatasourceContainerConfig {
     private final boolean showLogs;
     private final String datasourceName;
     private final Set<DatabaseFeature> requiredFeatures;
+    private final boolean shared;
+    private final String serviceName;
 
     public DevServicesDatasourceContainerConfig(Optional<String> imageName,
             Map<String, String> containerEnv,
@@ -43,7 +45,9 @@ public class DevServicesDatasourceContainerConfig {
             boolean reuse,
             boolean showLogs,
             String datasourceName,
-            Set<DatabaseFeature> requiredFeatures) {
+            Set<DatabaseFeature> requiredFeatures,
+            boolean shared,
+            String serviceName) {
         this.imageName = imageName;
         this.containerEnv = containerEnv;
         this.containerProperties = containerProperties;
@@ -60,6 +64,8 @@ public class DevServicesDatasourceContainerConfig {
         this.showLogs = showLogs;
         this.datasourceName = datasourceName;
         this.requiredFeatures = requiredFeatures != null ? requiredFeatures : Collections.emptySet();
+        this.shared = shared;
+        this.serviceName = serviceName;
     }
 
     public Optional<String> getImageName() {
@@ -124,5 +130,13 @@ public class DevServicesDatasourceContainerConfig {
 
     public Set<DatabaseFeature> getRequiredFeatures() {
         return requiredFeatures;
+    }
+
+    public boolean isShared() {
+        return shared;
+    }
+
+    public String getServiceName() {
+        return serviceName;
     }
 }

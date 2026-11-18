@@ -30,6 +30,15 @@ public interface DevServicesDatasourceProvider {
             boolean useSharedNetwork, DevServicesDatasourceContainerConfig containerConfig,
             DevServicesComposeProjectBuildItem composeProjectBuildItem);
 
+    /**
+     * Looks for a running container shared by another application, using label-based service discovery, as
+     * configured through {@code devservices.shared}/{@code devservices.service-name}.
+     */
+    default Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningSharedDatasource(
+            LaunchMode launchMode, DevServicesDatasourceContainerConfig containerConfig) {
+        return Optional.empty();
+    }
+
     default boolean isDockerRequired() {
         return true;
     }

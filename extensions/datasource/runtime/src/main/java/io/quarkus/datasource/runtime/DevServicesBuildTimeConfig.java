@@ -129,6 +129,43 @@ public interface DevServicesBuildTimeConfig {
     Map<String, String> volumes();
 
     /**
+     * Indicates if the Dev Services database managed by Quarkus is shared.
+     * When shared, Quarkus looks for a running container using label-based service discovery, based on the
+     * `service-name` property.
+     * If a matching container is found, it is used, and so a second one is not started.
+     * Otherwise, Dev Services starts a new container.
+     * <p>
+     * Unlike most other Dev Services, this defaults to `false`: this configuration group is shared by every
+     * database kind and by every datasource (default and named) in an application, so defaulting to `true`
+     * would mean every Quarkus application on a machine silently starts reusing the same database container
+     * (and therefore the same data) for a given `db-kind`, as soon as Docker is available. Opt in explicitly
+     * when you do want two or more applications to share one Dev Services database, for example in a
+     * monorepo.
+     * <p>
+     * Container sharing is only used in dev mode.
+     *
+     * @asciidoclet
+     */
+    @WithDefault("false")
+    boolean shared();
+
+    /**
+     * The value of the service discovery label attached to the started container.
+     * This property is used when `shared` is set to `true`.
+     * In this case, before starting a container, Dev Services looks for a container with the service
+     * discovery label set to the configured value. If found, it will use this container instead of starting
+     * a new one. Otherwise, it starts a new container with the service discovery label set to the specified
+     * value.
+     * <p>
+     * Defaults to the datasource's `db-kind`. This property is used when you need multiple shared databases
+     * of the same kind, each with their own set of applications sharing them.
+     *
+     * @asciidoclet
+     */
+    @ConfigDocDefault("The datasource's `db-kind`")
+    Optional<String> serviceName();
+
+    /**
      * Whether to keep Dev Service containers running *after a dev mode session or test suite execution*
      * to reuse them in the next dev mode session or test suite execution.
      *

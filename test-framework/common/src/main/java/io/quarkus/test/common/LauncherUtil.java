@@ -1,8 +1,5 @@
 package io.quarkus.test.common;
 
-import static io.quarkus.test.common.http.TestHTTPResourceManager.host;
-import static io.quarkus.test.common.http.TestHTTPResourceManager.rootPath;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.FileReader;
@@ -99,28 +96,6 @@ public final class LauncherUtil {
         String uniqueDir = "test-" + suffix;
         Path parent = baseLogPath.getParent();
         return parent != null ? parent.resolve(uniqueDir).resolve(baseName) : Path.of(uniqueDir).resolve(baseName);
-    }
-
-    /**
-     * Generates the value of <code>test.url</code> to pass as an argument to integration tests launchers.
-     * <p>
-     * Ideally, we shouldn't be using the configuration system to discover the url. We are keeping this for
-     * compatibility reasons, and it should be reworked with
-     * <a href="https://github.com/quarkusio/quarkus/discussions/46915">#45915</a>.
-     *
-     * @return a String with the <code>test.url</code> value to be evaluated by the running Quarkus Config instance.
-     */
-    // TODO - Replace internal usages of test.url with io.quarkus.vertx.http.HttpServer.getLocalBaseUri
-    static String generateTestUrl() {
-        Config config = Config.get();
-        String host = host(config, "quarkus.http.host");
-        // These are build time properties so it is fine to evaluate them here as they will not change
-        String rootPath = rootPath(config);
-        if (rootPath.endsWith("/")) {
-            rootPath = rootPath.substring(0, rootPath.length() - 1);
-        }
-        // We want to keep `quarkus.http.test-port` as an expression so it is evaluated correctly if is random
-        return "http://" + host + ":${quarkus.http.test-port:8081}" + rootPath;
     }
 
     /**

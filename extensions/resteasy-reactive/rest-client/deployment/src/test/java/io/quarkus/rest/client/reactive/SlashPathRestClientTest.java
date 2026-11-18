@@ -34,15 +34,12 @@ public class SlashPathRestClientTest {
                     "false")
             // disable the removal of trailing slash at server side
             .overrideConfigKey("quarkus.rest.removes-trailing-slash", "false")
-            .overrideRuntimeConfigKey("quarkus.rest-client.test.url",
-                    "http://localhost:${quarkus.http.test-port:8081}")
-            .overrideRuntimeConfigKey("quarkus.rest-client.default.url",
-                    "http://localhost:${quarkus.http.test-port:8081}")
-            .overrideRuntimeConfigKey("quarkus.rest-client.HelloClientUsingSimpleName.url",
-                    "http://localhost:${quarkus.http.test-port:8081}")
+            .overrideRuntimeConfigKey("quarkus.rest-client.test.url", "quarkus://vertx-http")
+            .overrideRuntimeConfigKey("quarkus.rest-client.default.url", "quarkus://vertx-http")
+            .overrideRuntimeConfigKey("quarkus.rest-client.HelloClientUsingSimpleName.url", "quarkus://vertx-http")
             .overrideRuntimeConfigKey(
                     "quarkus.rest-client.\"io.quarkus.rest.client.reactive.SlashPathRestClientTest$HelloClientUsingClassName\".url",
-                    "http://localhost:${quarkus.http.test-port:8081}");
+                    "quarkus://vertx-http");
 
     @RestClient
     HelloClientRemovingSlashes clientUsingDefaultBehaviour;

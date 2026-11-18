@@ -23,7 +23,7 @@ public class GlobalExceptionMapperDisabledTest {
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Client.class, Resource.class))
-            .overrideRuntimeConfigKey("quarkus.rest-client.test.url", "${test.url}")
+            .overrideRuntimeConfigKey("quarkus.rest-client.test.url", "quarkus://vertx-http")
             .overrideRuntimeConfigKey("microprofile.rest.client.disable.default.mapper", "true");
 
     @RestClient

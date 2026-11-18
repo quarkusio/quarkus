@@ -16,7 +16,8 @@ public class RegisterClientHeadersTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(EchoResource.class, EchoClient.class, MyHeadersFactory.class)
                     .addAsResource(
-                            new StringAsset("io.quarkus.restclient.registerclientheaders.EchoClient/mp-rest/url=${test.url}"),
+                            new StringAsset(
+                                    "io.quarkus.restclient.registerclientheaders.EchoClient/mp-rest/url=quarkus://vertx-http"),
                             "application.properties"));
 
     @RestClient

@@ -31,7 +31,7 @@ public class FormParamStyleTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(Resource.class, Client.class, ConfiguredClient.class))
             .overrideRuntimeConfigKey("quarkus.rest-client.configured-client.url",
-                    "http://localhost:${quarkus.http.test-port:8081}")
+                    "quarkus://vertx-http")
             .overrideRuntimeConfigKey("quarkus.rest-client.configured-client.form-param-style", "COMMA_SEPARATED");
 
     @TestHTTPResource

@@ -22,7 +22,7 @@ public class NoMaskedHeadersConfigTest extends AbstractClientMaskedHeaderLogTest
             .setLogRecordPredicate(record -> record.getLoggerName()
                     .equalsIgnoreCase("org.jboss.resteasy.reactive.client.logging.DefaultClientLogger"))
             .withConfiguration("""
-                    quarkus.rest-client.my-client.url=http://localhost:${quarkus.http.test-port:8081}
+                    quarkus.rest-client.my-client.url=quarkus://vertx-http
                     quarkus.rest-client.logging.scope=request-response
                     """).assertLogRecords(records -> {
                 Formatter formatter = new PatternFormatter("[%p] %m");

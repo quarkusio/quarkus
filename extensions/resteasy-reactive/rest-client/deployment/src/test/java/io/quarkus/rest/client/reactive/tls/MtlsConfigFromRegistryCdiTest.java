@@ -43,7 +43,7 @@ public class MtlsConfigFromRegistryCdiTest {
             .overrideConfigKey("quarkus.tls.rest-client.key-store.p12.password", "secret")
             .overrideConfigKey("quarkus.tls.rest-client.trust-store.p12.path", "client-truststore.p12")
             .overrideConfigKey("quarkus.tls.rest-client.trust-store.p12.password", "secret")
-            .overrideConfigKey("quarkus.rest-client.rc.url", "https://localhost:${quarkus.http.test-ssl-port:8444}")
+            .overrideConfigKey("quarkus.rest-client.rc.url", "quarkus://vertx-https")
             .overrideConfigKey("quarkus.rest-client.rc.tls-configuration-name", "rest-client");
 
     @RestClient

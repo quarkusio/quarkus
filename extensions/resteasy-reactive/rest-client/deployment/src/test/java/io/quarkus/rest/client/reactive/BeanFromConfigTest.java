@@ -28,7 +28,7 @@ public class BeanFromConfigTest {
                     .addClasses(HelloClient.class, HelloResource.class))
             .overrideConfigKey("quarkus.rest-client.\"io.quarkus.rest.client.reactive.HelloClient\".scope", "Dependent")
             .overrideRuntimeConfigKey("quarkus.rest-client.\"io.quarkus.rest.client.reactive.HelloClient\".url",
-                    "http://localhost:${quarkus.http.test-port:8081}");
+                    "quarkus://vertx-http");
 
     @RestClient
     HelloClient client;

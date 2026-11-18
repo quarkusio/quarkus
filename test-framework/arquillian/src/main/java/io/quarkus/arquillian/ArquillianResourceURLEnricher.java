@@ -37,7 +37,7 @@ public class ArquillianResourceURLEnricher implements TestEnricher {
                             if (field.getType().equals(URL.class)) {
                                 try {
                                     field.setAccessible(true);
-                                    field.set(QuarkusDeployableContainer.testInstance, new URL(testUrl(deployment)));
+                                    field.set(QuarkusDeployableContainer.testInstance, new URL(localBaseUri(deployment)));
                                     break;
                                 } catch (Exception e) {
                                     throw new RuntimeException(e);
@@ -45,7 +45,7 @@ public class ArquillianResourceURLEnricher implements TestEnricher {
                             } else if (field.getType().equals(URI.class)) {
                                 try {
                                     field.setAccessible(true);
-                                    field.set(QuarkusDeployableContainer.testInstance, URI.create(testUrl(deployment)));
+                                    field.set(QuarkusDeployableContainer.testInstance, URI.create(localBaseUri(deployment)));
                                     break;
                                 } catch (Exception e) {
                                     throw new RuntimeException(e);
@@ -68,22 +68,22 @@ public class ArquillianResourceURLEnricher implements TestEnricher {
             if (resource != null) {
                 if (parameterTypes[i].equals(URL.class)) {
                     try {
-                        values[i] = new URL(testUrl(deployment));
+                        values[i] = new URL(localBaseUri(deployment));
                     } catch (MalformedURLException e) {
                         throw new RuntimeException(e);
                     }
                 }
                 if (parameterTypes[i].equals(URI.class)) {
-                    values[i] = URI.create(testUrl(deployment));
+                    values[i] = URI.create(localBaseUri(deployment));
                 }
             }
         }
         return values;
     }
 
-    private String testUrl(Instance<QuarkusDeployment> deployment) {
+    private String localBaseUri(Instance<QuarkusDeployment> deployment) {
         ValueRegistry valueRegistry = deployment.get().getRunningApp().valueRegistry();
-        String url = valueRegistry.get(RuntimeKey.key("test.url"));
+        String url = valueRegistry.get(RuntimeKey.<URI> key("quarkus.http.local-base-uri")).toString();
         // This is to work around https://github.com/arquillian/arquillian-core/issues/216
         if (!url.endsWith("/")) {
             url = url + "/";

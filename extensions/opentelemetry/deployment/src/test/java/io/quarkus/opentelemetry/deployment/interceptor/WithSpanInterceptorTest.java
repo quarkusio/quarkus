@@ -38,9 +38,9 @@ import io.opentelemetry.sdk.trace.data.ExceptionEventData;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
+import io.quarkus.runtime.AddressResolver;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusExtensionTest;
-import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.Router;
@@ -293,14 +293,11 @@ public class WithSpanInterceptorTest {
 
     @ApplicationScoped
     public static class SpanRestClient {
-        @Inject
-        SmallRyeConfig config;
-
         @WithSpan
         public void spanRestClient() {
             try (Client client = ClientBuilder.newClient()) {
                 WebTarget target = client.target(UriBuilder
-                        .fromUri(config.getConfigValue("test.url").getValue())
+                        .fromUri(AddressResolver.resolve("quarkus://vertx-http"))
                         .path("hello"));
                 Response response = target.request().get();
                 assertEquals(HTTP_OK, response.getStatus());

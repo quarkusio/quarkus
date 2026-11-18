@@ -65,7 +65,7 @@ public class VaultScenarioRestClientConfigTest {
         @Override
         public String getValue(String propertyName) {
             if ("quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url".equals(propertyName)) {
-                return "http://localhost:${quarkus.http.test-port:8081}";
+                return "quarkus://vertx-http";
             }
             return null;
         }

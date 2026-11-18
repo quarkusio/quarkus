@@ -428,7 +428,6 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
             //rootLogger.setHandlers(originalHandlers);
             inMemoryLogHandler.clearRecords();
 
-            System.clearProperty("test.url");
             timeoutTask.cancel();
             timeoutTask = null;
             timeoutTimer = null;

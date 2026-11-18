@@ -35,7 +35,7 @@ public class SubResourceTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(SubResourceTest.class, ClientRootResource.class, ClientSubResource.class,
                             ServerResource.class, TestExceptionMapper.class, TestException.class)
-                    .addAsResource(new StringAsset(ClientRootResource.class.getName() + "/mp-rest/url=${test.url}\n"),
+                    .addAsResource(new StringAsset(ClientRootResource.class.getName() + "/mp-rest/url=quarkus://vertx-http\n"),
                             "application.properties"));
 
     @RestClient

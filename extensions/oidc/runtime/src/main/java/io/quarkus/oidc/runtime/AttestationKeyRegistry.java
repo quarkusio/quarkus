@@ -8,11 +8,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.inject.Singleton;
 
-import org.jose4j.jwk.JsonWebKey.OutputControlLevel;
-import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.lang.JoseException;
-
 import io.quarkus.oidc.common.ClientAttester.AttestationSigningKey;
+import io.smallrye.jwk.JsonWebKey;
+import io.smallrye.jwk.JsonWebKeyException;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -89,11 +87,11 @@ public class AttestationKeyRegistry {
 
     static Map<String, Object> convertPublicKeyToJwk(PublicKey key, SignatureAlgorithm algorithm) {
         try {
-            Map<String, Object> params = new java.util.HashMap<>(
-                    PublicJsonWebKey.Factory.newPublicJwk(key).toParams(OutputControlLevel.PUBLIC_ONLY));
+            // the public form of an asymmetric key is written by default
+            Map<String, Object> params = new java.util.HashMap<>(JsonWebKey.jwk(key).asMap());
             params.put("alg", algorithm.getAlgorithm());
             return params;
-        } catch (JoseException ex) {
+        } catch (JsonWebKeyException ex) {
             throw new RuntimeException("Failed to convert public key to JWK", ex);
         }
     }

@@ -12,8 +12,6 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
-import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.lang.JoseException;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.OIDCException;
@@ -21,6 +19,8 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher;
+import io.smallrye.jwk.JsonWebKey;
+import io.smallrye.jwk.JsonWebKeyException;
 import io.smallrye.jwt.util.KeyUtils;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
@@ -177,14 +177,13 @@ public final class ClientIdMetadataHandler implements Handler<RoutingContext> {
 
         private static JsonObject publicKeyToJwks(PublicKey publicKey) {
             try {
-                PublicJsonWebKey jwk = PublicJsonWebKey.Factory.newPublicJwk(publicKey);
-                jwk.setUse("sig");
-                JsonObject jwkJson = new JsonObject(
-                        jwk.toJson(org.jose4j.jwk.JsonWebKey.OutputControlLevel.PUBLIC_ONLY));
+                // the key has no private material, so all of its properties can be published
+                Map<String, Object> jwk = new HashMap<>(JsonWebKey.jwk(publicKey).asMap());
+                jwk.put("use", JoseConstants.SIGNATURE_USE);
                 JsonArray keys = new JsonArray();
-                keys.add(jwkJson);
+                keys.add(new JsonObject(jwk));
                 return new JsonObject().put("keys", keys);
-            } catch (JoseException e) {
+            } catch (JsonWebKeyException e) {
                 throw new OIDCException("Failed to convert the public key to JWK format", e);
             }
         }

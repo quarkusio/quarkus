@@ -23,9 +23,6 @@ import java.util.regex.Pattern;
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
-import org.jose4j.jwt.consumer.ErrorCodes;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.lang.UnresolvableKeyException;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AuthenticationCompletionAction;
@@ -56,6 +53,7 @@ import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
+import io.smallrye.jwt.auth.UnresolvableKeyException;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
 import io.smallrye.jwt.build.JwtSignatureBuilder;
@@ -412,16 +410,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                         }
 
                                         if (!(t instanceof TokenAutoRefreshException)) {
-                                            boolean expired = (t.getCause() instanceof InvalidJwtException)
-                                                    && ((InvalidJwtException) t.getCause())
-                                                            .hasErrorCode(ErrorCodes.EXPIRED);
+                                            boolean expired = OidcProvider.isTokenExpired(t);
 
                                             if (!expired) {
 
                                                 Throwable failure = null;
 
-                                                boolean unresolvedKey = t.getCause() instanceof InvalidJwtException
-                                                        && (t.getCause().getCause() instanceof UnresolvableKeyException);
+                                                boolean unresolvedKey = t.getCause() instanceof UnresolvableKeyException
+                                                        || (t.getCause() != null
+                                                                && t.getCause().getCause() instanceof UnresolvableKeyException);
                                                 if (StepUpAuthenticationPolicy.isInsufficientUserAuthException(t)) {
                                                     // Session does not have the required authentication level,
                                                     // redirect the user to the OIDC provider to re-authenticate

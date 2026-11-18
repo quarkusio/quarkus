@@ -11,16 +11,15 @@ import jakarta.json.JsonNumber;
 import jakarta.json.JsonObject;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
+import io.smallrye.jwt.common.JwtClaims;
 
 public class JwtCallerPrincipalUnitTest {
     @Test
-    public void testAllClaims() throws InvalidJwtException {
+    public void testAllClaims() throws Exception {
         InputStream is = getClass().getResourceAsStream("/Token1.json");
         JsonObject content = Json.createReader(is).readObject();
         JwtClaims jwtClaims = JwtClaims.parse(content.toString());

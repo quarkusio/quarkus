@@ -828,13 +828,13 @@ import java.util.Base64;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.consumer.InvalidJwtException;
+import jakarta.json.JsonException;
 import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
 import io.smallrye.jwt.auth.principal.ParseException;
+import io.smallrye.jwt.common.JwtClaims;
 
 @ApplicationScoped
 @Alternative
@@ -847,7 +847,7 @@ public class TestJWTCallerPrincipalFactory extends JWTCallerPrincipalFactory {
             // Token has already been verified; parse the token claims only
             String json = new String(Base64.getUrlDecoder().decode(token.split("\\.")[1]), StandardCharsets.UTF_8);
             return new DefaultJWTCallerPrincipal(JwtClaims.parse(json));
-        } catch (InvalidJwtException ex) {
+        } catch (JsonException ex) {
             throw new ParseException(ex.getMessage());
         }
     }
@@ -1162,7 +1162,7 @@ SmallRye JWT provides more properties that can be used to customize the token pr
 |`smallrye.jwt.verify.algorithm`||Signature algorithm. This property should only be used to set a symmetric algorithm such as `HS256`. It is deprecated for setting asymmetric algorithms such as `ES256` - use 'mp.jwt.verify.publickey.algorithm' instead.
 |`smallrye.jwt.verify.key-format`|`ANY`|Set this property to a specific key format such as `PEM_KEY`, `PEM_CERTIFICATE`, `JWK` or `JWK_BASE64URL` to optimize the way the verification key is loaded.
 |`smallrye.jwt.verify.key-provider`|`DEFAULT`|By default, PEM, JWK, or JWK key sets can be read from the local file system or fetched from URIs as required by MicroProfile JWT specification. Set this property to `AWS_ALB` to support an AWS Application Load Balancer verification key resolution.
-|`smallrye.jwt.verify.relax-key-validation`|false|Relax the validation of the verification keys; setting this property to `true` allows public RSA keys with a length of less than 2048 bits.
+|`smallrye.jwt.verify.relax-key-validation`|true|Relax the validation of the RSA verification keys. Public RSA keys with a length of less than 2048 bits are allowed by default; set this property to `false` to reject them. It has no effect on the HMAC secret keys, which must be at least as long as the HMAC output, for example, 256 bits for `HS256`.
 |`smallrye.jwt.verify.certificate-thumbprint`|false|If this property is enabled, a signed token must contain either 'x5t' or 'x5t#S256' X509Certificate thumbprint headers. Verification keys can only be in JWK or PEM Certificate key formats. JWK keys must have an 'x5c' (Base64-encoded X509Certificate) property set.
 |`smallrye.jwt.token.header`|`Authorization`|Set this property if another header, such as `Cookie`, is used to pass the token. This property is deprecated - use 'mp.jwt.token.header'.
 |`smallrye.jwt.key-cache-size`|`100`|Key cache size. Use this property and `smallrye.jwt.key-cache-time-to-live` to control the key cache when a key provider such as `AWS_ALB` is configured with `smallrye.jwt.verify.key-provider=AWS_ALB` for resolving the keys dynamically.

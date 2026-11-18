@@ -135,9 +135,14 @@ of the actual dependency changes, including aligned dependencies and changed
 Dev Services versions. Record the validation performed and any unavailable
 compatible component release.
 
-Read [Migration guide](references/migration-guide.md) to prepare the full wiki
-replacement and, when an entry already exists, a diff against the latest wiki.
-Include both in the PR body; a link to a local file is insufficient.
+Read [Migration guide](references/migration-guide.md) to reconcile existing and
+new entries against effective Quarkus behavior in the previous and target
+releases. Include only changes requiring application adjustments or awareness
+of compatibility risks. Prepare one complete replacement in the wiki's native
+source format and, when an entry already exists, a unified diff against its
+verified revision. For an AsciiDoc wiki, put the replacement in an `asciidoc`
+fenced block in the PR body, alongside the applicable `diff` block; a link to a
+local file is insufficient.
 
 Create new PRs as drafts. When updating an existing PR, preserve its draft
 status and unrelated description content. Mark it ready only when requested.
@@ -148,6 +153,8 @@ apparent differences against each PR's base: unrelated changes already on a
 branch do not belong to this upgrade's migration notes. Explain any actual
 upgrade difference that requires different guidance.
 
-Read back the published PR body to verify the full guide and applicable diff.
-The final response should link the PR and briefly report validation and any
-remaining limitations; the detailed migration comparison belongs in the PR.
+After an authorized PR creation or update, read back the body and verify that
+the replacement and applicable diff survived verbatim. Report unavailable
+checks explicitly. The final response should link the PR and briefly report
+validation and any remaining limitations; the detailed migration comparison
+belongs in the PR.

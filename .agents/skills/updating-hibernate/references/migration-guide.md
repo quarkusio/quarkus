@@ -13,9 +13,17 @@ the intended wiki release explicitly.
 
 Read the latest affected sections of `Migration-Guide-<release>` from the
 [Quarkus wiki](https://github.com/quarkusio/quarkus/wiki), using its raw source
-or a refreshed wiki checkout. Preserve applicable Quarkus-specific configuration
-and compatibility guidance. If there is no entry yet, establish the starting
-Hibernate versions from the previous Quarkus release's POM and history.
+or a refreshed wiki checkout. Record the baseline revision, source filename,
+and section boundaries so the comparison is reproducible. If raw content
+disagrees with a user-supplied revision, retrieve that exact revision or refresh
+the wiki checkout and resolve the discrepancy before editing. Do not silently
+use stale raw content. Determine the destination markup from the source file;
+an AsciiDoc wiki remains AsciiDoc even though the PR body uses Markdown.
+
+Establish the starting Hibernate versions and effective Quarkus behavior from
+the previous Quarkus release's POM, configuration, and history, even when a wiki
+entry already exists. Preserve applicable Quarkus-specific configuration and
+compatibility guidance.
 
 For a major upgrade, cover the entire transition from the Hibernate series in
 the previous Quarkus release. A later Alpha/Beta/CR bump does not reset that
@@ -41,21 +49,37 @@ its own breaking changes as well as inherited ORM changes. For Search, verify
 whether reindexing or an outbox-polling schema update is needed. Include changed
 Elasticsearch/OpenSearch Dev Services defaults when relevant.
 
-**Check existing claims as well as new changes.** Compare defaults, property
-names, compatibility statements, and workarounds with the target Hibernate tag
-and effective Quarkus behavior. Correct superseded guidance, remove duplicates,
-and preserve notes that still apply. If sources conflict, inspect the target
-code and history; report anything that remains unresolved.
+**Check existing claims as well as new changes.** Compare effective Quarkus
+behavior in the previous release with the target release, including defaults,
+supported APIs, property names, compatibility statements, and workarounds.
+Include a change only when it requires application adjustments or awareness of
+a concrete compatibility risk. An upstream migration-guide entry is a candidate
+to investigate, not automatic justification for a Quarkus entry.
+
+Apply these filters to additions and existing entries alike:
+
+| Case | Treatment |
+|------|-----------|
+| Unchanged behavior | Omit it, including upstream changes neutralized by Quarkus configuration. |
+| Prerelease feature reverted before the target release | Remove the note when the target restores the previous release's behavior. Keep the investigation out of the migration guide. |
+| Ordinary bug fix | Omit it unless investigation identifies a concrete migration impact, such as an application adjustment or compatibility risk; describe that impact when included. |
+| Unsupported usage | Omit custom persistence providers and settings Quarkus does not support, after checking whether supported usage, such as query hints, is also affected. Document any affected supported usage. |
+| Breaking change affecting supported usage | Include the application impact and required action or relevant upstream guidance. |
+
+Correct superseded guidance, remove duplicates and obsolete notes, and preserve
+entries that still apply. Remove subsections left empty by this review. If
+sources conflict, inspect the target code and history; report anything that
+remains unresolved.
 
 In particular:
 
-- A behavior may have been introduced and then reverted during prereleases.
-  Direct JDBC handling of `java.time`, for example, was enabled by default in
-  ORM 8.0.0.Beta4 and disabled again in 8.0.0.CR1. Check both ORM's and Quarkus's
-  defaults, the opt-in property, and timezone limitations.
-- Quarkus may override upstream validation/DDL or type-mapping behavior.
-  Do not turn an upstream change into a migration requirement that Quarkus
-  already handles.
+- For direct JDBC handling of `java.time`, check both ORM's and Quarkus's
+  defaults against the previous Quarkus release. If an enabled prerelease
+  default was reverted and the target restores the baseline, remove the note
+  instead of explaining the reversion or unchanged opt-in behavior.
+- Quarkus may override upstream validation/DDL or type-mapping behavior. If
+  the effective behavior is unchanged, omit the entry rather than documenting
+  why the upstream change does not affect Quarkus.
 - Hibernate's supported minimum database versions and Quarkus's default target
   versions are different. Compare the former with the release baseline and
   verify the latter against Quarkus configuration.
@@ -68,42 +92,77 @@ normally contain one descriptive link and punctuation. Put the short change
 summary inside the link; leave detailed explanations and examples upstream.
 Keep extra prose where needed for a Quarkus-specific qualification.
 
-For example, in AsciiDoc:
+Put qualifications and workarounds inside the relevant entry, including
+conditions about older starting versions and fallback configuration. Do not
+append detached notes that readers must match to earlier bullets. Prefer series
+versions, such as ORM `8.0` and Reactive `5.1`; use a precise prerelease version
+only when essential to explain a migration requirement.
+
+Preserve the wiki's source format, heading hierarchy, anchor names, and
+cross-references. The output must be the full reconciled sections, not an
+addendum asking readers to combine them with earlier migration notes.
+
+For an AsciiDoc destination, these compact examples show the native syntax;
+retain the actual guide's anchors and heading levels:
 
 ```asciidoc
+[[hibernate-orm]]
+== Hibernate ORM
+
+[[hibernate-orm-api-changes]]
+=== API changes
+
 * https://docs.hibernate.org/orm/7.3/migration-guide/#columns-annotation[The obsolete `@Columns` annotation was removed].
+** Remove remaining references to this annotation.
+
+See <<hibernate-orm-api-changes,API changes>>.
+
+NOTE: Apply the relevant API changes before upgrading.
 ```
 
-Use exact, verified upstream anchors. If no migration-guide section covers an
-API change, link to an appropriate API reference. This is a synthesis of
-breaking changes, not a list of new features or all upstream commits. Omit empty
-subsections and avoid unverified backwards-compatibility claims.
+Keep anchors on their own line before the heading, and use `**` for nested
+bullets. Use `URL[label]` links, `<<anchor,label>>` cross-references, and native
+admonitions such as `NOTE:` or `[WARNING]` followed by a delimited block. Do not
+substitute Markdown links, blockquotes, headings, or HTML anchors in the wiki
+source. Admonition labels belong to their admonition, not the preceding entry.
 
-Match the existing wiki's source format, heading hierarchy, anchors, and
-cross-references. Use Markdown when requested, converting links and admonitions
-without changing their meaning. The output must be the full reconciled sections,
-not an addendum asking readers to combine them with earlier migration notes.
+Use exact, verified upstream anchors. If no migration-guide section covers an
+API change, link to an appropriate API reference. Check the rendered link's
+actual URL fragment against the destination anchor, not just whether the page
+loads. In Javadoc varargs fragments, `...` can become a Unicode ellipsis during
+rendering; encode the dots as `%2E%2E%2E` when necessary and verify the resulting
+link. Avoid unverified backwards-compatibility claims.
+
+Render the replacement using the destination's markup renderer, then check
+links and fragments, missing or changed anchors, literal HTML, leftover
+Markdown syntax, flattened nested lists, and misplaced admonition labels.
+Compare with the captured source for accidental content loss or movement,
+including unaffected entries and references from elsewhere on the wiki page.
+If rendering or link checks are unavailable, report that limitation explicitly.
 
 ## Include the full guide and diff in the PR
 
 Under `## Migration guide`, include the complete replacement as raw source in a
-fenced `asciidoc` or `markdown` block. Use a fence longer than any fences inside
-the guide, so the source remains directly copyable.
+single fenced `asciidoc` block for an AsciiDoc wiki, or the corresponding native
+source block for another wiki format. Use a fence longer than any fences inside
+the guide, so the source remains directly copyable. Keep PR headings and any
+collapsible wrappers outside the source block.
 
 When the wiki already has the affected sections, also include
-`### Diff from the current wiki` with a link identifying the baseline page and
-sections, followed by an actual unified diff in a fenced `diff` block. A
+`### Diff from the current wiki` with a link identifying the baseline revision,
+page, and sections, followed by an actual unified diff in a fenced `diff` block. A
 collapsed `<details>` block can keep the PR readable.
 
 1. Refresh the wiki before preparing the comparison. Reconcile any edits made
-   since the initial read.
+   since the initial read and update the recorded baseline revision. If the
+   user requested a pinned revision, compare against it and identify it as such
+   rather than claiming it is the latest wiki.
 2. Compare only the affected existing sections with the complete replacement.
    Do not compare against the entire wiki page, Hibernate tag delta, or previous
    PR body.
-3. Use the same markup and heading hierarchy on both sides. If the full guide
-   is Markdown and the wiki uses AsciiDoc, convert the existing sections without
-   rewriting their content first, and explain this next to the diff. Formatting
-   conversion should not obscure the migration changes.
+3. Use the unconverted native wiki source as the baseline and preserve its
+   markup and heading hierarchy in the replacement. Do not normalize or convert
+   the baseline before diffing.
 4. Generate a unified diff with additions, removals, and context, using
    `git diff --no-index` or `difflib.unified_diff`, for example. Include corrected
    claims and wording changes; an additions-only list is insufficient.
@@ -116,9 +175,13 @@ If the existing sections are unchanged, state that instead of adding an empty
 diff block.
 
 On later updates, replace both blocks without duplicating them, and preserve
-the rest of the PR body. Read the published body back and verify that the full
-guide and diff survived unchanged. Keep the shared guide and comparison aligned
-across in-scope forward-port/backport PRs.
+the rest of the PR body. After an authorized PR creation or update, read the
+stored body back, extract the replacement and applicable diff from their
+fences, and compare both verbatim with the prepared source. Check that fences
+and wrappers remain intact; a visual inspection alone does not prove the source
+survived unchanged. Report any unavailable read-back or comparison check.
+Keep the shared guide and comparison aligned across in-scope
+forward-port/backport PRs.
 
 Generating this content does not publish it to the wiki. Report the PR link and
 any unresolved inconsistency briefly in the final response; the reviewable

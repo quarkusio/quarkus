@@ -189,12 +189,7 @@ With this configuration, the first application to start creates the container an
 Any other application setting `shared=true` for a datasource of the same kind then discovers and reuses that
 same container instead of starting a new one.
 
-This mirrors the `shared`/`service-name` configuration already available for other Dev Services, such as
-xref:kafka-dev-services.adoc#shared-broker[Kafka's shared broker]. Unlike most other Dev Services, `shared`
-defaults to `false` here: this configuration is shared by every database kind and by every datasource (default
-and named) in an application, so defaulting to `true` would mean every Quarkus application on a machine
-silently starts reusing the same database container -- and therefore the same data -- for a given `db-kind`.
-Opt in explicitly when you want it.
+NOTE: `quarkus.datasource.devservices.shared` defaults to `false`. Opt in explicitly when you want it.
 
 By default, the discovery label used is the datasource's `db-kind` (e.g. `postgresql`). If you need several,
 independently-shared databases of the same kind, differentiate them with

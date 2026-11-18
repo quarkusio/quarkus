@@ -43,8 +43,8 @@ class RedHatOpenJDKRuntimeBaseProviderTest {
         return Stream.of(
                 Arguments.of(17, 8, ContainerImages.UBI8_JAVA_VERSION),
                 Arguments.of(21, 8, ContainerImages.UBI8_JAVA_VERSION),
-                Arguments.of(17, 9, ContainerImages.UBI8_JAVA_VERSION),
-                Arguments.of(21, 9, ContainerImages.UBI8_JAVA_VERSION));
+                Arguments.of(17, 9, ContainerImages.UBI9_JAVA_VERSION),
+                Arguments.of(21, 9, ContainerImages.UBI9_JAVA_VERSION));
     }
 
     @Test

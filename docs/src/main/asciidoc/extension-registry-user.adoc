@@ -141,6 +141,10 @@ Here is a complete list of choices for a registry's `update-policy` value:
 * _interval:X_ (where X is an integer in minutes) - custom interval in minutes;
 * _never_ - resolve the catalogs once and never check for updates.
 
+=== Checksum validation of registry catalogs
+
+Because registry catalogs are continuously re-deployed snapshots, a client may read `maven-metadata.xml` and its checksum from two different generations of the catalog while the registry is publishing an update, and report a checksum mismatch for a download that is in fact intact. Catalog artifacts are therefore resolved with checksum validation disabled. This applies to catalog resolution only — the repositories a project resolves its dependencies from still validate checksums according to the Maven settings.
+
 === Disabling a registry in the configuration
 
 All the registries listed in the configuration file are enabled by default. A registry can be disabled though by adding `enabled: false` to its configuration. For example:

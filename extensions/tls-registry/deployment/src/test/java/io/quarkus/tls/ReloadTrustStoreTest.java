@@ -70,6 +70,8 @@ public class ReloadTrustStoreTest {
             assertThat(l.get(1)).isEqualTo("dns:localhost");
         });
 
+        long initialVersion = def.getContentVersion();
+
         Files.copy(new File("target/certs/test-reload-B-truststore.p12").toPath(),
                 new File(certs, "/tls.p12").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
@@ -80,6 +82,14 @@ public class ReloadTrustStoreTest {
             assertThat(l.get(0)).isEqualTo(2);
             assertThat(l.get(1)).isEqualTo("dns:acme.org");
         });
+
+        // A trust-store-only change must be detected.
+        long afterChange = def.getContentVersion();
+        assertThat(afterChange).isNotEqualTo(initialVersion);
+
+        // Reloading the very same trust store must not.
+        assertThat(def.reload()).isTrue();
+        assertThat(def.getContentVersion()).isEqualTo(afterChange);
     }
 
 }

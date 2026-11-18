@@ -9,7 +9,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -74,10 +76,17 @@ public class ConfigService {
         if (Files.exists(localConfigFile) || getProperty(QUARKUS_ANALYTICS_DISABLED_LOCAL_PROP, false)) {
             return; // ask nothing
         } else {
+            // run the prompt on a dedicated thread we can interrupt: if the user doesn't answer in time,
+            // the prompt must stop reading the console, otherwise it swallows the input of the dev mode console
+            ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
+                Thread thread = new Thread(r, "Quarkus analytics prompt");
+                thread.setDaemon(true);
+                return thread;
+            });
+            Future<String> userInputFuture = executor.submit(() -> analyticsEnabledSupplier.apply(ACCEPTANCE_PROMPT));
             try {
-                CompletableFuture<String> userInputFuture = CompletableFuture
-                        .supplyAsync(() -> analyticsEnabledSupplier.apply(ACCEPTANCE_PROMPT));
-                final String userInput = userInputFuture.get(timeout, TimeUnit.SECONDS).toLowerCase().trim();
+                final String answer = userInputFuture.get(timeout, TimeUnit.SECONDS);
+                final String userInput = answer == null ? "" : answer.toLowerCase().trim();
                 if (!validInput(userInput)) {
                     log.info("[Quarkus build analytics] Didn't receive a valid user's answer: `y` or `n`. " +
                             "The question will be asked again next time." + NEW_LINE);
@@ -95,6 +104,15 @@ public class ConfigService {
             } catch (Exception e) {
                 log.info("[Quarkus build analytics] Analytics config file was not written successfully. " +
                         e.getClass().getName() + ": " + (e.getMessage() == null ? "(no message)" : e.getMessage()));
+            } finally {
+                // interrupts the prompt if it is still waiting for an answer, and waits for it to stop
+                // so that it cannot read any input meant for the dev mode console once we return
+                executor.shutdownNow();
+                try {
+                    executor.awaitTermination(1, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
     }

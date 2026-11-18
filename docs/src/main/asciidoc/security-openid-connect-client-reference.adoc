@@ -199,7 +199,7 @@ quarkus.oidc-client.credentials.jwt.assertion=true <4>
 
 If `quarkus.oidc-client.credentials.jwt.source` is set to `spiffe-jwt`, the xref:security-spiffe-client.adoc[SPIFFE Client] extension is present, and no `token-path` is set, then Quarkus fetches the JWT-SVID from the SPIFFE Workload API.
 In this case, set `quarkus.oidc-client.credentials.jwt.audience` to the audience which the provider requires for the JWT bearer grant assertion.
-If it is not set, the audience defaults to the `quarkus.oidc-client.auth-server-url` value.
+If it is not set, the JWT-SVID is requested with the audiences configured with the `quarkus.spiffe-client.audiences` property, or with the `quarkus.oidc-client.auth-server-url` value if no SPIFFE client audiences are configured.
 
 No custom code is required to provide the assertion, therefore you can use `OidcClient` with the <<rest-client-oidc-filter,OIDC client filters>> as usual.
 If you prefer to provide the assertion yourself, use `OidcClient` methods which accept additional grant parameters, for example, `oidcClient.getTokens(Map.of("assertion", "ey..."))`. This assertion takes precedence over the one loaded by Quarkus.

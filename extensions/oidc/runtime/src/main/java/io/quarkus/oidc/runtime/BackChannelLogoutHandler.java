@@ -21,8 +21,10 @@ import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.SecurityEvent.Type;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
@@ -164,40 +166,21 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
                                 String encodedLogoutToken = form.get(OidcConstants.BACK_CHANNEL_LOGOUT_TOKEN);
                                 if (encodedLogoutToken == null) {
                                     LOG.debug("Back channel logout token is missing");
-                                    context.response().setStatusCode(400);
+                                    context.response().setStatusCode(400).end();
                                 } else {
-                                    try {
-                                        // Do the general validation of the logout token now, compare with the IDToken later
-                                        // Check the signature, as well the issuer and audience if it is configured
-                                        TokenVerificationResult result = tenantContext.provider()
-                                                .verifyLogoutJwtToken(encodedLogoutToken);
-
-                                        if (verifyLogoutTokenClaims(result)) {
-                                            BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
-                                                    .get(tenantId);
-                                            if (tokens == null) {
-                                                tokens = resolver.getBackChannelLogoutTokens().computeIfAbsent(tenantId,
-                                                        k -> new BackChannelLogoutTokenCache(tenantContext.oidcConfig(),
-                                                                context.vertx()));
-                                            }
-                                            tokens.addTokenVerification(result);
-
-                                            if (resolver.isSecurityEventObserved()) {
-                                                SecurityEventHelper.fire(resolver.getSecurityEvent(),
-                                                        new SecurityEvent(Type.OIDC_BACKCHANNEL_LOGOUT_INITIATED,
-                                                                Map.of(OidcConstants.BACK_CHANNEL_LOGOUT_TOKEN, result)));
-                                            }
-                                            context.response().setStatusCode(200);
-                                        } else {
-                                            context.response().setStatusCode(400);
-                                        }
-                                    } catch (InvalidJwtException e) {
-                                        LOG.warn("Back channel logout token is invalid");
-                                        context.response().setStatusCode(400);
-
-                                    }
+                                    verifyLogoutToken(encodedLogoutToken)
+                                            .subscribe().with(new Consumer<TokenVerificationResult>() {
+                                                @Override
+                                                public void accept(TokenVerificationResult result) {
+                                                    processVerifiedLogoutToken(context, result);
+                                                }
+                                            }, new Consumer<Throwable>() {
+                                                @Override
+                                                public void accept(Throwable failure) {
+                                                    rejectLogoutToken(context, failure);
+                                                }
+                                            });
                                 }
-                                context.response().end();
                             }
 
                         });
@@ -205,9 +188,61 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
             } else {
                 LOG.debug("HTTP POST and " + HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString()
                         + " content type must be used with the Back channel logout request");
-                context.response().setStatusCode(400);
-                context.response().end();
+                context.response().setStatusCode(400).end();
             }
+        }
+
+        private Uni<TokenVerificationResult> verifyLogoutToken(String encodedLogoutToken) {
+            final OidcProvider provider = tenantContext.provider();
+            try {
+                if (tenantContext.oidcConfig().jwks().resolveEarly()) {
+                    return Uni.createFrom().item(provider.verifyLogoutJwtToken(encodedLogoutToken));
+                } else {
+                    // when 'quarkus.oidc.jwks.resolve-early' is disabled, resolve the verification key
+                    return provider.getKeyResolverAndVerifyLogoutJwtToken(
+                            new TokenCredential(encodedLogoutToken, OidcConstants.BACK_CHANNEL_LOGOUT_TOKEN));
+                }
+            } catch (InvalidJwtException | RuntimeException e) {
+                return Uni.createFrom().failure(e);
+            }
+        }
+
+        private void processVerifiedLogoutToken(RoutingContext context, TokenVerificationResult result) {
+            try {
+                if (verifyLogoutTokenClaims(result)) {
+                    BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
+                            .get(tenantId);
+                    if (tokens == null) {
+                        tokens = resolver.getBackChannelLogoutTokens().computeIfAbsent(tenantId,
+                                k -> new BackChannelLogoutTokenCache(tenantContext.oidcConfig(),
+                                        context.vertx()));
+                    }
+                    tokens.addTokenVerification(result);
+
+                    if (resolver.isSecurityEventObserved()) {
+                        SecurityEventHelper.fire(resolver.getSecurityEvent(),
+                                new SecurityEvent(Type.OIDC_BACKCHANNEL_LOGOUT_INITIATED,
+                                        Map.of(OidcConstants.BACK_CHANNEL_LOGOUT_TOKEN, result)));
+                    }
+                    context.response().setStatusCode(200);
+                } else {
+                    context.response().setStatusCode(400);
+                }
+            } catch (RuntimeException e) {
+                LOG.debug("Back channel logout request can not be processed", e);
+                context.response().setStatusCode(400);
+            }
+            context.response().end();
+        }
+
+        private void rejectLogoutToken(RoutingContext context, Throwable failure) {
+            if (failure instanceof InvalidJwtException) {
+                LOG.warn("Back channel logout token is invalid");
+            } else {
+                LOG.debug("Back channel logout request can not be processed", failure);
+            }
+            context.response().setStatusCode(400);
+            context.response().end();
         }
 
         private boolean verifyLogoutTokenClaims(TokenVerificationResult result) {

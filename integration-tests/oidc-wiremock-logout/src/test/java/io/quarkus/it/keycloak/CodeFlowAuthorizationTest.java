@@ -40,7 +40,10 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWireMock;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.restassured.RestAssured;
+import io.restassured.config.HttpClientConfig;
 import io.restassured.http.ContentType;
+import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.util.KeyUtils;
 
 @QuarkusTest
 @QuarkusTestResource(OidcWiremockTestResource.class)
@@ -75,6 +78,12 @@ public class CodeFlowAuthorizationTest {
     public void testBackChannelLogoutForDynamicTenants() throws Exception {
         testCodeFlowFormPostAndBackChannelLogout("dynamic-tenant-one", "back-channel-logout/dynamic-tenant-one");
         testCodeFlowFormPostAndBackChannelLogout("dynamic-tenant-two", "back-channel-logout/dynamic-tenant-two");
+    }
+
+    @Test
+    public void testBackChannelLogoutWithDelayedJwkResolution() throws Exception {
+        // this tenant resolves a verification key when the ID token or the logout token has to be verified
+        testCodeFlowFormPostAndBackChannelLogout("jwk-delayed-resolution", "back-channel-logout/jwk-delayed-resolution");
     }
 
     @Test
@@ -191,6 +200,36 @@ public class CodeFlowAuthorizationTest {
         }
     }
 
+    @Test
+    public void testLogoutTokenWithNullHeaderIsRejected() {
+        // the JOSE header of this logout token is the JSON literal 'null'
+        postInvalidLogoutToken("back-channel-logout", "bnVsbA.e30.AAAA");
+    }
+
+    @Test
+    public void testLogoutTokenWithInvalidEventsClaimIsRejected() {
+        // this logout token is signed correctly but its 'events' claim is not a JSON object
+        postInvalidLogoutToken("back-channel-logout", getLogoutTokenWithInvalidEventsClaim());
+    }
+
+    @Test
+    public void testRequestWithoutLogoutTokenIsRejected() {
+        postInvalidLogoutRequest("back-channel-logout", "token=" + OidcWiremockTestResource.getLogoutToken());
+    }
+
+    @Test
+    public void testInvalidLogoutTokensAreRejectedWithDelayedJwkResolution() throws Exception {
+        String backChannelPath = "back-channel-logout/jwk-delayed-resolution";
+        // the JOSE header of this logout token is the JSON literal 'null'
+        postInvalidLogoutToken(backChannelPath, "bnVsbA.e30.AAAA");
+        // the OIDC provider has no verification key with the key identifier of this logout token
+        postInvalidLogoutToken(backChannelPath,
+                Jwt.subject("123456").jws().keyId("unknown").sign(KeyUtils.generateKeyPair(2048).getPrivate()));
+        // this logout token is signed correctly but its 'events' claim is not a JSON object
+        postInvalidLogoutToken(backChannelPath, getLogoutTokenWithInvalidEventsClaim());
+        postInvalidLogoutRequest(backChannelPath, "token=" + OidcWiremockTestResource.getLogoutToken());
+    }
+
     private void testCodeFlowFormPostAndBackChannelLogout(String tenantId, String backChannelPath) throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
@@ -297,6 +336,32 @@ public class CodeFlowAuthorizationTest {
                 .post("http://localhost:8081/service/" + backChannelPath)
                 .then()
                 .statusCode(200);
+    }
+
+    private void postInvalidLogoutToken(String backChannelPath, String logoutToken) {
+        postInvalidLogoutRequest(backChannelPath, "logout_token=" + logoutToken);
+    }
+
+    private void postInvalidLogoutRequest(String backChannelPath, String formData) {
+        RestAssured.given()
+                // fail if the request is not answered instead of waiting until the connection times out
+                .config(RestAssured.config().httpClient(HttpClientConfig.httpClientConfig()
+                        .setParam("http.socket.timeout", 10_000)))
+                .when().contentType(ContentType.URLENC)
+                .body(formData)
+                .post("http://localhost:8081/service/" + backChannelPath)
+                .then()
+                .statusCode(400);
+    }
+
+    private static String getLogoutTokenWithInvalidEventsClaim() {
+        return Jwt.issuer("https://server.example.com")
+                .audience("https://server.example.com")
+                .subject("123456")
+                .claim("events", "http://schemas.openid.net/event/backchannel-logout")
+                .jws()
+                .keyId("1")
+                .sign("privateKey.jwk");
     }
 
     private static String getIdToken(String user, String sub, String sid) {

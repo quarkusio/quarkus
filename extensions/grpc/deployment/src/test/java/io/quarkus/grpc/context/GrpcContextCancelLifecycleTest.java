@@ -151,6 +151,42 @@ public class GrpcContextCancelLifecycleTest {
                 .allSatisfy(ctx -> assertThat(ctx).isNotSameAs(io.grpc.Context.ROOT));
     }
 
+    @Test
+    void grpcContextIsCorrectForEachOnMessageOnBlockingWorker() throws Exception {
+        sendStreamingMessages(ContextCheckGrpc.getCheckStreamingBlockingMethod(), "blocking-worker");
+    }
+
+    @Test
+    void grpcContextIsCorrectForEachOnMessageOnVirtualThread() throws Exception {
+        sendStreamingMessages(ContextCheckGrpc.getCheckStreamingVirtualMethod(), "virtual-thread");
+    }
+
+    private void sendStreamingMessages(MethodDescriptor<CheckRequest, CheckReply> method, String path)
+            throws Exception {
+        ClientCall<CheckRequest, CheckReply> call = channel.newCall(method, CallOptions.DEFAULT);
+        CountDownLatch done = new CountDownLatch(1);
+        call.start(new ClientCall.Listener<>() {
+            @Override
+            public void onClose(Status status, Metadata trailers) {
+                done.countDown();
+            }
+        }, new Metadata());
+        call.request(1);
+
+        for (int i = 0; i < 4; i++) {
+            call.sendMessage(CheckRequest.getDefaultInstance());
+            Thread.sleep(50);
+        }
+        call.halfClose();
+
+        done.await(5, SECONDS);
+
+        assertThat(watcher.getContextsAtOnMessage())
+                .as("every onMessage() must see a non-ROOT gRPC context on the " + path + " path")
+                .hasSizeGreaterThanOrEqualTo(4)
+                .allSatisfy(ctx -> assertThat(ctx).isNotSameAs(io.grpc.Context.ROOT));
+    }
+
     /**
      * Starts a call for the given method, waits 150 ms for the server handler to reach a stable
      * state, then sends RST_STREAM via {@code ClientCall.cancel()}. Using cancel() rather than

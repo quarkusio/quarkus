@@ -96,9 +96,9 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
         if (cleanup != null) {
             GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(dc);
         }
-        java.util.concurrent.atomic.AtomicBoolean workerActive = GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.get(dc);
-        if (workerActive != null && workerActive.get()) {
-            // Worker is active on dc: skip removal, the worker handles it.
+        if (GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.get(dc) != null) {
+            // This is a blocking/virtual call: the worker removes GRPC_CONTEXT_LOCAL
+            // in its finally block after each event. Skip removal here to avoid racing.
             return;
         }
         if (cleanup != null) {
@@ -201,19 +201,22 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
         @Override
         public void onCancel() {
             invoke(listener -> {
-                // Notify inner interceptors first so they can still read context keys in their
-                // onCancel() handlers, then clean up because close() may never be called
-                // when the client cancels.
-                listener.onCancel();
-                runCleanup(context);
+                try {
+                    listener.onCancel();
+                } finally {
+                    runCleanup(context);
+                }
             });
         }
 
         @Override
         public void onComplete() {
             invoke(listener -> {
-                listener.onComplete();
-                runCleanup(context);
+                try {
+                    listener.onComplete();
+                } finally {
+                    runCleanup(context);
+                }
             });
         }
     }

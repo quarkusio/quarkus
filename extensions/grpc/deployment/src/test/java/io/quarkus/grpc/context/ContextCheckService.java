@@ -59,6 +59,18 @@ public class ContextCheckService extends MutinyContextCheckGrpc.ContextCheckImpl
         return request.collect().last().map(last -> contextReply());
     }
 
+    @Blocking
+    @Override
+    public Uni<CheckReply> checkStreamingBlocking(Multi<CheckRequest> request) {
+        return request.collect().last().map(last -> contextReply());
+    }
+
+    @RunOnVirtualThread
+    @Override
+    public Uni<CheckReply> checkStreamingVirtual(Multi<CheckRequest> request) {
+        return request.collect().last().map(last -> contextReply());
+    }
+
     @Override
     public Uni<CheckReply> checkSlowEventLoopResponding(CheckRequest request) {
         return slowReply();

@@ -119,6 +119,10 @@ public class DB2DevServicesProcessor {
                         containerConfig.getFixedExposedPort(), composeProjectBuildItem.getDefaultNetworkId(),
                         useSharedNetwork, podman);
                 startupTimeout.ifPresent(container::withStartupTimeout);
+                if (containerConfig.getWaitStrategy().isPresent()) {
+                    LOG.warnf("The DB2 Dev Service does not support '%s=connection', using its default wait strategy",
+                            DataSourceUtil.dataSourcePropertyKey(datasourceName, "devservices.wait.strategy"));
+                }
 
                 container.withUsername(effectiveUsername)
                         .withPassword(effectivePassword)

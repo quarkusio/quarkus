@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
+
 import io.quarkus.datasource.deployment.spi.DatabaseFeature;
 
 public class DevServicesDatasourceContainerConfig {
@@ -17,6 +19,7 @@ public class DevServicesDatasourceContainerConfig {
     private final Map<String, String> additionalJdbcUrlProperties;
     private final OptionalInt fixedExposedPort;
     private final Optional<String> command;
+    private final Optional<WaitStrategy> waitStrategy;
     private final Optional<String> dbName;
     private final Optional<String> username;
     private final Optional<String> password;
@@ -36,6 +39,7 @@ public class DevServicesDatasourceContainerConfig {
             Map<String, String> additionalJdbcUrlProperties,
             OptionalInt port,
             Optional<String> command,
+            Optional<WaitStrategy> waitStrategy,
             Optional<String> dbName,
             Optional<String> username,
             Optional<String> password,
@@ -54,6 +58,7 @@ public class DevServicesDatasourceContainerConfig {
         this.additionalJdbcUrlProperties = additionalJdbcUrlProperties;
         this.fixedExposedPort = port;
         this.command = command;
+        this.waitStrategy = waitStrategy;
         this.dbName = dbName;
         this.username = username;
         this.password = password;
@@ -90,6 +95,13 @@ public class DevServicesDatasourceContainerConfig {
 
     public Optional<String> getCommand() {
         return command;
+    }
+
+    /**
+     * The strategy used to wait for the database to be ready, if it should replace the one of the provider.
+     */
+    public Optional<WaitStrategy> getWaitStrategy() {
+        return waitStrategy;
     }
 
     public Optional<String> getDbName() {

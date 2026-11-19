@@ -86,6 +86,8 @@ public class PostgresqlDevServicesProcessor {
                         containerConfig.getFixedExposedPort(),
                         composeProjectBuildItem.getDefaultNetworkId(),
                         useSharedNetwork);
+                // set before the startup timeout, which applies to the current wait strategy
+                containerConfig.getWaitStrategy().ifPresent(container::waitingFor);
                 startupTimeout.ifPresent(container::withStartupTimeout);
 
                 container.withUsername(effectiveUsername)

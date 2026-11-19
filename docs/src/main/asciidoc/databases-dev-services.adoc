@@ -85,6 +85,23 @@ By capturing the logs, they become visible amongst other log statements:
 quarkus.datasource.devservices.show-logs=true
 ----
 
+[[wait-strategy]]
+=== Waiting for the Database
+
+Before the application starts, Dev Services wait for the database in the container to be ready.
+By default, the PostgreSQL, Oracle and DB2 Dev Services wait for the messages that the official images log once the database is ready.
+An image that logs other messages, for example because it uses another entrypoint, contains a pre-initialized database or uses another locale,
+never logs the expected messages, and the container fails to start after the startup timeout.
+
+For PostgreSQL, you can instead wait until a JDBC connection to the database can be opened:
+
+[source,properties]
+----
+quarkus.datasource.devservices.wait.strategy=connection
+----
+
+The MariaDB, MySQL and Microsoft SQL Server Dev Services always wait for a JDBC connection.
+
 == Automatic Image Selection
 
 The container image used by Dev Services is determined by the database kind of your xref:datasource.adoc[datasource],

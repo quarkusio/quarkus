@@ -238,6 +238,14 @@ class NettyProcessor {
                 builder.addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdOptions")
                         .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdConstants");
             }
+            // Netty's Zstd, ZstdConstants and ZstdOptions reach into the optional zstd-jni library from their static
+            // initializers (ZstdOptions through its DEFAULT instance), so they must be runtime initialized either way:
+            // - zstd-jni absent: ZstdOptions.<clinit> throws IllegalStateException("zstd-jni is not available")
+            // - zstd-jni present: zstd-jni itself is runtime initialized (see ZstdJniBuildStep), so classes initializing
+            //   it must be runtime initialized too
+            builder.addRuntimeInitializedClass("io.netty.handler.codec.compression.Zstd")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdOptions")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdConstants");
             // Brotli is an optional dependency, we should only runtime initialize BrotliOptions to avoid
             // IllegalStateException when brotli (e.g. com.aayushatharva.brotli4j.Brotli4jLoader) is not available.
             // This will result in a runtime ClassNotFoundException if the user tries to use Brotli.

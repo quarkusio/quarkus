@@ -59,6 +59,11 @@ public abstract class ForwardingTemplateInstance implements TemplateInstance {
     }
 
     @Override
+    public CompletionStage<Void> consume(ChunkWriter writer) {
+        return delegate().consume(writer);
+    }
+
+    @Override
     public long getTimeout() {
         return delegate().getTimeout();
     }

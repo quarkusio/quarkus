@@ -24,6 +24,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarn
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.resteasy.reactive.qute.runtime.TemplateResponseFilter;
 import io.quarkus.resteasy.reactive.qute.runtime.TemplateResponseUniHandler;
+import io.quarkus.resteasy.reactive.qute.runtime.TemplateResponseWriterHandler;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerResponseFilterBuildItem;
 
@@ -57,10 +58,17 @@ public class ResteasyReactiveQuteProcessor {
                     // TemplateResponseUniHandler creates a Uni, so we also need to introduce another Uni handler
                     // so RR actually gets the result
                     // the reason why we use AFTER_METHOD_INVOKE_SECOND_ROUND is to be able to properly support Uni<TemplateInstance>
-                    return Collections.singletonList(
+                    return List.of(
                             new FixedHandlersChainCustomizer(
                                     List.of(new TemplateResponseUniHandler(), new UniResponseHandler()),
-                                    HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE_SECOND_ROUND));
+                                    HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE_SECOND_ROUND),
+                            // the entity writer selected at build time is based on the declared return type
+                            // (TemplateInstance), i.e. it expects a String entity, and therefore cannot write the
+                            // byte array produced by TemplateResponseUniHandler; AFTER_RESPONSE_CREATED is the first
+                            // phase that runs after the build-time selected writer is set up
+                            new FixedHandlersChainCustomizer(
+                                    List.of(new TemplateResponseWriterHandler()),
+                                    HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED));
                 }
                 return Collections.emptyList();
             }

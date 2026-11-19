@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import java.nio.charset.Charset;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -62,6 +63,35 @@ public class ResultsCollectingTemplateInstance extends ForwardingTemplateInstanc
     public CompletionStage<Void> consume(Consumer<String> consumer) {
         StringBuilder builder = new StringBuilder();
         CompletionStage<Void> cs = delegate.consume(consumer.andThen(builder::append));
+        return cs.thenApply(v -> {
+            resultConsumer.accept(delegate, builder.toString());
+            return v;
+        });
+    }
+
+    @Override
+    public CompletionStage<Void> consume(ChunkWriter writer) {
+        StringBuilder builder = new StringBuilder();
+        CompletionStage<Void> cs = delegate.consume(new ChunkWriter() {
+
+            @Override
+            public void write(String chunk) {
+                builder.append(chunk);
+                writer.write(chunk);
+            }
+
+            @Override
+            public void write(byte[] chunk) {
+                builder.append(new String(chunk, writer.charset()));
+                writer.write(chunk);
+            }
+
+            @Override
+            public Charset charset() {
+                return writer.charset();
+            }
+
+        });
         return cs.thenApply(v -> {
             resultConsumer.accept(delegate, builder.toString());
             return v;

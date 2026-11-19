@@ -15,6 +15,7 @@ import org.jboss.resteasy.reactive.ResponseStatus;
 import org.jboss.resteasy.reactive.RestResponse;
 
 import io.quarkus.qute.CheckedTemplate;
+import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.resteasy.reactive.qute.RestTemplate;
@@ -42,12 +43,29 @@ public class HelloResource {
     @Inject
     Template hello;
 
+    @Inject
+    @Location("HelloResource/czech.txt")
+    Template czech;
+
     @GET
     public TemplateInstance get(@QueryParam("name") String name) {
         if (name == null) {
             name = "world";
         }
         return hello.data("name", name);
+    }
+
+    @Path("czech")
+    @GET
+    public TemplateInstance czech() {
+        return czech.data("name", "Čolek");
+    }
+
+    @Path("czech-response")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response czechResponse() {
+        return Response.ok(czech.data("name", "Čolek")).build();
     }
 
     @Path("no-injection")

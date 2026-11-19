@@ -959,7 +959,7 @@ spec:
       backendRefs:
         - name: myapp
           kind: Service
-          port: 8080
+          port: 80
 ----
 
 Optionally also generate a namespaced `Gateway` (the cluster must still provide a matching `GatewayClass`).

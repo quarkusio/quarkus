@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.api.model.gatewayapi.v1.HTTPRoute;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
@@ -59,7 +61,7 @@ public class KubernetesWithHttpRouteTest {
                         .satisfies(backend -> {
                             assertThat(backend.getName()).isEqualTo(APP_NAME);
                             assertThat(backend.getKind()).isEqualTo("Service");
-                            assertThat(backend.getPort()).isEqualTo(8080);
+                            assertThat(backend.getPort()).isEqualTo(80);
                         });
                 assertThat(route.getSpec().getRules().get(0).getMatches())
                         .singleElement()
@@ -69,5 +71,10 @@ public class KubernetesWithHttpRouteTest {
                         });
             });
         });
+
+        Service svc = (Service) kubernetesList.stream().filter(i -> "Service".equals(i.getKind())).findFirst().get();
+        HTTPRoute rt = (HTTPRoute) kubernetesList.stream().filter(i -> "HTTPRoute".equals(i.getKind())).findFirst().get();
+        assertThat(svc.getSpec().getPorts()).extracting(ServicePort::getPort)
+                .contains(rt.getSpec().getRules().get(0).getBackendRefs().get(0).getPort());
     }
 }

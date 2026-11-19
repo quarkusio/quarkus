@@ -53,13 +53,15 @@ public class KubernetesWithHttpRouteRulesTest {
     private boolean defaultRule(HTTPRouteRule rule) {
         return rule.getMatches().stream().anyMatch(m -> "/prod".equals(m.getPath().getValue())
                 && "PathPrefix".equals(m.getPath().getType()))
-                && rule.getBackendRefs().stream().anyMatch(b -> APP_NAME.equals(b.getName()));
+                && rule.getBackendRefs().stream()
+                        .anyMatch(b -> APP_NAME.equals(b.getName()) && Integer.valueOf(80).equals(b.getPort()));
     }
 
     private boolean exactPathRule(HTTPRouteRule rule) {
         return rule.getMatches().stream().anyMatch(m -> "/dev".equals(m.getPath().getValue())
                 && "Exact".equals(m.getPath().getType()))
-                && rule.getBackendRefs().stream().anyMatch(b -> APP_NAME.equals(b.getName()));
+                && rule.getBackendRefs().stream()
+                        .anyMatch(b -> APP_NAME.equals(b.getName()) && Integer.valueOf(80).equals(b.getPort()));
     }
 
     private boolean customBackendRule(HTTPRouteRule rule) {

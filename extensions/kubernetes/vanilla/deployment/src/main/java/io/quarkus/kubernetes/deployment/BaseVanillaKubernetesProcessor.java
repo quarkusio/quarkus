@@ -25,6 +25,7 @@ import io.dekorate.kubernetes.config.Port;
 import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddIngressRuleDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceResourceDecorator;
+import io.dekorate.utils.Ports;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -194,7 +195,8 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
                     + "HTTPRoute will use parent-refs and the generated Gateway may be unused.");
         }
 
-        Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, http.targetPort());
+        Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, http.targetPort())
+                .map(Ports::populateHostPort);
         int backendPort = port.map(AddServiceResourceDecorator::calculateHostPort).orElse(DEFAULT_HTTP_PORT);
 
         String path = http.path();
@@ -275,6 +277,7 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
 
         String portName = rule.servicePortName().orElse(config.gateway().http().targetPort());
         return KubernetesCommonHelper.getPort(ports, config, portName)
+                .map(Ports::populateHostPort)
                 .map(AddServiceResourceDecorator::calculateHostPort)
                 .orElse(defaultPort);
     }

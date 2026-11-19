@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -185,8 +186,23 @@ public class SchedulerProcessor {
                 .reason("Found non-static scheduled business methods").build();
     }
 
+    /**
+     * Annotations on the method take precedence; the declaring class is only considered
+     * if the method does not declare any execution model annotation.
+     */
+    private static AnnotationTarget executionModelTarget(TransformedAnnotationsBuildItem transformedAnnotations,
+            MethodInfo method) {
+        if (transformedAnnotations.hasAnnotation(method, SchedulerDotNames.BLOCKING)
+                || transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING)
+                || transformedAnnotations.hasAnnotation(method, SchedulerDotNames.RUN_ON_VIRTUAL_THREAD)) {
+            return method;
+        }
+        return method.declaringClass();
+    }
+
     @BuildStep
-    void collectScheduledMethods(BeanArchiveIndexBuildItem beanArchives, BeanDiscoveryFinishedBuildItem beanDiscovery,
+    void collectScheduledMethods(SchedulerConfig config, BeanArchiveIndexBuildItem beanArchives,
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
             TransformedAnnotationsBuildItem transformedAnnotations,
             BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
 
@@ -225,21 +241,25 @@ public class SchedulerProcessor {
 
         for (Entry<MethodInfo, List<AnnotationInstance>> e : staticScheduledMethods.entrySet()) {
             MethodInfo method = e.getKey();
+            AnnotationTarget executionModelTarget = executionModelTarget(transformedAnnotations, method);
             scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(null, method, e.getValue(),
-                    transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING),
-                    transformedAnnotations.hasAnnotation(method, SchedulerDotNames.RUN_ON_VIRTUAL_THREAD)));
+                    transformedAnnotations.hasAnnotation(executionModelTarget, SchedulerDotNames.NON_BLOCKING),
+                    transformedAnnotations.hasAnnotation(executionModelTarget, SchedulerDotNames.RUN_ON_VIRTUAL_THREAD),
+                    transformedAnnotations.hasAnnotation(executionModelTarget, SchedulerDotNames.BLOCKING),
+                    config.blockingSignaturesExecutionMode().isVirtualThread()));
             LOGGER.debugf("Found scheduled static method %s declared on %s", method, method.declaringClass().name());
         }
 
         // Then collect all business methods annotated with @Scheduled
         for (BeanInfo bean : beanDiscovery.beanStream().classBeans()) {
-            collectScheduledMethods(beanArchives.getIndex(), transformedAnnotations, bean,
+            collectScheduledMethods(config, beanArchives.getIndex(), transformedAnnotations, bean,
                     bean.getTarget().get().asClass(),
                     scheduledBusinessMethods);
         }
     }
 
-    private void collectScheduledMethods(IndexView index, TransformedAnnotationsBuildItem transformedAnnotations, BeanInfo bean,
+    private void collectScheduledMethods(SchedulerConfig config, IndexView index,
+            TransformedAnnotationsBuildItem transformedAnnotations, BeanInfo bean,
             ClassInfo beanClass, BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
 
         for (MethodInfo method : beanClass.methods()) {
@@ -265,9 +285,12 @@ public class SchedulerProcessor {
                 }
             }
             if (schedules != null) {
+                AnnotationTarget executionModelTarget = executionModelTarget(transformedAnnotations, method);
                 scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(bean, method, schedules,
-                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING),
-                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.RUN_ON_VIRTUAL_THREAD)));
+                        transformedAnnotations.hasAnnotation(executionModelTarget, SchedulerDotNames.NON_BLOCKING),
+                        transformedAnnotations.hasAnnotation(executionModelTarget, SchedulerDotNames.RUN_ON_VIRTUAL_THREAD),
+                        transformedAnnotations.hasAnnotation(executionModelTarget, SchedulerDotNames.BLOCKING),
+                        config.blockingSignaturesExecutionMode().isVirtualThread()));
                 LOGGER.debugf("Found scheduled business method %s declared on %s", method, bean);
             }
         }

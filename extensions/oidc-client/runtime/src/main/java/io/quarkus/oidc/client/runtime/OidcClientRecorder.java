@@ -12,8 +12,7 @@ import jakarta.enterprise.inject.CreationException;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.OidcClients;
@@ -30,14 +29,12 @@ import io.quarkus.oidc.common.runtime.OidcTlsSupport;
 import io.quarkus.oidc.common.runtime.OidcWebClient;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 
-@Recorder
 public class OidcClientRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcClientRecorder.class);
@@ -63,15 +60,6 @@ public class OidcClientRecorder {
         }
 
         return Map.copyOf(staticOidcClients);
-    }
-
-    public Function<SyntheticCreationalContext<OidcClient>, OidcClient> createOidcClientBean(String clientName) {
-        return new Function<SyntheticCreationalContext<OidcClient>, OidcClient>() {
-            @Override
-            public OidcClient apply(SyntheticCreationalContext<OidcClient> ctx) {
-                return ctx.getInjectedReference(OidcClients.class).getClient(clientName);
-            }
-        };
     }
 
     protected static OidcClient createOidcClient(OidcClientConfig oidcConfig, String oidcClientId, Vertx vertx,
@@ -274,10 +262,10 @@ public class OidcClientRecorder {
         return new OidcClientException(OidcCommonUtils.formatConnectionErrorMessage(authServerUrlString), cause);
     }
 
-    public void initOidcClients() {
+    public static void initOidcClients(BeanContainer beanContainer) {
         try {
             // makes sure that OIDC Clients are created at the latest when runtime synthetic beans are ready
-            Arc.container().instance(OidcClients.class).get();
+            beanContainer.beanInstance(OidcClients.class);
         } catch (CreationException wrapper) {
             if (wrapper.getCause() instanceof RuntimeException runtimeException) {
                 // so that users see ConfigurationException etc. without noise

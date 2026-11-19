@@ -231,6 +231,16 @@ public class OverloadDetector {
         updateOverloaded(current - 1);
     }
 
+    /**
+     * Ends a request without recording a latency sample or adapting the limit. This is for
+     * requests that another admission control rejected after this detector admitted them: their
+     * latency says nothing about queueing, and a microsecond rejection would otherwise become the
+     * baseline that every real request is compared against.
+     */
+    public void requestAborted() {
+        updateOverloaded(currentRequests.decrementAndGet());
+    }
+
     private boolean updateLowestRequestTime(long requestTime) {
         long current = lowestRequestTime.get();
         if (current > requestTime) {

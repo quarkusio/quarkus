@@ -201,6 +201,45 @@ public class PrometheusMetricsAssert extends AbstractAssert<PrometheusMetricsAss
     }
 
     /**
+     * Assert that a metric with the given name and labels exists with a value
+     * less than or equal to the specified maximum.
+     *
+     * @param name the metric name
+     * @param maxValue the maximum expected value (inclusive)
+     * @param entries label entries to match
+     */
+    @SafeVarargs
+    public final PrometheusMetricsAssert hasMetricWithLabelsAndValueLessThanOrEqualTo(String name, double maxValue,
+            MapEntry<String, String>... entries) {
+        isNotNull();
+        List<PrometheusMetric> found = actual.find(name, entries);
+        if (found.isEmpty()) {
+            List<PrometheusMetric> byName = actual.find(name);
+            if (byName.isEmpty()) {
+                failWithMessage("Expected metric <%s> to be present but no metric with that name was found", name);
+            } else {
+                failWithMessage(
+                        "Expected metric <%s> with labels %s to be present but only found:%n%s",
+                        name, formatLabels(entries), formatMetrics(byName));
+            }
+        } else {
+            boolean matched = false;
+            for (PrometheusMetric m : found) {
+                if (m.value() <= maxValue) {
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) {
+                failWithMessage(
+                        "Expected metric <%s> with labels %s to have value <= <%s> but found:%n%s",
+                        name, formatLabels(entries), maxValue, formatMetrics(found));
+            }
+        }
+        return this;
+    }
+
+    /**
      * Assert that at least one metric exists whose name contains the given substring.
      */
     public PrometheusMetricsAssert hasMetricNameContaining(String substring) {

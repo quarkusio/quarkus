@@ -335,14 +335,26 @@ public interface PlatformConfiguration extends EnvVarHolder {
                 .withName(APP_CONFIG_MAP).withNewConfigMap().withName(c).endConfigMap()
                 .build()));
 
-        secretVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
-        configMapVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
-        emptyDirVolumes().ifPresent(v -> v.forEach(
-                e -> volumes.add(new VolumeBuilder().withName(e).withNewEmptyDir().endEmptyDir().build())));
-        pvcVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
-        awsElasticBlockStoreVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
-        azureFileVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
-        azureDiskVolumes().forEach((k, v) -> volumes.add(v.toVolume(k)));
+        secretVolumes().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> volumes.add(e.getValue().toVolume(e.getKey())));
+        configMapVolumes().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> volumes.add(e.getValue().toVolume(e.getKey())));
+        emptyDirVolumes().ifPresent(v -> v.stream().sorted()
+                .forEach(e -> volumes.add(new VolumeBuilder().withName(e).withNewEmptyDir().endEmptyDir().build())));
+        pvcVolumes().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> volumes.add(e.getValue().toVolume(e.getKey())));
+        awsElasticBlockStoreVolumes().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> volumes.add(e.getValue().toVolume(e.getKey())));
+        azureFileVolumes().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> volumes.add(e.getValue().toVolume(e.getKey())));
+        azureDiskVolumes().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> volumes.add(e.getValue().toVolume(e.getKey())));
         return volumes;
     }
 }

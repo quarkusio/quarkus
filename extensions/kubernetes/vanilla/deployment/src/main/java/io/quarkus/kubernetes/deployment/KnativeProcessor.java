@@ -4,6 +4,7 @@ import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.DEFAULT_PRIORITY;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import io.dekorate.knative.decorator.AddHostAliasesToRevisionDecorator;
@@ -181,10 +182,12 @@ public class KnativeProcessor extends BaseKubeProcessor<AddPortToKnativeConfig, 
         context.add(new ApplyHttpGetActionPortDecorator(name, null));
 
         //Add revision decorators
-        config.hostAliases().entrySet()
+        config.hostAliases().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
                 .forEach(e -> context.add(new AddHostAliasesToRevisionDecorator(name, HostAliasConverter.convert(e))));
         config.nodeSelector().ifPresent(n -> context.add(new AddNodeSelectorDecorator(name, n.key(), n.value())));
-        config.sidecars().entrySet()
+        config.sidecars().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
                 .forEach(e -> context.add(new AddSidecarToRevisionDecorator(name, ContainerConverter.convert(e))));
 
         if (!roleBindings.isEmpty()) {

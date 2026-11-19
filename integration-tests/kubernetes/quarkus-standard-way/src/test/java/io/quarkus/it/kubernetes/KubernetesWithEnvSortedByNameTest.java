@@ -45,6 +45,9 @@ public class KubernetesWithEnvSortedByNameTest {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
+                            // Env vars are sorted alphabetically by name for deterministic output
+                            // Dependencies are still respected (e.g., A_URL=$(Z_HOST) requires Z_HOST first)
+                            // KUBERNETES_NAMESPACE is added automatically by Quarkus
                             assertThat(container.getEnv()).extracting(EnvVar::getName).containsExactly(
                                     "KUBERNETES_NAMESPACE",
                                     "AVAR",

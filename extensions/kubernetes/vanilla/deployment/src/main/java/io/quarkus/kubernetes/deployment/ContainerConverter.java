@@ -26,8 +26,12 @@ public class ContainerConverter {
             b.withLivenessProbe(ProbeConverter.convert(name, c.livenessProbe()));
         }
         b.addAllToEnvVars(c.convertToEnvs());
-        c.ports().entrySet().forEach(e -> b.addToPorts(PortConverter.convert(e)));
-        c.mounts().entrySet().forEach(e -> b.addToMounts(MountConverter.convert(e)));
+        c.ports().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> b.addToPorts(PortConverter.convert(e)));
+        c.mounts().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> b.addToMounts(MountConverter.convert(e)));
 
         if (c.resources().requests().memory().isPresent() || c.resources().requests().cpu().isPresent()) {
             b.withNewRequestResources(c.resources().requests().memory().orElse(null),

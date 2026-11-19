@@ -1,6 +1,8 @@
 package io.quarkus.kubernetes.deployment;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
@@ -12,7 +14,9 @@ import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
  */
 public class EnvVarValidator {
     private static final Logger log = Logger.getLogger(EnvVarValidator.class);
-    private final Map<ItemKey, KubernetesEnvBuildItem> items = new HashMap<>();
+    private static final Pattern ENV_VAR_REFERENCE = Pattern.compile("(?<!\\$)\\$\\(([A-Z_][A-Z0-9_]*)\\)");
+
+    private final Map<ItemKey, KubernetesEnvBuildItem> items = new LinkedHashMap<>();
     private final Set<String> knownNames = new HashSet<>();
     private final Map<String, Set<KubernetesEnvBuildItem>> conflicting = new HashMap<>();
     private final Set<String> errors = new HashSet<>();
@@ -74,9 +78,116 @@ public class EnvVarValidator {
      */
     Collection<KubernetesEnvBuildItem> getBuildItems() {
         if (conflicting.isEmpty() && errors.isEmpty()) {
-            return items.values();
+            return sortByDependencies(items);
         }
         throw new IllegalArgumentException(getError());
+    }
+
+    private Collection<KubernetesEnvBuildItem> sortByDependencies(Map<ItemKey, KubernetesEnvBuildItem> items) {
+        List<KubernetesEnvBuildItem> envFromItems = new ArrayList<>();
+        Map<String, KubernetesEnvBuildItem> namedVars = new LinkedHashMap<>();
+
+        for (KubernetesEnvBuildItem item : items.values()) {
+            KubernetesEnvBuildItem.EnvType type = item.getType();
+
+            if (type == KubernetesEnvBuildItem.EnvType.secret ||
+                    type == KubernetesEnvBuildItem.EnvType.configmap) {
+                envFromItems.add(item);
+            } else {
+                String name = item.getName();
+                namedVars.put(name, item);
+            }
+        }
+
+        Map<String, Set<String>> dependencies = new HashMap<>();
+        for (Map.Entry<String, KubernetesEnvBuildItem> entry : namedVars.entrySet()) {
+            Set<String> deps = extractDependencies(entry.getValue(), namedVars.keySet());
+            if (!deps.isEmpty()) {
+                dependencies.put(entry.getKey(), deps);
+            }
+        }
+
+        List<KubernetesEnvBuildItem> sortedVars = topologicalSort(namedVars, dependencies);
+
+        List<KubernetesEnvBuildItem> result = new ArrayList<>(envFromItems.size() + sortedVars.size());
+        result.addAll(envFromItems);
+        result.addAll(sortedVars);
+
+        return result;
+    }
+
+    private Set<String> extractDependencies(KubernetesEnvBuildItem item, Set<String> allVarNames) {
+        Set<String> deps = new HashSet<>();
+        String value = item.getValue();
+
+        if (value != null && !value.isEmpty()) {
+            Matcher matcher = ENV_VAR_REFERENCE.matcher(value);
+            while (matcher.find()) {
+                String depName = matcher.group(1);
+
+                for (String configName : allVarNames) {
+                    if (depName.equals(EnvConverter.convertName(configName))) {
+                        deps.add(configName);
+                    }
+                }
+            }
+        }
+
+        return deps;
+    }
+
+    private List<KubernetesEnvBuildItem> topologicalSort(
+            Map<String, KubernetesEnvBuildItem> namedVars,
+            Map<String, Set<String>> dependencies) {
+
+        Map<String, Integer> inDegree = new HashMap<>();
+        for (String name : namedVars.keySet()) {
+            inDegree.put(name, 0);
+        }
+
+        for (Map.Entry<String, Set<String>> entry : dependencies.entrySet()) {
+            for (String dep : entry.getValue()) {
+                if (namedVars.containsKey(dep)) {
+                    inDegree.merge(entry.getKey(), 1, Integer::sum);
+                }
+            }
+        }
+
+        PriorityQueue<String> queue = new PriorityQueue<>();
+
+        for (Map.Entry<String, Integer> entry : inDegree.entrySet()) {
+            if (entry.getValue() == 0) {
+                queue.offer(entry.getKey());
+            }
+        }
+
+        List<KubernetesEnvBuildItem> sorted = new ArrayList<>();
+
+        while (!queue.isEmpty()) {
+            String current = queue.poll();
+            sorted.add(namedVars.get(current));
+            log.debugf("Topological sort: added %s", current);
+
+            for (Map.Entry<String, Set<String>> entry : dependencies.entrySet()) {
+                if (entry.getValue().contains(current)) {
+                    String dependent = entry.getKey();
+                    int newDegree = inDegree.merge(dependent, -1, Integer::sum);
+                    if (newDegree == 0) {
+                        queue.offer(dependent);
+                        log.debugf("Topological sort: %s is now ready (depends on %s)", dependent, current);
+                    }
+                }
+            }
+        }
+
+        if (sorted.size() < namedVars.size()) {
+            log.warn("Circular dependency detected in environment variables, using insertion order");
+            return new ArrayList<>(namedVars.values());
+        }
+
+        log.debugf("Topological sort complete: %s",
+                sorted.stream().map(KubernetesEnvBuildItem::getName).collect(Collectors.toList()));
+        return sorted;
     }
 
     private String getError() {

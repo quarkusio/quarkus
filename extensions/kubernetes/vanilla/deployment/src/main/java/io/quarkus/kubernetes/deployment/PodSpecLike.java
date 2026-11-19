@@ -3,6 +3,7 @@ package io.quarkus.kubernetes.deployment;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -129,6 +130,7 @@ interface PodSpecLike<C extends PlatformConfiguration, CF extends ContainerFluen
         config.imagePullSecrets().ifPresent(this::addImagePullSecrets);
 
         config.hostAliases().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
                 .map(HostAliasConverter::toKubeHostAlias)
                 .forEach(this::addHostAlias);
 

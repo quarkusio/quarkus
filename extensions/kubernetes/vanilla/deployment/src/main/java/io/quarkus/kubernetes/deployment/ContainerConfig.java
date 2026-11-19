@@ -163,8 +163,12 @@ public interface ContainerConfig extends EnvVarHolder {
         }
         b.addAllToEnv(getEnvVars());
         b.addAllToEnvFrom(getEnvFroms());
-        b.addAllToPorts(ports().entrySet().stream().map(e -> e.getValue().toContainerPort(e.getKey())).toList());
-        b.addAllToVolumeMounts(mounts().entrySet().stream().map(esm -> esm.getValue().toVolumeMount(esm.getKey())).toList());
+        b.addAllToPorts(ports().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(e -> e.getValue().toContainerPort(e.getKey())).toList());
+        b.addAllToVolumeMounts(mounts().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(esm -> esm.getValue().toVolumeMount(esm.getKey())).toList());
 
         resources().applyToContainer(b);
 

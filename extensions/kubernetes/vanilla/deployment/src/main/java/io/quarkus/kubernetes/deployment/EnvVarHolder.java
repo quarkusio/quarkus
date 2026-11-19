@@ -41,17 +41,25 @@ public interface EnvVarHolder {
         final EnvVarsConfig c = env();
         Map<String, EnvVarPrefixConfig> prefixMap = collectPrefixes(c);
 
-        c.vars().forEach((k, v) -> validator.process(KubernetesEnvBuildItem.createSimpleVar(k, v.value().orElse(""), target)));
-        c.fields().forEach((k, v) -> validator.process(KubernetesEnvBuildItem.createFromField(k, v, target)));
+        // Sort keys alphabetically to ensure deterministic ordering
+        c.vars().keySet().stream().sorted()
+                .forEach(k -> validator.process(
+                        KubernetesEnvBuildItem.createSimpleVar(k, c.vars().get(k).value().orElse(""), target)));
+        c.fields().keySet().stream().sorted()
+                .forEach(k -> validator.process(KubernetesEnvBuildItem.createFromField(k, c.fields().get(k), target)));
         c.configmaps()
-                .ifPresent(
-                        cl -> cl.forEach(cm -> validator.process(KubernetesEnvBuildItem.createFromConfigMap(cm,
+                .ifPresent(cl -> cl.stream()
+                        .forEach(cm -> validator.process(KubernetesEnvBuildItem.createFromConfigMap(cm,
                                 target, extractConfigmapPrefix(cm, prefixMap).orElse(null)))));
-        c.secrets().ifPresent(sl -> sl.forEach(s -> validator.process(KubernetesEnvBuildItem.createFromSecret(s,
-                target, extractSecretPrefix(s, prefixMap).orElse(null)))));
-        c.mapping().forEach(
-                (varName, config) -> validator.process(KubernetesEnvBuildItem.createFromResourceKey(varName, config.withKey(),
-                        config.fromSecret().orElse(null), config.fromConfigmap().orElse(null), target)));
+        c.secrets().ifPresent(sl -> sl.stream()
+                .forEach(s -> validator.process(KubernetesEnvBuildItem.createFromSecret(s,
+                        target, extractSecretPrefix(s, prefixMap).orElse(null)))));
+        c.mapping().keySet().stream().sorted()
+                .forEach(varName -> {
+                    var config = c.mapping().get(varName);
+                    validator.process(KubernetesEnvBuildItem.createFromResourceKey(varName, config.withKey(),
+                            config.fromSecret().orElse(null), config.fromConfigmap().orElse(null), target));
+                });
 
         return validator.getBuildItems();
     }

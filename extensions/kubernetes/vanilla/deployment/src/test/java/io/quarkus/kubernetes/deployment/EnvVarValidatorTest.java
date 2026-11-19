@@ -3,6 +3,7 @@ package io.quarkus.kubernetes.deployment;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Collection;
+import java.util.Iterator;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -119,5 +120,31 @@ class EnvVarValidatorTest {
             assertTrue(
                     message.contains(name) && message.contains(value1) && message.contains(configmap) && message.contains(key));
         }
+    }
+
+    @Test
+    void getBuildItemsEscapedDollarSignsShouldNotCreateDependencies() {
+        final KubernetesEnvBuildItem literal = KubernetesEnvBuildItem.createSimpleVar("LITERAL", "$$(LITERAL)", TARGET);
+        final KubernetesEnvBuildItem zHost = KubernetesEnvBuildItem.createSimpleVar("z-host", "localhost", TARGET);
+        final KubernetesEnvBuildItem aUrl = KubernetesEnvBuildItem.createSimpleVar("a-url", "http://$(Z_HOST):8080",
+                TARGET);
+
+        validator.process(literal);
+        validator.process(zHost);
+        validator.process(aUrl);
+
+        Collection<KubernetesEnvBuildItem> items = validator.getBuildItems();
+        assertEquals(3, items.size());
+
+        Iterator<KubernetesEnvBuildItem> iterator = items.iterator();
+        KubernetesEnvBuildItem first = iterator.next();
+        KubernetesEnvBuildItem second = iterator.next();
+        KubernetesEnvBuildItem third = iterator.next();
+
+        assertEquals("LITERAL", first.getName());
+        assertEquals("$$(LITERAL)", first.getValue());
+
+        assertEquals("z-host", second.getName());
+        assertEquals("a-url", third.getName());
     }
 }

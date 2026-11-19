@@ -193,12 +193,12 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
         context.add(new ApplyServiceTypeDecorator(name, config.serviceType().name()));
         if ((config.serviceType() == ServiceType.NodePort)) {
             List<Map.Entry<String, PortConfig>> nodeConfigPorts = config.ports().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
                     .filter(e -> e.getValue().nodePort().isPresent())
                     .toList();
             if (!nodeConfigPorts.isEmpty()) {
-                for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
-                    context.add(new AddNodePortDecorator(name, entry.getValue().nodePort().getAsInt(), entry.getKey()));
-                }
+                nodeConfigPorts.forEach(entry -> context
+                        .add(new AddNodePortDecorator(name, entry.getValue().nodePort().getAsInt(), entry.getKey())));
             } else if (config.nodePort().isPresent()) {
                 context.add(new AddNodePortDecorator(name, config.nodePort().getAsInt(), config.ingress().targetPort()));
             }
@@ -210,17 +210,19 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
         super.ingress(context, ports, config);
 
         if (config.ingress() != null && config.ingress().tls() != null) {
-            for (Map.Entry<String, IngressConfig.IngressTlsConfig> tlsConfigEntry : config.ingress().tls().entrySet()) {
-                if (tlsConfigEntry.getValue().enabled()) {
-                    String[] tlsHosts = tlsConfigEntry.getValue().hosts()
-                            .map(l -> l.toArray(new String[0]))
-                            .orElse(null);
-                    context.add(new AddIngressTlsDecorator(context.name(), new IngressBuilder()
-                            .withTlsSecretName(tlsConfigEntry.getKey())
-                            .withTlsHosts(tlsHosts)
-                            .build()));
-                }
-            }
+            config.ingress().tls().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(tlsConfigEntry -> {
+                        if (tlsConfigEntry.getValue().enabled()) {
+                            String[] tlsHosts = tlsConfigEntry.getValue().hosts()
+                                    .map(l -> l.toArray(new String[0]))
+                                    .orElse(null);
+                            context.add(new AddIngressTlsDecorator(context.name(), new IngressBuilder()
+                                    .withTlsSecretName(tlsConfigEntry.getKey())
+                                    .withTlsHosts(tlsHosts)
+                                    .build()));
+                        }
+                    });
         }
     }
 

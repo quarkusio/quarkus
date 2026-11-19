@@ -38,6 +38,7 @@ public class TestResourceManagerTest {
     @ValueSource(classes = { SequentialTestResourcesTest.class, SequentialTestResourcesTest2.class })
     void testSequentialResourcesRunSequentially(Class<?> clazz) {
         TestResourceManager manager = new TestResourceManager(clazz);
+        manager.init("test");
         Map<String, String> props = manager.start();
         Assertions.assertEquals("value1", props.get("key1"));
         Assertions.assertEquals("value2", props.get("key2"));
@@ -48,6 +49,7 @@ public class TestResourceManagerTest {
     @ValueSource(classes = { ParallelTestResourcesTest.class, ParallelTestResourcesTest2.class })
     void testParallelResourcesRunInParallel(Class<?> clazz) {
         TestResourceManager manager = new TestResourceManager(clazz);
+        manager.init("test");
         Map<String, String> props = manager.start();
         Assertions.assertEquals("value1", props.get("key1"));
         Assertions.assertEquals("value2", props.get("key2"));
@@ -288,6 +290,50 @@ public class TestResourceManagerTest {
         Assertions.assertEquals("value", props.get("annotationkey2"));
     }
 
+    @Test
+    void testGlobalMetaAnnotationOnHolderClassIsDiscovered() {
+        TestResourceManager manager = new TestResourceManager(HolderMetaAnnotationUnrelatedTest.class);
+        manager.init("test");
+        Map<String, String> props = manager.start();
+        Assertions.assertEquals("value", props.get("holderkey"));
+        Assertions.assertTrue(manager.testResourceComparisonInfo().stream().anyMatch(
+                info -> HolderDiscoveredLifecycleManager.class.getName()
+                        .equals(info.testResourceLifecycleManagerClass())
+                        && info.scope() == TestResourceScope.GLOBAL));
+    }
+
+    @Test
+    void testRestrictedMetaAnnotationOnHolderClassIsNotAppliedGlobally() {
+        TestResourceManager manager = new TestResourceManager(HolderMetaAnnotationUnrelatedTest.class);
+        manager.init("test");
+        Map<String, String> props = manager.start();
+        Assertions.assertFalse(props.containsKey("restrictedholderkey"));
+        Assertions.assertTrue(manager.testResourceComparisonInfo().stream().noneMatch(
+                info -> HolderRestrictedLifecycleManager.class.getName()
+                        .equals(info.testResourceLifecycleManagerClass())));
+    }
+
+    @Test
+    void testGlobalMetaAnnotationOnTestClassIsDiscoveredOnce() {
+        // the meta-annotation directly on the test class is found both by the reflective walk over the class
+        // hierarchy and by the index scan, so it must be deduplicated to a single entry
+        TestResourceManager manager = new TestResourceManager(GlobalHolderMetaAnnotationOnTestClass.class);
+        long entriesForManager = manager.testResourceComparisonInfo().stream()
+                .filter(info -> HolderDiscoveredLifecycleManager.class.getName()
+                        .equals(info.testResourceLifecycleManagerClass()))
+                .count();
+        Assertions.assertEquals(1, entriesForManager);
+    }
+
+    @Test
+    void testRepeatableMetaAnnotationOnHolderClassIsDiscovered() {
+        TestResourceManager manager = new TestResourceManager(HolderMetaAnnotationUnrelatedTest.class);
+        manager.init("test");
+        Map<String, String> props = manager.start();
+        Assertions.assertEquals("value", props.get("holderrepeatablekey1"));
+        Assertions.assertEquals("value", props.get("holderrepeatablekey2"));
+    }
+
     public static class AnnotationBasedQuarkusTestResource
             implements QuarkusTestResourceConfigurableLifecycleManager<WithAnnotationBasedTestResource> {
 
@@ -372,7 +418,9 @@ public class TestResourceManagerTest {
     public static class RepeatableAnnotationBasedTestResourcesTest2 {
     }
 
-    @QuarkusTestResource(AnnotationBasedQuarkusTestResource.class)
+    // MATCHING_RESOURCES keeps the entries restricted to the annotated test class so that the reload
+    // comparison tests below keep exercising per-class semantics even with global holder-based entries present
+    @WithTestResource(value = ArrayLifecycleManager.class, scope = TestResourceScope.MATCHING_RESOURCES)
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.TYPE)
     public @interface WithArrayBasedTestResource {
@@ -391,7 +439,7 @@ public class TestResourceManagerTest {
     public static class DiffereringArrayTest {
     }
 
-    @QuarkusTestResource(AnnotationBasedQuarkusTestResource.class)
+    @WithTestResource(value = ArrayLifecycleManager.class, scope = TestResourceScope.MATCHING_RESOURCES)
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.TYPE)
     public @interface WithPrimitiveArrayBasedTestResource {
@@ -408,6 +456,110 @@ public class TestResourceManagerTest {
 
     @WithPrimitiveArrayBasedTestResource(args = { 3, 4 })
     public static class DifferingPrimitiveArrayTest {
+    }
+
+    public static class ArrayLifecycleManager implements QuarkusTestResourceLifecycleManager {
+
+        @Override
+        public Map<String, String> start() {
+            return Collections.emptyMap();
+        }
+
+        @Override
+        public void stop() {
+        }
+    }
+
+    @WithTestResource(value = HolderDiscoveredLifecycleManager.class, scope = TestResourceScope.GLOBAL)
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    public @interface GlobalHolderMetaAnnotation {
+    }
+
+    @WithTestResource(value = HolderRestrictedLifecycleManager.class, scope = TestResourceScope.RESTRICTED_TO_CLASS)
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    public @interface RestrictedHolderMetaAnnotation {
+    }
+
+    @WithTestResource(value = RepeatableHolderLifecycleManager.class, scope = TestResourceScope.GLOBAL)
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    @Repeatable(RepeatableHolderMetaAnnotation.List.class)
+    public @interface RepeatableHolderMetaAnnotation {
+        String key() default "";
+
+        @Target(ElementType.TYPE)
+        @Retention(RetentionPolicy.RUNTIME)
+        @WithTestResourceRepeatable(RepeatableHolderMetaAnnotation.class)
+        @interface List {
+            RepeatableHolderMetaAnnotation[] value();
+        }
+    }
+
+    @GlobalHolderMetaAnnotation
+    public static class GlobalHolderMetaAnnotationHolder {
+    }
+
+    @RestrictedHolderMetaAnnotation
+    public static class RestrictedHolderMetaAnnotationHolder {
+    }
+
+    @RepeatableHolderMetaAnnotation(key = "holderrepeatablekey1")
+    @RepeatableHolderMetaAnnotation(key = "holderrepeatablekey2")
+    public static class RepeatableHolderMetaAnnotationHolder {
+    }
+
+    @GlobalHolderMetaAnnotation
+    public static class GlobalHolderMetaAnnotationOnTestClass {
+    }
+
+    // a plain test class that is not annotated itself and is unrelated to the holder classes above
+    public static class HolderMetaAnnotationUnrelatedTest {
+    }
+
+    public static class HolderDiscoveredLifecycleManager implements QuarkusTestResourceLifecycleManager {
+
+        @Override
+        public Map<String, String> start() {
+            return Collections.singletonMap("holderkey", "value");
+        }
+
+        @Override
+        public void stop() {
+        }
+    }
+
+    public static class HolderRestrictedLifecycleManager implements QuarkusTestResourceLifecycleManager {
+
+        @Override
+        public Map<String, String> start() {
+            return Collections.singletonMap("restrictedholderkey", "value");
+        }
+
+        @Override
+        public void stop() {
+        }
+    }
+
+    public static class RepeatableHolderLifecycleManager
+            implements QuarkusTestResourceConfigurableLifecycleManager<RepeatableHolderMetaAnnotation> {
+
+        private String key;
+
+        @Override
+        public void init(RepeatableHolderMetaAnnotation annotation) {
+            this.key = annotation.key();
+        }
+
+        @Override
+        public Map<String, String> start() {
+            return Collections.singletonMap(key, "value");
+        }
+
+        @Override
+        public void stop() {
+        }
     }
 
 }

@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -107,7 +108,8 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
                     .collect(Collectors.toMap(s -> s.key(), s -> s.type().convert(s.value()))));
         }
 
-        SecurityIdentity userIdentity = augment(user.build(), allAnnotations, container);
+        TestSecurityIdentityAugmentor testAugmentor = getTestSecurityIdentityAugmentor(container);
+        SecurityIdentity userIdentity = augment(user.build(), allAnnotations, container, testAugmentor);
         container.select(TestIdentityAssociation.class).get().setTestIdentity(userIdentity);
         if (!testSecurity.authMechanism().isEmpty()) {
             for (var testMechanism : container.select(AbstractTestHttpAuthenticationMechanism.class)) {
@@ -117,7 +119,7 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
         }
 
         // run SecurityIdentityAugmentors when:
-        List<Instance<? extends SecurityIdentityAugmentor>> augmentors = new ArrayList<>();
+        List<Supplier<? extends SecurityIdentityAugmentor>> augmentors = new ArrayList<>();
         // 1. user opted-in with @TestSecurity#augmentors, run augmentors listed by user
         for (Class<? extends SecurityIdentityAugmentor> augmentorClass : testSecurity.augmentors()) {
             var augmentorInstance = container.select(augmentorClass);
@@ -128,12 +130,17 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
                         attribute on method '%s' is not available as a CDI bean.
                         """.formatted(augmentorClass, testMethodName));
             }
-            augmentors.add(augmentorInstance);
+            augmentors.add(augmentorInstance::get);
         }
         // 2. @PermissionChecker is used, run the augmentor that enables this functionality
         var quarkusPermissionAugmentor = container.select(QuarkusPermissionSecurityIdentityAugmentor.class);
         if (quarkusPermissionAugmentor.isResolvable()) {
-            augmentors.add(quarkusPermissionAugmentor);
+            augmentors.add(quarkusPermissionAugmentor::get);
+        }
+        // 3. the TestSecurityIdentityAugmentor is also a SecurityIdentityAugmentor, run it for every request,
+        // for example the OIDC one enforcing the @AuthenticationContext step-up authentication policy
+        if (testAugmentor instanceof SecurityIdentityAugmentor requestAugmentor) {
+            augmentors.add(() -> requestAugmentor);
         }
         if (!augmentors.isEmpty()) {
             for (var testMechanism : container.select(AbstractTestHttpAuthenticationMechanism.class)) {
@@ -186,12 +193,17 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
         return new TestSecurityContext(annotationContainerOptional.orElse(null), null);
     }
 
-    private SecurityIdentity augment(SecurityIdentity identity, Annotation[] annotations, ArcContainer container) {
+    private static TestSecurityIdentityAugmentor getTestSecurityIdentityAugmentor(ArcContainer container) {
+        Instance<TestSecurityIdentityAugmentor> producer = container.select(TestSecurityIdentityAugmentor.class);
+        return producer.isResolvable() ? producer.get() : null;
+    }
+
+    private SecurityIdentity augment(SecurityIdentity identity, Annotation[] annotations, ArcContainer container,
+            TestSecurityIdentityAugmentor testAugmentor) {
         SecurityIdentity augmentedIdentity = identity;
 
-        Instance<TestSecurityIdentityAugmentor> producer = container.select(TestSecurityIdentityAugmentor.class);
-        if (producer.isResolvable()) {
-            augmentedIdentity = producer.get().augment(identity, annotations);
+        if (testAugmentor != null) {
+            augmentedIdentity = testAugmentor.augment(identity, annotations);
         }
 
         try (var quarkusPermissionAugmentorInstance = container.instance(QuarkusPermissionSecurityIdentityAugmentor.class)) {

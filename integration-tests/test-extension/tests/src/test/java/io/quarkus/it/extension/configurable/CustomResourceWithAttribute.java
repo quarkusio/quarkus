@@ -8,7 +8,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@QuarkusTestResource(ConfigurableLifecycleManager.class)
+@QuarkusTestResource(value = ConfigurableLifecycleManager.class, restrictToAnnotatedClass = true)
 @Stereotype
 public @interface CustomResourceWithAttribute {
 

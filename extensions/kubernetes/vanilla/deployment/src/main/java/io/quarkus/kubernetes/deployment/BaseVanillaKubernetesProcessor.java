@@ -53,7 +53,8 @@ import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
-public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<AddPortToKubernetesConfig, KubernetesConfig> {
+public abstract class BaseVanillaKubernetesProcessor
+        extends BaseKubeProcessor<AddPortToKubernetesConfig, KubernetesConfig> {
     private static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
     private static final Logger log = Logger.getLogger(BaseVanillaKubernetesProcessor.class);
 
@@ -94,7 +95,8 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             List<KubernetesDeploymentTargetBuildItem> targets) {
-        final var context = commonDecorators(applicationInfo, outputTarget, capabilities, packageConfig, metricsConfiguration,
+        final var context = commonDecorators(applicationInfo, outputTarget, capabilities, packageConfig,
+                metricsConfiguration,
                 kubernetesClientConfiguration, namespaces, annotations, labels, envs, image, command,
                 ports, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
                 clusterRoleBindings, customProjectRoot, targets);
@@ -103,7 +105,8 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
         }
 
         final var config = config();
-        // Do not bind the Management port to the Service resource unless it's explicitly used by the user.
+        // Do not bind the Management port to the Service resource unless it's
+        // explicitly used by the user.
         if (managementPortIsEnabled()
                 && !isExposingManagementPort(config)) {
             context.add(new RemovePortFromServiceDecorator(context.name(), MANAGEMENT_PORT_NAME));
@@ -146,7 +149,8 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
         }
 
         for (Map.Entry<String, String> annotation : config.ingress().annotations().entrySet()) {
-            context.add(new AddAnnotationDecorator(context.name(), annotation.getKey(), annotation.getValue(), INGRESS));
+            context.add(
+                    new AddAnnotationDecorator(context.name(), annotation.getKey(), annotation.getValue(), INGRESS));
         }
 
         for (IngressConfig.IngressRuleConfig rule : config.ingress().rules().values()) {
@@ -218,25 +222,40 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
                     hostnames.stream().findFirst()));
         }
 
+        GatewayApiValidator.validateTimeouts("quarkus.kubernetes.gateway.http.timeouts", http.timeouts());
+
+        AddHttpRouteResourceDecorator.Rule defaultRule = new AddHttpRouteResourceDecorator.Rule(
+                Optional.empty(),
+                path,
+                http.pathType(),
+                resourceName,
+                backendPort,
+                http.timeouts().request(),
+                http.timeouts().backendRequest());
+
         List<AddHttpRouteResourceDecorator.Rule> extraRules = new ArrayList<>();
-        if (http.rules() != null) {
-            for (GatewayConfig.Http.RuleConfig rule : http.rules().values()) {
-                int rulePort = resolveGatewayBackendPort(ports, config, resourceName, rule, backendPort);
-                extraRules.add(new AddHttpRouteResourceDecorator.Rule(
-                        rule.path(),
-                        rule.pathType(),
-                        rule.serviceName().orElse(resourceName),
-                        rulePort));
-            }
+        for (Map.Entry<String, GatewayConfig.Http.RuleConfig> entry : http.rules().entrySet()) {
+            String ruleId = entry.getKey();
+            GatewayConfig.Http.RuleConfig rule = entry.getValue();
+            GatewayApiValidator.validateRuleName(ruleId);
+            GatewayApiValidator.validateTimeouts(
+                    "quarkus.kubernetes.gateway.http.rules." + ruleId + ".timeouts",
+                    rule.timeouts());
+            int rulePort = resolveGatewayBackendPort(ports, config, resourceName, rule, backendPort);
+            extraRules.add(new AddHttpRouteResourceDecorator.Rule(
+                    Optional.of(ruleId),
+                    rule.path(),
+                    rule.pathType(),
+                    rule.serviceName().orElse(resourceName),
+                    rulePort,
+                    rule.timeouts().request(),
+                    rule.timeouts().backendRequest()));
         }
 
         context.add(new AddHttpRouteResourceDecorator(
                 resourceName,
                 hostnames,
-                path,
-                http.pathType(),
-                resourceName,
-                backendPort,
+                defaultRule,
                 http.parentRefs(),
                 extraRules,
                 http.annotations(),
@@ -289,7 +308,8 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
                 .toList();
         if (!nodeConfigPorts.isEmpty()) {
             for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
-                context.add(new AddNodePortDecorator(context.name(), entry.getValue().nodePort().getAsInt(), entry.getKey()));
+                context.add(new AddNodePortDecorator(context.name(), entry.getValue().nodePort().getAsInt(),
+                        entry.getKey()));
             }
         } else {
             context.add(new AddNodePortDecorator(context.name(),
@@ -312,7 +332,8 @@ public abstract class BaseVanillaKubernetesProcessor extends BaseKubeProcessor<A
         }
 
         try {
-            byte[] hash = MessageDigest.getInstance(DEFAULT_HASH_ALGORITHM).digest(input.getBytes(StandardCharsets.UTF_8));
+            byte[] hash = MessageDigest.getInstance(DEFAULT_HASH_ALGORITHM)
+                    .digest(input.getBytes(StandardCharsets.UTF_8));
             return min + new BigInteger(hash).mod(BigInteger.valueOf(max - min)).intValue();
         } catch (Exception e) {
             throw new RuntimeException("Unable to generate stable port number from input string: '" + input + "'", e);

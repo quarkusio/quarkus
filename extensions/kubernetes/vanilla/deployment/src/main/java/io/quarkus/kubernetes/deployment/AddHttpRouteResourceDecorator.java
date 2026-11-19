@@ -23,10 +23,7 @@ public class AddHttpRouteResourceDecorator extends ResourceProvidingDecorator<Ku
 
     private final String name;
     private final List<String> hostnames;
-    private final String path;
-    private final String pathType;
-    private final String backendServiceName;
-    private final int backendPort;
+    private final Rule defaultRule;
     private final Map<String, GatewayConfig.Http.ParentRefConfig> parentRefs;
     private final List<Rule> extraRules;
     private final Map<String, String> annotations;
@@ -35,10 +32,7 @@ public class AddHttpRouteResourceDecorator extends ResourceProvidingDecorator<Ku
 
     public AddHttpRouteResourceDecorator(String name,
             List<String> hostnames,
-            String path,
-            String pathType,
-            String backendServiceName,
-            int backendPort,
+            Rule defaultRule,
             Map<String, GatewayConfig.Http.ParentRefConfig> parentRefs,
             List<Rule> extraRules,
             Map<String, String> annotations,
@@ -46,10 +40,7 @@ public class AddHttpRouteResourceDecorator extends ResourceProvidingDecorator<Ku
             String gatewayName) {
         this.name = name;
         this.hostnames = hostnames;
-        this.path = path;
-        this.pathType = pathType;
-        this.backendServiceName = backendServiceName;
-        this.backendPort = backendPort;
+        this.defaultRule = defaultRule;
         this.parentRefs = parentRefs;
         this.extraRules = extraRules;
         this.annotations = annotations;
@@ -81,10 +72,10 @@ public class AddHttpRouteResourceDecorator extends ResourceProvidingDecorator<Ku
         }
 
         List<HTTPRouteRule> rules = new ArrayList<>();
-        rules.add(buildRule(path, pathType, backendServiceName, backendPort));
+        rules.add(buildRule(defaultRule));
         if (extraRules != null) {
             for (Rule rule : extraRules) {
-                rules.add(buildRule(rule.path(), rule.pathType(), rule.serviceName(), rule.port()));
+                rules.add(buildRule(rule));
             }
         }
 
@@ -109,20 +100,27 @@ public class AddHttpRouteResourceDecorator extends ResourceProvidingDecorator<Ku
         list.addToItems(route);
     }
 
-    private static HTTPRouteRule buildRule(String path, String pathType, String serviceName, int port) {
-        return new HTTPRouteRuleBuilder()
+    private static HTTPRouteRule buildRule(Rule rule) {
+        HTTPRouteRuleBuilder builder = new HTTPRouteRuleBuilder()
                 .addNewMatch()
                 .withNewPath()
-                .withType(pathType)
-                .withValue(path)
+                .withType(rule.pathType())
+                .withValue(rule.path())
                 .endPath()
                 .endMatch()
                 .addNewBackendRef()
-                .withName(serviceName)
+                .withName(rule.serviceName())
                 .withKind(SERVICE_KIND)
-                .withPort(port)
-                .endBackendRef()
-                .build();
+                .withPort(rule.port())
+                .endBackendRef();
+        rule.name().ifPresent(builder::withName);
+        if (rule.requestTimeout().isPresent() || rule.backendRequestTimeout().isPresent()) {
+            var timeouts = builder.withNewTimeouts();
+            rule.requestTimeout().ifPresent(timeouts::withRequest);
+            rule.backendRequestTimeout().ifPresent(timeouts::withBackendRequest);
+            timeouts.endTimeouts();
+        }
+        return builder.build();
     }
 
     public static List<String> combineHostnames(Optional<String> host, Optional<List<String>> hosts) {
@@ -138,6 +136,13 @@ public class AddHttpRouteResourceDecorator extends ResourceProvidingDecorator<Ku
         return result;
     }
 
-    public record Rule(String path, String pathType, String serviceName, int port) {
+    public record Rule(
+            Optional<String> name,
+            String path,
+            String pathType,
+            String serviceName,
+            int port,
+            Optional<String> requestTimeout,
+            Optional<String> backendRequestTimeout) {
     }
 }

@@ -933,6 +933,9 @@ quarkus.kubernetes.gateway.http.host=myapp.example.com
 # quarkus.kubernetes.gateway.http.target-port=http
 # Optional: annotations (quote keys that contain dots)
 # quarkus.kubernetes.gateway.http.annotations."example.com/gate"=enabled
+# Optional: timeouts on the default HTTPRoute rule (Gateway API Duration format)
+# quarkus.kubernetes.gateway.http.timeouts.request=180s
+# quarkus.kubernetes.gateway.http.timeouts.backend-request=180s
 ----
 
 This generates an `HTTPRoute` similar to:
@@ -993,6 +996,12 @@ Prefer `HTTP` listeners, or configure TLS on the Gateway out-of-band.
 ====
 
 Additional HTTPRoute rules can be defined similarly to Ingress rules.
+Each extra rule's `<id>` is set as `rules[].name` on the generated `HTTPRoute` rule so implementation-specific
+policies can target a single rule via `sectionName`, and per-rule timeouts can be configured under
+`quarkus.kubernetes.gateway.http.rules.<id>.timeouts.*`.
+Rule `<id>` values must follow Gateway API `SectionName` rules (lowercase alphanumeric characters, `-`, or `.`).
+Note that `rules[].name` graduated to the Gateway API Standard channel in v1.2, so clusters with older
+Standard-channel CRDs may ignore it.
 When `service-name` points to a different Service, `service-port-number` is required
 (Gateway API backends use numeric ports, and Quarkus cannot resolve named ports of another Service):
 
@@ -1000,6 +1009,8 @@ When `service-name` points to a different Service, `service-port-number` is requ
 ----
 quarkus.kubernetes.gateway.http.rules.api.path=/api
 quarkus.kubernetes.gateway.http.rules.api.path-type=PathPrefix
+quarkus.kubernetes.gateway.http.rules.api.timeouts.request=0s
+quarkus.kubernetes.gateway.http.rules.api.timeouts.backend-request=0s
 quarkus.kubernetes.gateway.http.rules.alt.path=/ea
 quarkus.kubernetes.gateway.http.rules.alt.service-name=updated-service
 quarkus.kubernetes.gateway.http.rules.alt.service-port-number=8080

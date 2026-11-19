@@ -83,7 +83,14 @@ public interface GatewayConfig {
         Map<String, ParentRefConfig> parentRefs();
 
         /**
+         * Timeouts for the default HTTPRoute rule.
+         */
+        TimeoutsConfig timeouts();
+
+        /**
          * Additional HTTPRoute rules (in addition to the default rule from path/target-port).
+         * The map key ({@code <id>}) is used as the generated rule {@code name}, allowing policies to target
+         * individual rules via {@code sectionName}.
          */
         Map<String, RuleConfig> rules();
 
@@ -148,6 +155,27 @@ public interface GatewayConfig {
              * Preferred when set; otherwise the named port is resolved from the current application only.
              */
             Optional<Integer> servicePortNumber();
+
+            /**
+             * Timeouts for this HTTPRoute rule.
+             */
+            TimeoutsConfig timeouts();
+        }
+
+        interface TimeoutsConfig {
+
+            /**
+             * Timeout for an HTTP request that a gateway processes (Gateway API duration format, for example {@code 180s},
+             * or {@code 0s} to disable).
+             */
+            Optional<String> request();
+
+            /**
+             * Timeout for a single request from the gateway to a backend (Gateway API duration format, for example
+             * {@code 180s},
+             * or {@code 0s} to disable).
+             */
+            Optional<String> backendRequest();
         }
     }
 

@@ -69,6 +69,10 @@ public class KubernetesWithHttpRouteTest {
                             assertThat(match.getPath().getType()).isEqualTo("PathPrefix");
                             assertThat(match.getPath().getValue()).isEqualTo("/");
                         });
+                assertThat(route.getSpec().getRules().get(0).getName()).isNull();
+                assertThat(route.getSpec().getRules().get(0).getTimeouts()).isNotNull();
+                assertThat(route.getSpec().getRules().get(0).getTimeouts().getRequest()).isEqualTo("180s");
+                assertThat(route.getSpec().getRules().get(0).getTimeouts().getBackendRequest()).isEqualTo("120s");
             });
         });
 

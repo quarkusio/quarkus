@@ -51,21 +51,29 @@ public class KubernetesWithHttpRouteRulesTest {
     }
 
     private boolean defaultRule(HTTPRouteRule rule) {
-        return rule.getMatches().stream().anyMatch(m -> "/prod".equals(m.getPath().getValue())
-                && "PathPrefix".equals(m.getPath().getType()))
+        return rule.getName() == null
+                && rule.getTimeouts() == null
+                && rule.getMatches().stream().anyMatch(m -> "/prod".equals(m.getPath().getValue())
+                        && "PathPrefix".equals(m.getPath().getType()))
                 && rule.getBackendRefs().stream()
                         .anyMatch(b -> APP_NAME.equals(b.getName()) && Integer.valueOf(80).equals(b.getPort()));
     }
 
     private boolean exactPathRule(HTTPRouteRule rule) {
-        return rule.getMatches().stream().anyMatch(m -> "/dev".equals(m.getPath().getValue())
-                && "Exact".equals(m.getPath().getType()))
+        return "1".equals(rule.getName())
+                && rule.getTimeouts() != null
+                && "0s".equals(rule.getTimeouts().getRequest())
+                && rule.getTimeouts().getBackendRequest() == null
+                && rule.getMatches().stream().anyMatch(m -> "/dev".equals(m.getPath().getValue())
+                        && "Exact".equals(m.getPath().getType()))
                 && rule.getBackendRefs().stream()
                         .anyMatch(b -> APP_NAME.equals(b.getName()) && Integer.valueOf(80).equals(b.getPort()));
     }
 
     private boolean customBackendRule(HTTPRouteRule rule) {
-        return rule.getMatches().stream().anyMatch(m -> "/ea".equals(m.getPath().getValue()))
+        return "2".equals(rule.getName())
+                && rule.getTimeouts() == null
+                && rule.getMatches().stream().anyMatch(m -> "/ea".equals(m.getPath().getValue()))
                 && rule.getBackendRefs().stream().anyMatch(b -> "updated-service".equals(b.getName())
                         && Integer.valueOf(8080).equals(b.getPort()));
     }

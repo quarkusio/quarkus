@@ -2,7 +2,6 @@
 = Recorders-to-Services Migration Guide
 :diataxis-type: howto
 include::_attributes.adoc[]
-:extension-status: deprecated
 
 This guide describes how to migrate Quarkus extensions from the legacy `@Record`/`@Recorder` pattern to the modern `ServiceRegistrar` service system.
 

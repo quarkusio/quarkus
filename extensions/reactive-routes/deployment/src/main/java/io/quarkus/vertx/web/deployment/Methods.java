@@ -54,6 +54,7 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.RequestBody;
 import io.vertx.ext.web.RoutingContext;
 
 class Methods {
@@ -69,8 +70,7 @@ class Methods {
             String.class, String.class);
     static final MethodDesc GET_BODY = MethodDesc.of(RoutingContext.class, "getBody", Buffer.class);
     static final MethodDesc GET_BODY_AS_STRING = MethodDesc.of(RoutingContext.class, "getBodyAsString", String.class);
-    static final MethodDesc GET_BODY_AS_JSON = MethodDesc.of(RoutingContext.class, "getBodyAsJson", JsonObject.class);
-    static final MethodDesc GET_BODY_AS_JSON_ARRAY = MethodDesc.of(RoutingContext.class, "getBodyAsJsonArray", JsonArray.class);
+    static final MethodDesc BODY = MethodDesc.of(RoutingContext.class, "body", RequestBody.class);
     static final MethodDesc JSON_OBJECT_MAP_TO = MethodDesc.of(JsonObject.class, "mapTo", Object.class, Class.class);
     static final MethodDesc REQUEST_PARAMS = MethodDesc.of(HttpServerRequest.class, "params", MultiMap.class);
     static final MethodDesc REQUEST_HEADERS = MethodDesc.of(HttpServerRequest.class, "headers", MultiMap.class);
@@ -151,6 +151,10 @@ class Methods {
 
     static final ConstructorDesc ROUTE_HANDLER_CTOR = ConstructorDesc.of(RouteHandler.class);
 
+    static final MethodDesc ROUTE_HANDLERS_BODY_AS_JSON_OBJECT = MethodDesc.of(RouteHandlers.class, "bodyAsJsonObject",
+            JsonObject.class, RequestBody.class);
+    static final MethodDesc ROUTE_HANDLERS_BODY_AS_JSON_ARRAY = MethodDesc.of(RouteHandlers.class, "bodyAsJsonArray",
+            JsonArray.class, RequestBody.class);
     static final MethodDesc ROUTE_HANDLERS_SET_CONTENT_TYPE = MethodDesc.of(RouteHandlers.class, "setContentType",
             void.class, RoutingContext.class, String.class);
 

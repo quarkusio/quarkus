@@ -75,6 +75,27 @@ public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testThatAllOpenIsAppliedOnKotlinChange() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/kotlin-all-open", "projects/kotlin-all-open-change");
+        run(true);
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("hello"));
+
+        // GreetingService has an intercepted suspend function, which only works if all-open
+        // is also applied when the class is recompiled in dev mode
+        File greetingService = new File(testDir, "src/main/kotlin/org/acme/GreetingService.kt");
+        String uuid = UUID.randomUUID().toString();
+        filter(greetingService, Map.of("\"hello\"", "\"" + uuid + "\""));
+
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/hello").contains(uuid));
+    }
+
+    @Test
     public void testExternalKotlinReloadableArtifacts() throws Exception {
         final String rootProjectPath = "projects/external-reloadable-artifacts";
 

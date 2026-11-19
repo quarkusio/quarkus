@@ -19,5 +19,17 @@ public interface ClientLogger {
 
     void logResponse(HttpClientResponse response, boolean redirect);
 
+    /**
+     * Analogue of {@link #logResponse(HttpClientResponse, boolean)} for responses whose body
+     * has already been consumed. Obtaining the body again from {@code response} yields an empty buffer.
+     * <p>
+     * The default implementation delegates to {@link #logResponse(HttpClientResponse, boolean)}
+     * for backwards compatibility and therefore logs an empty body. Implementations that log
+     * response bodies should override this method.
+     */
+    default void logResponse(HttpClientResponse response, Buffer body, boolean redirect) {
+        logResponse(response, redirect);
+    }
+
     void logRequest(HttpClientRequest request, Buffer body, boolean omitBody);
 }

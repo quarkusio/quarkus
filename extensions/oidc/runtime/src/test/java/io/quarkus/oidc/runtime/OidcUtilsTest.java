@@ -102,6 +102,64 @@ public class OidcUtilsTest {
     }
 
     @Test
+    public void testGetEmptySessionCookie() {
+
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().tenantId("test").build();
+        Map<String, Object> context = new HashMap<>();
+        // An empty session cookie is a removed cookie which the user agent has not dropped yet
+        String sessionCookieValue = OidcUtils.getSessionCookie(context,
+                Map.of("q_session_test", new CookieImpl("q_session_test", "")), oidcConfig);
+        assertNull(sessionCookieValue);
+        // and it is not registered for the removal, the user agent drops it once it has expired
+        assertNull(context.get(OidcUtils.SESSION_COOKIE_NAME));
+    }
+
+    @Test
+    public void testGetEmptySessionCookieChunks() {
+
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().tenantId("test").build();
+        Map<String, Object> context = new HashMap<>();
+        String sessionCookieValue = OidcUtils.getSessionCookie(context,
+                Map.of("q_session_test_chunk_1", new CookieImpl("q_session_test_chunk_1", ""),
+                        "q_session_test_chunk_2", new CookieImpl("q_session_test_chunk_2", "")),
+                oidcConfig);
+        assertNull(sessionCookieValue);
+        assertNull(context.get(OidcUtils.SESSION_COOKIE_NAME));
+    }
+
+    @Test
+    public void testGetEmptySessionCookieWithSessionCookieChunks() {
+
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().tenantId("test").build();
+        Map<String, Object> context = new HashMap<>();
+        // An empty session cookie means no session, the session cookie chunks are not checked
+        String sessionCookieValue = OidcUtils.getSessionCookie(context,
+                Map.of("q_session_test", new CookieImpl("q_session_test", ""),
+                        "q_session_test_chunk_1", new CookieImpl("q_session_test_chunk_1", "tok"),
+                        "q_session_test_chunk_2", new CookieImpl("q_session_test_chunk_2", "ens")),
+                oidcConfig);
+        assertNull(sessionCookieValue);
+        // and nothing is registered for the removal
+        assertNull(context.get(OidcUtils.SESSION_COOKIE_NAME));
+    }
+
+    @Test
+    public void testGetSessionCookieWithEmptySessionCookieChunk() {
+
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().tenantId("test").build();
+        Map<String, Object> context = new HashMap<>();
+        // The session cookie wins over the chunks
+        String sessionCookieValue = OidcUtils.getSessionCookie(context,
+                Map.of("q_session_test", new CookieImpl("q_session_test", "tokens"),
+                        "q_session_test_chunk_1", new CookieImpl("q_session_test_chunk_1", "")),
+                oidcConfig);
+        assertEquals("tokens", sessionCookieValue);
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        List<String> names = (List) context.get(OidcUtils.SESSION_COOKIE_NAME);
+        assertEquals(List.of("q_session_test"), names);
+    }
+
+    @Test
     public void testCorrectTokenType() throws Exception {
         OidcTenantConfig.Token tokenClaims = new OidcTenantConfig.Token();
         tokenClaims.setTokenType("access_token");

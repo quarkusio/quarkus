@@ -61,7 +61,8 @@ class EventImpl<T> implements Event<T> {
     private static final int DEFAULT_CACHE_CAPACITY = 4;
     private static final NotificationOptions EMPTY_OPTIONS = NotificationOptions.builder().build();
 
-    private final HierarchyDiscovery injectionPointTypeHierarchy;
+    private volatile HierarchyDiscovery injectionPointTypeHierarchy;
+    private volatile boolean retainTypeHierarchy;
     private final Type eventType;
     private final Set<Annotation> qualifiers;
     private final ConcurrentMap<Class<?>, Notifier<? super T>> notifiers;
@@ -170,8 +171,14 @@ class EventImpl<T> implements Event<T> {
 
     private Notifier<? super T> createNotifier(Class<?> runtimeType) {
         Type eventType = getEventType(runtimeType);
-        return createNotifier(runtimeType, eventType, qualifiers, ArcContainerImpl.unwrap(Arc.requireContainer()),
-                injectionPoint);
+        Notifier<? super T> notifier = createNotifier(runtimeType, eventType, qualifiers,
+                ArcContainerImpl.unwrap(Arc.requireContainer()), injectionPoint);
+        // Release the hierarchy after the first successful notifier. If another generic runtime type needs it,
+        // keep the recreated hierarchy for subsequent types. Concurrent first notifications may recreate it.
+        if (!retainTypeHierarchy) {
+            injectionPointTypeHierarchy = null;
+        }
+        return notifier;
     }
 
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
@@ -233,7 +240,14 @@ class EventImpl<T> implements Event<T> {
 
     private Type getEventType(Class<?> runtimeType) {
         Type resolvedType = runtimeType;
+        HierarchyDiscovery injectionPointTypeHierarchy = null;
         if (Types.containsTypeVariable(resolvedType)) {
+            injectionPointTypeHierarchy = this.injectionPointTypeHierarchy;
+            if (injectionPointTypeHierarchy == null) {
+                injectionPointTypeHierarchy = new HierarchyDiscovery(eventType);
+                retainTypeHierarchy = true;
+                this.injectionPointTypeHierarchy = injectionPointTypeHierarchy;
+            }
             /*
              * If the container is unable to resolve the parameterized type of the event object, it uses the specified type to
              * infer the parameterized type of

@@ -107,7 +107,7 @@ public class HttpServerOptionsUtils {
         int sslPort = httpConfig.determineSslPort(launchMode);
         config.setPort(sslPort);
 
-        Set<HttpVersion> versions = EnumSet.of(HttpVersion.HTTP_1_1);
+        Set<HttpVersion> versions = EnumSet.of(HttpVersion.HTTP_1_0, HttpVersion.HTTP_1_1);
         if (httpConfig.http2()) {
             versions.add(HttpVersion.HTTP_2);
         }
@@ -151,7 +151,7 @@ public class HttpServerOptionsUtils {
         }
 
         HttpServerConfig config = new HttpServerConfig();
-        config.setVersions(EnumSet.of(HttpVersion.HTTP_1_1, HttpVersion.HTTP_2));
+        config.setVersions(EnumSet.of(HttpVersion.HTTP_1_0, HttpVersion.HTTP_1_1, HttpVersion.HTTP_2));
         config.setIdleTimeout(managementConfig.idleTimeout());
 
         int sslPort = managementConfig.determinePort(launchMode);
@@ -231,9 +231,9 @@ public class HttpServerOptionsUtils {
         HttpServerConfig config = new HttpServerConfig();
 
         if (httpConfig.http2()) {
-            config.setVersions(EnumSet.of(HttpVersion.HTTP_1_1, HttpVersion.HTTP_2));
+            config.setVersions(EnumSet.of(HttpVersion.HTTP_1_0, HttpVersion.HTTP_1_1, HttpVersion.HTTP_2));
         } else {
-            config.setVersions(EnumSet.of(HttpVersion.HTTP_1_1));
+            config.setVersions(EnumSet.of(HttpVersion.HTTP_1_0, HttpVersion.HTTP_1_1));
         }
 
         int port = httpConfig.determinePort(launchMode);

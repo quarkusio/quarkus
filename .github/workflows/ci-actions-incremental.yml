@@ -1026,6 +1026,14 @@ jobs:
       matrix:
         java:
           - {
+            name: "21",
+            java-version: 21,
+            java-distribution: "temurin",
+            os-name: "ubuntu-latest",
+            tag: "devtools-jdk-21",
+            runs-on: true
+          }
+          - {
             name: "25",
             java-version: 25,
             java-version-gradle: 21,

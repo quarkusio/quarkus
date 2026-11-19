@@ -389,3 +389,29 @@ Thus, in the previous example, the injected URL is `http://localhost:9001/q/mana
 ----]
 quarkus.management.test-port=0
 ----
+
+[[addresses]]
+== Referencing the management interface address
+
+When the management interface is enabled, Quarkus publishes where it can be reached as the `vertx-management`
+xref:http-reference.adoc#addresses[address]. The address contains the actual port, so it is also correct when the
+management port is random.
+
+You can inject it in your application:
+
+[source,java]
+----
+@Inject
+@Named("vertx-management")
+Address management;
+----
+
+Or reference it in the configuration of a client, such as the REST Client:
+
+[source, properties]
+----
+quarkus.rest-client.health.url=quarkus://vertx-management/q/health
+----
+
+IMPORTANT: The management root path is not added to the reference, so you must include it, such as `/q` in the previous
+example.

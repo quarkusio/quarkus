@@ -570,6 +570,98 @@ URL testUrl;
 Every Quarkus component that requires the actual http port, like REST Assured, is automatically updated with the real
 port.
 
+[[addresses]]
+=== Retrieving the server address
+
+Quarkus also publishes where the HTTP server can be reached as an `io.quarkus.runtime.Address`. An `Address` holds the
+protocol and the socket addresses the server is bound to, so it contains the real port when a random port is used.
+
+Each `Address` is published under a name:
+
+[cols="1,3"]
+|===
+|Name |Description
+
+|`vertx-http`
+|The HTTP port, and the domain socket if it is enabled.
+
+|`vertx-https`
+|The HTTPS port, if TLS is configured.
+
+|`vertx-management`
+|The xref:management-interface-reference.adoc#addresses[management interface] port, and its domain socket if it is
+enabled and the management interface does not use TLS.
+|===
+
+You can inject an `Address` with its name as a qualifier:
+
+[source,java]
+----
+import java.net.InetSocketAddress;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
+import io.quarkus.runtime.Address;
+
+@Singleton
+public class MyService  {
+    @Inject
+    @Named("vertx-http") // <1>
+    Address address;
+
+    public void connectToServer() {
+        String protocol = address.protocol(); // <2>
+        InetSocketAddress socket = address.inet().orElseThrow(); // <3>
+    }
+}
+----
+<1> The name of the `Address`.
+<2> `http`, or `https` for the `vertx-https` address.
+<3> The first TCP/IP socket address the server is bound to.
+
+The `HttpServer` API returns the same addresses with `getAddress()`, `getSecureAddress()` and `getManagementAddress()`.
+Use these methods when an address may not be available, for example `vertx-https` without TLS: they return an empty
+`Optional`, while an injected `Address` that is not available fails when it is used.
+
+NOTE: The HTTP server binds its sockets before the `StartupEvent` is fired, so the addresses can be used in a
+`StartupEvent` observer.
+
+==== Referencing an address in configuration
+
+A URL in the configuration can reference an `Address` with the `quarkus` scheme, followed by the name of the `Address`:
+
+[source,properties]
+----
+quarkus.rest-client.hello.url=quarkus://vertx-http/hello
+----
+
+The reference resolves to the protocol, host and port of the `Address`, and keeps the rest of the URL as is. For
+example, if the HTTP server listens on port `41237`, `quarkus://vertx-http/hello` resolves to
+`http://localhost:41237/hello`.
+
+Keep in mind that:
+
+* the reference must not specify a port,
+* the `quarkus.http.root-path` is not added to the path, so you must include it in the reference,
+* a server bound to all interfaces (`0.0.0.0`) resolves to `localhost`,
+* an `Address` bound only to a domain socket cannot be referenced.
+
+IMPORTANT: References are not resolved by the configuration system. They are only supported by the components that
+document it, such as the xref:rest-client.adoc#address-references[REST Client].
+
+To support references when reading a URL from the configuration, use `io.quarkus.runtime.AddressResolver`:
+
+[source,java]
+----
+URI uri = AddressResolver.resolve("quarkus://vertx-http/hello");  // <1>
+URI plain = AddressResolver.resolve("https://example.com/hello"); // <2>
+----
+<1> Resolves to the URL of the HTTP server, for example `http://localhost:41237/hello`.
+<2> A URL without the `quarkus` scheme is returned as is.
+
+`AddressResolver` looks up the `Address` as a CDI bean, so it can only resolve a reference after the HTTP server has
+bound its sockets.
+
 == CORS filter
 
 To make your Quarkus application accessible to another application running on a different domain, you need to configure cross-origin resource sharing (CORS).
@@ -802,7 +894,8 @@ public class MyListener {
 ----
 <1> An asynchronous `HttpServerStart` observer method may be declared by annotating an `HttpServerStart` parameter with `@jakarta.enterprise.event.ObservesAsync`.
 
-NOTE: It's not possible to use the `StartupEvent` for this particular use case because this CDI event is fired before the HTTP server is started.
+NOTE: The HTTP server binds its sockets before the `StartupEvent` is fired, so you can read the actual ports in a `StartupEvent` observer, for example with the xref:#addresses[server address].
+Use these events when you need to be notified when the corresponding HTTP server starts listening.
 
 [[reverse-proxy]]
 == Running behind a reverse proxy

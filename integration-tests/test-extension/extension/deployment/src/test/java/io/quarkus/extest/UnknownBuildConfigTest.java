@@ -1,8 +1,11 @@
 package io.quarkus.extest;
 
+import static java.util.stream.Collectors.toMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
@@ -32,9 +35,14 @@ public class UnknownBuildConfigTest {
                 .filter(logRecord -> logRecord.getMessage().startsWith("Unrecognized configuration property"))
                 .toList();
 
-        assertEquals(2, unrecognized.size());
-        assertEquals("quarkus.build-time.unknown.prop", unrecognized.get(0).getParameters()[0]);
-        assertEquals("UnknownBuildPropertyConfigSource", unrecognized.get(0).getParameters()[1]);
-        assertEquals("quarkus.unknown.prop", unrecognized.get(1).getParameters()[0]);
+        Map<Object, Object> unknown = unrecognized.stream()
+                .collect(toMap(logRecord -> logRecord.getParameters()[0], logRecord -> logRecord.getParameters()[1]));
+
+        // A name from an environment variable is not reported (quarkus.build.time.unknown.env)
+        assertEquals(Set.of("quarkus.build-time.unknown.prop", "quarkus.default.locale", "quarkus.unknown.prop"),
+                unknown.keySet());
+        assertEquals("UnknownBuildPropertyConfigSource", unknown.get("quarkus.build-time.unknown.prop"));
+        // A name that is only different in the punctuation from a known name is still unknown
+        assertEquals("UnknownBuildPropertyConfigSource", unknown.get("quarkus.default.locale"));
     }
 }

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -92,7 +93,8 @@ public class KubernetesCommonHelper {
     public static Map<String, Port> combinePorts(List<KubernetesPortBuildItem> ports,
             PlatformConfiguration config) {
         Map<String, Port> allPorts = new HashMap<>();
-        Map<String, Port> activePorts = new HashMap<>();
+        // sorted by name so that generated manifests are reproducible
+        Map<String, Port> activePorts = new TreeMap<>();
 
         allPorts.putAll(ports.stream()
                 .map(p -> new PortBuilder().withName(p.getName()).withContainerPort(p.getPort()).build())

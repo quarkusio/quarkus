@@ -5,6 +5,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 
 import java.sql.Date;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.TimeZone;
 
@@ -12,9 +13,14 @@ import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 
+import org.apache.http.ProtocolVersion;
+import org.apache.http.params.CoreProtocolPNames;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.config.HttpClientConfig;
+import io.restassured.config.RestAssuredConfig;
 import io.restassured.http.ContentType;
 
 @QuarkusTest
@@ -31,7 +37,7 @@ class GreetingResourceTest {
 
         // Jackson 3 serializes java.sql.Date as full date-time in UTC
         // instead of date-only toString(). See https://github.com/FasterXML/jackson-databind/issues/2405
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         String expectedSqlDate = sdf.format(sqlDate);
 
@@ -70,4 +76,16 @@ class GreetingResourceTest {
 
     }
 
+    @Test
+    void testHttp10() {
+        // Reproducer for https://github.com/quarkusio/quarkus/issues/58546
+        given(new RequestSpecBuilder()
+                .setConfig(RestAssuredConfig.config().httpClient(
+                        new HttpClientConfig().setParam(CoreProtocolPNames.PROTOCOL_VERSION,
+                                new ProtocolVersion("HTTP", 1, 0))))
+                .build())
+                .get("/greeting/config")
+                .then()
+                .statusCode(200);
+    }
 }

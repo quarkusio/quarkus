@@ -12,7 +12,9 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
+import io.quarkus.micrometer.runtime.binder.MeterCache;
 import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrapper;
 import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.quarkus.vertx.http.runtime.ExtendedQuarkusVertxHttpMetrics;
@@ -36,6 +38,10 @@ public class VertxMeterBinderAdapter extends MetricsOptions
 
     private HttpBinderConfiguration httpBinderConfiguration;
     private OpenTelemetryContextUnwrapper openTelemetryContextUnwrapper;
+
+    // Shared by all the HTTP server metrics, Vert.x creates one per HTTP server instance (i.e. per event loop)
+    private MeterCache<Timer> httpServerRequestsTimers;
+    private String httpServerRequestsTimersName;
 
     public VertxMeterBinderAdapter() {
     }
@@ -77,9 +83,20 @@ public class VertxMeterBinderAdapter extends MetricsOptions
         if (httpBinderConfiguration.isServerEnabled()) {
             log.debugf("Create HttpServerMetrics with options %s and address %s", options, localAddress);
             return new VertxHttpServerMetrics(Metrics.globalRegistry, httpBinderConfiguration, openTelemetryContextUnwrapper,
-                    options, longAdderGauges);
+                    options, longAdderGauges, httpServerRequestsTimers());
         }
         return null;
+    }
+
+    private synchronized MeterCache<Timer> httpServerRequestsTimers() {
+        // The configuration may change on a dev mode restart
+        String name = httpBinderConfiguration.getHttpServerRequestsName();
+        if (httpServerRequestsTimers == null || !name.equals(httpServerRequestsTimersName)) {
+            httpServerRequestsTimers = VertxHttpServerMetrics.requestsTimerCache(Metrics.globalRegistry,
+                    httpBinderConfiguration);
+            httpServerRequestsTimersName = name;
+        }
+        return httpServerRequestsTimers;
     }
 
     @Override

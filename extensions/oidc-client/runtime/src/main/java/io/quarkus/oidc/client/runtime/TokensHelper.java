@@ -168,10 +168,18 @@ public class TokensHelper {
     // The token request is shared by all the callers waiting for it and completes on the context of the caller which
     // subscribed to it first, so each caller is resumed on its own context, as the other one may belong to another request
     private static Uni<Tokens> emitOn(Uni<Tokens> tokenUni, Context context) {
-        if (context == null) {
+        if (context == null || !context.isEventLoopContext()) {
+            // no context to resume the caller on, or a worker or virtual thread context created by user code,
+            // whose task may be the one blocked in await() waiting for these tokens
             return tokenUni;
         }
-        return tokenUni.emitOn(command -> context.runOnContext(ignored -> command.run()));
+        return tokenUni.emitOn(command -> {
+            if (Vertx.currentContext() == context) {
+                command.run();
+            } else {
+                context.runOnContext(ignored -> command.run());
+            }
+        });
     }
 
     private Uni<Tokens> prepareUni(Uni<Tokens> tokens, TokenRequestStateHolder holder) {

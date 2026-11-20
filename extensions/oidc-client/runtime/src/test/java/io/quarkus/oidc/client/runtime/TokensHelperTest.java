@@ -34,6 +34,7 @@ import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.oidc.client.OidcClient;
@@ -43,7 +44,9 @@ import io.quarkus.oidc.client.runtime.InMemoryOidcTestClient.Expiry;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
+import io.vertx.core.ThreadingModel;
 import io.vertx.core.Vertx;
+import io.vertx.core.internal.VertxInternal;
 import io.vertx.core.json.JsonObject;
 
 class TokensHelperTest {
@@ -1203,6 +1206,44 @@ class TokensHelperTest {
             assertThat(contexts.resumedOn("acquiring")).containsSame(contexts.first);
             assertThat(contexts.resumedOn("waiting")).containsSame(contexts.second);
             assertThat(contexts.failed).hasSize(acquisitionFails ? 2 : 0);
+            assertThat(client.acquisitions.get()).isEqualTo(1);
+        }
+    }
+
+    /**
+     * A worker or virtual thread context runs one task at a time, so a caller blocked waiting for the tokens on such a
+     * context could never be resumed on it: it gets the tokens on the thread the token request completes on instead.
+     */
+    @ParameterizedTest
+    @EnumSource(value = ThreadingModel.class, names = { "WORKER", "VIRTUAL_THREAD" })
+    void testCallerBlockedOnWorkerContextGetsRefreshedTokens(ThreadingModel threadingModel) throws Exception {
+        Tokens current = tokens("current", 8, TIME_SKEW, Duration.ofSeconds(9));
+        assertThat(current.hasMinRemainingAccessTokenLifespan()).isFalse();
+
+        BlockingOidcClient client = new BlockingOidcClient(tokens("refreshed", 300));
+        TokensHelper helper = new TokensHelper();
+        helper.initTokens(new ImmediateOidcClient(current), Map.of());
+
+        try (ResumedContexts contexts = new ResumedContexts()) {
+            contexts.getTokens(contexts.first, "starting", () -> helper.getTokens(client, Map.of(), false));
+            client.awaitInFlight();
+
+            Context blockingContext = ((VertxInternal) contexts.vertx).createContext(threadingModel);
+            CountDownLatch subscribed = new CountDownLatch(1);
+            CompletableFuture<Tokens> awaited = new CompletableFuture<>();
+            blockingContext.runOnContext(ignored -> {
+                try {
+                    awaited.complete(helper.getTokens(client, Map.of(), false)
+                            .onSubscription().invoke(subscribed::countDown)
+                            .await().atMost(Duration.ofSeconds(5)));
+                } catch (Throwable t) {
+                    awaited.completeExceptionally(t);
+                }
+            });
+            assertThat(subscribed.await(10, TimeUnit.SECONDS)).as("the blocked caller should have subscribed").isTrue();
+
+            client.release.countDown();
+            assertThat(awaited.get(10, TimeUnit.SECONDS).getAccessToken()).isEqualTo("refreshed");
             assertThat(client.acquisitions.get()).isEqualTo(1);
         }
     }

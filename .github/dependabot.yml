@@ -338,3 +338,56 @@ updates:
     cooldown:
       default-days: 14
     rebase-strategy: disabled
+  - package-ecosystem: maven
+    directory: "/"
+    target-branch: "3.40"
+    schedule:
+      interval: daily
+      time: "23:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 10
+    labels:
+      - area/dependencies
+    allow:
+      # Hibernate
+      - dependency-name: org.hibernate.orm:*
+      - dependency-name: org.hibernate.reactive:*
+      - dependency-name: org.hibernate.validator:*
+      - dependency-name: org.hibernate.search:*
+    groups:
+      # Only group Hibernate ORM/Search/Reactive as Hibernate Validator is much more independent.
+      Hibernate:
+        patterns:
+          - "org.hibernate:*" # For org.hibernate:hibernate-jpamodelgen
+          - "org.hibernate.orm*"
+          - "org.hibernate.reactive*"
+          - "org.hibernate.search*"
+          - "org.hibernate.validator*"
+    ignore:
+      # Major/minor upgrades require more work and synchronization, we do them manually.
+      # Only use dependabot for micros (patch versions).
+      - dependency-name: org.hibernate.*:*
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+    rebase-strategy: disabled
+  - package-ecosystem: gradle
+    directory: "/devtools/gradle"
+    schedule:
+      interval: daily
+      time: "21:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 4
+    labels:
+      - area/dependencies
+    rebase-strategy: disabled
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: weekly
+      time: "00:30"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 10
+    labels:
+      - area/infra
+    cooldown:
+      default-days: 14
+    rebase-strategy: disabled

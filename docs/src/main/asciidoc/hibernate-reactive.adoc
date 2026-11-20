@@ -240,6 +240,9 @@ The `@Transactional` interceptor will:
 * Roll back the transaction if an exception is thrown or the `Uni` is cancelled
 * Close the session and release the database connection when the reactive chain completes
 
+Cancellation does not necessarily interrupt a database operation that is already executing.
+The transaction may have to wait for that operation to finish before it can be rolled back.
+
 [IMPORTANT]
 ====
 There are some limitations when using `@Transactional` with Hibernate Reactive, in particular not being able to use a specific `TxType`, not being able to use multiple persistence units / datasources, or non-functional `Uni.combine()`/`Uni.joining()`.

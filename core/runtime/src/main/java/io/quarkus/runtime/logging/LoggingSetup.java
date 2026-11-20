@@ -25,6 +25,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
+import java.util.regex.Pattern;
 
 import org.jboss.logmanager.ExtFormatter;
 import org.jboss.logmanager.ExtHandler;
@@ -88,6 +89,8 @@ public final class LoggingSetup {
             // discard: there is no reasonable path for error reporting
         }
     };
+
+    private static final Pattern NON_PRINTABLE_ASCII_OR_SPACE = Pattern.compile("[\\P{Print} ]");
 
     private LoggingSetup() {
     }
@@ -389,7 +392,7 @@ public final class LoggingSetup {
             final boolean includeFilters) {
         try {
             final SyslogHandler handler = new SyslogHandler(config.endpoint().getHostString(), config.endpoint().getPort());
-            handler.setAppName(config.appName().orElse(getProcessName()));
+            handler.setAppName(config.appName().orElseGet(() -> sanitizeSyslogAppName(getProcessName())));
             handler.setHostname(config.hostname().orElse(getQualifiedHostName()));
             handler.setFacility(config.facility());
             handler.setSyslogType(config.syslogType());
@@ -439,6 +442,22 @@ public final class LoggingSetup {
             errorManager.error("Failed to create syslog handler", e, ErrorManager.OPEN_FAILURE);
             return null;
         }
+    }
+
+    /**
+     * Derives a syslog app name from the process name. The process name is the full path of the
+     * command (for example {@code C:\Program Files\Microsoft\...\bin\java.exe} on Windows), which is
+     * not usable as is because the syslog app name must be printable ASCII without spaces.
+     *
+     * @param processName the process name (must not be {@code null})
+     * @return the base name of the command, with each character that is not printable ASCII replaced
+     *         by {@code -} (never {@code null}, never empty)
+     */
+    static String sanitizeSyslogAppName(final String processName) {
+        final int lastSeparator = Math.max(processName.lastIndexOf('/'), processName.lastIndexOf('\\'));
+        final String sanitized = NON_PRINTABLE_ASCII_OR_SPACE.matcher(processName.substring(lastSeparator + 1))
+                .replaceAll("-");
+        return sanitized.isEmpty() ? "-" : sanitized;
     }
 
     /**

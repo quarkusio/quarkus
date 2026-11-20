@@ -13,7 +13,9 @@ import jakarta.enterprise.inject.Default;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -108,16 +110,20 @@ public class MailerProcessor {
                 .collect(Collectors.toList());
 
         boolean hasDefaultMailer = mailerInjectionPoints.stream()
-                .anyMatch(i -> i.hasDefaultedQualifier() ||
+                .anyMatch(i -> !isNamedMailTemplate(i) && (i.hasDefaultedQualifier() ||
                 // we inject a MailTemplate and it is not named
-                        (MAIL_TEMPLATE.equals(i.getType().name()) && i.getRequiredQualifier(MAILER_NAME) == null))
+                        (MAIL_TEMPLATE.equals(i.getType().name()) && declaredMailerName(i) == null)))
                 || isTypeSafeMailTemplateFound(index.getIndex());
 
-        Set<String> namedMailers = mailerInjectionPoints.stream()
-                .map(i -> i.getRequiredQualifier(MAILER_NAME))
-                .filter(ai -> ai != null)
-                .map(ai -> ai.value().asString())
-                .collect(Collectors.toSet());
+        Set<String> namedMailers = new HashSet<>();
+        for (InjectionPointInfo injectionPoint : mailerInjectionPoints) {
+            AnnotationInstance mailerName = injectionPoint.getRequiredQualifier(MAILER_NAME);
+            if (mailerName == null) {
+                // The transformer removes @MailerName from a MailTemplate before qualifiers are recorded.
+                mailerName = declaredMailerName(injectionPoint);
+            }
+            addMailerName(namedMailers, mailerName);
+        }
 
         Set<String> mailerNames = Set.copyOf(namedMailers);
         serviceRegistrar
@@ -132,6 +138,37 @@ public class MailerProcessor {
                 .done());
 
         return new MailersBuildItem(hasDefaultMailer, namedMailers);
+    }
+
+    private static boolean isNamedMailTemplate(InjectionPointInfo injectionPoint) {
+        return declaredMailerName(injectionPoint) != null;
+    }
+
+    private static AnnotationInstance declaredMailerName(InjectionPointInfo injectionPoint) {
+        if (!MAIL_TEMPLATE.equals(injectionPoint.getType().name())) {
+            return null;
+        }
+        AnnotationTarget target = injectionPoint.getAnnotationTarget();
+        if (target == null) {
+            return null;
+        }
+        if (target.kind() == Kind.FIELD) {
+            return target.asField().annotation(MAILER_NAME);
+        }
+        if (target.kind() == Kind.METHOD_PARAMETER) {
+            return target.asMethodParameter().annotation(MAILER_NAME);
+        }
+        return null;
+    }
+
+    private static void addMailerName(Set<String> namedMailers, AnnotationInstance mailerName) {
+        if (mailerName == null) {
+            return;
+        }
+        AnnotationValue value = mailerName.value();
+        if (value != null && !value.asString().isEmpty()) {
+            namedMailers.add(value.asString());
+        }
     }
 
     private boolean isTypeSafeMailTemplateFound(IndexView index) {

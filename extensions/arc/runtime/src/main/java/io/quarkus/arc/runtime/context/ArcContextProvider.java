@@ -1,5 +1,8 @@
 package io.quarkus.arc.runtime.context;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.Map;
 
 import org.eclipse.microprofile.context.ThreadContext;
@@ -28,6 +31,32 @@ public class ArcContextProvider implements ThreadContextProvider {
 
     private static final ThreadContextSnapshot NULL_CONTEXT_SNAPSHOT = new NullContextSnapshot();
     private static final ThreadContextSnapshot CLEAR_CONTEXT_SNAPSHOT = new ClearContextSnapshot();
+    private static final MethodHandle IS_ON_DUPLICATED_CONTEXT = resolveIsOnDuplicatedContext();
+
+    private static MethodHandle resolveIsOnDuplicatedContext() {
+        try {
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            if (cl == null) {
+                cl = ArcContextProvider.class.getClassLoader();
+            }
+            Class<?> vertxContextClass = Class.forName("io.smallrye.common.vertx.VertxContext", false, cl);
+            return MethodHandles.publicLookup().findStatic(vertxContextClass, "isOnDuplicatedContext",
+                    MethodType.methodType(boolean.class));
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static boolean isOnDuplicatedContext() {
+        if (IS_ON_DUPLICATED_CONTEXT != null) {
+            try {
+                return (boolean) IS_ON_DUPLICATED_CONTEXT.invokeExact();
+            } catch (Throwable ignored) {
+                return false;
+            }
+        }
+        return false;
+    }
 
     @Override
     public ThreadContextSnapshot currentContext(Map<String, String> map) {
@@ -78,12 +107,26 @@ public class ArcContextProvider implements ThreadContextProvider {
             if (toRestore != null) {
                 // context active, store current state, start blank context anew and restore state afterwards
                 // it is not necessary to deactivate the context first - just overwrite the previous state
-                requestContext.activate();
-                return new RestoreContextController(requestContext, toRestore, true);
+                return new RestoreContextController(requestContext, toRestore, requestContext.activate());
+            } else if (isOnDuplicatedContext()) {
+                // Bug #57665: on a Vert.x duplicated context, the request context state is stored in
+                // ContextLocals and shared with worker threads dispatched on the same duplicated context.
+                // Do not activate a transient blank context when none is active, as a concurrent
+                // @ActivateRequestContext on the same duplicated context would borrow it and fail with
+                // ContextNotActiveException when this propagation bracket ends.
+                return NOOP_CONTROLLER;
             } else {
-                // context not active, activate blank one, terminate afterwards
-                requestContext.activate();
-                return requestContext::terminate;
+                // context not active on a non-duplicated context, activate blank one, terminate afterwards
+                InjectableContext.ContextState blankState = requestContext.activate();
+                return new ThreadContextController() {
+                    @Override
+                    public void endContext() throws IllegalStateException {
+                        requestContext.destroy(blankState);
+                        if (!requestContext.isActive()) {
+                            requestContext.deactivate();
+                        }
+                    }
+                };
             }
         }
     }
@@ -158,26 +201,33 @@ public class ArcContextProvider implements ThreadContextProvider {
 
         private final ManagedContext requestContext;
         private final InjectableContext.ContextState stateToRestore;
-        private final boolean destroyRequestContext;
+        private final InjectableContext.ContextState stateToDestroy;
 
         RestoreContextController(ManagedContext requestContext, ContextState stateToRestore) {
-            this(requestContext, stateToRestore, false);
+            this(requestContext, stateToRestore, null);
         }
 
         // in case of ClearContextSnapshot, we want to destroy instances of the intermediate context
-        RestoreContextController(ManagedContext requestContext, ContextState stateToRestore, boolean destroyRequestContext) {
+        RestoreContextController(ManagedContext requestContext, ContextState stateToRestore,
+                ContextState stateToDestroy) {
             this.requestContext = requestContext;
             this.stateToRestore = stateToRestore;
-            this.destroyRequestContext = destroyRequestContext;
+            this.stateToDestroy = stateToDestroy;
         }
 
         @Override
         public void endContext() throws IllegalStateException {
-            if (destroyRequestContext) {
-                requestContext.destroy();
+            if (stateToDestroy != null) {
+                // Bug #57665: destroy only the intermediate blank state created by ClearContextSnapshot
+                requestContext.destroy(stateToDestroy);
+                if (!requestContext.isActive()) {
+                    // it is not necessary to deactivate the context first - just overwrite the previous state
+                    requestContext.activate(stateToRestore.isValid() ? stateToRestore : null);
+                }
+            } else {
+                // it is not necessary to deactivate the context first - just overwrite the previous state
+                requestContext.activate(stateToRestore.isValid() ? stateToRestore : null);
             }
-            // it is not necessary to deactivate the context first - just overwrite the previous state
-            requestContext.activate(stateToRestore.isValid() ? stateToRestore : null);
         }
 
     }

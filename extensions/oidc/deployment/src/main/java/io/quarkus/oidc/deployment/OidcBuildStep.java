@@ -58,6 +58,8 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.InjectionPointsTransformer;
 import io.quarkus.arc.processor.QualifierRegistrar;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -127,6 +129,7 @@ import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
 import io.quarkus.vertx.http.deployment.PreRouterFinalizationBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorCreator;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
@@ -401,8 +404,7 @@ public class OidcBuildStep {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    public void registerTenantResolverInterceptor(Capabilities capabilities, OidcRecorder recorder,
+    public void registerTenantResolverInterceptor(Capabilities capabilities, ServiceRegistrar serviceRegistrar,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer,
@@ -421,8 +423,11 @@ public class OidcBuildStep {
                     .anyMatch(t -> isMethodWithTenantAnnButNotInjPoint(t) || t.kind() == CLASS);
             if (foundTenantResolver) {
                 // register method interceptor that will be run before security checks
+                serviceRegistrar.forService(EagerSecurityInterceptorCreator.class, TENANT_NAME.toString())
+                        .atPhase(Phase.STATIC_INIT)
+                        .onStart(ctx -> new EagerSecurityInterceptorCreator(OidcRecorder.tenantResolverInterceptorCreator()));
                 bindingProducer.produce(
-                        new EagerSecurityInterceptorBindingBuildItem(recorder.tenantResolverInterceptorCreator(), TENANT_NAME));
+                        new EagerSecurityInterceptorBindingBuildItem(TENANT_NAME));
                 systemPropertyProducer.produce(new SystemPropertyBuildItem(OidcUtils.ANNOTATION_BASED_TENANT_RESOLUTION_ENABLED,
                         Boolean.TRUE.toString()));
             }
@@ -463,8 +468,7 @@ public class OidcBuildStep {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    public void registerAuthenticationContextInterceptor(Capabilities capabilities, OidcRecorder recorder,
+    public void registerAuthenticationContextInterceptor(Capabilities capabilities, ServiceRegistrar serviceRegistrar,
             VertxHttpBuildTimeConfig httpBuildTimeConfig, CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckProducer,
             List<ClassSecurityAnnotationBuildItem> classSecurityAnnotations,
@@ -477,7 +481,10 @@ public class OidcBuildStep {
         }
         SecurityTransformer securityTransformer = SecurityTransformerBuildItem.createSecurityTransformer(
                 combinedIndexBuildItem.getIndex(), securityTransformerBuildItem);
-        bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(recorder.authenticationContextInterceptorCreator(),
+        serviceRegistrar.forService(EagerSecurityInterceptorCreator.class, AUTHENTICATION_CONTEXT_NAME.toString())
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> new EagerSecurityInterceptorCreator(OidcRecorder.authenticationContextInterceptorCreator()));
+        bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(
                 ai -> {
                     AnnotationValue maxAgeAnnotationValue = ai.value("maxAge");
                     String maxAge = maxAgeAnnotationValue == null ? "" : maxAgeAnnotationValue.asString();

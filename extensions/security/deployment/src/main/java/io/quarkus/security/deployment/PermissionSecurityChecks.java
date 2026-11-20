@@ -337,7 +337,6 @@ interface PermissionSecurityChecks {
                         // 'OR' operands
 
                         var orPredicate = new LogicalOrPermissionPredicate();
-                        predicate.and(orPredicate);
 
                         for (PermissionKey permissionKey : permissionKeys) {
                             var permission = createPermission(permissionKey, securedTarget, permissionCache);
@@ -346,6 +345,7 @@ interface PermissionSecurityChecks {
                             }
                             orPredicate.or(permission);
                         }
+                        predicate.and(orPredicate);
                     }
                 }
                 targetToPredicate.put(securedTarget, predicate);

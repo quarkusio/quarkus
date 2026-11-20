@@ -107,11 +107,11 @@ oc get is <1>
 oc get pods <2>
 oc get svc <3>
 ----
++
 <1> List the image streams created.
 <2> List the pods associated with your current OpenShift project.
 <3> List the Kubernetes services.
 
-[start=2]
 . To get the log output for your application's pod, run the following command where `__<pod_name>__` is the name of the latest pod prefixed with the name of your application:
 +
 [source,shell,subs="attributes+,+quotes"]

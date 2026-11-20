@@ -6,14 +6,12 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Provider;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.core.MediaType;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
@@ -47,10 +45,6 @@ public class ClientResource {
     RestClientWithFaultToleranceInterface restClientWithFaultToleranceInterface;
 
     @Inject
-    @ConfigProperty(name = "loopback/mp-rest/url", defaultValue = "http://localhost:8080/loopback")
-    Provider<String> loopbackEndpoint;
-
-    @Inject
     Client client;
 
     @GET
@@ -67,7 +61,7 @@ public class ClientResource {
 
     @GET
     @Path("/manual")
-    public String manual() throws Exception {
+    public String manual() {
         ProgrammaticRestInterface iface = RestClientBuilder.newBuilder()
                 .baseUri(httpServer.getLocalBaseUri())
                 .build(ProgrammaticRestInterface.class);
@@ -89,7 +83,7 @@ public class ClientResource {
     @GET
     @Path("manual/jackson")
     @Produces("application/json")
-    public TestResource.MyData getDataManual() throws Exception {
+    public TestResource.MyData getDataManual() {
         ProgrammaticRestInterface iface = RestClientBuilder.newBuilder()
                 .baseUri(httpServer.getLocalBaseUri())
                 .build(ProgrammaticRestInterface.class);
@@ -120,7 +114,7 @@ public class ClientResource {
     @GET
     @Path("/manual/complex")
     @Produces("application/json")
-    public List<ComponentType> complexManual() throws Exception {
+    public List<ComponentType> complexManual() {
         ProgrammaticRestInterface iface = RestClientBuilder.newBuilder()
                 .baseUri(httpServer.getLocalBaseUri())
                 .build(ProgrammaticRestInterface.class);
@@ -138,7 +132,7 @@ public class ClientResource {
     @GET
     @Path("/manual/headers")
     @Produces("application/json")
-    public Map<String, String> getAllHeaders(String headerValue) throws Exception {
+    public Map<String, String> getAllHeaders(String headerValue) {
         ProgrammaticRestInterface client = RestClientBuilder.newBuilder()
                 .baseUri(httpServer.getLocalBaseUri())
                 .build(ProgrammaticRestInterface.class);
@@ -169,7 +163,7 @@ public class ClientResource {
     @GET
     @Path("/jaxrs-client")
     public Greeting testJaxrsClient() throws ClassNotFoundException {
-        Greeting greeting = client.target(loopbackEndpoint.get())
+        Greeting greeting = client.target(httpServer.getLocalBaseUri() + "/loopback")
                 .request()
                 .get(Greeting.class);
         // The LoggingFilter should be programmatically registered in io.quarkus.it.rest.ClientProducer.init()

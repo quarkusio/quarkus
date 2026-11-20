@@ -28,9 +28,9 @@ public class OidcClientFilterRevokedAccessTokenDevModeTest extends AbstractRevok
     static final QuarkusDevModeTest test = createQuarkusDevModeTest(
             """
                     quarkus.rest-client-oidc-filter.refresh-on-unauthorized=true
-                    %s/mp-rest/url=http://localhost:${quarkus.http.port}
-                    %s/mp-rest/url=http://localhost:${quarkus.http.port}
-                    %s/mp-rest/url=http://localhost:${quarkus.http.port}
+                    %s/mp-rest/url=quarkus://vertx-http
+                    %s/mp-rest/url=quarkus://vertx-http
+                    %s/mp-rest/url=quarkus://vertx-http
                     """.formatted(MyClient_MultipleMethods.class.getName(), MyNamedClient_AnnotationOnMethod.class.getName(),
                     MyDefaultClient_AnnotationOnMethod.class.getName()),
             MyDefaultClient.class, MyNamedClient.class, MyNamedClientWithoutRefresh.class, MyDefaultClientWithoutRefresh.class,

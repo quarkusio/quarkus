@@ -279,7 +279,7 @@ public class RestClientBase {
     }
 
     protected void configureBaseUrl(RestClientBuilder builder) {
-        Optional<String> baseUrlOptional = oneOf(restClientConfig.uriReload(), restClientConfig.urlReload());
+        Optional<String> baseUrlOptional = oneOf(restClientConfig.uri(), restClientConfig.url());
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty()) && baseUrlOptional.isEmpty()) {
             String propertyPrefix = configKey != null ? configKey : proxyType.getName();
             throw new IllegalArgumentException(

@@ -107,7 +107,6 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         if (DefaultJarLauncher.HTTP_PRESENT) {
             args.add("-Dquarkus.http.port=" + httpPort);
             args.add("-Dquarkus.http.ssl-port=" + httpsPort);
-            args.add("-Dtest.url=" + LauncherUtil.generateTestUrl());
         }
         logFile = LauncherUtil.buildUniqueLogPath(instanceId);
         args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath());

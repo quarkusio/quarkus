@@ -35,7 +35,7 @@ public class RestClientRedirectPrometheusTest {
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .overrideConfigKey("quarkus.rest-client.redirect-client.url", "${test.url}")
+            .overrideConfigKey("quarkus.rest-client.redirect-client.url", "quarkus://vertx-http")
             .overrideConfigKey("quarkus.rest-client.redirect-client.follow-redirects", "true")
             .withApplicationRoot((jar) -> jar
                     .addClasses(Util.class, RedirectResource.class, RedirectResource.RedirectClient.class));

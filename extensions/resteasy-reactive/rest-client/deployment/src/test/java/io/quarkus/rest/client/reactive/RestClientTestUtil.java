@@ -2,7 +2,7 @@ package io.quarkus.rest.client.reactive;
 
 public final class RestClientTestUtil {
     public static String setUrlForClass(Class<?> clazz) {
-        return urlPropNameFor(clazz) + "=${test.url}\n";
+        return urlPropNameFor(clazz) + "=quarkus://vertx-http\n";
     }
 
     public static String urlPropNameFor(Class<?> clazz) {

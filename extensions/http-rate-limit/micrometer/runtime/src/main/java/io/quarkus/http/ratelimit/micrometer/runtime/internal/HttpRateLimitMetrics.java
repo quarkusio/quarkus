@@ -112,10 +112,13 @@ public class HttpRateLimitMetrics implements MeterBinder, RateLimitOutcomeListen
                     "Number of admitted requests that left less than a fifth of the burst");
             // a rule on another store holds keys in this replica only in its local fallback; no gauge for those
             if (evaluator.store() == local) {
-                Gauge.builder(KEYS, evaluator.configuration().id(), new ToDoubleFunction<>() {
+                String id = evaluator.configuration().id();
+                // a gauge holds the object it reads weakly, so that object must be the store, which lives as long as
+                // the application, and not the id, which is a string that nothing else refers to
+                Gauge.builder(KEYS, local, new ToDoubleFunction<>() {
                     @Override
-                    public double applyAsDouble(String id) {
-                        return local.trackedKeys(id);
+                    public double applyAsDouble(LocalRateLimitStore store) {
+                        return store.trackedKeys(id);
                     }
                 })
                         .description("Number of keys the rule holds in this replica's memory")

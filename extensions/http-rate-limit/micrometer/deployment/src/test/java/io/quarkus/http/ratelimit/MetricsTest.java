@@ -72,4 +72,15 @@ public class MetricsTest {
                 .hasMetricWithLabelsAndValue("http_rate_limit_keys", 1, entry("rule", "api"),
                         entry("phase", "pre-authentication"));
     }
+
+    /**
+     * Micrometer holds the object a gauge reads only weakly, and reports {@code NaN} once it has been collected.
+     */
+    @Test
+    void keysGaugeSurvivesGarbageCollection() {
+        System.gc();
+        // no key or one, whichever test ran first, but a number
+        assertScrape(http).hasMetricWithLabelsAndValueGreaterThanOrEqualTo("http_rate_limit_keys", 0.0,
+                entry("rule", "api"), entry("phase", "pre-authentication"));
+    }
 }

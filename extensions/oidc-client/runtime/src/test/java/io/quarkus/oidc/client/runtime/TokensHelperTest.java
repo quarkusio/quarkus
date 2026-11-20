@@ -1249,6 +1249,28 @@ class TokensHelperTest {
     }
 
     /**
+     * A caller is resumed straight away when the token request completes on its own context, rather than in another
+     * task on that context, while the other callers are still resumed on their own context.
+     */
+    @Test
+    void testCallerResumedStraightAwayWhenTokensAcquiredOnItsContext() throws Exception {
+        CompletableFuture<Tokens> response = new CompletableFuture<>();
+        OidcClient client = new PendingOidcClient(response);
+        TokensHelper helper = new TokensHelper();
+
+        try (ResumedContexts contexts = new ResumedContexts()) {
+            contexts.getTokens(contexts.first, "acquiring", () -> helper.getTokens(client, Map.of(), false));
+            contexts.getTokens(contexts.second, "waiting", () -> helper.getTokens(client, Map.of(), false));
+
+            contexts.complete(contexts.first, () -> response.complete(tokens("acquired", 300)));
+            contexts.awaitCompleted(2);
+            assertThat(contexts.resumedWhileCompleting).containsExactly("acquiring");
+            assertThat(contexts.resumedOn("acquiring")).containsSame(contexts.first);
+            assertThat(contexts.resumedOn("waiting")).containsSame(contexts.second);
+        }
+    }
+
+    /**
      * Tokens which are still valid but too close to expiry are not served while a refresh is in
      * flight: they could expire in transit, or while the target service handles the request. Such a
      * caller waits for the refreshed tokens instead.
@@ -1539,6 +1561,45 @@ class TokensHelperTest {
         }
     }
 
+    /** An OidcClient whose token request completes when the test completes the response, on the thread doing it. */
+    private record PendingOidcClient(CompletableFuture<Tokens> response) implements OidcClient {
+
+        @Override
+        public Uni<Tokens> getTokens() {
+            return getTokens(Map.of());
+        }
+
+        @Override
+        public Uni<Tokens> getTokens(Map<String, String> additionalGrantParameters) {
+            return Uni.createFrom().completionStage(response);
+        }
+
+        @Override
+        public Uni<Tokens> refreshTokens(String refreshToken) {
+            return getTokens(Map.of());
+        }
+
+        @Override
+        public Uni<Tokens> refreshTokens(String refreshToken, Map<String, String> additionalGrantParameters) {
+            return getTokens(additionalGrantParameters);
+        }
+
+        @Override
+        public Uni<Boolean> revokeAccessToken(String accessToken) {
+            return Uni.createFrom().item(true);
+        }
+
+        @Override
+        public Uni<Boolean> revokeAccessToken(String accessToken, Map<String, String> additionalParameters) {
+            return Uni.createFrom().item(true);
+        }
+
+        @Override
+        public void close() {
+            // no-op in the test
+        }
+    }
+
     /**
      * Two duplicated contexts standing for two requests, and the context each caller is resumed on once its tokens
      * are acquired or have failed to be.
@@ -1549,8 +1610,11 @@ class TokensHelperTest {
         final Context first = VertxContext.createNewDuplicatedContext(vertx.getOrCreateContext());
         final Context second = VertxContext.createNewDuplicatedContext(vertx.getOrCreateContext());
         final Set<String> failed = ConcurrentHashMap.newKeySet();
+        /** The callers resumed by the completion of the token request itself, before it returned. */
+        final Set<String> resumedWhileCompleting = ConcurrentHashMap.newKeySet();
         private final Map<String, Optional<Context>> resumedOn = new ConcurrentHashMap<>();
         private final Semaphore completed = new Semaphore(0);
+        private final ThreadLocal<Boolean> completing = ThreadLocal.withInitial(() -> false);
 
         /** Gets the tokens on the given context, and returns once the caller has subscribed to them. */
         void getTokens(Context context, String caller, Supplier<Uni<Tokens>> tokens) throws InterruptedException {
@@ -1565,7 +1629,25 @@ class TokensHelperTest {
             assertThat(subscribed.await(10, TimeUnit.SECONDS)).as("%s should have subscribed", caller).isTrue();
         }
 
+        /** Completes the token request on the given context, and returns once the completion has run. */
+        void complete(Context context, Runnable completion) throws InterruptedException {
+            CountDownLatch done = new CountDownLatch(1);
+            context.runOnContext(ignored -> {
+                completing.set(true);
+                try {
+                    completion.run();
+                } finally {
+                    completing.set(false);
+                    done.countDown();
+                }
+            });
+            assertThat(done.await(10, TimeUnit.SECONDS)).as("the token request should have completed").isTrue();
+        }
+
         private void resumed(String caller) {
+            if (completing.get()) {
+                resumedWhileCompleting.add(caller);
+            }
             resumedOn.put(caller, Optional.ofNullable(Vertx.currentContext()));
             completed.release();
         }

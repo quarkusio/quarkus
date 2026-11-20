@@ -172,7 +172,14 @@ The following attributes are added by default to resources.
 
 |service.name
 |"opentelemetry-quickstart"
-|Value comes from the artifactId, from the `quarkus.application.name` property or from `quarkus.otel.resource.attributes=service.name=cart` property.
+|Value comes from the following configurations, the first one to be set wins:
+
+The `quarkus.otel.service.name` property, then from `quarkus.otel.resource.attributes=service.name=cart` property, from the `OTEL_SERVICE_NAME` environment variable or the `otel.service.name` system property and finally, the `quarkus.application.name` property is used with the default being the name of the project.
+
+|service.instance.id
+|"8a3c60f7-9b2e-4c1d-..."
+|A random identifier the OpenTelemetry SDK generates at startup. It is regenerated on every start, so it identifies a run of the application rather than a deployment of it.
+Set `quarkus.otel.resource.attributes=service.instance.id=...` to supply your own.
 
 |host.name
 |"myHost"
@@ -215,6 +222,12 @@ quarkus.otel.resource.attributes=deployment.environment=dev,service.name=cart,se
 
 This will add the attributes for `deployment.environment`, `service.name` and `service.namespace` to the resource and be included in traces and metrics.
 
+[NOTE]
+====
+Setting `service.instance.id` through `quarkus.otel.resource.attributes` keeps the attribute value, but the resource then carries no `service.instance` resource entity.
+The OpenTelemetry SDK builds that entity from an identifier it generates itself, and a value you supply would conflict with it, so Quarkus switches the SDK provider off instead.
+====
+
 ==== Using CDI beans
 If by any means you need to use a custom resource or one that is provided by one of the https://github.com/open-telemetry/opentelemetry-java/tree/main/sdk-extensions[OpenTelemetry SDK Extensions]
 you can create multiple resource producers. The OpenTelemetry extension will detect the `Resource` CDI beans and will merge them when configuring the OTel SDK.
@@ -237,6 +250,38 @@ public class CustomConfiguration {
     }
 }
 ----
+
+Resources coming from the SDK extensions may carry *resource entities* of their own, which Quarkus does not manage.
+These are the OpenTelemetry kind of entity, described in the https://opentelemetry.io/docs/specs/otel/entities/data-model/[entities data model] — they have nothing to do with JPA entities.
+If one of your producers writes an attribute that identifies such a resource entity, the entity association is dropped and the OpenTelemetry SDK logs a warning.
+
+For example, the SDK builds a `service` resource entity that is identified by `service.name`.
+A producer writing that same attribute as an ordinary attribute changes a value the entity owns:
+
+[source,java]
+----
+@Produces
+@ApplicationScoped
+public Resource serviceNameResource() {
+    return Resource.create(Attributes.of(ServiceAttributes.SERVICE_NAME, "cart"));
+}
+----
+
+The exported resource still carries `service.name=cart`, but it no longer carries the `service` resource entity, and the SDK logs:
+
+----
+WARNING [io.opentelemetry.sdk.resources.ResourceBuilder] Removing entity association [service] because resource
+attributes change the value or type of its attributes. Other attributes are retained as unassociated.
+----
+
+Use `quarkus.otel.service.name` or `quarkus.otel.resource.attributes` to set the service name instead.
+Quarkus resolves those before the SDK builds the resource, so the entity is built with the value you asked for and nothing overwrites it afterwards.
+
+[WARNING]
+====
+Quarkus does not support OpenTelemetry resource entities yet.
+There is no Quarkus configuration or API to declare, rename or extend one: the only resource entities you get are the ones the SDK itself builds, and Quarkus limits itself to not breaking them.
+====
 
 ==== Kubernetes
 When running the application in Kubernetes, the https://opentelemetry.io/docs/specs/semconv/resource/k8s/[OpenTelemetry Kubernetes resource attributes] can be populated in a couple of ways.

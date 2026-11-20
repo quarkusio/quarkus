@@ -61,8 +61,15 @@ public class JsonbMessageBodyReader extends AbstractJsonMessageBodyReader implem
             if (isEmptyInputException(e)) {
                 return null;
             }
-            if (isMalformedInputException(e) || isInputTooDeeplyNestedException(e)) {
-                // un-parsable or excessively nested JSON is a client error, other JsonbExceptions
+            JsonParsingException parsingException = extractJsonParsingException(e);
+            if (parsingException != null) {
+                // un-parsable JSON is a client error, other JsonbExceptions (e.g. type definition problems) are not.
+                // The JsonParsingException is rethrown rather than wrapped in a WebApplicationException so that
+                // the built-in JsonParsingException mapper can report the failure details
+                throw parsingException;
+            }
+            if (isInputTooDeeplyNestedException(e)) {
+                // excessively nested JSON is a client error, other JsonbExceptions
                 // (e.g. type definition problems) are not
                 throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
             }
@@ -76,13 +83,13 @@ public class JsonbMessageBodyReader extends AbstractJsonMessageBodyReader implem
         }
     }
 
-    private boolean isMalformedInputException(Exception e) {
+    private JsonParsingException extractJsonParsingException(Exception e) {
         for (Throwable t = e; t != null; t = t.getCause()) {
-            if (t instanceof JsonParsingException) {
-                return true;
+            if (t instanceof JsonParsingException jsonParsingException) {
+                return jsonParsingException;
             }
         }
-        return false;
+        return null;
     }
 
     private boolean isInputTooDeeplyNestedException(Exception e) {

@@ -1,6 +1,7 @@
 package io.quarkus.spiffe.client.runtime.internal;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 
@@ -41,4 +42,10 @@ public interface SpiffeClientConfig {
      * {@link SpiffeClient} methods for retrieving workload tokens.
      */
     Optional<Set<@WithConverter(TrimmedStringConverter.class) String>> audiences();
+
+    /**
+     * The duration after which a request to the SPIFFE Workload API times out.
+     */
+    @WithDefault("10s")
+    Duration requestTimeout();
 }

@@ -70,11 +70,9 @@
         <plexus-interpolation.version>1.26</plexus-interpolation.version>
         <plexus-sec-dispatcher.version>2.0</plexus-sec-dispatcher.version>
         <plexus-utils.version>3.6.1</plexus-utils.version>
-        <!-- Dragged in by plexus-xml -> maven-xml. Pinned so it converges with the Woodstox that
-             jackson-dataformat-xml brings to downstream modules. Do not exclude it instead: from
-             maven-xml 4.0.0-rc-5 on, DefaultXmlService (the ServiceLoader-registered XmlService
-             impl) references com.ctc.wstx classes directly. -->
-        <woodstox-core.version>7.1.1</woodstox-core.version>
+        <!-- Dragged in by plexus-xml -> maven-xml, used also by jackson-dataformat-xml and CXF. Keep at the lastest version as long as it works for all consumers -->
+        <woodstox-core.version>7.3.0</woodstox-core.version>
+        <stax2.version>4.3.2</stax2.version><!-- Dependency of woodstox-core, keep compatible -->
         <smallrye-common.version>2.19.0</smallrye-common.version>
         <smallrye-classfile.version>26</smallrye-classfile.version>
         <smallrye-beanbag.version>1.7.0</smallrye-beanbag.version>

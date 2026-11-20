@@ -129,4 +129,57 @@ class VertxRedisClientFactoryTest {
         Assertions.assertThat(options.getEndpoints().get(1)).contains("6380");
     }
 
+    @Test
+    void shouldApplyMaxMultiLengthWithDefaultValue() {
+        RedisOptions options = new RedisOptions();
+        Assertions.assertThat(options.getMaxMultiLength()).isEqualTo(65535);
+    }
+
+    @Test
+    void shouldApplyMaxMultiLengthWithUserDefinedValue() {
+        SmallRyeConfig config = new SmallRyeConfigBuilder()
+                .withConverter(Duration.class, 100, new DurationConverter())
+                .withMapping(RedisConfig.class)
+                .withDefaultValues(Map.of(
+                        "quarkus.redis.max-multi-length", "10000000"))
+                .build();
+        Map<String, RedisClientConfig> clients = config.getConfigMapping(RedisConfig.class).clients();
+        Assertions.assertThat(clients.get(RedisConfig.DEFAULT_CLIENT_NAME).maxMultiLength()).contains(10_000_000);
+    }
+
+    @Test
+    void shouldApplyMaxLineLengthWithDefaultValue() {
+        RedisOptions options = new RedisOptions();
+        Assertions.assertThat(options.getMaxLineLength()).isEqualTo(128 * 1024);
+    }
+
+    @Test
+    void shouldApplyMaxLineLengthWithUserDefinedValue() {
+        SmallRyeConfig config = new SmallRyeConfigBuilder()
+                .withConverter(Duration.class, 100, new DurationConverter())
+                .withMapping(RedisConfig.class)
+                .withDefaultValues(Map.of(
+                        "quarkus.redis.max-line-length", "10000000"))
+                .build();
+        Map<String, RedisClientConfig> clients = config.getConfigMapping(RedisConfig.class).clients();
+        Assertions.assertThat(clients.get(RedisConfig.DEFAULT_CLIENT_NAME).maxLineLength()).contains(10_000_000);
+    }
+
+    @Test
+    void shouldApplyMaxStringLengthWithDefaultValue() {
+        RedisOptions options = new RedisOptions();
+        Assertions.assertThat(options.getMaxStringLength()).isEqualTo(512 * 1024 * 1024);
+    }
+
+    @Test
+    void shouldApplyMaxStringLengthWithUserDefinedValue() {
+        SmallRyeConfig config = new SmallRyeConfigBuilder()
+                .withConverter(Duration.class, 100, new DurationConverter())
+                .withMapping(RedisConfig.class)
+                .withDefaultValues(Map.of(
+                        "quarkus.redis.max-string-length", "10000000"))
+                .build();
+        Map<String, RedisClientConfig> clients = config.getConfigMapping(RedisConfig.class).clients();
+        Assertions.assertThat(clients.get(RedisConfig.DEFAULT_CLIENT_NAME).maxStringLength()).contains(10_000_000);
+    }
 }

@@ -146,6 +146,27 @@ public interface RedisClientConfig {
     int maxNestedArrays();
 
     /**
+     * Sets the maximum number of elements allowed in any single RESP multi-bulk response
+     * (array, map, set, push, attribute).
+     */
+    @ConfigDocDefault("65535")
+    Optional<Integer> maxMultiLength();
+
+    /**
+     * Sets the maximum length (in bytes) of a single RESP line (a simple string, an error,
+     * or a type header) that may be buffered before its {@code \r\n} terminator is found.
+     */
+    @ConfigDocDefault("128 KB")
+    Optional<Integer> maxLineLength();
+
+    /**
+     * Sets the maximum length (in bytes) of a single RESP bulk (bulk string or verbatim string)
+     * payload.
+     */
+    @ConfigDocDefault("512 MB")
+    Optional<Integer> maxStringLength();
+
+    /**
      * The number of reconnection attempts when a pooled connection cannot be established on first try.
      */
     @WithDefault("0")

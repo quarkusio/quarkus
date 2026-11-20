@@ -22,6 +22,7 @@ import io.grpc.Status;
 import io.grpc.StatusException;
 import io.quarkus.grpc.ExceptionHandlerProvider;
 import io.quarkus.grpc.GlobalInterceptor;
+import io.quarkus.grpc.runtime.GrpcContextLocalsProvider;
 import io.quarkus.grpc.runtime.Interceptors;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
@@ -49,7 +50,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
             setContextSafe(local, true);
 
             // Must be sure to call next.startCall on the right context
-            return new ListenedOnDuplicatedContext<>(ehp, call, nextCall(call, headers, next), local);
+            return new ListenedOnDuplicatedContext<>(ehp, call, nextCall(call, headers, next, local), local);
         } else {
             log.warn("Unable to run on a duplicated context - interceptor not called on the Vert.x event loop");
             return next.startCall(call, headers);
@@ -58,34 +59,52 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
 
     private <ReqT, RespT> Function<Runnable, ServerCall.Listener<ReqT>> nextCall(ServerCall<ReqT, RespT> call,
             Metadata headers,
-            ServerCallHandler<ReqT, RespT> next) {
+            ServerCallHandler<ReqT, RespT> next,
+            Context dc) {
         // Must be sure to call next.startCall on the right context
         io.grpc.Context current = io.grpc.Context.current();
         return onClose -> {
             io.grpc.Context previous = current.attach();
-            try {
-                var forwardingCall = new ForwardingServerCall<ReqT, RespT>() {
-                    @Override
-                    protected ServerCall<ReqT, RespT> delegate() {
-                        return call;
-                    }
+            GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.put(dc, () -> current.detach(previous));
+            var forwardingCall = new ForwardingServerCall<ReqT, RespT>() {
+                @Override
+                protected ServerCall<ReqT, RespT> delegate() {
+                    return call;
+                }
 
-                    @Override
-                    public void close(Status status, Metadata trailers) {
-                        onClose.run();
+                @Override
+                public void close(Status status, Metadata trailers) {
+                    onClose.run();
+                    try {
                         super.close(status, trailers);
+                    } finally {
+                        runCleanup(dc);
                     }
-                };
-                return next.startCall(forwardingCall, headers);
-            } finally {
-                current.detach(previous);
-            }
+                }
+            };
+            return next.startCall(forwardingCall, headers);
         };
     }
 
     @Override
     public int getPriority() {
         return Interceptors.DUPLICATE_CONTEXT;
+    }
+
+    static void runCleanup(Context dc) {
+        Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(dc);
+        if (cleanup != null) {
+            GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(dc);
+        }
+        if (GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.get(dc) != null) {
+            // This is a blocking/virtual call: the worker removes GRPC_CONTEXT_LOCAL
+            // in its finally block after each event. Skip removal here to avoid racing.
+            return;
+        }
+        if (cleanup != null) {
+            cleanup.run();
+        }
+        GrpcContextLocalsProvider.GRPC_CONTEXT_LOCAL.remove(dc);
     }
 
     static class ListenedOnDuplicatedContext<ReqT, RespT> extends ServerCall.Listener<ReqT> {
@@ -181,12 +200,24 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
 
         @Override
         public void onCancel() {
-            invoke(ServerCall.Listener::onCancel);
+            invoke(listener -> {
+                try {
+                    listener.onCancel();
+                } finally {
+                    runCleanup(context);
+                }
+            });
         }
 
         @Override
         public void onComplete() {
-            invoke(ServerCall.Listener::onComplete);
+            invoke(listener -> {
+                try {
+                    listener.onComplete();
+                } finally {
+                    runCleanup(context);
+                }
+            });
         }
     }
 }

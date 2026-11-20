@@ -168,6 +168,11 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             // that should always be called before this interceptor
             ContextState state = requestContext.getState();
             boolean deferHalfCloseUntilMessage = deferHalfCloseUntilMessage(call.getMethodDescriptor().getType());
+            io.vertx.core.Context dc = Vertx.currentContext();
+            if (dc != null) {
+                io.quarkus.grpc.runtime.GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.put(dc,
+                        new java.util.concurrent.atomic.AtomicBoolean(false));
+            }
             VirtualReplayListener<ReqT> replay = new VirtualReplayListener<>(state, deferHalfCloseUntilMessage);
             virtualThreadExecutor.execute(() -> {
                 ServerCall.Listener<ReqT> listener;
@@ -187,6 +192,11 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             // that should always be called before this interceptor
             ContextState state = requestContext.getState();
             boolean deferHalfCloseUntilMessage = deferHalfCloseUntilMessage(call.getMethodDescriptor().getType());
+            io.vertx.core.Context dc = Vertx.currentContext();
+            if (dc != null) {
+                io.quarkus.grpc.runtime.GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.put(dc,
+                        new java.util.concurrent.atomic.AtomicBoolean(false));
+            }
             ReplayListener<ReqT> replay = new ReplayListener<>(state, deferHalfCloseUntilMessage);
             vertx.executeBlocking(() -> {
                 ServerCall.Listener<ReqT> listener;
@@ -304,7 +314,6 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
          * @param consumer the original
          */
         private void executeBlockingWithRequestContext(Consumer<ServerCall.Listener<ReqT>> consumer) {
-            final Context grpcContext = Context.current();
             Callable<Void> blockingHandler = new BlockingExecutionHandler<>(consumer, grpcContext, delegate,
                     requestContextState, getRequestContext(), this);
 
@@ -376,6 +385,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
      */
     private class VirtualReplayListener<ReqT> extends ServerCall.Listener<ReqT> {
         private final InjectableContext.ContextState requestContextState;
+        private final Context grpcContext;
         private final boolean deferHalfCloseUntilMessage;
 
         // exclusive to event loop context
@@ -389,6 +399,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         private VirtualReplayListener(InjectableContext.ContextState requestContextState,
                 boolean deferHalfCloseUntilMessage) {
             this.requestContextState = requestContextState;
+            this.grpcContext = Context.current();
             this.deferHalfCloseUntilMessage = deferHalfCloseUntilMessage;
         }
 
@@ -449,7 +460,6 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         }
 
         private void executeVirtualWithRequestContext(Consumer<ServerCall.Listener<ReqT>> consumer) {
-            final Context grpcContext = Context.current();
             Callable<Void> blockingHandler = new BlockingExecutionHandler<>(consumer, grpcContext, delegate,
                     requestContextState, getRequestContext(), this);
             if (devMode) {

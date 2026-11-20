@@ -3,9 +3,7 @@ package io.quarkus.kafka.client.deployment;
 import static io.quarkus.devservices.common.ConfigureUtil.configureSharedServiceLabel;
 import static io.quarkus.kafka.client.deployment.DevServicesKafkaProcessor.DEV_SERVICE_LABEL;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.testcontainers.containers.GenericContainer;
@@ -29,6 +27,8 @@ public class KafkaContainer extends GenericContainer<KafkaContainer> implements 
 
     static final int KAFKA_PORT = 9092;
 
+    private static final int BROKER_PORT = 9093;
+
     static final String STARTER_SCRIPT = "/tmp/testcontainers_start.sh";
 
     static final String[] COMMAND = {
@@ -47,7 +47,7 @@ public class KafkaContainer extends GenericContainer<KafkaContainer> implements 
         envVars.put("CLUSTER_ID", DEFAULT_CLUSTER_ID);
 
         envVars.put("KAFKA_LISTENERS",
-                "PLAINTEXT://0.0.0.0:" + KAFKA_PORT + ",BROKER://0.0.0.0:9093,CONTROLLER://0.0.0.0:9094");
+                "PLAINTEXT://0.0.0.0:" + KAFKA_PORT + ",BROKER://0.0.0.0:" + BROKER_PORT + ",CONTROLLER://0.0.0.0:9094");
         envVars.put(
                 "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",
                 "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT");
@@ -94,14 +94,10 @@ public class KafkaContainer extends GenericContainer<KafkaContainer> implements 
 
     @Override
     protected void containerIsStarting(InspectContainerResponse containerInfo) {
-        String brokerAdvertisedListener = String.format(
-                "BROKER://%s:%s", containerInfo.getConfig().getHostName(),
-                "9093");
-        List<String> advertisedListeners = new ArrayList<>();
-        advertisedListeners.add("PLAINTEXT://" + getBootstrapServers());
-        advertisedListeners.add(brokerAdvertisedListener);
-
-        String kafkaAdvertisedListeners = String.join(",", advertisedListeners);
+        // On the shared network, other containers reach the broker through its network alias
+        String brokerHost = useSharedNetwork ? hostName : containerInfo.getConfig().getHostName();
+        String kafkaAdvertisedListeners = String.join(",", getHostListener(),
+                DevServicesHostUtil.formatPrefixedAuthority("BROKER", brokerHost, BROKER_PORT));
 
         String command = "#!/bin/bash\n";
         command += String.format("export KAFKA_ADVERTISED_LISTENERS=%s\n", kafkaAdvertisedListeners);
@@ -167,16 +163,20 @@ public class KafkaContainer extends GenericContainer<KafkaContainer> implements 
         return this;
     }
 
-    public String getEffectiveHostName() {
-        return DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, getHost());
-    }
-
-    public int getEffectivePort() {
-        return useSharedNetwork ? 9092 : getMappedPort(KAFKA_PORT);
+    private String getHostListener() {
+        // See https://github.com/quarkusio/quarkus/issues/21819
+        // Kafka is always exposed to the Docker host network
+        return DevServicesHostUtil.formatPrefixedAuthority("PLAINTEXT",
+                DevServicesHostUtil.publishedPortHost(getContainerId(), getHost()), getMappedPort(KAFKA_PORT));
     }
 
     public String getBootstrapServers() {
-        return DevServicesHostUtil.formatHostAndPort(getEffectiveHostName(), getEffectivePort());
+        if (useSharedNetwork) {
+            // Containers on the shared network resolve only the alias, the Docker host only the published port
+            return String.join(",", DevServicesHostUtil.formatPrefixedAuthority("BROKER", hostName, BROKER_PORT),
+                    getHostListener());
+        }
+        return DevServicesHostUtil.formatResolvedHostAndPort(getContainerId(), getHost(), getMappedPort(KAFKA_PORT));
     }
 
     @Override

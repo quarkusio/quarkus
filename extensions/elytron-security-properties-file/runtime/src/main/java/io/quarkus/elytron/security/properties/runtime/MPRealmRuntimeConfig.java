@@ -44,14 +44,14 @@ public interface MPRealmRuntimeConfig {
 
     /**
      * The realm users user1=password\nuser2=password2... mapping.
-     * See <a href="#embedded-users">Embedded Users</a>.
+     * See <a href="https://quarkus.io/guides/security-properties#embedded-users">Embedded Users</a>.
      */
     @ConfigDocDefault("none")
     Map<@WithConverter(TrimmedStringConverter.class) String, @WithConverter(TrimmedStringConverter.class) String> users();
 
     /**
      * The realm roles user1=role1,role2,...\nuser2=role1,role2,... mapping
-     * See <a href="#embedded-roles">Embedded Roles</a>.
+     * See <a href="https://quarkus.io/guides/security-properties#embedded-roles">Embedded Roles</a>.
      */
     @ConfigDocDefault("none")
     Map<@WithConverter(TrimmedStringConverter.class) String, @WithConverter(TrimmedStringConverter.class) String> roles();

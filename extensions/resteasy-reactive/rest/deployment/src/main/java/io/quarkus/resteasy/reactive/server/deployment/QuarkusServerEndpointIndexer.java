@@ -102,10 +102,10 @@ public class QuarkusServerEndpointIndexer
 
     @Override
     protected boolean handleCustomParameter(Map<DotName, AnnotationInstance> anns, ServerIndexedParameter builder,
-            Type paramType, boolean field, Map<String, Object> methodContext) {
+            Type paramType, boolean field, String sourceName, Map<String, Object> methodContext) {
         methodContext.put(GeneratedClassBuildItem.class.getName(), generatedClassBuildItemBuildProducer);
         methodContext.put(EndpointInvokerFactory.class.getName(), resteasyReactiveRecorder);
-        return super.handleCustomParameter(anns, builder, paramType, field, methodContext);
+        return super.handleCustomParameter(anns, builder, paramType, field, sourceName, methodContext);
     }
 
     public static final class Builder extends AbstractBuilder<Builder> {

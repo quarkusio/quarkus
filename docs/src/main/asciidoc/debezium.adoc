@@ -1,0 +1,17 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Debezium on Quarkus
+include::_attributes.adoc[]
+:summary: This guide covers Change Data Capture with Debezium
+:topics: debezium,cdc,outbox-pattern
+
+https://debezium.io[Debezium] is an open-source distributed platform for Change Data Capture (CDC).
+It streams real-time changes from databases into event-driven systems by capturing changes from database transaction logs (such as inserts, updates, and deletes) and publishing them to the target systems.
+This enables applications to react to data changes as they happen, without polling the database.
+
+The support for Debezium on top of Quarkus is provided by the
+https://github.com/debezium/debezium-quarkus[Debezium Quarkus project]. Please refer to
+https://debezium.io/documentation/reference/quarkus[their documentation] for more information.

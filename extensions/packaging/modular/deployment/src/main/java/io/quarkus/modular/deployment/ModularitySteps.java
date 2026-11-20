@@ -48,6 +48,8 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.modular.spi.items.AddDependencyBuildItem;
 import io.quarkus.modular.spi.items.ApplicationModuleInfoBuildItem;
 import io.quarkus.modular.spi.items.BootModulePathBuildItem;
+import io.quarkus.modular.spi.items.ClassAccessBuildItem;
+import io.quarkus.modular.spi.items.GeneratedClassPlacementBuildItem;
 import io.quarkus.modular.spi.model.AppModuleModel;
 import io.quarkus.modular.spi.model.AutoDependencyGroup;
 import io.quarkus.modular.spi.model.DependencyInfo;
@@ -110,6 +112,8 @@ public final class ModularitySteps {
             CurateOutcomeBuildItem curateOutcome,
             MainClassBuildItem mainClassBuildItem,
             List<GeneratedClassBuildItem> generatedClasses,
+            List<GeneratedClassPlacementBuildItem> classPlacements,
+            List<ClassAccessBuildItem> classAccesses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<GeneratedServiceProviderBuildItem> generatedServices,
             TransformedClassesBuildItem transformedClasses,
@@ -166,6 +170,23 @@ public final class ModularitySteps {
                 .filter(d -> !d.isFlagSet(DependencyFlags.MISSING_FROM_APPLICATION))
                 .map(d -> Map.entry(d.getModuleName(), d))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        // map of all `module-info.class` models
+        Map<ResolvedDependency, ClassModel> moduleInfoClassModels = knownNamedModules.values().stream()
+                .map(d -> {
+                    PathTree contentTree = d.getContentTree();
+                    ClassModel cm = findModuleInfoClass(d, contentTree, "module-info.class");
+                    if (cm == null) {
+                        // slf4j...
+                        cm = findModuleInfoClass(d, contentTree, "META-INF/versions/9/module-info.class");
+                    }
+                    return cm == null ? null : Map.entry(d, cm);
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        ModuleContentIndex contentIndex = new ModuleContentIndex(moduleInfoClassModels);
+        ClassModuleResolver classModules = new ClassModuleResolver(appArtifact, knownNamedModules.values(), contentIndex,
+                generatedClasses, classPlacements, classAccesses);
 
         // Collect all added dependencies and merge them into a flat map.
         // In particular, we collapse duplicates by combining modifier sets union-wise.
@@ -313,6 +334,8 @@ public final class ModularitySteps {
             }
         }
 
+        classModules.claimResources(generatedByPackageAndPath);
+
         // now start creating the module set
 
         Set<String> usedJdkModuleNames = new HashSet<>();
@@ -323,20 +346,6 @@ public final class ModularitySteps {
 
         // This will be our collection of all modules in the application.
         Map<String, ModuleInfo> modulesByName = new HashMap<>();
-
-        // map of all `module-info.class` models
-        Map<ResolvedDependency, ClassModel> moduleInfoClassModels = knownNamedModules.values().stream()
-                .map(d -> {
-                    PathTree contentTree = d.getContentTree();
-                    ClassModel cm = findModuleInfoClass(contentTree, "module-info.class");
-                    if (cm == null) {
-                        // slf4j...
-                        cm = findModuleInfoClass(contentTree, "META-INF/versions/9/module-info.class");
-                    }
-                    return cm == null ? null : Map.entry(d, cm);
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         // The application's module name
         final String appModuleName = appArtifact.getModuleName();
@@ -375,7 +384,8 @@ public final class ModularitySteps {
                 if (mn.equals(appModuleName)) {
                     continue;
                 }
-                if (!ModuleTreeShaker.isModuleAlive(dep.getContentTree(), mn, reachableClassNames)) {
+                if (!ModuleTreeShaker.isModuleAlive(dep.getContentTree(), mn, reachableClassNames)
+                        && !classModules.hasReachableGeneratedClass(mn, reachableClassNames)) {
                     deadModules.add(mn);
                 }
             }
@@ -401,7 +411,9 @@ public final class ModularitySteps {
             // Get the module info.
             // todo: we're doing a lot of extra transformations here that will eventually move out.
             final ModuleInfo depModule = getModuleInfo(dependency, generatedByPackageAndPath, moduleInfoClassModels,
-                    allDependenciesByKey, Map.of(), knownNamedModules, mi -> {
+                    contentIndex,
+                    allDependenciesByKey, classModules.packages(moduleName), knownNamedModules, mi -> {
+                        mi = classModules.contribute(mi);
                         // Transformations for a given module.
                         // These flags ensure we don't add dependencies twice (see #52933).
                         boolean arcAdded = false;
@@ -558,15 +570,17 @@ public final class ModularitySteps {
                 "io.quarkus.arc.generator", PackageInfo.EXPORTED,
                 "io.quarkus.runner.recorded", PackageInfo.EXPORTED));
 
+        classModules.packages(appModuleName).forEach((name, info) -> initialPackages.merge(name, info, PackageInfo::merge));
+
         // claim all unclaimed generated classes and resources (#44657)
         generatedByPackageAndPath.keySet().forEach(pn -> initialPackages.putIfAbsent(pn, PackageInfo.PRIVATE));
 
         // Get the descriptor information for the application module.
         // todo: we do a few extra transformations for ArC due to #52933.
-        final ModuleInfo appModule = getModuleInfo(appArtifact, generatedByPackageAndPath, moduleInfoClassModels,
+        final ModuleInfo appModule = getModuleInfo(appArtifact, generatedByPackageAndPath, moduleInfoClassModels, contentIndex,
                 allDependenciesByKey, initialPackages,
                 knownNamedModules, mi -> {
-                    mi = mi.withMainClass(mainClassBuildItem.getClassName());
+                    mi = classModules.contribute(mi).withMainClass(mainClassBuildItem.getClassName());
                     // add services and dependencies to app module
                     boolean arcAdded = false;
                     boolean arcRuntimeAdded = false;
@@ -595,6 +609,16 @@ public final class ModularitySteps {
                             .stream()
                             .map((e) -> new DependencyInfo(e.getKey(), e.getValue(), Map.of()))
                             .toList());
+                    // Add extra opens from build items, just as for dependency modules.
+                    Map<String, Set<String>> obi = addOpensByModule.getOrDefault(appModuleName, Map.of());
+                    if (!obi.isEmpty()) {
+                        mi = mi.withMoreDependencies(obi.entrySet().stream()
+                                .map(e -> new DependencyInfo(e.getKey(),
+                                        Modifier.Set.of(Modifier.READ, Modifier.OPTIONAL),
+                                        e.getValue().stream().collect(
+                                                Collectors.toMap(Function.identity(), ignored -> PackageAccess.OPEN))))
+                                .toList());
+                    }
                     // Add extra exports from build items.
                     Map<String, Set<String>> ebi = addExportsByModule.getOrDefault(appModuleName, Map.of());
                     if (!ebi.isEmpty()) {
@@ -836,17 +860,24 @@ public final class ModularitySteps {
     /***
      * Try to locate a {@code module-info} model in a content tree by path.
      *
+     * @param dependency the artifact containing the descriptor (must not be {@code null})
      * @param contentTree the content tree (must not be {@code null})
      * @param pathName the path name (must not be {@code null})
      * @return the parsed {@code module-info} model.
      */
-    private static ClassModel findModuleInfoClass(final PathTree contentTree, final String pathName) {
+    private static ClassModel findModuleInfoClass(final ResolvedDependency dependency, final PathTree contentTree,
+            final String pathName) {
         return contentTree.apply(pathName, v -> {
             if (v == null) {
                 return null;
             }
             try (InputStream is = v.getUrl().openStream()) {
-                return ClassFile.of().parse(is.readAllBytes());
+                ClassModel model = ClassFile.of().parse(is.readAllBytes());
+                if (model.findAttribute(Attributes.module()).isEmpty()) {
+                    throw new IllegalArgumentException("Invalid module descriptor " + pathName + " in " + dependency
+                            + ": missing Module attribute");
+                }
+                return model;
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -863,6 +894,7 @@ public final class ModularitySteps {
      * @param generatedByPackageAndPath the (temporary) index of generated classes and resource by package and path name
      * @param moduleInfoClassModels the (read-only) cache of loaded {@code module-info} models by dependency (must not be
      *        {@code null})
+     * @param contentIndex the package inventory shared with class ownership resolution (must not be {@code null})
      * @param allDeps the (read-only) index of all known dependencies by group and artifact ID (must not be {@code null})
      * @param initialPackages the (read-only) map of initial packages to add to this module (must not be {@code null})
      * @param knownNamedModules the (read-only) map of artifacts by module name (must not be {@code null})
@@ -873,6 +905,7 @@ public final class ModularitySteps {
             ResolvedDependency dependency,
             Map<String, Map<String, Resource>> generatedByPackageAndPath,
             Map<ResolvedDependency, ClassModel> moduleInfoClassModels,
+            ModuleContentIndex contentIndex,
             Map<ArtifactKey, ResolvedDependency> allDeps,
             Map<String, PackageInfo> initialPackages,
             Map<String, ResolvedDependency> knownNamedModules,
@@ -998,42 +1031,46 @@ public final class ModularitySteps {
                     .map(Utf8Entry::stringValue)
                     .map(n -> n.replace('/', '.'))
                     .orElse(null);
-            // figure out which packages we open to everyone
-            Set<String> openedPackages = cm.findAttribute(Attributes.module()).map(ModuleAttribute::opens)
-                    .map(l -> l.stream()
-                            .filter(ei -> ei.opensTo().isEmpty())
-                            .map(ei -> ei.openedPackage().name().stringValue().replace('/', '.'))
-                            .collect(Collectors.toSet()))
-                    .orElse(Set.of());
-            // figure out which packages we export to everyone
-            Set<String> exportedPackages = cm.findAttribute(Attributes.module()).map(ModuleAttribute::exports)
-                    .map(l -> l.stream()
-                            .filter(ei -> ei.exportsTo().isEmpty())
-                            .map(ei -> ei.exportedPackage().name().stringValue().replace('/', '.'))
-                            .collect(Collectors.toSet()))
-                    .orElse(Set.of());
-            // compute a PackageInfo for every package, merging in exported and opened package information
-            cm.findAttribute(Attributes.modulePackages()).ifPresentOrElse(a -> a.packages().forEach(pe -> {
-                String pn = pe.name().stringValue().replace('/', '.');
-                PackageInfo info = openedPackages.contains(pn) ? PackageInfo.OPEN
-                        : exportedPackages.contains(pn) ? PackageInfo.EXPORTED : PackageInfo.PRIVATE;
-                packages.compute(pn, (ignored, old) -> PackageInfo.merge(info, old));
-            }), () -> indexPackages(packages, contentTree));
+            ModuleAttribute moduleAttribute = cm.findAttribute(Attributes.module()).orElseThrow();
+            boolean openModule = moduleAttribute.has(AccessFlag.OPEN);
+            if (openModule) {
+                flags = flags.with(ModuleDescriptor.Modifier.OPEN);
+            }
+            // Record both unqualified and qualified opens; an empty target set means access for everyone.
+            Map<String, Set<String>> openedPackages = moduleAttribute.opens().stream()
+                    .collect(Collectors.toMap(e -> e.openedPackage().name().stringValue().replace('/', '.'),
+                            e -> e.opensTo().stream().map(target -> target.name().stringValue()).collect(Collectors.toSet())));
+            // Record both unqualified and qualified exports.
+            Map<String, Set<String>> exportedPackages = moduleAttribute.exports().stream()
+                    .collect(Collectors.toMap(e -> e.exportedPackage().name().stringValue().replace('/', '.'),
+                            e -> e.exportsTo().stream().map(target -> target.name().stringValue())
+                                    .collect(Collectors.toSet())));
+            Function<String, PackageInfo> packageInfo = pn -> {
+                Set<String> openTargets = openedPackages.get(pn);
+                Set<String> exportTargets = exportedPackages.get(pn);
+                PackageAccess access = openModule || openTargets != null && openTargets.isEmpty() ? PackageAccess.OPEN
+                        : exportTargets != null && exportTargets.isEmpty() ? PackageAccess.EXPORTED : PackageAccess.PRIVATE;
+                return PackageInfo.of(access, exportTargets == null ? Set.of() : exportTargets,
+                        openTargets == null ? Set.of() : openTargets);
+            };
+            // Compute a PackageInfo for every package, merging in exported and opened package information.
+            // javac need not emit ModulePackages: discover those packages from classes, but retain descriptor access.
+            contentIndex.packages(dependency).forEach(pn -> packages.merge(pn, packageInfo.apply(pn), PackageInfo::merge));
             // find the set of used services
-            uses = cm.findAttribute(Attributes.module()).map(ModuleAttribute::uses).orElse(List.of()).stream()
+            uses = moduleAttribute.uses().stream()
                     .map(ClassEntry::name)
                     .map(Utf8Entry::stringValue)
                     .map(c -> c.replace('/', '.'))
                     .collect(Collectors.toUnmodifiableSet());
             // find the set of provided services
-            provides = cm.findAttribute(Attributes.module()).map(ModuleAttribute::provides).orElse(List.of()).stream()
+            provides = moduleAttribute.provides().stream()
                     .map(mpi -> Map.entry(
                             mpi.provides().name().stringValue().replace('/', '.'),
                             mpi.providesWith().stream().map(ClassEntry::name).map(Utf8Entry::stringValue)
                                     .map(e -> e.replace('/', '.')).toList()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             // find the dependency set, marking things `optional` if they are missing
-            cm.findAttribute(Attributes.module()).map(ModuleAttribute::requires).orElse(List.of()).stream()
+            moduleAttribute.requires().stream()
                     .map(mri -> Map.entry(
                             mri.requires().name().stringValue(),
                             mri.requiresFlags()))
@@ -1070,8 +1107,8 @@ public final class ModularitySteps {
                     flags = flags.with(ModuleDescriptor.Modifier.NATIVE_ACCESS);
                 }
             }
-            // create an index of all of the packages based on the content tree
-            indexPackages(packages, contentTree);
+            // Reuse packages discovered during ownership resolution, or discover them lazily when there are no declarations.
+            indexPackages(packages, contentIndex.packages(dependency));
             // process the service files into a service provider map
             provides = contentTree.apply("META-INF/services", pv -> {
                 if (pv == null) {
@@ -1269,38 +1306,19 @@ public final class ModularitySteps {
      * Update the given package index based on discovered packages in an automatic module.
      *
      * @param packages the packages map to update (must not be {@code null})
-     * @param content the artifact content (must not be {@code null})
+     * @param discoveredPackages the artifact's discovered packages (must not be {@code null})
      */
-    private static void indexPackages(final Map<String, PackageInfo> packages, final PathTree content) {
-        content.walk(vp -> {
-            String rp = vp.getResourceName();
-            // flatten MR-JAR structure.
-            if (rp.startsWith("META-INF/versions/")) {
-                int idx = rp.indexOf('/', 18);
-                if (idx == -1) {
-                    // skip weird entry
-                    return;
-                }
-                rp = rp.substring(idx + 1);
+    private static void indexPackages(final Map<String, PackageInfo> packages, final Set<String> discoveredPackages) {
+        for (String n : discoveredPackages) {
+            // A package is public if it does not contain a segment named `impl`, `private_`, or `_private`.
+            if (n.endsWith(".impl") || n.contains(".impl.")
+                    || n.endsWith(".private_") || n.contains(".private_.")
+                    || n.endsWith("._private") || n.contains("._private.")) {
+                packages.merge(n, PackageInfo.PRIVATE, PackageInfo::merge);
+            } else {
+                packages.merge(n, PackageInfo.EXPORTED, PackageInfo::merge);
             }
-            // A directory is a package if it contains a class.
-            if (rp.endsWith(".class")) {
-                int idx = rp.lastIndexOf('/');
-                if (idx != -1) {
-                    String pkgName = rp.substring(0, idx).replace('/', '.');
-                    // A package is public if it does not contain a segment named `impl`, `private_`, or `_private`.
-                    packages.compute(pkgName, (n, old) -> {
-                        if (n.endsWith(".impl") || n.contains(".impl.")
-                                || n.endsWith(".private_") || n.contains(".private_.")
-                                || n.endsWith("._private") || n.contains("._private.")) {
-                            return PackageInfo.merge(old, PackageInfo.PRIVATE);
-                        } else {
-                            return PackageInfo.merge(old, PackageInfo.EXPORTED);
-                        }
-                    });
-                }
-            }
-        });
+        }
     }
 
     /**

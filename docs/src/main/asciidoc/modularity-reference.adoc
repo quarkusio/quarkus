@@ -13,6 +13,9 @@ include::_attributes.adoc[]
 
 This document describes the build items that extension authors use to integrate with the xref:modularity.adoc[Quarkus modularity] system.
 Extensions can declare boot modules, add inter-module dependencies, and consume the completed module model.
+Explicit module descriptors retain their declared package access, including qualified exports and opens.
+When the optional `ModulePackages` attribute is absent, Quarkus discovers package names from class files while preserving the descriptor's access rules.
+For the dynamic module loader, an open module is represented by opening each packaged package; boot module descriptors retain the open-module flag.
 
 include::{includes}/extension-status.adoc[]
 
@@ -114,3 +117,51 @@ Extension authors should migrate from the deprecated `JPMSExportBuildItem` to `M
 Version bounds on legacy `JPMSExportBuildItem` instances are ignored.
 
 `ModuleEnableNativeAccessBuildItem` declares that a module requires native access (equivalent to the `--enable-native-access` JVM flag).
+
+== Generated class placement
+
+`GeneratedClassPlacementBuildItem` in `quarkus-modular-spi` assigns a generated class to a module without requiring its producer to discover module names:
+
+[source,java]
+----
+placements.produce(GeneratedClassPlacementBuildItem.inModuleOf(bridgeName, hostName));
+placements.produce(GeneratedClassPlacementBuildItem.inApplication(bootstrapName));
+----
+
+The class must also be produced as a `GeneratedClassBuildItem`.
+The anchor can be an existing runtime class or another generated class.
+Placement controls the packaged class bytes and the destination module's packages, including newly generated packages.
+Generated classes without a placement declaration retain package-based assignment: they follow the module owning their package, or the application module for an unclaimed package.
+This also applies when an explicit placement introduces a new package.
+
+Missing anchors, conflicting placements, cyclic placement relationships, and ambiguous class ownership fail the build.
+Explicit placement cannot introduce split packages while package-based resource routing remains in use.
+Placement into an existing owner of an already split package is allowed; unrelated generated classes in that package retain their existing routing.
+These declarations affect modular packaging only; they do not change the meaning of `GeneratedClassBuildItem.isApplicationClass()` or dev-mode class loading.
+
+== Class-based access
+
+`ClassAccessBuildItem` describes access requirements using class names instead of module names:
+
+[source,java]
+----
+accesses.produce(ClassAccessBuildItem.direct(generatedReaderName, hostName));
+accesses.produce(ClassAccessBuildItem.reflective(accessContextName, memberDeclaringClassName));
+----
+
+Modularity resolves both classes after generated-class placement.
+`direct` adds class loading linkage and readability (`LINKED`, `READ`, and `SYNTHETIC`), together with a qualified export of the target package to the caller's module.
+`reflective` adds readability and a qualified open of the declaring package, without adding class loading linkage.
+The reflective caller must already have the reflected class or member, or obtain it using an appropriate class loader.
+Both declarations grant access to an entire package, not just the named class, and direct access still obeys Java member visibility.
+Duplicate requirements are merged; opens take precedence over exports, and same-module requirements need no additional access.
+
+Caller classes must belong to application runtime artifacts or generated classes; target classes can additionally belong to system modules of the build JDK.
+JDK class ownership is resolved without loading the class.
+JDK callers and placement of generated classes in JDK modules are rejected because these declarations cannot modify JDK module contents or dependencies.
+Classes in placement and access declarations, including placement anchors, must belong to a named package; the default package is unsupported by named modules.
+Class-based declarations are consumed by modular packaging; existing core module access items remain available for requirements that also apply to other packaging and launch modes.
+
+Ownership checks are batched by artifact and reuse the package inventory needed for modular packaging.
+Only classes required by the declarations and their generated-class placement relationships are checked; modularity does not retain a class ownership index of every runtime dependency.
+When a package is split between artifacts, the class resource is checked in each candidate artifact to determine its owner.

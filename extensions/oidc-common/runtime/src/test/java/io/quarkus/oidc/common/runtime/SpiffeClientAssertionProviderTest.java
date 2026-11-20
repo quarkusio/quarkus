@@ -1,8 +1,10 @@
 package io.quarkus.oidc.common.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -59,8 +61,45 @@ public class SpiffeClientAssertionProviderTest {
             String secondResult = awaitAssertion(provider);
             assertNotNull(firstResult);
             assertEquals(firstResult, secondResult);
+            // explicit audience: the token is requested with it, the stub throws if the default audiences method is called
             assertEquals(1, spiffeClient.fetchCount());
         }
+    }
+
+    @Test
+    public void testGetClientAssertionWithDefaultAudiences() {
+        String token = createSpiffeSvidToken();
+        WorkloadJsonWebToken svid = new TestJwtSvid(token, ISSUER, SPIFFE_ID, Set.of(AUDIENCE),
+                Instant.now().plusSeconds(60));
+        AtomicInteger defaultAudiencesFetchCount = new AtomicInteger();
+        SpiffeClient spiffeClient = new StubSpiffeClient(svid) {
+            @Override
+            public Uni<WorkloadJsonWebToken> getWorkloadJsonWebToken() {
+                defaultAudiencesFetchCount.incrementAndGet();
+                return Uni.createFrom().item(svid);
+            }
+        };
+        // null audience: the default audiences configured for the SPIFFE client are used
+        try (var provider = new SpiffeClientAssertionProvider(spiffeClient, null, vertx)) {
+            assertEquals(token, awaitAssertion(provider));
+            assertEquals(token, awaitAssertion(provider));
+            assertEquals(1, defaultAudiencesFetchCount.get());
+            // the explicit audience methods must not be called
+            assertEquals(0, ((StubSpiffeClient) spiffeClient).fetchCount());
+        }
+    }
+
+    @Test
+    public void testHasDefaultAudiences() {
+        String property = "quarkus.spiffe-client.audiences";
+        assertFalse(SpiffeClientAssertionProvider.hasDefaultAudiences());
+        System.setProperty(property, AUDIENCE + ",https://other.example.com");
+        try {
+            assertTrue(SpiffeClientAssertionProvider.hasDefaultAudiences());
+        } finally {
+            System.clearProperty(property);
+        }
+        assertFalse(SpiffeClientAssertionProvider.hasDefaultAudiences());
     }
 
     @Test

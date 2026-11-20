@@ -269,9 +269,11 @@ public interface OidcClientCommonConfig extends OidcCommonConfig {
              * By default, the audience is set to the address of the OpenId Connect Provider's token endpoint.
              * When the JWT {@link #source()} is {@link Source#SPIFFE_JWT}, the audience defaults to the
              * {@link OidcCommonConfig#authServerUrl() auth-server-url} instead.
+             * When the SPIFFE JWT-SVID token is used as a JWT bearer grant assertion, see {@link #assertion()}, the
+             * audience defaults to the audiences configured with the {@code quarkus.spiffe-client.audiences} property,
+             * if any, and to the {@code auth-server-url} otherwise.
              * Set this property explicitly if the OIDC provider expects a different audience, for example, if its
-             * issuer URL differs from the {@code auth-server-url}, or if it requires a specific audience when the
-             * SPIFFE JWT-SVID token is used as a JWT bearer grant assertion, see {@link #assertion()}.
+             * issuer URL differs from the {@code auth-server-url}.
              */
             Optional<String> audience();
 

@@ -1038,10 +1038,18 @@ public class OidcCommonUtils {
             }
             return clientAssertionProvider;
         } else if (jwtConfig.source() == Source.SPIFFE_JWT) {
-            var audience = jwtConfig.audience().or(() -> authServerUrl).orElseThrow(
-                    () -> new ConfigurationException(
-                            "'credentials.jwt.source' is set to 'spiffe-jwt', but no audience is available."
-                                    + " Either set 'credentials.jwt.audience' or 'auth-server-url'"));
+            final String audience;
+            if (jwtConfig.audience().isEmpty() && jwtConfig.assertion()
+                    && SpiffeClientAssertionProvider.hasDefaultAudiences()) {
+                // The JWT-SVID is a JWT bearer grant assertion, prefer the default audiences configured for the SPIFFE client
+                // over the auth-server-url
+                audience = null;
+            } else {
+                audience = jwtConfig.audience().or(() -> authServerUrl).orElseThrow(
+                        () -> new ConfigurationException(
+                                "'credentials.jwt.source' is set to 'spiffe-jwt', but no audience is available."
+                                        + " Either set 'credentials.jwt.audience' or 'auth-server-url'"));
+            }
             var clientAssertionProvider = SpiffeClientAssertionProvider.forAudience(vertx, audience);
             if (clientAssertionProvider == null) {
                 throw new ConfigurationException(

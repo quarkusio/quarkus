@@ -3,6 +3,7 @@ package io.quarkus.reactive.transaction.runtime;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import jakarta.interceptor.InvocationContext;
@@ -16,6 +17,7 @@ import io.quarkus.transaction.annotations.Rollback;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.subscription.Cancellable;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -86,7 +88,11 @@ public abstract class TransactionalInterceptorBase {
             LOG.tracef("Setting this method as transactional: %s", method);
             ContextLocals.put(TRANSACTIONAL_METHOD_KEY, true);
 
+            // defineReactiveTransactionalChain() is invoked by deferred() for each subscription,
+            // so re-subscribing to the returned Uni never shares this reference between transactions.
+            final AtomicReference<Cancellable> businessSubscription = new AtomicReference<>();
             return work.get()
+                    .onSubscription().invoke(businessSubscription::set)
                     .onFailure().call(exception -> rollbackOrCommitBasedOnException(context, annotation, exception))
                     .onCancellation().call(this::rollbackOnCancel)
                     .call(() -> { // Good path - commit or rollback if marked
@@ -97,7 +103,16 @@ public abstract class TransactionalInterceptorBase {
                         LOG.tracef("Calling commit from method %s", method);
                         return invokeBeforeCommitAndCommit(context);
                     })
-                    .eventually(() -> reactiveResource.afterCommit(context)).eventually(this::closeConnection);
+                    .eventually(() -> reactiveResource.afterCommit(context)).eventually(this::closeConnection)
+                    .onCancellation().invoke(() -> {
+                        // Cancellation hooks await their cleanup before cancelling upstream. Cancel the business
+                        // subscription first so a pending query result cannot trigger another chained operation
+                        // while rollback or connection close is in progress.
+                        Cancellable subscription = businessSubscription.get();
+                        if (subscription != null) {
+                            subscription.cancel();
+                        }
+                    });
         } else {
             // Nested methods should just propagate the reactive chain without transaction handling
             return work.get();

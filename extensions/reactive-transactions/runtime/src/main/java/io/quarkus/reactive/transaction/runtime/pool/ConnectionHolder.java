@@ -52,6 +52,15 @@ class ConnectionHolder {
                         return connection.begin().map(t -> {
                             LOG.tracef("Transaction started: %s", connection);
                             return new TransactionalContextConnection(connection);
+                        }).recover(failure -> {
+                            // Checkout already succeeded: a failed BEGIN must release the connection too.
+                            // Wait for release, preserving the BEGIN failure if cleanup also fails.
+                            return connection.close().transform(closed -> {
+                                if (closed.failed() && closed.cause() != failure) {
+                                    failure.addSuppressed(closed.cause());
+                                }
+                                return Future.failedFuture(failure);
+                            });
                         });
                     })
                     .onComplete(connectionPromise);

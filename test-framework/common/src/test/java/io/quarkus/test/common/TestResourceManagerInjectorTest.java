@@ -20,6 +20,8 @@ public class TestResourceManagerInjectorTest {
     @ValueSource(classes = { UsingInjectorTest.class, UsingInjectorTest2.class })
     void testTestInjector(Class<?> clazz) {
         TestResourceManager manager = new TestResourceManager(clazz);
+        // the index-wide meta-annotation discovery also finds the GLOBAL meta-annotation holders declared elsewhere
+        // in this test folder's index; the configurable RepeatableHolderLifecycleManager cannot start without init()
         manager.init("test");
         manager.start();
 

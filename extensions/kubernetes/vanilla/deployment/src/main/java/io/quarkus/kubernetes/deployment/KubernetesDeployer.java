@@ -189,16 +189,17 @@ public class KubernetesDeployer {
             KubernetesClient client, Path outputDir,
             OpenShiftConfig openshiftConfig, ApplicationInfoBuildItem applicationInfo,
             List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions) {
-        String namespace = Optional.ofNullable(client.getNamespace()).orElse("default");
-        log.info("Deploying to " + deploymentTarget.getName().toLowerCase() + " server: " + client.getMasterUrl()
-                + " in namespace: " + namespace + ".");
         File manifest = outputDir.resolve(deploymentTarget.getName().toLowerCase() + ".yml").toFile();
 
         try (FileInputStream fis = new FileInputStream(manifest)) {
             KubernetesList list = Serialization.unmarshalAsList(fis);
+            String namespace = effectiveNamespace(list.getItems(), deploymentTarget.getDeploymentResourceKind(),
+                    client.getNamespace());
+            log.info("Deploying to " + deploymentTarget.getName().toLowerCase() + " server: " + client.getMasterUrl()
+                    + " in namespace: " + namespace + ".");
 
-            Optional<GenericKubernetesResource> conflictingResource = findConflictingResource(client, deploymentTarget,
-                    list.getItems());
+            Optional<GenericKubernetesResource> conflictingResource = findConflictingResource(client, namespace,
+                    deploymentTarget, list.getItems());
             if (conflictingResource.isPresent()) {
                 String message = "Skipping deployment of " + deploymentTarget.getDeploymentResourceKind() + " "
                         + conflictingResource.get().getMetadata().getName() + " because a "
@@ -219,7 +220,7 @@ public class KubernetesDeployer {
                 log.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");
             });
 
-            printExposeInformation(client, list, openshiftConfig, applicationInfo);
+            printExposeInformation(client, namespace, list, ResourceNameUtil.getResourceName(openshiftConfig, applicationInfo));
 
             HasMetadata m = list.getItems().stream()
                     .filter(r -> deploymentTarget.getDeploymentResourceKind().matches(r))
@@ -274,7 +275,25 @@ public class KubernetesDeployer {
         }
     }
 
-    private Optional<GenericKubernetesResource> findConflictingResource(KubernetesClient clinet,
+    /**
+     * The namespace the deployment goes to: the one written into the generated deployment resource
+     * (quarkus.kubernetes.namespace), which the apply honours, and otherwise the client's namespace.
+     */
+    static String effectiveNamespace(List<HasMetadata> items, DeploymentResourceKind deploymentResourceKind,
+            String clientNamespace) {
+        return items.stream()
+                .filter(deploymentResourceKind::matches)
+                .findFirst()
+                .map(resource -> resource.getMetadata().getNamespace())
+                .or(() -> Optional.ofNullable(clientNamespace))
+                .orElse("default");
+    }
+
+    /**
+     * Looks in the given namespace for a resource of another deployment kind that has the name of the generated
+     * deployment resource.
+     */
+    static Optional<GenericKubernetesResource> findConflictingResource(KubernetesClient clinet, String namespace,
             DeploymentTargetEntry deploymentTarget, List<HasMetadata> generated) {
         HasMetadata deploymentResource = generated.stream()
                 .filter(r -> deploymentTarget.getDeploymentResourceKind().matches(r))
@@ -289,7 +308,8 @@ public class KubernetesDeployer {
             }
             try {
                 GenericKubernetesResource resource = clinet
-                        .genericKubernetesResources(deploymentKind.getApiVersion(), deploymentKind.getKind()).withName(name)
+                        .genericKubernetesResources(deploymentKind.getApiVersion(), deploymentKind.getKind())
+                        .inNamespace(namespace).withName(name)
                         .get();
                 if (resource != null) {
                     log.warn("Found conflicting resource:" + resource.getApiVersion() + "/" + resource.getKind() + ":"
@@ -331,25 +351,34 @@ public class KubernetesDeployer {
         return client.resource(metadata);
     }
 
-    private void printExposeInformation(KubernetesClient client, KubernetesList list, OpenShiftConfig openshiftConfig,
-            ApplicationInfoBuildItem applicationInfo) {
-        String generatedRouteName = ResourceNameUtil.getResourceName(openshiftConfig, applicationInfo);
+    /**
+     * Logs the URL of the generated route, read back from the cluster in the given namespace.
+     *
+     * @return the URL, or empty when the manifest has no route or the cluster did not return it
+     */
+    static Optional<String> printExposeInformation(KubernetesClient client, String namespace, KubernetesList list,
+            String generatedRouteName) {
         List<HasMetadata> items = list.getItems();
         for (HasMetadata item : items) {
             if (Constants.ROUTE_API_GROUP.equals(item.getApiVersion()) && Constants.ROUTE.equals(item.getKind())
                     && generatedRouteName.equals(item.getMetadata().getName())) {
                 try {
                     OpenShiftClient openShiftClient = client.adapt(OpenShiftClient.class);
-                    Route route = openShiftClient.routes().withName(generatedRouteName).get();
+                    Route route = openShiftClient.routes().inNamespace(namespace).withName(generatedRouteName).get();
+                    if (route == null || route.getSpec() == null) {
+                        break;
+                    }
                     boolean isTLS = (route.getSpec().getTls() != null);
-                    String host = route.getSpec().getHost();
-                    log.infov("The deployed application can be accessed at: http{0}://{1}", isTLS ? "s" : "", host);
+                    String url = "http" + (isTLS ? "s" : "") + "://" + route.getSpec().getHost();
+                    log.infov("The deployed application can be accessed at: {0}", url);
+                    return Optional.of(url);
                 } catch (KubernetesClientException ignored) {
 
                 }
                 break;
             }
         }
+        return Optional.empty();
     }
 
     /**

@@ -60,10 +60,21 @@ public class Marshaller {
     @SafeVarargs
     public final <T> List<byte[]> encode(T... objects) {
         nonNull(objects, "objects");
-        List<byte[]> result = new ArrayList<>();
+        List<byte[]> result = new ArrayList<>(objects.length);
         for (T o : objects) {
             byte[] r = encode(o);
             result.add(r);
+        }
+        return result;
+    }
+
+    @SafeVarargs
+    public final <T> byte[][] encodeAsArray(T... objects) {
+        nonNull(objects, "objects");
+        byte[][] result = new byte[objects.length][];
+        for (int i = 0; i < objects.length; i++) {
+            byte[] r = encode(objects[i]);
+            result[i] = r;
         }
         return result;
     }

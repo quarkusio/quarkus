@@ -64,6 +64,8 @@ public class DefaultDataSourceConfigTest {
         assertTrue(agroalConnectionFactoryConfiguration.trackJdbcResources());
         assertTrue(dataSource.getConfiguration().metricsEnabled());
         assertFalse(configuration.flushOnClose());
+        // not set in the configuration: the pool is flushed on the first failed background validation
+        assertEquals(1, configuration.validationFailureFlushThreshold());
         assertEquals(newConnectionSql, agroalConnectionFactoryConfiguration.initialSql());
         assertThat(agroalConnectionFactoryConfiguration.jdbcProperties())
                 .contains(

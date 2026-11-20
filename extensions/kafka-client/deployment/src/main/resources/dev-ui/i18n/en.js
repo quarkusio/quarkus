@@ -65,6 +65,5 @@ export const templates = {
     'quarkus-kafka-client-principal': 'Principal',
     'quarkus-kafka-client-permission': 'Permission',
     'quarkus-kafka-client-resource-pattern': 'Resource Pattern',
-    'quarkus-kafka-client-schema-registry-todo': 'TODO: Scheme Registry'
+    'quarkus-kafka-client-schema-registry-todo': 'TODO: Schema Registry'
 };
-

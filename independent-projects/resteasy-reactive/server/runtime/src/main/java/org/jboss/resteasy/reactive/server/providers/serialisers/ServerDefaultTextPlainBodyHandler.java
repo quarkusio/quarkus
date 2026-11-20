@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 
 import jakarta.ws.rs.BadRequestException;
@@ -37,5 +38,14 @@ public class ServerDefaultTextPlainBodyHandler extends DefaultTextPlainBodyHandl
     public Object readFrom(Class<Object> type, Type genericType, MediaType mediaType, ServerRequestContext context)
             throws WebApplicationException, IOException {
         return doReadFrom(type, mediaType, context.getInputStream());
+    }
+
+    @Override
+    protected Object doReadFrom(Class type, MediaType mediaType, InputStream entityStream) throws IOException {
+        try {
+            return super.doReadFrom(type, mediaType, entityStream);
+        } catch (NumberFormatException e) {
+            throw new BadRequestException(e);
+        }
     }
 }

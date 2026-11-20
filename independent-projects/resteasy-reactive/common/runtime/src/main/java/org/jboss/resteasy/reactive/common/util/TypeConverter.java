@@ -210,8 +210,13 @@ public final class TypeConverter {
                 // because you can't use targetType.cast() with primitives.
                 result = (T) value;
             }
-        } catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof RuntimeException cause) {
+                throw cause;
+            }
+            throw new RuntimeException(e.getCause());
         }
         return result;
     }
@@ -238,8 +243,13 @@ public final class TypeConverter {
 
         try {
             result = c.newInstance(source);
-        } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException e) {
             throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof RuntimeException cause) {
+                throw cause;
+            }
+            throw new RuntimeException(e.getCause());
         }
         return result;
     }

@@ -193,6 +193,7 @@ public class CliHelpTest {
         assertThat(result.stdout).contains("--force");
         assertThat(result.stdout).contains("--size");
         assertThat(result.stdout).contains("--algo");
+        assertThat(result.stdout).contains("--encryption");
     }
 
     @Order(60)

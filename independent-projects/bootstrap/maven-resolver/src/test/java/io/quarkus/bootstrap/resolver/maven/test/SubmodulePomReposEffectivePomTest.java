@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.nio.file.Files;
 import java.util.Arrays;
 
+import org.eclipse.aether.repository.RemoteRepository;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
@@ -19,7 +20,8 @@ public class SubmodulePomReposEffectivePomTest extends BootstrapMavenContextTest
                 Arrays.asList(
                         newRepo("module-pom-repo", "https://module-pom.repo"),
                         newRepo("parent-pom-repo", "https://parent-pom.repo"),
-                        BootstrapMavenContext.newDefaultRepository()),
+                        new RemoteRepository.Builder(BootstrapMavenContext.newDefaultRepository())
+                                .setIntent(RemoteRepository.Intent.RESOLUTION).build()),
                 mvn.getRemoteRepositories());
     }
 }

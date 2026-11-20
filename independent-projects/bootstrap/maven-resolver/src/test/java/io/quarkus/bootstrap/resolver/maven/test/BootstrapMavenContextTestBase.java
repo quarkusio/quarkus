@@ -38,7 +38,7 @@ public class BootstrapMavenContextTestBase {
     }
 
     protected RemoteRepository newRepo(String id, String url) {
-        return new RemoteRepository.Builder(id, "default", url).build();
+        return new RemoteRepository.Builder(id, "default", url).setIntent(RemoteRepository.Intent.RESOLUTION).build();
     }
 
     protected BootstrapMavenContext bootstrapMavenContextForProject(String projectOnCp) throws Exception {

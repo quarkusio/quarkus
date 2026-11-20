@@ -338,7 +338,16 @@ public final class DatabaseInspector {
                         try (ResultSet tables = metaData.getTables(null, null, "%", new String[] { "TABLE" })) {
                             while (tables.next()) {
                                 String tableName = tables.getString("TABLE_NAME");
-                                exportTable(connection, writer, tableName);
+                                String tableSchema = tables.getString("TABLE_SCHEM");
+                                if (tableSchema == null) {
+                                    tableSchema = tables.getString("TABLE_CAT"); // fallback for MySQL
+                                }
+                                if ("INFORMATION_SCHEMA".equalsIgnoreCase(tableSchema)) {
+                                    // System tables (listed as TABLE by H2) are not application data
+                                    continue;
+                                }
+                                exportTable(connection, writer,
+                                        tableSchema == null ? tableName : tableSchema + "." + tableName);
                             }
                         }
 

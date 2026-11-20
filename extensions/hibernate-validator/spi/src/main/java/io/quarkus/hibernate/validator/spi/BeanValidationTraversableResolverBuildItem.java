@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.validator.spi;
 
-import java.util.function.BiPredicate;
-
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
@@ -9,13 +7,13 @@ import io.quarkus.builder.item.SimpleBuildItem;
  */
 public final class BeanValidationTraversableResolverBuildItem extends SimpleBuildItem {
 
-    private final BiPredicate<Object, String> attributeLoadedPredicate;
+    private final AttributeLoadedPredicate attributeLoadedPredicate;
 
-    public BeanValidationTraversableResolverBuildItem(BiPredicate<Object, String> attributeLoadedPredicate) {
+    public BeanValidationTraversableResolverBuildItem(AttributeLoadedPredicate attributeLoadedPredicate) {
         this.attributeLoadedPredicate = attributeLoadedPredicate;
     }
 
-    public BiPredicate<Object, String> getAttributeLoadedPredicate() {
+    public AttributeLoadedPredicate getAttributeLoadedPredicate() {
         return attributeLoadedPredicate;
     }
 }

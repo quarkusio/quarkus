@@ -419,45 +419,54 @@ public class TestResourceManager implements Closeable {
     private static void collectMetaAnnotations(Class<?> testClassFromTCCL, Function<Class<?>, Class<?>> next,
             Set<TestResourceClassEntry> uniqueEntries) {
         while (testClassFromTCCL != null && !testClassFromTCCL.getName().equals("java.lang.Object")) {
-            for (Annotation metaAnnotation : testClassFromTCCL.getAnnotations()) {
-                for (Annotation ann : metaAnnotation.annotationType().getAnnotations()) {
-                    if (ann.annotationType() == WithTestResource.class) {
-                        addTestResourceEntry((WithTestResource) ann, metaAnnotation, uniqueEntries);
-                        break;
-                    } else if (ann.annotationType() == WithTestResource.List.class) {
-                        Arrays.stream(((WithTestResource.List) ann).value())
-                                .forEach(res -> addTestResourceEntry(res, metaAnnotation, uniqueEntries));
-                        break;
-                    } else if (ann.annotationType() == WithTestResourceRepeatable.class) {
-                        for (Annotation repeatableMetaAnn : testClassFromTCCL
-                                .getAnnotationsByType(((WithTestResourceRepeatable) ann).value())) {
-                            WithTestResource quarkusTestResource = repeatableMetaAnn.annotationType()
-                                    .getAnnotation(WithTestResource.class);
-                            if (quarkusTestResource != null) {
-                                addTestResourceEntry(quarkusTestResource, repeatableMetaAnn, uniqueEntries);
-                            }
+            collectMetaAnnotationsForSingleClass(testClassFromTCCL, uniqueEntries);
+            testClassFromTCCL = next.apply(testClassFromTCCL);
+        }
+    }
+
+    /**
+     * Collects the test resource entries that the meta-annotations carried by the annotations of the given class
+     * produce. The class is examined on its own; its hierarchy is not traversed.
+     */
+    private static void collectMetaAnnotationsForSingleClass(Class<?> annotatedClass,
+            Set<TestResourceClassEntry> uniqueEntries) {
+        for (Annotation metaAnnotation : annotatedClass.getAnnotations()) {
+            for (Annotation ann : metaAnnotation.annotationType().getAnnotations()) {
+                if (ann.annotationType() == WithTestResource.class) {
+                    addTestResourceEntry((WithTestResource) ann, metaAnnotation, uniqueEntries);
+                    break;
+                } else if (ann.annotationType() == WithTestResource.List.class) {
+                    Arrays.stream(((WithTestResource.List) ann).value())
+                            .forEach(res -> addTestResourceEntry(res, metaAnnotation, uniqueEntries));
+                    break;
+                } else if (ann.annotationType() == WithTestResourceRepeatable.class) {
+                    for (Annotation repeatableMetaAnn : annotatedClass
+                            .getAnnotationsByType(((WithTestResourceRepeatable) ann).value())) {
+                        WithTestResource quarkusTestResource = repeatableMetaAnn.annotationType()
+                                .getAnnotation(WithTestResource.class);
+                        if (quarkusTestResource != null) {
+                            addTestResourceEntry(quarkusTestResource, repeatableMetaAnn, uniqueEntries);
                         }
-                    } else if (ann.annotationType() == QuarkusTestResource.class) {
-                        addTestResourceEntry((QuarkusTestResource) ann, metaAnnotation, uniqueEntries);
-                        break;
-                    } else if (ann.annotationType() == QuarkusTestResource.List.class) {
-                        for (QuarkusTestResource quarkusTestResource : ((QuarkusTestResource.List) ann).value()) {
-                            addTestResourceEntry(quarkusTestResource, metaAnnotation, uniqueEntries);
-                        }
-                        break;
-                    } else if (ann.annotationType() == QuarkusTestResourceRepeatable.class) {
-                        for (Annotation repeatableMetaAnn : testClassFromTCCL
-                                .getAnnotationsByType(((QuarkusTestResourceRepeatable) ann).value())) {
-                            QuarkusTestResource quarkusTestResource = repeatableMetaAnn.annotationType()
-                                    .getAnnotation(QuarkusTestResource.class);
-                            if (quarkusTestResource != null) {
-                                addTestResourceEntry(quarkusTestResource, repeatableMetaAnn, uniqueEntries);
-                            }
+                    }
+                } else if (ann.annotationType() == QuarkusTestResource.class) {
+                    addTestResourceEntry((QuarkusTestResource) ann, metaAnnotation, uniqueEntries);
+                    break;
+                } else if (ann.annotationType() == QuarkusTestResource.List.class) {
+                    for (QuarkusTestResource quarkusTestResource : ((QuarkusTestResource.List) ann).value()) {
+                        addTestResourceEntry(quarkusTestResource, metaAnnotation, uniqueEntries);
+                    }
+                    break;
+                } else if (ann.annotationType() == QuarkusTestResourceRepeatable.class) {
+                    for (Annotation repeatableMetaAnn : annotatedClass
+                            .getAnnotationsByType(((QuarkusTestResourceRepeatable) ann).value())) {
+                        QuarkusTestResource quarkusTestResource = repeatableMetaAnn.annotationType()
+                                .getAnnotation(QuarkusTestResource.class);
+                        if (quarkusTestResource != null) {
+                            addTestResourceEntry(quarkusTestResource, repeatableMetaAnn, uniqueEntries);
                         }
                     }
                 }
             }
-            testClassFromTCCL = next.apply(testClassFromTCCL);
         }
     }
 
@@ -477,6 +486,7 @@ public class TestResourceManager implements Closeable {
             Set<TestResourceClassEntry> uniqueEntries) {
         Set<String> testClassHierarchy = testClassHierarchyOf(testClass);
         Map<DotName, Boolean> examinedAnnotationTypes = new HashMap<>();
+        Set<DotName> examinedTargetClasses = new HashSet<>();
         for (ClassInfo knownClass : index.getKnownClasses()) {
             for (AnnotationInstance instance : knownClass.annotations()) {
                 DotName annotationName = instance.name();
@@ -508,6 +518,11 @@ public class TestResourceManager implements Closeable {
                     // meta-annotation resolution, which neither this method nor collectMetaAnnotations performs
                     continue;
                 }
+                if (!examinedTargetClasses.add(targetClassInfo.name())) {
+                    // every annotation instance targeting the same class yields the same entries, so the class
+                    // only needs to be examined reflectively once
+                    continue;
+                }
                 String targetClassName = targetClassInfo.name().toString('.');
                 Class<?> targetClassFromTCCL = loadClassFromTCCL(targetClassName);
                 if (targetClassFromTCCL == null) {
@@ -515,8 +530,7 @@ public class TestResourceManager implements Closeable {
                 }
                 Set<TestResourceClassEntry> targetEntries = new LinkedHashSet<>();
                 try {
-                    // reuse the reflective extraction with a single-class walk; `next` returning null ends it
-                    collectMetaAnnotations(targetClassFromTCCL, c -> null, targetEntries);
+                    collectMetaAnnotationsForSingleClass(targetClassFromTCCL, targetEntries);
                 } catch (LinkageError | TypeNotPresentException e) {
                     // a target carrying annotations that cannot be loaded must not break discovery for the
                     // whole module; such targets are skipped as they cannot be examined safely

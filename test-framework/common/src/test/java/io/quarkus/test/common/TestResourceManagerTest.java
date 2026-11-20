@@ -38,6 +38,8 @@ public class TestResourceManagerTest {
     @ValueSource(classes = { SequentialTestResourcesTest.class, SequentialTestResourcesTest2.class })
     void testSequentialResourcesRunSequentially(Class<?> clazz) {
         TestResourceManager manager = new TestResourceManager(clazz);
+        // the index-wide meta-annotation discovery also finds the GLOBAL holders in this test folder, and the
+        // configurable RepeatableHolderLifecycleManager cannot start without init()
         manager.init("test");
         Map<String, String> props = manager.start();
         Assertions.assertEquals("value1", props.get("key1"));
@@ -49,6 +51,8 @@ public class TestResourceManagerTest {
     @ValueSource(classes = { ParallelTestResourcesTest.class, ParallelTestResourcesTest2.class })
     void testParallelResourcesRunInParallel(Class<?> clazz) {
         TestResourceManager manager = new TestResourceManager(clazz);
+        // the index-wide meta-annotation discovery also finds the GLOBAL holders in this test folder, and the
+        // configurable RepeatableHolderLifecycleManager cannot start without init()
         manager.init("test");
         Map<String, String> props = manager.start();
         Assertions.assertEquals("value1", props.get("key1"));

@@ -1271,6 +1271,31 @@ class TokensHelperTest {
     }
 
     /**
+     * The refresh started in the background does not belong to the request of the caller which starts it, and may
+     * complete after that request has ended, so the token request is made on a new duplicated context.
+     */
+    @Test
+    void testBackgroundRefreshMadeOnNewDuplicatedContext() throws Exception {
+        Tokens current = tokens("current", 8);
+        assertThat(current.isAccessTokenWithinRefreshInterval()).isTrue();
+        assertThat(current.hasMinRemainingAccessTokenLifespan()).isTrue();
+
+        ContextRecordingOidcClient client = new ContextRecordingOidcClient(tokens("refreshed", 300));
+        TokensHelper helper = new TokensHelper();
+        helper.initTokens(new ImmediateOidcClient(current), Map.of());
+
+        try (ResumedContexts contexts = new ResumedContexts()) {
+            contexts.getTokens(contexts.first, "starting", () -> helper.getTokens(client, Map.of(), false));
+            contexts.awaitCompleted(1);
+
+            Optional<Context> requestedOn = client.requestedOn.get(10, TimeUnit.SECONDS);
+            assertThat(requestedOn).as("the token request should have been made on a context").isPresent();
+            assertThat(requestedOn.get()).isNotSameAs(contexts.first);
+            assertThat(VertxContext.isDuplicatedContext(requestedOn.get())).isTrue();
+        }
+    }
+
+    /**
      * Tokens which are still valid but too close to expiry are not served while a refresh is in
      * flight: they could expire in transit, or while the target service handles the request. Such a
      * caller waits for the refreshed tokens instead.
@@ -1572,6 +1597,54 @@ class TokensHelperTest {
         @Override
         public Uni<Tokens> getTokens(Map<String, String> additionalGrantParameters) {
             return Uni.createFrom().completionStage(response);
+        }
+
+        @Override
+        public Uni<Tokens> refreshTokens(String refreshToken) {
+            return getTokens(Map.of());
+        }
+
+        @Override
+        public Uni<Tokens> refreshTokens(String refreshToken, Map<String, String> additionalGrantParameters) {
+            return getTokens(additionalGrantParameters);
+        }
+
+        @Override
+        public Uni<Boolean> revokeAccessToken(String accessToken) {
+            return Uni.createFrom().item(true);
+        }
+
+        @Override
+        public Uni<Boolean> revokeAccessToken(String accessToken, Map<String, String> additionalParameters) {
+            return Uni.createFrom().item(true);
+        }
+
+        @Override
+        public void close() {
+            // no-op in the test
+        }
+    }
+
+    /** An OidcClient that records the context its token request is made on, which is where an HTTP client sends it. */
+    private record ContextRecordingOidcClient(Tokens tokens, CompletableFuture<Optional<Context>> requestedOn)
+            implements
+                OidcClient {
+
+        ContextRecordingOidcClient(Tokens tokens) {
+            this(tokens, new CompletableFuture<>());
+        }
+
+        @Override
+        public Uni<Tokens> getTokens() {
+            return getTokens(Map.of());
+        }
+
+        @Override
+        public Uni<Tokens> getTokens(Map<String, String> additionalGrantParameters) {
+            return Uni.createFrom().item(() -> {
+                requestedOn.complete(Optional.ofNullable(Vertx.currentContext()));
+                return tokens;
+            });
         }
 
         @Override

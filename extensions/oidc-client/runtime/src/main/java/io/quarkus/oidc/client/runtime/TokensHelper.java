@@ -12,6 +12,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.Tokens;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
@@ -148,11 +149,7 @@ public class TokensHelper {
                                 && tokensBeingRefreshed.hasMinRemainingAccessTokenLifespan()) {
                             // Refresh the tokens in the background and serve the tokens being refreshed meanwhile,
                             // the refreshed tokens or the failure are recorded in the state when the refresh completes
-                            newState.tokenUni.subscribe().with(
-                                    refreshedTokens -> {
-                                    },
-                                    failure -> LOG.warnf(failure, "Background refresh of the tokens for client %s has failed",
-                                            tokensBeingRefreshed.getClientId()));
+                            subscribeInBackground(newState.tokenUni, context, tokensBeingRefreshed.getClientId());
                             return Uni.createFrom().item(tokensBeingRefreshed);
                         }
                         return emitOn(newState.tokenUni, context);
@@ -162,6 +159,20 @@ public class TokensHelper {
                     return Uni.createFrom().item(tokens);
                 }
             }
+        }
+    }
+
+    // The refresh does not belong to the request of the caller which starts it, and may complete after that request has
+    // ended, so it is made on a new duplicated context rather than on the context of that request
+    private static void subscribeInBackground(Uni<Tokens> tokenUni, Context context, String clientId) {
+        final Runnable subscribe = () -> tokenUni.subscribe().with(
+                refreshedTokens -> {
+                },
+                failure -> LOG.warnf(failure, "Background refresh of the tokens for client %s has failed", clientId));
+        if (context != null && context.isEventLoopContext()) {
+            VertxContext.createNewDuplicatedContext(context).runOnContext(ignored -> subscribe.run());
+        } else {
+            subscribe.run();
         }
     }
 

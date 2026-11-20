@@ -58,11 +58,11 @@ final class SpiffeClientImpl implements SpiffeClient {
     private static final String FETCH_X509_SVID_METHOD = "FetchX509SVID";
     private static final String SECURITY_HEADER_KEY = "workload.spiffe.io";
     private static final String SECURITY_HEADER_VALUE = "true";
-    private static final long REQUEST_TIMEOUT_MS = 10_000;
 
     private final GrpcClient client;
     private final SocketAddress server;
     private final Set<String> defaultAudiences;
+    private final long requestTimeoutMs;
 
     SpiffeClientImpl(SpiffeClientConfig config, Vertx vertx) {
         URI endpointSocket = config.endpointSocket().orElseThrow(() -> new ConfigurationException(
@@ -83,6 +83,7 @@ final class SpiffeClientImpl implements SpiffeClient {
                     return audiences;
                 })
                 .orElse(null);
+        this.requestTimeoutMs = config.requestTimeout().toMillis();
     }
 
     @Override
@@ -90,7 +91,7 @@ final class SpiffeClientImpl implements SpiffeClient {
         Buffer payload = Buffer.buffer(X509SVIDRequest.newBuilder().build().toByteArray());
 
         return Uni.createFrom().emitter(emitter -> client.request(server)
-                .timeout(REQUEST_TIMEOUT_MS, MILLISECONDS)
+                .timeout(requestTimeoutMs, MILLISECONDS)
                 .onFailure(t -> emitter.fail(new SpiffeConnectionException("Failed to connect to SPIRE agent", t)))
                 .onSuccess(grpcRequest -> {
                     grpcRequest.serviceName(SERVICE_NAME);
@@ -172,7 +173,7 @@ final class SpiffeClientImpl implements SpiffeClient {
         Buffer payload = Buffer.buffer(proto.build().toByteArray());
 
         return Multi.createFrom().emitter(emitter -> client.request(server)
-                .timeout(REQUEST_TIMEOUT_MS, MILLISECONDS)
+                .timeout(requestTimeoutMs, MILLISECONDS)
                 .onFailure(t -> emitter.fail(new SpiffeConnectionException("Failed to connect to SPIRE agent", t)))
                 .onSuccess(grpcRequest -> {
                     grpcRequest.serviceName(SERVICE_NAME);

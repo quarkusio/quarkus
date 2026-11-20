@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Map;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.spiffe.client.runtime.internal.SpiffeClientConfig;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.config.ConfigValidationException;
@@ -175,6 +177,7 @@ class SpiffeEndpointParsingTest {
     private static SpiffeClientConfig configWith(String endpointSocket) {
         return new SmallRyeConfigBuilder()
                 .addDefaultInterceptors()
+                .withConverter(Duration.class, 100, new DurationConverter())
                 .withSources(new PropertiesConfigSource(
                         Map.of("quarkus.spiffe-client.endpoint-socket", endpointSocket), "test", 100))
                 .withMapping(SpiffeClientConfig.class)
@@ -185,6 +188,7 @@ class SpiffeEndpointParsingTest {
     private static SpiffeClientConfig configFromSources(ConfigSource... configSources) {
         return new SmallRyeConfigBuilder()
                 .addDefaultInterceptors()
+                .withConverter(Duration.class, 100, new DurationConverter())
                 .withSources(configSources)
                 .withMapping(SpiffeClientConfig.class)
                 .build()

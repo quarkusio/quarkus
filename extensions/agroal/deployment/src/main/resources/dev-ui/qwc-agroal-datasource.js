@@ -804,14 +804,22 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
             }
             const byteArray = new Uint8Array(byteNumbers);
             
-            const blob = new Blob([byteArray], { type: 'application/octet-stream' });
-            const url = URL.createObjectURL(blob);
-
-            return html`<a class="download" href="${url}" download="download">${msg('download', { id: 'quarkus-agroal-download' })}</span>`;
+            return html`<a class="download" href="#" @click="${(e) => this._downloadBinary(e, byteArray)}">${msg('download', { id: 'quarkus-agroal-download' })}</a>`;
         } catch (e) {
             // Here try a normal render. Sometimes Java objects can render in String format (eg. UUID)
             return this._renderTextCell(value, colType);
         }
+    }
+
+    _downloadBinary(event, byteArray){
+        event.preventDefault();
+        const blob = new Blob([byteArray], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'download';
+        link.click();
+        URL.revokeObjectURL(url);
     }
     
     _renderJsonColDialog(){

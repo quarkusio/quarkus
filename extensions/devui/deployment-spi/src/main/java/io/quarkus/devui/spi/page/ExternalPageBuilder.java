@@ -48,6 +48,10 @@ public class ExternalPageBuilder extends PageBuilder<ExternalPageBuilder> {
             throw new RuntimeException("Invalid dynamic URL Method name, can not be empty");
         }
         super.metadata.put(DYNAMIC_URL, methodName);
+        if (methodName != null) {
+            return staticLabel(
+                    "<div style='color: var(--lumo-contrast-80pct);'  target='_blank'><vaadin-icon class='icon' icon='font-awesome-solid:up-right-from-square'></vaadin-icon></div>");
+        }
         return this;
     }
 
@@ -60,6 +64,10 @@ public class ExternalPageBuilder extends PageBuilder<ExternalPageBuilder> {
                             + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
                     .reduce((a, b) -> a + "&" + b)
                     .orElse(""));
+        }
+        if (methodName != null) {
+            return staticLabel(
+                    "<div style='color: var(--lumo-contrast-80pct);'  target='_blank'><vaadin-icon class='icon' icon='font-awesome-solid:up-right-from-square'></vaadin-icon></div>");
         }
         return this;
     }

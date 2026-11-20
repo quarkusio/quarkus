@@ -757,11 +757,11 @@ For helpers with a fixed query structure, see <<reactive-generated-methods>>.
 [[reactive-repositories]]
 === Migrate a Panache repository
 
-Replace the CDI repository class with an interface, make custom method implementations `default` methods,
-and, if needed, declare annotated methods (implementations are generated), as shown in the example below:
+Replace a handwritten CDI repository implementation with an interface.
+Quarkus Data generates its CDI implementation at build time.
 
 [source,java]
-.Before
+.Before: handwritten Panache repository
 ----
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
@@ -778,7 +778,30 @@ public class PersonRepository implements PanacheRepository<Person> {
 ----
 
 [source,java]
-.After
+.After: Quarkus Data repository
+----
+import io.quarkus.data.hibernate.ManagedRepository;
+import io.smallrye.mutiny.Uni;
+import jakarta.data.repository.Repository;
+
+import java.util.List;
+
+@Repository
+public interface PersonRepository extends ManagedRepository.Reactive<Person> {
+    default Uni<List<Person>> findAlive() {
+        return list("status", Status.ALIVE);
+    }
+}
+----
+
+Change the entity superclass to `ManagedEntity.Reactive` as shown above.
+When using this top-level repository, the entity does not need a nested `Repo` interface.
+Replace the `@ApplicationScoped` class with the `@Repository` interface and use `default` for custom method
+implementations.
+You can also declare annotated methods whose implementations are generated, and take this a step further:
+
+[source,java]
+.Quarkus Data repository with annotated method
 ----
 import io.quarkus.data.hibernate.ManagedRepository;
 import io.smallrye.mutiny.Uni;
@@ -793,20 +816,19 @@ public interface PersonRepository extends ManagedRepository.Reactive<Person> {
     Uni<List<Person>> findByStatus(Status status);
 
     default Uni<List<Person>> findAlive() {
-        return findByStatus("status");
+        return findByStatus(Status.ALIVE);
     }
 }
 ----
 
-Change the entity superclass to `ManagedEntity.Reactive` as shown above.
-When using this top-level repository, the entity does not need a nested `Repo` interface.
-Quarkus Data generates the CDI implementation at build time.
 The top-level example uses `jakarta.data.repository.Repository`; a nested repository does not need this annotation.
 
-Injection and query call sites remain the same:
+Injection and query call sites remain the same before and after this conversion:
 
 [source,java]
 ----
+import jakarta.inject.Inject;
+
 @Inject
 PersonRepository people;
 

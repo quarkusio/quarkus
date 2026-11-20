@@ -91,6 +91,8 @@ public class AnonymousFallbackTest {
         assertThat(get("/principal/x", TestHttp.basic("alice", "alice")).statusCode()).isEqualTo(200);
         assertThat(get("/principal/x", TestHttp.basic("alice", "alice")).statusCode()).isEqualTo(429);
         assertThat(rejections.keys("principal")).last().isEqualTo("principal:alice");
+        // a rejection names the user, and nobody for an anonymous request
+        assertThat(rejections.principals("principal")).containsExactly(Optional.empty(), Optional.of("alice"));
     }
 
     @Test
@@ -148,6 +150,10 @@ public class AnonymousFallbackTest {
 
         List<String> keys(String rule) {
             return rejections.stream().filter(r -> r.rule().equals(rule)).map(info -> info.key().orElseThrow()).toList();
+        }
+
+        List<Optional<String>> principals(String rule) {
+            return rejections.stream().filter(r -> r.rule().equals(rule)).map(RateLimitRejectionInfo::principal).toList();
         }
     }
 }

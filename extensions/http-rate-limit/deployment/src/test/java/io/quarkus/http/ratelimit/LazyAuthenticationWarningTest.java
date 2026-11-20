@@ -5,9 +5,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +31,8 @@ public class LazyAuthenticationWarningTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = TestHttp.withUsers(new QuarkusExtensionTest()
-            .withApplicationRoot(jar -> jar.addClasses(TestHttp.class, TestClient.class, TestHttp.Resource.class)))
+            .withApplicationRoot(jar -> jar.addClasses(TestHttp.class, TestClient.class, TestHttp.Resource.class,
+                    Rejections.class)))
             .overrideConfigKey("quarkus.vertx.event-loops-pool-size", "1")
             .overrideConfigKey("quarkus.http.auth.proactive", "false")
             .overrideConfigKey(PREFIX + "paths", "/api/*")
@@ -37,21 +43,17 @@ public class LazyAuthenticationWarningTest {
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-elytron-security-properties-file-deployment", Version.getVersion())))
             .setLogRecordPredicate(r -> r.getLoggerName().startsWith("io.quarkus.http.ratelimit"))
-            .assertLogRecords(records -> {
-                assertThat(records).anySatisfy(r -> {
-                    assertThat(r.getLevel()).isEqualTo(Level.WARNING);
-                    assertThat(r.getMessage()).isEqualTo("Rate limit rule 'api' runs after authentication but "
-                            + "quarkus.http.auth.proactive=false: authentication is now forced for every request to "
-                            + "its paths, using the mechanisms selected by path; mechanisms selected by REST "
-                            + "annotations are not known at this point and are not applied");
-                });
-                // basic authentication is a mechanism
-                assertThat(records).noneSatisfy(r -> assertThat(r.getMessage())
-                        .contains("no HttpAuthenticationMechanism bean is present"));
-            });
+            // the build warns neither about the rule nor about its principal key, because basic authentication is a
+            // mechanism
+            .assertLogRecords(records -> assertThat(records)
+                    .filteredOn(r -> r.getLevel().intValue() >= Level.WARNING.intValue())
+                    .extracting(LogRecord::getMessage).isEmpty());
 
     @Inject
     Vertx vertx;
+
+    @Inject
+    Rejections rejections;
 
     @TestHTTPResource
     URL url;
@@ -76,5 +78,17 @@ public class LazyAuthenticationWarningTest {
         // an anonymous request is limited by its address, in a bucket of its own
         assertThat(http.get("/api/x").statusCode()).isEqualTo(200);
         assertThat(http.get("/api/x").statusCode()).isEqualTo(429);
+        // a rejection names the user, and nobody for an anonymous request
+        assertThat(rejections.principals).containsExactly(Optional.of("alice"), Optional.empty());
+    }
+
+    @Singleton
+    public static class Rejections {
+
+        final List<Optional<String>> principals = new CopyOnWriteArrayList<>();
+
+        void onRejection(@Observes RateLimitRejectionInfo rejection) {
+            principals.add(rejection.principal());
+        }
     }
 }

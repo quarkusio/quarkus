@@ -106,7 +106,7 @@ public class HttpRateLimitProcessor {
         validateSelections(config, validationPhase.getBeanResolver(), index.getComputingIndex(), errors);
         errors.addAll(HttpRateLimitBuildConfigValidator.validateRootPath(config, httpConfig.rootPath(),
                 httpConfig.nonApplicationRootPath()));
-        for (String warning : HttpRateLimitBuildConfigValidator.warnings(config, httpConfig.auth().proactive(),
+        for (String warning : HttpRateLimitBuildConfigValidator.warnings(config,
                 mechanisms)) {
             LOG.warn(warning);
         }

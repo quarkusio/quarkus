@@ -109,7 +109,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         final LaunchMode mode = LaunchMode.valueOf(parameter.getMode());
 
         final ApplicationDeploymentClasspathBuilder classpathBuilder = new ApplicationDeploymentClasspathBuilder(project, mode);
-        final Configuration runtimeConfig = classpathBuilder.getRuntimeConfiguration();
+        final Configuration runtimeConfig = classpathBuilder.getRuntimeConfigurationWithoutResolvingDeployment();
         final Configuration deploymentConfig = classpathBuilder.getDeploymentConfiguration();
         final PlatformImports platformImports = classpathBuilder.getPlatformImports();
 

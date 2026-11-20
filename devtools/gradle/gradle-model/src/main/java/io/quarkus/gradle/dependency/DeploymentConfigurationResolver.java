@@ -42,6 +42,7 @@ public class DeploymentConfigurationResolver {
         deploymentConfig.setCanBeConsumed(false);
         deploymentConfig.extendsFrom(baseRuntimeConfig);
         deploymentConfig.shouldResolveConsistentlyWith(baseRuntimeConfig);
+        deploymentConfig.getIncoming().beforeResolve(ignored -> directDeploymentDeps.get());
 
         ListProperty<Dependency> dependencyListProperty = project.getObjects().listProperty(Dependency.class);
         deploymentConfig.getDependencies().addAllLater(

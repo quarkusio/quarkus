@@ -149,6 +149,10 @@ export class QwcConfiguration extends observeState(LitElement) {
     }
 
     _reloadConfigSourceSet(){
+        // The locale can be ready before the configuration is loaded
+        if (!this._allConfiguration) {
+            return;
+        }
         this._configSourceSet = new Map();
         for (const configItem of this._allConfiguration) {
             let configSourceName = this._getConfigSourceName(configItem.configValue);

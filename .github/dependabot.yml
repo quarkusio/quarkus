@@ -71,6 +71,7 @@ updates:
       - dependency-name: org.hibernate.*:*
       # Test dependencies
       - dependency-name: org.htmlunit:htmlunit
+      - dependency-name: com.microsoft.playwright:playwright
       - dependency-name: io.rest-assured:*
       - dependency-name: org.hamcrest:hamcrest
       - dependency-name: org.junit:junit-bom

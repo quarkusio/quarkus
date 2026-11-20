@@ -669,4 +669,4 @@ The following information shows you how to use `OpenID Connect` for secure singl
 * xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
 * xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications]
 * xref:hibernate-orm-panache.adoc[Simplified Hibernate ORM with Panache]
-* xref:hibernate-orm.adoc[Using Hibernate ORM and Jakarta Persistence]
+* xref:hibernate-orm.adoc[Advanced Hibernate ORM and Jakarta Persistence Reference Guide]

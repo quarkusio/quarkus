@@ -64,7 +64,14 @@ export const templates = {
     'quarkus-kafka-client-operation': 'Operation',
     'quarkus-kafka-client-principal': 'Principal',
     'quarkus-kafka-client-permission': 'Permission',
-    'quarkus-kafka-client-resource-pattern': 'Resource Pattern',
+    'quarkus-kafka-client-resource-type': 'Resource Type',
+    'quarkus-kafka-client-resource-name': 'Resource Name',
+    'quarkus-kafka-client-pattern-type': 'Pattern Type',
+    'quarkus-kafka-client-create-acl': 'Create ACL',
+    'quarkus-kafka-client-delete-acl': 'Delete ACL',
+    'quarkus-kafka-client-delete-acl-confirm': str`Are you sure you want to delete this ACL: ${0} ${1} ${2} on ${3} ${4} (${5})?`,
+    'quarkus-kafka-client-principal-placeholder': 'User:alice',
+    'quarkus-kafka-client-acl-required': 'Principal and resource name are required',
     'quarkus-kafka-client-schema-registry-todo': 'TODO: Scheme Registry'
 };
 

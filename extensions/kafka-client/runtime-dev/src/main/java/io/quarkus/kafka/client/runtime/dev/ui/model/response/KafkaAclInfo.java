@@ -8,6 +8,7 @@ public class KafkaAclInfo {
     private String broker;
     private String aclOperations;
     private List<KafkaAclEntry> entries = new ArrayList<>();
+    private String errorMessage;
 
     public KafkaAclInfo() {
     }
@@ -17,6 +18,10 @@ public class KafkaAclInfo {
         this.broker = broker;
         this.aclOperations = aclOperations;
         this.entries = entries;
+    }
+
+    public KafkaAclInfo(String errorMessage) {
+        this.errorMessage = errorMessage;
     }
 
     public String getClusterId() {
@@ -33,5 +38,9 @@ public class KafkaAclInfo {
 
     public List<KafkaAclEntry> getEntries() {
         return entries;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
     }
 }

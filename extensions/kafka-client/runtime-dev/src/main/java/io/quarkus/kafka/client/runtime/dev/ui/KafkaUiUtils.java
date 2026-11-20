@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -22,6 +23,17 @@ import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.acl.AccessControlEntry;
+import org.apache.kafka.common.acl.AclBinding;
+import org.apache.kafka.common.acl.AclOperation;
+import org.apache.kafka.common.acl.AclPermissionType;
+import org.apache.kafka.common.errors.ClusterAuthorizationException;
+import org.apache.kafka.common.errors.InvalidRequestException;
+import org.apache.kafka.common.errors.SecurityDisabledException;
+import org.apache.kafka.common.resource.PatternType;
+import org.apache.kafka.common.resource.ResourcePattern;
+import org.apache.kafka.common.resource.ResourceType;
+import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -53,6 +65,8 @@ import io.vertx.core.json.JsonObject;
 
 @Singleton
 public class KafkaUiUtils {
+
+    private static final Logger LOG = Logger.getLogger(KafkaUiUtils.class);
 
     private final KafkaAdminClient kafkaAdminClient;
 
@@ -219,7 +233,6 @@ public class KafkaUiUtils {
     public KafkaAclInfo getAclInfo() throws InterruptedException, ExecutionException {
         var clusterInfo = clusterInfo(kafkaAdminClient.getCluster());
         var entries = new ArrayList<KafkaAclEntry>();
-        //TODO: fix it after proper error message impl
         try {
             var acls = kafkaAdminClient.getAclInfo();
             for (var acl : acls) {
@@ -227,17 +240,111 @@ public class KafkaUiUtils {
                         acl.entry().operation().name(),
                         acl.entry().principal(),
                         acl.entry().permissionType().name(),
-                        acl.pattern().toString());
+                        acl.entry().host(),
+                        acl.pattern().resourceType().name(),
+                        acl.pattern().name(),
+                        acl.pattern().patternType().name());
                 entries.add(entry);
             }
-        } catch (Exception e) {
-            // this mostly means that ALC controller is absent
+        } catch (ExecutionException e) {
+            return aclError("describe", "DESCRIBE", e);
         }
         return new KafkaAclInfo(
                 clusterInfo.getId(),
                 clusterInfo.getController().asFullNodeName(),
                 clusterInfo.getAclOperations(),
                 entries);
+    }
+
+    /**
+     * Creates an ACL and returns the updated ACL list, or an error message.
+     */
+    public KafkaAclInfo createAcl(String principal, String host, String operation, String permissionType,
+            String resourceType, String resourceName, String patternType)
+            throws InterruptedException, ExecutionException {
+        AclBinding binding;
+        try {
+            binding = toAclBinding(principal, host, operation, permissionType, resourceType, resourceName, patternType);
+        } catch (IllegalArgumentException e) {
+            return new KafkaAclInfo("Invalid ACL: " + e.getMessage());
+        }
+        try {
+            kafkaAdminClient.createAcl(binding);
+        } catch (ExecutionException e) {
+            return aclError("create", "ALTER", e);
+        }
+        return getAclInfo();
+    }
+
+    /**
+     * Deletes one ACL and returns the updated ACL list, or an error message.
+     */
+    public KafkaAclInfo deleteAcl(String principal, String host, String operation, String permissionType,
+            String resourceType, String resourceName, String patternType)
+            throws InterruptedException, ExecutionException {
+        AclBinding binding;
+        try {
+            binding = toAclBinding(principal, host, operation, permissionType, resourceType, resourceName, patternType);
+        } catch (IllegalArgumentException e) {
+            return new KafkaAclInfo("Invalid ACL: " + e.getMessage());
+        }
+        try {
+            kafkaAdminClient.deleteAcl(binding);
+        } catch (ExecutionException e) {
+            return aclError("delete", "ALTER", e);
+        }
+        return getAclInfo();
+    }
+
+    static AclBinding toAclBinding(String principal, String host, String operation, String permissionType,
+            String resourceType, String resourceName, String patternType) {
+        if (principal == null || principal.isBlank()) {
+            throw new IllegalArgumentException("principal is required, for example User:alice");
+        }
+        if (resourceName == null || resourceName.isBlank()) {
+            throw new IllegalArgumentException("resource name is required");
+        }
+        var pattern = new ResourcePattern(
+                ResourceType.valueOf(requireNonBlankAndUpperCase(resourceType, "resource type")),
+                resourceName,
+                PatternType.valueOf(requireNonBlankAndUpperCase(patternType, "pattern type")));
+        var entry = new AccessControlEntry(
+                principal,
+                host == null || host.isBlank() ? "*" : host,
+                AclOperation.valueOf(requireNonBlankAndUpperCase(operation, "operation")),
+                AclPermissionType.valueOf(requireNonBlankAndUpperCase(permissionType, "permission type")));
+        return new AclBinding(pattern, entry);
+    }
+
+    /**
+     * Validates and normalizes the name of a Kafka enum constant (for example {@code read} becomes {@code READ}),
+     * so that it can be passed to {@code Enum.valueOf}. Not for free-text values such as the principal or the
+     * resource name, which are case-sensitive.
+     *
+     * @throws IllegalArgumentException if the value is null or blank
+     */
+    private static String requireNonBlankAndUpperCase(String value, String name) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(name + " is required");
+        }
+        return value.trim().toUpperCase(Locale.ROOT);
+    }
+
+    static KafkaAclInfo aclError(String action, String requiredOperation, ExecutionException e) {
+        if (e.getCause() instanceof SecurityDisabledException) {
+            // The broker has no authorizer configured, so it does not support ACLs at all
+            return new KafkaAclInfo("ACL support requires a security authorizer to be enabled on the Kafka broker");
+        } else if (e.getCause() instanceof ClusterAuthorizationException) {
+            // The client principal is missing the required permission on the Cluster resource
+            return new KafkaAclInfo("The Kafka client lacks permission to " + action + " ACLs. "
+                    + "Grant " + requiredOperation + " on the Cluster resource to the client principal.");
+        } else if (e.getCause() instanceof InvalidRequestException) {
+            // The broker refused the ACL itself, for example because of an invalid resource name
+            return new KafkaAclInfo("The broker rejected the ACL request: " + e.getCause().getMessage());
+        }
+        // Anything else (timeouts, connection problems, ...): log the stack trace and show the cause
+        LOG.error("Failed to " + action + " ACL", e);
+        return new KafkaAclInfo("Failed to " + action + " ACL: " + e.getCause());
     }
 
     public String toJson(Object o) {

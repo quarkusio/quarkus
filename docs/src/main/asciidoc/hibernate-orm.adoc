@@ -2550,6 +2550,12 @@ public interface MyRepository {
 ----
 ====
 
+include::{includes}/hibernate-accessor.adoc[]
+
+// Keep this include in the parent guide: generated-dir can be relative or absolute.
+// Inside _includes/hibernate-accessor.adoc, relative paths would resolve from the wrong directory.
+include::{generated-dir}/config/quarkus-hibernate-accessor.adoc[opts=optional, leveloffset=+2]
+
 [[configuration-reference]]
 == Configuration Reference for Hibernate ORM
 

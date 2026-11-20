@@ -606,6 +606,12 @@ To support some external libraries that are creating a `ValidatorFactory` using 
 Quarkus returns the `ValidatorFactory` managed by Quarkus when `Validation.buildDefaultValidatorFactory()`
 is called.
 
+include::{includes}/hibernate-accessor.adoc[]
+
+// Keep this include in the parent guide: generated-dir can be relative or absolute.
+// Inside _includes/hibernate-accessor.adoc, relative paths would resolve from the wrong directory.
+include::{generated-dir}/config/quarkus-hibernate-accessor.adoc[opts=optional, leveloffset=+2]
+
 [[configuration-reference]]
 == Hibernate Validator Configuration Reference
 

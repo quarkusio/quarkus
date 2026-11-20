@@ -13,7 +13,7 @@ import org.hibernate.id.enhanced.SequenceStyleGenerator;
 public class EntityWithGenericGeneratorAndPooledOptimizer {
 
     @Id
-    @GeneratedValue(generator = "gen_gen_pooled_lo")
+    @GeneratedValue
     @GenericGenerator(type = SequenceStyleGenerator.class, parameters = @Parameter(name = OptimizableGenerator.OPT_PARAM, value = "pooled"))
     Long id;
 

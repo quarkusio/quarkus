@@ -2,6 +2,7 @@ package io.quarkus.rest.client.reactive.jaxb.runtime;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PushbackInputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
@@ -16,8 +17,6 @@ import jakarta.ws.rs.ext.MessageBodyReader;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Unmarshaller;
-
-import org.jboss.resteasy.reactive.common.util.StreamUtil;
 
 @ActivateRequestContext
 public class ClientJaxbMessageBodyReader implements MessageBodyReader<Object> {
@@ -50,11 +49,12 @@ public class ClientJaxbMessageBodyReader implements MessageBodyReader<Object> {
     }
 
     private Object doReadFrom(Class<Object> type, InputStream entityStream) throws IOException {
-        if (isInputStreamEmpty(entityStream)) {
+        PushbackInputStream pushbackEntityStream = new PushbackInputStream(entityStream);
+        if (isStreamEmpty(pushbackEntityStream)) {
             return null;
         }
 
-        return unmarshal(entityStream, type);
+        return unmarshal(pushbackEntityStream, type);
     }
 
     protected Object unmarshal(InputStream entityStream, Class<Object> type) {
@@ -66,7 +66,13 @@ public class ClientJaxbMessageBodyReader implements MessageBodyReader<Object> {
         }
     }
 
-    private boolean isInputStreamEmpty(InputStream entityStream) throws IOException {
-        return StreamUtil.isEmpty(entityStream) || entityStream.available() == 0;
+    // available() == 0 only means no bytes are buffered yet, e.g. a chunked body whose first chunk has not arrived
+    private boolean isStreamEmpty(PushbackInputStream pushbackStream) throws IOException {
+        int firstByte = pushbackStream.read();
+        if (firstByte == -1) {
+            return true;
+        }
+        pushbackStream.unread(firstByte);
+        return false;
     }
 }

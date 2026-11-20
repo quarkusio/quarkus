@@ -21,7 +21,7 @@ import io.vertx.sqlclient.RowIterator;
 import io.vertx.sqlclient.RowSet;
 import io.vertx.sqlclient.Tuple;
 
-public class OidcDbTokenStateManager implements TokenStateManager {
+public final class OidcDbTokenStateManager implements TokenStateManager {
 
     private static final Logger LOG = Logger.getLogger(OidcDbTokenStateManager.class);
     private static final String TOKEN_STATE_INSERT_FAILED = "Failed to insert token state into database";
@@ -37,15 +37,12 @@ public class OidcDbTokenStateManager implements TokenStateManager {
     private final String insertStatement;
     private final String deleteStatement;
     private final String getQuery;
-    private Pool pool;
+    private final Pool pool;
 
-    OidcDbTokenStateManager(String insertStatement, String deleteStatement, String getQuery) {
+    public OidcDbTokenStateManager(String insertStatement, String deleteStatement, String getQuery, Pool pool) {
         this.insertStatement = insertStatement;
         this.deleteStatement = deleteStatement;
         this.getQuery = getQuery;
-    }
-
-    void setSqlClientPool(Pool pool) {
         this.pool = pool;
     }
 

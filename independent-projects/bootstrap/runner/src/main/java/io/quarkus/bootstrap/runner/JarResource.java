@@ -17,6 +17,7 @@ import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -183,7 +184,13 @@ public class JarResource implements ClassLoadingResource {
         if (futureRef != null) {
             // The jarfile has been already used and it's going to be removed from the cache,
             // so the future must be already completed
-            var ref = futureRef.getNow(null);
+            JarFileReference ref;
+            try {
+                ref = futureRef.getNow(null);
+            } catch (CompletionException e) {
+                // opening the jar file failed, there is nothing to close
+                ref = null;
+            }
             if (ref != null) {
                 ref.markForClosing(this);
             }

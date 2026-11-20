@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.runner;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarFile;
 
@@ -128,12 +129,20 @@ public class JarFileReference {
         final var localJarFileRefFuture = jarResource.jarFileReference.get();
         boolean closingLocalJarFileRef = false;
         if (localJarFileRefFuture != null && localJarFileRefFuture.isDone()) {
-            JarFileReference jarFileReference = localJarFileRefFuture.join();
-            if (jarFileReference.acquire()) {
-                return consumeSharedJarFile(jarFileReference, jarResource, resource, fileConsumer);
+            JarFileReference jarFileReference = null;
+            try {
+                jarFileReference = localJarFileRefFuture.join();
+            } catch (CompletionException e) {
+                // opening this jar file failed (and the future has been unpublished), fall through and load again
+                // this reference is stale, there is nothing to help closing, so `closingLocalJarFileRef` stays false
             }
-            // The acquire failure implies that the reference is already marked to be closed.
-            closingLocalJarFileRef = true;
+            if (jarFileReference != null) {
+                if (jarFileReference.acquire()) {
+                    return consumeSharedJarFile(jarFileReference, jarResource, resource, fileConsumer);
+                }
+                // The acquire failure implies that the reference is already marked to be closed.
+                closingLocalJarFileRef = true;
+            }
         }
 
         // There's no valid jar reference, so load a new one
@@ -203,12 +212,25 @@ public class JarFileReference {
             if (jarResource.jarFileReference.compareAndSet(null, newJarRefFuture)) {
                 try {
                     return new JarFileReference(JarFiles.create(jarResource.jarPath.toFile()), newJarRefFuture);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                } catch (Throwable t) {
+                    // future was already published, but it will never be completed, so it must not be left behind
+                    jarResource.jarFileReference.compareAndSet(newJarRefFuture, null);
+                    newJarRefFuture.completeExceptionally(t);
+                    if (t instanceof RuntimeException re) {
+                        throw re;
+                    }
+                    if (t instanceof Error e) {
+                        throw e;
+                    }
+                    throw new RuntimeException("Failed opening " + jarResource.jarPath, t);
                 }
             }
             existingJarRefFuture = jarResource.jarFileReference.get();
-            existingJarRef = existingJarRefFuture == null ? null : existingJarRefFuture.join();
+            try {
+                existingJarRef = existingJarRefFuture == null ? null : existingJarRefFuture.join();
+            } catch (CompletionException e) {
+                existingJarRef = null;
+            }
         } while (existingJarRef == null || !existingJarRef.acquire());
         return existingJarRef;
     }

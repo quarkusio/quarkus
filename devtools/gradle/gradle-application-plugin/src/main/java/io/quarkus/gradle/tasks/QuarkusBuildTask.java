@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.LogLevel;
@@ -210,9 +211,24 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
 
     }
 
-    @InputFile
-    @PathSensitive(PathSensitivity.RELATIVE)
+    /**
+     * The serialized application model. Internal, since it holds absolute paths: its
+     * {@linkplain #getApplicationModelDigest() digest} and the {@linkplain #getDeploymentClasspath() files} it
+     * refers to are the inputs.
+     */
+    @Internal
     public abstract RegularFileProperty getApplicationModel();
+
+    @InputFile
+    @PathSensitive(PathSensitivity.NONE)
+    public abstract RegularFileProperty getApplicationModelDigest();
+
+    /**
+     * The artifacts the application model refers to: the runtime classpath and the deployment artifacts of its
+     * extensions.
+     */
+    @Classpath
+    public abstract ConfigurableFileCollection getDeploymentClasspath();
 
     ApplicationModel resolveAppModelForBuild() {
         try {

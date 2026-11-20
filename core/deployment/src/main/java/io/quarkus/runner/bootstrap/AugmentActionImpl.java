@@ -283,7 +283,8 @@ public class AugmentActionImpl implements AugmentAction {
         Map<String, String> metadata = effectiveArtifact.getMetadata();
         if (metadata != null) {
             for (Map.Entry<String, String> entry : metadata.entrySet()) {
-                properties.put("metadata." + entry.getKey(), entry.getValue());
+                properties.put("metadata." + entry.getKey(),
+                        relativizeToOutputDirectory(outputTargetBuildItem.getOutputDirectory(), entry.getValue()));
             }
         }
         try {
@@ -339,6 +340,45 @@ public class AugmentActionImpl implements AugmentAction {
     private static String artifactPathForResultMetadata(BuildSystemTargetBuildItem outputTargetBuildItem,
             ArtifactResultBuildItem artifactResultBuildItem) {
         return outputTargetBuildItem.getOutputDirectory().relativize(artifactResultBuildItem.getPath()).toString();
+    }
+
+    /**
+     * Records a metadata value that names a location under the output directory relative to it, the way
+     * {@code path} above is already recorded.
+     * <p>
+     * An absolute path here is a path to wherever the project happened to be built. A build tool that restores
+     * the outputs of the build from a cache populated by a build in another directory, as Gradle does, would
+     * otherwise restore a file pointing into that other directory.
+     * <p>
+     * The output directory itself, which container image builds record as {@code output-directory}, is recorded
+     * as {@code .}. Values that do not name a location under the output directory - anything absolute elsewhere,
+     * or already relative - are recorded unchanged.
+     * <p>
+     * Readers resolve these values against the directory holding {@code quarkus-artifact.properties}, which is
+     * the output directory. Resolving keeps an absolute value, as recorded by earlier versions, as it is.
+     *
+     * @param outputDirectory the output directory of the build, may be {@code null}
+     * @param value the metadata value
+     * @return the value relative to the output directory if it names a location under it, otherwise the value
+     */
+    static String relativizeToOutputDirectory(Path outputDirectory, String value) {
+        if (value == null || outputDirectory == null) {
+            return value;
+        }
+        try {
+            final Path path = Path.of(value);
+            if (!path.isAbsolute() || !path.startsWith(outputDirectory)) {
+                return value;
+            }
+            if (path.equals(outputDirectory)) {
+                // relativize() would return an empty path, which reads as "no value"
+                return ".";
+            }
+            return outputDirectory.relativize(path).toString();
+        } catch (RuntimeException e) {
+            // not a path at all, or not one this filesystem can parse: record it as it was
+            return value;
+        }
     }
 
     @Override

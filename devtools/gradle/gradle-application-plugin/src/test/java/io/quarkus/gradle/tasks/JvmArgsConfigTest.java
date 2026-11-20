@@ -41,7 +41,8 @@ public class JvmArgsConfigTest extends BaseGradleTest {
         FileUtils.copyDirectory(new File(url.toURI()), testProjectDir.toFile());
         FileUtils.copyFile(new File("../gradle.properties"), testProjectDir.resolve("gradle.properties").toFile());
 
-        BuildResult result = buildResult("test");
+        // The test JVM has to run, not come from the build cache, which another build of this project may have filled
+        BuildResult result = buildResult("test", "--no-build-cache");
 
         BuildTask testResult = result.task(":test");
         assertThat(testResult).isNotNull();

@@ -766,7 +766,7 @@ This returns a 302 redirect to the root URI of your application.
 
 === Related Origins
 
-`GET /.well-known/webauthn`: Retreives the list of https://passkeys.dev/docs/advanced/related-origins/[related origins].
+`GET /.well-known/webauthn`: Retrieves the list of https://passkeys.dev/docs/advanced/related-origins/[related origins].
 
 This defaults to the current origin on which Quarkus is deployed, but can be <<quarkus-security-webauthn_quarkus-webauthn-origins,configured>>.
 

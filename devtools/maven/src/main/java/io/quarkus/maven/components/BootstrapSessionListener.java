@@ -26,6 +26,8 @@ public class BootstrapSessionListener extends AbstractMavenLifecycleParticipant 
     private static final List<String> INJECTED_JVM_PROPS = List.of(
             "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
             "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            // this one is needed when running the tests, as we need to access com.sun.naming.internal.ResourceManager to reset a cache
+            "--add-opens=java.naming/com.sun.naming.internal=ALL-UNNAMED",
             "--add-exports=java.base/jdk.internal.module=ALL-UNNAMED");
 
     private final Logger logger;

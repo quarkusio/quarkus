@@ -1718,6 +1718,62 @@ Returning `Optional.empty()` marks the service as present-but-valueless. This is
 
 Use `.optional()` for services that may legitimately have nothing to produce based on configuration or runtime conditions.
 
+[[service-addresses]]
+===== Service Addresses
+
+Services that listen on sockets publish where they can be reached as an `io.quarkus.runtime.Address`, a named service
+value holding the protocol and the socket addresses the service is bound to. For example, the HTTP server publishes
+the `vertx-http`, `vertx-https` and `vertx-management` addresses
+(see the xref:http-reference.adoc#addresses[HTTP reference]).
+
+To connect to a service of the same application, depend on its `Address` by name instead of reading its configured
+host and port, which may differ from the bound ones (for example, with a random port):
+
+[source%nowrap,java]
+----
+reg.forService("io.quarkus.my-client")
+   .request(Address.class, "vertx-http")
+   .onStart((ctx, address) -> {
+       address.flatMap(Address::inet).ifPresent(socket -> {
+           // Connect to socket.getHostString() and socket.getPort()
+       });
+   });
+----
+
+Prefer `request()` over `require()`, since an `Address` is only available when the service is bound (for example,
+`vertx-https` requires TLS).
+
+A URL read from configuration may reference an `Address` as `quarkus://<name>/path`. Use
+`io.quarkus.runtime.AddressResolver.resolve(String)` to resolve it. Plain URLs are returned unchanged, so the same
+code path handles both. `AddressResolver` looks up the `Address` as a `@Named` CDI bean, so it can only be called
+after the target service is bound.
+
+To publish the `Address` of your own service:
+
+* Register it after the sockets are bound, with the actual values (such as the resolved port) rather than the configured ones.
+* Name the service after your server, and mark it `.optional()` if the server may not be bound depending on configuration.
+* Expose it as a `@Named` synthetic bean, so that applications can inject it and `AddressResolver` can resolve it.
+
+[source%nowrap,java]
+----
+reg.forService(Address.class, "my-server")
+   .atPhase(Phase.BINDING)
+   .require(MyServer.class) // <1>
+   .optional()
+   .onStart((ctx, server) -> server.isListening()
+           ? Optional.of(Address.of("http", server.boundSocketAddresses()))
+           : Optional.empty());
+
+SyntheticBeanBuildItem.configure(Address.class)
+   .setRuntimeInit()
+   .unremovable()
+   .scope(Singleton.class)
+   .addQualifier().annotation(DotNames.NAMED).addValue("value", "my-server").done()
+   .serviceValue(Address.class, "my-server")
+   .done();
+----
+<1> A service that starts once `MyServer` has bound its sockets.
+
 ==== Lambda Capture Rules
 
 Because the action lambda bytecode (defined inside `.onStart()`) is executed at runtime, values from the build step can be captured inside the lambda under strict rules.

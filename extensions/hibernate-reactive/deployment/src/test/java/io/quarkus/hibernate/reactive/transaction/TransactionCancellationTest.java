@@ -60,6 +60,10 @@ class TransactionCancellationTest {
     @Test
     @RunOnVertxContext
     void timeoutRecoveryCanStartAnotherTransaction(UniAsserter asserter) {
+        // A timeout cancels the upstream transactional subscription, then emits a failure downstream.
+        // Recovery must be able to start a new transaction after that cancellation cleanup.
+        // The cancelled operation acquires no connection, so this does not cover recovery overlapping
+        // asynchronous rollback or connection release; the row-lock test covers cancellation during SQL execution.
         asserter.assertEquals(() -> service.neverCompletes()
                 .ifNoItem().after(Duration.ofMillis(50)).fail()
                 .onFailure(TimeoutException.class).recoverWithUni(service::one), 1);

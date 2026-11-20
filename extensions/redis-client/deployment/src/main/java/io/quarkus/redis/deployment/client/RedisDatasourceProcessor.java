@@ -8,6 +8,7 @@ import static io.quarkus.redis.runtime.client.config.RedisConfig.DEFAULT_CLIENT_
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -71,7 +72,7 @@ public class RedisDatasourceProcessor {
                 .ifPresent(x -> names.addAll(configuredClientNames(buildTimeConfig, Config.get())));
 
         for (String name : names) {
-            request.produce(new RequestedRedisClientBuildItem(name));
+            request.produce(RequestedRedisClientBuildItem.dataSource(name));
         }
     }
 
@@ -89,6 +90,7 @@ public class RedisDatasourceProcessor {
     public void init(RedisClientRecorder recorder,
             ServiceRegistrar reg,
             List<RequestedRedisClientBuildItem> clients,
+            Optional<RedisDataSourceProviderBuildItem> dataSourceProvider,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
         if (clients.isEmpty()) {
@@ -108,6 +110,12 @@ public class RedisDatasourceProcessor {
                             jakarta.enterprise.inject.spi.CDI.current()
                                     .select(io.quarkus.redis.datasource.codecs.Codec.class).stream());
                 });
+
+        if (dataSourceProvider.isPresent()) {
+            // Another backend provides the data source services and beans; the codecs service above is kept, and
+            // the Vert.x client is only created for the clients using it (see RedisClientProcessor).
+            return;
+        }
 
         for (String name : names) {
             Supplier<ActiveResult> checkActive = recorder.checkActive(name);

@@ -698,6 +698,11 @@ public class MainClassBuildStep {
                     }
                 }
                 if (found) {
+                    if (Modifier.isAbstract(classByName.flags())) {
+                        throw new RuntimeException("The @QuarkusMain class '" + mainClassName
+                                + "' is an abstract QuarkusApplication and cannot be instantiated. "
+                                + "Make the class concrete or add a 'public static void main(String[])' method to it.");
+                    }
                     //this is QuarkusApplication, generate a real main to run it
                     generateMainForQuarkusApplication(mainClassName, generatedClass);
                     mainClassName = MAIN_CLASS;

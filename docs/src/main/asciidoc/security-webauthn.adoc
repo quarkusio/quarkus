@@ -616,7 +616,10 @@ creation and logins yourself via your own logic (see <<Handling login and regist
 
 == WebAuthn endpoints
 
-The Quarkus WebAuthn extension comes out of the box with these REST endpoints pre-defined:
+The Quarkus WebAuthn extension comes out of the box with these REST endpoints pre-defined.
+They are under `/q/webauthn` by default; set `quarkus.webauthn.root-path` to move them. A relative value, such as
+`passkeys`, is resolved against `quarkus.http.non-application-root-path`, and an absolute one, such as `/auth/webauthn`,
+is used as is:
 
 === Obtain a registration challenge
 
@@ -802,7 +805,7 @@ a JavaScript library to help you talk to the WebAuthn endpoints, at `/q/webauthn
 </script>
 ----
 
-Or, if you need to customise the endpoints:
+Or, if you need to customise the endpoints, for example because you changed `quarkus.webauthn.root-path`:
 
 [source,javascript]
 ----

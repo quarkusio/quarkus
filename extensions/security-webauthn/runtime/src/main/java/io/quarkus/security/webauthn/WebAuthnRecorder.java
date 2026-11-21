@@ -31,25 +31,24 @@ public class WebAuthnRecorder {
         this.config = config;
     }
 
-    public void setupRoutes(BeanContainer beanContainer, RuntimeValue<Router> routerValue, String prefix) {
+    public void setupRoutes(BeanContainer beanContainer, RuntimeValue<Router> routerValue, String rootPath) {
         WebAuthnSecurity security = beanContainer.beanInstance(WebAuthnSecurity.class);
         WebAuthnController controller = new WebAuthnController(security);
         Router router = routerValue.getValue();
         BodyHandler bodyHandler = BodyHandler.create();
-        // FIXME: paths configurable
-        // prefix is the non-application root path, ends with a slash: defaults to /q/
-        router.get(prefix + "webauthn/login-options-challenge").handler(bodyHandler)
+        // rootPath is quarkus.webauthn.root-path resolved to an absolute path, not ending with a slash: defaults to /q/webauthn
+        router.get(rootPath + "/login-options-challenge").handler(bodyHandler)
                 .handler(controller::loginOptionsChallenge);
-        router.get(prefix + "webauthn/register-options-challenge").handler(bodyHandler)
+        router.get(rootPath + "/register-options-challenge").handler(bodyHandler)
                 .handler(controller::registerOptionsChallenge);
         if (config.getValue().enableLoginEndpoint().orElse(false)) {
-            router.post(prefix + "webauthn/login").handler(bodyHandler).handler(controller::login);
+            router.post(rootPath + "/login").handler(bodyHandler).handler(controller::login);
         }
         if (config.getValue().enableRegistrationEndpoint().orElse(false)) {
-            router.post(prefix + "webauthn/register").handler(bodyHandler).handler(controller::register);
+            router.post(rootPath + "/register").handler(bodyHandler).handler(controller::register);
         }
-        router.get(prefix + "webauthn/webauthn.js").handler(controller::javascript);
-        router.get(prefix + "webauthn/logout").handler(controller::logout);
+        router.get(rootPath + "/webauthn.js").handler(controller::javascript);
+        router.get(rootPath + "/logout").handler(controller::logout);
         router.get("/.well-known/webauthn").handler(controller::wellKnown);
     }
 

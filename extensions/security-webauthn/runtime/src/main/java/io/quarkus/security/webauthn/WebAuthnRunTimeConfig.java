@@ -446,16 +446,16 @@ public interface WebAuthnRunTimeConfig {
     Optional<Duration> cookieMaxAge();
 
     /**
-     * Set to <code>true</code> if you want to enable the default registration endpoint at <code>/q/webauthn/register</code>, in
-     * which case
+     * Set to <code>true</code> if you want to enable the default registration endpoint, <code>register</code> under
+     * <code>quarkus.webauthn.root-path</code>, in which case
      * you should also implement the <code>WebAuthnUserProvider.store</code> method.
      */
     @WithDefault("false")
     Optional<Boolean> enableRegistrationEndpoint();
 
     /**
-     * Set to <code>true</code> if you want to enable the default login endpoint at <code>/q/webauthn/login</code>, in which
-     * case
+     * Set to <code>true</code> if you want to enable the default login endpoint, <code>login</code> under
+     * <code>quarkus.webauthn.root-path</code>, in which case
      * you should also implement the <code>WebAuthnUserProvider.update</code> method.
      */
     @WithDefault("false")

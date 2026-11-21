@@ -16,14 +16,17 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.CacheableTask;
+import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
@@ -100,9 +103,24 @@ public abstract class QuarkusGenerateCode extends QuarkusTaskWithExtensionView {
         return inputDirectories;
     }
 
-    @InputFile
-    @PathSensitive(PathSensitivity.RELATIVE)
+    /**
+     * The serialized application model. Internal, since it holds absolute paths: its
+     * {@linkplain #getApplicationModelDigest() digest} and the {@linkplain #getDeploymentClasspath() files} it
+     * refers to are the inputs.
+     */
+    @Internal
     public abstract RegularFileProperty getApplicationModel();
+
+    @InputFile
+    @PathSensitive(PathSensitivity.NONE)
+    public abstract RegularFileProperty getApplicationModelDigest();
+
+    /**
+     * The artifacts the application model refers to: the runtime classpath and the deployment artifacts of its
+     * extensions.
+     */
+    @Classpath
+    public abstract ConfigurableFileCollection getDeploymentClasspath();
 
     @OutputDirectory
     public abstract DirectoryProperty getGeneratedOutputDirectory();

@@ -12,7 +12,6 @@ import javax.net.ssl.SSLException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -70,12 +69,12 @@ public class HybridKeyExchangeTest extends AbstractHybridKeyExchangeTest {
     }
 
     @Test
-    @Disabled("Blocked by Vert.x SslEngineUtils.resolveKeyExchangeGroups fix")
     void testClientWithOnlyUnadvertisedPqcGroupFails() {
         WebClientOptions options = new WebClientOptions();
         options.setSsl(true);
         options.setSslEngineOptions(new OpenSSLEngineOptions());
         options.setTrustAll(true);
+        options.setVerifyHost(false);
         options.getSslOptions().setKeyExchangeGroups(List.of("SecP256r1MLKEM768"));
 
         WebClient client = WebClient.create(vertx, options);
@@ -89,7 +88,6 @@ public class HybridKeyExchangeTest extends AbstractHybridKeyExchangeTest {
     }
 
     @Test
-    @Disabled("Blocked by Vert.x SslEngineUtils.resolveKeyExchangeGroups fix")
     void testClientWithUnadvertisedPqcGroupFailsInStrictMode() {
         // Client offers SecP256r1MLKEM768 (not advertised by the server) with X25519 as a fallback.
         // Strict mode only advertises X25519MLKEM768, so there is no common group — handshake fails.
@@ -97,6 +95,7 @@ public class HybridKeyExchangeTest extends AbstractHybridKeyExchangeTest {
         options.setSsl(true);
         options.setSslEngineOptions(new OpenSSLEngineOptions());
         options.setTrustAll(true);
+        options.setVerifyHost(false);
         options.getSslOptions().setKeyExchangeGroups(List.of("SecP256r1MLKEM768", "X25519"));
 
         WebClient client = WebClient.create(vertx, options);

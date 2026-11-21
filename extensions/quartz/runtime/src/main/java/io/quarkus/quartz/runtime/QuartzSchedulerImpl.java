@@ -299,6 +299,10 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
                             createJobDefinitionQuartzTrigger(new SerializedExecutionMetadata(jobDetail), scheduled, oldTrigger);
                         }
                     }
+
+                    if (runtimeConfig.removeOrphanedJobs()) {
+                        removeOrphanedJobs();
+                    }
                 }
 
                 if (transaction != null) {
@@ -569,6 +573,30 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
                 }
             } catch (SchedulerException e) {
                 LOGGER.warnf("Unable to shutdown the scheduler", e);
+            }
+        }
+    }
+
+    /**
+     * Removes the jobs that were created for scheduled methods which no longer exist in the application.
+     * <p>
+     * Must be called once all scheduled methods and persistent job definitions are registered in {@link #scheduledTasks}.
+     */
+    private void removeOrphanedJobs() throws SchedulerException {
+        for (JobKey jobKey : scheduler.getJobKeys(GroupMatcher.jobGroupEquals(Scheduler.class.getName()))) {
+            if (scheduledTasks.containsKey(jobKey.getName())) {
+                continue;
+            }
+            JobDetail jobDetail = scheduler.getJobDetail(jobKey);
+            if (jobDetail == null
+                    // Only remove the jobs created by Quarkus
+                    || !InvokerJob.class.isAssignableFrom(jobDetail.getJobClass())
+                    // Never remove jobs scheduled programmatically, e.g. by another instance of the cluster
+                    || jobDetail.getJobDataMap().containsKey(SCHEDULED_METADATA)) {
+                continue;
+            }
+            if (scheduler.deleteJob(jobKey)) {
+                LOGGER.infof("Removed orphaned job %s that does not match any scheduled method", jobKey.getName());
             }
         }
     }
@@ -1122,7 +1150,8 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
                 String jobName = jobExecutionContext.getJobDetail().getKey().getName();
                 LOGGER.warnf("Unable to find corresponding Quartz trigger for job %s. "
                         + "Update your Quartz table by removing all phantom jobs or make sure that there is a "
-                        + "Scheduled method with the identity matching the job's name", jobName);
+                        + "Scheduled method with the identity matching the job's name. Set "
+                        + "'quarkus.quartz.remove-orphaned-jobs=true' to remove such jobs when the scheduler starts", jobName);
             }
         }
     }

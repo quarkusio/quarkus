@@ -122,6 +122,25 @@ public interface QuartzRuntimeConfig {
     boolean runBlockingScheduledMethodOnQuartzThread();
 
     /**
+     * When set to {@code true}, the jobs of scheduled methods that no longer exist in the application are removed from the
+     * job store when the scheduler starts.
+     * <p>
+     * The job of a scheduled method is stored under the identity of the method. If the method is removed, or if its identity
+     * changes, the job and its trigger remain in the job store, and a warning is logged every time the trigger fires.
+     * <p>
+     * Only the jobs that Quarkus created for scheduled methods are removed. Jobs scheduled programmatically with
+     * {@code Scheduler#newJob()} and jobs scheduled directly with the Quartz API are never removed.
+     * <p>
+     * Ignored if using a `ram` store i.e {@link StoreType#RAM}.
+     * <p>
+     * In a cluster, the jobs are removed by each instance when it starts. Therefore, during a rolling update, the instances
+     * running the new version of the application remove the jobs of scheduled methods that only exist in the previous
+     * version.
+     */
+    @WithDefault("false")
+    boolean removeOrphanedJobs();
+
+    /**
      * The name of the datasource to use.
      * <p>
      * This property in valid only in combination with {@link QuartzBuildTimeConfig#deferDatasourceCheck()}

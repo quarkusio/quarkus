@@ -16,15 +16,6 @@
     <properties>
         <wiremock.server.port>8766</wiremock.server.port>
         <microprofile-rest-client-tck.version>4.0</microprofile-rest-client-tck.version>
-        <!--
-        Disabling the enforcer because of:
-
-        For future Jakarta versions, we will need to keep javax.servlet around
-        as some classes of the MicroProfile REST Client TCK rely on it.
-        See https://github.com/eclipse/microprofile-rest-client/issues/346
-        and https://github.com/eclipse/microprofile-rest-client/issues/341
-        -->
-        <enforcer.skip>true</enforcer.skip>
     </properties>
 
     <build>
@@ -60,11 +51,6 @@
 
                         <!-- ConversationScope not supported in Quarkus -->
                         <exclude>org.eclipse.microprofile.rest.client.tck.cditests.HasConversationScopeTest</exclude>
-
-                        <!-- we have a newer version of the test in the code -->
-                        <!-- remove our test and remove this once https://github.com/eclipse/microprofile-rest-client/pull/300 gets -->
-                        <!-- into a release -->
-                        <exclude>org.eclipse.microprofile.rest.client.tck.cditests.CDIInterceptorTest</exclude>
 
                         <!-- We have our own version of this test, the original doesn't failing the build -->
                         <!-- on invalid interfaces -->
@@ -184,17 +170,6 @@
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
-        </dependency>
-        <!--
-        For future Jakarta versions, we will need to keep javax.servlet around
-        as some classes of the MicroProfile REST Client TCK rely on it.
-        See https://github.com/eclipse/microprofile-rest-client/issues/346
-        and https://github.com/eclipse/microprofile-rest-client/issues/341
-        -->
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>4.0.1</version>
         </dependency>
     </dependencies>
 </project>

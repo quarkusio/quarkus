@@ -70,6 +70,7 @@ public class QuarkusDataHibernateExtension implements HibernateProcessorExtensio
     private boolean usesQuarkusDataHibernate;
     private boolean usesQuarkusReactiveCommon;
     private boolean injectionAvailable;
+    private boolean lifecycleEventsAvailable;
 
     @Override
     public void init(ProcessingEnvironment processingEnvironment) {
@@ -93,6 +94,9 @@ public class QuarkusDataHibernateExtension implements HibernateProcessorExtensio
         }
 
         injectionAvailable = packagePresent(quarkusOrmPackage) || packagePresent(quarkusReactivePackage);
+        lifecycleEventsAvailable = packagePresent(elements.getPackageElement("jakarta.data.event"))
+                && packagePresent(elements.getPackageElement("jakarta.inject"))
+                && packagePresent(elements.getPackageElement("jakarta.enterprise.context"));
         usesQuarkusOrm = packagePresent(quarkusOrmPanachePackage);
         usesQuarkusReactive = packagePresent(quarkusReactivePanachePackage);
         usesQuarkusDataHibernate = packagePresent(quarkusDataHibernatePackage);
@@ -299,6 +303,11 @@ public class QuarkusDataHibernateExtension implements HibernateProcessorExtensio
             TypeElement element,
             @Nullable ExecutableElement getter,
             AnnotationMetaEntityContext context) {
+
+        if (injectionAvailable && lifecycleEventsAvailable && context.metamodel().isJakartaDataStyle()
+                && hasAnnotation(element, ENTITY)) {
+            LifecycleEventMembers.add(element, context);
+        }
 
         final boolean entity = isExtensionEntity(element);
         final boolean repo = isExtensionRepository(element);

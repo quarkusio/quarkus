@@ -766,7 +766,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
     }
     
     _renderTextCell(value, colType){
-        if(colType === "bool" || colType === "boolean"){ // TODO: Can we do int(1) and asume this will be a boolean ?
+        if(colType === "bool" || colType === "boolean"){ // TODO: Can we do int(1) and assume this will be a boolean ?
             if(value && value === "true"){
                 return html`<vaadin-icon style="color: var(--lumo-contrast-50pct);" title="${value}" icon="font-awesome-regular:square-check"></vaadin-icon>`;
             }else {

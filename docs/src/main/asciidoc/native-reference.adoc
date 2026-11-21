@@ -1147,45 +1147,6 @@ RETURN count(*);
 
 Copy and paste the contents of the script into a file called `import.cypher`.
 
-[WARNING]
-====
-Mandrel 22.0.0 contains a bug where the symbolic links used by the import cypher file are not correctly set when generating reports within a container
-(for more details see link:https://github.com/oracle/graal/issues/4355[here]).
-This can be worked around by copying the following script into a file and executing it:
-
-[source,bash]
-----
-set -e
-
-project="debugging-native"
-
-pushd target/*-native-image-source-jar/reports
-
-rm -f call_tree_vm.csv
-ln -s call_tree_vm_${project}-* call_tree_vm.csv
-
-rm -f call_tree_direct_edges.csv
-ln -s call_tree_direct_edges_${project}-* call_tree_direct_edges.csv
-
-rm -f call_tree_entry_points.csv
-ln -s call_tree_entry_points_${project}-* call_tree_entry_points.csv
-
-rm -f call_tree_methods.csv
-ln -s call_tree_methods_${project}-* call_tree_methods.csv
-
-rm -f call_tree_virtual_edges.csv
-ln -s call_tree_virtual_edges_${project}-* call_tree_virtual_edges.csv
-
-rm -f call_tree_virtual_methods.csv
-ln -s call_tree_virtual_methods_${project}-* call_tree_virtual_methods.csv
-
-rm -f call_tree_override_by_edges.csv
-ln -s call_tree_override_by_edges_${project}-* call_tree_override_by_edges.csv
-
-popd
-----
-====
-
 Next, copy the import cypher script and CSV files into Neo4j's import folder:
 
 [source,bash]

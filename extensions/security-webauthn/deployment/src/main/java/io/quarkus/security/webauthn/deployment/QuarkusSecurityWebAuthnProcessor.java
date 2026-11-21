@@ -33,16 +33,17 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.webauthn.WebAuthn;
 import io.quarkus.security.webauthn.WebAuthnAuthenticationMechanism;
 import io.quarkus.security.webauthn.WebAuthnAuthenticatorStorage;
 import io.quarkus.security.webauthn.WebAuthnBuildTimeConfig;
+import io.quarkus.security.webauthn.WebAuthnController;
 import io.quarkus.security.webauthn.WebAuthnRecorder;
 import io.quarkus.security.webauthn.WebAuthnSecurity;
 import io.quarkus.security.webauthn.WebAuthnTrustedIdentityProvider;
 import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
-import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
+import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 
 @BuildSteps(onlyIf = QuarkusSecurityWebAuthnProcessor.IsEnabled.class)
@@ -105,11 +106,39 @@ class QuarkusSecurityWebAuthnProcessor {
     @BuildStep
     public void setup(
             WebAuthnRecorder recorder,
-            VertxWebRouterBuildItem vertxWebRouterBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
-        recorder.setupRoutes(beanContainerBuildItem.getValue(), vertxWebRouterBuildItem.getHttpRouter(),
-                nonApplicationRootPathBuildItem.getNonApplicationRootPath());
+            BuildProducer<RouteBuildItem> routes) {
+        RuntimeValue<WebAuthnController> controller = recorder.controller(beanContainerBuildItem.getValue());
+        // FIXME: paths configurable
+        // framework routes are resolved against the non-application root path: defaults to /q/
+        routes.produce(RouteBuildItem.newFrameworkRoute("webauthn/login-options-challenge")
+                .withRouteCustomizer(recorder.routeFunction("GET", true))
+                .withRequestHandler(recorder.loginOptionsChallengeHandler(controller))
+                .build());
+        routes.produce(RouteBuildItem.newFrameworkRoute("webauthn/register-options-challenge")
+                .withRouteCustomizer(recorder.routeFunction("GET", true))
+                .withRequestHandler(recorder.registerOptionsChallengeHandler(controller))
+                .build());
+        routes.produce(RouteBuildItem.newFrameworkRoute("webauthn/login")
+                .withRouteCustomizer(recorder.loginRouteFunction())
+                .withRequestHandler(recorder.loginHandler(controller))
+                .build());
+        routes.produce(RouteBuildItem.newFrameworkRoute("webauthn/register")
+                .withRouteCustomizer(recorder.registerRouteFunction())
+                .withRequestHandler(recorder.registerHandler(controller))
+                .build());
+        routes.produce(RouteBuildItem.newFrameworkRoute("webauthn/webauthn.js")
+                .withRouteCustomizer(recorder.routeFunction("GET", false))
+                .withRequestHandler(recorder.javascriptHandler(controller))
+                .build());
+        routes.produce(RouteBuildItem.newFrameworkRoute("webauthn/logout")
+                .withRouteCustomizer(recorder.routeFunction("GET", false))
+                .withRequestHandler(recorder.logoutHandler(controller))
+                .build());
+        routes.produce(RouteBuildItem.newApplicationRoute(".well-known/webauthn")
+                .withRouteCustomizer(recorder.routeFunction("GET", false))
+                .withRequestHandler(recorder.wellKnownHandler(controller))
+                .build());
     }
 
     @BuildStep

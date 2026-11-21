@@ -1253,7 +1253,7 @@ A very common need is to start some services on which your Quarkus application d
 By simply annotating any test in the test suite with `@QuarkusTestResource`, Quarkus will run the corresponding `QuarkusTestResourceLifecycleManager` before any tests are run.
 A test suite is also free to utilize multiple `@QuarkusTestResource` annotations, in which case all the corresponding `QuarkusTestResourceLifecycleManager` objects will be run before the tests.
 
-NOTE: Test resources are global, even if they are defined on a test class or custom profile, which means they will all be activated for all tests, even though we do
+NOTE: Test resources are global, even if they are defined on a test class, a custom profile or any other class of the test folder, which means they will all be activated for all tests, even though we do
 remove duplicates. If you want to only enable a test resource on a single test class or test profile, you can use `@QuarkusTestResource(restrictToAnnotatedClass = true)`.
 
 NOTE: When using multiple test resources, they can be started concurrently. For that you need to set `@QuarkusTestResource(parallel = true)`.
@@ -1327,8 +1327,9 @@ any necessary injections into the test class.
 It is possible to write test resources that are enabled and configured using annotations. This is enabled by placing the `@QuarkusTestResource`
 on an annotation which will be used to enable and configure the test resource.
 
-For example, this defines the `@WithKubernetesTestServer` annotation, which you can use on your tests to activate the `KubernetesServerTestResource`,
-but only for the annotated test class. You can also place them on your `QuarkusTestProfile` test profiles.
+For example, this defines the `@WithKubernetesTestServer` annotation, which you can use on your tests to activate the `KubernetesServerTestResource`.
+You can also place them on your `QuarkusTestProfile` test profiles.
+The scope of the test resource behind such a meta-annotation is described in <<test-resource-meta-annotation-scopes>>.
 
 [source,java]
 ----
@@ -1397,6 +1398,28 @@ public @interface WithRepeatableTestResource {
     }
 }
 ----
+
+[[test-resource-meta-annotation-scopes]]
+==== Scoping and migration of test resource meta-annotations
+
+The scope of a test resource declared through a meta-annotation is the scope of the test resource annotation it carries:
+
+* a custom annotation carrying `@QuarkusTestResource` produces a global resource, unless the carried annotation sets `restrictToAnnotatedClass = true`, in which case the resource only applies to tests whose class hierarchy (the test class itself, its superclasses and enclosing classes) contains the annotated class;
+* a custom annotation carrying `@WithTestResource` produces a resource with the `scope` of the carried `@WithTestResource` (see the `TestResourceScope` values described in the next section).
+
+[IMPORTANT]
+====
+Meta-annotation usages on any class of the test folder are discovered, not only on classes of the currently running test class hierarchy.
+From classes outside of the current test class hierarchy (for example a plain holder class of the test folder), only globally scoped resources are activated; meta-annotations with a restricted scope placed on such classes keep being ignored.
+====
+
+In practice:
+
+* A globally scoped meta-annotation (for example `@QuarkusTestResource` without `restrictToAnnotatedClass = true`, or `@WithTestResource(scope = TestResourceScope.GLOBAL)`) placed on a holder class of the test folder, on a test base class, or on any other class of the test folder now activates its resource for the whole test suite. Previously, tests that did not include the annotated class in their class hierarchy never saw such a resource, even though it was silently recorded as global, so no resource was started at all in that case.
+* If you rely on a meta-annotation *not* being registered (because it is placed outside of the relevant test class hierarchies), the resource will now start for every test. To keep the previous behavior, either remove the meta-annotation from classes that are not part of a test class hierarchy, or restrict its scope:
+** for a `@QuarkusTestResource` based meta-annotation, set `restrictToAnnotatedClass = true` on the carried annotation;
+** for a `@WithTestResource` based meta-annotation, set the `scope` of the carried annotation to `TestResourceScope.MATCHING_RESOURCES` or `TestResourceScope.RESTRICTED_TO_CLASS`.
+* Conversely, if you want a test resource to apply to the whole test suite, it can now be declared through a meta-annotation on any class of the test folder.
 
 === Usage of `@WithTestResource`
 

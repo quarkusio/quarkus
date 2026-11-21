@@ -45,8 +45,11 @@ public @interface QuarkusTestResource {
 
     /**
      * Whether this annotation should only be enabled if it is placed on the currently running test class or test profile.
-     * Note that this defaults to true for meta-annotations since meta-annotations are only considered
-     * for the current test class or test profile.
+     * When {@code false} (the default), the test resource applies to all tests of the test suite, even when the annotation
+     * (or a meta-annotation carrying it) is placed on a class - for example a plain holder class of the test folder - that is
+     * not part of the currently running test class hierarchy.
+     * Meta-annotations carrying this annotation are discovered throughout the test folder: from classes outside of the
+     * currently running test class hierarchy, only usages that result in a global scope are activated.
      * <p>
      * Note: When this is set to {@code true}, the annotation {@code @QuarkusTestResource} will result
      * in the application being re-augmented and restarted (in a similar fashion as happens in dev mode when a change is

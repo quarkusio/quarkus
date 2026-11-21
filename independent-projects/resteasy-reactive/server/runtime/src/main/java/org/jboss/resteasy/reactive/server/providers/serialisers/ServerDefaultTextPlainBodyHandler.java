@@ -1,6 +1,8 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 
 import jakarta.ws.rs.BadRequestException;
@@ -37,5 +39,19 @@ public class ServerDefaultTextPlainBodyHandler extends DefaultTextPlainBodyHandl
     public Object readFrom(Class<Object> type, Type genericType, MediaType mediaType, ServerRequestContext context)
             throws WebApplicationException, IOException {
         return doReadFrom(type, mediaType, context.getInputStream());
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Override
+    protected Object doReadFrom(Class type, MediaType mediaType, InputStream entityStream) throws IOException {
+        try {
+            return super.doReadFrom(type, mediaType, entityStream);
+        } catch (RuntimeException e) {
+            // the value could not be converted to the requested type, e.g. "abc" for an int
+            if (e.getCause() instanceof InvocationTargetException) {
+                throw new BadRequestException(e);
+            }
+            throw e;
+        }
     }
 }

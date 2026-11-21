@@ -56,7 +56,7 @@ public class RepeatedPermissionsAllowedTest {
                 .body("{%$$#!#@") // assures checks are eager
                 .post("/hello")
                 .then()
-                .statusCode(500);
+                .statusCode(400);
     }
 
     @Test
@@ -80,7 +80,7 @@ public class RepeatedPermissionsAllowedTest {
                 .body("{%$$#!#@") // assures checks are eager
                 .post("/hello-interface")
                 .then()
-                .statusCode(500);
+                .statusCode(400);
     }
 
     @Path("/hello")

@@ -69,24 +69,15 @@ public final class HttpRateLimitBuildConfigValidator {
     }
 
     /**
-     * @param proactive {@code quarkus.http.auth.proactive}
      * @param mechanisms whether there is an {@code HttpAuthenticationMechanism} bean
      * @return one message per rule that is valid but probably not what was intended
      */
-    public static List<String> warnings(HttpRateLimitBuildTimeConfig config, boolean proactive, boolean mechanisms) {
+    public static List<String> warnings(HttpRateLimitBuildTimeConfig config, boolean mechanisms) {
         List<String> warnings = new ArrayList<>();
         for (Map.Entry<String, Rule> entry : config.rules().entrySet()) {
             Rule rule = entry.getValue();
             if (RateLimitRuleConfig.phase(config, rule) != RateLimitPhase.POST_AUTHENTICATION) {
                 continue;
-            }
-            if (!proactive) {
-                // HttpAuthenticator.getPathSpecificMechanism reads routing context data that only the REST layer sets
-                warnings.add("Rate limit rule '" + entry.getKey()
-                        + "' runs after authentication but quarkus.http.auth.proactive=false:"
-                        + " authentication is now forced for every request to its paths, using the mechanisms selected"
-                        + " by path; mechanisms selected by REST annotations are not known at this point and are not"
-                        + " applied");
             }
             if ("principal".equals(RateLimitRuleConfig.key(config, rule)) && !mechanisms) {
                 warnings.add("Rate limit rule '" + entry.getKey()

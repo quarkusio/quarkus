@@ -1027,8 +1027,14 @@ The same paths are exempt from load shedding.
 [[authentication]]
 === Authentication and permissions
 
-With lazy authentication (`quarkus.http.auth.proactive=false`), a `post-authentication` rule authenticates the request for all of its paths, using the mechanisms configured for those paths with `quarkus.http.auth.permission.*`; mechanisms selected by annotations on REST methods are not known yet.
-The build logs a warning for such a rule, and for a `principal` key when the application has no `HttpAuthenticationMechanism` bean, since every request would then be anonymous.
+When proactive authentication is disabled (`quarkus.http.auth.proactive=false`), a `post-authentication` rule authenticates the request for all of its paths, using the mechanisms configured for those paths with xref:security-authorize-web-endpoints-reference.adoc#authorization-using-configuration[HTTP permissions].
+A `post-authentication` rule that applies to every path therefore authenticates every request, and disabling proactive authentication has no effect.
+
+A `post-authentication` rule is matched by the request path, so it authenticates the request before the endpoint has been matched.
+Annotations such as xref:security-authentication-mechanisms.adoc#use-annotations-for-path-based-auth[`@BasicAuthentication`] or xref:security-openid-connect-multitenancy.adoc#annotations-tenant-resolver[`@Tenant`] can select the authentication mechanism or resolve the OIDC tenant only after the endpoint has been matched.
+A request to an endpoint with such an annotation can therefore be rejected with the `401` status, because the rule authenticates it with a different mechanism or tenant than the annotation requires.
+Do not apply a `post-authentication` rule to endpoints that use these annotations.
+Instead, select the authentication mechanism xref:security-authentication-mechanisms.adoc#path-based-authentication[by path] and resolve the OIDC tenant with xref:security-openid-connect-multitenancy.adoc#configure-tenant-paths[tenant paths], or limit these endpoints with a `pre-authentication` rule.
 
 A custom resolver in the `post-authentication` phase is called for anonymous requests too: `RateLimitContext.identity()` tells whether the request is anonymous.
 

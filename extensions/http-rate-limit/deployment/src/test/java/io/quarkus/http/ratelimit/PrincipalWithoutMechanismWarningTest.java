@@ -3,9 +3,14 @@ package io.quarkus.http.ratelimit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URL;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +27,8 @@ public class PrincipalWithoutMechanismWarningTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
-            .withApplicationRoot(jar -> jar.addClasses(TestHttp.class, TestClient.class, TestHttp.Resource.class))
+            .withApplicationRoot(jar -> jar.addClasses(TestHttp.class, TestClient.class, TestHttp.Resource.class,
+                    Rejections.class))
             .overrideConfigKey("quarkus.vertx.event-loops-pool-size", "1")
             // no mechanism at all
             .overrideConfigKey("quarkus.http.auth.basic", "false")
@@ -40,6 +46,9 @@ public class PrincipalWithoutMechanismWarningTest {
 
     @Inject
     Vertx vertx;
+
+    @Inject
+    Rejections rejections;
 
     @TestHTTPResource
     URL url;
@@ -61,5 +70,16 @@ public class PrincipalWithoutMechanismWarningTest {
         // limited by address, the fallback of the principal key
         assertThat(http.get("/api/x").statusCode()).isEqualTo(200);
         assertThat(http.get("/api/x").statusCode()).isEqualTo(429);
+        assertThat(rejections.principals).containsExactly(Optional.empty());
+    }
+
+    @Singleton
+    public static class Rejections {
+
+        final List<Optional<String>> principals = new CopyOnWriteArrayList<>();
+
+        void onRejection(@Observes RateLimitRejectionInfo rejection) {
+            principals.add(rejection.principal());
+        }
     }
 }

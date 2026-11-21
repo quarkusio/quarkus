@@ -121,7 +121,7 @@ public class UnsupportedPropertiesTest {
     @Entity
     public static class SpyingIdentifierGeneratorEntity {
         @Id
-        @GeneratedValue(generator = "spying-generator")
+        @GeneratedValue
         @GenericGenerator(type = SettingsSpyingIdentifierGenerator.class)
         private Long id;
 

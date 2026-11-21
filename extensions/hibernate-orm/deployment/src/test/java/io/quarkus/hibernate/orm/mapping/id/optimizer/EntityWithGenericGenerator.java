@@ -11,7 +11,7 @@ import org.hibernate.id.enhanced.SequenceStyleGenerator;
 public class EntityWithGenericGenerator {
 
     @Id
-    @GeneratedValue(generator = "gen_gen")
+    @GeneratedValue
     @GenericGenerator(type = SequenceStyleGenerator.class)
     Long id;
 

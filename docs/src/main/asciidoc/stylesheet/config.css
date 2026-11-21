@@ -68,10 +68,6 @@ table.configuration-reference.tableblock caption {
   color: inherit;
 }
 
-table.configuration-reference.tableblock .configuration-legend input {
-  float: center;
-}
-
 table.configuration-reference.tableblock .description-collapsed {
   height: 19px;
   overflow: hidden;
@@ -111,7 +107,6 @@ input[id^="config-search-"] {
   width: 100%;
   margin-top: 10px;
   padding: 12px 24px;
-  transition: transform 250ms ease-in-out;
   font-size: 14px;
   line-height: 18px;
   color: color(#4695eb a(0.8));

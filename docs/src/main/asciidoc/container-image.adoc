@@ -59,6 +59,18 @@ To support these cases, Quarkus copies any file under `src/main/jib` into the bu
 idea that the Jib Maven and Gradle plugins support).
 For example, the presence of `src/main/jib/foo/bar` would result in  `/foo/bar` being added into the container filesystem.
 
+To add the files of other directories, or to add them to another directory of the container image, use `quarkus.jib.extra-directories`, the counterpart of the `extraDirectories` option of the Jib plugins:
+
+[source,properties]
+----
+quarkus.jib.extra-directories.config.from=src/main/container-config
+quarkus.jib.extra-directories.config.into=/opt/app/config
+----
+
+With this configuration, `src/main/container-config/foo/bar` is added as `/opt/app/config/foo/bar`.
+A relative `from` path is resolved against the project directory, and `into` defaults to `/`.
+The build fails if the `from` directory does not exist.
+
 ==== JVM Debugging
 
 There are cases where the built container image may need to have Java debugging conditionally enabled at runtime.

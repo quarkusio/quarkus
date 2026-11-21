@@ -471,7 +471,7 @@ You can also set it to `false` to explicitly disable recovery even when XA datas
 
 [NOTE]
 ====
-To work around the current known issue of link:https://issues.redhat.com/browse/AG-209[Agroal having a different view on running transaction checks], set the datasource transaction type for the datasource responsible for writing the transaction logs to `disabled`:
+The datasource that writes the transaction logs must not take part in transactions. Set its transaction type to `disabled`, or the application fails to start:
 
 ----
 quarkus.datasource.TX_LOG.jdbc.transactions=disabled

@@ -1,6 +1,6 @@
 "use strict";
 
-/* Universial Module (UMD) design pattern
+/* Universal Module (UMD) design pattern
  * https://github.com/umdjs/umd/blob/master/templates/returnExports.js
  */
 (function (root, factory) {

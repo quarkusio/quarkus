@@ -18,8 +18,6 @@ import java.util.Optional;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.logging.Handler;
 
-import org.jboss.logmanager.LogContext;
-import org.jboss.logmanager.handlers.OutputStreamHandler;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -38,7 +36,6 @@ import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
-import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.deployment.dev.testing.LogCapturingOutputFilter;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
@@ -179,45 +176,6 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         }
     }
 
-    private static Handler ORIGINAL_QUARKUS_CONSOLE_HANDLER = null;
-    private static Handler REDIRECT_QUARKUS_CONSOLE_HANDLER = null;
-
-    private static void installLoggerRedirect() {
-        var rootLogger = LogContext.getLogContext()
-                .getLogger("");
-
-        ORIGINAL_QUARKUS_CONSOLE_HANDLER = null;
-        REDIRECT_QUARKUS_CONSOLE_HANDLER = null;
-
-        for (var topLevelHandler : rootLogger.getHandlers()) {
-            if (topLevelHandler instanceof QuarkusDelayedHandler) {
-                ORIGINAL_QUARKUS_CONSOLE_HANDLER = topLevelHandler;
-                for (var h : ((QuarkusDelayedHandler) topLevelHandler).getHandlers()) {
-                    if (h instanceof org.jboss.logmanager.handlers.ConsoleHandler) {
-                        REDIRECT_QUARKUS_CONSOLE_HANDLER = new OutputStreamHandler(QuarkusConsole.REDIRECT_OUT,
-                                h.getFormatter());
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-
-        if (REDIRECT_QUARKUS_CONSOLE_HANDLER != null) {
-            rootLogger.removeHandler(ORIGINAL_QUARKUS_CONSOLE_HANDLER);
-            rootLogger.addHandler(REDIRECT_QUARKUS_CONSOLE_HANDLER);
-        }
-    }
-
-    private static void uninstallLoggerRedirect() {
-        var rootLogger = LogContext.getLogContext()
-                .getLogger("");
-        if (REDIRECT_QUARKUS_CONSOLE_HANDLER != null) {
-            rootLogger.addHandler(ORIGINAL_QUARKUS_CONSOLE_HANDLER);
-            rootLogger.removeHandler(REDIRECT_QUARKUS_CONSOLE_HANDLER);
-        }
-    }
-
     private void flushAllLoggers() {
         Enumeration<String> loggerNames = org.jboss.logmanager.LogContext.getLogContext()
                 .getLoggerNames();
@@ -234,12 +192,13 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
     private int doJavaStart(ExtensionContext context, String[] arguments) throws Exception {
         TracingHandler.quarkusStarting();
         Closeable testResourceManager = null;
+        MainTestLogRedirect logRedirect = new MainTestLogRedirect();
         try {
             StartupAction startupAction = prepareResult.augmentAction().createInitialRuntimeApplication();
             Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
             QuarkusConsole.installRedirects();
             flushAllLoggers();
-            installLoggerRedirect();
+            logRedirect.install();
 
             Class<? extends QuarkusTestProfile> profileClass = getQuarkusTestProfile(context).orElse(null);
             TestProfileAndProperties testProfileAndProperties = TestProfileAndProperties.ofNullable(profileClass, TEST);
@@ -283,7 +242,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
                 System.err.println("Unable to shutdown resource: " + e.getMessage());
             }
 
-            uninstallLoggerRedirect();
+            logRedirect.uninstall();
             QuarkusConsole.uninstallRedirects();
             if (originalCl != null) {
                 Thread.currentThread().setContextClassLoader(originalCl);

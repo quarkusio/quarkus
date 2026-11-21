@@ -37,6 +37,7 @@ public class OidcClientConfigBuilderTest {
         assertTrue(config.clientEnabled());
         assertTrue(config.scopes().isEmpty());
         assertTrue(config.refreshTokenTimeSkew().isEmpty());
+        assertTrue(config.minRemainingAccessTokenLifespan().isEmpty());
         assertTrue(config.accessTokenExpiresIn().isEmpty());
         assertFalse(config.absoluteExpiresIn());
         assertTrue(config.grantOptions().isEmpty());
@@ -118,6 +119,7 @@ public class OidcClientConfigBuilderTest {
                 .scopes("one", "two")
                 .scopes(List.of("three", "four"))
                 .refreshTokenTimeSkew(Duration.ofSeconds(987))
+                .minRemainingAccessTokenLifespan(Duration.ofSeconds(654))
                 .accessTokenExpiresIn(Duration.ofSeconds(789))
                 .absoluteExpiresIn(true)
                 .grant()
@@ -198,6 +200,7 @@ public class OidcClientConfigBuilderTest {
         assertTrue(scopes.contains("three"));
         assertTrue(scopes.contains("four"));
         assertEquals(987, config.refreshTokenTimeSkew().map(Duration::getSeconds).orElse(-1L));
+        assertEquals(654, config.minRemainingAccessTokenLifespan().map(Duration::getSeconds).orElse(-1L));
         assertEquals(789, config.accessTokenExpiresIn().map(Duration::getSeconds).orElse(-1L));
         assertTrue(config.absoluteExpiresIn());
         var grant = config.grant();
@@ -300,6 +303,7 @@ public class OidcClientConfigBuilderTest {
                 .scopes("one", "two")
                 .scopes(List.of("three", "four"))
                 .refreshTokenTimeSkew(Duration.ofSeconds(987))
+                .minRemainingAccessTokenLifespan(Duration.ofSeconds(654))
                 .accessTokenExpiresIn(Duration.ofSeconds(789))
                 .absoluteExpiresIn(true)
                 .grant()
@@ -329,6 +333,7 @@ public class OidcClientConfigBuilderTest {
         assertTrue(scopes.contains("three"));
         assertTrue(scopes.contains("four"));
         assertEquals(987, existingConfig.refreshTokenTimeSkew().map(Duration::getSeconds).orElse(-1L));
+        assertEquals(654, existingConfig.minRemainingAccessTokenLifespan().map(Duration::getSeconds).orElse(-1L));
         assertEquals(789, existingConfig.accessTokenExpiresIn().map(Duration::getSeconds).orElse(-1L));
         assertTrue(existingConfig.absoluteExpiresIn());
         var grant = existingConfig.grant();
@@ -383,6 +388,7 @@ public class OidcClientConfigBuilderTest {
         assertTrue(scopes.contains("five"));
         assertTrue(scopes.contains("six"));
         assertEquals(987, newConfig.refreshTokenTimeSkew().map(Duration::getSeconds).orElse(-1L));
+        assertEquals(654, newConfig.minRemainingAccessTokenLifespan().map(Duration::getSeconds).orElse(-1L));
         assertEquals(444, newConfig.accessTokenExpiresIn().map(Duration::getSeconds).orElse(-1L));
         assertTrue(newConfig.absoluteExpiresIn());
         grant = newConfig.grant();

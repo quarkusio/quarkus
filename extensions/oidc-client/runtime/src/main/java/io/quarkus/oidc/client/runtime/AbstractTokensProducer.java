@@ -68,7 +68,8 @@ public abstract class AbstractTokensProducer {
             oidcClients.registerTokenRefresh(oidcClient, new Supplier<Uni<Tokens>>() {
                 @Override
                 public Uni<Tokens> get() {
-                    return getTokens();
+                    // the periodic refresh waits for the refresh it starts so that it is notified about its failures
+                    return getTokens(additionalParameters(), true);
                 }
             });
         }
@@ -102,13 +103,17 @@ public abstract class AbstractTokensProducer {
             throw new IllegalStateException("OIDC client feature is disabled with `quarkus.oidc-client.enabled=false`"
                     + " but the getTokens() method is called.");
         }
+        return getTokens(additionalParameters, false);
+    }
+
+    private Uni<Tokens> getTokens(Map<String, String> additionalParameters, boolean waitForRefresh) {
         final boolean forceNewTokens = isForceNewTokens();
         if (forceNewTokens) {
             final Optional<String> clientId = clientId();
             LOG.debugf("%s OidcClient will discard the current access and refresh tokens",
                     clientId.orElse(DEFAULT_OIDC_CLIENT_ID));
         }
-        return tokensHelper.getTokens(oidcClient, additionalParameters, forceNewTokens);
+        return tokensHelper.getTokens(oidcClient, additionalParameters, forceNewTokens, waitForRefresh);
     }
 
     public Tokens awaitTokens() {

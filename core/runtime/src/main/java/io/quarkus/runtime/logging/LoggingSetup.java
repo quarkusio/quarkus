@@ -389,7 +389,7 @@ public final class LoggingSetup {
             final boolean includeFilters) {
         try {
             final SyslogHandler handler = new SyslogHandler(config.endpoint().getHostString(), config.endpoint().getPort());
-            handler.setAppName(config.appName().orElse(getProcessName()));
+            handler.setAppName(config.appName().orElseGet(() -> toSyslogAppName(getProcessName())));
             handler.setHostname(config.hostname().orElse(getQualifiedHostName()));
             handler.setFacility(config.facility());
             handler.setSyslogType(config.syslogType());
@@ -439,6 +439,37 @@ public final class LoggingSetup {
             errorManager.error("Failed to create syslog handler", e, ErrorManager.OPEN_FAILURE);
             return null;
         }
+    }
+
+    /**
+     * Convert a process name into a value accepted as a syslog app name, which must consist of printable
+     * ASCII characters with no spaces.
+     * <p>
+     * Only the last path segment is kept (the process name is usually the full path of the executable, such as
+     * {@code C:\Program Files\...\bin\java.exe} on Windows), a trailing {@code .exe} is removed, and any
+     * remaining invalid character is replaced with {@code _}. If nothing is left, {@code java} is returned.
+     *
+     * @param processName the process name, may be {@code null}
+     * @return a valid syslog app name (not {@code null})
+     */
+    static String toSyslogAppName(final String processName) {
+        if (processName == null) {
+            return "java";
+        }
+        String name = processName;
+        int lastSeparator = Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\'));
+        if (lastSeparator >= 0) {
+            name = name.substring(lastSeparator + 1);
+        }
+        if (name.regionMatches(true, name.length() - 4, ".exe", 0, 4)) {
+            name = name.substring(0, name.length() - 4);
+        }
+        StringBuilder sb = new StringBuilder(name.length());
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            sb.append(c > ' ' && c < 0x7f ? c : '_');
+        }
+        return sb.isEmpty() ? "java" : sb.toString();
     }
 
     /**

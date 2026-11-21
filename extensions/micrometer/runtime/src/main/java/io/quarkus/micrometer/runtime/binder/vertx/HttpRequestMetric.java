@@ -33,7 +33,7 @@ public class HttpRequestMetric extends RequestMetricInfo {
     private boolean requestActive = false;
 
     public HttpRequestMetric(String uri, LongAdder activeRequests) {
-        this.initialPath = uri;
+        this.initialPath = stripQueryString(uri);
         this.activeRequests = activeRequests;
     }
 
@@ -41,8 +41,12 @@ public class HttpRequestMetric extends RequestMetricInfo {
         this.httpRequest = request;
         if (request instanceof HttpServerRequestInternal internal) {
             this.request = internal;
+            // Vert.x has parsed the request target already, which also drops the authority of an
+            // absolute form target
+            this.initialPath = internal.path();
+        } else {
+            this.initialPath = stripQueryString(request.uri());
         }
-        this.initialPath = request.uri();
         this.activeRequests = activeRequests;
     }
 

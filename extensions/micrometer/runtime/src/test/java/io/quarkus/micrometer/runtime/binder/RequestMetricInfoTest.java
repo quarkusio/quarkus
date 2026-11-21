@@ -83,6 +83,19 @@ public class RequestMetricInfoTest {
     }
 
     @Test
+    public void testParsePathWithQueryString() {
+        String path = requestMetric.getNormalizedUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS,
+                "/ws?room=lobby&user=alice");
+        Assertions.assertEquals("/ws", path);
+    }
+
+    @Test
+    public void testParseQueryStringWithoutPath() {
+        String path = requestMetric.getNormalizedUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "?room=lobby");
+        Assertions.assertEquals("/", path);
+    }
+
+    @Test
     public void testParsePathIgnoreNoLeadingSlash() {
         String path = requestMetric.getNormalizedUriPath(NO_MATCH_PATTERNS, ignorePatterns,
                 "ignore/me/with/no/leading/slash");
@@ -124,6 +137,15 @@ public class RequestMetricInfoTest {
         matchPatterns.put(Pattern.compile("/item/\\d+"), "/item/{id}");
 
         String path = requestMetric.getNormalizedUriPath(matchPatterns, NO_IGNORE_PATTERNS, "/item/123");
+        Assertions.assertEquals("/item/{id}", path);
+    }
+
+    @Test
+    public void testParsePathMatchReplaceWithQueryString() {
+        final Map<Pattern, String> matchPatterns = new HashMap<>();
+        matchPatterns.put(Pattern.compile("/item/\\d+"), "/item/{id}");
+
+        String path = requestMetric.getNormalizedUriPath(matchPatterns, NO_IGNORE_PATTERNS, "/item/123?full=true");
         Assertions.assertEquals("/item/{id}", path);
     }
 

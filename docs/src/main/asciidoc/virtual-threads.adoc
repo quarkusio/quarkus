@@ -372,8 +372,6 @@ For a more robust approach that works on all Java versions, use the `junit-virtu
 java -jar target/quarkus-app/quarkus-run.jar
 ----
 
-TIP: Prior to Java 21, virtual threads were still an experimental feature, you need to start your application with the `--enable-preview` flag.
-
 == Build containers for application using virtual threads
 
 When running your application in JVM mode (so not compiled into native, for native check xref:native[the dedicated section]), you can follow the xref:./container-image.adoc[containerization guide] to build a container.

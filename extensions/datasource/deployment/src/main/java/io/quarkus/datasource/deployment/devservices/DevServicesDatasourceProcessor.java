@@ -12,6 +12,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.spi.DataSourceDefinedBuildItem;
@@ -20,6 +21,7 @@ import io.quarkus.datasource.deployment.spi.DatabaseFeature;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import io.quarkus.datasource.runtime.DevServicesBuildTimeConfig.DevServicesWaitConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
@@ -42,6 +44,7 @@ import io.quarkus.devservices.datasource.common.DevServicesDatasourceContainerCo
 import io.quarkus.devservices.datasource.common.DevServicesDatasourceProvider;
 import io.quarkus.devservices.datasource.common.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.devservices.datasource.common.DevServicesDatasourceResultBuildItem;
+import io.quarkus.devservices.datasource.common.JdbcConnectionWaitStrategy;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -418,6 +421,7 @@ public class DevServicesDatasourceProcessor {
                 dataSourceBuildTimeConfig.devservices().properties(),
                 dataSourceBuildTimeConfig.devservices().port(),
                 dataSourceBuildTimeConfig.devservices().command(),
+                waitStrategy(dataSourceBuildTimeConfig.devservices().waitConfig().strategy()),
                 dataSourceBuildTimeConfig.devservices().dbName(),
                 dataSourceBuildTimeConfig.devservices().username(),
                 dataSourceBuildTimeConfig.devservices().password(),
@@ -430,6 +434,13 @@ public class DevServicesDatasourceProcessor {
                 requiredFeatures,
                 dataSourceBuildTimeConfig.devservices().shared(),
                 dataSourceBuildTimeConfig.devservices().serviceName().orElse(dbKind));
+    }
+
+    private static Optional<WaitStrategy> waitStrategy(DevServicesWaitConfig.WaitStrategy waitStrategy) {
+        return switch (waitStrategy) {
+            case DEFAULT -> Optional.empty();
+            case CONNECTION -> Optional.of(new JdbcConnectionWaitStrategy());
+        };
     }
 
     private void setDataSourceProperties(Map<String, String> propertiesMap, String dbName, String propertyKeyRadical,

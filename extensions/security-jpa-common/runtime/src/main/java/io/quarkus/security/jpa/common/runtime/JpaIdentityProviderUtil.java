@@ -45,6 +45,10 @@ public class JpaIdentityProviderUtil {
     }
 
     public static void addRoles(QuarkusSecurityIdentity.Builder builder, String roles) {
+        // A null column means this user has no roles. It is not a failed login.
+        if (roles == null) {
+            return;
+        }
         if (roles.indexOf(',') != -1) {
             for (String role : roles.split(",")) {
                 builder.addRole(role.trim());
@@ -63,14 +67,20 @@ public class JpaIdentityProviderUtil {
     }
 
     public static Password getClearPassword(String pass) {
+        if (pass == null) {
+            throw new AuthenticationFailedException();
+        }
         return ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR, pass.toCharArray());
     }
 
     public static Password getMcfPassword(String pass) {
+        if (pass == null) {
+            throw new AuthenticationFailedException();
+        }
         try {
             return ModularCrypt.decode(pass);
         } catch (InvalidKeySpecException e) {
-            throw new RuntimeException(e);
+            throw new AuthenticationFailedException(e);
         }
     }
 

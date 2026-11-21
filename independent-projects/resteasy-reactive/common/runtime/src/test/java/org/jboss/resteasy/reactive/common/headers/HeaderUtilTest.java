@@ -93,4 +93,9 @@ class HeaderUtilTest {
         String sanitized = HeaderUtil.sanitizeFileName(extracted);
         assertEquals("pwned.txt", sanitized);
     }
+
+    @Test
+    void extractQuotedValueFromHeaderWithEmptyValue() {
+        assertEquals("", HeaderUtil.extractQuotedValueFromHeader("multipart/form-data; boundary=", "boundary"));
+    }
 }

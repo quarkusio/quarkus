@@ -23,6 +23,7 @@ import io.quarkus.opentelemetry.runtime.tracing.instrumentation.grpc.GrpcTracing
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.reactivemessaging.ReactiveMessagingTracingIncomingDecorator;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.reactivemessaging.ReactiveMessagingTracingOutgoingDecorator;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.restclient.OpenTelemetryClientFilter;
+import io.quarkus.opentelemetry.runtime.tracing.instrumentation.restclient.OpenTelemetryReactiveClientContextFilter;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.resteasy.AttachExceptionHandler;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.resteasy.OpenTelemetryClassicServerFilter;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.resteasy.OpenTelemetryReactiveServerFilter;
@@ -95,6 +96,21 @@ public class InstrumentationProcessor {
                 && config.instrument().resteasyClient()) {
             additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryClientFilter.class.getName()));
             additionalBeans.produce(new AdditionalBeanBuildItem(OpenTelemetryClientFilter.class));
+        }
+    }
+
+    @BuildStep
+    void registerReactiveRestClientContext(
+            Capabilities capabilities,
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        if (capabilities.isPresent(Capability.REST_CLIENT_REACTIVE)) {
+            // The REST Client picks up the @Provider annotation from the index.
+            additionalIndexed
+                    .produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryReactiveClientContextFilter.class.getName()));
+            additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                    .addBeanClasses(OpenTelemetryReactiveClientContextFilter.class)
+                    .build());
         }
     }
 

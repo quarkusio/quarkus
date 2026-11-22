@@ -13,9 +13,8 @@ public class GlobalJwtPreferredNameValidator implements ClaimsValidator {
     @Override
     public String validate(VerificationContext context) {
         JwtClaims claims = context.claims();
-        if (claims.hasClaim("preferred_username")
-                && claims.getClaim("preferred_username") instanceof String
-                && ((String) claims.getClaim("preferred_username")).contains("jdoe")) {
+        String preferredUserName = claims.getStringClaim("preferred_username");
+        if (preferredUserName != null && preferredUserName.contains("jdoe")) {
             return "scope validation failed, the 'fail-validation' scope is not allowed";
         }
         return null;

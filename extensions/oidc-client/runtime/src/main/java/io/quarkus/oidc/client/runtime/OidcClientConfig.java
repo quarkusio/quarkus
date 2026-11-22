@@ -195,7 +195,7 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
 
     /**
      * Maximum number of sets of additional grant parameters for which an OIDC client filter, an OIDC token propagation
-     * filter which exchanges tokens, or a token producer, such as {@code TokenProvider}, caches the tokens.
+     * filter or a GraphQL client which exchanges tokens, or a token producer, such as {@code TokenProvider}, caches the tokens.
      * Tokens requested with additional grant parameters, for example, with different scopes or subject tokens
      * passed to {@code TokenProvider#getAccessToken(Map)}, are cached per set of parameters.
      * Set this property to {@code 0} to not cache such tokens at all.

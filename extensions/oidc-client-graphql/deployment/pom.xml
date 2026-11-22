@@ -33,6 +33,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-graphql-client-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc-token-propagation-graphql-deployment-spi</artifactId>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

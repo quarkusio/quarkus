@@ -15,6 +15,10 @@ import java.lang.annotation.Target;
  * <p>
  * This annotation may also be placed on individual methods of the REST Client interface.
  * When applied to a method, the {@link AccessTokenRequestFilter} will be registered only for that method.
+ * <p>
+ * When this annotation is added to a SmallRye GraphQL typesafe client interface and the
+ * {@code quarkus-oidc-token-propagation-graphql} extension is present, the GraphQL client propagates the token the same way.
+ * This annotation is not supported on individual methods of the GraphQL client interface.
  */
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
@@ -22,10 +26,11 @@ import java.lang.annotation.Target;
 public @interface AccessToken {
 
     /**
-     * Selects name of the configured OidcClient and activates token exchange for the annotated REST client.
+     * Selects name of the configured OidcClient and activates token exchange for the annotated REST or GraphQL client.
      * Please note that the default OidcClient's name is `Default`. You do not have to enable this attribute
      * if you use the default OidcClient and already have either 'quarkus.resteasy-client-oidc-token-propagation.exchange-token'
-     * or 'quarkus.rest-client-oidc-token-propagation.exchange-token' property set to 'true'
+     * or 'quarkus.rest-client-oidc-token-propagation.exchange-token' property set to 'true'.
+     * These properties only apply to REST clients, a GraphQL client only exchanges the token when this attribute is set.
      */
     String exchangeTokenClient() default "";
 

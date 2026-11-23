@@ -2,12 +2,10 @@ package io.quarkus.test.keycloak.client;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 
+import org.keycloak.admin.client.jackson3.Jackson3JsonMapper;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.util.JsonSerialization;
-
-import tools.jackson.databind.json.JsonMapper;
 
 /**
  * (De)serializes the Keycloak representations with the Jackson 3 mapper of the Keycloak admin client, or with Keycloak's
@@ -19,7 +17,6 @@ import tools.jackson.databind.json.JsonMapper;
 public final class KeycloakJson {
 
     private static final boolean JACKSON2_REPRESENTATIONS = isPresent("org.keycloak.util.JsonSerialization");
-    private static volatile JsonMapper jackson3Mapper;
 
     private KeycloakJson() {
     }
@@ -38,22 +35,16 @@ public final class KeycloakJson {
         return jackson3Mapper().writeValueAsString(realm);
     }
 
-    private static JsonMapper jackson3Mapper() {
-        JsonMapper mapper = jackson3Mapper;
-        if (mapper == null) {
-            // the mapper of the Keycloak admin client, held by a package-private holder
-            // TODO: make the holder public in Keycloak, then call it directly
-            try {
-                Field field = Class.forName("org.keycloak.admin.client.jackson3.Jackson3MapperHolder")
-                        .getDeclaredField("MAPPER");
-                field.setAccessible(true);
-                mapper = (JsonMapper) field.get(null);
-            } catch (ReflectiveOperationException e) {
-                throw new IllegalStateException("Failed to obtain the Jackson 3 mapper of the Keycloak admin client", e);
-            }
-            jackson3Mapper = mapper;
-        }
-        return mapper;
+    private static Jackson3JsonMapper jackson3Mapper() {
+        return Jackson3.MAPPER;
+    }
+
+    /**
+     * Holds the Jackson 3 mapper of the Keycloak admin client, so that it is only loaded when the Jackson 3 variant
+     * of the representations is in use.
+     */
+    private static final class Jackson3 {
+        static final Jackson3JsonMapper MAPPER = new Jackson3JsonMapper();
     }
 
     private static boolean isPresent(String className) {

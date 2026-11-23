@@ -139,10 +139,10 @@ public final class MySQLPoolRecorder {
                 final SslMode sslMode = dataSourceReactiveMySQLConfig.sslMode().get();
                 mysqlConnectOptions.setSslMode(sslMode);
 
-                var algo = dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm();
-                if ("NONE".equalsIgnoreCase(algo) && sslMode == SslMode.VERIFY_IDENTITY) {
+                if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().filter("NONE"::equalsIgnoreCase)
+                        .isPresent() && sslMode == SslMode.VERIFY_IDENTITY) {
                     throw new IllegalArgumentException(
-                            "quarkus.datasource.reactive.hostname-verification-algorithm must be specified under verify-identity sslmode");
+                            "quarkus.datasource.reactive.hostname-verification-algorithm must not be NONE under verify-identity sslmode");
                 }
             } else if (dataSourceReactiveRuntimeConfig.tlsConfigurationName().isPresent()) {
                 // Auto-enable SSL mode when a named TLS configuration is set

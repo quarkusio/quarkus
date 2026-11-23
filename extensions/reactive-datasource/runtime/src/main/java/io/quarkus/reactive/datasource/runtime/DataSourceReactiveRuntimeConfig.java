@@ -132,10 +132,11 @@ public interface DataSourceReactiveRuntimeConfig {
     /**
      * The hostname verification algorithm to use in case the server's identity should be checked.
      * Should be {@code HTTPS}, {@code LDAPS} or {@code NONE}.
-     * {@code NONE} is the default value and disables the verification.
+     * If not set, or if set to an empty value, {@code HTTPS} is used, which means that the hostname
+     * is verified against the server's certificate.
      */
-    @WithDefault("NONE")
-    String hostnameVerificationAlgorithm();
+    @ConfigDocDefault("HTTPS")
+    Optional<String> hostnameVerificationAlgorithm();
 
     /**
      * The name of the TLS configuration to use.

@@ -374,7 +374,7 @@ quarkus.tls.redis.trust-store.p12.password=secret
 quarkus.redis.tls-configuration-name=redis # Reference the named configuration
 ----
 
-IMPORTANT: The default hostname verifier is set to `NONE`, meaning it does not verify the host name. You can change this behavior by setting the `quarkus.redis.tls.hostname-verification-algorithm` property, to `HTTPS` for example.
+IMPORTANT: The default hostname verifier is set to `HTTPS`, which verifies the host name. If needed, you can disable verification by setting `quarkus.redis.tls.hostname-verification-algorithm=NONE`.
 
 
 === Configure the authentication

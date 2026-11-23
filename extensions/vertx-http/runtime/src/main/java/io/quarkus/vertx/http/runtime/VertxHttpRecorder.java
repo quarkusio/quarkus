@@ -186,9 +186,11 @@ public class VertxHttpRecorder {
 
     private static volatile Handler<RoutingContext> nonApplicationRedirectHandler;
 
-    private static volatile int actualHttpPort = -1;
-    private static volatile int actualHttpsPort = -1;
-    private static volatile int actualManagementPort = -1;
+    private static volatile ServerBinding httpBinding;
+    private static volatile ServerBinding httpsBinding;
+    private static volatile ServerBinding managementBinding;
+    private static volatile UnixDomainSocketAddress httpDomainSocketBinding;
+    private static volatile UnixDomainSocketAddress managementDomainSocketBinding;
 
     public static final String GET = "GET";
     private static final Handler<HttpServerRequest> ACTUAL_ROOT = new Handler<HttpServerRequest>() {
@@ -414,6 +416,7 @@ public class VertxHttpRecorder {
                 || (managementConfig != null && managementConfig.domainSocketEnabled()))) {
             // Start the server
             if (closeTask == null) {
+                clearBindings();
                 var insecureRequestStrategy = getInsecureRequestStrategy(httpConfiguration, httpBuildTimeConfig, launchMode);
                 doServerStart(vertx.get(), httpBuildTimeConfig, httpConfiguration, managementRouter, managementBuildTimeConfig,
                         managementConfig, launchMode, ioThreads, websocketSubProtocols,
@@ -429,8 +432,86 @@ public class VertxHttpRecorder {
                         }
                     });
                 }
+            } else if (valueRegistry != null) {
+                // A dev mode restart keeps the servers, so they do not bind again, but the restarted application has a
+                // new ValueRegistry: register the values of the server bindings in it
+                registerServerBindings(valueRegistry.getValue());
             }
         }
+    }
+
+    /**
+     * Where a TCP server is bound, with what its values in the {@link ValueRegistry} are made of.
+     */
+    private record ServerBinding(String host, int port, URI localBaseUri, boolean registerLocalBaseUri, boolean test) {
+        /**
+         * @return the port of the binding, or {@code -1} if the server is not bound
+         */
+        static int port(ServerBinding binding) {
+            return binding != null ? binding.port() : -1;
+        }
+    }
+
+    private static void registerHttpBinding(ValueRegistry valueRegistry, ServerBinding binding) {
+        valueRegistry.register(HTTP_PORT, binding.port());
+        valueRegistry.register(HTTP_SOCKET, new InetSocketAddress(binding.host(), binding.port()));
+        if (binding.registerLocalBaseUri()) {
+            valueRegistry.register(LOCAL_BASE_URI, binding.localBaseUri());
+        }
+        if (binding.test()) {
+            valueRegistry.register(HTTP_TEST_PORT, binding.port());
+            // Compatibility with test.url
+            valueRegistry.register(RuntimeKey.key("test.url"), binding.localBaseUri().toString());
+        }
+    }
+
+    private static void registerHttpsBinding(ValueRegistry valueRegistry, ServerBinding binding) {
+        valueRegistry.register(HTTPS_PORT, binding.port());
+        valueRegistry.register(HTTPS_SOCKET, new InetSocketAddress(binding.host(), binding.port()));
+        if (binding.registerLocalBaseUri()) {
+            valueRegistry.register(LOCAL_BASE_URI, binding.localBaseUri());
+        }
+        if (binding.test()) {
+            valueRegistry.register(HTTPS_TEST_PORT, binding.port());
+            // TODO - Should we register test.url.ssl? We don't use it, or have tests for it
+        }
+    }
+
+    private static void registerManagementBinding(ValueRegistry valueRegistry, ServerBinding binding) {
+        valueRegistry.register(MANAGEMENT_PORT, binding.port());
+        valueRegistry.register(MANAGEMENT_SOCKET, new InetSocketAddress(binding.host(), binding.port()));
+        if (binding.test()) {
+            valueRegistry.register(MANAGEMENT_TEST_PORT, binding.port());
+        }
+        if (binding.registerLocalBaseUri()) {
+            valueRegistry.register(LOCAL_MANAGEMENT_BASE_URI, binding.localBaseUri());
+        }
+    }
+
+    private static void registerServerBindings(ValueRegistry valueRegistry) {
+        if (httpBinding != null) {
+            registerHttpBinding(valueRegistry, httpBinding);
+        }
+        if (httpsBinding != null) {
+            registerHttpsBinding(valueRegistry, httpsBinding);
+        }
+        if (httpDomainSocketBinding != null) {
+            valueRegistry.register(HTTP_DOMAIN_SOCKET, httpDomainSocketBinding);
+        }
+        if (managementBinding != null) {
+            registerManagementBinding(valueRegistry, managementBinding);
+        }
+        if (managementDomainSocketBinding != null) {
+            valueRegistry.register(MANAGEMENT_DOMAIN_SOCKET, managementDomainSocketBinding);
+        }
+    }
+
+    private static void clearBindings() {
+        httpBinding = null;
+        httpsBinding = null;
+        httpDomainSocketBinding = null;
+        managementBinding = null;
+        managementDomainSocketBinding = null;
     }
 
     public void mountFrameworkRouter(RuntimeValue<Router> mainRouter, RuntimeValue<Router> frameworkRouter,
@@ -787,8 +868,9 @@ public class VertxHttpRecorder {
                                                     + domainSocketConfigForManagement.getTcpHost() + " domain socket",
                                             ar.cause()));
                         } else {
-                            valueRegistry.getValue().register(MANAGEMENT_DOMAIN_SOCKET,
-                                    UnixDomainSocketAddress.of(Path.of(managementConfig.domainSocket())));
+                            managementDomainSocketBinding = UnixDomainSocketAddress
+                                    .of(Path.of(managementConfig.domainSocket()));
+                            valueRegistry.getValue().register(MANAGEMENT_DOMAIN_SOCKET, managementDomainSocketBinding);
                             managementInterfaceDomainSocketFuture.complete(ar.result());
                         }
                     });
@@ -896,13 +978,7 @@ public class VertxHttpRecorder {
                                                 "management interface", clientAuth);
                             }
 
-                            actualManagementPort = ar.result().actualPort();
-                            valueRegistry.getValue().register(MANAGEMENT_PORT, actualManagementPort);
-                            valueRegistry.getValue().register(MANAGEMENT_SOCKET,
-                                    new InetSocketAddress(httpManagementServerConfig.getTcpHost(), actualManagementPort));
-                            if (launchMode.isDevOrTest()) {
-                                valueRegistry.getValue().register(MANAGEMENT_TEST_PORT, actualManagementPort);
-                            }
+                            int actualManagementPort = ar.result().actualPort();
                             String mgmtScheme = httpManagementSslOptions != null ? "https" : "http";
                             String mgmtHost = httpManagementServerConfig.getTcpHost();
                             if ("0.0.0.0".equals(mgmtHost)) {
@@ -915,8 +991,13 @@ public class VertxHttpRecorder {
                             if (mgmtRootPath.length() > 1 && mgmtRootPath.endsWith("/")) {
                                 mgmtRootPath = mgmtRootPath.substring(0, mgmtRootPath.length() - 1);
                             }
-                            valueRegistry.getValue().register(LOCAL_MANAGEMENT_BASE_URI,
-                                    URI.create(mgmtScheme + "://" + mgmtHost + ":" + actualManagementPort + mgmtRootPath));
+                            managementBinding = new ServerBinding(
+                                    httpManagementServerConfig.getTcpHost(),
+                                    actualManagementPort,
+                                    URI.create(mgmtScheme + "://" + mgmtHost + ":" + actualManagementPort + mgmtRootPath),
+                                    true,
+                                    launchMode == LaunchMode.TEST);
+                            registerManagementBinding(valueRegistry.getValue(), managementBinding);
                             managementInterfaceFuture.complete(ar.result());
                         }
                     });
@@ -1159,6 +1240,7 @@ public class VertxHttpRecorder {
                         }
                     }
                     closeTask = null;
+                    clearBindings();
                     if (remoteSyncHandler != null) {
                         remoteSyncHandler.close();
                         remoteSyncHandler = null;
@@ -1209,7 +1291,7 @@ public class VertxHttpRecorder {
 
         if (!httpDisabled && httpServerConfig != null) {
             serverListeningMessage.append(String.format(
-                    "http://%s:%s", getDeveloperFriendlyHostName(httpServerConfig), actualHttpPort));
+                    "http://%s:%s", getDeveloperFriendlyHostName(httpServerConfig), ServerBinding.port(httpBinding)));
             socketCount++;
         }
 
@@ -1218,7 +1300,8 @@ public class VertxHttpRecorder {
                 serverListeningMessage.append(" and ");
             }
             serverListeningMessage
-                    .append(String.format("https://%s:%s", getDeveloperFriendlyHostName(sslConfig), actualHttpsPort));
+                    .append(String.format("https://%s:%s", getDeveloperFriendlyHostName(sslConfig),
+                            ServerBinding.port(httpsBinding)));
             socketCount++;
         }
 
@@ -1232,7 +1315,7 @@ public class VertxHttpRecorder {
             serverListeningMessage.append(
                     String.format(". Management interface listening on http%s://%s:%s.",
                             httpManagementSslOptions != null ? "s" : "",
-                            getDeveloperFriendlyHostName(managementConfig), actualManagementPort));
+                            getDeveloperFriendlyHostName(managementConfig), ServerBinding.port(managementBinding)));
         }
 
         Timing.setHttpServer(serverListeningMessage.toString(), auxiliaryApplication);
@@ -1451,7 +1534,8 @@ public class VertxHttpRecorder {
                 if (event.succeeded()) {
                     // a server is created per IO thread; register the socket once
                     if (registerDomainSocketServer.compareAndSet(false, true)) {
-                        valueRegistry.register(HTTP_DOMAIN_SOCKET, UnixDomainSocketAddress.of(Path.of(config.getTcpHost())));
+                        httpDomainSocketBinding = UnixDomainSocketAddress.of(Path.of(config.getTcpHost()));
+                        valueRegistry.register(HTTP_DOMAIN_SOCKET, httpDomainSocketBinding);
                     }
                     if (notifyStartObservers) {
                         container.beanManager().getEvent().select(DomainSocketServerStart.class)
@@ -1536,36 +1620,24 @@ public class VertxHttpRecorder {
                             // Note that a new HttpServer is created for each IO thread, but we only want to register the
                             // real ports once. See https://vertx.io/docs/vertx-core/java/#_server_sharing
                             if (registerHttpsServer.compareAndSet(false, true)) {
-                                actualHttpsPort = actualPort;
-                                validateHttpPorts(actualHttpPort, actualHttpsPort);
-                                valueRegistry.register(HTTPS_PORT, actualPort);
-                                valueRegistry.register(HTTPS_SOCKET, new InetSocketAddress(config.getTcpHost(), actualPort));
-                                URI localBaseUri = localBaseUri("https", actualPort);
-                                if (!insecureRequests.equals(InsecureRequests.ENABLED)) {
-                                    valueRegistry.register(LOCAL_BASE_URI, localBaseUri);
-                                }
-                                if (launchMode.isDevOrTest()) {
-                                    valueRegistry.register(HTTPS_TEST_PORT, actualPort);
-                                    // TODO - Should we register test.url.ssl? We don't use it, or have tests for it
-                                }
+                                httpsBinding = new ServerBinding(config.getTcpHost(), actualPort,
+                                        localBaseUri("https", actualPort),
+                                        !insecureRequests.equals(InsecureRequests.ENABLED), launchMode == LaunchMode.TEST);
+                                validateHttpPorts(ServerBinding.port(httpBinding), actualPort);
+                                registerHttpsBinding(valueRegistry, httpsBinding);
                             }
                         } else {
                             // Note that a new HttpServer is created for each IO thread, but we only want to register the
                             // real ports once. See https://vertx.io/docs/vertx-core/java/#_server_sharing
                             if (registerHttpServer.compareAndSet(false, true)) {
-                                actualHttpPort = actualPort;
-                                validateHttpPorts(actualHttpPort, actualHttpsPort);
-                                valueRegistry.register(HTTP_PORT, actualPort);
-                                valueRegistry.register(HTTP_SOCKET, new InetSocketAddress(config.getTcpHost(), actualPort));
-                                URI localBaseUri = localBaseUri("http", actualPort);
-                                if (insecureRequests.equals(InsecureRequests.ENABLED)) {
-                                    valueRegistry.register(LOCAL_BASE_URI, localBaseUri);
-                                }
-                                if (launchMode.isDevOrTest()) {
-                                    valueRegistry.register(HTTP_TEST_PORT, actualPort);
-                                    // Compatibility with test.url
-                                    valueRegistry.register(RuntimeKey.key("test.url"), localBaseUri.toString());
-                                }
+                                httpBinding = new ServerBinding(
+                                        config.getTcpHost(),
+                                        actualPort,
+                                        localBaseUri("http", actualPort),
+                                        insecureRequests.equals(InsecureRequests.ENABLED),
+                                        launchMode == LaunchMode.TEST);
+                                validateHttpPorts(actualPort, ServerBinding.port(httpsBinding));
+                                registerHttpBinding(valueRegistry, httpBinding);
                             }
                         }
 

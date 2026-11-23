@@ -263,6 +263,13 @@ public class VertxHttpRecorder {
 
     private static volatile RuntimeValue<ValueRegistry> valueRegistry;
 
+    /**
+     * The values that the servers registered in the {@link ValueRegistry} when they bound their sockets. Dev mode keeps
+     * the servers across live reloads, but every restarted application has a new {@link ValueRegistry}, so
+     * {@link #finalizeRouter} registers these values again, before the restarted application receives requests.
+     */
+    private static final List<ServerValue<?>> serverValues = new CopyOnWriteArrayList<>();
+
     private static volatile Handler<HttpServerRequest> managementRouter;
     private static volatile Handler<HttpServerRequest> managementRouterDelegate;
 
@@ -433,6 +440,17 @@ public class VertxHttpRecorder {
         }
     }
 
+    private static <T> void registerServerValue(ValueRegistry valueRegistry, RuntimeKey<T> key, T value) {
+        valueRegistry.register(key, value);
+        serverValues.add(new ServerValue<>(key, value));
+    }
+
+    private record ServerValue<T>(RuntimeKey<T> key, T value) {
+        void registerIn(ValueRegistry valueRegistry) {
+            valueRegistry.register(key, value);
+        }
+    }
+
     public void mountFrameworkRouter(RuntimeValue<Router> mainRouter, RuntimeValue<Router> frameworkRouter,
             String frameworkPath) {
         String p = frameworkPath.endsWith("/") ? frameworkPath + "*" : frameworkPath + "/*";
@@ -455,6 +473,14 @@ public class VertxHttpRecorder {
             List<String> knowClasses,
             List<ErrorPageAction> actions,
             Optional<RuntimeValue<SubmissionPublisher<String>>> publisher) {
+        if (closeTask != null) {
+            // Dev mode kept the servers of the previous application. They pass requests to this application as soon as
+            // this method installs its router, which is before startServer runs, so register their values now.
+            ValueRegistry restartedApplicationRegistry = valueRegistry.getValue();
+            for (ServerValue<?> serverValue : serverValues) {
+                serverValue.registerIn(restartedApplicationRegistry);
+            }
+        }
         VertxHttpConfig httpConfig = this.httpConfig.getValue();
         // install the default route at the end
         Router httpRouteRouter = httpRouterRuntimeValue.getValue();
@@ -787,7 +813,7 @@ public class VertxHttpRecorder {
                                                     + domainSocketConfigForManagement.getTcpHost() + " domain socket",
                                             ar.cause()));
                         } else {
-                            valueRegistry.getValue().register(MANAGEMENT_DOMAIN_SOCKET,
+                            registerServerValue(valueRegistry.getValue(), MANAGEMENT_DOMAIN_SOCKET,
                                     UnixDomainSocketAddress.of(Path.of(managementConfig.domainSocket())));
                             managementInterfaceDomainSocketFuture.complete(ar.result());
                         }
@@ -897,11 +923,11 @@ public class VertxHttpRecorder {
                             }
 
                             actualManagementPort = ar.result().actualPort();
-                            valueRegistry.getValue().register(MANAGEMENT_PORT, actualManagementPort);
-                            valueRegistry.getValue().register(MANAGEMENT_SOCKET,
+                            registerServerValue(valueRegistry.getValue(), MANAGEMENT_PORT, actualManagementPort);
+                            registerServerValue(valueRegistry.getValue(), MANAGEMENT_SOCKET,
                                     new InetSocketAddress(httpManagementServerConfig.getTcpHost(), actualManagementPort));
                             if (launchMode.isDevOrTest()) {
-                                valueRegistry.getValue().register(MANAGEMENT_TEST_PORT, actualManagementPort);
+                                registerServerValue(valueRegistry.getValue(), MANAGEMENT_TEST_PORT, actualManagementPort);
                             }
                             String mgmtScheme = httpManagementSslOptions != null ? "https" : "http";
                             String mgmtHost = httpManagementServerConfig.getTcpHost();
@@ -915,7 +941,7 @@ public class VertxHttpRecorder {
                             if (mgmtRootPath.length() > 1 && mgmtRootPath.endsWith("/")) {
                                 mgmtRootPath = mgmtRootPath.substring(0, mgmtRootPath.length() - 1);
                             }
-                            valueRegistry.getValue().register(LOCAL_MANAGEMENT_BASE_URI,
+                            registerServerValue(valueRegistry.getValue(), LOCAL_MANAGEMENT_BASE_URI,
                                     URI.create(mgmtScheme + "://" + mgmtHost + ":" + actualManagementPort + mgmtRootPath));
                             managementInterfaceFuture.complete(ar.result());
                         }
@@ -1067,6 +1093,8 @@ public class VertxHttpRecorder {
             List<String> websocketSubProtocols,
             InsecureRequests insecureRequestStrategy,
             boolean auxiliaryApplication) throws IOException {
+
+        serverValues.clear();
 
         TlsConfigurationRegistry registry = null;
         if (Arc.container() != null) {
@@ -1451,7 +1479,8 @@ public class VertxHttpRecorder {
                 if (event.succeeded()) {
                     // a server is created per IO thread; register the socket once
                     if (registerDomainSocketServer.compareAndSet(false, true)) {
-                        valueRegistry.register(HTTP_DOMAIN_SOCKET, UnixDomainSocketAddress.of(Path.of(config.getTcpHost())));
+                        registerServerValue(valueRegistry, HTTP_DOMAIN_SOCKET,
+                                UnixDomainSocketAddress.of(Path.of(config.getTcpHost())));
                     }
                     if (notifyStartObservers) {
                         container.beanManager().getEvent().select(DomainSocketServerStart.class)
@@ -1538,14 +1567,15 @@ public class VertxHttpRecorder {
                             if (registerHttpsServer.compareAndSet(false, true)) {
                                 actualHttpsPort = actualPort;
                                 validateHttpPorts(actualHttpPort, actualHttpsPort);
-                                valueRegistry.register(HTTPS_PORT, actualPort);
-                                valueRegistry.register(HTTPS_SOCKET, new InetSocketAddress(config.getTcpHost(), actualPort));
+                                registerServerValue(valueRegistry, HTTPS_PORT, actualPort);
+                                registerServerValue(valueRegistry, HTTPS_SOCKET,
+                                        new InetSocketAddress(config.getTcpHost(), actualPort));
                                 URI localBaseUri = localBaseUri("https", actualPort);
                                 if (!insecureRequests.equals(InsecureRequests.ENABLED)) {
-                                    valueRegistry.register(LOCAL_BASE_URI, localBaseUri);
+                                    registerServerValue(valueRegistry, LOCAL_BASE_URI, localBaseUri);
                                 }
                                 if (launchMode.isDevOrTest()) {
-                                    valueRegistry.register(HTTPS_TEST_PORT, actualPort);
+                                    registerServerValue(valueRegistry, HTTPS_TEST_PORT, actualPort);
                                     // TODO - Should we register test.url.ssl? We don't use it, or have tests for it
                                 }
                             }
@@ -1555,16 +1585,17 @@ public class VertxHttpRecorder {
                             if (registerHttpServer.compareAndSet(false, true)) {
                                 actualHttpPort = actualPort;
                                 validateHttpPorts(actualHttpPort, actualHttpsPort);
-                                valueRegistry.register(HTTP_PORT, actualPort);
-                                valueRegistry.register(HTTP_SOCKET, new InetSocketAddress(config.getTcpHost(), actualPort));
+                                registerServerValue(valueRegistry, HTTP_PORT, actualPort);
+                                registerServerValue(valueRegistry, HTTP_SOCKET,
+                                        new InetSocketAddress(config.getTcpHost(), actualPort));
                                 URI localBaseUri = localBaseUri("http", actualPort);
                                 if (insecureRequests.equals(InsecureRequests.ENABLED)) {
-                                    valueRegistry.register(LOCAL_BASE_URI, localBaseUri);
+                                    registerServerValue(valueRegistry, LOCAL_BASE_URI, localBaseUri);
                                 }
                                 if (launchMode.isDevOrTest()) {
-                                    valueRegistry.register(HTTP_TEST_PORT, actualPort);
+                                    registerServerValue(valueRegistry, HTTP_TEST_PORT, actualPort);
                                     // Compatibility with test.url
-                                    valueRegistry.register(RuntimeKey.key("test.url"), localBaseUri.toString());
+                                    registerServerValue(valueRegistry, RuntimeKey.key("test.url"), localBaseUri.toString());
                                 }
                             }
                         }

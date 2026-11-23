@@ -1674,7 +1674,7 @@ class MyBean {
 [[templates-from-dependencies]]
 === Templates from dependencies
 
-Qute templates can also be provided by a dependency or another non-root application archive.
+Qute templates can also be provided by a dependency that is either a runtime extension artifact or an application archive (i.e. an archive that is indexed, contains a `beans.xml` descriptor, or is listed in `quarkus.index-dependency`).
 The `quarkus.qute.alt-expr-syntax` configuration property applies to the application's own templates only; it does not affect templates provided by dependencies.
 By default, those templates use the `{foo}` output expression syntax.
 

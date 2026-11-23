@@ -34,10 +34,6 @@
                     <artifactId>jaxb-api</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>jakarta.xml.bind</groupId>
-                    <artifactId>jakarta.xml.bind-api</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>io.sundr</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>

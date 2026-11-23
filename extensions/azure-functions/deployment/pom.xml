@@ -53,10 +53,6 @@
                     <artifactId>azure-core</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.azure</groupId>
-                    <artifactId>azure-core</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>com.azure.resourcemanager</groupId>
                     <artifactId>azure-resourcemanager-appservice</artifactId>
                 </exclusion>

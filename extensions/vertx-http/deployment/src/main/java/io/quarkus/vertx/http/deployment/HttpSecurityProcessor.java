@@ -884,6 +884,23 @@ public class HttpSecurityProcessor {
         return !Modifier.isStatic(info.flags());
     }
 
+    /**
+     * Detects a bridge method that the compiler adds when a method overrides a method with a more specific return type.
+     * Both methods have the same {@link MethodDescription}.
+     * Other bridge methods are kept, because RESTEasy Classic invokes some of them.
+     */
+    private static boolean isBridgeWithSameParameterTypes(MethodInfo method) {
+        if (method.isSynthetic()) {
+            for (MethodInfo declaredMethod : method.declaringClass().methods()) {
+                if (!declaredMethod.isSynthetic() && declaredMethod.name().equals(method.name())
+                        && declaredMethod.descriptorParameterTypes().equals(method.descriptorParameterTypes())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private static void addInterceptedEndpoints(List<EagerSecurityInterceptorBindingBuildItem> interceptorBindings,
             IndexView index, AnnotationTarget.Kind appliesTo, Map<DotName, Map<String, List<MethodInfo>>> result,
             Map<AnnotationTarget, List<EagerSecurityInterceptorBindingBuildItem>> cache,
@@ -949,6 +966,10 @@ public class HttpSecurityProcessor {
                         }
                     } else {
                         MethodInfo mi = annotation.target().asMethod();
+                        if (isBridgeWithSameParameterTypes(mi)) {
+                            // the bridge lacks class-level interceptor bindings and would replace the endpoint interceptor
+                            continue;
+                        }
 
                         if (hasClassLevelSecurity.test(mi.declaringClass())) {
                             throw new RuntimeException(

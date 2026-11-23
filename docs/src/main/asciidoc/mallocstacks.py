@@ -182,7 +182,7 @@ has_enomem = False
 bytemap = b.get_table("bytes")
 stack_traces = b.get_table("stack_traces")
 for k, v in sorted(bytemap.items(), key=lambda bytemap: bytemap[1].value):
-    # handle get_stackid erorrs
+    # handle get_stackid errors
     if (k.user_stack_id < 0 and k.user_stack_id != -errno.EFAULT):
         missing_stacks += 1
         # check for an ENOMEM error

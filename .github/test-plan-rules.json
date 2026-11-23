@@ -42,7 +42,7 @@
     "modified-modules": {
         "group": "jvm-modified",
         "eligible-groups": [ "jvm-heavy", "jvm-main" ],
-        "max-modules": 3
+        "max-modules": 5
     },
     "matrix-categories": {
         "Runtime": [

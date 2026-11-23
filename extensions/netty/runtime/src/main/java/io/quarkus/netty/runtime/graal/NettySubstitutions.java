@@ -551,10 +551,10 @@ final class Target_SslContext {
 }
 
 @TargetClass(className = "io.netty.util.internal.shaded.org.jctools.util.UnsafeLongArrayAccess")
-final class Target_io_netty_util_internal_shaded_org_jctools_util_UnsafeRefArrayAccess {
+final class Target_io_netty_util_internal_shaded_org_jctools_util_UnsafeLongArrayAccess {
 
     @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.ArrayIndexShift, declClass = Object[].class)
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.ArrayIndexShift, declClass = long[].class)
     public static int LONG_ELEMENT_SHIFT;
 }
 

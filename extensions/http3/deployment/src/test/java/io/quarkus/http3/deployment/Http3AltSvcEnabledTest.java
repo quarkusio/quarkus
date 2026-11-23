@@ -97,6 +97,48 @@ class Http3AltSvcEnabledTest {
     }
 
     @Test
+    void testUpgradeFromHttp2ToHttp3() throws Exception {
+        int port = tlsUrl.getPort();
+
+        HttpClientConfig clientConfig = new HttpClientConfig();
+        clientConfig.setVersions(HttpVersion.HTTP_3, HttpVersion.HTTP_2, HttpVersion.HTTP_1_1);
+        clientConfig.setSsl(true);
+        clientConfig.setHttp3Config(new Http3ClientConfig());
+        clientConfig.setFollowAlternativeServices(true);
+
+        ClientSSLOptions sslOptions = new ClientSSLOptions()
+                .setTrustOptions(new JksOptions().setPath("target/certs/http3-test-truststore.jks").setPassword("secret"));
+
+        HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
+
+        try {
+            // First request goes over TCP (ALPN picks HTTP/2); the server advertises HTTP/3 with an ALTSVC frame
+            assertThat(get(client, port)).isEqualTo(HttpVersion.HTTP_2);
+
+            // The client processes the advertisement asynchronously, so allow a few attempts
+            HttpVersion version = null;
+            for (int i = 0; i < 20 && version != HttpVersion.HTTP_3; i++) {
+                version = get(client, port);
+                if (version != HttpVersion.HTTP_3) {
+                    Thread.sleep(100);
+                }
+            }
+            assertThat(version).isEqualTo(HttpVersion.HTTP_3);
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
+    }
+
+    private static HttpVersion get(HttpClientAgent client, int port) throws Exception {
+        // Vert.x only follows Alt-Svc for hosts containing a dot, so "localhost" would never upgrade
+        var resp = client.request(HttpMethod.GET, port, "127.0.0.1", "/hello")
+                .compose(HttpClientRequest::send)
+                .await(10, TimeUnit.SECONDS);
+        resp.body().await(5, TimeUnit.SECONDS);
+        return resp.version();
+    }
+
+    @Test
     void testNoAltSvcOnHttp3() throws Exception {
         int port = tlsUrl.getPort();
 

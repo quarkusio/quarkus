@@ -30,7 +30,7 @@ public class Http3AltSvcHandler implements Handler<RoutingContext> {
             // We cannot add a header as the head has already be written
             // For HTTP/1 and HTTP/1.1, the advertisement is done using a header, so we need to check
             // if we can write it. For HTTP/2 it's a custom frame.
-            if (rc.request().version() != HttpVersion.HTTP_2 && !rc.response().headWritten()) {
+            if (rc.request().version() == HttpVersion.HTTP_2 || !rc.response().headWritten()) {
                 int port = rc.request().localAddress().port();
                 String advertisement = "h3=\":" + port + "\"; ma=" + maxAgeSeconds;
                 try {

@@ -28,9 +28,8 @@ public class TenantSpecificJwtPreferredNameValidator implements ClaimsValidator 
             throw new IllegalStateException("The 'tenant-requiredclaim' tenant required claim 'azp' is not 'quarkus-app-b'");
         }
 
-        if (claims.hasClaim("preferred_username")
-                && claims.getClaim("preferred_username") instanceof String
-                && ((String) claims.getClaim("preferred_username")).contains("admin")) {
+        String preferredUserName = claims.getStringClaim("preferred_username");
+        if (preferredUserName != null && preferredUserName.contains("admin")) {
             return "scope validation failed, the 'fail-validation' scope is not allowed";
         }
         return null;

@@ -392,7 +392,7 @@ public class IssuerValidator implements ClaimsValidator { <1>
 <2> Return the claim verification error description.
 <3> Return `null` to confirm that this validator has successfully verified the token.
 
-`VerificationContext` is a record declared by `ClaimsValidator`, and its `claims()` accessor returns an `io.smallrye.jwt.common.JwtClaims` instance, which offers both the generic `getClaim(String)` and `hasClaim(String)` methods and the standard claim accessors such as `getIssuer()` and `getAudience()`.
+`VerificationContext` is a record declared by `ClaimsValidator`, and its `claims()` accessor returns an `io.smallrye.jwt.common.JwtClaims` instance, which offers the generic `getClaim(String)` method, typed accessors such as `getStringClaim(String)`, and the standard claim accessors such as `getIssuer()` and `getAudience()`.
 
 TIP: Use a `@quarkus.oidc.TenantFeature` annotation to bind a custom claims validator to a specific OIDC tenant only.
 

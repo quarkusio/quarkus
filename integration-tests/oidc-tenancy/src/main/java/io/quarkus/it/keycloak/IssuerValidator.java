@@ -17,8 +17,7 @@ public class IssuerValidator implements ClaimsValidator {
     @Override
     public String validate(VerificationContext context) {
         JwtClaims claims = context.claims();
-        if (claims.hasClaim(iss.name())
-                && "unacceptable-issuer".equals((String) claims.getClaim(iss.name()))) {
+        if ("unacceptable-issuer".equals(claims.getStringClaim(iss.name()))) {
             // issuer matched
             return "The 'unacceptable-issuer' is not allowed";
         }

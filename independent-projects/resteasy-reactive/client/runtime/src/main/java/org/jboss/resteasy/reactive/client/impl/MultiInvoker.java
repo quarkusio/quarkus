@@ -55,9 +55,9 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
     }
 
     /**
-     * We need this class to work around a bug in Mutiny where we can register our cancel listener
-     * after the subscription is cancelled, and we never get notified
-     * See <a href="https://github.com/smallrye/smallrye-mutiny/issues/417">...</a>
+     * The emitter of a request, with the action that releases the request once the subscriber cancels, or once
+     * {@link #complete()} or {@link #fail(Throwable)} ends it. The action runs at most once, and items are dropped
+     * after the end.
      */
     static class MultiRequest<R> {
 
@@ -70,11 +70,6 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
         public MultiRequest(MultiEmitter<? super R> emitter) {
             this.emitter = emitter;
-            emitter.onTermination(() -> {
-                if (emitter.isCancelled()) {
-                    this.cancel();
-                }
-            });
         }
 
         void emit(R item) {
@@ -98,7 +93,7 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         }
 
         public boolean isCancelled() {
-            return onCancel.get() == CLEARED;
+            return onCancel.get() == CLEARED || emitter.isCancelled();
         }
 
         private void cancel() {
@@ -110,7 +105,12 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
         public void onCancel(Runnable onCancel) {
             if (this.onCancel.compareAndSet(null, onCancel)) {
-                // this was a first set
+                // Mutiny runs the callback at once if the subscriber has already cancelled
+                emitter.onTermination(() -> {
+                    if (emitter.isCancelled()) {
+                        cancel();
+                    }
+                });
             } else if (this.onCancel.get() == CLEARED) {
                 // already cleared
                 if (onCancel != null)

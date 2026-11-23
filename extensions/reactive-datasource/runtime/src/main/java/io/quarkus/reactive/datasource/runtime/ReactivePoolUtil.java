@@ -45,6 +45,7 @@ import io.vertx.sqlclient.impl.Utils;
 public final class ReactivePoolUtil {
 
     private static final Logger log = Logger.getLogger(ReactivePoolUtil.class);
+    static final String HOSTNAME_VERIFICATION_DEFAULT_ALGO = "HTTPS";
 
     private ReactivePoolUtil() {
     }
@@ -256,7 +257,7 @@ public final class ReactivePoolUtil {
         connectOptions.setReconnectInterval(config.reconnectInterval().toMillis());
     }
 
-    private static boolean hasManualSslProperties(DataSourceReactiveRuntimeConfig config) {
+    static boolean hasManualSslProperties(DataSourceReactiveRuntimeConfig config) {
         return config.trustAll()
                 || config.trustCertificatePem().enabled()
                 || (config.trustCertificatePem().certs().isPresent() && !config.trustCertificatePem().certs().get().isEmpty())
@@ -265,7 +266,18 @@ public final class ReactivePoolUtil {
                 || config.keyCertificatePem().enabled()
                 || config.keyCertificateJks().enabled()
                 || config.keyCertificatePfx().enabled()
-                || !"NONE".equalsIgnoreCase(config.hostnameVerificationAlgorithm());
+                || normalizeHostnameVerificationAlgorithm(config.hostnameVerificationAlgorithm()).isPresent();
+    }
+
+    static Optional<String> normalizeHostnameVerificationAlgorithm(Optional<String> configured) {
+        return configured.filter(algorithm -> !algorithm.isBlank());
+    }
+
+    static String toVertxHostnameVerificationAlgorithm(Optional<String> configured) {
+        //absent or "" means use the default, which is currently HTTPS
+        //see also VertxRedisClientFactory.configureSsl
+        String algorithm = normalizeHostnameVerificationAlgorithm(configured).orElse(HOSTNAME_VERIFICATION_DEFAULT_ALGO);
+        return "NONE".equalsIgnoreCase(algorithm) ? "" : algorithm;
     }
 
     private static void configureManualSsl(SqlConnectOptions connectOptions,
@@ -285,12 +297,8 @@ public final class ReactivePoolUtil {
         configureJksKeyCertOptions(sslOptions, config.keyCertificateJks());
         configurePfxKeyCertOptions(sslOptions, config.keyCertificatePfx());
 
-        String algo = config.hostnameVerificationAlgorithm();
-        if ("NONE".equalsIgnoreCase(algo)) {
-            sslOptions.setHostnameVerificationAlgorithm("");
-        } else {
-            sslOptions.setHostnameVerificationAlgorithm(algo);
-        }
+        sslOptions.setHostnameVerificationAlgorithm(
+                toVertxHostnameVerificationAlgorithm(config.hostnameVerificationAlgorithm()));
 
         connectOptions.setSslOptions(sslOptions);
     }

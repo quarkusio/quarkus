@@ -47,6 +47,7 @@ public class VertxRedisClientFactory {
 
     public static final String DEFAULT_CLIENT = "<default>";
     public static String NON_RESERVED_URI_PATTERN = "[^a-zA-Z0-9\\-_.~]";
+    static final String HOSTNAME_VERIFICATION_DEFAULT_ALGO = "HTTPS";
 
     private static final Logger LOGGER = Logger.getLogger(VertxRedisClientFactory.class);
 
@@ -179,6 +180,11 @@ public class VertxRedisClientFactory {
         options.setPassword(config.password().orElse(null));
     }
 
+    static String toVertxHostnameVerificationAlgorithm(Optional<String> configured) {
+        String algorithm = configured.filter(value -> !value.isBlank()).orElse(HOSTNAME_VERIFICATION_DEFAULT_ALGO);
+        return "NONE".equalsIgnoreCase(algorithm) ? "" : algorithm;
+    }
+
     private static void customize(String name, RedisOptions options) {
         if (Arc.container() != null) {
             List<InstanceHandle<RedisOptionsCustomizer>> customizers = Arc.container().listAll(RedisOptionsCustomizer.class);
@@ -302,12 +308,10 @@ public class VertxRedisClientFactory {
         } else {
             config.tcp().alpn().ifPresent(net::setUseAlpn);
 
-            String verificationAlgorithm = config.tls().hostnameVerificationAlgorithm();
-            if ("NONE".equalsIgnoreCase(verificationAlgorithm)) {
-                net.setHostnameVerificationAlgorithm("");
-            } else {
-                net.setHostnameVerificationAlgorithm(verificationAlgorithm);
-            }
+            //absent or "" means use the default, which is currently HTTPS
+            //see also ReactivePoolUtil.configureSsl
+            net.setHostnameVerificationAlgorithm(
+                    toVertxHostnameVerificationAlgorithm(config.tls().hostnameVerificationAlgorithm()));
             net.setSsl(config.tls().enabled() || tlsFromHosts);
             net.setTrustAll(config.tls().trustAll() || defaultTrustAll);
 

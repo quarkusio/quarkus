@@ -118,6 +118,9 @@
                                 <format>PEM</format>
                             </formats>
                             <cn>sql1</cn>
+                            <subjectAlternativeNames>
+                                <subjectAlternativeName>DNS:localhost</subjectAlternativeName>
+                            </subjectAlternativeNames>
                             <duration>2</duration>
                         </certificate>
                     </certificates>

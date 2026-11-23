@@ -98,10 +98,10 @@ public final class PgPoolRecorder {
                 final SslMode sslMode = dataSourceReactivePostgreSQLConfig.sslMode().get();
                 pgConnectOptions.setSslMode(sslMode);
 
-                var algo = dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm();
-                if ("NONE".equalsIgnoreCase(algo) && sslMode == SslMode.VERIFY_FULL) {
+                if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().filter("NONE"::equalsIgnoreCase)
+                        .isPresent() && sslMode == SslMode.VERIFY_FULL) {
                     throw new IllegalArgumentException(
-                            "quarkus.datasource.reactive.hostname-verification-algorithm must be specified under verify-full sslmode");
+                            "quarkus.datasource.reactive.hostname-verification-algorithm must not be NONE under verify-full sslmode");
                 }
             } else if (dataSourceReactiveRuntimeConfig.tlsConfigurationName().isPresent()) {
                 // Auto-enable SSL mode when a named TLS configuration is set

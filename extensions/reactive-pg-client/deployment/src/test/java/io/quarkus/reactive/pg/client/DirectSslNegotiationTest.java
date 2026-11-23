@@ -23,6 +23,7 @@ public class DirectSslNegotiationTest {
             .overrideConfigKey("quarkus.datasource.reactive.postgresql.ssl-negotiation", "direct")
             .overrideConfigKey("quarkus.datasource.reactive.postgresql.ssl-mode", "require")
             .overrideConfigKey("quarkus.datasource.reactive.trust-certificate-pem", "true")
+            .overrideConfigKey("quarkus.datasource.reactive.hostname-verification-algorithm", "NONE")
             .overrideConfigKey("quarkus.datasource.reactive.trust-certificate-pem.certs",
                     "target/certificates/postgres-server-ca.crt")
             .withApplicationRoot(jar -> jar.addClass(BeanUsingPool.class));

@@ -20,6 +20,8 @@ public class DevServicesMsSQLDatasourceTestCase {
     @RegisterExtension
     static QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withConfigurationResource("application.properties")
+            // Dev Services starts a SQL Server with a self-signed certificate that does not match the host name
+            .overrideConfigKey("quarkus.datasource.reactive.hostname-verification-algorithm", "NONE")
             // Expect no warnings from reactive
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
                     && record.getMessage().toLowerCase(Locale.ENGLISH).contains("reactive"))

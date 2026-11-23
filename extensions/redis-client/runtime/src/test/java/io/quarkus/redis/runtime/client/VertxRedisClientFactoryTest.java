@@ -3,6 +3,7 @@ package io.quarkus.redis.runtime.client;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -127,6 +128,30 @@ class VertxRedisClientFactoryTest {
         Assertions.assertThat(options.getEndpoints()).hasSize(2);
         Assertions.assertThat(options.getEndpoints().get(0)).contains("6379");
         Assertions.assertThat(options.getEndpoints().get(1)).contains("6380");
+    }
+
+    @Test
+    void hostnameVerificationNotSetUsesHttps() {
+        Assertions.assertThat(VertxRedisClientFactory.toVertxHostnameVerificationAlgorithm(Optional.empty()))
+                .isEqualTo(VertxRedisClientFactory.HOSTNAME_VERIFICATION_DEFAULT_ALGO);
+    }
+
+    @Test
+    void hostnameVerificationEmptyUsesHttps() {
+        Assertions.assertThat(VertxRedisClientFactory.toVertxHostnameVerificationAlgorithm(Optional.of("")))
+                .isEqualTo(VertxRedisClientFactory.HOSTNAME_VERIFICATION_DEFAULT_ALGO);
+    }
+
+    @Test
+    void hostnameVerificationValueIsPassedThrough() {
+        Assertions.assertThat(VertxRedisClientFactory.toVertxHostnameVerificationAlgorithm(Optional.of("LDAPS")))
+                .isEqualTo("LDAPS");
+    }
+
+    @Test
+    void hostnameVerificationNoneDisablesVertxAlgorithm() {
+        Assertions.assertThat(VertxRedisClientFactory.toVertxHostnameVerificationAlgorithm(Optional.of("NONE")))
+                .isEqualTo("");
     }
 
 }

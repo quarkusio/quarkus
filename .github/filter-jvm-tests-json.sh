@@ -12,7 +12,10 @@
 #          An entry is dropped if none of its groups is part of the test plan.
 #          The groups flagged with "gate" are tested first, the other test jobs only run if their tests pass:
 #          the second parameter selects either the jobs of these groups (gate) or the other ones (main).
-#          Nothing is printed if there is no entry left.
+#          For the main jobs, nothing is printed if there is no entry left.
+#          For the gate jobs, a placeholder entry with "noop": true is printed instead: the job running the gate tests
+#          must never be skipped as GitHub Actions skips all the jobs depending (even indirectly) on a skipped job,
+#          unless their condition uses a status check function. All the steps of the job are skipped for this entry.
 # Note: This script is only for CI and does therefore not aim to be compatible with BSD/macOS.
 
 set -e -u -o pipefail
@@ -66,7 +69,11 @@ JSON=$(echo -n "$JSON" | jq -c --arg jobs "${JOBS}" --slurpfile plan "${TEST_PLA
 ')
 
 if [ "$JSON" == '[]' ]; then
-  echo -n ''
+  if [ "$JOBS" == 'gate' ]; then
+    echo '{java: [{"name": "No early tests", "noop": true, "os-name": "ubuntu-slim", "tag": "no-early-tests"}]}'
+  else
+    echo -n ''
+  fi
   exit 0
 fi
 

@@ -14,9 +14,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CompletionException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -117,21 +119,27 @@ public class HttpSecurityRecorder {
         }
     }
 
-    public Supplier<EagerSecurityInterceptorStorage> createSecurityInterceptorStorage(
-            Map<RuntimeValue<MethodDescription>, Consumer<RoutingContext>> endpointRuntimeValToInterceptor,
-            Map<String, Consumer<RoutingContext>> classNameToInterceptor) {
+    public static EagerSecurityInterceptorStorage createSecurityInterceptorStorage(
+            Map<String, EagerSecurityInterceptorCreator> interceptorCreators, List<InterceptedMethod> interceptedMethods,
+            Map<String, List<InterceptorBinding>> classNameToInterceptorBindings) {
 
+        final Map<InterceptorBinding, Consumer<RoutingContext>> bindingToInterceptor = new HashMap<>();
         final Map<MethodDescription, Consumer<RoutingContext>> endpointToInterceptor = new HashMap<>();
-        for (var entry : endpointRuntimeValToInterceptor.entrySet()) {
-            endpointToInterceptor.put(entry.getKey().getValue(), entry.getValue());
+        for (InterceptedMethod method : interceptedMethods) {
+            var methodDescription = new MethodDescription(method.className(), method.methodName(),
+                    method.parameterTypes().toArray(String[]::new));
+            endpointToInterceptor.put(methodDescription,
+                    createEagerSecurityInterceptor(interceptorCreators, bindingToInterceptor, method.interceptorBindings()));
         }
 
-        return new Supplier<EagerSecurityInterceptorStorage>() {
-            @Override
-            public EagerSecurityInterceptorStorage get() {
-                return new EagerSecurityInterceptorStorage(endpointToInterceptor, classNameToInterceptor);
-            }
-        };
+        final Map<String, Consumer<RoutingContext>> classNameToInterceptor = new HashMap<>();
+        // sorted, so that the interceptors are always created in the same order
+        for (var entry : new TreeMap<>(classNameToInterceptorBindings).entrySet()) {
+            classNameToInterceptor.put(entry.getKey(),
+                    createEagerSecurityInterceptor(interceptorCreators, bindingToInterceptor, entry.getValue()));
+        }
+
+        return new EagerSecurityInterceptorStorage(endpointToInterceptor, classNameToInterceptor);
     }
 
     public static HttpSecurityConfiguration prepareHttpSecurityConfiguration(VertxHttpConfig httpConfig,
@@ -465,16 +473,32 @@ public class HttpSecurityRecorder {
         }
     }
 
-    public RuntimeValue<MethodDescription> createMethodDescription(String className, String methodName, String[] paramTypes) {
-        return new RuntimeValue<>(new MethodDescription(className, methodName, paramTypes));
+    private static Consumer<RoutingContext> createEagerSecurityInterceptor(
+            Map<String, EagerSecurityInterceptorCreator> interceptorCreators,
+            Map<InterceptorBinding, Consumer<RoutingContext>> bindingToInterceptor,
+            List<InterceptorBinding> interceptorBindings) {
+        Consumer<RoutingContext> existingInterceptor = null;
+        for (InterceptorBinding interceptorBinding : interceptorBindings) {
+            Consumer<RoutingContext> interceptor = bindingToInterceptor.get(interceptorBinding);
+            if (interceptor == null) {
+                EagerSecurityInterceptorCreator interceptorCreator = interceptorCreators
+                        .get(interceptorBinding.annotationName());
+                if (interceptorCreator == null) {
+                    throw new IllegalStateException(
+                            "No static-init service of the '%s' type is registered for the '%s' interceptor binding"
+                                    .formatted(EagerSecurityInterceptorCreator.class.getName(),
+                                            interceptorBinding.annotationName()));
+                }
+                interceptor = interceptorCreator.interceptorCreator().apply(interceptorBinding.annotationValue());
+                bindingToInterceptor.put(interceptorBinding, interceptor);
+            }
+            existingInterceptor = existingInterceptor == null ? interceptor
+                    : compoundSecurityInterceptor(interceptor, existingInterceptor);
+        }
+        return existingInterceptor;
     }
 
-    public Consumer<RoutingContext> createEagerSecurityInterceptor(
-            Function<String, Consumer<RoutingContext>> interceptorCreator, String annotationValue) {
-        return interceptorCreator.apply(annotationValue);
-    }
-
-    public Consumer<RoutingContext> compoundSecurityInterceptor(Consumer<RoutingContext> interceptor1,
+    private static Consumer<RoutingContext> compoundSecurityInterceptor(Consumer<RoutingContext> interceptor1,
             Consumer<RoutingContext> interceptor2) {
         return new Consumer<RoutingContext>() {
             @Override
@@ -483,6 +507,28 @@ public class HttpSecurityRecorder {
                 interceptor2.accept(routingContext);
             }
         };
+    }
+
+    /**
+     * Method with the eager security interceptors.
+     *
+     * @param className declaring class name
+     * @param methodName method name
+     * @param parameterTypes method parameter type names
+     * @param interceptorBindings bindings of the interceptors applied on the method, the last one is run first
+     */
+    public record InterceptedMethod(String className, String methodName, List<String> parameterTypes,
+            List<InterceptorBinding> interceptorBindings) {
+    }
+
+    /**
+     * Interceptor binding annotation and its binding value, for which the {@link EagerSecurityInterceptorCreator}
+     * creates an interceptor.
+     *
+     * @param annotationName {@link Class#getName() name} of the interceptor binding annotation
+     * @param annotationValue annotation binding value: '@HttpAuthenticationMechanism("custom")' => 'custom'
+     */
+    public record InterceptorBinding(String annotationName, String annotationValue) {
     }
 
     public static void selectAuthMechanismViaAnnotation() {

@@ -3,13 +3,12 @@ package io.quarkus.oidc.deployment.devservices.keycloak;
 import java.util.Optional;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devservices.keycloak.KeycloakAdminPageBuildItem;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesPreparedBuildItem;
@@ -19,35 +18,36 @@ import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.deployment.devservices.AbstractDevUIProcessor;
 import io.quarkus.oidc.runtime.dev.ui.OidcDevJsonRpcService;
 import io.quarkus.oidc.runtime.dev.ui.OidcDevLoginObserver;
-import io.quarkus.oidc.runtime.dev.ui.OidcDevUiRecorder;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevUiBuildTimeProperties.DevServiceType;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.PreRouterFinalizationBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 
 public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
 
     OidcBuildTimeConfig oidcConfig;
 
-    @Record(ExecutionTime.RUNTIME_INIT)
+    // ensures OidcDevJsonRpcService is prepared before it is used, this works because Vert.x HTTP still uses recorder
+    // TODO: replace with .before("router-finalization-future-svc") when it exists
+    @Produce(PreRouterFinalizationBuildItem.class)
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     void produceProviderComponent(BuildProducer<KeycloakAdminPageBuildItem> keycloakAdminPageProducer,
-            OidcDevUiRecorder recorder,
+            ServiceRegistrar serviceRegistrar,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            BeanContainerBuildItem beanContainer,
             Capabilities capabilities,
             Optional<KeycloakDevServicesPreparedBuildItem> keycloakDevServicesPreparedBuildItem) {
         if (keycloakDevServicesPreparedBuildItem.isPresent()) {
             CardPageBuildItem cardPageBuildItem = createProviderWebComponent(
-                    recorder,
+                    serviceRegistrar,
                     capabilities,
                     "Keycloak",
                     oidcConfig.devui().grant().type().orElse(DevUiConfig.Grant.Type.CODE).getGrantType(),
                     true,
-                    beanContainer,
                     oidcConfig.devui().webClientTimeout(),
                     oidcConfig.devui().grantOptions(),
                     nonApplicationRootPathBuildItem,
                     keycloakDevServicesPreparedBuildItem.get().getDevServiceConfigHashCode(),
-                    false, null, null, null, OidcDevUiRecorder.DevServiceType.KEYCLOAK);
+                    false, null, null, null, DevServiceType.KEYCLOAK);
 
             cardPageBuildItem.setLogo("keycloak_logo.svg", "keycloak_logo.svg");
 
@@ -69,13 +69,12 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
         return AdditionalBeanBuildItem.unremovableOf(OidcDevLoginObserver.class);
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    void invokeEndpoint(BuildProducer<RouteBuildItem> routeProducer, OidcDevUiRecorder recorder,
+    void invokeEndpoint(BuildProducer<RouteBuildItem> routeProducer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         // TODO: this is called even when Keycloak DEV UI is disabled and OIDC DEV UI is enabled
         //   we should fine a mechanism to switch where the endpoints are registered or have shared build steps
-        registerOidcWebAppRoutes(routeProducer, recorder, nonApplicationRootPathBuildItem);
+        registerOidcWebAppRoutes(routeProducer, nonApplicationRootPathBuildItem);
     }
 
 }

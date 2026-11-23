@@ -11,11 +11,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.http.Cookie;
 import io.vertx.ext.web.RoutingContext;
 
-final class OidcDevSessionCookieReaderHandler implements Handler<RoutingContext> {
-
-    OidcDevSessionCookieReaderHandler() {
-
-    }
+public final class OidcDevSessionCookieReaderHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext rc) {

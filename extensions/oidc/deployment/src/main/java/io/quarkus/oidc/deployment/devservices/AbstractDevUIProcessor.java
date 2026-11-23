@@ -3,33 +3,36 @@ package io.quarkus.oidc.deployment.devservices;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.oidc.runtime.OidcTenantConfig;
-import io.quarkus.oidc.runtime.dev.ui.OidcDevUiRecorder;
-import io.quarkus.oidc.runtime.dev.ui.OidcDevUiRpcSvcPropertiesBean;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevJsonRpcService;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevSessionCookieReaderHandler;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevSessionLogoutHandler;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevUiBuildTimeProperties;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevUiBuildTimeProperties.DevServiceType;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.smallrye.config.Config;
-import io.smallrye.mutiny.Uni;
+import io.vertx.core.Vertx;
 
 public abstract class AbstractDevUIProcessor {
     protected static final String CONFIG_PREFIX = "quarkus.oidc.";
     protected static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
     private static final String APP_TYPE_CONFIG_KEY = CONFIG_PREFIX + "application-type";
 
-    protected static CardPageBuildItem createProviderWebComponent(OidcDevUiRecorder recorder,
+    protected static CardPageBuildItem createProviderWebComponent(ServiceRegistrar serviceRegistrar,
             Capabilities capabilities,
             String oidcProviderName,
             String oidcGrantType,
             boolean introspectionIsAvailable,
-            BeanContainerBuildItem beanContainer,
             Duration webClientTimeout,
             Map<String, Map<String, String>> grantOptions,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
@@ -37,7 +40,7 @@ public abstract class AbstractDevUIProcessor {
             boolean discoverMetadata,
             String authServerUrl,
             String buildTimeKeycloakAdminUrl,
-            String buildTimeOidcApplicationType, OidcDevUiRecorder.DevServiceType devServiceType) {
+            String buildTimeOidcApplicationType, DevServiceType devServiceType) {
         final CardPageBuildItem cardPage = new CardPageBuildItem();
 
         cardPage.setLogo("oidc_logo.png", "oidc_logo.png");
@@ -76,13 +79,23 @@ public abstract class AbstractDevUIProcessor {
 
         cardPage.addBuildTimeData("devRoot", nonApplicationRootPathBuildItem.getNonApplicationRootPath());
 
-        Supplier<Uni<OidcDevUiRpcSvcPropertiesBean>> runtimeProperties = recorder.getRpcServiceProperties(
-                webClientTimeout, grantOptions, oidcProviderName, oidcGrantType, introspectionIsAvailable,
+        // the service lambda can only capture unmodifiable maps, and the config mapping maps are HashMaps
+        Map<String, Map<String, String>> unmodifiableGrantOptions = grantOptions.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> Map.copyOf(e.getValue())));
+        var buildTimeProperties = new OidcDevUiBuildTimeProperties(webClientTimeout, unmodifiableGrantOptions,
+                oidcProviderName, oidcGrantType, introspectionIsAvailable,
                 swaggerIsAvailable, graphqlIsAvailable, swaggerUiPath, graphqlUiPath, devServiceConfigHashCode,
                 discoverMetadata, devUiLogoutPath, devUiReadSessionCookiePath, authServerUrl, buildTimeKeycloakAdminUrl,
                 buildTimeOidcApplicationType, devServiceType);
 
-        recorder.createJsonRPCService(beanContainer.getValue(), runtimeProperties);
+        serviceRegistrar
+                .forService("io.quarkus.oidc.dev-ui.prepare-json-rpc-service")
+                .require(BeanContainer.class)
+                // Vert.x comes from its service rather than an injection point, so that this service does not wait for
+                // the runtime-init synthetic beans.
+                .require(Vertx.class)
+                .onStart((ctx, beanContainer, vertx) -> beanContainer.beanInstance(OidcDevJsonRpcService.class)
+                        .hydrate(buildTimeProperties, vertx));
 
         return cardPage;
     }
@@ -102,15 +115,15 @@ public abstract class AbstractDevUIProcessor {
                 .orElse(OidcTenantConfig.ApplicationType.SERVICE.name().toLowerCase());
     }
 
-    protected static void registerOidcWebAppRoutes(BuildProducer<RouteBuildItem> routeProducer, OidcDevUiRecorder recorder,
+    protected static void registerOidcWebAppRoutes(BuildProducer<RouteBuildItem> routeProducer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .nestedRoute("quarkus-oidc", "readSessionCookie")
-                .handler(recorder.readSessionCookieHandler())
+                .handler(new OidcDevSessionCookieReaderHandler())
                 .build());
         routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .nestedRoute("quarkus-oidc", "logout")
-                .handler(recorder.logoutHandler())
+                .handler(new OidcDevSessionLogoutHandler())
                 .build());
     }
 }

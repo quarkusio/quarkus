@@ -176,16 +176,18 @@ public class ApplicationLifecycleManager {
                         applicationLogger.errorf("Port %d seems to be in use by another process. " +
                                 "Quarkus may already be running or the port is used by another application.", port);
                         if (IS_WINDOWS) {
-                            applicationLogger.warn("Use 'netstat -a -b -n -o' to identify the process occupying the port.");
+                            applicationLogger.warn(
+                                    "Use 'netstat -a -b -n -o | findstr LISTENING' to identify the process occupying the port.");
                             applicationLogger
                                     .warn("You can try to kill it with 'taskkill /PID <pid>' or via the Task Manager.");
                         } else if (IS_MAC) {
                             applicationLogger
-                                    .warnf("Use 'netstat -anv | grep %d' to identify the process occupying the port.", port);
+                                    .warnf("Use 'netstat -anv | grep LISTEN | grep %d' to identify the process occupying the port.",
+                                            port);
                             applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
                         } else {
                             applicationLogger
-                                    .warnf("Use 'ss -anop | grep %1$d' or 'netstat -anop | grep %1$d' to identify the process occupying the port.",
+                                    .warnf("Use 'ss -lnop | grep %1$d' or 'netstat -lnop | grep %1$d' to identify the process occupying the port.",
                                             port);
                             applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
                         }

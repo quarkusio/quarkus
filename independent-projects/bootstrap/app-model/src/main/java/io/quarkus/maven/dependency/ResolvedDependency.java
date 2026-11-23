@@ -130,11 +130,6 @@ public interface ResolvedDependency extends Dependency {
                 case "quarkus-qute" -> "io.quarkus.qute.runtime";
                 default -> null;
             };
-            case "org.jboss.slf4j" -> switch (artifactId) {
-                // https://github.com/jboss-logging/slf4j-jboss-logmanager/issues/69
-                case "slf4j-jboss-logmanager" -> "org.jboss.logmanager.slf4j";
-                default -> null;
-            };
             case "org.eclipse.microprofile.rest.client" -> switch (artifactId) {
                 // https://github.com/microprofile/microprofile-rest-client/issues/397
                 case "microprofile-rest-client-api" -> "org.eclipse.microprofile.rest.client";

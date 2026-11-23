@@ -433,13 +433,11 @@ public abstract class QuarkusDev extends QuarkusTask {
 
         String java = null;
 
-        if (GradleVersion.current().compareTo(GradleVersion.version("6.7")) >= 0) {
-            JavaToolchainService toolChainService = project.getExtensions().getByType(JavaToolchainService.class);
-            JavaToolchainSpec toolchainSpec = javaPluginExtension.getToolchain();
-            Provider<JavaLauncher> javaLauncher = toolChainService.launcherFor(toolchainSpec);
-            if (javaLauncher.isPresent()) {
-                java = javaLauncher.get().getExecutablePath().getAsFile().getAbsolutePath();
-            }
+        JavaToolchainService toolChainService = project.getExtensions().getByType(JavaToolchainService.class);
+        JavaToolchainSpec toolchainSpec = javaPluginExtension.getToolchain();
+        Provider<JavaLauncher> javaLauncher = toolChainService.launcherFor(toolchainSpec);
+        if (javaLauncher.isPresent()) {
+            java = javaLauncher.get().getExecutablePath().getAsFile().getAbsolutePath();
         }
         DevModeCommandLineBuilder builder = DevModeCommandLine.builder(java)
                 .forceC2(getForceC2().getOrNull())

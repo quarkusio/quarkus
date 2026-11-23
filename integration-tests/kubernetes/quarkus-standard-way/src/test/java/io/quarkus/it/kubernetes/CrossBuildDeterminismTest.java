@@ -69,6 +69,9 @@ public class CrossBuildDeterminismTest {
 
         Files.createDirectories(srcMain);
         Files.createDirectories(srcResources);
+        // The temporary directory is inside the Quarkus build directory: without its own .mvn directory, the nested
+        // build would read the .mvn configuration of the Quarkus repository, which CI extends with a module selection
+        Files.createDirectories(projectDir.resolve(".mvn"));
 
         // Copy the GreetingResource class
         Path sourceRoot = Paths.get("").toAbsolutePath();

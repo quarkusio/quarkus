@@ -71,17 +71,10 @@ final class ExportUtil {
             properties.putAll(originalProperties);
             properties.putAll(customApplicationProperties);
 
-            deleteApplicationProperties(archive);
             archive.add(new PropertiesAsset(properties), APPLICATION_PROPERTIES);
         } else {
             archive.add(new PropertiesAsset(customApplicationProperties), APPLICATION_PROPERTIES);
         }
-    }
-
-    static void deleteApplicationProperties(JavaArchive archive) {
-        // MemoryMapArchiveBase#addAsset(ArchivePath,Asset) does not overwrite the existing node correctly
-        // https://github.com/shrinkwrap/shrinkwrap/issues/179
-        archive.delete(APPLICATION_PROPERTIES);
     }
 
     /**

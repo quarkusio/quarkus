@@ -1,7 +1,6 @@
 package io.quarkus.devservices.common;
 
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
@@ -15,6 +14,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ContainerPort;
 
+import io.quarkus.deployment.dev.devservices.PortBindings;
 import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesRegistry;
 import io.quarkus.runtime.LaunchMode;
 
@@ -77,13 +77,7 @@ public class ContainerLocator {
     }
 
     private Optional<ContainerPort> getMappedPort(Container container, int port) {
-        if (container.getPorts() == null) {
-            return Optional.empty();
-        }
-
-        return Arrays.stream(container.getPorts())
-                .filter(containerPort -> hasMatchingPort(containerPort, port))
-                .findAny();
+        return PortBindings.selectBinding(container.getPorts(), cp -> hasMatchingPort(cp, port), ContainerPort::getIp);
     }
 
     public Optional<ContainerAddress> locateContainer(String serviceName, boolean shared, LaunchMode launchMode) {
@@ -129,8 +123,11 @@ public class ContainerLocator {
                             return container.getId();
                         }
 
-                        Arrays.stream(container.getPorts())
-                                .filter(cp -> Objects.nonNull(cp.getPublicPort()) && Objects.nonNull(cp.getPrivatePort()))
+                        // one binding per private port, IPv4 and IPv6 may be published on different host ports
+                        PortBindings.selectBindings(container.getPorts(),
+                                cp -> cp.getPublicPort() != null && cp.getPrivatePort() != null,
+                                ContainerPort::getPrivatePort,
+                                ContainerPort::getIp)
                                 .forEach(cp -> {
                                     ContainerAddress containerAddress = new ContainerAddress(
                                             container.getId(),

@@ -6,7 +6,6 @@ import static java.lang.Boolean.TRUE;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,7 +32,9 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Network;
+import com.github.dockerjava.api.model.Ports;
 
+import io.quarkus.deployment.dev.devservices.PortBindings;
 import io.quarkus.devservices.common.ContainerUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.runtime.util.StringUtil;
@@ -202,8 +203,10 @@ public class ComposeProject {
                 if (exposedPortsPath != null) {
                     String ports = inspectContainer.getNetworkSettings().getPorts().getBindings().entrySet().stream()
                             .filter(e -> e.getValue() != null)
-                            .flatMap(e -> Arrays.stream(e.getValue())
-                                    .map(c -> String.format("PORT_%d=%s", e.getKey().getPort(), c.getHostPortSpec())))
+                            // one binding per exposed port, IPv4 and IPv6 may be published on different host ports
+                            .flatMap(e -> PortBindings.selectBinding(e.getValue(), b -> true, Ports.Binding::getHostIp)
+                                    .map(c -> String.format("PORT_%d=%s", e.getKey().getPort(), c.getHostPortSpec()))
+                                    .stream())
                             .collect(Collectors.joining("\n", "", "\n"));
                     if (!StringUtil.isNullOrEmpty(ports)) {
                         instance.copyFileToContainer(Transferable.of(ports.getBytes(StandardCharsets.UTF_8)),

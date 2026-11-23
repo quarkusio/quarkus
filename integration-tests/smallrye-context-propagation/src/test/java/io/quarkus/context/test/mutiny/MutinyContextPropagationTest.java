@@ -11,7 +11,6 @@ import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.context.test.CompletionExceptionMapper;
 import io.quarkus.context.test.RequestBean;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
@@ -24,7 +23,6 @@ import io.restassured.RestAssured;
 public class MutinyContextPropagationTest {
     private static Class[] testClasses = {
             MutinyContextEndpoint.class, RequestBean.class, SomeEntity.class, SomeOtherEntity.class, Person.class,
-            CompletionExceptionMapper.class,
             MutinyTransactionalBean.class
     };
 

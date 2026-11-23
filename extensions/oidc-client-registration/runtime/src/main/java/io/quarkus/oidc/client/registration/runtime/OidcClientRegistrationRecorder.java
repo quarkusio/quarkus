@@ -54,8 +54,12 @@ public class OidcClientRegistrationRecorder {
 
         Map<String, OidcClientRegistration> staticOidcClientRegs = new HashMap<>();
         for (var config : runtimeConfig.getValue().namedClientRegistrations().entrySet()) {
-            staticOidcClientRegs.put(config.getKey(),
-                    createOidcClientRegistration(config.getValue(), tlsSupport, vertx, proxyConfigurationRegistrySupplier));
+            final String namedKey = config.getKey();
+            if (!OidcClientRegistrationsConfig.DEFAULT_CLIENT_REGISTRATION_KEY.equals(namedKey)) {
+                staticOidcClientRegs.put(namedKey,
+                        createOidcClientRegistration(config.getValue(), tlsSupport, vertx,
+                                proxyConfigurationRegistrySupplier));
+            }
         }
 
         return new OidcClientRegistrationsImpl(defaultClientReg, staticOidcClientRegs,

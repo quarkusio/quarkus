@@ -345,7 +345,7 @@ jobs:
       jvm_early_matrix: ${{ steps.compute-test-plan.outputs.jvm_early_matrix }}
       jvm_matrix: ${{ steps.compute-test-plan.outputs.jvm_matrix }}
     steps:
-      - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
+      - uses: runs-on/action@13fbb6a39310a0dac9ab4716da2c4e74a3326dfc # v2.7.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{ needs.configure.outputs.base-jdk-version }}" >> "$GITHUB_ENV"
@@ -565,7 +565,7 @@ jobs:
       otp_native_matrix: ${{ steps.calc-otp-native-matrix.outputs.matrix }}
       run_quickstarts: ${{ steps.calc-run-flags.outputs.run_quickstarts }}
     steps:
-      - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
+      - uses: runs-on/action@13fbb6a39310a0dac9ab4716da2c4e74a3326dfc # v2.7.0
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Calculate matrix from native-tests.json
         id: calc-native-matrix
@@ -633,7 +633,7 @@ jobs:
       matrix: ${{ fromJson(needs.initial-build.outputs.jvm_early_matrix) }}
 
     steps: &jvm-tests-steps
-      - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
+      - uses: runs-on/action@13fbb6a39310a0dac9ab4716da2c4e74a3326dfc # v2.7.0
         if: ${{ !matrix.java.noop }}
       - name: Gradle Enterprise environment
         if: ${{ !matrix.java.noop }}
@@ -841,7 +841,7 @@ jobs:
             runs-on: false
           }
     steps:
-      - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
+      - uses: runs-on/action@13fbb6a39310a0dac9ab4716da2c4e74a3326dfc # v2.7.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}},distribution-${{matrix.java.java-distribution}}" >> "$GITHUB_ENV"
@@ -956,7 +956,7 @@ jobs:
             runs-on: false
           }
     steps:
-      - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
+      - uses: runs-on/action@13fbb6a39310a0dac9ab4716da2c4e74a3326dfc # v2.7.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
@@ -1071,7 +1071,7 @@ jobs:
             runs-on: false
           }
     steps:
-      - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
+      - uses: runs-on/action@13fbb6a39310a0dac9ab4716da2c4e74a3326dfc # v2.7.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}},distribution-${{matrix.java.java-distribution}}" >> "$GITHUB_ENV"
@@ -1187,7 +1187,7 @@ jobs:
             runs-on: true
           }
     steps:
-      - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
+      - uses: runs-on/action@13fbb6a39310a0dac9ab4716da2c4e74a3326dfc # v2.7.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}},distribution-${{matrix.java.java-distribution}}" >> "$GITHUB_ENV"
@@ -1286,7 +1286,7 @@ jobs:
             runs-on: true
           }
     steps:
-      - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
+      - uses: runs-on/action@13fbb6a39310a0dac9ab4716da2c4e74a3326dfc # v2.7.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
@@ -1402,7 +1402,7 @@ jobs:
             runs-on: true
           }
     steps:
-      - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
+      - uses: runs-on/action@13fbb6a39310a0dac9ab4716da2c4e74a3326dfc # v2.7.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
@@ -1494,7 +1494,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.virtual_threads_matrix) }}
     steps:
-      - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
+      - uses: runs-on/action@13fbb6a39310a0dac9ab4716da2c4e74a3326dfc # v2.7.0
       - name: Gradle Enterprise environment
         run: |
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
@@ -1571,7 +1571,7 @@ jobs:
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
     timeout-minutes: 150
     steps:
-      - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
+      - uses: runs-on/action@13fbb6a39310a0dac9ab4716da2c4e74a3326dfc # v2.7.0
       - name: Gradle Enterprise environment
         run: |
           echo "GE_TAGS=jdk-${{ needs.configure.outputs.base-jdk-version }}" >> "$GITHUB_ENV"
@@ -1670,7 +1670,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
     steps:
-      - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
+      - uses: runs-on/action@13fbb6a39310a0dac9ab4716da2c4e74a3326dfc # v2.7.0
       - name: Gradle Enterprise environment
         run: |
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
@@ -1801,7 +1801,7 @@ jobs:
       - native-tests
     runs-on: ubuntu-slim
     steps:
-      - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
+      - uses: runs-on/action@13fbb6a39310a0dac9ab4716da2c4e74a3326dfc # v2.7.0
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           pattern: build-stats-*
@@ -2163,7 +2163,7 @@ jobs:
     needs: [configure,initial-build,jvm-early-tests,early-tests-gate,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests,oracle-test-pilot-jvm-tests,oracle-test-pilot-native-tests,pqc-tests]
     if: always() && needs.configure.outputs.run-ci-build == 'true'
     steps:
-      - uses: runs-on/action@284bff869d4a825f778ac7c38e50f1e31ef198fd # v2.6.0
+      - uses: runs-on/action@13fbb6a39310a0dac9ab4716da2c4e74a3326dfc # v2.7.0
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           path: build-reports-artifacts

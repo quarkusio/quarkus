@@ -122,4 +122,30 @@ public class KafkaJsonRPCService {
         return kafkaUiUtils.getAclInfo();
     }
 
+    @JsonRpcDescription("Create an access control list entry used for authorization in Kafka")
+    public KafkaAclInfo createAcl(
+            @JsonRpcDescription("The principal, example User:alice") String principal,
+            @JsonRpcDescription("The host the ACL applies to, example * for any host") String host,
+            @JsonRpcDescription("The operation, example READ, WRITE, DESCRIBE") String operation,
+            @JsonRpcDescription("The permission type, ALLOW or DENY") String permissionType,
+            @JsonRpcDescription("The resource type, example TOPIC, GROUP, CLUSTER") String resourceType,
+            @JsonRpcDescription("The resource name, example my-topic") String resourceName,
+            @JsonRpcDescription("The pattern type, LITERAL or PREFIXED") String patternType)
+            throws InterruptedException, ExecutionException {
+        return kafkaUiUtils.createAcl(principal, host, operation, permissionType, resourceType, resourceName, patternType);
+    }
+
+    @JsonRpcDescription("Delete an access control list entry used for authorization in Kafka")
+    public KafkaAclInfo deleteAcl(
+            @JsonRpcDescription("The principal, example User:alice") String principal,
+            @JsonRpcDescription("The host the ACL applies to, example *") String host,
+            @JsonRpcDescription("The operation, example READ, WRITE, DESCRIBE") String operation,
+            @JsonRpcDescription("The permission type, ALLOW or DENY") String permissionType,
+            @JsonRpcDescription("The resource type, example TOPIC, GROUP, CLUSTER") String resourceType,
+            @JsonRpcDescription("The resource name, example my-topic") String resourceName,
+            @JsonRpcDescription("The pattern type, LITERAL or PREFIXED") String patternType)
+            throws InterruptedException, ExecutionException {
+        return kafkaUiUtils.deleteAcl(principal, host, operation, permissionType, resourceType, resourceName, patternType);
+    }
+
 }

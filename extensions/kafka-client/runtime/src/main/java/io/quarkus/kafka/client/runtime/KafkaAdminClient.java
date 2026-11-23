@@ -95,6 +95,30 @@ public class KafkaAdminClient {
         return client.describeAcls(filter, options).values().get();
     }
 
+    /**
+     * Creates exactly the given ACL.
+     *
+     * @param aclBinding the acl binding to be created
+     * @throws InterruptedException if the thread is interrupted while waiting for the broker
+     * @throws ExecutionException if the broker rejects or fails the request
+     */
+    public void createAcl(AclBinding aclBinding) throws InterruptedException, ExecutionException {
+        var options = new CreateAclsOptions().timeoutMs(DEFAULT_ADMIN_CLIENT_TIMEOUT);
+        client.createAcls(List.of(aclBinding), options).all().get();
+    }
+
+    /**
+     * Deletes exactly the given ACL (the filter is derived from the binding).
+     *
+     * @param aclBinding the acl binding to be deleted
+     * @throws InterruptedException if the thread is interrupted while waiting for the broker
+     * @throws ExecutionException if the broker rejects or fails the request
+     */
+    public void deleteAcl(AclBinding aclBinding) throws InterruptedException, ExecutionException {
+        var options = new DeleteAclsOptions().timeoutMs(DEFAULT_ADMIN_CLIENT_TIMEOUT);
+        client.deleteAcls(List.of(aclBinding.toFilter()), options).all().get();
+    }
+
     public Map<String, TopicDescription> describeTopics(final Collection<String> topicNames)
             throws InterruptedException, ExecutionException {
         return client.describeTopics(topicNames)

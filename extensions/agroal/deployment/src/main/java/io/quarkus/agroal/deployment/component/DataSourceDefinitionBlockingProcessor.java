@@ -38,7 +38,6 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -125,7 +124,6 @@ class DataSourceDefinitionBlockingProcessor {
             BuildProducer<DataSourceDefinitionBuildItem> definedDataSources,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ServiceProviderBuildItem> service,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -177,19 +175,11 @@ class DataSourceDefinitionBlockingProcessor {
                     .setDefaultScope(DotNames.SINGLETON).build());
         }
 
-        // For now, we can't push the security providers to Agroal so we need to include
-        // the service file inside the image. Hopefully, we will get an entry point to
-        // resolve them at build time and push them to Agroal soon.
-        resource.produce(new NativeImageResourceBuildItem(
-                "META-INF/services/" + io.agroal.api.security.AgroalSecurityProvider.class.getName()));
-
         // accessed through io.quarkus.agroal.runtime.DataSources.loadDriversInTCCL
         service.produce(ServiceProviderBuildItem.allProvidersFromClassPath(Driver.class.getName()));
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(io.agroal.pool.ConnectionHandler[].class.getName(),
                 io.agroal.pool.ConnectionHandler.class.getName(),
-                io.agroal.api.security.AgroalDefaultSecurityProvider.class.getName(),
-                io.agroal.api.security.AgroalKerberosSecurityProvider.class.getName(),
                 java.sql.Statement[].class.getName(),
                 java.sql.Statement.class.getName(),
                 java.sql.ResultSet.class.getName(),

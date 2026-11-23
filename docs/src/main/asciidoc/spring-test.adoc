@@ -5,13 +5,13 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Testing Spring-style applications in Quarkus
 include::_attributes.adoc[]
-:categories: compatibility,testing
 :summary: Quarkus supports the @SpringBootTest annotation out of the box, letting Spring developers write tests in a familiar style while running on the Quarkus runtime.
 :topics: spring,testing,compatibility
 :extensions: io.quarkus:quarkus-test-spring
 
-Spring developers migrating to Quarkus can keep using `@SpringBootTest` as they do in Spring Boot — no import change required.
-Under the hood, Quarkus treats `@SpringBootTest` as an alias for xref:getting-started-testing.adoc[`@QuarkusTest`]: it starts the Quarkus runtime and CDI container, not a Spring Application Context.
+While users are encouraged to use xref:getting-started-testing.adoc[`@QuarkusTest`] directly, Quarkus provides a compatibility layer for Spring Boot's `@SpringBootTest` annotation in the form of the `spring-test` extension.
+
+This guide explains how a Quarkus application test suite can leverage the well known `@SpringBootTest` annotation to write tests in a familiar Spring Boot style while running on the Quarkus runtime.
 
 [IMPORTANT]
 ====
@@ -108,6 +108,26 @@ public class GreetingControllerIT extends GreetingControllerTest {
 }
 ----
 
+== Supported Spring Test functionalities
+
+Quarkus currently supports a single Spring Boot test annotation.
+
+=== Annotations
+
+The table below summarizes the supported annotation:
+
+.Supported Spring Test annotation
+|===
+|Name|Comments
+
+|@SpringBootTest
+|Treated as an alias for xref:getting-started-testing.adoc[`@QuarkusTest`]. The `webEnvironment`, `classes`, `properties`, and `args` attributes are not read.
+|===
+
+Other Spring Boot test annotations, such as `@MockBean`, `@SpyBean`, `@ActiveProfiles`, `@DirtiesContext`, and `@TestPropertySource`, are not supported.
+See the <<differences,differences table>> below for the Quarkus equivalents.
+
+[[differences]]
 == Differences from Spring Boot's `@SpringBootTest`
 
 `@SpringBootTest` in Quarkus is intentionally simpler than in Spring Boot. The table below summarises the main differences:
@@ -140,16 +160,24 @@ public class GreetingControllerIT extends GreetingControllerTest {
 |xref:getting-started-testing.adoc#testing_different_profiles[`@TestProfile`]
 |===
 
+== Important Technical Note
+
+Please note that the Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
+Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
+What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover, Spring infrastructure
+classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for example) will not be executed.
+
 == More Spring guides
 
 Quarkus has more Spring compatibility features. See the following guides for more details:
 
-* xref:spring-di.adoc[Quarkus Extension for Spring DI]
-* xref:spring-web.adoc[Quarkus Extension for Spring Web API]
-* xref:spring-data-jpa.adoc[Quarkus Extension for Spring Data JPA]
-* xref:spring-data-rest.adoc[Quarkus Extension for Spring Data REST]
-* xref:spring-security.adoc[Quarkus Extension for Spring Security]
-* xref:spring-boot-properties.adoc[Quarkus Extension for Spring Boot properties]
-* xref:spring-cache.adoc[Quarkus Extension for Spring Cache]
-* xref:spring-scheduled.adoc[Quarkus Extension for Spring Scheduled]
-* xref:spring-cloud-config-client.adoc[Reading properties from Spring Cloud Config Server]
+* xref:spring-di.adoc[Quarkus - Extension for Spring DI]
+* xref:spring-web.adoc[Quarkus - Extension for Spring Web]
+* xref:spring-data-jpa.adoc[Quarkus - Extension for Spring Data JPA]
+* xref:spring-data-rest.adoc[Quarkus - Extension for Spring Data REST]
+* xref:spring-security.adoc[Quarkus - Extension for Spring Security]
+* xref:spring-cloud-config-client.adoc[Quarkus - Reading properties from Spring Cloud Config Server]
+* xref:spring-boot-properties.adoc[Quarkus - Extension for Spring Boot properties]
+* xref:spring-cache.adoc[Quarkus - Extension for Spring Cache]
+* xref:spring-scheduled.adoc[Quarkus - Extension for Spring Scheduled]
+* xref:spring-tx.adoc[Quarkus - Extension for Spring Transaction]

@@ -21,6 +21,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.tls.runtime.internal.CertificateSnapshot;
 import io.quarkus.vertx.http.runtime.ServerSslConfig;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -67,13 +68,13 @@ public class TlsCertificateReloader {
             useRegistry = true;
         }
 
-        AtomicReference<ServerSSLOptions> currentSslOptions = new AtomicReference<>(null);
+        // The options the server currently uses, compared with the reloaded ones to skip updates when nothing changed
+        AtomicReference<ServerSSLOptions> currentSslOptions = new AtomicReference<>(sslOptions);
         TlsConfiguration tlsConfiguration = null;
         if (!useRegistry) {
             if (sslOptions == null) {
                 throw new IllegalArgumentException("Unable to configure TLS reloading - TLS/SSL is not enabled on the server");
             }
-            currentSslOptions.set(sslOptions);
         } else {
             if (tlsConfigurationName.isPresent()) {
                 tlsConfiguration = registry.get(tlsConfigurationName.get()).orElseThrow();
@@ -96,6 +97,11 @@ public class TlsCertificateReloader {
 
         boolean reloadFromRegistry = useRegistry;
         TlsConfiguration registryConfiguration = tlsConfiguration;
+        // What the server currently uses when reloading from the registry, compared with the reloaded content
+        AtomicReference<List<Object>> registryContent = new AtomicReference<>(
+                useRegistry ? content(sslOptions, registryConfiguration) : null);
+        // Taken with the reloaded options, so a concurrent registry reload cannot record content the server never got
+        AtomicReference<List<Object>> pendingContent = new AtomicReference<>();
         Supplier<CompletionStage<Boolean>> task = new Supplier<>() {
             @Override
             public CompletionStage<Boolean> get() {
@@ -105,11 +111,16 @@ public class TlsCertificateReloader {
                     @Override
                     public ServerSSLOptions call() throws Exception {
                         if (reloadFromRegistry) {
-                            if (registryConfiguration.reload()) {
-                                return createServerSslOptions(registryConfiguration, clientAuth);
-                            } else {
+                            if (!registryConfiguration.reload()) {
                                 return null;
                             }
+                            var c = createServerSslOptions(registryConfiguration, clientAuth);
+                            var content = content(c, registryConfiguration);
+                            if (content.equals(registryContent.get())) { // No change, skip the update
+                                return null;
+                            }
+                            pendingContent.set(content);
+                            return c;
                         } else {
                             var c = reloadFileContent(currentSslOptions.get(), sslConfig);
                             if (c.equals(currentSslOptions.get())) { // No change, skip the update
@@ -127,6 +138,9 @@ public class TlsCertificateReloader {
                                         @Override
                                         public void handle(Boolean event) {
                                             currentSslOptions.set(res);
+                                            if (reloadFromRegistry) {
+                                                registryContent.set(pendingContent.get());
+                                            }
                                         }
                                     });
                                 } else {
@@ -187,6 +201,13 @@ public class TlsCertificateReloader {
         }
 
         return CompletableFuture.allOf(futures);
+    }
+
+    /**
+     * The options and the certificates of the stores, compared by value to detect a rotation.
+     */
+    private static List<Object> content(ServerSSLOptions options, TlsConfiguration configuration) {
+        return CertificateSnapshot.of(configuration.getKeyStore(), configuration.getTrustStore(), options);
     }
 
     private static ServerSSLOptions reloadFileContent(ServerSSLOptions ssl, ServerSslConfig sslConfig) throws IOException {

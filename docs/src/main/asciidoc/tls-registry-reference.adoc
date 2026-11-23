@@ -1137,7 +1137,7 @@ public void reload() {
 private final io.vertx.core.http.HttpServer server;
 
 public void onCertificateUpdate(@Observes CertificateUpdatedEvent reload) {
-    if ("name".equals(event.getName())) {
+    if ("name".equals(reload.name())) {
         server.updateSSLOptions(reload.tlsConfiguration().getServerSSLOptions());
         // Or update the SSLContext.
     }
@@ -1148,7 +1148,10 @@ public void onCertificateUpdate(@Observes CertificateUpdatedEvent reload) {
 === Periodic reloading
 
 The TLS registry includes a built-in mechanism that periodically checks the file system for changes and reloads certificates.
-The `reload-period` property specifies the interval for reloading certificates and emits a `CertificateUpdatedEvent` each time certificates are reloaded.
+The `reload-period` property specifies the interval for reloading certificates.
+A `CertificateUpdatedEvent` is emitted only when the reloaded keystore, truststore, or CRL content differs from the content previously notified, so servers and clients do not swap their SSL options when nothing changed.
+The comparison relies on `equals`, so the `KeyCertOptions` and `TrustOptions` returned by a custom `KeyStoreProvider`, `TrustStoreProvider`, `KeyStoreFactory`, or `TrustStoreFactory` must implement `equals`, otherwise the event is emitted at every period.
+If the keystore or truststore cannot be reloaded, for example because the file is being rewritten or is corrupted, the cause is logged and the current certificates are kept.
 
 . To configure periodic certificate reloading:
 +

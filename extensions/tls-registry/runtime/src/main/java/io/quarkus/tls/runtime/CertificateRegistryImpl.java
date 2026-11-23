@@ -104,7 +104,7 @@ public class CertificateRegistryImpl implements TlsConfigurationRegistry {
 
     private void verifyCertificateConfig(TlsBucketConfig config, Vertx vertx, String name) {
         verifySslEngineSupportedInNativeImage(config, name);
-        final TlsConfiguration tlsConfig = verifyCertificateConfigInternal(config, vertx, name);
+        final VertxCertificateHolder tlsConfig = verifyCertificateConfigInternal(config, vertx, name);
         certificates.put(name, tlsConfig);
 
         // Handle reloading if needed
@@ -112,7 +112,7 @@ public class CertificateRegistryImpl implements TlsConfigurationRegistry {
             if (reloader == null) {
                 reloader = new TlsCertificateUpdater(vertx);
             }
-            reloader.add(name, certificates.get(name), config.reloadPeriod().get());
+            reloader.add(name, tlsConfig, config.reloadPeriod().get());
         }
     }
 
@@ -139,7 +139,7 @@ public class CertificateRegistryImpl implements TlsConfigurationRegistry {
                 Set.of(key));
     }
 
-    private static TlsConfiguration verifyCertificateConfigInternal(TlsBucketConfig config, Vertx vertx, String name) {
+    private static VertxCertificateHolder verifyCertificateConfigInternal(TlsBucketConfig config, Vertx vertx, String name) {
         // Verify the key store
         KeyStoreAndKeyCertOptions ks = getKeyStore(config, vertx, name);
 

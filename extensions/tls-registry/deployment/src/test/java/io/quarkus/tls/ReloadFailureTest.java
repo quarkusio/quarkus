@@ -9,10 +9,12 @@ import java.security.KeyStoreException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.UUID;
+import java.util.logging.Level;
 
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logmanager.ExtLogRecord;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.tls.runtime.VertxCertificateHolder;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -42,6 +45,14 @@ public class ReloadFailureTest {
             .overrideRuntimeConfigKey("quarkus.tls.key-store.p12.path", temp.getAbsolutePath() + "/tls.p12")
             .overrideRuntimeConfigKey("quarkus.tls.key-store.p12.password", "password")
             .overrideRuntimeConfigKey("loc", temp.getAbsolutePath())
+            .setLogRecordPredicate(r -> r.getLoggerName().equals(VertxCertificateHolder.class.getName()))
+            // The same failure is logged once, not at every reload
+            .assertLogRecords(records -> assertThat(records)
+                    .filteredOn(r -> r.getLevel().intValue() >= Level.SEVERE.intValue())
+                    .singleElement().satisfies(r -> {
+                        assertThat(((ExtLogRecord) r).getFormattedMessage()).contains("Unable to reload the key store");
+                        assertThat(r.getThrown()).isNotNull();
+                    }))
             .setBeforeAllCustomizer(() -> {
                 try {
                     temp.mkdirs();
@@ -68,6 +79,7 @@ public class ReloadFailureTest {
 
         Files.write(new File(certs, "/tls.p12").toPath(), "this is not a valid p12 file".getBytes());
 
+        assertThat(def.reload()).isFalse();
         assertThat(def.reload()).isFalse();
 
         // The previous configuration is preserved

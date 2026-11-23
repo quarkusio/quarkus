@@ -24,6 +24,7 @@ import io.quarkus.tls.TrustStoreAndTrustOptions;
 import io.quarkus.tls.runtime.config.PqcEnforcementPolicy;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
+import io.quarkus.tls.runtime.internal.CertificateSnapshot;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.ClientSSLOptions;
@@ -48,6 +49,9 @@ public class VertxCertificateHolder implements TlsConfiguration {
 
     private final Vertx vertx;
     private final String name;
+
+    // The last reported reload failure, so a broken file is logged once and not at every reload period
+    private volatile String lastReloadFailure;
 
     VertxCertificateHolder(Vertx vertx, String name, TlsBucketConfig config, KeyStoreAndKeyCertOptions ks,
             TrustStoreAndTrustOptions ts) {
@@ -293,6 +297,7 @@ public class VertxCertificateHolder implements TlsConfiguration {
             try {
                 keyStoreUpdateResult = CertificateRegistryImpl.getKeyStore(config, vertx, name);
             } catch (Exception e) {
+                reportReloadFailure("key store", e);
                 return false;
             }
         }
@@ -302,6 +307,7 @@ public class VertxCertificateHolder implements TlsConfiguration {
             try {
                 trustStoreUpdateResult = CertificateRegistryImpl.getTrustStore(config, vertx, name);
             } catch (Exception e) {
+                reportReloadFailure("trust store", e);
                 return false;
             }
         } else if (config.trustAll()) {
@@ -317,12 +323,18 @@ public class VertxCertificateHolder implements TlsConfiguration {
         // Also reload the revoked certificates
         List<Buffer> newCRLs = new ArrayList<>();
         if (config().certificateRevocationList().isPresent()) {
-            for (Path path : config().certificateRevocationList().get()) {
-                byte[] bytes = TlsConfigUtils.read(path);
-                newCRLs.add(Buffer.buffer(bytes));
+            try {
+                for (Path path : config().certificateRevocationList().get()) {
+                    byte[] bytes = TlsConfigUtils.read(path);
+                    newCRLs.add(Buffer.buffer(bytes));
+                }
+            } catch (Exception e) {
+                reportReloadFailure("certificate revocation list", e);
+                return false;
             }
         }
 
+        lastReloadFailure = null;
         synchronized (this) {
             keyStoreOptions = keyStoreUpdateResult != null ? keyStoreUpdateResult.options : null;
             keyStore = keyStoreUpdateResult != null ? keyStoreUpdateResult.keyStore : null;
@@ -332,6 +344,23 @@ public class VertxCertificateHolder implements TlsConfiguration {
             crls.addAll(newCRLs);
         }
         return true;
+    }
+
+    private void reportReloadFailure(String what, Exception e) {
+        String failure = what + ": " + e;
+        if (failure.equals(lastReloadFailure)) {
+            LOGGER.debugf(e, "Unable to reload the %s of the TLS configuration '%s', keeping the current one", what, name);
+        } else {
+            lastReloadFailure = failure;
+            LOGGER.errorf(e, "Unable to reload the %s of the TLS configuration '%s', keeping the current one", what, name);
+        }
+    }
+
+    /**
+     * Snapshot of the loaded key store, trust store and CRL content, compared by value to detect a rotation.
+     */
+    synchronized List<Object> content() {
+        return CertificateSnapshot.of(keyStore, trustStore, keyStoreOptions, trustOptions, List.copyOf(crls));
     }
 
     @Override

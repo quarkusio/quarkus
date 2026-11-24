@@ -15,4 +15,9 @@ public class ItemDao {
     public void add(Item newItem) {
         entityManager.persist(newItem);
     }
+
+    @Transactional
+    public void clear() {
+        entityManager.createQuery("DELETE from Item").executeUpdate();
+    }
 }

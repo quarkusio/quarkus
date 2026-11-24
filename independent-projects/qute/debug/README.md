@@ -140,7 +140,7 @@ Pause only when certain conditions are met.
 
 ### Hover
 
-Hover
+You can see data model value with Hover:
 
 ![Hover](./images/Hover.png)
 

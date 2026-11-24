@@ -1,0 +1,224 @@
+= Release Cadence for Quarkus 4
+
+* Status: _proposed_
+* Date: 2026-11-23 by @cescoffier
+
+== Context and Problem Statement
+
+Quarkus ships a feature (minor) release every month and a patch (micro) release every week.
+Two minors a year become LTS releases, cut from a dedicated hardening release.
+Emergency releases happen whenever needed, including for CVEs in third-party dependencies.
+
+This model no longer fits the project we have today:
+
+* Quarkus is mature. Users value predictability more than a monthly flow of features.
+* Many organizations cannot follow a monthly minor. The LTS exists for them, but the monthly train still sets the pace for everyone else.
+* Twelve minors a year inflate version numbers quickly.
+* The CVE volume, in Quarkus and in its dependencies, is unprecedented. We cannot cut an emergency release every week.
+* Maven Central carries a cost for every artifact published. Fewer releases are a gesture of goodwill. See the https://www.sonatype.com/blog/open-publishing-commercial-scale[Sonatype statement] for details.
+* Releasing a minor every month and a micro every week requires a significant amount of effort on the Release Team.
+
+*How do we release less often, in a predictable way, without slowing down fixes, shortening the LTS maintenance window, or lowering LTS quality?*
+
+== Decision Drivers
+
+* A calendar that users and contributors can plan around.
+* Fewer release days and fewer out-of-band releases.
+* Same LTS rhythm and the same 12-month maintenance window.
+* An LTS that ships code users have already run.
+* Fast fixes for regressions in a new minor.
+* Fixes keep landing upstream immediately, in the open.
+* Release work that a large project can sustain.
+
+== Considered Options
+
+* *Keep the current cadence.* Rejected: it is the problem this ADR solves.
+* *Minors every 2 months, one patch per minor at 4 weeks; every third minor is an LTS.* No hardening before an LTS, and a regression found right after a minor ships waits 4 weeks for a fix.
+* *Variant A: the same, with two early patches per non-LTS minor (2 and 4 weeks).* Faster regression fixes, but still no hardening before an LTS.
+* *Variant B: the same, with each LTS hardened from the previous minor.* Better LTS quality, but a regression found right after a minor ships still waits 4 weeks.
+* *Variant C: A and B combined, with the second patch at 6 weeks (chosen).* Regressions found right after a minor ships are fixed within 2 weeks, no fix waits more than 4 weeks, and each LTS is hardened.
+
+== Decision
+
+The new cadence starts the day Quarkus 4.0 goes GA.
+Dates below are examples. Only the 4.0 GA date anchors the calendar; every later date is a projection.
+
+=== Release trains
+
+[cols="1,1,1",options="header"]
+|===
+| | Today | New cadence
+| Feature (minor) releases | Monthly (12 a year) | Every 2 months (6 a year), from `main`
+| Patch (micro) releases | Weekly | Two per feature release: 2 and 6 weeks after it ships
+| LTS designation | 2 a year, from a hardening release | 2 a year, hardened from the previous minor
+| LTS maintenance | 12 months | 12 months
+| LTS patch releases | Every 2 months | Every 2 months
+| Emergency releases | When needed | Rare, decided case by case
+| Third-party CVEs | Emergency release | Next scheduled release
+|===
+
+=== Feature releases
+
+A feature release ships from `main` every 2 months.
+Each one gets two patch releases: 2 weeks and 6 weeks after it ships.
+No patch ships in the last 2 weeks. The next feature release replaces it.
+
+Most regressions surface in the first days after a minor ships, when early adopters upgrade.
+The early patch release ships fixes fast.
+
+Many users upgrade later, often after the first patch.
+The second patch, at week 6, fixes what they find.
+It also caps the wait for any fix at 4 weeks, possibly through the next feature release.
+For a release that becomes an LTS, it is the last patch before the LTS ships.
+
+=== LTS releases
+
+Every 6 months, an LTS ships. It is *not* cut from `main`.
+It is cut from the previous feature release, gets its own minor version, and contains no new features.
+A feature release ships from `main` on the same day.
+
+For example:
+
+. 4.1 ships from `main`. It gets 4.1.1 at week 2 and 4.1.2 at week 6.
+. At week 8, two releases are cut and ship together:
+** 4.2, the LTS, from the 4.1 branch;
+** 4.3, a feature release, from `main`.
+
+An LTS therefore ships code that has been public for 2 months and patched twice, plus the fixes merged in the last 2 weeks of the cycle.
+Those 2 months are its hardening period.
+
+Each LTS is maintained for 12 months and gets a patch release every 2 months as today.
+Two consecutive LTS releases overlap for 6 months. That overlap is the migration window.
+
+An LTS is never the latest version.
+On the day it ships, it lacks the features of the feature release shipped alongside it, like today.
+
+=== Version numbers
+
+Each year brings 6 feature releases and 2 LTS releases, so 8 minor versions.
+The LTS takes the minor version right after the release it hardens.
+The feature release shipped the same day takes the next one.
+
+=== Example calendar
+
+Assuming 4.0 ships at the end of November 2026:
+
+[cols="1,1,1,1",options="header"]
+|===
+| Example date | From `main` | LTS (hardened from) | LTS maintained until (example)
+| Nov 2026 | 4.0 | |
+| Jan 2027 | 4.1 | |
+| Mar 2027 | 4.3 | 4.2 (from 4.1) | Mar 2028
+| May 2027 | 4.4 | |
+| Jul 2027 | 4.5 | |
+| Sep 2027 | 4.7 | 4.6 (from 4.5) | Sep 2028
+| Nov 2027 | 4.8 | |
+| Jan 2028 | 4.9 | |
+| Mar 2028 | 4.11 | 4.10 (from 4.9) | Mar 2029
+|===
+
+Releases over two cycles, including an LTS:
+
+[cols="1,3",options="header"]
+|===
+| Week | Release
+| 0 | 4.1.0
+| 2 | 4.1.1
+| 6 | 4.1.2
+| 8 | 4.2.0 (LTS, from the 4.1 branch) and 4.3.0
+| 10 | 4.3.1
+| 14 | 4.3.2
+| 16 | 4.4.0 and 4.2.1 (first LTS patch)
+|===
+
+The tables count in weeks to show the rhythm.
+The calendar counts in months: feature releases ship every 2 months on a fixed rule (for example, the last Wednesday of odd months), so a cycle lasts 8 or 9 weeks.
+Patch releases stay at 2 and 6 weeks after the feature release; the extra days fall at the end of the cycle.
+
+=== Branches
+
+At any time, we maintain `main`, the latest feature release branch, and at most two LTS branches.
+On LTS day, we create the LTS branch from the previous feature release branch: for example, `4.2` from `4.1`.
+The `4.1` branch then stops receiving fixes.
+
+=== How fixes flow
+
+Fixes do not wait. Only releases do.
+
+. A fix (bug, CVE, dependency bump) is merged on `main`.
+. It is backported to the latest minor release and to the affected LTS branches. CI validates every branch.
+. It ships in the next scheduled release.
+
+For the latest feature release:
+
+* a fix merged in weeks 0 to 2 ships in the first patch, at week 2;
+* a fix merged in weeks 2 to 6 ships in the second patch, at week 6;
+* a fix merged in weeks 6 to 8 ships in the next feature release, at week 8. If the current feature release is the base of the next LTS, the fix also ships in that LTS.
+
+The longest wait is 4 weeks. After week 6, the fix arrives through the next feature release, not a patch.
+
+In the last 2 weeks before an LTS, only fixes for regressions, CVEs, and critical bugs are backported to the branch that becomes the LTS.
+Other fixes reach the LTS in its first patch release.
+For an LTS, a fix ships in the next LTS patch, within 2 months.
+
+Users who cannot wait can build from the branch or override the dependency version in their build.
+Upstream CI tells us whether a plain dependency bump works.
+
+=== Emergency releases
+
+Emergency releases are *rare and decided case by case*.
+The guideline: the core framework is critically broken, or the Quarkus code is affected by a very impactful vulnerability.
+An emergency release covers the latest feature release and the affected LTS branches.
+
+Not all CVEs in Quarkus itself will trigger an emergency release.
+
+A CVE in Quarkus code triggers an emergency release only when it is critical.
+Other Quarkus CVEs ship in the next scheduled release.
+Users may override the version of the dependency in their own applications.
+We may make an exception, for example, for a critical third-party CVE exploitable in a default setup.
+
+Embargoed CVEs are prepared privately, as today.
+When possible, we align disclosure with an LTS patch date.
+
+=== Scenarios
+
+[cols="1,1,1,1,1",options="header"]
+|===
+| Scenario | Upstream fix | Latest feature release | LTS | Max wait
+| Critical regression hitting most applications | Merged and backported right away | Emergency release | Emergency release | Days
+| Embargoed CVE in Quarkus | Prepared privately until the embargo lifts | Same day if critical, else next scheduled release | Same day if critical, else next LTS patch | Embargo date if critical, else as above
+|CVE in a third-party dependency | Merged and backported | Next monthly patch | Next LTS patch | 1 month (2 for LTS)
+| EOLed third-party dependencies used in LTS | N/A | N/A | No fix | Until users move to a newer feature release
+|===
+
+The last scenario is the uncomfortable one.
+When the fixed dependency breaks compatibility, LTS users may get the fix only by moving to a newer feature release.
+We document the issue and the available mitigations.
+It is already the case today.
+
+=== What we promise the community
+
+* Every 2 months: a new feature release.
+* 2 and 6 weeks after each feature release: a patch release.
+* Every 6 months: a new LTS, hardened for 2 months, maintained for 12 months, and patched every 2 months.
+* Always: fixes are merged and backported in the open, so you can build them before the release.
+* When it matters: an out-of-band release for critical issues in Quarkus itself, decided case by case.
+
+== Consequences
+
+=== Positive
+
+* A predictable calendar for contributors and users.
+* Fewer release days, and fewer out-of-band releases for third-party CVEs.
+* Half the version inflation.
+* Regressions found right after a feature release ships are fixed within 2 weeks.
+* Every LTS ships code that has been public for 2 months and patched twice, plus a small set of late fixes.
+* Same LTS rhythm, same 12-month maintenance, same 6-month migration window.
+* Feature releases stay frequent: 6 a year.
+* Backports, CI, and the open development model do not change.
+
+=== Negative
+
+* Each minor gets less community bake time before the next one ships.
+* No hardening release before an LTS. Stabilization must fit in the LTS's own 2-month cycle.
+* Users might have to handle more dependency updates themselves.

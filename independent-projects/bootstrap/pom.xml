@@ -70,8 +70,11 @@
         <plexus-interpolation.version>1.26</plexus-interpolation.version>
         <plexus-sec-dispatcher.version>2.0</plexus-sec-dispatcher.version>
         <plexus-utils.version>3.6.1</plexus-utils.version>
+        <!-- Dragged in by plexus-xml -> maven-xml, used also by jackson-dataformat-xml and CXF. Keep at the lastest version as long as it works for all consumers -->
+        <woodstox-core.version>7.3.0</woodstox-core.version>
+        <stax2.version>4.3.2</stax2.version><!-- Dependency of woodstox-core, keep compatible -->
         <smallrye-common.version>2.16.0</smallrye-common.version>
-        <smallrye-beanbag.version>1.6.1</smallrye-beanbag.version>
+        <smallrye-beanbag.version>1.7.0</smallrye-beanbag.version>
         <gradle-tooling.version>9.3.1</gradle-tooling.version>
         <quarkus-fs-util.version>1.4.2</quarkus-fs-util.version>
         <crac.version>1.5.0</crac.version>

@@ -41,6 +41,53 @@
             <groupId>io.smallrye.beanbag</groupId>
             <artifactId>smallrye-beanbag-maven</artifactId>
             <exclusions>
+                <!-- BeanBag builds against a newer Maven than we target (BeanBag 1.7.0 against Maven 3.10.0, whose
+                     maven-resolver-provider pulls maven-resolver 2.x). Maven's nearest-wins resolution keeps those
+                     at ${maven-core.version} via our dependencyManagement, but Gradle resolves the Quarkus Gradle
+                     plugin classpath with highest-version-wins and would otherwise silently upgrade the whole Maven
+                     stack — and maven-resolver 2.x injects java.util.function.Supplier<T>, which BeanBag's Sisu
+                     implementation resolves by raw type, wiring the wrong bean. We take these artifacts from
+                     maven-embedder/maven-core instead. Keep in sync with smallrye-beanbag-maven's org.apache.maven
+                     dependencies; note that maven-xml (a Maven 4 artifact needed by plexus-xml) must NOT be
+                     excluded, so this cannot be a wildcard exclusion. -->
+                <exclusion>
+                    <groupId>org.apache.maven</groupId>
+                    <artifactId>maven-artifact</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.maven</groupId>
+                    <artifactId>maven-builder-support</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.maven</groupId>
+                    <artifactId>maven-model</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.maven</groupId>
+                    <artifactId>maven-model-builder</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.maven</groupId>
+                    <artifactId>maven-repository-metadata</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.maven</groupId>
+                    <artifactId>maven-resolver-provider</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.maven</groupId>
+                    <artifactId>maven-settings</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.maven</groupId>
+                    <artifactId>maven-settings-builder</artifactId>
+                </exclusion>
+                <!-- Same reason: BeanBag 1.7.0 moved to Sisu 1.1.0, we keep ${sisu.version} in sync with
+                     ${maven-core.version}. Sisu comes in via our own org.eclipse.sisu.plexus dependency. -->
+                <exclusion>
+                    <groupId>org.eclipse.sisu</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
                 <exclusion>
                     <groupId>commons-io</groupId>
                     <artifactId>commons-io</artifactId>

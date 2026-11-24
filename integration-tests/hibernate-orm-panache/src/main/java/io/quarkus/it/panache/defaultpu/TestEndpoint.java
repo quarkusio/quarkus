@@ -20,6 +20,7 @@ import jakarta.persistence.LockModeType;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.NonUniqueResultException;
 import jakarta.persistence.PersistenceException;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -1378,6 +1379,61 @@ public class TestEndpoint {
         // Must keep the letter case
         Assertions.assertEquals("GARFIELD", catView.getName());
         Assertions.assertEquals("JoN ArBuCkLe", catView.getOwnerName());
+
+        Cat.deleteAll();
+        CatOwner.deleteAll();
+
+        return "OK";
+    }
+
+    @GET
+    @Path("projection-left-join")
+    @Transactional
+    public String testProjectionLeftJoin() {
+        CatOwner julie = new CatOwner("Julie");
+        julie.persist();
+        Cat bubulle = new Cat("Bubulle", julie);
+        bubulle.weight = 8.5d;
+        bubulle.persist();
+        // A cat without an owner: the association is null.
+        Cat stray = new Cat("Garfield", null);
+        stray.weight = 5.0d;
+        stray.persist();
+
+        // The default projection navigates `owner.name` with an implicit inner join, so the owner-less cat is
+        // filtered out (#42676).
+        List<CatDto> innerJoined = Cat.findAll().project(CatDto.class).list();
+        Assertions.assertEquals(1, innerJoined.size());
+        Assertions.assertEquals("Bubulle", innerJoined.get(0).name);
+
+        // Opting into JoinType.INNER is explicitly the same as the default.
+        Assertions.assertEquals(1, Cat.findAll().project(CatDto.class, JoinType.INNER).list().size());
+
+        // JoinType.LEFT keeps the owner-less cat, with a null owner name.
+        List<CatDto> leftJoined = Cat.findAll().project(CatDto.class, JoinType.LEFT).list();
+        Assertions.assertEquals(2, leftJoined.size());
+        CatDto bubulleDto = leftJoined.stream().filter(c -> "Bubulle".equals(c.name)).findFirst().orElseThrow();
+        CatDto garfieldDto = leftJoined.stream().filter(c -> "Garfield".equals(c.name)).findFirst().orElseThrow();
+        Assertions.assertEquals("Julie", bubulleDto.ownerName);
+        Assertions.assertNull(garfieldDto.ownerName);
+
+        // Several fields of the same association must share a single join.
+        List<CatOwnerRefDto> refs = Cat.findAll().project(CatOwnerRefDto.class, JoinType.LEFT).list();
+        Assertions.assertEquals(2, refs.size());
+        CatOwnerRefDto garfieldRef = refs.stream().filter(r -> r.ownerId == null).findFirst().orElseThrow();
+        Assertions.assertNull(garfieldRef.ownerName);
+        CatOwnerRefDto bubulleRef = refs.stream().filter(r -> r.ownerId != null).findFirst().orElseThrow();
+        Assertions.assertEquals("Julie", bubulleRef.ownerName);
+
+        // The LEFT projection also works combined with a sort.
+        List<CatDto> sorted = Cat.findAll(Sort.by("name")).project(CatDto.class, JoinType.LEFT).list();
+        Assertions.assertEquals(2, sorted.size());
+        Assertions.assertEquals("Bubulle", sorted.get(0).name);
+        Assertions.assertEquals("Garfield", sorted.get(1).name);
+        Assertions.assertNull(sorted.get(1).ownerName);
+
+        // RIGHT joins are not supported.
+        Assertions.assertThrows(PanacheQueryException.class, () -> Cat.findAll().project(CatDto.class, JoinType.RIGHT));
 
         Cat.deleteAll();
         CatOwner.deleteAll();

@@ -5,7 +5,6 @@ import java.io.IOException;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -106,7 +105,6 @@ public class MpJvmMetricsTest extends BaseJvmMetricsTest {
                 MetricDataType.LONG_SUM);
     }
 
-    @Disabled("Because of this challenge: https://github.com/eclipse/microprofile-telemetry/issues/241")
     @Test
     void testThreadCountMetric() throws IOException {
         assertMetric("jvm.thread.count", "Number of executing platform threads.", "{thread}",

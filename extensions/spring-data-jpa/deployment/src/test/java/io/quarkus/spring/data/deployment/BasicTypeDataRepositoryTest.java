@@ -41,8 +41,7 @@ public class BasicTypeDataRepositoryTest {
     @RegisterExtension
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(WithDoubleValue.class, BasicTypeData.class, BasicTypeDataRepository.class,
-                            FixedLocaleJavaType.class))
+                    .addClasses(WithDoubleValue.class, BasicTypeData.class, BasicTypeDataRepository.class))
             .withConfigurationResource("application.properties");
 
     private static final UUID uuid = UUID.randomUUID();

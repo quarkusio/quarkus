@@ -11,13 +11,11 @@ import jakarta.validation.valueextraction.ValueExtractor;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 
-@Disabled("Reproduces https://github.com/quarkusio/quarkus/issues/20377, not yet fixed")
 public class NestedContainerTypeCustomValueExtractorTest {
 
     @Inject

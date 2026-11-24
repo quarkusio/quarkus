@@ -274,16 +274,15 @@ public class CycloneDxIT extends MojoTestBase {
         assertThat(sbomPath).exists();
         assertThat(isXml(sbomPath)).as("Generated file is XML").isTrue();
 
-        // TODO enable this once https://github.com/CycloneDX/cyclonedx-core-java/issues/938 is fixed
-        //        Bom bom = parseSbomXml(testDir, "quarkus-run-cyclonedx.xml");
-        //        assertRunnerMainComponent(bom);
-        //
-        //        List<Component> components = bom.getComponents();
-        //        assertThat(components).isNotEmpty();
-        //        assertComponent(components, "io.quarkus", "quarkus-rest", "runtime", "lib/main/");
-        //        assertComponent(components, "io.quarkus", "quarkus-rest-deployment", "development", null);
-        //        assertComponent(components, "io.quarkus", "quarkus-cyclonedx", "runtime", "lib/main/");
-        //        assertComponent(components, "io.quarkus", "quarkus-cyclonedx-deployment", "development", null);
+        Bom bom = parseSbomXml(testDir, "quarkus-run-cyclonedx.xml");
+        assertRunnerMainComponent(bom);
+
+        List<Component> components = bom.getComponents();
+        assertThat(components).isNotEmpty();
+        assertComponent(components, "io.quarkus", "quarkus-rest", "runtime", "lib/main/");
+        assertComponent(components, "io.quarkus", "quarkus-rest-deployment", "development", null);
+        assertComponent(components, "io.quarkus", "quarkus-cyclonedx", "runtime", "lib/main/");
+        assertComponent(components, "io.quarkus", "quarkus-cyclonedx-deployment", "development", null);
     }
 
     @Test

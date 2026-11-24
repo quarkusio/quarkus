@@ -711,9 +711,7 @@ public final class ModularitySteps {
                 // but allow dependents to be included
                 return true;
             }
-            if (toAdd.modifiers().contains(ModuleDescriptor.Modifier.AUTOMATIC)
-                    // TODO: remove this once this is modular
-                    && !toAdd.name().equals("org.jboss.logmanager.slf4j")) {
+            if (toAdd.modifiers().contains(ModuleDescriptor.Modifier.AUTOMATIC)) {
                 // exclude automatic
                 log.infof("Excluding %s from boot path because it is automatic", toAdd.name());
                 return false;

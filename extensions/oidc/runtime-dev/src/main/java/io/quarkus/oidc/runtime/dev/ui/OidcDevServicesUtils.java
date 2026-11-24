@@ -173,7 +173,7 @@ public final class OidcDevServicesUtils {
 
         // user-defined password has preference over known passwords
         if (password == null || password.isBlank()) {
-            password = usernameToPassword.get("password");
+            password = usernameToPassword.get(username);
             if (password == null) {
                 return Uni.createFrom().failure(
                         new IllegalArgumentException("Can't request access token as password is missing"));

@@ -486,55 +486,6 @@
   "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": false,
   "webAuthnPolicyPasswordlessAcceptableAaguids": [],
   "webAuthnPolicyPasswordlessExtraOrigins": [],
-  "users": [
-    {
-      "id": "8587742e-638b-4b6f-8197-5bdba72cd137",
-      "username": "service-account-backend-client-with-secret",
-      "emailVerified": false,
-      "createdTimestamp": 1734350109683,
-      "enabled": true,
-      "totp": false,
-      "serviceAccountClientId": "backend-client-with-secret",
-      "disableableCredentialTypes": [],
-      "requiredActions": [],
-      "realmRoles": [
-        "default-roles-quarkus"
-      ],
-      "clientRoles": {
-        "backend-client-with-secret": [
-          "uma_protection"
-        ]
-      },
-      "notBefore": 0,
-      "groups": []
-    },
-    {
-      "id": "948c59ec-46ed-4d99-aa43-02900029b930",
-      "username": "service-account-backend-service",
-      "email": "service-account-backend-service@placeholder.org",
-      "emailVerified": false,
-      "createdTimestamp": 1554245880023,
-      "enabled": true,
-      "totp": false,
-      "serviceAccountClientId": "backend-service",
-      "disableableCredentialTypes": [],
-      "requiredActions": [],
-      "realmRoles": [
-        "offline_access"
-      ],
-      "clientRoles": {
-        "backend-service": [
-          "uma_protection"
-        ],
-        "account": [
-          "view-profile",
-          "manage-account"
-        ]
-      },
-      "notBefore": 0,
-      "groups": []
-    }
-  ],
   "clientScopeMappings": {
     "account": [
       {

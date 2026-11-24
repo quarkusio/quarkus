@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,7 +18,6 @@ import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.Cancellable;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
 import io.vertx.mutiny.redis.client.RedisConnection;
@@ -299,11 +297,10 @@ public class ConnectionRecyclingTest extends DatasourceTestBase {
      * Makes UNSUBSCRIBE fail, as it does with a cluster client when a node has restarted or gone away: the command is
      * sent to the master of every slot range and fails if one of them is unreachable.
      */
-    private static class FailingUnsubscribeConnection implements io.vertx.redis.client.RedisConnection {
-        private final io.vertx.redis.client.RedisConnection delegate;
+    private static class FailingUnsubscribeConnection extends DelegatingRedisConnection {
 
         FailingUnsubscribeConnection(io.vertx.redis.client.RedisConnection delegate) {
-            this.delegate = delegate;
+            super(delegate);
         }
 
         @Override
@@ -311,58 +308,7 @@ public class ConnectionRecyclingTest extends DatasourceTestBase {
             if (command.command().equals(Command.UNSUBSCRIBE)) {
                 return Future.failedFuture(new IllegalStateException("UNSUBSCRIBE failed"));
             }
-            return delegate.send(command);
-        }
-
-        @Override
-        public Future<List<Response>> batch(List<Request> commands) {
-            return delegate.batch(commands);
-        }
-
-        @Override
-        public Future<Void> close() {
-            return delegate.close();
-        }
-
-        @Override
-        public boolean pendingQueueFull() {
-            return delegate.pendingQueueFull();
-        }
-
-        @Override
-        public io.vertx.redis.client.RedisConnection exceptionHandler(Handler<Throwable> handler) {
-            delegate.exceptionHandler(handler);
-            return this;
-        }
-
-        @Override
-        public io.vertx.redis.client.RedisConnection handler(Handler<Response> handler) {
-            delegate.handler(handler);
-            return this;
-        }
-
-        @Override
-        public io.vertx.redis.client.RedisConnection pause() {
-            delegate.pause();
-            return this;
-        }
-
-        @Override
-        public io.vertx.redis.client.RedisConnection resume() {
-            delegate.resume();
-            return this;
-        }
-
-        @Override
-        public io.vertx.redis.client.RedisConnection fetch(long amount) {
-            delegate.fetch(amount);
-            return this;
-        }
-
-        @Override
-        public io.vertx.redis.client.RedisConnection endHandler(Handler<Void> endHandler) {
-            delegate.endHandler(endHandler);
-            return this;
+            return super.send(command);
         }
     }
 

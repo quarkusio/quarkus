@@ -1,6 +1,6 @@
 "use strict";
 
-/* Universial Module (UMD) design pattern
+/* Universal Module (UMD) design pattern
  * https://github.com/umdjs/umd/blob/master/templates/returnExports.js
  */
 (function (root, factory) {
@@ -118,7 +118,7 @@
   WebAuthn.prototype.registerClientSteps = function (user) {
     const self = this;
     if (!self.registerOptionsChallengePath) {
-      return Promise.reject('Register challenge path missing form the initial configuration!');
+      return Promise.reject('Register challenge path missing from the initial configuration!');
     }
     return self.fetchWithCsrf(self.registerOptionsChallengePath + "?" + new URLSearchParams({username: user.username, displayName: user.displayName}).toString(), {
       method: 'GET',

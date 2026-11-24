@@ -118,10 +118,11 @@ public class RedisDatasourceProcessor {
                     .after("io.quarkus.redis.codecs")
                     .request(RedisClientConnection.class, name)
                     .require(Vertx.class)
+                    .require(RedisConfig.class)
                     .optional()
-                    .onStart((ctx, connOpt, vertx) -> connOpt.map(conn -> new ReactiveRedisDataSourceImpl(
+                    .onStart((ctx, connOpt, vertx, config) -> connOpt.map(conn -> new ReactiveRedisDataSourceImpl(
                             io.vertx.mutiny.core.Vertx.newInstance(vertx),
-                            conn.redis(), conn.api())));
+                            conn.redis(), conn.api(), config.clients().get(name).subscribeTimeout())));
 
             // Blocking data source service
             reg.forService(RedisDataSource.class, name)

@@ -118,13 +118,6 @@ It has been removed in Java 24+. For Java 24+, use the JFR events or Quarkus tes
 
 The `-Djdk.tracePinnedThreads` will detect pinned carrier threads while running tests on Java 21-23 (See xref:./virtual-threads.adoc#pinning[the virtual thread reference guide for details]).
 
-[IMPORTANT]
-.--enable-preview on Java 19 and 20
-====
-If you are using a Java 19 or 20, add the `--enable-preview` flag in the `argLine` and as `parameters` of the maven compiler plugin.
-Note that we strongly recommend Java 21.
-====
-
 == Create the weather client
 
 This section is not about virtual threads.

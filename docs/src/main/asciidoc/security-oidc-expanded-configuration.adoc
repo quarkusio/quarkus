@@ -876,7 +876,7 @@ Enforcing that a token is intended for a specific audience is RECOMMENDED. ID to
 
 `quarkus.oidc.token.lifespan-grace` property should only be used to avoid token verification failures due to the possible clock skews.
 
-`quarkus.oidc.token.token-type` can be used to enforce the token type when you know the provider sets a type (`typ`) claim. For example, Keycloak issues the ID token, access token and refresh token in JWT format, how how can you prevent SPA sending an ID token to Quarkus as if it were a bearer access token ? Setting `quarkus.oidc.token.token-type=bearer` enforces that only a JWT access token that contains a type (`typ`) claim with the `bearer` value can be accepted.
+`quarkus.oidc.token.token-type` can be used to enforce the token type when you know the provider sets a type (`typ`) claim. For example, Keycloak issues the ID token, access token and refresh token in JWT format, how can you prevent SPA sending an ID token to Quarkus as if it were a bearer access token ? Setting `quarkus.oidc.token.token-type=bearer` enforces that only a JWT access token that contains a type (`typ`) claim with the `bearer` value can be accepted.
 
 `quarkus.oidc.token.principal-claim` can be used to customize which token claim should be used to support Java Security `Principal` and MicroProfile JWT  `JsonWebToken` APIs for getting the principal name. The `upn`, `preferred_username`, `sub` are some of the claims that are used to find the principal name by default, but some tokens may have it in the `name` or some other claim, which is when you can set `quarkus.oidc.token.principal-claim=name`, etc.
 

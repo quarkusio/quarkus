@@ -7,7 +7,7 @@ That repo will be cloned and executed via a separate mvn call when running `mvn 
 
 The Git ref is pinned in `pom.xml` and can be changed conveniently via `./update-ref.sh <new-ref>`.
 
-If dependencies were changed in the testuite repo make sure to run `./update-dependencies.sh`
+If dependencies were changed in the testsuite repo make sure to run `./update-dependencies.sh`
 to ensure proper build order.
 
 `mvn clean ...` will remove the cloned repo so better use `mvn test -Dresteasy-reactive-testsuite.clone.skip`

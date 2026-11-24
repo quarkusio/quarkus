@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import io.quarkus.runtime.LaunchMode;
@@ -34,7 +33,7 @@ abstract class AbstractTestHttpAuthenticationMechanism implements HttpAuthentica
     BlockingSecurityExecutor blockingSecurityExecutor;
 
     protected volatile String authMechanism = null;
-    protected volatile List<Instance<? extends SecurityIdentityAugmentor>> augmentors = null;
+    protected volatile List<Supplier<? extends SecurityIdentityAugmentor>> augmentors = null;
 
     @PostConstruct
     public void check() {
@@ -82,7 +81,7 @@ abstract class AbstractTestHttpAuthenticationMechanism implements HttpAuthentica
         this.authMechanism = authMechanism;
     }
 
-    void setSecurityIdentityAugmentors(List<Instance<? extends SecurityIdentityAugmentor>> augmentors) {
+    void setSecurityIdentityAugmentors(List<Supplier<? extends SecurityIdentityAugmentor>> augmentors) {
         this.augmentors = augmentors;
     }
 }

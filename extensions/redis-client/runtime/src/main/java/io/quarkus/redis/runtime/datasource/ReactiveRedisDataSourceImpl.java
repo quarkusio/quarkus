@@ -5,6 +5,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positiveOrZero;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -49,23 +50,35 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     final Redis redis;
     final RedisConnection connection;
     private final Vertx vertx;
+    // null means no timeout
+    final Duration subscribeTimeout;
 
     public ReactiveRedisDataSourceImpl(Vertx vertx, Redis redis, RedisAPI api) {
+        this(vertx, redis, api, null);
+    }
+
+    public ReactiveRedisDataSourceImpl(Vertx vertx, Redis redis, RedisAPI api, Duration subscribeTimeout) {
         nonNull(redis, "redis");
         nonNull(api, "api");
         nonNull(vertx, "vertx");
         this.vertx = vertx;
         this.redis = redis;
         this.connection = null;
+        this.subscribeTimeout = subscribeTimeout;
     }
 
     public ReactiveRedisDataSourceImpl(Vertx vertx, Redis redis, RedisConnection connection) {
+        this(vertx, redis, connection, null);
+    }
+
+    public ReactiveRedisDataSourceImpl(Vertx vertx, Redis redis, RedisConnection connection, Duration subscribeTimeout) {
         nonNull(redis, "redis");
         nonNull(connection, "connection");
         nonNull(vertx, "vertx");
         this.vertx = vertx;
         this.redis = redis;
         this.connection = connection;
+        this.subscribeTimeout = subscribeTimeout;
     }
 
     @Override
@@ -80,7 +93,8 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     public Uni<TransactionResult> withTransaction(Function<ReactiveTransactionalRedisDataSource, Uni<Void>> tx) {
         nonNull(tx, "tx");
         return RedisConnections.withNewConnection(redis, connection -> {
-            ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
+            ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection,
+                    subscribeTimeout);
             TransactionHolder th = new TransactionHolder();
             return connection.send(Request.cmd(Command.MULTI))
                     .chain(x -> tx.apply(new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
@@ -113,7 +127,8 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
         notNullOrEmpty(watchedKeys, "watchedKeys");
         doesNotContainNull(watchedKeys, "watchedKeys");
         return RedisConnections.withNewConnection(redis, connection -> {
-            ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
+            ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection,
+                    subscribeTimeout);
             TransactionHolder th = new TransactionHolder();
             return watch(connection, watchedKeys) // WATCH keys
                     .chain(() -> connection.send(Request.cmd(Command.MULTI))
@@ -160,10 +175,11 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
         doesNotContainNull(watchedKeys, "watchedKeys");
 
         return RedisConnections.withNewConnection(redis, connection -> {
-            ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
+            ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection,
+                    subscribeTimeout);
             TransactionHolder th = new TransactionHolder();
             return watch(connection, watchedKeys) // WATCH keys
-                    .chain(x -> preTx.apply(new ReactiveRedisDataSourceImpl(vertx, redis, connection)))// Execute the pre-tx-block
+                    .chain(x -> preTx.apply(new ReactiveRedisDataSourceImpl(vertx, redis, connection, subscribeTimeout)))// Execute the pre-tx-block
                     .onFailure().recoverWithUni(failure -> {
                         return connection.send(Request.cmd(Command.UNWATCH))
                                 .onItemOrFailure().transformToUni((response2, failure2) -> {
@@ -238,7 +254,8 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
             return function.apply(this);
         }
         return RedisConnections.withNewConnection(redis, connection -> {
-            ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
+            ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection,
+                    subscribeTimeout);
             return function.apply(singleConnectionDS);
         });
     }

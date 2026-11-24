@@ -69,7 +69,7 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
         nonNull(tx, "tx");
         RedisConnection connection = reactive.redis.connect().await().atMost(timeout);
         ReactiveRedisDataSourceImpl dataSource = new ReactiveRedisDataSourceImpl(reactive.getVertx(), reactive.redis,
-                connection);
+                connection, reactive.subscribeTimeout);
         TransactionHolder th = new TransactionHolder();
         BlockingTransactionalRedisDataSourceImpl source = new BlockingTransactionalRedisDataSourceImpl(
                 new ReactiveTransactionalRedisDataSourceImpl(dataSource, th), timeout);
@@ -117,7 +117,7 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
         doesNotContainNull(watchedKeys, "watchedKeys");
         RedisConnection connection = reactive.redis.connect().await().atMost(timeout);
         ReactiveRedisDataSourceImpl dataSource = new ReactiveRedisDataSourceImpl(reactive.getVertx(), reactive.redis,
-                connection);
+                connection, reactive.subscribeTimeout);
         TransactionHolder th = new TransactionHolder();
         BlockingTransactionalRedisDataSourceImpl source = new BlockingTransactionalRedisDataSourceImpl(
                 new ReactiveTransactionalRedisDataSourceImpl(dataSource, th), timeout);
@@ -184,7 +184,7 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
         doesNotContainNull(watchedKeys, "watchedKeys");
         RedisConnection connection = reactive.redis.connect().await().atMost(timeout);
         ReactiveRedisDataSourceImpl dataSource = new ReactiveRedisDataSourceImpl(reactive.getVertx(), reactive.redis,
-                connection);
+                connection, reactive.subscribeTimeout);
         TransactionHolder th = new TransactionHolder();
         BlockingTransactionalRedisDataSourceImpl source = new BlockingTransactionalRedisDataSourceImpl(
                 new ReactiveTransactionalRedisDataSourceImpl(dataSource, th), timeout);
@@ -209,7 +209,8 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
             I input = null;
             try {
                 input = preTx.apply(
-                        new BlockingRedisDataSourceImpl(reactive.getVertx(), reactive.redis, connection, timeout));
+                        new BlockingRedisDataSourceImpl(new ReactiveRedisDataSourceImpl(reactive.getVertx(),
+                                reactive.redis, connection, reactive.subscribeTimeout), timeout));
             } catch (Throwable e) {
                 try {
                     connection.send(Request.cmd(Command.UNWATCH)).await().atMost(timeout);
@@ -264,7 +265,8 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
         }
 
         BlockingRedisDataSourceImpl source = reactive.redis.connect()
-                .map(rc -> new BlockingRedisDataSourceImpl(reactive.getVertx(), reactive.redis, rc, timeout))
+                .map(rc -> new BlockingRedisDataSourceImpl(new ReactiveRedisDataSourceImpl(reactive.getVertx(),
+                        reactive.redis, rc, reactive.subscribeTimeout), timeout))
                 .await().atMost(timeout);
 
         try {

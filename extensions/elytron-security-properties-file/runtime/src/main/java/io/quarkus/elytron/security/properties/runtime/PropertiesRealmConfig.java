@@ -38,14 +38,14 @@ public interface PropertiesRealmConfig {
 
     /**
      * Classpath resource name of properties file containing user to password mappings. See
-     * <a href="#users-properties">Users.properties</a>.
+     * <a href="https://quarkus.io/guides/security-properties#users-properties">Users.properties</a>.
      */
     @WithDefault("users.properties")
     String users();
 
     /**
      * Classpath resource name of properties file containing user to role mappings. See
-     * <a href="#roles-properties">Roles.properties</a>.
+     * <a href="https://quarkus.io/guides/security-properties#roles-properties">Roles.properties</a>.
      */
     @WithDefault("roles.properties")
     String roles();

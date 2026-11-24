@@ -440,14 +440,6 @@ public final class ModularitySteps {
                                 arcRuntimeAdded = true;
                             }
                         }
-                        // TODO: Temporary fixups; remove when we can.
-                        switch (moduleName) {
-                            // todo: needs resteasy release
-                            case "org.jboss.resteasy.core.spi" -> {
-                                mi = mi.withMorePackages(Map.of("org.jboss.resteasy.resteasy_jaxrs.i18n", PackageInfo.of(
-                                        PackageAccess.PRIVATE, Set.of(), Set.of("org.jboss.logging"))));
-                            }
-                        }
                         // Add extra dependencies from build items.
                         mi = mi.withMoreDependencies(extraDepsMap.getOrDefault(mi.name(), Map.of())
                                 .entrySet()

@@ -5,7 +5,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.ext.web.RoutingContext;
 
-final class OidcDevSessionLogoutHandler implements Handler<RoutingContext> {
+public final class OidcDevSessionLogoutHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext rc) {

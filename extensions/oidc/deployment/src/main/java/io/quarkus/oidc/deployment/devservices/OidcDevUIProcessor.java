@@ -3,14 +3,12 @@ package io.quarkus.oidc.deployment.devservices;
 import java.util.Optional;
 import java.util.Set;
 
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Consume;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devservices.oidc.OidcDevServicesPreparedBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
@@ -18,11 +16,11 @@ import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.runtime.OidcTenantConfig;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Provider;
 import io.quarkus.oidc.runtime.dev.ui.OidcDevJsonRpcService;
-import io.quarkus.oidc.runtime.dev.ui.OidcDevUiRecorder;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevUiBuildTimeProperties.DevServiceType;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.PreRouterFinalizationBuildItem;
 import io.smallrye.config.Config;
 
 class OidcDevUIProcessor extends AbstractDevUIProcessor {
@@ -39,14 +37,14 @@ class OidcDevUIProcessor extends AbstractDevUIProcessor {
     private static final String ENTRAID = "Microsoft Entra ID";
     private static final Set<String> OTHER_PROVIDERS = Set.of("Auth0", "Okta", "Google", "Github", "Spotify");
 
-    @Record(ExecutionTime.RUNTIME_INIT)
+    // ensures OidcDevJsonRpcService is prepared before it is used, this works because Vert.x HTTP still uses recorder
+    // TODO: replace with .before("router-finalization-future-svc") when it exists
+    @Produce(PreRouterFinalizationBuildItem.class)
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    @Consume(CoreVertxBuildItem.class) // metadata discovery requires Vertx instance
-    void prepareOidcDevConsole(Capabilities capabilities,
-            BeanContainerBuildItem beanContainer,
+    void prepareOidcDevConsole(Capabilities capabilities, ServiceRegistrar serviceRegistrar,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<CardPageBuildItem> cardPageProducer,
-            OidcDevUiRecorder recorder, OidcBuildTimeConfig oidcConfig,
+            OidcBuildTimeConfig oidcConfig,
             Optional<OidcDevServicesPreparedBuildItem> oidcDevServicesPreparedBuildItem) {
         if (!isOidcTenantEnabled() || (!isClientIdSet() && oidcDevServicesPreparedBuildItem.isEmpty())) {
             return;
@@ -58,11 +56,11 @@ class OidcDevUIProcessor extends AbstractDevUIProcessor {
             boolean discoverMetadata = !oidcDevServicesEnabled && isDiscoveryEnabled(providerConfig);
             String providerName = authServerUrl != null ? tryToGetProviderName(authServerUrl) : null;
 
-            final OidcDevUiRecorder.DevServiceType devServiceType;
+            final DevServiceType devServiceType;
             if (oidcDevServicesEnabled) {
-                devServiceType = OidcDevUiRecorder.DevServiceType.OIDC;
+                devServiceType = DevServiceType.OIDC;
             } else {
-                devServiceType = OidcDevUiRecorder.DevServiceType.OTHER;
+                devServiceType = DevServiceType.OTHER;
             }
 
             final String keycloakAdminUrl;
@@ -71,13 +69,12 @@ class OidcDevUIProcessor extends AbstractDevUIProcessor {
             } else {
                 keycloakAdminUrl = null;
             }
-            var cardPage = createProviderWebComponent(recorder,
+            var cardPage = createProviderWebComponent(serviceRegistrar,
                     capabilities,
                     providerName,
                     oidcConfig.devui().grant().type().isPresent() ? oidcConfig.devui().grant().type().get().getGrantType()
                             : "code",
                     checkProviderUserInfoRequired(providerConfig),
-                    beanContainer,
                     oidcConfig.devui().webClientTimeout(),
                     oidcConfig.devui().grantOptions(),
                     nonApplicationRootPathBuildItem,

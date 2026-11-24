@@ -196,7 +196,7 @@ public class VertxCoreRecorder {
         return vertx;
     }
 
-    private void tryCleanTccl() {
+    public static void tryCleanTccl() {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         synchronized (devModeThreads) {
             currentDevModeNewThreadCreationClassLoader = cl;

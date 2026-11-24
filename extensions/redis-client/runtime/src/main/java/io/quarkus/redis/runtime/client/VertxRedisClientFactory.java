@@ -98,6 +98,9 @@ public class VertxRedisClientFactory {
         options.setMaxPoolSize(config.maxPoolSize());
         options.setMaxPoolWaiting(config.maxPoolWaiting());
         options.setMaxWaitingHandlers(config.maxWaitingHandlers());
+        config.maxMultiLength().ifPresent(options::setMaxMultiLength);
+        config.maxLineLength().ifPresent(options::setMaxLineLength);
+        config.maxStringLength().ifPresent(options::setMaxStringLength);
 
         options.setProtocolNegotiation(config.protocolNegotiation());
         config.preferredProtocolVersion().ifPresent(options::setPreferredProtocolVersion);

@@ -1619,7 +1619,8 @@ public class VertxHttpRecorder {
                 }
 
                 private URI localBaseUri(String scheme, int actualPort) {
-                    Config smallRyeConfig = Config.get();
+                    // runs on an event loop thread, also after a failed dev mode start when no config is registered
+                    Config smallRyeConfig = Config.getOrCreate();
                     String host = config.getTcpHost();
                     if (host.equals("0.0.0.0")) {
                         host = "localhost";

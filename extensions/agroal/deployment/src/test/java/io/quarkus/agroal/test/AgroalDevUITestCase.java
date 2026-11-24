@@ -26,7 +26,8 @@ public class AgroalDevUITestCase extends DevUIJsonRPCTest {
                             .add(new StringAsset("quarkus.datasource.db-kind=h2\n" +
                                     "quarkus.datasource.username=USERNAME-NAMED\n" +
                                     "quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:testing\n" +
-                                    "quarkus.datasource.jdbc.driver=org.h2.Driver\n"), "application.properties");
+                                    "quarkus.datasource.jdbc.driver=org.h2.Driver\n" +
+                                    "quarkus.datasource.dev-ui.allow-sql=true\n"), "application.properties");
                 }
             });
 
@@ -57,6 +58,23 @@ public class AgroalDevUITestCase extends DevUIJsonRPCTest {
         JsonNode tables = super.executeJsonRPCMethod("getTables", Map.of("datasource", DEFAULT_DATASOURCE));
         Assertions.assertNotNull(tables);
         Assertions.assertTrue(tables.isArray());
+    }
+
+    @Test
+    public void testGetInsertScript() throws Exception {
+        JsonNode created = super.executeJsonRPCMethod("executeSQL", Map.of("datasource", DEFAULT_DATASOURCE,
+                "sql", "CREATE SCHEMA IF NOT EXISTS EXPORT_TEST;"
+                        + " CREATE TABLE IF NOT EXISTS EXPORT_TEST.FRUIT (ID INT PRIMARY KEY, NAME VARCHAR(40));"
+                        + " MERGE INTO EXPORT_TEST.FRUIT VALUES (1, 'Cherry')",
+                "pageNumber", 1, "pageSize", 10));
+        Assertions.assertNotNull(created);
+
+        JsonNode script = super.executeJsonRPCMethod("getInsertScript", Map.of("datasource", DEFAULT_DATASOURCE));
+        Assertions.assertNotNull(script);
+        Assertions.assertTrue(script.isString());
+        Assertions.assertTrue(script.asString().contains("INSERT INTO EXPORT_TEST.FRUIT (ID, NAME) VALUES (1, 'Cherry');"),
+                script::asString);
+        Assertions.assertFalse(script.asString().contains("INFORMATION_SCHEMA"), script::asString);
     }
 
     private static final String DEFAULT_DATASOURCE = "<default>";

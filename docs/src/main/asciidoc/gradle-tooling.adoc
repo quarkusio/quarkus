@@ -852,6 +852,15 @@ like uber-jars and native binaries are not cached in CI, but are cached in local
 
 TIP: The Quarkus Gradle plugin detects a _CI environment_, if the `CI` environment variable is present.
 
+Cached outputs can be reused by a build of the same project in another directory, or with another Gradle user home.
+For example, CI pipelines that each check out into their own directory can share a build cache, and so can CI and
+developer machines. The application model that Quarkus resolves for a project records absolute paths, so the tasks
+that consume it take a digest of the model as an input instead, together with the artifacts the model refers to. The
+digest names each artifact by its coordinates and each project directory by its module, wherever they are located, so
+it is the same for artifacts resolved from the Gradle user home, a Maven repository, another project of the build or
+an included build. A file dependency outside the project is the exception: it is identified by its location, so
+outputs that depend on it are only reused by builds in the same location.
+
 How the various Quarkus package types are cached in non-CI and CI environments is described in the following table.
 Note that even if a task's output is not _cached_, the _up-to-date_ checks still apply.
 

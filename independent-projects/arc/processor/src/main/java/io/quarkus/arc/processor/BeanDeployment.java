@@ -552,6 +552,7 @@ public class BeanDeployment {
         validateBeans(errors, bytecodeTransformerConsumer);
         validateInterceptorsAndDecorators(errors, bytecodeTransformerConsumer);
         validateNonAppBeansWithAppDecorators(errors, bytecodeTransformerConsumer);
+        validateInvokerAsyncHandlers(errors);
         ValidationContextImpl validationContext = new ValidationContextImpl(buildContext);
         for (Throwable error : errors) {
             validationContext.addDeploymentProblem(error);
@@ -2013,6 +2014,26 @@ public class BeanDeployment {
 
                     return transformer.applyTo(visitor);
                 }));
+            }
+        }
+    }
+
+    private void validateInvokerAsyncHandlers(List<Throwable> errors) {
+        for (InvokerInfo invoker : invokers) {
+            if (invoker.asyncHandler == null) {
+                continue;
+            }
+
+            // the generated invoker is an application class only if the target bean class is an application class,
+            // so a non-application invoker cannot use an application async handler
+            if (!applicationClassPredicate.test(invoker.targetBeanClass.name())
+                    && applicationClassPredicate.test(invoker.asyncHandler.clazz().name())) {
+                String error = "Async handler " + invoker.asyncHandler.clazz().name() + " is an application class,"
+                        + " but the target bean of " + invoker + " is not.\n"
+                        + "The generated invoker is not an application class and so cannot reference the async handler.\n"
+                        + "Async type " + invoker.asyncHandler.asyncType() + " must be handled by an async handler"
+                        + " which is not an application class, or the target bean has to be an application class.";
+                errors.add(new DeploymentException(error));
             }
         }
     }

@@ -57,7 +57,8 @@ import io.quarkus.gizmo2.desc.MethodDesc;
 import io.smallrye.common.annotation.SuppressForbidden;
 
 public class InvokerGenerator extends AbstractGenerator {
-    private static final String ASYNC_HANDLERS_SUFFIX = "_AsyncHandlers";
+    private static final String NON_APP_ASYNC_HANDLERS_SUFFIX = "_NonAppAsyncHandlers";
+    private static final String APP_ASYNC_HANDLERS_SUFFIX = "_AppAsyncHandlers";
 
     private final Predicate<DotName> applicationClassPredicate;
     private final IndexView beanArchiveIndex;
@@ -107,13 +108,36 @@ public class InvokerGenerator extends AbstractGenerator {
     }
 
     Collection<Resource> generateAsyncHandlersSetup(List<AsyncHandlerInfo> asyncHandlers) {
-        // the generated class references all async handler classes in its static field initializers,
-        // some of which may be application classes, so the generated class is always an application class
-        ResourceClassOutput classOutput = new ResourceClassOutput(true, generateSources);
+        List<AsyncHandlerInfo> appAsyncHandlers = new ArrayList<>();
+        List<AsyncHandlerInfo> nonAppAsyncHandlers = new ArrayList<>();
+        for (AsyncHandlerInfo asyncHandler : asyncHandlers) {
+            if (applicationClassPredicate.test(asyncHandler.clazz().name())) {
+                appAsyncHandlers.add(asyncHandler);
+            } else {
+                nonAppAsyncHandlers.add(asyncHandler);
+            }
+        }
+
+        Collection<Resource> resources = new ArrayList<>();
+        if (!nonAppAsyncHandlers.isEmpty()) {
+            resources.addAll(generateAsyncHandlersSetup(nonAppAsyncHandlers, false, NON_APP_ASYNC_HANDLERS_SUFFIX));
+        }
+        if (!appAsyncHandlers.isEmpty()) {
+            resources.addAll(generateAsyncHandlersSetup(appAsyncHandlers, true, APP_ASYNC_HANDLERS_SUFFIX));
+        }
+        return resources;
+    }
+
+    // The generated class references the async handler classes in its static field initializers,
+    // so all async handlers stored in a single class have to be visible from a single classloader.
+    // That's why application and non-application async handlers are stored in two separate classes.
+    private List<Resource> generateAsyncHandlersSetup(List<AsyncHandlerInfo> asyncHandlers, boolean isAppClass,
+            String suffix) {
+        ResourceClassOutput classOutput = new ResourceClassOutput(isAppClass, generateSources);
 
         io.quarkus.gizmo2.Gizmo gizmo = gizmo(classOutput);
 
-        gizmo.class_(ComponentsProviderGenerator.SETUP_PACKAGE + "." + name + ASYNC_HANDLERS_SUFFIX, cc -> {
+        gizmo.class_(ComponentsProviderGenerator.SETUP_PACKAGE + "." + name + suffix, cc -> {
             for (AsyncHandlerInfo asyncHandler : asyncHandlers) {
                 cc.staticField(asyncHandler.asyncType().toString('_'), fc -> {
                     fc.public_();
@@ -132,8 +156,11 @@ public class InvokerGenerator extends AbstractGenerator {
     }
 
     StaticFieldVar readAsyncHandler(AsyncHandlerInfo asyncHandler) {
-        return Expr.staticField(FieldDesc.of(
-                ClassDesc.of(ComponentsProviderGenerator.SETUP_PACKAGE + "." + name + ASYNC_HANDLERS_SUFFIX),
+        String asyncHandlerClassName = ComponentsProviderGenerator.SETUP_PACKAGE + "." + this.name
+                + (applicationClassPredicate.test(asyncHandler.clazz().name())
+                        ? APP_ASYNC_HANDLERS_SUFFIX
+                        : NON_APP_ASYNC_HANDLERS_SUFFIX);
+        return Expr.staticField(FieldDesc.of(ClassDesc.of(asyncHandlerClassName),
                 asyncHandler.asyncType().toString('_'), classDescOf(asyncHandler.clazz())));
     }
 

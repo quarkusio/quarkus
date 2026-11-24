@@ -66,6 +66,7 @@ import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.fs.util.ZipUtils;
+import io.quarkus.gradle.tooling.ApplicationModelDigest;
 import io.quarkus.gradle.tooling.DefaultProjectDescriptor;
 import io.quarkus.gradle.tooling.ProjectDescriptor;
 import io.quarkus.gradle.tooling.ToolingUtils;
@@ -150,6 +151,13 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
     @OutputFile
     public abstract RegularFileProperty getApplicationModel();
 
+    /**
+     * The {@linkplain ApplicationModelDigest digest} of the application model, which the tasks consuming the model
+     * hash instead of the model itself, since the model holds absolute paths.
+     */
+    @OutputFile
+    public abstract RegularFileProperty getApplicationModelDigest();
+
     public QuarkusApplicationModelTask() {
         getProjectBuildFile().set(getProject().getBuildFile());
     }
@@ -183,6 +191,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
 
         DefaultApplicationModel model = modelBuilder.build();
         ToolingUtils.serializeAppModel(model, getApplicationModel().get().getAsFile().toPath());
+        ApplicationModelDigest.write(model, getApplicationModelDigest().get().getAsFile().toPath());
     }
 
     private ResolvedDependencyBuilder getProjectArtifact(DefaultProjectDescriptor projectDescriptor) {

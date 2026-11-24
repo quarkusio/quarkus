@@ -202,7 +202,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
         addOpenApiResponseAnnotation(methodCreator, RestResponse.Status.OK, resourceMetadata.getEntityType(), true);
         addSecurityAnnotations(methodCreator, resourceProperties);
-        addSortQueryParamValidatorAnnotation(methodCreator, resourceMetadata.getFields().keySet(),
+        addSortQueryParamValidatorAnnotation(methodCreator, resourceMetadata.getSortableFields(),
                 resourceMetadata.getSecureFields());
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(1), "page");
@@ -290,7 +290,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
         addOpenApiResponseAnnotation(methodCreator, RestResponse.Status.OK, resourceMetadata.getEntityType(), true);
         addSecurityAnnotations(methodCreator, resourceProperties);
-        addSortQueryParamValidatorAnnotation(methodCreator, resourceMetadata.getFields().keySet(),
+        addSortQueryParamValidatorAnnotation(methodCreator, resourceMetadata.getSortableFields(),
                 resourceMetadata.getSecureFields());
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(0), "sort");
         addQueryParamAnnotation(methodCreator.getParameterAnnotations(1), "namedQuery");

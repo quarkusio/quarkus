@@ -38,6 +38,8 @@ import tools.jackson.databind.node.ObjectNode;
  */
 public final class ExtensionCategoryChecker {
 
+    private static final String SKIPPING_CHECK = "Skipping the extension category check: ";
+
     private final MessageWriter log;
     private final Set<String> knownCategories;
 
@@ -64,7 +66,9 @@ public final class ExtensionCategoryChecker {
      * <p>
      * Any failure to resolve the fallback catalog (an offline build, no registries configured, the registry being
      * unreachable, etc.) results in an empty set rather than a failure, since this data is only ever used to produce
-     * a non-blocking warning.
+     * a non-blocking warning. Since an empty set means no check is performed, the reason is always logged, so that a
+     * skipped check can't be mistaken for a passing one: at info level if the registry client has been deliberately
+     * disabled, and as a warning otherwise.
      *
      * @param catalogOverridesFile path to a {@code catalog-overrides.json}-shaped file, may be {@code null}
      * @param quarkusCoreVersion the Quarkus core version the extension is built against, may be {@code null}
@@ -77,11 +81,13 @@ public final class ExtensionCategoryChecker {
             }
         }
         if (!QuarkusProjectHelper.isRegistryClientEnabled()) {
+            log.info(SKIPPING_CHECK + "the registry client is disabled.");
             return Set.of();
         }
         try {
             final ExtensionCatalogResolver catalogResolver = platformOnlyCatalogResolver();
             if (!catalogResolver.hasRegistries()) {
+                log.warn(SKIPPING_CHECK + "no extension registries are configured.");
                 return Set.of();
             }
             final ExtensionCatalog catalog = catalogResolver.resolveExtensionCatalog(quarkusCoreVersion);
@@ -91,8 +97,8 @@ public final class ExtensionCategoryChecker {
             }
             return ids;
         } catch (Exception e) {
-            log.debug("Could not resolve the known extension categories from the configured registries: %s",
-                    e.getMessage());
+            log.warn(SKIPPING_CHECK + "could not resolve the known extension categories from the configured registries: "
+                    + e.getMessage());
             return Set.of();
         }
     }

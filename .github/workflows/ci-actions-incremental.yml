@@ -1225,21 +1225,26 @@ jobs:
           add-job-summary: false
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           develocity-token-expiry: 6
-      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        id: get-quickstarts-branch
-        with:
-          result-encoding: string
-          script: |
-            if (process.env.GITHUB_REPOSITORY != 'quarkusio/quarkus') {
-              return 'development'
-            }
-
-            const branch = process.env.GITHUB_BASE_REF ? process.env.GITHUB_BASE_REF : process.env.GITHUB_REF_NAME
-            return branch
       - name: Get Quarkus version
         id: get-quarkus-version
         run: |
           echo "quarkus-version=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        id: get-quickstarts-branch
+        env:
+          QUARKUS_VERSION: ${{ steps.get-quarkus-version.outputs.quarkus-version }}
+        with:
+          result-encoding: string
+          script: |
+            if (process.env.GITHUB_REPOSITORY != 'quarkusio/quarkus') {
+              // branch names are arbitrary in forks, so derive the quickstarts branch from the version
+              // e.g. 3.27.999-SNAPSHOT -> 3.27, 999-SNAPSHOT -> development
+              const match = process.env.QUARKUS_VERSION.match(/^(\d+\.\d+)\.999-SNAPSHOT$/)
+              return match ? match[1] : 'development'
+            }
+
+            const branch = process.env.GITHUB_BASE_REF ? process.env.GITHUB_BASE_REF : process.env.GITHUB_REF_NAME
+            return branch
       - name: Clone Quickstarts
         env:
           QUICKSTARTS_BRANCH: ${{ steps.get-quickstarts-branch.outputs.result }}

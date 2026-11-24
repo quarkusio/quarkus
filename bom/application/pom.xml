@@ -4198,6 +4198,13 @@
                 <groupId>com.github.ben-manes.caffeine</groupId>
                 <artifactId>jcache</artifactId>
                 <version>${caffeine.version}</version>
+                <exclusions>
+                    <!-- We don't use OSGi -->
+                    <exclusion>
+                        <groupId>org.osgi</groupId>
+                        <artifactId>org.osgi.service.component.annotations</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.github.docker-java</groupId>

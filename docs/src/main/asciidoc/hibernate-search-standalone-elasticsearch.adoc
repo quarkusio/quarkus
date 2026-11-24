@@ -742,7 +742,7 @@ as shown below.
 
 [source,properties]
 ----
-quarkus.hibernate-search-standalone.elasticsearch.version=opensearch:3.5
+quarkus.hibernate-search-standalone.elasticsearch.version=opensearch:3.10
 ----
 
 All other configuration options and APIs are exactly the same as with Elasticsearch.

@@ -14,6 +14,7 @@ import java.util.function.BiConsumer;
 import org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurer;
 import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchBackendSettings;
 import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchIndexSettings;
+import org.hibernate.search.backend.elasticsearch.client.rest5.cfg.ClientRest5ElasticsearchBackendClientSettings;
 import org.hibernate.search.backend.elasticsearch.index.layout.IndexLayoutStrategy;
 import org.hibernate.search.engine.cfg.BackendSettings;
 
@@ -127,15 +128,16 @@ public final class HibernateSearchBackendElasticsearchConfigHandler {
                     elasticsearchBackendConfig.username());
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.PASSWORD,
                     elasticsearchBackendConfig.password());
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.CONNECTION_TIMEOUT,
+            addBackendConfig(propertyCollector, backendName, ClientRest5ElasticsearchBackendClientSettings.CONNECTION_TIMEOUT,
                     elasticsearchBackendConfig.connectionTimeout().toMillis());
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.READ_TIMEOUT,
+            addBackendConfig(propertyCollector, backendName, ClientRest5ElasticsearchBackendClientSettings.READ_TIMEOUT,
                     elasticsearchBackendConfig.readTimeout().toMillis());
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.REQUEST_TIMEOUT,
+            addBackendConfig(propertyCollector, backendName, ClientRest5ElasticsearchBackendClientSettings.REQUEST_TIMEOUT,
                     elasticsearchBackendConfig.requestTimeout(), Optional::isPresent, d -> d.get().toMillis());
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.MAX_CONNECTIONS,
+            addBackendConfig(propertyCollector, backendName, ClientRest5ElasticsearchBackendClientSettings.MAX_CONNECTIONS,
                     elasticsearchBackendConfig.maxConnections());
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.MAX_CONNECTIONS_PER_ROUTE,
+            addBackendConfig(propertyCollector, backendName,
+                    ClientRest5ElasticsearchBackendClientSettings.MAX_CONNECTIONS_PER_ROUTE,
                     elasticsearchBackendConfig.maxConnectionsPerRoute());
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.THREAD_POOL_SIZE,
                     elasticsearchBackendConfig.threadPool().size());
@@ -144,10 +146,11 @@ public final class HibernateSearchBackendElasticsearchConfigHandler {
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.QUERY_SHARD_FAILURE_IGNORE,
                     elasticsearchBackendConfig.query().shardFailure().ignore());
 
-            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_ENABLED,
+            addBackendConfig(propertyCollector, backendName, ClientRest5ElasticsearchBackendClientSettings.DISCOVERY_ENABLED,
                     elasticsearchBackendConfig.discovery().enabled());
             if (elasticsearchBackendConfig.discovery().enabled()) {
-                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_REFRESH_INTERVAL,
+                addBackendConfig(propertyCollector, backendName,
+                        ClientRest5ElasticsearchBackendClientSettings.DISCOVERY_REFRESH_INTERVAL,
                         elasticsearchBackendConfig.discovery().refreshInterval().getSeconds());
             }
         }

@@ -37,6 +37,8 @@ import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.RequestConfig;
+import io.fabric8.kubernetes.client.RequestConfigBuilder;
 import io.fabric8.kubernetes.client.dsl.LogWatch;
 import io.fabric8.kubernetes.client.dsl.NamespaceableResource;
 import io.fabric8.kubernetes.client.dsl.base.PatchContext;
@@ -501,15 +503,21 @@ public class OpenshiftProcessor {
      * @param openshiftConfig The openshift configuration
      * @param kubernetesClientBuilder The kubernetes client builder
      */
-    private static Build startOpenshiftBuild(BuildConfig buildConfig, File binaryFile,
+    static Build startOpenshiftBuild(BuildConfig buildConfig, File binaryFile,
             ContainerImageOpenshiftConfig openshiftConfig, KubernetesClientBuilder kubernetesClientBuilder) {
         try (KubernetesClient kubernetesClient = kubernetesClientBuilder.build()) {
             OpenShiftClient client = toOpenshiftClient(kubernetesClient);
             try {
-                return client.buildConfigs().withName(buildConfig.getMetadata().getName())
-                        .instantiateBinary()
-                        .withTimeoutInMillis(openshiftConfig.buildTimeout().toMillis())
-                        .fromFile(binaryFile);
+                // The archive is streamed from a single InputStream that cannot be replayed: an HTTP-level retry of an
+                // interrupted upload would start another build fed with an already consumed stream (quarkusio/quarkus#57420).
+                RequestConfig noRetries = new RequestConfigBuilder(kubernetesClient.getConfiguration().getRequestConfig())
+                        .withRequestRetryBackoffLimit(0)
+                        .build();
+                return client.withRequestConfig(noRetries)
+                        .call(c -> c.buildConfigs().withName(buildConfig.getMetadata().getName())
+                                .instantiateBinary()
+                                .withTimeoutInMillis(openshiftConfig.buildTimeout().toMillis())
+                                .fromFile(binaryFile));
             } catch (Exception e) {
                 if (openshiftConfig.failOnBuildArchiveUploadFailure()) {
                     throw openshiftException(e);

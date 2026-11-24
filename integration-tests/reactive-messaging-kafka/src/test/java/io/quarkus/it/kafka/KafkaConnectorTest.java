@@ -6,6 +6,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.KafkaCompanionResource;
@@ -28,7 +29,7 @@ import io.restassured.response.Response;
 import io.smallrye.reactive.messaging.kafka.commit.ProcessingState;
 
 @QuarkusTest
-@QuarkusTestResource(KafkaCompanionResource.class)
+@WithTestResource(KafkaCompanionResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 // this test class needs to be executed first, since it relies on number of kafka messages send
 // these messages are send during each test class execution and cannot be easily removed
@@ -60,7 +61,10 @@ public class KafkaConnectorTest {
     @Test
     @Order(2)
     public void testPets() {
-        await().untilAsserted(() -> Assertions.assertEquals(get("/kafka/pets").as(TYPE_REF).size(), 3));
+        given().post("/kafka/produce-pets").then().statusCode(204);
+
+        await().atMost(Duration.ofSeconds(30))
+                .untilAsserted(() -> Assertions.assertEquals(3, get("/kafka/pets").as(TYPE_REF).size()));
     }
 
     @Disabled("MultiSplitter yields flaky results, to investigate")
@@ -75,13 +79,16 @@ public class KafkaConnectorTest {
     @Order(4)
     public void testPrices() {
         KafkaRepeatableReceivers repeatableReceivers = Arc.container().instance(KafkaRepeatableReceivers.class).get();
-        await().untilAsserted(() -> Assertions.assertEquals(6, new HashSet<>(repeatableReceivers.getPrices()).size()));
+        await().atMost(Duration.ofSeconds(30))
+                .untilAsserted(() -> Assertions.assertEquals(6, new HashSet<>(repeatableReceivers.getPrices()).size()));
     }
 
     @Test
     @Order(5)
     public void testDataWithMetadata() {
-        await().untilAsserted(() -> {
+        given().post("/kafka/produce-data-with-metadata").then().statusCode(204);
+
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
             Map<String, String> map = get("/kafka/data-with-metadata").as(new TypeRef<Map<String, String>>() {
             });
             Assertions.assertEquals(3, map.size());
@@ -94,7 +101,9 @@ public class KafkaConnectorTest {
     @Test
     @Order(6)
     public void testDataForKeyed() {
-        await().untilAsserted(() -> {
+        given().post("/kafka/produce-data-for-keyed").then().statusCode(204);
+
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
             List<String> list = get("/kafka/data-for-keyed").as(new TypeRef<List<String>>() {
             });
             Assertions.assertEquals(3, new HashSet<>(list).size());

@@ -15,6 +15,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.DockerClientFactory;
 
+import com.github.dockerjava.api.exception.ConflictException;
+import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ContainerPort;
 
@@ -39,10 +41,7 @@ class DevServicesPostgresqFixedPortTest extends MojoTestBase {
 
     @AfterAll
     static void removeContainers() {
-        String containerId = findContainerOnPort(FIXED_PORT);
-        if (containerId != null) {
-            DockerClientFactory.lazyClient().removeContainerCmd(containerId).withForce(true).exec();
-        }
+        removeContainerOnFixedPort();
     }
 
     @AfterEach
@@ -53,10 +52,7 @@ class DevServicesPostgresqFixedPortTest extends MojoTestBase {
         if (devModeClient != null) {
             devModeClient.awaitUntilServerDown();
         }
-        String containerId = findContainerOnPort(FIXED_PORT);
-        if (containerId != null) {
-            DockerClientFactory.lazyClient().removeContainerCmd(containerId).withForce(true).exec();
-        }
+        removeContainerOnFixedPort();
     }
 
     @Test
@@ -97,6 +93,21 @@ class DevServicesPostgresqFixedPortTest extends MojoTestBase {
         assertThat(result.getProcess().waitFor())
                 .as("Test run should succeed")
                 .isZero();
+    }
+
+    private static void removeContainerOnFixedPort() {
+        String containerId = findContainerOnPort(FIXED_PORT);
+        if (containerId != null) {
+            try {
+                DockerClientFactory.lazyClient().removeContainerCmd(containerId).withForce(true).exec();
+            } catch (NotFoundException | ConflictException e) {
+                // The container is already gone or is being removed, either by Quarkus shutting down or by Ryuk
+            }
+        }
+        // Removal is asynchronous, make sure the port is free before the next test starts
+        await().atMost(1, TimeUnit.MINUTES)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .until(() -> findContainerOnPort(FIXED_PORT) == null);
     }
 
     static String findContainerOnPort(int publicPort) {

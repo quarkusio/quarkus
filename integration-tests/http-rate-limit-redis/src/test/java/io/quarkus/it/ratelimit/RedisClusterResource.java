@@ -24,7 +24,10 @@ public class RedisClusterResource implements QuarkusTestResourceLifecycleManager
         StringBuilder script = new StringBuilder();
         StringBuilder nodes = new StringBuilder();
         for (int port : PORTS) {
-            script.append("redis-server --port ").append(port).append(" --cluster-enabled yes --cluster-config-file nodes-")
+            // Redis 8.12 refuses to start a cluster node whose bus port is neither TLS-protected nor explicitly waived;
+            // the nodes only talk to each other over loopback inside the container, so waiving it is safe
+            script.append("redis-server --port ").append(port)
+                    .append(" --cluster-enabled yes --cluster-bus-port-protected-mode no --cluster-config-file nodes-")
                     .append(port).append(".conf --save '' --appendonly no --daemonize yes && ");
             nodes.append(" 127.0.0.1:").append(port);
         }

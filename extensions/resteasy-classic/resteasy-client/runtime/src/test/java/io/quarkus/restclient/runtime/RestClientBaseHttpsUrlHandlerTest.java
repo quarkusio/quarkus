@@ -24,7 +24,7 @@ class RestClientBaseHttpsUrlHandlerTest {
                 .isTrue();
     }
 
-    // release/graal-vm/25.1 branch, unchanged since
+    // release/graal-vm/25.1 branch
     @Test
     void graalVM25_1Message() {
         assertThat(RestClientBase.isHttpsUrlHandlerDisabled(new MalformedURLException(
@@ -33,11 +33,24 @@ class RestClientBaseHttpsUrlHandlerTest {
                 .isTrue();
     }
 
+    // `master` branch, unchanged since
+    @Test
+    void graalVM25_6Message() {
+        assertThat(RestClientBase.isHttpsUrlHandlerDisabled(new MalformedURLException(
+                "Accessing a URL protocol that was not enabled. The URL protocol https requires the handler class"
+                        + " sun.net.www.protocol.https.Handler and its no-argument constructor."
+                        + " Check that both are available and registered in reachability metadata.")))
+                .isTrue();
+    }
+
     @Test
     void httpHandlerDisabled() {
         assertThat(RestClientBase.isHttpsUrlHandlerDisabled(new MalformedURLException(
-                "Accessing a URL protocol that was not enabled. The URL protocol http is supported but not enabled by default."
-                        + " It must be enabled by adding the sun.net.www.protocol.http.Handler to reachability metadata.")))
+                "Accessing a URL protocol that was not enabled. The URL protocol http is supported but not enabled by default.")))
+                .isFalse();
+        assertThat(RestClientBase.isHttpsUrlHandlerDisabled(new MalformedURLException(
+                "Accessing a URL protocol that was not enabled. The URL protocol http requires the handler class"
+                        + " sun.net.www.protocol.http.Handler and its no-argument constructor.")))
                 .isFalse();
     }
 

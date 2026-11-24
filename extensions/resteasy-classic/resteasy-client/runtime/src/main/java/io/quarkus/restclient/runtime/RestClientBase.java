@@ -308,10 +308,12 @@ public class RestClientBase {
 
     /**
      * Whether the exception was thrown because the https URL protocol handler is not enabled in the native executable.
-     * The message wording differs between GraalVM versions: this matches the part they share.
+     * The message wording differs between GraalVM versions.
      */
     static boolean isHttpsUrlHandlerDisabled(MalformedURLException e) {
-        return e.getMessage() != null && e.getMessage().contains("URL protocol https is supported but not enabled");
+        String message = e.getMessage();
+        return message != null && (message.contains("URL protocol https is supported but not enabled")
+                || message.contains("URL protocol https requires the handler class sun.net.www.protocol.https.Handler"));
     }
 
     @SafeVarargs

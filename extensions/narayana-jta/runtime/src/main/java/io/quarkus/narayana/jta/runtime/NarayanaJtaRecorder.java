@@ -1,6 +1,5 @@
 package io.quarkus.narayana.jta.runtime;
 
-import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -69,20 +68,12 @@ public class NarayanaJtaRecorder {
     }
 
     public static void setDefaultProperties(Map<String, String> buildTimeProperties) {
-        //TODO: this is a huge hack to avoid loading XML parsers
-        //this needs a proper SPI
+        // Avoid loading XML parsers: Narayana reads the properties from this factory instead of its XML file
         Properties properties = new Properties();
         properties.putAll(buildTimeProperties);
         properties.putAll(System.getProperties());
 
-        try {
-            Field field = PropertiesFactory.class.getDeclaredField("delegatePropertiesFactory");
-            field.setAccessible(true);
-            field.set(null, new QuarkusPropertiesFactory(properties));
-
-        } catch (Exception e) {
-            log.error("Could not override transaction properties factory", e);
-        }
+        PropertiesFactory.setDelegatePropertiesFactory(new QuarkusPropertiesFactory(properties));
 
         defaultProperties = properties;
     }

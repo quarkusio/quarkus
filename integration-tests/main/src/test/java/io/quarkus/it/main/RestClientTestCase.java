@@ -162,7 +162,7 @@ public class RestClientTestCase {
                         + " executable. Make sure the quarkus.ssl.native property is set to true, then rebuild the native"
                         + " executable."),
                         // the GraalVM exception, which the hint relies on
-                        containsString("The URL protocol https is supported but not enabled by default."));
+                        containsString("Accessing a URL protocol that was not enabled."));
     }
 
     @Test

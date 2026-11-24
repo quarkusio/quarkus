@@ -226,6 +226,17 @@ quarkus.rest-client.extensions-api.url=https://stage.code.quarkus.io/api
 quarkus.rest-client.extensions-api.scope=jakarta.inject.Singleton
 ----
 
+If the REST Client calls an endpoint of the same application, you can use the
+xref:http-reference.adoc#addresses[address] of the HTTP server as the base URL:
+
+[source,properties]
+----
+quarkus.rest-client.hello-api.url=quarkus://vertx-http/hello
+----
+
+The `quarkus://vertx-http` reference resolves to the host and port the HTTP server is bound to, which also works when
+the server listens on a random port.
+
 === Disabling Hostname Verification
 
 To disable the SSL hostname verification for a specific REST client, add the following property to your configuration:

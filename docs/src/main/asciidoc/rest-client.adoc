@@ -579,6 +579,34 @@ quarkus.rest-client.extensions-api.scope=jakarta.inject.Singleton
 Setting the base URL of the client is **mandatory**, however the REST Client supports per-invocation overrides of the base URL using the `@io.quarkus.rest.client.reactive.Url` annotation.
 ====
 
+[[address-references]]
+=== Calling an endpoint of the same application
+
+If the REST Client calls an endpoint of the same application, you can configure the base URL with the
+xref:http-reference.adoc#addresses[address] of the HTTP server instead of its host and port:
+
+[source,properties]
+----
+quarkus.rest-client.hello-api.url=quarkus://vertx-http/hello // <1>
+----
+<1> Having this configuration means that all requests performed using the `hello-api` client will use the host and
+port the HTTP server is bound to, followed by `/hello`, as the base URL.
+
+This also works when the HTTP server listens on a random port, for example with `quarkus.http.test-port=0`, and
+replaces URLs like `http://localhost:${quarkus.http.port}/hello`. Use `quarkus://vertx-https` for the HTTPS port.
+
+NOTE: The `quarkus.http.root-path` is not added to the base URL, so you must include it in the reference.
+
+The same reference can be used in the `baseUri` property of `@RegisterRestClient`. When creating the client
+programmatically, resolve the reference with `io.quarkus.runtime.AddressResolver`:
+
+[source,java]
+----
+HelloService helloService = QuarkusRestClientBuilder.newBuilder()
+        .baseUri(AddressResolver.resolve("quarkus://vertx-http/hello"))
+        .build(HelloService.class);
+----
+
 === Trusting all certificates and Disabling SSL hostname verification
 
 [WARNING]

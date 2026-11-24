@@ -376,10 +376,7 @@ public class QuarkusExtensionTest
             }
 
             if (configResourceName != null) {
-                if (archive.get(APPLICATION_PROPERTIES) != null) {
-                    // Asset added explicitly to the archive must be completely replaced with custom config resource
-                    ExportUtil.deleteApplicationProperties(archive);
-                }
+                // replaces an application.properties asset added explicitly to the archive
                 archive.addAsResource(configResourceName, APPLICATION_PROPERTIES);
             }
             if (customApplicationProperties != null) {

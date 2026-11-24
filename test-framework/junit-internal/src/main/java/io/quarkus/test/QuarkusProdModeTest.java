@@ -321,10 +321,7 @@ public class QuarkusProdModeTest
             JavaArchive archive = getArchiveProducerOrDefault();
 
             if (configResourceName != null) {
-                if (archive.get(APPLICATION_PROPERTIES) != null) {
-                    // Asset added explicitly to the archive must be completely replaced with custom config resource
-                    ExportUtil.deleteApplicationProperties(archive);
-                }
+                // replaces an application.properties asset added explicitly to the archive
                 archive.addAsResource(configResourceName, APPLICATION_PROPERTIES);
             } else if (defaultConfigResource && archive.get(APPLICATION_PROPERTIES) == null) {
                 // No custom config resource set and no application.properties asset added

@@ -7,11 +7,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import jakarta.enterprise.context.spi.CreationalContext;
-
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -31,9 +28,9 @@ public final class TenantConfigBean {
 
     TenantConfigBean(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, OidcImpl oidc,
             boolean securityEventsEnabled, ProxyConfigurationRegistry proxyConfigurationRegistry,
-            Set<OidcRoute> allowedRoutes) {
+            Set<OidcRoute> allowedRoutes, boolean userInfoInjectionPointDetected) {
         this.tenantContextFactory = new TenantContextFactory(vertx, tlsConfigurationRegistry, securityEventsEnabled,
-                proxyConfigurationRegistry, allowedRoutes);
+                proxyConfigurationRegistry, allowedRoutes, userInfoInjectionPointDetected);
         this.dynamicTenantsConfig = new ConcurrentHashMap<>();
 
         this.staticTenantsConfig = tenantContextFactory.createStaticTenantConfigs(oidc.getStaticTenantConfigs(),
@@ -88,7 +85,8 @@ public final class TenantConfigBean {
         var tenant = dynamicTenantsConfig.get(tenantId);
         if (tenant != null) {
             LOG.debugf("Updating the resolved tenant %s configuration with a new configuration", tenantId);
-            var newTenant = new TenantConfigContextImpl(tenant, oidcConfig);
+            var newTenant = new TenantConfigContextImpl(tenant, oidcConfig,
+                    tenantContextFactory.userInfoInjectionPointDetected);
             dynamicTenantsConfig.put(tenantId, newTenant);
             BackChannelLogoutHandler.fireBackChannelLogoutChangedEvent(oidcConfig, tenant);
             ResourceMetadataHandler.fireResourceMetadataChangedEvent(oidcConfig, tenant);
@@ -154,23 +152,18 @@ public final class TenantConfigBean {
         return dynamicTenantsConfig.get(tenantId);
     }
 
-    public static class Destroyer implements BeanDestroyer<TenantConfigBean> {
-
-        @Override
-        public void destroy(TenantConfigBean instance, CreationalContext<TenantConfigBean> creationalContext,
-                Map<String, Object> params) {
-            if (instance.defaultTenant != null && instance.defaultTenant.provider() != null) {
-                instance.defaultTenant.provider().close();
+    public void close() {
+        if (defaultTenant != null && defaultTenant.provider() != null) {
+            defaultTenant.provider().close();
+        }
+        for (var i : staticTenantsConfig.values()) {
+            if (i.provider() != null) {
+                i.provider().close();
             }
-            for (var i : instance.staticTenantsConfig.values()) {
-                if (i.provider() != null) {
-                    i.provider().close();
-                }
-            }
-            for (var i : instance.dynamicTenantsConfig.values()) {
-                if (i.provider() != null) {
-                    i.provider().close();
-                }
+        }
+        for (var i : dynamicTenantsConfig.values()) {
+            if (i.provider() != null) {
+                i.provider().close();
             }
         }
     }

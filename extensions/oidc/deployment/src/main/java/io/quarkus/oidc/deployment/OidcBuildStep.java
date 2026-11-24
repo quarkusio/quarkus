@@ -2,8 +2,8 @@ package io.quarkus.oidc.deployment;
 
 import static io.quarkus.arc.processor.BuiltinScope.APPLICATION;
 import static io.quarkus.arc.processor.DotNames.DEFAULT;
-import static io.quarkus.arc.processor.DotNames.EVENT;
 import static io.quarkus.arc.processor.DotNames.NAMED;
+import static io.quarkus.arc.processor.DotNames.SINGLETON;
 import static io.quarkus.oidc.common.runtime.OidcConstants.BEARER_SCHEME;
 import static io.quarkus.oidc.common.runtime.OidcConstants.CODE_FLOW_CODE;
 import static io.quarkus.oidc.runtime.OidcRecorder.ACR_VALUES_TO_MAX_AGE_SEPARATOR;
@@ -16,7 +16,6 @@ import static io.quarkus.vertx.http.deployment.HttpSecurityProcessor.collectMeth
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +40,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -66,7 +66,6 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
@@ -74,19 +73,17 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.oidc.AuthenticationContext;
 import io.quarkus.oidc.AuthorizationCodeFlow;
 import io.quarkus.oidc.BearerTokenAuthentication;
 import io.quarkus.oidc.DPoPNonceProvider;
 import io.quarkus.oidc.IdToken;
-import io.quarkus.oidc.Oidc;
 import io.quarkus.oidc.Tenant;
 import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.TenantIdentityProvider;
-import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.UserInfo;
-import io.quarkus.oidc.UserInfoCache;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.runtime.AttestationJwksHandler;
@@ -97,10 +94,12 @@ import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
 import io.quarkus.oidc.runtime.OidcAuthenticationMechanism;
+import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.oidc.runtime.OidcConfigurationAndProviderProducer;
 import io.quarkus.oidc.runtime.OidcIdentityProvider;
 import io.quarkus.oidc.runtime.OidcJsonWebTokenProducer;
 import io.quarkus.oidc.runtime.OidcRecorder;
+import io.quarkus.oidc.runtime.OidcRecorder.TenantIdentityProviderCreator;
 import io.quarkus.oidc.runtime.OidcRoute;
 import io.quarkus.oidc.runtime.OidcSessionImpl;
 import io.quarkus.oidc.runtime.OidcTenantDefaultIdConfigBuilder;
@@ -111,9 +110,10 @@ import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.oidc.runtime.WebSocketIdentityUpdateProvider;
 import io.quarkus.oidc.runtime.health.OidcTenantHealthCheck;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
-import io.quarkus.proxy.deployment.ProxyRegistryBuildItem;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.runtime.SecurityConfig;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
 import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
@@ -121,8 +121,7 @@ import io.quarkus.security.spi.SecurityTransformer;
 import io.quarkus.security.spi.SecurityTransformerBuildItem;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
-import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
-import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
@@ -136,6 +135,7 @@ import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
 
 @BuildSteps(onlyIf = OidcBuildStep.IsEnabled.class)
@@ -245,16 +245,12 @@ public class OidcBuildStep {
     }
 
     @BuildStep(onlyIf = IsCacheEnabled.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public SyntheticBeanBuildItem addDefaultCacheBean(
-            OidcRecorder recorder,
-            CoreVertxBuildItem vertxBuildItem) {
-        return SyntheticBeanBuildItem.configure(DefaultTokenIntrospectionUserInfoCache.class).unremovable()
-                .types(DefaultTokenIntrospectionUserInfoCache.class, TokenIntrospectionCache.class, UserInfoCache.class)
-                .supplier(recorder.setupTokenCache(vertxBuildItem.getVertx()))
-                .scope(Singleton.class)
-                .setRuntimeInit()
-                .done();
+    AdditionalBeanBuildItem addDefaultCacheBean() {
+        return AdditionalBeanBuildItem.builder()
+                .setUnremovable()
+                .setDefaultScope(SINGLETON)
+                .addBeanClass(DefaultTokenIntrospectionUserInfoCache.class)
+                .build();
     }
 
     @BuildStep
@@ -308,10 +304,9 @@ public class OidcBuildStep {
      *  TenantIdentityProvider identityProvider;
      * </code>
      */
-    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void produceTenantIdentityProviders(BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
-            OidcRecorder recorder, BeanDiscoveryFinishedBuildItem beans, CombinedIndexBuildItem combinedIndex) {
+            BeanDiscoveryFinishedBuildItem beans, CombinedIndexBuildItem combinedIndex) {
         if (!combinedIndex.getIndex().getAnnotations(TENANT_NAME).isEmpty()) {
             // create TenantIdentityProviders for tenants selected with @Tenant like: @Tenant("my-tenant")
             beans
@@ -331,7 +326,8 @@ public class OidcBuildStep {
                                     // InjectableInstance<DPoPNonceProvider>
                                     .addInjectionPoint(ParameterizedType.create(InjectableInstance.class,
                                             ClassType.create(DPoPNonceProvider.class)))
-                                    .createWith(recorder.createTenantIdentityProvider(tenantName))
+                                    .param(TenantIdentityProviderCreator.TENANT_NAME_PARAMETER, tenantName)
+                                    .creator(TenantIdentityProviderCreator.class)
                                     .unremovable()
                                     .done()));
         }
@@ -357,7 +353,8 @@ public class OidcBuildStep {
                             // InjectableInstance<DPoPNonceProvider>
                             .addInjectionPoint(ParameterizedType.create(InjectableInstance.class,
                                     ClassType.create(DPoPNonceProvider.class)))
-                            .createWith(recorder.createTenantIdentityProvider(DEFAULT_TENANT_ID))
+                            .param(TenantIdentityProviderCreator.TENANT_NAME_PARAMETER, DEFAULT_TENANT_ID)
+                            .creator(TenantIdentityProviderCreator.class)
                             .unremovable()
                             .done());
         }
@@ -367,38 +364,48 @@ public class OidcBuildStep {
         return TENANT_IDENTITY_PROVIDER_NAME.equals(ip.getRequiredType().name());
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
-    @BuildStep
-    void detectIfUserInfoRequired(OidcRecorder recorder, BeanRegistrationPhaseBuildItem beanRegistration) {
-        recorder.setUserInfoInjectionPointDetected(detectUserInfoRequired(beanRegistration));
-    }
-
+    // TODO: replace with .before("router-finalization-future-svc") when it exists
     @Produce(PreRouterFinalizationBuildItem.class)
-    @Consume(BeanContainerBuildItem.class)
-    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void initTenantConfigBean(OidcRecorder recorder) {
-        recorder.initTenantConfigBean();
+    ServiceStartBuildItem createTenantConfigBeanServiceValue(OidcBuildTimeConfig buildTimeConfig,
+            BeanRegistrationPhaseBuildItem beanRegistration,
+            ServiceRegistrar serviceRegistrar) {
+        List<OidcRoute> allowedRoutes = buildTimeConfig.allowedRoutes().stream().sorted().toList();
+        final boolean userInfoInjectionPointDetected = detectUserInfoRequired(beanRegistration);
+
+        // makes sure that config of static tenants is validated during app startup and create static tenant contexts
+        // TODO: nothing orders this after the OpenTelemetry Vert.x tracer setup, which currently runs later;
+        //      requests sent to the OIDC provider before it are not traced,
+        //      see https://github.com/quarkusio/quarkus/issues/39644
+        serviceRegistrar.forService(TenantConfigBean.class)
+                .atPhase(Phase.DATA)
+                // the Oidc event observers and the beans used to create the static tenants, like the CredentialsProvider,
+                // can be, or can inject, synthetic beans initialized during the RUNTIME_INIT
+                .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                .require(ProxyConfigurationRegistry.class)
+                .require(TlsConfigurationRegistry.class)
+                .require(Vertx.class)
+                .require(SecurityConfig.class)
+                .require(ArcContainer.class)
+                .require(OidcConfig.class)
+                .onStart((ctx, proxyRegistry, tlsRegistry, vertx, securityConfig, arcContainer, oidcConfig) -> {
+                    TenantConfigBean tenantConfigBean = OidcRecorder.createTenantConfigBean(vertx, tlsRegistry,
+                            proxyRegistry, oidcConfig, securityConfig, arcContainer, allowedRoutes,
+                            userInfoInjectionPointDetected);
+                    ctx.onStop(tenantConfigBean::close);
+                    return tenantConfigBean;
+                });
+
+        return new ServiceStartBuildItem("oidc-tenant-config-bean");
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
+    // Kept separate from createTenantConfigBeanServiceValue to avoid a cycle in the service graph;
+    // see the note on createTenantConfigBeanServiceValue above.
     @BuildStep
-    SyntheticBeanBuildItem setup(OidcBuildTimeConfig buildTimeConfig, OidcRecorder recorder,
-            CoreVertxBuildItem vertxBuildItem,
-            TlsRegistryBuildItem tlsRegistryBuildItem,
-            ProxyRegistryBuildItem proxyRegistryBuildItem) {
-        // Here we copy OidcBuildTimeConfig#allowedRoutes() into an EnumSet because it gives us a stable iteration
-        // order based on the enum's ordinal. Otherwise, generated bytecode is unstable
-        Set<OidcRoute> allowedRoutes = EnumSet.noneOf(OidcRoute.class);
-        allowedRoutes.addAll(buildTimeConfig.allowedRoutes());
+    SyntheticBeanBuildItem registerTenantConfigBeanAsCdiBean() {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
-                .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(Oidc.class)))
-                .createWith(recorder.createTenantConfigBean(vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry(),
-                        proxyRegistryBuildItem.registry(),
-                        allowedRoutes))
-                .destroyer(TenantConfigBean.Destroyer.class)
-                .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
+                .serviceValue(TenantConfigBean.class)
+                .scope(Singleton.class)
                 .setRuntimeInit()
                 .done();
     }

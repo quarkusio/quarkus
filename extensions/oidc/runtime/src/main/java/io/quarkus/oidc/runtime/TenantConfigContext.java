@@ -63,13 +63,14 @@ public sealed interface TenantConfigContext permits TenantConfigContextImpl, Laz
         return Uni.createFrom().item(this);
     }
 
-    static Uni<TenantConfigContext> createReady(OidcProvider provider, OidcTenantConfig config) {
-        return TenantConfigContextImpl.createReady(provider, config);
+    static Uni<TenantConfigContext> createReady(OidcProvider provider, OidcTenantConfig config,
+            boolean userInfoInjectionPointDetected) {
+        return TenantConfigContextImpl.createReady(provider, config, userInfoInjectionPointDetected);
     }
 
     static TenantConfigContext createNotReady(OidcProvider provider, OidcTenantConfig config,
-            Supplier<Uni<TenantConfigContext>> staticTenantCreator) {
-        var notReadyContext = new TenantConfigContextImpl(provider, config, false, null);
+            Supplier<Uni<TenantConfigContext>> staticTenantCreator, boolean userInfoInjectionPointDetected) {
+        var notReadyContext = new TenantConfigContextImpl(provider, config, false, null, userInfoInjectionPointDetected);
         return new LazyTenantConfigContext(notReadyContext, staticTenantCreator);
     }
 }

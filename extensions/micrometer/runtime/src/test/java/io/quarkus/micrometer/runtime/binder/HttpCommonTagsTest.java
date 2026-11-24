@@ -71,6 +71,23 @@ public class HttpCommonTagsTest {
     }
 
     @Test
+    public void testStatusRangeBoundaries() {
+        Assertions.assertEquals(Tag.of("status", "100"), HttpCommonTags.status(100));
+        Assertions.assertEquals(Tag.of("status", "599"), HttpCommonTags.status(599));
+        Assertions.assertEquals(Tag.of("status", "99"), HttpCommonTags.status(99));
+        Assertions.assertEquals(Tag.of("status", "600"), HttpCommonTags.status(600));
+        Assertions.assertEquals(Tag.of("status", "999"), HttpCommonTags.status(999));
+        Assertions.assertEquals(HttpCommonTags.STATUS_UNKNOWN, HttpCommonTags.status(0));
+        Assertions.assertEquals(HttpCommonTags.STATUS_UNKNOWN, HttpCommonTags.status(-1));
+    }
+
+    @Test
+    public void testTagsAreReused() {
+        Assertions.assertSame(HttpCommonTags.status(200), HttpCommonTags.status(200));
+        Assertions.assertSame(HttpCommonTags.method("GET"), HttpCommonTags.method("GET"));
+    }
+
+    @Test
     public void testUriRedirect() {
         Assertions.assertEquals(HttpCommonTags.URI_REDIRECTION, HttpCommonTags.uri("/moved", null, 301, false));
         Assertions.assertEquals(HttpCommonTags.URI_REDIRECTION, HttpCommonTags.uri("/moved", null, 302, false));

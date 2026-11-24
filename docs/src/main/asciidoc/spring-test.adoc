@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :categories: compatibility,testing
 :summary: Quarkus supports the @SpringBootTest annotation out of the box, letting Spring developers write tests in a familiar style while running on the Quarkus runtime.
 :topics: spring,testing,compatibility
-:extensions: io.quarkus:quarkus-test-spring
+:extensions: io.quarkus:quarkus-spring-test
 
 Spring developers migrating to Quarkus can keep using `@SpringBootTest` as they do in Spring Boot — no import change required.
 Under the hood, Quarkus treats `@SpringBootTest` as an alias for xref:getting-started-testing.adoc[`@QuarkusTest`]: it starts the Quarkus runtime and CDI container, not a Spring Application Context.
@@ -24,14 +24,14 @@ include::{includes}/prerequisites.adoc[]
 
 == Adding the dependency
 
-Add `quarkus-test-spring` to your project as a test-scoped dependency:
+Add `quarkus-spring-test` to your project as a test-scoped dependency:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-test-spring</artifactId>
+    <artifactId>quarkus-spring-test</artifactId>
     <scope>test</scope>
 </dependency>
 ----
@@ -39,7 +39,7 @@ Add `quarkus-test-spring` to your project as a test-scoped dependency:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("io.quarkus:quarkus-test-spring")
+testImplementation("io.quarkus:quarkus-spring-test")
 ----
 
 == Writing a test

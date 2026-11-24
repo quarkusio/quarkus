@@ -29,7 +29,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-test-spring</artifactId>
+            <artifactId>quarkus-spring-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

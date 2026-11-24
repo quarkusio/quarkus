@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.resolver.maven;
 import static io.quarkus.bootstrap.util.DependencyUtils.getKey;
 import static io.quarkus.bootstrap.util.DependencyUtils.hasWinner;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,18 +30,25 @@ import io.quarkus.maven.dependency.ArtifactKey;
 class DependencyTreeConflictResolver {
 
     /**
-     * Resolves dependency version conflicts in the given dependency tree.
+     * Resolves dependency version conflicts in the given dependency tree adding activated conditional dependencies
+     * as children of the winning nodes of the extensions that declared them.
+     * <p>
+     * The entries of {@code conditionalDeps} are removed from it as they are added to the tree,
+     * so a non-empty map must be mutable.
      *
      * @param root the root of the dependency tree
+     * @param conditionalDeps activated conditional dependency nodes keyed by the declaring extension runtime artifact key
      */
-    static void resolveConflicts(DependencyNode root) {
-        new DependencyTreeConflictResolver(root).run();
+    static void resolveWithConditionalDeps(DependencyNode root, Map<ArtifactKey, List<DependencyNode>> conditionalDeps) {
+        new DependencyTreeConflictResolver(root, conditionalDeps).run();
     }
 
     final OrderedDependencyVisitor visitor;
+    private final Map<ArtifactKey, List<DependencyNode>> conditionalDeps;
 
-    private DependencyTreeConflictResolver(DependencyNode root) {
+    private DependencyTreeConflictResolver(DependencyNode root, Map<ArtifactKey, List<DependencyNode>> conditionalDeps) {
         visitor = new OrderedDependencyVisitor(root);
+        this.conditionalDeps = conditionalDeps;
     }
 
     private void run() {
@@ -56,10 +64,29 @@ class DependencyTreeConflictResolver {
 
     private VisitedDependency resolveConflict(ArtifactKey key, VisitedDependency prev) {
         if (prev == null) {
+            if (!conditionalDeps.isEmpty()) {
+                addConditionalDeps(visitor.getCurrent(), conditionalDeps.remove(key));
+            }
             return new VisitedDependency(visitor);
         }
         prev.resolveConflict(visitor);
         return prev;
+    }
+
+    /**
+     * Adds conditional dependencies as children of the winning node of the extension that declared them.
+     * This is called before the visitor descends into the children of the node, so the conditional dependencies
+     * will take part in conflict resolution as if they were originally children of the winning node.
+     */
+    private static void addConditionalDeps(DependencyNode winner, List<DependencyNode> deps) {
+        if (deps == null) {
+            return;
+        }
+        final List<DependencyNode> children = winner.getChildren();
+        final List<DependencyNode> newChildren = new ArrayList<>(children.size() + deps.size());
+        newChildren.addAll(children);
+        newChildren.addAll(deps);
+        winner.setChildren(newChildren);
     }
 
     private static class VisitedDependency {

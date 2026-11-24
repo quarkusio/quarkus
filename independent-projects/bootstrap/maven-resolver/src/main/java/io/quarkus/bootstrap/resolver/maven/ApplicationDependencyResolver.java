@@ -207,12 +207,12 @@ public class ApplicationDependencyResolver {
 
         DependencyNode root = resolveRuntimeDeps(collectRtDepsRequest);
         processRuntimeDeps(root);
-        activateConditionalDeps();
+        final Map<ArtifactKey, List<DependencyNode>> conditionalDeps = activateConditionalDeps();
         // resolve and inject deployment dependency branches for the top (first met) runtime extension nodes
         if (!runtimeModelOnly) {
             injectDeploymentDeps();
         }
-        DependencyTreeConflictResolver.resolveConflicts(root);
+        DependencyTreeConflictResolver.resolveWithConditionalDeps(root, conditionalDeps);
         populateModelBuilder(root);
 
         if (!runtimeModelOnly) {
@@ -261,12 +261,20 @@ public class ApplicationDependencyResolver {
     }
 
     /**
-     * Activates satisfied conditional dependencies
+     * Activates satisfied conditional dependencies.
+     * <p>
+     * Activated conditional dependency nodes are not added to the dependency tree here. Instead, they are returned
+     * keyed by the runtime artifact key of the extensions that declared them, so that during version conflict resolution
+     * they are added as children of the extension nodes that win, see
+     * {@link DependencyTreeConflictResolver#resolveWithConditionalDeps(DependencyNode, Map)}.
+     *
+     * @return activated conditional dependency nodes keyed by the runtime artifact key of the extensions that declared them
      */
-    private void activateConditionalDeps() {
+    private Map<ArtifactKey, List<DependencyNode>> activateConditionalDeps() {
         if (conditionalDepsToProcess.isEmpty()) {
-            return;
+            return Map.of();
         }
+        Map<ArtifactKey, List<DependencyNode>> activated = Map.of();
         boolean checkDependencyConditions = true;
         while (!conditionalDepsToProcess.isEmpty() && checkDependencyConditions) {
             checkDependencyConditions = false;
@@ -275,6 +283,11 @@ public class ApplicationDependencyResolver {
             for (ConditionalDependency cd : unsatisfiedConditionalDeps) {
                 if (cd.isSatisfied()) {
                     cd.activate();
+                    if (activated.isEmpty()) {
+                        activated = new HashMap<>();
+                    }
+                    activated.computeIfAbsent(getKey(cd.conditionalDep.parent.ext.runtimeNode.getArtifact()),
+                            k -> new ArrayList<>(1)).add(cd.conditionalDep.node);
                     // if a dependency was activated, the remaining not satisfied conditions should be checked again
                     checkDependencyConditions = true;
                 } else {
@@ -283,6 +296,7 @@ public class ApplicationDependencyResolver {
             }
         }
         conditionalDepsToProcess = List.of();
+        return activated;
     }
 
     /**
@@ -1102,14 +1116,9 @@ public class ApplicationDependencyResolver {
 
             final DefaultDependencyNode rtNode = (DefaultDependencyNode) conditionalDep.node;
             rtNode.setRepositories(originalNode.getRepositories());
-            // if this node has conditional dependencies on its own, they may have been activated by this time
-            // in which case they would be included into its children
-            List<DependencyNode> currentChildren = rtNode.getChildren();
-            if (currentChildren == null || currentChildren.isEmpty()) {
-                rtNode.setChildren(originalNode.getChildren());
-            } else {
-                currentChildren.addAll(originalNode.getChildren());
-            }
+            // conditional dependencies of this node, if any, are not added to its children here,
+            // they are added to the winning node of this dependency during version conflict resolution
+            rtNode.setChildren(originalNode.getChildren());
             if (conditionalDep.ext != null && conditionalDep.ext.extDeps == null) {
                 conditionalDep.ext.extDeps = new ArrayList<>();
             }
@@ -1117,7 +1126,6 @@ public class ApplicationDependencyResolver {
             conditionalDep.setFlags(
                     (byte) (COLLECT_DEPLOYMENT_INJECTION_POINTS | (collectReloadableModules ? COLLECT_RELOADABLE_MODULES : 0)));
             dependencyMap.getOrCreate(parent.node.getDependency()).putDependency(conditionalDep.node.getDependency());
-            parent.ext.runtimeNode.getChildren().add(rtNode);
         }
 
         private void visitRuntimeDeps() {

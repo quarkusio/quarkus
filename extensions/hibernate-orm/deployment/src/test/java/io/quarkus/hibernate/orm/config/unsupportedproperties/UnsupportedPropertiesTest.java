@@ -220,7 +220,7 @@ public class UnsupportedPropertiesTest {
     @Entity
     public static class SpyingIdentifierGeneratorEntity {
         @Id
-        @GeneratedValue(generator = "spying-generator")
+        @GeneratedValue
         @GenericGenerator(type = io.quarkus.hibernate.orm.config.SettingsSpyingIdentifierGenerator.class)
         private Long id;
 

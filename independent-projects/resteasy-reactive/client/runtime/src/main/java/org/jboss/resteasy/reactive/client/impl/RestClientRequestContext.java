@@ -38,6 +38,7 @@ import jakarta.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
+import org.jboss.resteasy.reactive.client.handlers.ClientCaptureCurrentContextRestHandler;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
@@ -120,6 +121,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     private ServiceInstance callStatsCollector;
     private Map<Class<?>, MultipartResponseData> multipartResponsesData;
     private StackTraceElement[] callerStackTrace;
+    private Throwable callerStackTraceCapture;
 
     private final AtomicBoolean userCanceled = new AtomicBoolean();
 
@@ -690,11 +692,29 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     }
 
     public StackTraceElement[] getCallerStackTrace() {
+        StackTraceElement[] callerStackTrace = this.callerStackTrace;
+        if (callerStackTrace == null) {
+            Throwable capture = callerStackTraceCapture;
+            if (capture != null) {
+                callerStackTrace = ClientCaptureCurrentContextRestHandler.filterCallerStackTrace(capture.getStackTrace());
+                this.callerStackTrace = callerStackTrace;
+            }
+        }
         return callerStackTrace;
     }
 
     public void setCallerStackTrace(StackTraceElement[] callerStackTrace) {
         this.callerStackTrace = callerStackTrace;
+        this.callerStackTraceCapture = null;
+    }
+
+    /**
+     * Records the caller frames without building the {@link StackTraceElement}s: {@link #getCallerStackTrace()} builds
+     * and filters them the first time it is called.
+     */
+    public void setCallerStackTraceCapture(Throwable callerStackTraceCapture) {
+        this.callerStackTraceCapture = callerStackTraceCapture;
+        this.callerStackTrace = null;
     }
 
     @SuppressWarnings("SameParameterValue")

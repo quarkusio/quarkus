@@ -30,11 +30,14 @@ public class ClientCaptureCurrentContextRestHandler implements ClientRestHandler
     }
 
     private void captureCallerStackTrace(RestClientRequestContext requestContext) {
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        // only fills the VM backtrace: the StackTraceElement[] is built in getCallerStackTrace(), on error responses
+        requestContext.setCallerStackTraceCapture(new CallerStackTrace());
+    }
+
+    public static StackTraceElement[] filterCallerStackTrace(StackTraceElement[] stackTrace) {
         List<StackTraceElement> effectiveStackTrace = new ArrayList<>(stackTrace.length);
         boolean foundUserMethod = false;
-        // skip first trace which is Thread.getStackTrace
-        for (int i = 1; i < stackTrace.length; i++) {
+        for (int i = 0; i < stackTrace.length; i++) {
             StackTraceElement trace = stackTrace[i];
             if (foundUserMethod) {
                 effectiveStackTrace.add(trace);
@@ -45,7 +48,16 @@ public class ClientCaptureCurrentContextRestHandler implements ClientRestHandler
                 foundUserMethod = true;
             }
         }
+        return effectiveStackTrace.toArray(EMPTY_ARRAY);
+    }
 
-        requestContext.setCallerStackTrace(effectiveStackTrace.toArray(EMPTY_ARRAY));
+    /**
+     * Records the caller frames when created; never thrown.
+     */
+    private static final class CallerStackTrace extends Throwable {
+
+        CallerStackTrace() {
+            super("REST Client caller stack trace", null, false, true);
+        }
     }
 }

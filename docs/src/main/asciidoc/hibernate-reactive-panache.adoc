@@ -169,7 +169,7 @@ public class Person extends PanacheEntity {
 
 And thanks to our field access rewrite, when your users read `person.name` they will actually call your `getName()` accessor,
 and similarly for field writes and the setter.
-This allows for proper encapsulation at runtime as all fields calls will be replaced by the corresponding getter/setter calls.
+This allows for proper encapsulation at runtime as all accesses to the public persistent fields will be replaced by the corresponding getter/setter calls.
 
 === Most useful operations
 
@@ -494,7 +494,7 @@ If your select query does not start with `from`, `select`, or `with`, the follow
 If your update query does not start with `update`, the following additional forms are supported:
 
 - `from EntityName ...` which will expand to `update EntityName ...`
-- `set? <singleAttribute>` (and single parameter) which will expand to `update EntityName set <singleAttribute> = ?1`
+- `<singleAttribute>` (and single parameter) which will expand to `update EntityName set <singleAttribute> = ?1`
 - `set? <update-query>` will expand to `update EntityName set <update-query>`
 
 If your delete query does not start with `delete`, the following additional forms are supported:
@@ -509,7 +509,7 @@ link:{hibernate-orm-docs-url}#hql[HQL]:
 [source,java]
 ----
 Order.find("select distinct o from Order o left join fetch o.lineItems");
-Order.update("update from Person set name = 'Mortal' where status = ?1", Status.Alive);
+Person.update("update Person set name = 'Mortal' where status = ?1", Status.Alive);
 ----
 
 === Named queries
@@ -735,23 +735,26 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.quarkus.hibernate.reactive.panache.common.ProjectedConstructor;
 
 @RegisterForReflection
-public class PersonName {
+public class PersonSummary {
     public final String name;
+    public final Status status;
 
-    @ProjectedConstructor // <1>
-    public PersonName(String name) {
-        this.name = name;
+    public PersonSummary(String name) { // <1>
+        this(name, null);
     }
 
-    public PersonName(String name, String otherField) {
+    @ProjectedConstructor // <2>
+    public PersonSummary(String name, Status status) {
         this.name = name;
+        this.status = status;
     }
 }
 
-// only 'name' will be loaded from the database
-PanacheQuery<PersonName> query = Person.find("status", Status.Alive).project(PersonName.class);
+// 'name' and 'status' will be loaded from the database
+PanacheQuery<PersonSummary> query = Person.find("status", Status.Alive).project(PersonSummary.class);
 ----
-<1> This will use your annotated constructor to create the query. (`select new PersonName(name) from ...`)
+<1> Without the annotation, Panache would select this constructor, because it has the fewest parameters.
+<2> This will use your annotated constructor to create the query. (`select new PersonSummary(name, status) from ...`)
 
 [WARNING]
 ====
@@ -1056,7 +1059,7 @@ public class PanacheFunctionalityTest {
 
         // We can even mock your custom methods
         asserter.execute(() -> Mockito.when(Person.findOrdered()).thenReturn(Uni.createFrom().item(Collections.emptyList())));
-        asserter.assertThat(() -> Person.findOrdered(), list -> list.isEmpty());
+        asserter.assertThat(() -> Person.findOrdered(), list -> Assertions.assertTrue(list.isEmpty()));
 
         asserter.execute(() -> {
             PanacheMock.verify(Person.class).findOrdered();
@@ -1184,7 +1187,7 @@ public class PanacheFunctionalityTest {
         // We can even mock your custom methods
         asserter.execute(() -> Mockito.when(personRepository.findOrdered())
                 .thenReturn(Uni.createFrom().item(Collections.emptyList())));
-        asserter.assertThat(() -> personRepository.findOrdered(), list -> list.isEmpty());
+        asserter.assertThat(() -> personRepository.findOrdered(), list -> Assertions.assertTrue(list.isEmpty()));
 
         asserter.execute(() -> {
             Mockito.verify(personRepository).findOrdered();
@@ -1229,8 +1232,9 @@ Panache takes an opinionated approach to tackle all these problems:
 If you require a custom ID strategy, you can extend `PanacheEntityBase` instead and handle the ID yourself.
 - Use public fields.
 Get rid of dumb getter and setters.
-Under the hood, Panache generates all getters and setters that are missing, and rewrites every access to these fields to use the accessor methods.
+Under the hood, Panache generates all getters and setters that are missing for the public persistent fields, and rewrites every access to these fields to use the accessor methods.
 This way you can still write _useful_ accessors when you need them, which will be used even though your entity users still use field accesses.
+Fields annotated with `@Transient` are not persistent, so Panache does not generate accessors for them and leaves access to them unchanged.
 - With the active record pattern: put all your entity logic in static methods in your entity class and do not create DAOs.
 Your entity superclass comes with lots of useful static methods, and you can add your own in your entity class.
 Users can just start using your entity `Person` by typing `Person.` and getting completion for all the operations in a single place.

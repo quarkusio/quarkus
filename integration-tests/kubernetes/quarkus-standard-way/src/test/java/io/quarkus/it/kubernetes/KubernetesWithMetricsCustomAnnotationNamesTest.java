@@ -31,6 +31,8 @@ public class KubernetesWithMetricsCustomAnnotationNamesTest {
             .overrideConfigKey("quarkus.kubernetes.prometheus.path", "example.io/metrics-path")
             .overrideConfigKey("quarkus.kubernetes.prometheus.scheme", "example.io/metrics-scheme")
             .overrideConfigKey("quarkus.kubernetes.prometheus.scrape-scheme", "https")
+            .overrideConfigKey("quarkus.http.ssl.certificate.files", "server.crt")
+            .overrideConfigKey("quarkus.http.ssl.certificate.key-files", "server.key")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-micrometer-registry-prometheus", Version.getVersion())));
 
@@ -46,7 +48,7 @@ public class KubernetesWithMetricsCustomAnnotationNamesTest {
             assertThat(d.getSpec().getTemplate().getMetadata().getAnnotations()).contains(
                     entry("prometheus.io/scrape", "true"),
                     entry("example.io/metrics-path", "/q/metrics"),
-                    entry("prometheus.io/port", "9090"),
+                    entry("prometheus.io/port", "8443"),
                     entry("example.io/metrics-scheme", "https"));
         });
 
@@ -55,7 +57,7 @@ public class KubernetesWithMetricsCustomAnnotationNamesTest {
                     assertThat(s.getSpec().getEndpoints()).singleElement()
                             .isInstanceOfSatisfying(Endpoint.class, e -> {
                                 assertThat(e.getScheme()).isEqualTo("https");
-                                assertThat(e.getTargetPort().getIntVal()).isEqualTo(9090);
+                                assertThat(e.getTargetPort().getIntVal()).isEqualTo(8443);
                                 assertThat(e.getPath()).isEqualTo("/q/metrics");
                             });
                 });

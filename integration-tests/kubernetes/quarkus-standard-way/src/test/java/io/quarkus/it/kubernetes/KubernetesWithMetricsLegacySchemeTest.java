@@ -22,7 +22,7 @@ import io.quarkus.test.QuarkusProdModeTest;
 
 /**
  * {@code quarkus.kubernetes.prometheus.scheme=https}, the setting earlier versions used to scrape over HTTPS, still makes
- * Prometheus scrape over HTTPS when {@code scrape-scheme} is not set.
+ * Prometheus scrape over HTTPS, on the https port, when {@code scrape-scheme} is not set.
  */
 public class KubernetesWithMetricsLegacySchemeTest {
 
@@ -33,6 +33,8 @@ public class KubernetesWithMetricsLegacySchemeTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .overrideConfigKey("quarkus.http.port", "9090")
             .overrideConfigKey("quarkus.kubernetes.prometheus.scheme", "https")
+            .overrideConfigKey("quarkus.http.ssl.certificate.files", "server.crt")
+            .overrideConfigKey("quarkus.http.ssl.certificate.key-files", "server.key")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-micrometer-registry-prometheus", Version.getVersion())));
 
@@ -48,7 +50,7 @@ public class KubernetesWithMetricsLegacySchemeTest {
             assertThat(d.getSpec().getTemplate().getMetadata().getAnnotations()).contains(
                     entry("prometheus.io/scrape", "true"),
                     entry("prometheus.io/path", "/q/metrics"),
-                    entry("prometheus.io/port", "9090"),
+                    entry("prometheus.io/port", "8443"),
                     entry("prometheus.io/scheme", "https"));
             assertThat(d.getSpec().getTemplate().getMetadata().getAnnotations()).doesNotContainKey("https");
         });
@@ -58,7 +60,7 @@ public class KubernetesWithMetricsLegacySchemeTest {
                     assertThat(s.getSpec().getEndpoints()).singleElement()
                             .isInstanceOfSatisfying(Endpoint.class, e -> {
                                 assertThat(e.getScheme()).isEqualTo("https");
-                                assertThat(e.getTargetPort().getIntVal()).isEqualTo(9090);
+                                assertThat(e.getTargetPort().getIntVal()).isEqualTo(8443);
                                 assertThat(e.getPath()).isEqualTo("/q/metrics");
                             });
                 });

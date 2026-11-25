@@ -918,7 +918,7 @@ An application can expose Prometheus metrics, for example with the `quarkus-micr
 * Annotations on the pod template: `prometheus.io/scrape`, `prometheus.io/path`, `prometheus.io/port` and `prometheus.io/scheme`.
 * A `ServiceMonitor` resource for setups that use the Prometheus Operator.
 
-The `quarkus.kubernetes.prometheus.scrape`, `path`, `port` and `scheme` properties set the *names* of these annotations, and `quarkus.kubernetes.prometheus.prefix` sets their common prefix. The values come from the application: the metrics path and the HTTP port. With the management interface enabled, the port is the management port.
+The `quarkus.kubernetes.prometheus.scrape`, `path`, `port` and `scheme` properties set the *names* of these annotations, and `quarkus.kubernetes.prometheus.prefix` sets their common prefix. The values come from the application: the metrics path and the HTTP port. Over HTTPS, the port is the `https` port. With the management interface enabled, the port is the management port.
 
 `quarkus.kubernetes.prometheus.scrape-scheme` sets the scheme that Prometheus uses, `http` or `https`. It is the value of the scheme annotation and the scheme of the `ServiceMonitor` endpoint. For example, to scrape over HTTPS:
 
@@ -927,11 +927,15 @@ The `quarkus.kubernetes.prometheus.scrape`, `path`, `port` and `scheme` properti
 quarkus.kubernetes.prometheus.scrape-scheme=https
 ----
 
+Over HTTPS, Prometheus scrapes the `https` port instead of the HTTP port. `quarkus.http.ssl-port` sets this port, `8443` by default. The generated resources have an `https` port when the `quarkus.http.ssl.certificate.*` properties configure TLS. You can also declare the port with `quarkus.kubernetes.ports.https.container-port`, for example when the TLS registry configures TLS. Without an `https` port, the build fails, because Prometheus cannot scrape a plain HTTP port over HTTPS.
+
+With the management interface enabled, Prometheus scrapes the management port with the configured scheme. Configure TLS on the management interface to scrape it over HTTPS.
+
 Use `quarkus.kubernetes.prometheus.annotations=false` or `quarkus.kubernetes.prometheus.generate-service-monitor=false` to leave out the annotations or the `ServiceMonitor`.
 
 [NOTE]
 ====
-Before `scrape-scheme` existed, `quarkus.kubernetes.prometheus.scheme=https` gave the `ServiceMonitor` the `https` scheme. It also named the scheme annotation `https` and kept its value at `http`. Without `scrape-scheme`, a `scheme` value of `http` or `https` keeps that earlier meaning. The build then logs a warning. Replace `quarkus.kubernetes.prometheus.scheme=https` with `quarkus.kubernetes.prometheus.scrape-scheme=https`, and keep `quarkus.kubernetes.prometheus.scheme` only to rename the annotation.
+Before `scrape-scheme` existed, `quarkus.kubernetes.prometheus.scheme=https` gave the `ServiceMonitor` the `https` scheme. It also named the scheme annotation `https` and kept its value at `http`. Without `scrape-scheme`, a `scheme` value of `http` or `https` keeps that earlier meaning. The build then logs a warning. With `https`, Prometheus now scrapes the `https` port, as described above. Replace `quarkus.kubernetes.prometheus.scheme=https` with `quarkus.kubernetes.prometheus.scrape-scheme=https`, and keep `quarkus.kubernetes.prometheus.scheme` only to rename the annotation.
 ====
 
 === Using the Kubernetes client

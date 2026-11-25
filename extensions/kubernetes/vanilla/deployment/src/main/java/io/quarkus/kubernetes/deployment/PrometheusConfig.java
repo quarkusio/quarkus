@@ -69,6 +69,9 @@ public interface PrometheusConfig {
      * The scheme Prometheus uses to scrape the metrics endpoint. It is the value of the scheme annotation and the
      * scheme of the generated {@code ServiceMonitor} endpoint.
      * <p>
+     * With {@code https} and without the management interface, Prometheus scrapes the {@code https} port. The build fails
+     * when the generated resources have no {@code https} port.
+     * <p>
      * When this is not set and {@code quarkus.kubernetes.prometheus.scheme} is {@code http} or {@code https}, that value
      * is the scheme, as in earlier versions, and a warning asks to move it to this property.
      */

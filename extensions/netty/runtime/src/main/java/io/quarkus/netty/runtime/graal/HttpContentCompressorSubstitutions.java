@@ -48,6 +48,28 @@ final class Target_io_netty_handler_codec_compression_ZstdConstants {
 }
 
 @Substitute
+@TargetClass(className = "io.netty.handler.codec.compression.Zstd", onlyWith = IsZstdAbsent.class)
+final class Target_io_netty_handler_codec_compression_Zstd {
+
+    // The original initializer references the optional zstd-jni native loader even when zstd-jni is absent.
+
+    @Substitute
+    public static boolean isAvailable() {
+        return false;
+    }
+
+    @Substitute
+    public static void ensureAvailability() throws Throwable {
+        throw cause();
+    }
+
+    @Substitute
+    public static Throwable cause() {
+        return new ClassNotFoundException("com.github.luben.zstd.Zstd");
+    }
+}
+
+@Substitute
 @TargetClass(className = "io.netty.handler.codec.compression.Brotli", onlyWith = IsBrotli4jAbsent.class)
 final class Target_io_netty_handler_codec_compression_Brotli {
 

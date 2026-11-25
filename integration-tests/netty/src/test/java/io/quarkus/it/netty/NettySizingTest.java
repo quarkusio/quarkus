@@ -40,6 +40,16 @@ public class NettySizingTest {
         assertThat(values).containsAllEntriesOf(expected);
     }
 
+    @Test
+    @Launch
+    public void zstdIsUnavailableWithoutItsOptionalDependency(LaunchResult result) {
+        assertThat(values(result))
+                .containsEntry("netty.zstd.available", "false")
+                .containsEntry("netty.zstd.cause", ClassNotFoundException.class.getName())
+                .containsEntry("netty.zstd.ensureAvailability", ClassNotFoundException.class.getName())
+                .containsEntry("netty.httpContentCompressor", "io.netty.handler.codec.http.HttpContentCompressor");
+    }
+
     static Map<String, String> values(LaunchResult result) {
         Map<String, String> values = new HashMap<>();
         for (String line : result.getOutputStream()) {

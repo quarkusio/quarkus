@@ -9,6 +9,8 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
+import io.netty.handler.codec.compression.Zstd;
+import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.util.NettyRuntime;
 import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.runtime.QuarkusApplication;
@@ -31,6 +33,16 @@ public class NettySizingApp implements QuarkusApplication {
     @Override
     public int run(String... args) throws Exception {
         ByteBufAllocator.DEFAULT.directBuffer(1).release();
+
+        print("netty.zstd.available", Zstd.isAvailable());
+        print("netty.zstd.cause", Zstd.cause().getClass().getName());
+        try {
+            Zstd.ensureAvailability();
+            print("netty.zstd.ensureAvailability", "available");
+        } catch (Throwable cause) {
+            print("netty.zstd.ensureAvailability", cause.getClass().getName());
+        }
+        print("netty.httpContentCompressor", new HttpContentCompressor().getClass().getName());
 
         print("runtime.availableProcessors", Runtime.getRuntime().availableProcessors());
         print("runtime.maxMemory", Runtime.getRuntime().maxMemory());

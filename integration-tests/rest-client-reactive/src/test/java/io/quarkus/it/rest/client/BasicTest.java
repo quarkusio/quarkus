@@ -18,6 +18,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import io.opentelemetry.api.trace.SpanId;
 import io.opentelemetry.api.trace.SpanKind;
@@ -42,6 +44,8 @@ public class BasicTest {
     String helloUrl;
     @TestHTTPResource("/params")
     String paramsUrl;
+    @TestHTTPResource("/primitive")
+    String primitiveUrl;
 
     @BeforeEach
     @AfterEach
@@ -60,6 +64,21 @@ public class BasicTest {
     public void shouldMakeJsonRequestAndGetTextResponse() {
         Response response = with().body(helloUrl).post("/call-helloFromMessage-client");
         assertThat(response.asString()).isEqualTo("Hello world");
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "long, 9876543210",
+            "int, 42",
+            "double, 3.5",
+            "boolean, true",
+            "Long, 9876543210"
+    })
+    void shouldReadTextResponseAsPrimitive(String type, String value) {
+        with().body(primitiveUrl).queryParam("value", value).post("/call-primitive-client/" + type)
+                .then()
+                .statusCode(200)
+                .body(equalTo(value));
     }
 
     @Test

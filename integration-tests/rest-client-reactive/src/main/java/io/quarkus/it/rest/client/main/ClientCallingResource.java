@@ -244,6 +244,25 @@ public class ClientCallingResource {
             rc.response().end(greeting);
         });
 
+        router.get("/primitive").handler(rc -> rc.response().putHeader("content-type", MediaType.TEXT_PLAIN)
+                .end(rc.queryParam("value").get(0)));
+
+        router.route("/call-primitive-client/:type").blockingHandler(rc -> {
+            String url = rc.body().asString();
+            PrimitiveClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .build(PrimitiveClient.class);
+            String value = rc.queryParam("value").get(0);
+            String result = switch (rc.pathParam("type")) {
+                case "long" -> String.valueOf(client.getLong(value));
+                case "int" -> String.valueOf(client.getInt(value));
+                case "double" -> String.valueOf(client.getDouble(value));
+                case "boolean" -> String.valueOf(client.getBoolean(value));
+                case "Long" -> String.valueOf(client.getLongWrapper(value));
+                default -> throw new IllegalArgumentException("Unsupported type " + rc.pathParam("type"));
+            };
+            rc.response().end(result);
+        });
+
         router.post("/params/param").handler(rc -> rc.response().putHeader("content-type", MediaType.TEXT_PLAIN)
                 .end(getParam(rc)));
 

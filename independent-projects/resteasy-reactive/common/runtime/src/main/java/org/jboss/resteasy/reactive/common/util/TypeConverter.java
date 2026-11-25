@@ -61,44 +61,35 @@ public final class TypeConverter {
             throw new IllegalArgumentException("Date instances are not supported by this class.");
         }
         if (Character.class.equals(targetType)) {
-            if (source.length() == 0)
+            if (source.isEmpty())
                 return targetType.cast(new Character('\0'));
             return targetType.cast(new Character(source.charAt(0)));
         }
         if (char.class.equals(targetType)) {
-            Character c = null;
-            if (source.length() == 0)
-                c = new Character('\0');
-            else
-                c = new Character(source.charAt(0));
-            try {
-                return (T) Character.class.getMethod("charValue").invoke(c);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            } catch (InvocationTargetException e) {
-                throw new RuntimeException(e);
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException(e);
-            }
-
+            return (T) Character.valueOf(source.isEmpty() ? '\0' : source.charAt(0));
         }
         T result;
         // boolean types need special handling
         if (Boolean.class.equals(targetType) || boolean.class.equals(targetType)) {
-            Boolean booleanValue = getBooleanValue(source);
-            if (Boolean.class.equals(targetType)) {
-                return targetType.cast(booleanValue);
-            } else {
-                try {
-                    return (T) Boolean.class.getMethod("booleanValue").invoke(booleanValue);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                } catch (InvocationTargetException e) {
-                    throw new RuntimeException(e);
-                } catch (NoSuchMethodException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            return (T) getBooleanValue(source);
+        }
+
+        Object number = null;
+        if (int.class.equals(targetType) || Integer.class.equals(targetType)) {
+            number = Integer.valueOf(source);
+        } else if (long.class.equals(targetType) || Long.class.equals(targetType)) {
+            number = Long.valueOf(source);
+        } else if (double.class.equals(targetType) || Double.class.equals(targetType)) {
+            number = Double.valueOf(source);
+        } else if (float.class.equals(targetType) || Float.class.equals(targetType)) {
+            number = Float.valueOf(source);
+        } else if (short.class.equals(targetType) || Short.class.equals(targetType)) {
+            number = Short.valueOf(source);
+        } else if (byte.class.equals(targetType) || Byte.class.equals(targetType)) {
+            number = Byte.valueOf(source);
+        }
+        if (number != null) {
+            return (T) number;
         }
         try {
             result = getTypeViaValueOfMethod(source, targetType);

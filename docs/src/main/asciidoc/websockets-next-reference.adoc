@@ -1701,10 +1701,11 @@ quarkus.log.category."io.quarkus.websockets.next.traffic".level=DEBUG <3>
 
 == Dev mode
 
-In dev mode, Quarkus scans for source changes when it receives an HTTP request.
-An application whose clients only communicate over open WebSocket connections would never trigger that scan, so a message received by a server endpoint triggers it as well, at most once every two seconds.
-When a change is detected, the application restarts and the open WebSocket connections are closed, because they belong to the previous deployment.
-Clients must reconnect to the restarted application, and the message that triggered the restart is not delivered to the new endpoint.
+In dev mode, a message received by a server endpoint triggers the scan for changed files, like an HTTP request.
+If Quarkus finds changes, it restarts the application and closes all open WebSocket connections.
+Clients must open a new connection to use the restarted application.
+The restarted application does not receive the message that triggered the scan.
+Send this message again on the new connection.
 
 [[subscribe-or-not-subscribe]]
 == When to subscribe to a `Uni` or `Multi`

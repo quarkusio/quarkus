@@ -19,6 +19,7 @@ import javax.net.ssl.TrustManagerFactory;
 import org.jboss.logging.Logger;
 
 import io.quarkus.tls.KeyStoreAndKeyCertOptions;
+import io.quarkus.tls.KeyStoreProvider;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TrustStoreAndTrustOptions;
 import io.quarkus.tls.runtime.config.PqcEnforcementPolicy;
@@ -48,12 +49,24 @@ public class VertxCertificateHolder implements TlsConfiguration {
 
     private final Vertx vertx;
     private final String name;
+    private final KeyStoreProvider serviceKeyStoreProvider;
 
     VertxCertificateHolder(Vertx vertx, String name, TlsBucketConfig config, KeyStoreAndKeyCertOptions ks,
             TrustStoreAndTrustOptions ts) {
+        this(vertx, name, config, ks, ts, null);
+    }
+
+    /**
+     * Create a holder whose key store comes from a provider of the service graph, such as the Let's Encrypt client.
+     *
+     * @param serviceKeyStoreProvider the provider that also supplies the key store on reload, or {@code null}
+     */
+    VertxCertificateHolder(Vertx vertx, String name, TlsBucketConfig config, KeyStoreAndKeyCertOptions ks,
+            TrustStoreAndTrustOptions ts, KeyStoreProvider serviceKeyStoreProvider) {
         this.config = config;
         this.vertx = vertx;
         this.name = name;
+        this.serviceKeyStoreProvider = serviceKeyStoreProvider;
         if (ks != null) {
             keyStoreOptions = ks.options;
             keyStore = ks.keyStore;
@@ -291,7 +304,9 @@ public class VertxCertificateHolder implements TlsConfiguration {
         // Reload keystore
         if (keyStore != null) {
             try {
-                keyStoreUpdateResult = CertificateRegistryImpl.getKeyStore(config, vertx, name);
+                keyStoreUpdateResult = serviceKeyStoreProvider != null
+                        ? serviceKeyStoreProvider.getKeyStore(vertx)
+                        : CertificateRegistryImpl.getKeyStore(config, vertx, name);
             } catch (Exception e) {
                 return false;
             }

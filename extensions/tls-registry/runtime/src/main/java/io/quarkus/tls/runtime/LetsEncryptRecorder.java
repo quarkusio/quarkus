@@ -16,6 +16,7 @@ import io.quarkus.tls.CertificateUpdatedEvent;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.TlsConfig;
+import io.quarkus.tls.runtime.letsencrypt.LetsEncryptChallenges;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
@@ -89,6 +90,12 @@ public class LetsEncryptRecorder {
                 String token = rc.pathParam("token");
                 if (token == null) {
                     rc.response().setStatusCode(404).end();
+                    return;
+                }
+
+                String keyAuthorization = LetsEncryptChallenges.keyAuthorization(token);
+                if (keyAuthorization != null) {
+                    rc.response().end(keyAuthorization);
                     return;
                 }
 

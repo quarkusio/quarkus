@@ -104,6 +104,19 @@ Avoid using highly generic patterns like `**/*.xml` without a preceding literal 
 For more information about this topic, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/#resources[GraalVM Accessing Resources in Native Image] guide.
 ====
 
+=== Reading resources from external JARs at run time
+
+If your application uses `URLClassLoader` to read resources from an external JAR at run time, enable the `jar` URL protocol when building the native executable.
+Add the following to `application.properties`:
+
+[source,properties]
+----
+quarkus.native.additional-build-args=--enable-url-protocols=jar
+----
+
+This option lets the application read resources from the JAR without bundling them into the native executable.
+It does not enable loading Java classes from the JAR at run time.
+
 === Registering for reflection
 
 When building a native executable, GraalVM operates with a closed world assumption.

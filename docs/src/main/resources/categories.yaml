@@ -141,8 +141,8 @@ categories:
       - id: data-orm
         title: ORM and Hibernate
         guides:
-          - quarkus-data-hibernate.adoc
           - quarkus-data-hibernate-getting-started.adoc
+          - quarkus-data-hibernate.adoc
           - quarkus-data-hibernate-sql.adoc
           - hibernate-orm.adoc
           - hibernate-orm-panache.adoc

@@ -1210,24 +1210,12 @@ public class BootstrapMavenContext {
                 && varName.endsWith(option);
     }
 
-    private static FileProfileActivator createFileProfileActivator() throws BootstrapMavenException {
+    private static FileProfileActivator createFileProfileActivator() {
         var activator = new FileProfileActivator();
         var translator = new DefaultPathTranslator();
-        try {
-            var pathInterpolator = new ProfileActivationFilePathInterpolator();
-            pathInterpolator.setPathTranslator(translator);
-            activator.setProfileActivationFilePathInterpolator(pathInterpolator);
-        } catch (NoClassDefFoundError e) {
-            // ProfileActivationFilePathInterpolator not found; Maven < 3.8.5 (https://github.com/apache/maven/pull/649)
-            try {
-                activator.getClass().getMethod("setPathTranslator", org.apache.maven.model.path.PathTranslator.class)
-                        .invoke(activator, translator);
-            } catch (ReflectiveOperationException reflectionExc) {
-                throw new BootstrapMavenException(
-                        "Failed to set up DefaultPathTranslator for Maven < 3.8.5 DefaultPathTranslator",
-                        reflectionExc);
-            }
-        }
+        var pathInterpolator = new ProfileActivationFilePathInterpolator();
+        pathInterpolator.setPathTranslator(translator);
+        activator.setProfileActivationFilePathInterpolator(pathInterpolator);
         return activator;
     }
 }

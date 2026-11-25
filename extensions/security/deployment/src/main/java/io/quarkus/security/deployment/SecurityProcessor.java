@@ -522,9 +522,6 @@ public class SecurityProcessor {
             runtimeReInitialized
                     .produce(new RuntimeInitializedClassBuildItem("org.bouncycastle.crypto.internal.SecretZeroizer"));
         }
-
-        // Reinitialize class because it embeds a java.lang.ref.Cleaner instance in the image heap
-        runtimeReInitialized.produce(new RuntimeInitializedClassBuildItem("sun.security.pkcs11.P11Util"));
     }
 
     @BuildStep

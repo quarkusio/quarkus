@@ -26,7 +26,7 @@ public class SpanAttributesJsonMapperCustomizer implements JsonMapperBuilderCust
     @Override
     public void customize(JsonMapper.Builder builder) {
         SimpleModule module = new SimpleModule();
-        module.addSerializer(Attributes.class, new ValueSerializer<Attributes>() {
+        module.addSerializer(Attributes.class, new ValueSerializer<>() {
             @Override
             public void serialize(Attributes attributes, JsonGenerator gen, SerializationContext ctxt) {
                 gen.writeStartObject();

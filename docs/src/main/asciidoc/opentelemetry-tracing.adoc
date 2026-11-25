@@ -866,6 +866,14 @@ Using the `HelloPropagation` class from before we can add the following 2 method
 
 See the main xref:opentelemetry.adoc#exporters[OpenTelemetry Guide exporters] section.
 
+== Testing exported spans
+
+When your test application includes `io.quarkus:quarkus-test-opentelemetry`, its in-memory exporter exposes finished spans to `SpanExporterClient`.
+For example, after exercising an operation that records a single span, a test can fetch it with `SpanExporterClient.at(applicationUri).awaitCount(1, Duration.ofSeconds(5)).single()`, where `applicationUri` is the application's `@TestHTTPResource` URI.
+The returned OpenTelemetry `SpanData` preserves attribute types and trace-state order.
+For a recorded exception, `ExceptionEventData.getException().getMessage()` returns the original throwable's message.
+Use the event's recorded `exception.type` and `exception.stacktrace` attributes to check its type and stack trace.
+
 [[quarkus-extensions-using-opentelemetry]]
 == Quarkus core extensions instrumented with OpenTelemetry tracing
 

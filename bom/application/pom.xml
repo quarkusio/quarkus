@@ -104,7 +104,7 @@
         <narayana-lra.version>2.0.1.Final</narayana-lra.version>
         <agroal.version>3.2.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>9.4.9</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>9.4.10</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.3.0.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.3.0.Final</wildfly.openssl-linux.version>
@@ -199,7 +199,7 @@
         <log4j2-jboss-logmanager.version>2.0.1.Final</log4j2-jboss-logmanager.version>
         <log4j2-api.version>2.26.1</log4j2-api.version>
         <avro.version>1.12.2</avro.version>
-        <apicurio-registry.version>3.3.4</apicurio-registry.version>
+        <apicurio-registry.version>3.3.5</apicurio-registry.version>
         <testcontainers.version>2.0.5</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.7.1</docker-java.version> <!-- must be the version Testcontainers use: https://central.sonatype.com/artifact/org.testcontainers/testcontainers -->
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
@@ -3816,7 +3816,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-test-spring</artifactId>
+                <artifactId>quarkus-spring-test</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -7057,6 +7057,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-junit5</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-spring</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- End of Relocations, please put new extensions above this list -->

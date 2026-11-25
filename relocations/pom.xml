@@ -22,6 +22,7 @@
     -->
     <modules>
         <module>quarkus-junit5</module>
+        <module>quarkus-test-spring</module>
     </modules>
 
 </project>

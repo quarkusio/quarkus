@@ -78,6 +78,7 @@ import io.quarkus.runtime.ValueRegistryImpl;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -299,6 +300,9 @@ public class VertxHttpRecorder {
             // the server start to fail
             hotReplacementHandler = prevHotReplacementHandler;
         }
+        // The Vert.x threads still have the classloader of the failed application, which is closed and has no
+        // configuration registered, so switch them to the current one, the base runtime classloader
+        VertxCoreRecorder.tryCleanTccl();
         Supplier<Vertx> supplier = VertxCoreRecorder.getVertx();
         Vertx vertx;
         SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
@@ -317,6 +321,9 @@ public class VertxHttpRecorder {
                 .withMapping(ThreadPoolConfig.class)
                 .withMapping(LiveReloadConfig.class)
                 .build();
+        // Register the configuration for the current classloader, so it is available to the Vert.x threads. The next
+        // successful start releases it when installing its own configuration
+        QuarkusConfigFactory.setConfig(config);
         if (supplier == null) {
             VertxConfiguration vertxConfiguration = config.getConfigMapping(VertxConfiguration.class);
             ThreadPoolConfig threadPoolConfig = config.getConfigMapping(ThreadPoolConfig.class);

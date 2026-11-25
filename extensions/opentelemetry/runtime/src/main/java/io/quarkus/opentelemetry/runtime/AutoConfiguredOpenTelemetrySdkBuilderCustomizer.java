@@ -6,6 +6,7 @@ import static java.util.Collections.emptyList;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
@@ -98,19 +99,56 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         }
     }
 
+    /**
+     * Makes an explicitly configured service name outrank the one the SDK resolves on its own.
+     * <p>
+     * {@code OTEL_SERVICE_NAME} would otherwise beat {@code quarkus.otel.service.name}.
+     * {@code addPropertiesCustomizer} is applied after the SDK has read its own sources and is the
+     * only hook that can override them.
+     * <p>
+     * Nothing is written when the user configured no service name: the forwarded properties already
+     * carry the application name default, and leaving it to be overridden is what lets a bare
+     * {@code OTEL_SERVICE_NAME} still win.
+     */
+    @Singleton
+    final class ServiceNameCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+
+        private final ApplicationConfig appConfig;
+        private final OTelRuntimeConfig oTelRuntimeConfig;
+
+        public ServiceNameCustomizer(ApplicationConfig appConfig, OTelRuntimeConfig oTelRuntimeConfig) {
+            this.appConfig = appConfig;
+            this.oTelRuntimeConfig = oTelRuntimeConfig;
+        }
+
+        @Override
+        public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
+            String serviceName = ResourceConfigReconciler.resolveServiceName(
+                    oTelRuntimeConfig.serviceName().orElse(null),
+                    oTelRuntimeConfig.resourceAttributes().orElse(emptyList()),
+                    appConfig.name().orElse("unset"));
+            if (serviceName == null) {
+                return;
+            }
+            builder.addPropertiesCustomizer(new Function<ConfigProperties, Map<String, String>>() {
+                @Override
+                public Map<String, String> apply(ConfigProperties configProperties) {
+                    return Map.of(ResourceConfigReconciler.OTEL_SERVICE_NAME, serviceName);
+                }
+            });
+        }
+    }
+
     @Singleton
     final class ResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
-        private final ApplicationConfig appConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final Instance<DelayedAttributes> delayedAttributes;
         private final List<Resource> resources;
 
-        public ResourceCustomizer(ApplicationConfig appConfig,
-                OTelRuntimeConfig oTelRuntimeConfig,
+        public ResourceCustomizer(OTelRuntimeConfig oTelRuntimeConfig,
                 @Any Instance<DelayedAttributes> delayedAttributes,
                 @All List<Resource> resources) {
-            this.appConfig = appConfig;
             this.oTelRuntimeConfig = oTelRuntimeConfig;
             this.delayedAttributes = delayedAttributes;
             this.resources = resources;
@@ -121,20 +159,11 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             builder.addResourceCustomizer(new BiFunction<>() {
                 @Override
                 public Resource apply(Resource existingResource, ConfigProperties configProperties) {
+                    // The service name is resolved before the SDK builds the resource, in
+                    // ResourceConfigReconciler. Writing it again here would drop the service resource
+                    // entity.
                     Resource consolidatedResource = existingResource.merge(
                             Resource.create(delayedAttributes.get()));
-
-                    // if user explicitly set 'otel.service.name', make sure we don't override it with defaults
-                    // inside resource customizer
-                    String serviceName = oTelRuntimeConfig
-                            .serviceName()
-                            .filter(new Predicate<String>() {
-                                @Override
-                                public boolean test(String sn) {
-                                    return !sn.equals(appConfig.name().orElse("unset"));
-                                }
-                            })
-                            .orElse(null);
 
                     String hostname = HostName.getHostName();
 
@@ -143,7 +172,6 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             .reduce(Resource.empty(), Resource::merge)
                             .merge(TracerUtil.mapResourceAttributes(
                                     oTelRuntimeConfig.resourceAttributes().orElse(emptyList()),
-                                    serviceName, // from properties
                                     hostname));
                     return consolidatedResource.merge(resource);
                 }

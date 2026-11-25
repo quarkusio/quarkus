@@ -72,6 +72,23 @@ public class IfSectionTest {
     }
 
     @Test
+    public void testAndShortCircuitFollowedByOr() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("OK", engine.parse("{#if false && true || true}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if false && true && true || true}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if false and true or true}OK{#else}NOK{/if}").render());
+        assertEquals("NOK", engine.parse("{#if false && true || false}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if false && true || true && true}OK{#else}NOK{/if}").render());
+        assertEquals("NOK", engine.parse("{#if false && true || true && false}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if false || false && true || true}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true || false && false}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if a && b || c}OK{#else}NOK{/if}")
+                .data("a", false).data("b", true).data("c", true).render());
+        assertEquals("OK", engine.parse("{#if false}NOK{#else if a && b || c}OK{#else}NOK{/if}")
+                .data("a", false).data("b", true).data("c", true).render());
+    }
+
+    @Test
     public void testCompositeParameters() {
         Engine engine = Engine.builder().addDefaults().build();
         assertEquals("OK", engine.parse("{#if (true || false) && true}OK{/if}").render());

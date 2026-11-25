@@ -1,15 +1,19 @@
 package io.quarkus.it.opentelemetry.reactive;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
@@ -82,6 +86,13 @@ public class ReactiveResource {
                 client.helloGet("Goku"),
                 client.helloGetUniExecutor())
                 .with((s, s2, s3, s4) -> s + " and " + s2 + " and " + s3 + " and " + s4);
+    }
+
+    @POST
+    @Path("/stream")
+    @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+    public byte[] stream(InputStream body) throws IOException {
+        return body.readAllBytes();
     }
 
     @POST

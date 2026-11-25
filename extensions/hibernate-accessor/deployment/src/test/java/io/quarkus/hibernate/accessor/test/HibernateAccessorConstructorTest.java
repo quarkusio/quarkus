@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 
+import org.hibernate.accessor.AccessorException;
 import org.hibernate.accessor.AccessorFactory;
 import org.hibernate.accessor.Instantiator;
 import org.hibernate.accessor.ValueReader;
@@ -26,14 +27,14 @@ public class HibernateAccessorConstructorTest extends HibernateAccessorBaseTest 
         AccessorFactory factory = loadGeneratedFactory();
         Instantiator<ConstructorEntity> noArgs = factory.instantiator(ConstructorEntity.class.getDeclaredConstructor());
         assertThatThrownBy(() -> noArgs.create("extra"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(AccessorException.class);
         Instantiator<ConstructorEntity> constructor = factory.instantiator(
                 ConstructorEntity.class.getDeclaredConstructor(String.class, int.class));
         assertThat(constructor.create("widened", (byte) 7).getValue()).isEqualTo(7);
         assertThatThrownBy(() -> constructor.create("missing"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(AccessorException.class);
         assertThatThrownBy(() -> constructor.create("extra", 1, 2))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(AccessorException.class);
     }
 
     @Test

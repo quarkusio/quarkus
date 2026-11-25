@@ -23,9 +23,11 @@ import io.quarkus.opentelemetry.runtime.tracing.instrumentation.grpc.GrpcTracing
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.reactivemessaging.ReactiveMessagingTracingIncomingDecorator;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.reactivemessaging.ReactiveMessagingTracingOutgoingDecorator;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.restclient.OpenTelemetryClientFilter;
+import io.quarkus.opentelemetry.runtime.tracing.instrumentation.restclient.OpenTelemetryReactiveClientContextFilter;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.resteasy.AttachExceptionHandler;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.resteasy.OpenTelemetryClassicServerFilter;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.resteasy.OpenTelemetryReactiveServerFilter;
+import io.quarkus.rest.client.reactive.spi.ClientRequestFilterBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.KnownServerRestHandlerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.PreExceptionMapperHandlerBuildItem;
@@ -95,6 +97,23 @@ public class InstrumentationProcessor {
                 && config.instrument().resteasyClient()) {
             additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryClientFilter.class.getName()));
             additionalBeans.produce(new AdditionalBeanBuildItem(OpenTelemetryClientFilter.class));
+        }
+    }
+
+    /**
+     * With the Quarkus REST Client the span is created by the Vert.x tracer: this request filter only hands the caller's
+     * OpenTelemetry context over to the Vert.x context of the invocation.
+     */
+    @BuildStep
+    void registerRestClientReactiveContextFilter(
+            Capabilities capabilities,
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
+            BuildProducer<ClientRequestFilterBuildItem> clientRequestFilters) {
+        if (capabilities.isPresent(Capability.REST_CLIENT_REACTIVE)) {
+            additionalIndexed.produce(
+                    new AdditionalIndexedClassesBuildItem(OpenTelemetryReactiveClientContextFilter.class.getName()));
+            clientRequestFilters
+                    .produce(new ClientRequestFilterBuildItem(OpenTelemetryReactiveClientContextFilter.class.getName()));
         }
     }
 

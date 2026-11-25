@@ -71,7 +71,11 @@ case "$(uname -s)" in
     os=linux
     if [ -f /etc/alpine-release ]; then
       os=alpine-linux
-      javaVersion=16
+      libc_type=musl
+      # Alpine Linux does not work below Java 16
+      if [[ -z "${javaVersion}" || "${javaVersion}" -lt 16 ]]; then
+        javaVersion=17
+      fi
     fi
     ;;
   Darwin*)
@@ -101,13 +105,7 @@ case "$(uname -m)" in
   s390x)
     arch=s390x;;
   arm64)
-    if [ "$os" = "mac" ]; then
-      arch=arm64
-      ## force use of 17 as 11 not yet available https://github.com/adoptium/adoptium/issues/96
-      javaVersion=17
-    else
-      arch=arm64
-    fi
+    arch=arm64
     ;;
   *)
     ## AIX gives a machine ID for `uname -m` but it only supports ppc64
@@ -200,7 +198,7 @@ if [[ -z "$JAVA_EXEC" ]]; then
       fi
       mkdir -p "$TDIR/jdks"
       echo "Downloading JDK $javaVersion. Be patient, this can take several minutes..." 1>&2
-      jdkurl="https://api.foojay.io/disco/v2.0/directuris?distro=$distro&javafx_bundled=false&libc_type=$libc_type&archive_type=$file_type&operating_system=$os&package_type=jdk&version=$javaVersion&release_status=$release&architecture=$arch&latest=available"
+      jdkurl="https://api.foojay.io/disco/v3.0/directuris?distro=$distro&javafx_bundled=false&libc_type=$libc_type&archive_type=$file_type&operating_system=$os&package_type=jdk&version=$javaVersion&release_status=$release&architecture=$arch&latest=available"
       download "$jdkurl" "$TDIR/bootstrap-jdk.$file_type"
       if [ $retval -ne 0 ]; then echo "Error downloading JDK" 1>&2; exit $retval; fi
       echo "Installing JDK $javaVersion..." 1>&2

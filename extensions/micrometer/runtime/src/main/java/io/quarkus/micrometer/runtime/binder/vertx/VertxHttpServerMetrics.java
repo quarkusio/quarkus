@@ -208,7 +208,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
             Timer.Sample sample = requestMetric.getSample();
 
             Tags originalTags = Tags.of(
-                    VertxMetricsTags.method(requestMetric.request().method()),
+                    VertxMetricsTags.method(requestMetric.httpRequest().method()),
                     HttpCommonTags.uri(path, requestMetric.getInitialPath(), 0, false),
                     Outcome.CLIENT_ERROR.asTag(),
                     HttpCommonTags.STATUS_RESET);

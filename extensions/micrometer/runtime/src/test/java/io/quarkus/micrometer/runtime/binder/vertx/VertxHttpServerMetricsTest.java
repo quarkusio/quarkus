@@ -1,13 +1,24 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
+import java.util.Collections;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
+import io.quarkus.micrometer.runtime.export.exemplars.OpenTelemetryContextUnwrapper;
+import io.quarkus.micrometer.runtime.meters.Gauges;
+import io.vertx.core.Context;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerConfig;
 import io.vertx.core.internal.http.HttpServerRequestInternal;
+import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.ext.web.RoutingContext;
 
 public class VertxHttpServerMetricsTest {
@@ -54,6 +65,48 @@ public class VertxHttpServerMetricsTest {
         Assertions.assertEquals("/item/{id}", requestMetric.applyTemplateMatching("/"));
         // Make sure conversion is cached
         Assertions.assertEquals("/item/{id}", HttpRequestMetric.vertxWebToUriTemplate.get("/item/:id"));
+    }
+
+    @Test
+    public void testRequestResetWithNonInternalHttpRequest() {
+        HttpRequest httpReq = Mockito.mock(HttpRequest.class);
+        Mockito.when(httpReq.method()).thenReturn(HttpMethod.GET);
+        Mockito.when(httpReq.uri()).thenReturn("/test");
+
+        LongAdder activeRequests = new LongAdder();
+        HttpRequestMetric metric = new HttpRequestMetric(httpReq, activeRequests);
+        Assertions.assertNull(metric.request(), "request() must be null for non-internal HttpRequest");
+        Assertions.assertNotNull(metric.httpRequest());
+
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+        HttpBinderConfiguration config = Mockito.mock(HttpBinderConfiguration.class);
+        Mockito.when(config.getHttpServerActiveRequestsName()).thenReturn("http.server.active.requests");
+        Mockito.when(config.getHttpServerRequestsName()).thenReturn("http.server.requests");
+        Mockito.when(config.getHttpServerWebSocketConnectionsName()).thenReturn("http.server.websocket.connections");
+        Mockito.when(config.getHttpServerPushName()).thenReturn("http.server.push");
+        Mockito.when(config.getServerMatchPatterns()).thenReturn(Collections.emptyMap());
+        Mockito.when(config.getServerIgnorePatterns()).thenReturn(Collections.emptyList());
+
+        OpenTelemetryContextUnwrapper unwrapper = new OpenTelemetryContextUnwrapper() {
+            @Override
+            public <P, R> R executeInContext(Function<P, R> fn, P param, Context ctx) {
+                return fn.apply(param);
+            }
+        };
+        VertxHttpServerMetrics serverMetrics = new VertxHttpServerMetrics(
+                registry, config, unwrapper,
+                new HttpServerConfig(), Gauges.longAdder());
+
+        metric.setSample(Timer.start(registry));
+        metric.requestStarted();
+
+        serverMetrics.requestReset(metric);
+
+        Assertions.assertEquals(0, activeRequests.sum(), "activeRequests must be decremented after reset");
+        Timer timer = registry.find("http.server.requests").tag("method", "GET").timer();
+        Assertions.assertNotNull(timer, "timer must be recorded with method tag from httpRequest()");
+        Assertions.assertEquals(1, timer.count());
     }
 
 }

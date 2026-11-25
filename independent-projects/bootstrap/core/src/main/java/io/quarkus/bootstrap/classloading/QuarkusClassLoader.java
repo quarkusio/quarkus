@@ -7,7 +7,6 @@ import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.ProtectionDomain;
@@ -167,18 +166,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private volatile MemoryClassPathElement transformedClasses;
     private volatile ClassPathResourceIndex classPathResourceIndex;
     private final List<Runnable> closeTasks = new ArrayList<>();
-
-    static final ClassLoader PLATFORM_CLASS_LOADER;
-
-    static {
-        ClassLoader cl = null;
-        try {
-            cl = (ClassLoader) ClassLoader.class.getDeclaredMethod("getPlatformClassLoader").invoke(null);
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-
-        }
-        PLATFORM_CLASS_LOADER = cl;
-    }
 
     private volatile byte status;
     private volatile boolean driverLoaded;

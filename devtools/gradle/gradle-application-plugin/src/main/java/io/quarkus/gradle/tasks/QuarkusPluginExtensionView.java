@@ -7,7 +7,6 @@ import static org.gradle.api.tasks.SourceSet.MAIN_SOURCE_SET_NAME;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -25,7 +24,6 @@ import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.process.JavaForkOptions;
-import org.gradle.util.GradleVersion;
 
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 
@@ -53,43 +51,29 @@ public abstract class QuarkusPluginExtensionView {
         getMainResources().setFrom(project.getExtensions().getByType(SourceSetContainer.class).getByName(MAIN_SOURCE_SET_NAME)
                 .getResources().getSourceDirectories());
         getQuarkusBuildProperties().set(extension.getQuarkusBuildProperties());
-        getQuarkusRelevantProjectProperties().set(getQuarkusRelevantProjectProperties(project));
+        getQuarkusRelevantProjectProperties().set(quarkusRelevantProjectProperties());
         getQuarkusProfileSystemVariable().set(getProviderFactory().systemProperty(QUARKUS_PROFILE));
         getQuarkusProfileEnvVariable().set(getProviderFactory().environmentVariable("QUARKUS_PROFILE"));
         getCachingRelevantProperties().set(extension.getCachingRelevantProperties());
         getForcedProperties().set(extension.forcedPropertiesProperty());
-        getProjectProperties().set(getQuarkusAndPlatformProjectProperties(project));
+        getProjectProperties().set(quarkusAndPlatformProjectProperties());
     }
 
-    private Provider<Map<String, String>> getQuarkusAndPlatformProjectProperties(Project project) {
-        if (GradleVersion.current().compareTo(GradleVersion.version("8.0")) >= 0) {
-            // gradlePropertiesPrefixedBy is configuration-cache and Isolated-Projects friendly, unlike
-            // Project.getProperties() which is not allowed under Isolated Projects.
-            return getProviderFactory().gradlePropertiesPrefixedBy("quarkus.")
-                    .zip(getProviderFactory().gradlePropertiesPrefixedBy("platform.quarkus."),
-                            (quarkus, platform) -> {
-                                Map<String, String> merged = new HashMap<>(quarkus);
-                                merged.putAll(platform);
-                                return merged;
-                            });
-        } else {
-            return getProviderFactory().provider(() -> project.getProperties().entrySet().stream()
-                    .filter(e -> e.getValue() != null
-                            && (e.getKey().startsWith("quarkus.") || e.getKey().startsWith("platform.quarkus.")))
-                    .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString())));
-        }
+    private Provider<Map<String, String>> quarkusAndPlatformProjectProperties() {
+        // gradlePropertiesPrefixedBy is configuration-cache and Isolated-Projects friendly, unlike
+        // Project.getProperties() which is not allowed under Isolated Projects.
+        return getProviderFactory().gradlePropertiesPrefixedBy("quarkus.")
+                .zip(getProviderFactory().gradlePropertiesPrefixedBy("platform.quarkus."),
+                        (quarkus, platform) -> {
+                            Map<String, String> merged = new HashMap<>(quarkus);
+                            merged.putAll(platform);
+                            return merged;
+                        });
     }
 
-    private Provider<Map<String, String>> getQuarkusRelevantProjectProperties(Project project) {
-        if (GradleVersion.current().compareTo(GradleVersion.version("8.0")) >= 0) {
-            // This is more efficient, i.e.: configuration cache is invalidated only when quarkus properties change
-            return getProviderFactory().gradlePropertiesPrefixedBy("quarkus.");
-        } else {
-            return getProviderFactory().provider(() -> project.getProperties().entrySet().stream()
-                    .filter(e -> e.getValue() != null)
-                    .map(e -> Map.entry(e.getKey(), e.getValue().toString()))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-        }
+    private Provider<Map<String, String>> quarkusRelevantProjectProperties() {
+        // This is more efficient, i.e.: configuration cache is invalidated only when quarkus properties change
+        return getProviderFactory().gradlePropertiesPrefixedBy("quarkus.");
     }
 
     @Inject

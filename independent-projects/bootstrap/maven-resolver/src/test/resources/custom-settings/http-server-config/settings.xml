@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">
+  <servers>
+    <server>
+      <id>custom-repo</id>
+      <configuration>
+        <httpHeaders>
+          <property>
+            <name>X-Custom-Header</name>
+            <value>custom-value</value>
+          </property>
+        </httpHeaders>
+        <connectTimeout>1234</connectTimeout>
+        <requestTimeout>5678</requestTimeout>
+      </configuration>
+    </server>
+  </servers>
+</settings>

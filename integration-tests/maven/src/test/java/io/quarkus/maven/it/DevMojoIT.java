@@ -182,7 +182,10 @@ public class DevMojoIT extends LaunchMojoTestBase {
     @Test
     public void testPropertyOverridesTest() throws MavenInvocationException, IOException {
         testDir = getTargetDir("projects/property-overrides");
-        runAndCheck("-Dlocal-dep.version=1.0-SNAPSHOT");
+        // Starting from 3.10, Maven does not interpolate imported BOMs, including those from the reactor, with
+        // user and system properties, unless maven.model.dependencyInterpolation.full is enabled.
+        // Older Maven versions ignore this property.
+        runAndCheck("-Dlocal-dep.version=1.0-SNAPSHOT", "-Dmaven.model.dependencyInterpolation.full=true");
     }
 
     @Test

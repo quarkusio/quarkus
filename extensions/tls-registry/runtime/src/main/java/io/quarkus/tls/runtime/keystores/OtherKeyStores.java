@@ -87,13 +87,13 @@ public class OtherKeyStores {
             byte[] data = read(config.path().get());
             String password = CredentialProviders.getTrustStorePassword(config.password(), tsc.credentialsProvider())
                     .orElse(null);
-            if (password == null) {
+            if (password == null && tsc.credentialsProvider().name().isPresent()) {
                 throw new IllegalStateException("Invalid trust store configuration for certificate '" + name
                         + "' - the trust store password is not set and cannot be retrieved from the credential provider.");
             }
 
             KeyStore ks = getInstance(config.type(), config.provider());
-            ks.load(new ByteArrayInputStream(data), password.toCharArray());
+            ks.load(new ByteArrayInputStream(data), password == null ? null : password.toCharArray());
 
             KeyStoreOptions options = new KeyStoreOptions();
             options.setType(config.type());
@@ -101,7 +101,9 @@ public class OtherKeyStores {
                 options.setProvider(config.provider().get());
             }
             options.setValue(Buffer.buffer(data));
-            options.setPassword(password);
+            if (password != null) {
+                options.setPassword(password);
+            }
             if (config.alias().isPresent()) {
                 options.setAlias(config.alias().get());
             }

@@ -243,7 +243,7 @@ The `@Transactional` interceptor will:
 
 [IMPORTANT]
 ====
-There are some limitations when using `@Transactional` with Hibernate Reactive, in particular not being able to use a specific `TxType`, not being able to use more than one persistence unit or data source in the same transaction, or non-functional `Uni.combine()`/`Uni.joining()`.
+There are some limitations when using `@Transactional` with Hibernate Reactive, in particular not being able to use a specific `TxType`, not being able to use more than one persistence unit or data source in the same transaction, or non-functional `Uni.combine()`/`Uni.join()`.
 
 See <<hr-limitations>> for more information.
 ====

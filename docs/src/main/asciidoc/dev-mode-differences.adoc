@@ -109,6 +109,18 @@ Since optimal performance is never an objective of dev mode, in the interest of 
 Perhaps the most important reason why dev mode applications should not be run in production is that the dev mode allows reading information that could be confidential (via the Dev-UI)
 while also giving access to operations that could be destructive (either by exposing endpoints that should not be available in production application or via the Dev-UI).
 
+[IMPORTANT]
+====
+Dev mode is designed for local development only and is not meant to be accessed across the network.
+Its security relies on the application listening on a local loopback address, such as `localhost` or `127.0.0.1`, and on you accessing it from a browser, where Quarkus enforces CORS and checks that the HTTP `Host` header contains a local address for the dev mode endpoints.
+
+These protections no longer apply if you make the dev mode application reachable from other machines, for example, by setting `quarkus.http.host=0.0.0.0`, or by opening it up through a firewall or the networking options of a system such as WSL.
+In such a setup, anyone who can reach the application over the network may be able to access the dev mode endpoints, and Quarkus cannot protect against it.
+
+Be careful when enabling network access to a dev mode application, and do it only in an environment that you trust.
+If you need to work with an application that runs on another machine or in a container, prefer the xref:maven-tooling.adoc#remote-development-mode[remote development mode].
+====
+
 == Native executable
 
 When a native executable is created (explained in detail xref:building-native-image.adoc[here]), it is *always* built from a production application.

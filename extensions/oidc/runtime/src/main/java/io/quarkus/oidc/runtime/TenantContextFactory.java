@@ -47,8 +47,7 @@ import io.vertx.core.json.JsonObject;
 
 final class TenantContextFactory {
 
-    static volatile boolean userInfoInjectionPointDetected = false;
-
+    final boolean userInfoInjectionPointDetected;
     private final Set<String> tenantsExpectingServerAvailableEvents;
     private final Vertx vertx;
     private final OidcTlsSupport tlsSupport;
@@ -58,13 +57,14 @@ final class TenantContextFactory {
 
     TenantContextFactory(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, boolean securityEventsEnabled,
             ProxyConfigurationRegistry proxyConfigurationRegistry,
-            Set<OidcRoute> allowedRoutes) {
+            Set<OidcRoute> allowedRoutes, boolean userInfoInjectionPointDetected) {
         this.vertx = vertx;
         this.tlsSupport = OidcTlsSupport.of(tlsConfigurationRegistry);
         this.securityEventsEnabled = securityEventsEnabled;
         this.tenantsExpectingServerAvailableEvents = ConcurrentHashMap.newKeySet();
         this.proxyConfigurationRegistry = proxyConfigurationRegistry;
         this.allowedRoutes = allowedRoutes;
+        this.userInfoInjectionPointDetected = userInfoInjectionPointDetected;
     }
 
     TenantConfigContext createDefaultTenantConfig(Map<String, OidcTenantConfig> staticTenants, OidcTenantConfig defaultTenant) {
@@ -138,14 +138,16 @@ final class TenantContextFactory {
                                         + " Access to resources protected by this tenant may fail"
                                         + " if OIDC server will not become available",
                                         tenantId, t.getMessage());
-                                return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator);
+                                return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator,
+                                        userInfoInjectionPointDetected);
                             }
                             logTenantConfigContextFailure(t, tenantId);
                             if (t instanceof ConfigurationException
                                     && !oidcConfig.authServerUrl().isPresent()
                                     && LaunchMode.DEVELOPMENT == LaunchMode.current()) {
                                 // Let it start if it is a DEV mode and auth-server-url has not been configured yet
-                                return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator);
+                                return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator,
+                                        userInfoInjectionPointDetected);
                             }
                             // fail in all other cases
                             throw new OIDCException(t);
@@ -156,7 +158,7 @@ final class TenantContextFactory {
             LOG.warnf("Tenant '%s': OIDC server is not available after a %d seconds timeout, an attempt to connect will be made"
                     + " during the first request. Access to resources protected by this tenant may fail if OIDC server"
                     + " will not become available", tenantId, oidcConfig.connectionTimeout().getSeconds());
-            return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator);
+            return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator, userInfoInjectionPointDetected);
         }
     }
 
@@ -188,7 +190,8 @@ final class TenantContextFactory {
 
         if (!oidcConfig.tenantEnabled()) {
             LOG.debugf("'%s' tenant configuration is disabled", tenantId);
-            return TenantConfigContext.createReady(new OidcProvider(null, null, null), oidcConfig);
+            return TenantConfigContext.createReady(new OidcProvider(null, null, null), oidcConfig,
+                    userInfoInjectionPointDetected);
         }
 
         if (oidcConfig.authServerUrl().isEmpty()) {
@@ -395,7 +398,8 @@ final class TenantContextFactory {
             }
         }
 
-        return createOidcProvider(oidcConfig).flatMap(p -> TenantConfigContext.createReady(p, oidcConfig));
+        return createOidcProvider(oidcConfig)
+                .flatMap(p -> TenantConfigContext.createReady(p, oidcConfig, userInfoInjectionPointDetected));
     }
 
     private void verifyAllowedRoutes(OidcTenantConfig oidcConfig, String tenantId) {
@@ -556,7 +560,8 @@ final class TenantContextFactory {
         LOG.debug("'public-key' property for the local token verification is set,"
                 + " no connection to the OIDC server will be created");
 
-        return TenantConfigContext.createReady(new OidcProvider(oidcConfig.publicKey().get(), oidcConfig), oidcConfig);
+        return TenantConfigContext.createReady(new OidcProvider(oidcConfig.publicKey().get(), oidcConfig), oidcConfig,
+                userInfoInjectionPointDetected);
     }
 
     private Uni<TenantConfigContext> createTenantContextToVerifyCertChain(OidcTenantConfig oidcConfig) {
@@ -565,7 +570,7 @@ final class TenantContextFactory {
                     "Currently only 'service' applications can be used to verify tokens with inlined certificate chains");
         }
 
-        return TenantConfigContext.createReady(new OidcProvider(null, oidcConfig), oidcConfig);
+        return TenantConfigContext.createReady(new OidcProvider(null, oidcConfig), oidcConfig, userInfoInjectionPointDetected);
     }
 
     private OIDCException toOidcException(Throwable cause, String authServerUrl, String tenantId) {

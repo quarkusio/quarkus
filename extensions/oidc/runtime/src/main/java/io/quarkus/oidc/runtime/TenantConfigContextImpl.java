@@ -69,11 +69,12 @@ final class TenantConfigContextImpl implements TenantConfigContext {
 
     private final boolean ready;
 
-    TenantConfigContextImpl(OidcProvider provider, OidcTenantConfig config, boolean ready, Credentials credentials) {
+    TenantConfigContextImpl(OidcProvider provider, OidcTenantConfig config, boolean ready, Credentials credentials,
+            boolean userInfoInjectionPointDetected) {
         this.provider = provider;
         this.originalConfig = config;
         this.oidcConfig = OidcUtils.resolveUserInfoRequired(config, provider == null ? null : provider.getMetadata(),
-                TenantContextFactory.userInfoInjectionPointDetected);
+                userInfoInjectionPointDetected);
         this.redirectFilters = getRedirectFiltersMap(TenantFeatureFinder.find(config, OidcRedirectFilter.class));
         this.ready = ready;
 
@@ -90,10 +91,11 @@ final class TenantConfigContextImpl implements TenantConfigContext {
         }
     }
 
-    TenantConfigContextImpl(TenantConfigContext tenantConfigContext, OidcTenantConfig oidcConfig) {
+    TenantConfigContextImpl(TenantConfigContext tenantConfigContext, OidcTenantConfig oidcConfig,
+            boolean userInfoInjectionPointDetected) {
         this.originalConfig = oidcConfig;
         this.oidcConfig = OidcUtils.resolveUserInfoRequired(oidcConfig, tenantConfigContext.getOidcMetadata(),
-                TenantContextFactory.userInfoInjectionPointDetected);
+                userInfoInjectionPointDetected);
         this.ready = tenantConfigContext.ready();
         this.provider = tenantConfigContext.provider();
         this.sessionCookieEncryptionKey = tenantConfigContext.getSessionCookieEncryptionKey();
@@ -348,7 +350,8 @@ final class TenantConfigContextImpl implements TenantConfigContext {
             SecretKey internalIdTokenSigningKey, Key tokenDecryptionKey) {
     }
 
-    static Uni<TenantConfigContext> createReady(OidcProvider provider, OidcTenantConfig config) {
+    static Uni<TenantConfigContext> createReady(OidcProvider provider, OidcTenantConfig config,
+            boolean userInfoInjectionPointDetected) {
         if (providerIsNoNull(provider)) {
             final Uni<Credentials> credentialsUni;
             if (provider.client != null) {
@@ -381,9 +384,11 @@ final class TenantConfigContextImpl implements TenantConfigContext {
                             }
                         });
             }
-            return credentialsUni.map(credentials -> new TenantConfigContextImpl(provider, config, true, credentials));
+            return credentialsUni.map(credentials -> new TenantConfigContextImpl(provider, config, true, credentials,
+                    userInfoInjectionPointDetected));
         } else {
-            return Uni.createFrom().item(new TenantConfigContextImpl(provider, config, true, null));
+            return Uni.createFrom()
+                    .item(new TenantConfigContextImpl(provider, config, true, null, userInfoInjectionPointDetected));
         }
     }
 

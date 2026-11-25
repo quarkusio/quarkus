@@ -1,27 +1,41 @@
 package io.quarkus.it.observation.micrometer.opentelemetry;
 
-import static io.restassured.RestAssured.get;
+import static io.opentelemetry.api.common.AttributeKey.stringKey;
+import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
 import static io.restassured.RestAssured.given;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
 
+import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
 public class ObservationMicrometerOtelTest {
 
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
+
     @BeforeEach
     void reset() {
         given().get("/reset").then().statusCode(200);
+        spanExporter().reset();
     }
 
     @Test
@@ -32,11 +46,9 @@ public class ObservationMicrometerOtelTest {
                 .statusCode(200)
                 .body(is("manual-result"));
 
-        List<Map<String, Object>> spans = getSpans(1);
-        Map<String, Object> span = findSpanByName(spans, "manual.operation");
-        assertThat(span).isNotNull();
-        Map attributes = (Map) span.get("attributes");
-        assertThat(attributes.get("operation.type")).isEqualTo("manual");
+        SpanDataList spans = getSpans(1);
+        SpanData span = spans.named("manual.operation").single();
+        assertThat(span).hasAttribute(stringKey("operation.type"), "manual");
 
         await().atMost(5, SECONDS).untilAsserted(() -> {
             long count = getTimerCount("manual.operation");
@@ -52,9 +64,8 @@ public class ObservationMicrometerOtelTest {
                 .statusCode(200)
                 .body(is("observed-result"));
 
-        List<Map<String, Object>> spans = getSpans(1);
-        Map<String, Object> span = findSpanByName(spans, "ObservedService#doWork");
-        assertThat(span).isNotNull();
+        SpanDataList spans = getSpans(1);
+        assertThat(spans.named("ObservedService#doWork")).hasSize(1);
 
         await().atMost(5, SECONDS).untilAsserted(() -> {
             long count = getTimerCount("doWork");
@@ -73,13 +84,9 @@ public class ObservationMicrometerOtelTest {
         return ((Number) points.get(0).get("count")).longValue();
     }
 
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> getSpans(int minCount) {
-        await().atMost(5, SECONDS).untilAsserted(() -> {
-            List<Map<String, Object>> result = get("/export").as(List.class);
-            assertThat(result).hasSizeGreaterThanOrEqualTo(minCount);
-        });
-        return get("/export").as(List.class);
+    private SpanDataList getSpans(int minCount) {
+        return spanExporter().awaitUntil("at least " + minCount + " spans", Duration.ofSeconds(5),
+                spans -> spans.size() >= minCount);
     }
 
     private List<Map<String, Object>> getMetrics(String metricName) {
@@ -88,13 +95,5 @@ public class ObservationMicrometerOtelTest {
                 .get("/export/metrics")
                 .body().as(new TypeRef<>() {
                 });
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> findSpanByName(List<Map<String, Object>> spans, String name) {
-        return spans.stream()
-                .filter(s -> name.equals(s.get("name")))
-                .findFirst()
-                .orElse(null);
     }
 }

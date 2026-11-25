@@ -67,16 +67,24 @@ public class CertificateUpdatedEventWithPeriodicReloadTest {
     File certs;
 
     @Test
-    void testPeriodicReloadFiresEvent() throws IOException {
+    void testPeriodicReloadFiresEventOnlyWhenCertificatesChange() throws IOException {
         TlsConfiguration def = registry.getDefault().orElseThrow();
-        assertThat(observer.events()).isEmpty();
+
+        // Reload periods during which nothing changed are silent
+        await().during(3, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS)
+                .until(() -> observer.events().isEmpty());
 
         Files.copy(new File("target/certs/test-periodic-event-B-keystore.p12").toPath(),
                 new File(certs, "/tls.p12").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        // A reload performed by someone else before the period must not hide the change from the observers
+        assertThat(def.reload()).isTrue();
 
         await().atMost(10, TimeUnit.SECONDS)
                 .pollInterval(500, TimeUnit.MILLISECONDS)
-                .untilAsserted(() -> assertThat(observer.events()).isNotEmpty());
+                .untilAsserted(() -> assertThat(observer.events()).hasSize(1));
+        // Notified once per rotation, not once per period
+        await().during(3, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS)
+                .until(() -> observer.events().size() == 1);
 
         CertificateUpdatedEvent event = observer.events().get(0);
         assertThat(event.name()).isEqualTo("<default>");

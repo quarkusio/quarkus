@@ -146,7 +146,8 @@ public interface TlsBucketConfig {
 
     /**
      * When configured, the server will reload the certificates (from the file system for example) and fires a
-     * {@link CertificateUpdatedEvent} if the reload is successful
+     * {@link CertificateUpdatedEvent} if the reloaded key store, trust store or certificate revocation list content
+     * differs from the one previously notified
      * <p>
      * This property configures the period to reload the certificates. IF not set, the certificates won't be reloaded
      * automatically.

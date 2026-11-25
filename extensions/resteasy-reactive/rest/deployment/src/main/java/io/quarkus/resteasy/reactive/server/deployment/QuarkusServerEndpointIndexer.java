@@ -1,5 +1,8 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LIST;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESPONSE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_RESPONSE;
 import static org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_READER;
 import static org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_WRITER;
 
@@ -162,7 +165,24 @@ public class QuarkusServerEndpointIndexer
 
     @Override
     public boolean additionalRegisterClassForReflectionCheck(ResourceMethodCallbackEntry entry) {
-        return checkBodyParameterMessageBodyReader(entry) || checkReturnTypeMessageBodyWriter(entry);
+        return checkBodyParameterMessageBodyReader(entry) || checkReturnTypeMessageBodyWriter(entry)
+                || checkMultipartListReturnType(entry);
+    }
+
+    /**
+     * Check whether the Resource Method produces {@code multipart/form-data} and may return a {@link List} entity.
+     * In this case the Resource Class needs to be registered for reflection because
+     * {@link org.jboss.resteasy.reactive.server.core.multipart.MultipartMessageBodyWriter} only accepts a {@link List}
+     * when the method declares {@code @Produces(MediaType.MULTIPART_FORM_DATA)}, and it reads the method annotations
+     * to find out.
+     */
+    private boolean checkMultipartListReturnType(ResourceMethodCallbackEntry entry) {
+        String[] produces = entry.getResourceMethod().getProduces();
+        if (produces == null || produces.length != 1 || !MediaType.MULTIPART_FORM_DATA.equals(produces[0])) {
+            return false;
+        }
+        DotName returnTypeName = getNonAsyncReturnType(entry.getMethodInfo().returnType()).name();
+        return RESPONSE.equals(returnTypeName) || REST_RESPONSE.equals(returnTypeName) || LIST.equals(returnTypeName);
     }
 
     /**

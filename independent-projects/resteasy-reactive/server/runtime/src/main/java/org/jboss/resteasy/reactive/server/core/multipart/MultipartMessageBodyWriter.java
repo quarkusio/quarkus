@@ -54,7 +54,7 @@ public class MultipartMessageBodyWriter implements ServerMessageBodyWriter<Objec
             return true;
         }
         if (isMultipartFormData(mediaType)) {
-            return annotationsContainMultipartProduces(annotations);
+            return !List.class.isAssignableFrom(type) || annotationsContainMultipartProduces(annotations);
         }
         return false;
     }
@@ -74,7 +74,7 @@ public class MultipartMessageBodyWriter implements ServerMessageBodyWriter<Objec
             return true;
         }
         if (isMultipartFormData(mediaType)) {
-            return methodProducesMultipart(target);
+            return !List.class.isAssignableFrom(type) || methodProducesMultipart(target);
         }
         return false;
     }

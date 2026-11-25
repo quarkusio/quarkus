@@ -1,43 +1,43 @@
 package io.quarkus.it.opentelemetry;
 
-import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
-import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.awaitility.Awaitility.await;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.URI;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-import io.restassured.common.mapper.TypeRef;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 
 public abstract class OpenTelemetryJdbcInstrumentationTest {
+
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
+
+    private static final AttributeKey<String> DB_SYSTEM = AttributeKey.stringKey("db.system");
+    private static final AttributeKey<String> DB_OPERATION = AttributeKey.stringKey("db.operation");
+    private static final AttributeKey<String> DB_SQL_TABLE = AttributeKey.stringKey("db.sql.table");
 
     @BeforeEach
     @AfterEach
     void reset() {
-        given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(30, SECONDS).until(() -> {
-            // make sure spans are cleared
-            List<Map<String, Object>> spans = getSpans();
-            if (spans.size() > 0) {
-                given().get("/reset").then().statusCode(HTTP_OK);
-            }
-            return spans.size() == 0;
-        });
-    }
-
-    private List<Map<String, Object>> getSpans() {
-        return get("/export").body().as(new TypeRef<>() {
-        });
+        // make sure spans are cleared
+        spanExporter().reset();
     }
 
     protected void testQueryTraced(String dbKind, String expectedTable) {
@@ -49,19 +49,16 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
                 .body("message", Matchers.equalTo("Hit message."));
 
         Awaitility.await().atMost(Duration.ofSeconds(55)).untilAsserted(() -> {
-            assertFalse(getSpans().isEmpty());
+            assertFalse(spanExporter().fetch().isEmpty());
 
             // Assert insert has been traced
             boolean hitInserted = false;
-            for (Map<String, Object> spanData : getSpans()) {
-                if (spanData.get("attributes") instanceof Map) {
-                    final Map attributes = (Map) spanData.get("attributes");
-                    var dbOperation = attributes.get("db.operation");
-                    var dbTable = attributes.get("db.sql.table");
-                    if ("INSERT".equals(dbOperation) && expectedTable.equals(dbTable)) {
-                        hitInserted = true;
-                        break;
-                    }
+            for (SpanData span : spanExporter().fetch()) {
+                var dbOperation = span.getAttributes().get(DB_OPERATION);
+                var dbTable = span.getAttributes().get(DB_SQL_TABLE);
+                if ("INSERT".equals(dbOperation) && expectedTable.equals(dbTable)) {
+                    hitInserted = true;
+                    break;
                 }
             }
             assertTrue(hitInserted, "JDBC insert statement was not traced.");
@@ -77,7 +74,7 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
                 .body("message", Matchers.equalTo("Hit message."));
 
         Awaitility.await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
-            assertTrue(getSpans().isEmpty(), "No spans should be recorded when OpenTelemetry is disabled.");
+            assertTrue(spanExporter().fetch().isEmpty(), "No spans should be recorded when OpenTelemetry is disabled.");
         });
     }
 
@@ -90,19 +87,15 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
                 .body("message", Matchers.equalTo("Hit message."));
 
         Awaitility.await().atMost(Duration.ofSeconds(55)).untilAsserted(() -> {
-            List<Map<String, Object>> spans = getSpans();
+            SpanDataList spans = spanExporter().fetch();
             assertFalse(spans.isEmpty());
 
             // Verify no connection acquisition span is present (only statement spans with db.operation)
-            for (Map<String, Object> spanData : spans) {
-                if (spanData.get("attributes") instanceof Map) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> attributes = (Map<String, Object>) spanData.get("attributes");
-                    if (attributes.containsKey("db.system") && !attributes.containsKey("db.operation")) {
-                        throw new AssertionError(
-                                "Connection acquisition span should not be present when trace-connection is disabled. "
-                                        + "Span attributes: " + attributes);
-                    }
+            for (SpanData span : spans) {
+                if (isConnectionSpan(span)) {
+                    throw new AssertionError(
+                            "Connection acquisition span should not be present when trace-connection is disabled. "
+                                    + "SpanData attributes: " + span.getAttributes());
                 }
             }
         });
@@ -117,24 +110,25 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
                 .body("message", Matchers.equalTo("Hit message."));
 
         Awaitility.await().atMost(Duration.ofSeconds(55)).untilAsserted(() -> {
-            List<Map<String, Object>> spans = getSpans();
+            SpanDataList spans = spanExporter().fetch();
             assertFalse(spans.isEmpty());
 
             // Verify at least one connection acquisition span IS present
             // (has db.system but no db.operation)
             boolean connectionSpanFound = false;
-            for (Map<String, Object> spanData : spans) {
-                if (spanData.get("attributes") instanceof Map) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> attributes = (Map<String, Object>) spanData.get("attributes");
-                    if (attributes.containsKey("db.system") && !attributes.containsKey("db.operation")) {
-                        connectionSpanFound = true;
-                        break;
-                    }
+            for (SpanData span : spans) {
+                if (isConnectionSpan(span)) {
+                    connectionSpanFound = true;
+                    break;
                 }
             }
             assertTrue(connectionSpanFound,
                     "Connection acquisition span should be present when trace-connection is enabled.");
         });
+    }
+
+    private static boolean isConnectionSpan(SpanData span) {
+        Set<String> names = span.getAttributes().asMap().keySet().stream().map(AttributeKey::getKey).collect(toSet());
+        return names.contains(DB_SYSTEM.getKey()) && !names.contains(DB_OPERATION.getKey());
     }
 }

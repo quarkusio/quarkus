@@ -1,7 +1,6 @@
 package io.quarkus.it.opentelemetry;
 
 import static io.opentelemetry.sdk.metrics.data.MetricDataType.*;
-import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -9,6 +8,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.net.URI;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,27 +21,33 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.common.JdkUtil;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
 public class MetricsTest {
+
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
+
     @BeforeEach
     @AfterEach
     void reset() {
         await().atMost(5, SECONDS).until(() -> {
             // make sure spans are cleared
-            List<Map<String, Object>> spans = getSpans();
+            SpanDataList spans = spanExporter().fetch();
             if (!spans.isEmpty()) {
                 given().get("/reset").then().statusCode(HTTP_OK);
             }
             return spans.isEmpty();
-        });
-    }
-
-    private List<Map<String, Object>> getSpans() {
-        return get("/export").body().as(new TypeRef<>() {
         });
     }
 
@@ -65,8 +72,8 @@ public class MetricsTest {
                 .then()
                 .statusCode(200);
 
-        await().atMost(10, SECONDS).until(() -> getSpans().size() >= 2);
-        assertEquals(2, getSpans().size(), () -> "The spans are " + getSpans());
+        SpanDataList spans = spanExporter().awaitUntil("at least 2 spans", Duration.ofSeconds(10), s -> s.size() >= 2);
+        assertThat(spans).hasSize(2);
         await().atMost(10, SECONDS).until(() -> getMetrics("direct-trace-counter").size() > 2);
 
         List<Map<String, Object>> metrics = getMetrics("direct-trace-counter");

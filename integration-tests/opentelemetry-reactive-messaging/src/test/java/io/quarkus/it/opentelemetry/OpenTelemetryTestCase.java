@@ -1,24 +1,35 @@
 package io.quarkus.it.opentelemetry;
 
+import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessageOperation.PUBLISH;
-import static io.restassured.RestAssured.get;
+import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
+import static io.opentelemetry.semconv.ClientAttributes.CLIENT_ADDRESS;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_ADDRESS;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_NAME;
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_VERSION;
+import static io.opentelemetry.semconv.TelemetryAttributes.TELEMETRY_SDK_LANGUAGE;
+import static io.opentelemetry.semconv.TelemetryAttributes.TELEMETRY_SDK_NAME;
+import static io.opentelemetry.semconv.TelemetryAttributes.TELEMETRY_SDK_VERSION;
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
+import static io.opentelemetry.semconv.UrlAttributes.URL_SCHEME;
+import static io.opentelemetry.semconv.UserAgentAttributes.USER_AGENT_ORIGINAL;
+import static io.opentelemetry.semconv.incubating.MessagingIncubatingAttributes.MESSAGING_CLIENT_ID;
+import static io.opentelemetry.semconv.incubating.MessagingIncubatingAttributes.MESSAGING_CONSUMER_GROUP_NAME;
+import static io.opentelemetry.semconv.incubating.MessagingIncubatingAttributes.MESSAGING_DESTINATION_NAME;
+import static io.opentelemetry.semconv.incubating.MessagingIncubatingAttributes.MESSAGING_DESTINATION_PARTITION_ID;
+import static io.opentelemetry.semconv.incubating.MessagingIncubatingAttributes.MESSAGING_SYSTEM;
 import static io.restassured.RestAssured.given;
-import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.net.URI;
 import java.net.URL;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Predicate;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.awaitility.Awaitility;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,18 +37,27 @@ import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.trace.SpanId;
 import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.TraceId;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
-import io.restassured.common.mapper.TypeRef;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 
 @QuarkusTest
 @QuarkusTestResource(KafkaCompanionResource.class)
 public class OpenTelemetryTestCase {
+
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
+
     @TestHTTPResource("direct")
     URL directUrl;
 
@@ -50,30 +70,7 @@ public class OpenTelemetryTestCase {
     @BeforeEach
     @AfterEach
     void reset() {
-        await().atMost(5, SECONDS).until(() -> {
-            List<Map<String, Object>> spans = getSpans();
-            if (spans.size() == 0) {
-                return true;
-            } else {
-                given().get("/export/clear").then().statusCode(HTTP_NO_CONTENT);
-                return false;
-            }
-        });
-    }
-
-    private List<Map<String, Object>> getSpans() {
-        return get("/export").body().as(new TypeRef<>() {
-        });
-    }
-
-    @NotNull
-    private static Map<String, Object> findSpan(List<Map<String, Object>> spans,
-            Predicate<Map<String, Object>> spanDataSelector) {
-        Optional<Map<String, Object>> select = spans.stream().filter(spanDataSelector).findFirst();
-        Assertions.assertTrue(select.isPresent());
-        Map<String, Object> spanData = select.get();
-        Assertions.assertNotNull(spanData.get("spanId"));
-        return spanData;
+        spanExporter().reset();
     }
 
     @Test
@@ -85,19 +82,18 @@ public class OpenTelemetryTestCase {
                 .statusCode(200)
                 .body("message", equalTo("Direct trace"));
 
-        Awaitility.await().atMost(Duration.ofMinutes(1)).until(() -> getSpans().size() == 4);
-        List<Map<String, Object>> spans = getSpans();
+        SpanDataList spans = spanExporter().awaitCount(4, Duration.ofMinutes(1));
 
-        Map<String, Object> serverSpan = findSpan(spans, m -> SpanKind.SERVER.name().equals(m.get("kind")));
+        SpanData serverSpan = spans.ofKind(SpanKind.SERVER).single();
         verifyServer(serverSpan, null, directUrl);
 
-        Map<String, Object> producerSpan = findSpan(spans, m -> SpanKind.PRODUCER.name().equals(m.get("kind")));
+        SpanData producerSpan = spans.ofKind(SpanKind.PRODUCER).single();
         verifyProducer(producerSpan, serverSpan, "traces");
 
-        Map<String, Object> consumerSpan = findSpan(spans, m -> SpanKind.CONSUMER.name().equals(m.get("kind")));
+        SpanData consumerSpan = spans.ofKind(SpanKind.CONSUMER).single();
         verifyConsumer(consumerSpan, producerSpan, true, "traces", "traces-in");
 
-        Map<String, Object> cdiSpan = findSpan(spans, m -> SpanKind.INTERNAL.name().equals(m.get("kind")));
+        SpanData cdiSpan = spans.ofKind(SpanKind.INTERNAL).single();
         verifyCdiCall(cdiSpan, consumerSpan);
     }
 
@@ -105,16 +101,15 @@ public class OpenTelemetryTestCase {
     void testProcessorTracing() {
         companion.produceStrings().fromRecords(new ProducerRecord<>("traces2", "1"));
 
-        Awaitility.await().atMost(Duration.ofMinutes(1)).until(() -> getSpans().size() == 3);
-        List<Map<String, Object>> spans = getSpans();
+        SpanDataList spans = spanExporter().awaitCount(3, Duration.ofMinutes(1));
 
-        Map<String, Object> consumerSpan = findSpan(spans, m -> SpanKind.CONSUMER.name().equals(m.get("kind")));
+        SpanData consumerSpan = spans.ofKind(SpanKind.CONSUMER).single();
         verifyConsumer(consumerSpan, null, false, "traces2", "traces-in2");
 
-        Map<String, Object> cdiSpan = findSpan(spans, m -> SpanKind.INTERNAL.name().equals(m.get("kind")));
+        SpanData cdiSpan = spans.ofKind(SpanKind.INTERNAL).single();
         verifyCdiCall(cdiSpan, consumerSpan);
 
-        Map<String, Object> producerSpan = findSpan(spans, m -> SpanKind.PRODUCER.name().equals(m.get("kind")));
+        SpanData producerSpan = spans.ofKind(SpanKind.PRODUCER).single();
         verifyProducer(producerSpan, consumerSpan, "traces-processed");
     }
 
@@ -126,120 +121,127 @@ public class OpenTelemetryTestCase {
         given().body("rose").post("/uni").then()
                 .statusCode(204);
 
-        await().atMost(Duration.ofMinutes(1)).until(() -> getSpans().size() == 4);
-        List<Map<String, Object>> spans = getSpans();
+        SpanDataList spans = spanExporter().awaitCount(4, Duration.ofMinutes(1));
 
-        Map<String, Object> serverSpan = findSpan(spans, m -> SpanKind.SERVER.name().equals(m.get("kind")));
-        Assertions.assertNotNull(serverSpan.get("spanId"));
+        SpanData serverSpan = spans.ofKind(SpanKind.SERVER).single();
+        Assertions.assertNotNull(serverSpan.getSpanId());
         verifyResource(serverSpan, null);
 
-        Assertions.assertEquals("POST /uni", serverSpan.get("name"));
-        Assertions.assertEquals(SpanKind.SERVER.toString(), serverSpan.get("kind"));
-        Assertions.assertTrue((Boolean) serverSpan.get("ended"));
-        Assertions.assertFalse((Boolean) serverSpan.get("parent_remote"));
+        assertThat(serverSpan).hasName("POST /uni");
+        Assertions.assertTrue(serverSpan.hasEnded());
+        Assertions.assertFalse(serverSpan.getParentSpanContext().isRemote());
 
-        Assertions.assertEquals("POST", serverSpan.get("attr_http.request.method"));
-        Assertions.assertEquals("/uni", serverSpan.get("attr_url.path"));
-        assertEquals(uniUrl.getHost(), serverSpan.get("attr_server.address"));
-        assertEquals(uniUrl.getPort(), Integer.valueOf((String) serverSpan.get("attr_server.port")));
-        Assertions.assertEquals("http", serverSpan.get("attr_url.scheme"));
-        Assertions.assertEquals("204", serverSpan.get("attr_http.response.status_code"));
-        Assertions.assertNotNull(serverSpan.get("attr_client.address"));
-        Assertions.assertNotNull(serverSpan.get("attr_user_agent.original"));
+        assertThat(serverSpan)
+                .hasAttribute(HTTP_REQUEST_METHOD, "POST")
+                .hasAttribute(URL_PATH, "/uni")
+                .hasAttribute(SERVER_ADDRESS, uniUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) uniUrl.getPort())
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 204L);
+        Assertions.assertNotNull(serverSpan.getAttributes().get(CLIENT_ADDRESS));
+        Assertions.assertNotNull(serverSpan.getAttributes().get(USER_AGENT_ORIGINAL));
 
         // Producer OTel context was cleared by using @CurrentThreadContext(propagated = {}). No parent.
-        Map<String, Object> producerSpan = findSpan(spans, m -> SpanKind.PRODUCER.name().equals(m.get("kind")));
+        SpanData producerSpan = spans.ofKind(SpanKind.PRODUCER).single();
         verifyProducer(producerSpan, null, "traces");
 
-        Map<String, Object> consumerSpan = findSpan(spans, m -> SpanKind.CONSUMER.name().equals(m.get("kind")));
+        SpanData consumerSpan = spans.ofKind(SpanKind.CONSUMER).single();
         verifyConsumer(consumerSpan, producerSpan, true, "traces", "traces-in");
 
-        Map<String, Object> internalSpan = findSpan(spans, m -> SpanKind.INTERNAL.name().equals(m.get("kind")));
+        SpanData internalSpan = spans.ofKind(SpanKind.INTERNAL).single();
         verifyInternal(internalSpan, consumerSpan);
     }
 
-    private static void verifyInternal(Map<String, Object> internalSpan, Map<String, Object> consumerSpan) {
-        assertEquals("TracedService.call", internalSpan.get("name"));
-        assertEquals(consumerSpan.get("spanId"), internalSpan.get("parent_spanId"));
+    private static void verifyInternal(SpanData internalSpan, SpanData consumerSpan) {
+        assertThat(internalSpan).hasName("TracedService.call");
+        assertEquals(consumerSpan.getSpanId(), internalSpan.getParentSpanContext().getSpanId());
     }
 
-    private void verifyServer(Map<String, Object> spanData, Map<String, Object> parentSpanData, URL url) {
-        Assertions.assertNotNull(spanData.get("spanId"));
-        verifyResource(spanData, parentSpanData);
+    private void verifyServer(SpanData span, SpanData parentSpan, URL url) {
+        Assertions.assertNotNull(span.getSpanId());
+        verifyResource(span, parentSpan);
 
-        Assertions.assertEquals("GET /direct", spanData.get("name"));
-        Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
-        Assertions.assertTrue((Boolean) spanData.get("ended"));
-        Assertions.assertFalse((Boolean) spanData.get("parent_remote"));
+        assertThat(span)
+                .hasName("GET /direct")
+                .hasKind(SpanKind.SERVER);
+        Assertions.assertTrue(span.hasEnded());
+        Assertions.assertFalse(span.getParentSpanContext().isRemote());
 
-        Assertions.assertEquals("GET", spanData.get("attr_http.request.method"));
-        Assertions.assertEquals("/direct", spanData.get("attr_url.path"));
-        assertEquals(url.getHost(), spanData.get("attr_server.address"));
-        assertEquals(url.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
-        Assertions.assertEquals("http", spanData.get("attr_url.scheme"));
-        Assertions.assertEquals("200", spanData.get("attr_http.response.status_code"));
-        Assertions.assertNotNull(spanData.get("attr_client.address"));
-        Assertions.assertNotNull(spanData.get("attr_user_agent.original"));
+        assertThat(span)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/direct")
+                .hasAttribute(SERVER_ADDRESS, url.getHost())
+                .hasAttribute(SERVER_PORT, (long) url.getPort())
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        Assertions.assertNotNull(span.getAttributes().get(CLIENT_ADDRESS));
+        Assertions.assertNotNull(span.getAttributes().get(USER_AGENT_ORIGINAL));
     }
 
-    private static void verifyProducer(Map<String, Object> spanData,
-            Map<String, Object> parentSpanData,
+    private static void verifyProducer(SpanData span,
+            SpanData parentSpan,
             String topic) {
-        Assertions.assertNotNull(spanData.get("spanId"));
-        verifyResource(spanData, parentSpanData);
+        Assertions.assertNotNull(span.getSpanId());
+        verifyResource(span, parentSpan);
 
-        Assertions.assertEquals(topic + " " + PUBLISH.name().toLowerCase(), spanData.get("name"));
-        Assertions.assertEquals(SpanKind.PRODUCER.toString(), spanData.get("kind"));
-        Assertions.assertTrue((Boolean) spanData.get("ended"));
-        Assertions.assertFalse((Boolean) spanData.get("parent_remote"));
+        assertThat(span)
+                .hasName(topic + " " + PUBLISH.name().toLowerCase())
+                .hasKind(SpanKind.PRODUCER);
+        Assertions.assertTrue(span.hasEnded());
+        Assertions.assertFalse(span.getParentSpanContext().isRemote());
 
-        Assertions.assertEquals("kafka", spanData.get("attr_messaging.system"));
-        Assertions.assertEquals(topic, spanData.get("attr_messaging.destination.name"));
+        assertThat(span)
+                .hasAttribute(MESSAGING_SYSTEM, "kafka")
+                .hasAttribute(MESSAGING_DESTINATION_NAME, topic);
     }
 
-    private static void verifyConsumer(Map<String, Object> spanData,
-            Map<String, Object> parentSpanData,
+    private static void verifyConsumer(SpanData span,
+            SpanData parentSpan,
             boolean parentRemote,
             String topic,
             String channel) {
-        Assertions.assertNotNull(spanData.get("spanId"));
-        verifyResource(spanData, parentSpanData);
+        Assertions.assertNotNull(span.getSpanId());
+        verifyResource(span, parentSpan);
 
-        Assertions.assertEquals(topic + " receive", spanData.get("name"));
-        Assertions.assertEquals(SpanKind.CONSUMER.toString(), spanData.get("kind"));
-        Assertions.assertTrue((Boolean) spanData.get("ended"));
-        Assertions.assertEquals(parentRemote, spanData.get("parent_remote"));
+        assertThat(span)
+                .hasName(topic + " receive")
+                .hasKind(SpanKind.CONSUMER);
+        Assertions.assertTrue(span.hasEnded());
+        Assertions.assertEquals(parentRemote, span.getParentSpanContext().isRemote());
 
-        Assertions.assertEquals("opentelemetry-integration-test - kafka-consumer-" + channel,
-                spanData.get("attr_messaging.client.id"));
-        Assertions.assertEquals("kafka", spanData.get("attr_messaging.system"));
-        Assertions.assertEquals(topic, spanData.get("attr_messaging.destination.name"));
-        Assertions.assertEquals("opentelemetry-integration-test", spanData.get("attr_messaging.consumer.group.name"));
-        Assertions.assertEquals("0", spanData.get("attr_messaging.destination.partition.id"));
-        Assertions.assertEquals("kafka-consumer-" + channel, spanData.get("attr_messaging.client_id"));
+        assertThat(span)
+                .hasAttribute(MESSAGING_CLIENT_ID, "opentelemetry-integration-test - kafka-consumer-" + channel)
+                .hasAttribute(MESSAGING_SYSTEM, "kafka")
+                .hasAttribute(MESSAGING_DESTINATION_NAME, topic)
+                .hasAttribute(MESSAGING_CONSUMER_GROUP_NAME, "opentelemetry-integration-test")
+                .hasAttribute(MESSAGING_DESTINATION_PARTITION_ID, "0")
+                .hasAttribute(stringKey("messaging.client_id"), "kafka-consumer-" + channel);
     }
 
-    private void verifyCdiCall(Map<String, Object> spanData, Map<String, Object> parentSpanData) {
-        Assertions.assertEquals("TracedService.call", spanData.get("name"));
-        Assertions.assertEquals(SpanKind.INTERNAL.toString(), spanData.get("kind"));
-        verifyResource(spanData, parentSpanData);
+    private void verifyCdiCall(SpanData span, SpanData parentSpan) {
+        assertThat(span)
+                .hasName("TracedService.call")
+                .hasKind(SpanKind.INTERNAL);
+        verifyResource(span, parentSpan);
     }
 
-    private static void verifyResource(Map<String, Object> spanData, Map<String, Object> parentSpanData) {
-        Assertions.assertEquals("opentelemetry-integration-test", spanData.get("resource_service.name"));
-        Assertions.assertEquals("999-SNAPSHOT", spanData.get("resource_service.version"));
-        Assertions.assertEquals("java", spanData.get("resource_telemetry.sdk.language"));
-        Assertions.assertEquals("opentelemetry", spanData.get("resource_telemetry.sdk.name"));
-        Assertions.assertNotNull(spanData.get("resource_telemetry.sdk.version"));
+    private static void verifyResource(SpanData span, SpanData parentSpan) {
+        Assertions.assertEquals("opentelemetry-integration-test", span.getResource().getAttribute(SERVICE_NAME));
+        Assertions.assertEquals("999-SNAPSHOT", span.getResource().getAttribute(SERVICE_VERSION));
+        Assertions.assertEquals("java", span.getResource().getAttribute(TELEMETRY_SDK_LANGUAGE));
+        Assertions.assertEquals("opentelemetry", span.getResource().getAttribute(TELEMETRY_SDK_NAME));
+        Assertions.assertNotNull(span.getResource().getAttribute(TELEMETRY_SDK_VERSION));
         String parentSpanId = SpanId.getInvalid();
-        String parentTraceId = TraceId.getInvalid();
-        if (parentSpanData != null) {
-            parentSpanId = (String) parentSpanData.get("spanId");
-            parentTraceId = (String) parentSpanData.get("traceId");
+        if (parentSpan != null) {
+            parentSpanId = parentSpan.getSpanId();
+            Assertions.assertEquals(parentSpan.getTraceId(), span.getParentSpanContext().getTraceId());
+            // a span is in the trace of its parent
+            assertThat(span).hasTraceId(parentSpan.getTraceId()).hasParent(parentSpan);
+        } else {
+            assertThat(span).hasNoParent();
         }
-        Assertions.assertEquals(parentSpanId, spanData.get("parent_spanId"));
-        Assertions.assertEquals(parentTraceId, spanData.get("parent_traceId"));
-        Assertions.assertEquals(!SpanId.getInvalid().equals(parentSpanId), spanData.get("parent_valid"));
+        Assertions.assertEquals(parentSpanId, span.getParentSpanContext().getSpanId());
+        Assertions.assertEquals(!SpanId.getInvalid().equals(parentSpanId), span.getParentSpanContext().isValid());
 
     }
 

@@ -1,24 +1,37 @@
 package io.quarkus.it.opentelemetry;
 
+import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
+import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
+import static io.opentelemetry.semconv.ClientAttributes.CLIENT_ADDRESS;
 import static io.opentelemetry.semconv.CodeAttributes.CODE_FUNCTION_NAME;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_ADDRESS;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_INSTANCE_ID;
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_NAME;
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_VERSION;
+import static io.opentelemetry.semconv.TelemetryAttributes.TELEMETRY_SDK_LANGUAGE;
+import static io.opentelemetry.semconv.TelemetryAttributes.TELEMETRY_SDK_NAME;
+import static io.opentelemetry.semconv.TelemetryAttributes.TELEMETRY_SDK_VERSION;
+import static io.opentelemetry.semconv.UrlAttributes.URL_FULL;
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
+import static io.opentelemetry.semconv.UrlAttributes.URL_SCHEME;
+import static io.opentelemetry.semconv.UserAgentAttributes.USER_AGENT_ORIGINAL;
 import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ID;
 import static io.opentelemetry.semconv.incubating.UserIncubatingAttributes.USER_ROLES;
-import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
-import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -27,14 +40,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,20 +51,30 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanId;
 import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.TraceId;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
+import io.opentelemetry.sdk.testing.assertj.TracesAssert;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.arc.Arc;
 import io.quarkus.it.opentelemetry.util.SocketClient;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 import io.restassured.RestAssured;
-import io.restassured.common.mapper.TypeRef;
 import io.restassured.specification.RequestSpecification;
 
 @QuarkusTest
 public class TracingTest {
+
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
+
     @TestHTTPResource("direct")
     URL directUrl;
     @TestHTTPResource("chained")
@@ -68,20 +87,7 @@ public class TracingTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        await().atMost(5, SECONDS).until(() -> {
-            List<Map<String, Object>> spans = getSpans();
-            if (spans.size() == 0) {
-                return true;
-            } else {
-                given().get("/reset").then().statusCode(HTTP_OK);
-                return false;
-            }
-        });
-    }
-
-    private List<Map<String, Object>> getSpans() {
-        return get("/export").body().as(new TypeRef<>() {
-        });
+        spanExporter().reset();
     }
 
     @Test
@@ -93,30 +99,29 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("Direct trace"));
 
-        await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 1);
-        Map<String, Object> spanData = getSpans().get(0);
-        assertNotNull(spanData);
-        assertNotNull(spanData.get("spanId"));
+        SpanData spanData = spanExporter().awaitCount(1, Duration.ofMinutes(2)).single();
+        assertNotNull(spanData.getSpanId());
 
         verifyResource(spanData);
 
-        assertEquals("GET /direct", spanData.get("name"));
-        assertEquals(SERVER.toString(), spanData.get("kind"));
-        assertTrue((Boolean) spanData.get("ended"));
+        assertThat(spanData)
+                .hasName("GET /direct")
+                .hasKind(SERVER);
+        assertTrue(spanData.hasEnded());
 
-        assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));
-        assertEquals(TraceId.getInvalid(), spanData.get("parent_traceId"));
-        assertFalse((Boolean) spanData.get("parent_valid"));
-        assertFalse((Boolean) spanData.get("parent_remote"));
+        assertEquals(SpanId.getInvalid(), spanData.getParentSpanContext().getSpanId());
+        assertThat(spanData).hasNoParent();
+        assertFalse(spanData.getParentSpanContext().isRemote());
 
-        assertEquals("GET", spanData.get("attr_http.request.method"));
-        assertEquals("/direct", spanData.get("attr_url.path"));
-        assertEquals(deepPathUrl.getHost(), spanData.get("attr_server.address"));
-        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
-        assertEquals("http", spanData.get("attr_url.scheme"));
-        assertEquals("200", spanData.get("attr_http.response.status_code"));
-        assertNotNull(spanData.get("attr_client.address"));
-        assertNotNull(spanData.get("attr_user_agent.original"));
+        assertThat(spanData)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/direct")
+                .hasAttribute(SERVER_ADDRESS, deepPathUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) deepPathUrl.getPort())
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(spanData.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(spanData.getAttributes().get(USER_AGENT_ORIGINAL));
     }
 
     @Test
@@ -128,62 +133,58 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("No path trace"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 3);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(3, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertEquals(SERVER.toString(), server.get("kind"));
+        SpanData server = spans.ofKind(SERVER).roots().single();
         verifyResource(server);
-        assertEquals("GET /nopath", server.get("name"));
-        assertEquals(SERVER.toString(), server.get("kind"));
-        assertTrue((Boolean) server.get("ended"));
-        assertEquals(SpanId.getInvalid(), server.get("parent_spanId"));
-        assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
-        assertFalse((Boolean) server.get("parent_valid"));
-        assertFalse((Boolean) server.get("parent_remote"));
-        assertEquals("GET", server.get("attr_http.request.method"));
-        assertEquals("/nopath", server.get("attr_url.path"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
-        assertEquals("http", server.get("attr_url.scheme"));
-        assertEquals("/nopath", server.get("attr_http.route"));
-        assertEquals("200", server.get("attr_http.response.status_code"));
-        assertNotNull(server.get("attr_client.address"));
-        assertNotNull(server.get("attr_user_agent.original"));
+        assertThat(server).hasName("GET /nopath");
+        assertTrue(server.hasEnded());
+        assertEquals(SpanId.getInvalid(), server.getParentSpanContext().getSpanId());
+        assertThat(server).hasNoParent();
+        assertFalse(server.getParentSpanContext().isRemote());
+        assertThat(server)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/nopath")
+                .hasAttribute(SERVER_ADDRESS, pathParamUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) pathParamUrl.getPort())
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_ROUTE, "/nopath")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(server.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(server.getAttributes().get(USER_AGENT_ORIGINAL));
 
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
-        assertEquals(CLIENT.toString(), client.get("kind"));
+        SpanData client = spans.ofKind(CLIENT).childrenOf(server).single();
         verifyResource(client);
-        assertEquals("GET /", client.get("name"));
-        assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        assertTrue((Boolean) client.get("ended"));
-        assertTrue((Boolean) client.get("parent_valid"));
-        assertFalse((Boolean) client.get("parent_remote"));
-        assertEquals("GET", client.get("attr_http.request.method"));
-        assertEquals("http://localhost:8081/", client.get("attr_url.full"));
-        assertEquals("200", client.get("attr_http.response.status_code"));
-        assertEquals(client.get("parentSpanId"), server.get("spanId"));
+        assertThat(client).hasName("GET /");
+        assertTrue(client.hasEnded());
+        assertTrue(client.getParentSpanContext().isValid());
+        assertFalse(client.getParentSpanContext().isRemote());
+        assertThat(client)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_FULL, "http://localhost:8081/")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L)
+                .hasParent(server);
 
-        Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-        assertEquals(SERVER.toString(), clientServer.get("kind"));
+        SpanData clientServer = spans.ofKind(SERVER).childrenOf(client).single();
         verifyResource(clientServer);
-        assertEquals("GET /", clientServer.get("name"));
-        assertEquals(SERVER.toString(), clientServer.get("kind"));
-        assertTrue((Boolean) clientServer.get("ended"));
-        assertTrue((Boolean) clientServer.get("parent_valid"));
-        assertTrue((Boolean) clientServer.get("parent_remote"));
-        assertEquals("GET", clientServer.get("attr_http.request.method"));
-        assertEquals("/", clientServer.get("attr_url.path"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
-        assertEquals("http", clientServer.get("attr_url.scheme"));
-        assertEquals("/", clientServer.get("attr_http.route"));
-        assertEquals("200", clientServer.get("attr_http.response.status_code"));
-        assertNotNull(clientServer.get("attr_client.address"));
-        assertNotNull(clientServer.get("attr_user_agent.original"));
-        assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
+        assertThat(clientServer).hasName("GET /");
+        assertTrue(clientServer.hasEnded());
+        assertTrue(clientServer.getParentSpanContext().isValid());
+        assertTrue(clientServer.getParentSpanContext().isRemote());
+        assertThat(clientServer)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/");
+        assertThat(server)
+                .hasAttribute(SERVER_ADDRESS, pathParamUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) pathParamUrl.getPort());
+        assertThat(clientServer)
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_ROUTE, "/")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(clientServer.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(clientServer.getAttributes().get(USER_AGENT_ORIGINAL));
+        assertThat(clientServer).hasParent(client);
     }
 
     @Test
@@ -195,61 +196,57 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("No path trace"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 3);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(3, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertEquals(SERVER.toString(), server.get("kind"));
+        SpanData server = spans.ofKind(SERVER).roots().single();
         verifyResource(server);
-        assertEquals("GET /slashpath", server.get("name"));
-        assertEquals(SERVER.toString(), server.get("kind"));
-        assertTrue((Boolean) server.get("ended"));
-        assertEquals(SpanId.getInvalid(), server.get("parent_spanId"));
-        assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
-        assertFalse((Boolean) server.get("parent_valid"));
-        assertFalse((Boolean) server.get("parent_remote"));
-        assertEquals("GET", server.get("attr_http.request.method"));
-        assertEquals("/slashpath", server.get("attr_url.path"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
-        assertEquals("http", server.get("attr_url.scheme"));
-        assertEquals("/slashpath", server.get("attr_http.route"));
-        assertEquals("200", server.get("attr_http.response.status_code"));
-        assertNotNull(server.get("attr_client.address"));
-        assertNotNull(server.get("attr_user_agent.original"));
+        assertThat(server).hasName("GET /slashpath");
+        assertTrue(server.hasEnded());
+        assertEquals(SpanId.getInvalid(), server.getParentSpanContext().getSpanId());
+        assertThat(server).hasNoParent();
+        assertFalse(server.getParentSpanContext().isRemote());
+        assertThat(server)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/slashpath")
+                .hasAttribute(SERVER_ADDRESS, pathParamUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) pathParamUrl.getPort())
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_ROUTE, "/slashpath")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(server.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(server.getAttributes().get(USER_AGENT_ORIGINAL));
 
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
-        assertEquals(CLIENT.toString(), client.get("kind"));
-        assertEquals("GET /", client.get("name"));
-        assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        assertTrue((Boolean) client.get("ended"));
-        assertTrue((Boolean) client.get("parent_valid"));
-        assertFalse((Boolean) client.get("parent_remote"));
-        assertEquals("GET", client.get("attr_http.request.method"));
-        assertEquals("http://localhost:8081/", client.get("attr_url.full"));
-        assertEquals("200", client.get("attr_http.response.status_code"));
-        assertEquals(client.get("parentSpanId"), server.get("spanId"));
+        SpanData client = spans.ofKind(CLIENT).childrenOf(server).single();
+        assertThat(client).hasName("GET /");
+        assertTrue(client.hasEnded());
+        assertTrue(client.getParentSpanContext().isValid());
+        assertFalse(client.getParentSpanContext().isRemote());
+        assertThat(client)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_FULL, "http://localhost:8081/")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L)
+                .hasParent(server);
 
-        Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-        assertEquals(SERVER.toString(), clientServer.get("kind"));
+        SpanData clientServer = spans.ofKind(SERVER).childrenOf(client).single();
         verifyResource(clientServer);
-        assertEquals("GET /", clientServer.get("name"));
-        assertEquals(SERVER.toString(), clientServer.get("kind"));
-        assertTrue((Boolean) clientServer.get("ended"));
-        assertTrue((Boolean) clientServer.get("parent_valid"));
-        assertTrue((Boolean) clientServer.get("parent_remote"));
-        assertEquals("GET", clientServer.get("attr_http.request.method"));
-        assertEquals("/", clientServer.get("attr_url.path"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
-        assertEquals("http", clientServer.get("attr_url.scheme"));
-        assertEquals("/", clientServer.get("attr_http.route"));
-        assertEquals("200", clientServer.get("attr_http.response.status_code"));
-        assertNotNull(clientServer.get("attr_client.address"));
-        assertNotNull(clientServer.get("attr_user_agent.original"));
-        assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
+        assertThat(clientServer).hasName("GET /");
+        assertTrue(clientServer.hasEnded());
+        assertTrue(clientServer.getParentSpanContext().isValid());
+        assertTrue(clientServer.getParentSpanContext().isRemote());
+        assertThat(clientServer)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/");
+        assertThat(server)
+                .hasAttribute(SERVER_ADDRESS, pathParamUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) pathParamUrl.getPort());
+        assertThat(clientServer)
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_ROUTE, "/")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(clientServer.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(clientServer.getAttributes().get(USER_AGENT_ORIGINAL));
+        assertThat(clientServer).hasParent(client);
     }
 
     @Test
@@ -261,32 +258,28 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("baggage-value"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 3);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(3, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertEquals(SERVER.toString(), server.get("kind"));
+        SpanData server = spans.ofKind(SERVER).roots().single();
         verifyResource(server);
-        assertEquals("GET /slashpath-baggage", server.get("name"));
-        assertEquals(SpanId.getInvalid(), server.get("parent_spanId"));
-        assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
-        assertFalse((Boolean) server.get("parent_valid"));
-        assertFalse((Boolean) server.get("parent_remote"));
+        assertThat(server).hasName("GET /slashpath-baggage");
+        assertEquals(SpanId.getInvalid(), server.getParentSpanContext().getSpanId());
+        assertThat(server).hasNoParent();
+        assertFalse(server.getParentSpanContext().isRemote());
 
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
-        assertEquals(CLIENT.toString(), client.get("kind"));
-        assertEquals("GET /from-baggage", client.get("name"));
-        assertEquals("http://localhost:8081/from-baggage", client.get("attr_url.full"));
-        assertEquals("200", client.get("attr_http.response.status_code"));
-        assertEquals(client.get("parentSpanId"), server.get("spanId"));
+        SpanData client = spans.ofKind(CLIENT).childrenOf(server).single();
+        assertThat(client)
+                .hasName("GET /from-baggage")
+                .hasAttribute(URL_FULL, "http://localhost:8081/from-baggage")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L)
+                .hasParent(server);
 
-        Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-        assertEquals(SERVER.toString(), clientServer.get("kind"));
+        SpanData clientServer = spans.ofKind(SERVER).childrenOf(client).single();
         verifyResource(clientServer);
-        assertEquals("GET /from-baggage", clientServer.get("name"));
-        assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
+        assertThat(clientServer)
+                .hasName("GET /from-baggage")
+                .hasParent(client);
     }
 
     @Test
@@ -298,36 +291,32 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("Chained trace"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 2);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(2, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(2, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertEquals(SERVER.toString(), server.get("kind"));
+        SpanData server = spans.ofKind(SERVER).roots().single();
         verifyResource(server);
-        assertEquals("GET /chained", server.get("name"));
-        assertEquals(SERVER.toString(), server.get("kind"));
-        assertTrue((Boolean) server.get("ended"));
-        assertEquals(SpanId.getInvalid(), server.get("parent_spanId"));
-        assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
-        assertFalse((Boolean) server.get("parent_valid"));
-        assertFalse((Boolean) server.get("parent_remote"));
-        assertEquals("GET", server.get("attr_http.request.method"));
-        assertEquals("/chained", server.get("attr_url.path"));
-        assertEquals(deepPathUrl.getHost(), server.get("attr_server.address"));
-        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
-        assertEquals("http", server.get("attr_url.scheme"));
-        assertEquals("200", server.get("attr_http.response.status_code"));
-        assertNotNull(server.get("attr_client.address"));
-        assertNotNull(server.get("attr_user_agent.original"));
+        assertThat(server).hasName("GET /chained");
+        assertTrue(server.hasEnded());
+        assertEquals(SpanId.getInvalid(), server.getParentSpanContext().getSpanId());
+        assertThat(server).hasNoParent();
+        assertFalse(server.getParentSpanContext().isRemote());
+        assertThat(server)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/chained")
+                .hasAttribute(SERVER_ADDRESS, deepPathUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) deepPathUrl.getPort())
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(server.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(server.getAttributes().get(USER_AGENT_ORIGINAL));
 
         // CDI call
-        Map<String, Object> cdi = getSpanByKindAndParentId(spans, INTERNAL, server.get("spanId"));
-        assertEquals("TracedService.call", cdi.get("name"));
-        assertEquals(SpanKind.INTERNAL.toString(), cdi.get("kind"));
-        assertEquals(server.get("spanId"), cdi.get("parent_spanId"));
-        assertEquals("io.quarkus.it.opentelemetry.TracedService.call", cdi.get("attr_" + CODE_FUNCTION_NAME.getKey()));
+        SpanData cdi = spans.ofKind(INTERNAL).childrenOf(server).single();
+        assertThat(cdi)
+                .hasName("TracedService.call")
+                .hasParent(server)
+                .hasAttribute(CODE_FUNCTION_NAME, "io.quarkus.it.opentelemetry.TracedService.call");
     }
 
     @Test
@@ -347,30 +336,31 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("Direct trace"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
-        Map<String, Object> spanData = getSpans().get(0);
-        assertNotNull(spanData);
-        assertNotNull(spanData.get("spanId"));
+        SpanData spanData = spanExporter().awaitCount(1, Duration.ofSeconds(10)).single();
+        assertNotNull(spanData.getSpanId());
 
         verifyResource(spanData);
 
-        assertEquals("GET /direct", spanData.get("name"));
-        assertEquals(SERVER.toString(), spanData.get("kind"));
-        assertTrue((Boolean) spanData.get("ended"));
+        assertThat(spanData)
+                .hasName("GET /direct")
+                .hasKind(SERVER);
+        assertTrue(spanData.hasEnded());
 
-        assertEquals(parentSpan.getSpanContext().getSpanId(), spanData.get("parent_spanId"));
-        assertEquals(parentSpan.getSpanContext().getTraceId(), spanData.get("parent_traceId"));
-        assertTrue((Boolean) spanData.get("parent_remote"));
-        assertTrue((Boolean) spanData.get("parent_valid"));
+        assertEquals(parentSpan.getSpanContext().getSpanId(), spanData.getParentSpanContext().getSpanId());
+        assertEquals(parentSpan.getSpanContext().getTraceId(), spanData.getTraceId());
+        assertEquals(parentSpan.getSpanContext().getTraceId(), spanData.getParentSpanContext().getTraceId());
+        assertTrue(spanData.getParentSpanContext().isRemote());
+        assertTrue(spanData.getParentSpanContext().isValid());
 
-        assertEquals("GET", spanData.get("attr_http.request.method"));
-        assertEquals("/direct", spanData.get("attr_url.path"));
-        assertEquals(deepPathUrl.getHost(), spanData.get("attr_server.address"));
-        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
-        assertEquals("http", spanData.get("attr_url.scheme"));
-        assertEquals("200", spanData.get("attr_http.response.status_code"));
-        assertNotNull(spanData.get("attr_client.address"));
-        assertNotNull(spanData.get("attr_user_agent.original"));
+        assertThat(spanData)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/direct")
+                .hasAttribute(SERVER_ADDRESS, deepPathUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) deepPathUrl.getPort())
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(spanData.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(spanData.getAttributes().get(USER_AGENT_ORIGINAL));
     }
 
     @Test
@@ -382,30 +372,29 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("Deep url path"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
-        Map<String, Object> spanData = getSpans().get(0);
-        assertNotNull(spanData);
-        assertNotNull(spanData.get("spanId"));
+        SpanData spanData = spanExporter().awaitCount(1, Duration.ofSeconds(10)).single();
+        assertNotNull(spanData.getSpanId());
 
         verifyResource(spanData);
 
-        assertEquals("GET /deep/path", spanData.get("name"));
-        assertEquals(SERVER.toString(), spanData.get("kind"));
-        assertTrue((Boolean) spanData.get("ended"));
+        assertThat(spanData)
+                .hasName("GET /deep/path")
+                .hasKind(SERVER);
+        assertTrue(spanData.hasEnded());
 
-        assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));
-        assertEquals(TraceId.getInvalid(), spanData.get("parent_traceId"));
-        assertFalse((Boolean) spanData.get("parent_valid"));
-        assertFalse((Boolean) spanData.get("parent_remote"));
+        assertEquals(SpanId.getInvalid(), spanData.getParentSpanContext().getSpanId());
+        assertThat(spanData).hasNoParent();
+        assertFalse(spanData.getParentSpanContext().isRemote());
 
-        assertEquals("GET", spanData.get("attr_http.request.method"));
-        assertEquals("/deep/path", spanData.get("attr_url.path"));
-        assertEquals(deepPathUrl.getHost(), spanData.get("attr_server.address"));
-        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
-        assertEquals("http", spanData.get("attr_url.scheme"));
-        assertEquals("200", spanData.get("attr_http.response.status_code"));
-        assertNotNull(spanData.get("attr_client.address"));
-        assertNotNull(spanData.get("attr_user_agent.original"));
+        assertThat(spanData)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/deep/path")
+                .hasAttribute(SERVER_ADDRESS, deepPathUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) deepPathUrl.getPort())
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(spanData.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(spanData.getAttributes().get(USER_AGENT_ORIGINAL));
     }
 
     @Test
@@ -417,31 +406,30 @@ public class TracingTest {
                 .statusCode(200)
                 .body("message", equalTo("ParameterId: 12345"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
-        Map<String, Object> spanData = getSpans().get(0);
-        assertNotNull(spanData);
-        assertNotNull(spanData.get("spanId"));
+        SpanData spanData = spanExporter().awaitCount(1, Duration.ofSeconds(10)).single();
+        assertNotNull(spanData.getSpanId());
 
         verifyResource(spanData);
 
-        assertEquals("GET /param/{paramId}", spanData.get("name"));
-        assertEquals(SERVER.toString(), spanData.get("kind"));
-        assertTrue((Boolean) spanData.get("ended"));
+        assertThat(spanData)
+                .hasName("GET /param/{paramId}")
+                .hasKind(SERVER);
+        assertTrue(spanData.hasEnded());
 
-        assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));
-        assertEquals(TraceId.getInvalid(), spanData.get("parent_traceId"));
-        assertFalse((Boolean) spanData.get("parent_valid"));
-        assertFalse((Boolean) spanData.get("parent_remote"));
+        assertEquals(SpanId.getInvalid(), spanData.getParentSpanContext().getSpanId());
+        assertThat(spanData).hasNoParent();
+        assertFalse(spanData.getParentSpanContext().isRemote());
 
-        assertEquals("GET", spanData.get("attr_http.request.method"));
-        assertEquals("/param/12345", spanData.get("attr_url.path"));
-        assertEquals(pathParamUrl.getHost(), spanData.get("attr_server.address"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
-        assertEquals("http", spanData.get("attr_url.scheme"));
-        assertEquals("/param/{paramId}", spanData.get("attr_http.route"));
-        assertEquals("200", spanData.get("attr_http.response.status_code"));
-        assertNotNull(spanData.get("attr_client.address"));
-        assertNotNull(spanData.get("attr_user_agent.original"));
+        assertThat(spanData)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/param/12345")
+                .hasAttribute(SERVER_ADDRESS, pathParamUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) pathParamUrl.getPort())
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_ROUTE, "/param/{paramId}")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(spanData.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(spanData.getAttributes().get(USER_AGENT_ORIGINAL));
     }
 
     @Test
@@ -452,59 +440,56 @@ public class TracingTest {
                 .statusCode(200)
                 .body(containsString("one"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 3);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(3, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertEquals(SERVER.toString(), server.get("kind"));
+        SpanData server = spans.ofKind(SERVER).roots().single();
         verifyResource(server);
-        assertEquals("GET /client/ping/{message}", server.get("name"));
-        assertEquals(SERVER.toString(), server.get("kind"));
-        assertTrue((Boolean) server.get("ended"));
-        assertEquals(SpanId.getInvalid(), server.get("parent_spanId"));
-        assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
-        assertFalse((Boolean) server.get("parent_valid"));
-        assertFalse((Boolean) server.get("parent_remote"));
-        assertEquals("GET", server.get("attr_http.request.method"));
-        assertEquals("/client/ping/one", server.get("attr_url.path"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
-        assertEquals("http", server.get("attr_url.scheme"));
-        assertEquals("/client/ping/{message}", server.get("attr_http.route"));
-        assertEquals("200", server.get("attr_http.response.status_code"));
-        assertNotNull(server.get("attr_client.address"));
-        assertNotNull(server.get("attr_user_agent.original"));
+        assertThat(server).hasName("GET /client/ping/{message}");
+        assertTrue(server.hasEnded());
+        assertEquals(SpanId.getInvalid(), server.getParentSpanContext().getSpanId());
+        assertThat(server).hasNoParent();
+        assertFalse(server.getParentSpanContext().isRemote());
+        assertThat(server)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/client/ping/one")
+                .hasAttribute(SERVER_ADDRESS, pathParamUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) pathParamUrl.getPort())
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_ROUTE, "/client/ping/{message}")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(server.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(server.getAttributes().get(USER_AGENT_ORIGINAL));
 
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
-        assertEquals("GET /client/pong/{message}", client.get("name"));
-        assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        assertTrue((Boolean) client.get("ended"));
-        assertTrue((Boolean) client.get("parent_valid"));
-        assertFalse((Boolean) client.get("parent_remote"));
-        assertEquals("GET", client.get("attr_http.request.method"));
-        assertEquals("http://localhost:8081/client/pong/one", client.get("attr_url.full"));
-        assertEquals("200", client.get("attr_http.response.status_code"));
+        SpanData client = spans.ofKind(CLIENT).childrenOf(server).single();
+        assertThat(client).hasName("GET /client/pong/{message}");
+        assertTrue(client.hasEnded());
+        assertTrue(client.getParentSpanContext().isValid());
+        assertFalse(client.getParentSpanContext().isRemote());
+        assertThat(client)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_FULL, "http://localhost:8081/client/pong/one")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
 
-        Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-        assertEquals(SERVER.toString(), clientServer.get("kind"));
+        SpanData clientServer = spans.ofKind(SERVER).childrenOf(client).single();
         verifyResource(clientServer);
-        assertEquals("GET /client/pong/{message}", clientServer.get("name"));
-        assertEquals(SERVER.toString(), clientServer.get("kind"));
-        assertTrue((Boolean) clientServer.get("ended"));
-        assertTrue((Boolean) clientServer.get("parent_valid"));
-        assertTrue((Boolean) clientServer.get("parent_remote"));
-        assertEquals("GET", clientServer.get("attr_http.request.method"));
-        assertEquals("/client/pong/one", clientServer.get("attr_url.path"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
-        assertEquals("http", clientServer.get("attr_url.scheme"));
-        assertEquals("/client/pong/{message}", clientServer.get("attr_http.route"));
-        assertEquals("200", clientServer.get("attr_http.response.status_code"));
-        assertNotNull(clientServer.get("attr_client.address"));
-        assertNotNull(clientServer.get("attr_user_agent.original"));
-        assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
+        assertThat(clientServer).hasName("GET /client/pong/{message}");
+        assertTrue(clientServer.hasEnded());
+        assertTrue(clientServer.getParentSpanContext().isValid());
+        assertTrue(clientServer.getParentSpanContext().isRemote());
+        assertThat(clientServer)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/client/pong/one");
+        assertThat(server)
+                .hasAttribute(SERVER_ADDRESS, pathParamUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) pathParamUrl.getPort());
+        assertThat(clientServer)
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_ROUTE, "/client/pong/{message}")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(clientServer.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(clientServer.getAttributes().get(USER_AGENT_ORIGINAL));
+        assertThat(clientServer).hasParent(client);
     }
 
     @Test
@@ -515,58 +500,55 @@ public class TracingTest {
                 .statusCode(200)
                 .body(containsString("one"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 3);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(3, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertEquals(SERVER.toString(), server.get("kind"));
+        SpanData server = spans.ofKind(SERVER).roots().single();
         verifyResource(server);
-        assertEquals("GET /client/async-ping/{message}", server.get("name"));
-        assertEquals(SERVER.toString(), server.get("kind"));
-        assertTrue((Boolean) server.get("ended"));
-        assertEquals(SpanId.getInvalid(), server.get("parent_spanId"));
-        assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
-        assertFalse((Boolean) server.get("parent_valid"));
-        assertFalse((Boolean) server.get("parent_remote"));
-        assertEquals("GET", server.get("attr_http.request.method"));
-        assertEquals("/client/async-ping/one", server.get("attr_url.path"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
-        assertEquals("http", server.get("attr_url.scheme"));
-        assertEquals("/client/async-ping/{message}", server.get("attr_http.route"));
-        assertEquals("200", server.get("attr_http.response.status_code"));
-        assertNotNull(server.get("attr_client.address"));
-        assertNotNull(server.get("attr_user_agent.original"));
+        assertThat(server).hasName("GET /client/async-ping/{message}");
+        assertTrue(server.hasEnded());
+        assertEquals(SpanId.getInvalid(), server.getParentSpanContext().getSpanId());
+        assertThat(server).hasNoParent();
+        assertFalse(server.getParentSpanContext().isRemote());
+        assertThat(server)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/client/async-ping/one")
+                .hasAttribute(SERVER_ADDRESS, pathParamUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) pathParamUrl.getPort())
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_ROUTE, "/client/async-ping/{message}")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(server.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(server.getAttributes().get(USER_AGENT_ORIGINAL));
 
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
-        assertEquals("GET /client/pong/{message}", client.get("name"));
-        assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        assertTrue((Boolean) client.get("ended"));
-        assertTrue((Boolean) client.get("parent_valid"));
-        assertFalse((Boolean) client.get("parent_remote"));
-        assertEquals("GET", client.get("attr_http.request.method"));
-        assertEquals("http://localhost:8081/client/pong/one", client.get("attr_url.full"));
-        assertEquals("200", client.get("attr_http.response.status_code"));
+        SpanData client = spans.ofKind(CLIENT).childrenOf(server).single();
+        assertThat(client).hasName("GET /client/pong/{message}");
+        assertTrue(client.hasEnded());
+        assertTrue(client.getParentSpanContext().isValid());
+        assertFalse(client.getParentSpanContext().isRemote());
+        assertThat(client)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_FULL, "http://localhost:8081/client/pong/one")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
 
-        Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-        assertEquals(SERVER.toString(), clientServer.get("kind"));
+        SpanData clientServer = spans.ofKind(SERVER).childrenOf(client).single();
         verifyResource(clientServer);
-        assertEquals("GET /client/pong/{message}", clientServer.get("name"));
-        assertEquals(SERVER.toString(), clientServer.get("kind"));
-        assertTrue((Boolean) clientServer.get("ended"));
-        assertTrue((Boolean) clientServer.get("parent_valid"));
-        assertTrue((Boolean) clientServer.get("parent_remote"));
-        assertEquals("GET", clientServer.get("attr_http.request.method"));
-        assertEquals("/client/pong/one", clientServer.get("attr_url.path"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
-        assertEquals("http", clientServer.get("attr_url.scheme"));
-        assertEquals("/client/pong/{message}", clientServer.get("attr_http.route"));
-        assertEquals("200", clientServer.get("attr_http.response.status_code"));
-        assertNotNull(clientServer.get("attr_client.address"));
-        assertNotNull(clientServer.get("attr_user_agent.original"));
+        assertThat(clientServer).hasName("GET /client/pong/{message}");
+        assertTrue(clientServer.hasEnded());
+        assertTrue(clientServer.getParentSpanContext().isValid());
+        assertTrue(clientServer.getParentSpanContext().isRemote());
+        assertThat(clientServer)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/client/pong/one");
+        assertThat(server)
+                .hasAttribute(SERVER_ADDRESS, pathParamUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) pathParamUrl.getPort());
+        assertThat(clientServer)
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_ROUTE, "/client/pong/{message}")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(clientServer.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(clientServer.getAttributes().get(USER_AGENT_ORIGINAL));
     }
 
     @Test
@@ -577,71 +559,68 @@ public class TracingTest {
                 .statusCode(200)
                 .body(containsString("one"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 4);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(4, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(4, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertEquals(SERVER.toString(), server.get("kind"));
+        SpanData server = spans.ofKind(SERVER).roots().single();
         verifyResource(server);
-        assertEquals("GET /client/pong-intercept/{message}", server.get("name"));
-        assertEquals(SERVER.toString(), server.get("kind"));
-        assertTrue((Boolean) server.get("ended"));
-        assertEquals(SpanId.getInvalid(), server.get("parent_spanId"));
-        assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
-        assertFalse((Boolean) server.get("parent_valid"));
-        assertFalse((Boolean) server.get("parent_remote"));
-        assertEquals("GET", server.get("attr_http.request.method"));
-        assertEquals("/client/pong-intercept/one", server.get("attr_url.path"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
-        assertEquals("http", server.get("attr_url.scheme"));
-        assertEquals("/client/pong-intercept/{message}", server.get("attr_http.route"));
-        assertEquals("200", server.get("attr_http.response.status_code"));
-        assertNotNull(server.get("attr_client.address"));
-        assertNotNull(server.get("attr_user_agent.original"));
+        assertThat(server).hasName("GET /client/pong-intercept/{message}");
+        assertTrue(server.hasEnded());
+        assertEquals(SpanId.getInvalid(), server.getParentSpanContext().getSpanId());
+        assertThat(server).hasNoParent();
+        assertFalse(server.getParentSpanContext().isRemote());
+        assertThat(server)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/client/pong-intercept/one")
+                .hasAttribute(SERVER_ADDRESS, pathParamUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) pathParamUrl.getPort())
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_ROUTE, "/client/pong-intercept/{message}")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(server.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(server.getAttributes().get(USER_AGENT_ORIGINAL));
 
-        Map<String, Object> fromInterceptor = getSpanByKindAndParentId(spans, INTERNAL, server.get("spanId"));
-        assertEquals("PingPongRestClient.pingpongIntercept", fromInterceptor.get("name"));
-        assertEquals(INTERNAL.toString(), fromInterceptor.get("kind"));
-        assertTrue((Boolean) fromInterceptor.get("ended"));
-        assertTrue((Boolean) fromInterceptor.get("parent_valid"));
-        assertFalse((Boolean) fromInterceptor.get("parent_remote"));
-        assertNull(fromInterceptor.get("attr_http.request.method"));
-        assertNull(fromInterceptor.get("attr_http.response.status_code"));
-        assertEquals("one", fromInterceptor.get("attr_message"));
-        assertEquals("io.quarkus.it.opentelemetry.PingPongResource$PingPongRestClient.pingpongIntercept",
-                fromInterceptor.get("attr_" + CODE_FUNCTION_NAME.getKey()));
+        SpanData fromInterceptor = spans.ofKind(INTERNAL).childrenOf(server).single();
+        assertThat(fromInterceptor).hasName("PingPongRestClient.pingpongIntercept");
+        assertTrue(fromInterceptor.hasEnded());
+        assertTrue(fromInterceptor.getParentSpanContext().isValid());
+        assertFalse(fromInterceptor.getParentSpanContext().isRemote());
+        assertThat(fromInterceptor.getAttributes())
+                .doesNotContainKey(HTTP_REQUEST_METHOD.getKey())
+                .doesNotContainKey(HTTP_RESPONSE_STATUS_CODE.getKey());
+        assertThat(fromInterceptor).hasAttribute(stringKey("message"), "one");
+        assertThat(fromInterceptor).hasAttribute(CODE_FUNCTION_NAME,
+                "io.quarkus.it.opentelemetry.PingPongResource$PingPongRestClient.pingpongIntercept");
 
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, fromInterceptor.get("spanId"));
-        assertEquals("GET /client/pong/{message}", client.get("name"));
-        assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        assertTrue((Boolean) client.get("ended"));
-        assertTrue((Boolean) client.get("parent_valid"));
-        assertFalse((Boolean) client.get("parent_remote"));
-        assertEquals("GET", client.get("attr_http.request.method"));
-        assertEquals("http://localhost:8081/client/pong/one", client.get("attr_url.full"));
-        assertEquals("200", client.get("attr_http.response.status_code"));
+        SpanData client = spans.ofKind(CLIENT).childrenOf(fromInterceptor).single();
+        assertThat(client).hasName("GET /client/pong/{message}");
+        assertTrue(client.hasEnded());
+        assertTrue(client.getParentSpanContext().isValid());
+        assertFalse(client.getParentSpanContext().isRemote());
+        assertThat(client)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_FULL, "http://localhost:8081/client/pong/one")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
 
-        Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-        assertEquals(SERVER.toString(), clientServer.get("kind"));
+        SpanData clientServer = spans.ofKind(SERVER).childrenOf(client).single();
         verifyResource(clientServer);
-        assertEquals("GET /client/pong/{message}", clientServer.get("name"));
-        assertEquals(SERVER.toString(), clientServer.get("kind"));
-        assertTrue((Boolean) clientServer.get("ended"));
-        assertTrue((Boolean) clientServer.get("parent_valid"));
-        assertTrue((Boolean) clientServer.get("parent_remote"));
-        assertEquals("GET", clientServer.get("attr_http.request.method"));
-        assertEquals("/client/pong/one", clientServer.get("attr_url.path"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
-        assertEquals("http", clientServer.get("attr_url.scheme"));
-        assertEquals("/client/pong/{message}", clientServer.get("attr_http.route"));
-        assertEquals("200", clientServer.get("attr_http.response.status_code"));
-        assertNotNull(clientServer.get("attr_client.address"));
-        assertNotNull(clientServer.get("attr_user_agent.original"));
-        assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
+        assertThat(clientServer).hasName("GET /client/pong/{message}");
+        assertTrue(clientServer.hasEnded());
+        assertTrue(clientServer.getParentSpanContext().isValid());
+        assertTrue(clientServer.getParentSpanContext().isRemote());
+        assertThat(clientServer)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/client/pong/one");
+        assertThat(server)
+                .hasAttribute(SERVER_ADDRESS, pathParamUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) pathParamUrl.getPort());
+        assertThat(clientServer)
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_ROUTE, "/client/pong/{message}")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(clientServer.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(clientServer.getAttributes().get(USER_AGENT_ORIGINAL));
+        assertThat(clientServer).hasParent(client);
     }
 
     @Test
@@ -652,33 +631,32 @@ public class TracingTest {
                 .statusCode(200)
                 .body(containsString("one"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 4);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(4, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(4, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertEquals("GET /client/pong-intercept-inherited/{message}", server.get("name"));
+        SpanData server = spans.ofKind(SERVER).roots().single();
+        assertThat(server).hasName("GET /client/pong-intercept-inherited/{message}");
 
         // the @WithSpan method is declared by the super interface of the REST client, which is what the span name
         // and the code.function.name attribute must report, as they do for any other CDI bean
-        Map<String, Object> fromInterceptor = getSpanByKindAndParentId(spans, INTERNAL, server.get("spanId"));
-        assertEquals("PingPongBaseRestClient.pingpongInherited", fromInterceptor.get("name"));
-        assertEquals(INTERNAL.toString(), fromInterceptor.get("kind"));
-        assertTrue((Boolean) fromInterceptor.get("ended"));
-        assertTrue((Boolean) fromInterceptor.get("parent_valid"));
-        assertFalse((Boolean) fromInterceptor.get("parent_remote"));
-        assertEquals("one", fromInterceptor.get("attr_message"));
-        assertEquals("io.quarkus.it.opentelemetry.PingPongResource$PingPongBaseRestClient.pingpongInherited",
-                fromInterceptor.get("attr_" + CODE_FUNCTION_NAME.getKey()));
+        SpanData fromInterceptor = spans.ofKind(INTERNAL).childrenOf(server).single();
+        assertThat(fromInterceptor).hasName("PingPongBaseRestClient.pingpongInherited");
+        assertTrue(fromInterceptor.hasEnded());
+        assertTrue(fromInterceptor.getParentSpanContext().isValid());
+        assertFalse(fromInterceptor.getParentSpanContext().isRemote());
+        assertThat(fromInterceptor).hasAttribute(stringKey("message"), "one");
+        assertThat(fromInterceptor).hasAttribute(CODE_FUNCTION_NAME,
+                "io.quarkus.it.opentelemetry.PingPongResource$PingPongBaseRestClient.pingpongInherited");
 
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, fromInterceptor.get("spanId"));
-        assertEquals("GET /client/pong/{message}", client.get("name"));
-        assertEquals("http://localhost:8081/client/pong/one", client.get("attr_url.full"));
+        SpanData client = spans.ofKind(CLIENT).childrenOf(fromInterceptor).single();
+        assertThat(client)
+                .hasName("GET /client/pong/{message}")
+                .hasAttribute(URL_FULL, "http://localhost:8081/client/pong/one");
 
-        Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-        assertEquals("GET /client/pong/{message}", clientServer.get("name"));
-        assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
+        SpanData clientServer = spans.ofKind(SERVER).childrenOf(client).single();
+        assertThat(clientServer)
+                .hasName("GET /client/pong/{message}")
+                .hasParent(client);
     }
 
     @Test
@@ -690,30 +668,29 @@ public class TracingTest {
                 .statusCode(200)
                 .body(containsString("Received: something"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
-        Map<String, Object> spanData = getSpans().get(0);
-        assertNotNull(spanData);
-        assertNotNull(spanData.get("spanId"));
+        SpanData spanData = spanExporter().awaitCount(1, Duration.ofSeconds(10)).single();
+        assertNotNull(spanData.getSpanId());
 
         verifyResource(spanData);
 
-        assertEquals("GET /template/path/{value}", spanData.get("name"));
-        assertEquals(SERVER.toString(), spanData.get("kind"));
-        assertTrue((Boolean) spanData.get("ended"));
+        assertThat(spanData)
+                .hasName("GET /template/path/{value}")
+                .hasKind(SERVER);
+        assertTrue(spanData.hasEnded());
 
-        assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));
-        assertEquals(TraceId.getInvalid(), spanData.get("parent_traceId"));
-        assertFalse((Boolean) spanData.get("parent_valid"));
-        assertFalse((Boolean) spanData.get("parent_remote"));
+        assertEquals(SpanId.getInvalid(), spanData.getParentSpanContext().getSpanId());
+        assertThat(spanData).hasNoParent();
+        assertFalse(spanData.getParentSpanContext().isRemote());
 
-        assertEquals("GET", spanData.get("attr_http.request.method"));
-        assertEquals("/template/path/something", spanData.get("attr_url.path"));
-        assertEquals(deepPathUrl.getHost(), spanData.get("attr_server.address"));
-        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
-        assertEquals("http", spanData.get("attr_url.scheme"));
-        assertEquals("200", spanData.get("attr_http.response.status_code"));
-        assertNotNull(spanData.get("attr_client.address"));
-        assertNotNull(spanData.get("attr_user_agent.original"));
+        assertThat(spanData)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/template/path/something")
+                .hasAttribute(SERVER_ADDRESS, deepPathUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) deepPathUrl.getPort())
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(spanData.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(spanData.getAttributes().get(USER_AGENT_ORIGINAL));
     }
 
     @Test
@@ -725,16 +702,14 @@ public class TracingTest {
                 .statusCode(200)
                 .body(containsString("one"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(3, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
+        SpanData server = spans.ofKind(SERVER).roots().single();
+        SpanData client = spans.ofKind(CLIENT).childrenOf(server).single();
 
         verifyResource(client);
-        assertEquals("Async Ping", client.get("name"));
+        assertThat(client).hasName("Async Ping");
     }
 
     /**
@@ -752,7 +727,7 @@ public class TracingTest {
         } catch (IOException e) {
             fail("Not failing graciously. Got: " + e.getMessage());
         }
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 1);
+        spanExporter().awaitCount(1, Duration.ofSeconds(10));
     }
 
     /**
@@ -773,14 +748,10 @@ public class TracingTest {
                 .get("/otel/enduser/roles-allowed-only-writer-role")
                 .then()
                 .statusCode(403);
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() > 1);
-        List<Map<String, Object>> spans = getSpans();
-        Assertions.assertTrue(spans
-                .stream()
-                .flatMap(m -> m.entrySet().stream())
-                .filter(e -> ("attr_" + ENDUSER_ID.getKey()).equals(e.getKey())
-                        || ("attr_" + USER_ROLES.getKey()).equals(e.getKey()))
-                .findAny().isEmpty());
+        SpanDataList spans = spanExporter().awaitUntil("more than 1 span", Duration.ofSeconds(5), s -> s.size() > 1);
+        assertThat(spans).allSatisfy(span -> assertThat(span.getAttributes())
+                .doesNotContainKey(ENDUSER_ID.getKey())
+                .doesNotContainKey(USER_ROLES.getKey()));
     }
 
     @Test
@@ -793,18 +764,18 @@ public class TracingTest {
 
         // should throw because there are a configuration quarkus.otel.traces.suppress-app-uris=/suppress-app-uri
         assertThrows(ConditionTimeoutException.class, () -> {
-            await().atMost(5, SECONDS).until(() -> !getSpans().isEmpty());
+            await().atMost(5, SECONDS).until(() -> !spanExporter().fetch().isEmpty());
         });
     }
 
-    private void verifyResource(Map<String, Object> spanData) {
+    private void verifyResource(SpanData spanData) {
         // the configured resource attribute wins over the application name
-        assertEquals("opentelemetry-integration-service", spanData.get("resource_service.name"));
-        assertEquals("42", spanData.get("resource_service.instance.id"));
-        assertEquals("999-SNAPSHOT", spanData.get("resource_service.version"));
-        assertEquals("java", spanData.get("resource_telemetry.sdk.language"));
-        assertEquals("opentelemetry", spanData.get("resource_telemetry.sdk.name"));
-        assertNotNull(spanData.get("resource_telemetry.sdk.version"));
+        assertEquals("opentelemetry-integration-service", spanData.getResource().getAttribute(SERVICE_NAME));
+        assertEquals("42", spanData.getResource().getAttribute(SERVICE_INSTANCE_ID));
+        assertEquals("999-SNAPSHOT", spanData.getResource().getAttribute(SERVICE_VERSION));
+        assertEquals("java", spanData.getResource().getAttribute(TELEMETRY_SDK_LANGUAGE));
+        assertEquals("opentelemetry", spanData.getResource().getAttribute(TELEMETRY_SDK_NAME));
+        assertNotNull(spanData.getResource().getAttribute(TELEMETRY_SDK_VERSION));
     }
 
     /**
@@ -841,18 +812,4 @@ public class TracingTest {
             }
         }
     };
-
-    private static List<Map<String, Object>> getSpansByKindAndParentId(List<Map<String, Object>> spans, SpanKind kind,
-            Object parentSpanId) {
-        return spans.stream()
-                .filter(map -> map.get("kind").equals(kind.toString()))
-                .filter(map -> map.get("parentSpanId").equals(parentSpanId)).collect(toList());
-    }
-
-    private static Map<String, Object> getSpanByKindAndParentId(List<Map<String, Object>> spans, SpanKind kind,
-            Object parentSpanId) {
-        List<Map<String, Object>> span = getSpansByKindAndParentId(spans, kind, parentSpanId);
-        assertEquals(1, span.size());
-        return span.get(0);
-    }
 }

@@ -25,7 +25,6 @@ import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
-import io.opentelemetry.sdk.trace.data.SpanData;
 
 @Path("")
 public class ExporterResource {
@@ -43,19 +42,6 @@ public class ExporterResource {
         inMemoryMetricExporter.reset();
         inMemoryLogRecordExporter.reset();
         return Response.ok().build();
-    }
-
-    /**
-     * Will exclude export endpoint related traces
-     */
-    @GET
-    @Path("/export")
-    public List<Map<String, Object>> exportTraces() {
-        return inMemorySpanExporter.getFinishedSpanItems()
-                .stream()
-                .filter(sd -> !sd.getName().contains("export") && !sd.getName().contains("reset"))
-                .map(ExporterResource::toSpanMap)
-                .collect(Collectors.toList());
     }
 
     /**
@@ -89,23 +75,6 @@ public class ExporterResource {
         return items.stream().map(ExporterResource::toLogMap).collect(Collectors.toList());
     }
 
-    private static Map<String, Object> toSpanMap(SpanData sd) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("spanId", sd.getSpanId());
-        map.put("traceId", sd.getTraceId());
-        map.put("name", sd.getName());
-        map.put("kind", sd.getKind().name());
-        map.put("ended", sd.hasEnded());
-        map.put("parentSpanId", sd.getParentSpanContext().getSpanId());
-        map.put("parent_spanId", sd.getParentSpanContext().getSpanId());
-        map.put("parent_traceId", sd.getParentSpanContext().getTraceId());
-        map.put("parent_remote", sd.getParentSpanContext().isRemote());
-        map.put("parent_valid", sd.getParentSpanContext().isValid());
-        sd.getAttributes().forEach((k, v) -> map.put("attr_" + k.getKey(), v.toString()));
-        sd.getResource().getAttributes().forEach((k, v) -> map.put("resource_" + k.getKey(), v.toString()));
-        return map;
-    }
-
     private static Map<String, Object> toLogMap(LogRecordData lr) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("severityText", lr.getSeverityText());
@@ -129,15 +98,6 @@ public class ExporterResource {
             return false;
         }
         return value.toString().equals(path);
-    }
-
-    @ApplicationScoped
-    static class InMemorySpanExporterProducer {
-        @Produces
-        @Singleton
-        InMemorySpanExporter inMemorySpanExporter() {
-            return InMemorySpanExporter.create();
-        }
     }
 
     @ApplicationScoped

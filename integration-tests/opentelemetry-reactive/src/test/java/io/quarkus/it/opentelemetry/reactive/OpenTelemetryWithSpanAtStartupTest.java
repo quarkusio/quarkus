@@ -3,14 +3,10 @@ package io.quarkus.it.opentelemetry.reactive;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
-import static io.quarkus.it.opentelemetry.reactive.Utils.getSpanByKindAndParentId;
-import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 
 import jakarta.annotation.PostConstruct;
@@ -26,14 +22,25 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
 import io.opentelemetry.instrumentation.annotations.WithSpan;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.runtime.Startup;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 
 @QuarkusTestResource(restrictToAnnotatedClass = true, value = OpenTelemetryWithSpanAtStartupTest.MyWireMockResource.class)
 @QuarkusTest
 public class OpenTelemetryWithSpanAtStartupTest {
+
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
 
     private static final int WIREMOCK_PORT = 20001;
     private static final String STARTUP_BEAN_ENABLED_PROPERTY = "startup.bean.enabled";
@@ -42,22 +49,15 @@ public class OpenTelemetryWithSpanAtStartupTest {
     void testGeneratedSpansUsingRestClientReactive() {
 
         // There's a bit of asynchronousness in recording and exporting the spans, so to avoid issues, give the startup spans a (small) moment to arrive
-        await().atMost(Duration.ofSeconds(5L)).pollDelay(Duration.ofMillis(50)).until(() -> {
-            // make sure incoming spans are processed
-            List<Map<String, Object>> spans = getSpans();
-            return spans.size() >= 2;
-        });
-
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(2, spans.size());
+        SpanDataList spans = spanExporter().awaitCount(2, Duration.ofSeconds(10));
 
         // First span is the callWireMockClient method. It does not have a parent span.
-        Map<String, Object> client = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
-        assertEquals("StartupBean.callWireMockClient", client.get("name"));
+        SpanData client = spans.ofKind(INTERNAL).roots().single();
+        assertThat(client).hasName("StartupBean.callWireMockClient");
 
         // We should get one client span, from the internal method.
-        Map<String, Object> server = getSpanByKindAndParentId(spans, CLIENT, client.get("spanId"));
-        assertEquals("GET /stub", server.get("name"));
+        SpanData server = spans.ofKind(CLIENT).childrenOf(client).single();
+        assertThat(server).hasName("GET /stub");
     }
 
     @Startup

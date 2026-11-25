@@ -1,30 +1,47 @@
 package io.quarkus.it.opentelemetry.spi;
 
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.restassured.RestAssured.get;
+import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
+import static io.opentelemetry.semconv.ClientAttributes.CLIENT_ADDRESS;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_ADDRESS;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_NAME;
+import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_VERSION;
+import static io.opentelemetry.semconv.TelemetryAttributes.TELEMETRY_SDK_LANGUAGE;
+import static io.opentelemetry.semconv.TelemetryAttributes.TELEMETRY_SDK_NAME;
+import static io.opentelemetry.semconv.TelemetryAttributes.TELEMETRY_SDK_VERSION;
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
+import static io.opentelemetry.semconv.UrlAttributes.URL_SCHEME;
+import static io.opentelemetry.semconv.UserAgentAttributes.USER_AGENT_ORIGINAL;
 import static io.restassured.RestAssured.given;
-import static java.net.HttpURLConnection.HTTP_OK;
-import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.net.URI;
 import java.net.URL;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.trace.SpanId;
-import io.opentelemetry.api.trace.TraceId;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.common.mapper.TypeRef;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 
 @QuarkusTest
 public class OTelSpiTest {
+
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
 
     @TestHTTPResource("deep/path")
     URL deepPathUrl;
@@ -32,19 +49,7 @@ public class OTelSpiTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        await().atMost(Duration.ofSeconds(30L)).until(() -> {
-            // make sure spans are cleared
-            List<Map<String, Object>> spans = getSpans();
-            if (!spans.isEmpty()) {
-                given().get("/reset").then().statusCode(HTTP_OK);
-            }
-            return spans.isEmpty();
-        });
-    }
-
-    private List<Map<String, Object>> getSpans() {
-        return get("/export").body().as(new TypeRef<>() {
-        });
+        spanExporter().reset();
     }
 
     @Test
@@ -56,30 +61,30 @@ public class OTelSpiTest {
                 .statusCode(200)
                 .body("message", equalTo("Direct trace"));
 
-        await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 1);
-        Map<String, Object> spanData = getSpans().get(0);
-        assertNotNull(spanData);
-        assertNotNull(spanData.get("spanId"));
+        SpanData span = spanExporter().awaitCount(1, Duration.ofMinutes(2)).single();
+        assertNotNull(span);
+        assertNotNull(span.getSpanId());
 
-        verifyResource(spanData);
+        verifyResource(span);
 
-        assertEquals("GET /direct", spanData.get("name"));
-        assertEquals(SERVER.toString(), spanData.get("kind"));
-        assertTrue((Boolean) spanData.get("ended"));
+        assertThat(span)
+                .hasName("GET /direct")
+                .hasKind(SERVER);
+        assertTrue(span.hasEnded());
 
-        assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));
-        assertEquals(TraceId.getInvalid(), spanData.get("parent_traceId"));
-        assertFalse((Boolean) spanData.get("parent_valid"));
-        assertFalse((Boolean) spanData.get("parent_remote"));
+        assertEquals(SpanId.getInvalid(), span.getParentSpanContext().getSpanId());
+        assertThat(span).hasNoParent();
+        assertFalse(span.getParentSpanContext().isRemote());
 
-        assertEquals("GET", spanData.get("attr_http.request.method"));
-        assertEquals("/direct", spanData.get("attr_url.path"));
-        assertEquals(deepPathUrl.getHost(), spanData.get("attr_server.address"));
-        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
-        assertEquals("http", spanData.get("attr_url.scheme"));
-        assertEquals("200", spanData.get("attr_http.response.status_code"));
-        assertNotNull(spanData.get("attr_client.address"));
-        assertNotNull(spanData.get("attr_user_agent.original"));
+        assertThat(span)
+                .hasAttribute(HTTP_REQUEST_METHOD, "GET")
+                .hasAttribute(URL_PATH, "/direct")
+                .hasAttribute(SERVER_ADDRESS, deepPathUrl.getHost())
+                .hasAttribute(SERVER_PORT, (long) deepPathUrl.getPort())
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertNotNull(span.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(span.getAttributes().get(USER_AGENT_ORIGINAL));
     }
 
     @Test
@@ -98,23 +103,22 @@ public class OTelSpiTest {
                 .statusCode(200)
                 .body("message", equalTo("Direct trace"));
 
-        await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 1);
-        Map<String, Object> spanData = getSpans().get(0);
-        assertNotNull(spanData);
-        assertNotNull(spanData.get("spanId"));
+        SpanData span = spanExporter().awaitCount(1, Duration.ofMinutes(2)).single();
+        assertNotNull(span);
+        assertNotNull(span.getSpanId());
 
-        verifyResource(spanData);
+        verifyResource(span);
 
         // /param/67 was sampled
-        assertEquals("GET /direct", spanData.get("name"));
+        assertThat(span).hasName("GET /direct");
 
     }
 
-    private void verifyResource(Map<String, Object> spanData) {
-        assertEquals("opentelemetry-integration-test-spi", spanData.get("resource_service.name"));
-        assertEquals("999-SNAPSHOT", spanData.get("resource_service.version"));
-        assertEquals("java", spanData.get("resource_telemetry.sdk.language"));
-        assertEquals("opentelemetry", spanData.get("resource_telemetry.sdk.name"));
-        assertNotNull(spanData.get("resource_telemetry.sdk.version"));
+    private void verifyResource(SpanData span) {
+        assertEquals("opentelemetry-integration-test-spi", span.getResource().getAttribute(SERVICE_NAME));
+        assertEquals("999-SNAPSHOT", span.getResource().getAttribute(SERVICE_VERSION));
+        assertEquals("java", span.getResource().getAttribute(TELEMETRY_SDK_LANGUAGE));
+        assertEquals("opentelemetry", span.getResource().getAttribute(TELEMETRY_SDK_NAME));
+        assertNotNull(span.getResource().getAttribute(TELEMETRY_SDK_VERSION));
     }
 }

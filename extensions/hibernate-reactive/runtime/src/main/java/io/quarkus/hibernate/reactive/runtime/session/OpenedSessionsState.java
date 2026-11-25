@@ -1,6 +1,8 @@
 package io.quarkus.hibernate.reactive.runtime.session;
 
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.PERSISTENCE_UNIT_NAME_KEY;
+import static io.quarkus.reactive.transaction.runtime.TransactionalInterceptorBase.TRANSACTIONAL_METHOD_KEY;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -66,6 +68,7 @@ public abstract class OpenedSessionsState<T extends Mutiny.Closeable> {
     // Only session objects need this — string-keyed flags (e.g. TRANSACTIONAL_METHOD_KEY)
     // are Quarkus-only and belong in ContextLocals.
     public Optional<SessionWithKey<T>> getOpenedSession(Context context, String persistenceUnitName) {
+        checkPersistenceUnit(persistenceUnitName);
         T current = ContextualDataStorage.get(context, sessionKeys.getValue(persistenceUnitName));
         return Optional.ofNullable(current)
                 .filter(this::isSessionOpen)
@@ -85,11 +88,26 @@ public abstract class OpenedSessionsState<T extends Mutiny.Closeable> {
     }
 
     public T createNewSession(String persistenceUnitName, Context context) {
+        checkPersistenceUnit(persistenceUnitName);
         Mutiny.SessionFactory sessionFactory = sessionFactories.getValue(persistenceUnitName);
         T session = newSessionMethod(sessionFactory);
 
         storeSession(context, persistenceUnitName, session);
         return session;
+    }
+
+    private static void checkPersistenceUnit(String persistenceUnitName) {
+        if (ContextLocals.get(TRANSACTIONAL_METHOD_KEY).isEmpty()) {
+            return;
+        }
+        Optional<String> currentPersistenceUnit = ContextLocals.get(PERSISTENCE_UNIT_NAME_KEY);
+        if (currentPersistenceUnit.isPresent() && !currentPersistenceUnit.get().equals(persistenceUnitName)) {
+            throw new UnsupportedOperationException(
+                    "Using more than one persistence unit in the same reactive transaction is not supported. "
+                            + "Current persistence unit: '" + currentPersistenceUnit.get()
+                            + "'; requested: '" + persistenceUnitName + "'.");
+        }
+        ContextLocals.put(PERSISTENCE_UNIT_NAME_KEY, persistenceUnitName);
     }
 
     private void storeSession(Context context, String persistenceUnitName, T session) {

@@ -31,13 +31,15 @@ public class WebAuthnRecorder {
         this.config = config;
     }
 
-    public void setupRoutes(BeanContainer beanContainer, RuntimeValue<Router> routerValue, String prefix) {
+    public void setupRoutes(BeanContainer beanContainer, RuntimeValue<Router> routerValue) {
         WebAuthnSecurity security = beanContainer.beanInstance(WebAuthnSecurity.class);
         WebAuthnController controller = new WebAuthnController(security);
         Router router = routerValue.getValue();
         BodyHandler bodyHandler = BodyHandler.create();
         // FIXME: paths configurable
-        // prefix is the non-application root path, ends with a slash: defaults to /q/
+        // these are application paths, so they don't follow quarkus.http.non-application-root-path: q/ is only a
+        // namespace, and the HTTP router is already mounted under quarkus.http.root-path
+        String prefix = "/q/";
         router.get(prefix + "webauthn/login-options-challenge").handler(bodyHandler)
                 .handler(controller::loginOptionsChallenge);
         router.get(prefix + "webauthn/register-options-challenge").handler(bodyHandler)

@@ -20,6 +20,7 @@ import io.quarkus.datasource.deployment.spi.DatabaseFeature;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import io.quarkus.datasource.runtime.DevServicesBuildTimeConfig.Reuse;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
@@ -424,7 +425,8 @@ public class DevServicesDatasourceProcessor {
                 dataSourceBuildTimeConfig.devservices().initScriptPath(),
                 dataSourceBuildTimeConfig.devservices().initPrivilegedScriptPath(),
                 dataSourceBuildTimeConfig.devservices().volumes(),
-                dataSourceBuildTimeConfig.devservices().reuse(),
+                dataSourceBuildTimeConfig.devservices().reuse() != Reuse.FALSE,
+                dataSourceBuildTimeConfig.devservices().reuse() == Reuse.TRUE,
                 dataSourceBuildTimeConfig.devservices().showLogs(),
                 datasourceName,
                 requiredFeatures,

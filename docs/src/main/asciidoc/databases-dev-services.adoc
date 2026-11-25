@@ -170,6 +170,22 @@ you can disable this feature for a specific Dev Service by setting the configura
 xref:quarkus-datasource_quarkus-datasource-devservices_quarkus-datasource-devservices-reuse[`quarkus.datasource.devservices.reuse`/`quarkus.datasource."datasource-name".devservices.reuse`]
 to `false`.
 
+This property also controls what happens to the
+xref:quarkus-datasource_quarkus-datasource-devservices_quarkus-datasource-devservices-init-script-path[init scripts]
+when a container is reused:
+
+`true` (default):: Reuse the container and run the init scripts again.
+This is consistent with Hibernate ORM, which by default initializes the schema and data again on a reused container.
+`false`:: Do not reuse the container.
+`skip-init-scripts`:: Reuse the container and do not run the init scripts again.
+Use this value if your init scripts are not idempotent, for example if they create tables without `IF NOT EXISTS`.
+
+[source,properties]
+----
+quarkus.datasource.devservices.init-script-path=init.sql
+quarkus.datasource.devservices.reuse=skip-init-scripts
+----
+
 [[sharing-datasource]]
 === Sharing a Dev Services database between several applications
 
@@ -222,6 +238,7 @@ It is handled only at the Dev Service layer; upper layers, e.g. connection pools
 
 This means in particular that sharing the Dev Services between two datasources of the *same application* may lead to unwanted behavior, such as the database schema being initialized twice, or transactions involving both datasources requiring XA, and more.
 ====
+
 == Mapping volumes into Dev Services for Database
 
 Mapping volumes from the Docker host's filesystem to the containers is handy to provide files like scripts or configuration, but also to preserve database data and reuse it after an application restart.

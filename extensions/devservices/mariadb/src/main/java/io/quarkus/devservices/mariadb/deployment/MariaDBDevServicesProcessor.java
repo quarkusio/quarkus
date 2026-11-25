@@ -80,6 +80,7 @@ public class MariaDBDevServicesProcessor {
                         .withPassword(effectivePassword)
                         .withDatabaseName(effectiveDbName)
                         .withReuse(containerConfig.isReuse());
+                container.setRunInitScriptsOnReuse(containerConfig.isRunInitScriptsOnReuse());
                 Labels.addDataSourceLabel(container, datasourceName);
                 ConfigureUtil.configureSharedServiceLabel(container, launchMode, DEV_SERVICE_LABEL,
                         containerConfig.getServiceName());
@@ -131,6 +132,7 @@ public class MariaDBDevServicesProcessor {
 
         private final String hostName;
 
+        private boolean runInitScriptsOnReuse = true;
         private boolean reused;
 
         public QuarkusMariaDBContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
@@ -144,6 +146,13 @@ public class MariaDBDevServicesProcessor {
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mariadb");
         }
 
+        /**
+         * @param runInitScriptsOnReuse whether the init scripts run again when the container is reused
+         */
+        void setRunInitScriptsOnReuse(boolean runInitScriptsOnReuse) {
+            this.runInitScriptsOnReuse = runInitScriptsOnReuse;
+        }
+
         @Override
         protected void containerIsStarted(InspectContainerResponse containerInfo, boolean reused) {
             this.reused = reused;
@@ -152,11 +161,12 @@ public class MariaDBDevServicesProcessor {
 
         /**
          * A reused container keeps its data, including the effect of the init scripts that ran when it was first
-         * started, so the scripts are not run again: a non-idempotent script would fail on the second run.
+         * started. With {@code reuse=skip-init-scripts}, the scripts are not run again on a reused container: a
+         * non-idempotent script would fail on the second run.
          */
         @Override
         protected void runInitScriptIfRequired() {
-            if (!reused) {
+            if (!reused || runInitScriptsOnReuse) {
                 super.runInitScriptIfRequired();
             }
         }

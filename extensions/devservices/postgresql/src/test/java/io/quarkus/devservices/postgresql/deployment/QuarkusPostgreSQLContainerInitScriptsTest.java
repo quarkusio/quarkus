@@ -17,37 +17,52 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 /**
  * The init scripts are run from {@code runInitScriptIfRequired}, which {@code JdbcDatabaseContainer} calls from
  * {@code containerIsStarted} right after logging the JDBC URL. The container is never started here: the script does
- * not exist, so reaching the inherited implementation fails while loading it, and a reused container must skip it
- * altogether and still reach the inherited logging.
+ * not exist, so reaching the inherited implementation fails while loading it. A reused container runs the scripts
+ * again by default, and skips them altogether with {@code reuse=skip-init-scripts} but still reaches the inherited
+ * logging.
  */
 public class QuarkusPostgreSQLContainerInitScriptsTest {
 
     private static final String INIT_SCRIPT = "does-not-exist.sql";
 
     @Test
-    public void initScriptsAreNotRunOnAReusedContainer() {
-        TestContainer container = container();
+    public void initScriptsAreRunOnAReusedContainerByDefault() {
+        assertInitScriptsAreRun(container(true), true);
+    }
+
+    @Test
+    public void initScriptsAreNotRunOnAReusedContainerWhenSkipped() {
+        TestContainer container = container(false);
         assertDoesNotThrow(() -> container.containerIsStarted(new InspectContainerResponse(), true));
     }
 
     @Test
     public void initScriptsAreRunOnAFreshContainer() {
-        TestContainer container = container();
-        ScriptUtils.ScriptLoadException e = assertThrows(ScriptUtils.ScriptLoadException.class,
-                () -> container.containerIsStarted(new InspectContainerResponse(), false));
-        assertTrue(e.getMessage().contains(INIT_SCRIPT), e.getMessage());
+        assertInitScriptsAreRun(container(true), false);
+    }
+
+    @Test
+    public void initScriptsAreRunOnAFreshContainerWhenSkipped() {
+        assertInitScriptsAreRun(container(false), false);
     }
 
     @Test
     public void theInheritedStartupLoggingIsKeptOnAReusedContainer() {
-        TestContainer container = container();
+        TestContainer container = container(false);
         container.containerIsStarted(new InspectContainerResponse(), true);
         assertTrue(container.jdbcUrlRequested);
     }
 
-    private static TestContainer container() {
+    private static void assertInitScriptsAreRun(TestContainer container, boolean reused) {
+        ScriptUtils.ScriptLoadException e = assertThrows(ScriptUtils.ScriptLoadException.class,
+                () -> container.containerIsStarted(new InspectContainerResponse(), reused));
+        assertTrue(e.getMessage().contains(INIT_SCRIPT), e.getMessage());
+    }
+
+    private static TestContainer container(boolean runInitScriptsOnReuse) {
         TestContainer container = new TestContainer();
         container.withInitScripts(INIT_SCRIPT);
+        container.setRunInitScriptsOnReuse(runInitScriptsOnReuse);
         return container;
     }
 

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.keycloak.admin.client.common.runtime.KeycloakAdminClientConfig;
 import io.quarkus.keycloak.admin.client.common.runtime.KeycloakAdminClientConfigUtil;
 import io.smallrye.config.ConfigInstanceBuilder;
+import io.smallrye.config.Secret;
 
 public class ConfigValidationTest {
 
@@ -25,7 +26,7 @@ public class ConfigValidationTest {
 
         // password is required
         Assertions.assertThrows(KeycloakAdminClientConfigUtil.KeycloakAdminClientException.class, () -> {
-            validate(createConfig().with(KeycloakAdminClientConfig::password, Optional.<String> empty()).build());
+            validate(createConfig().with(KeycloakAdminClientConfig::password, Optional.<Secret<String>> empty()).build());
         });
     }
 
@@ -36,7 +37,8 @@ public class ConfigValidationTest {
 
         // client secret is required
         Assertions.assertThrows(KeycloakAdminClientConfigUtil.KeycloakAdminClientException.class, () -> {
-            validate(createClientCredentialsConfig().with(KeycloakAdminClientConfig::clientSecret, Optional.<String> empty())
+            validate(createClientCredentialsConfig()
+                    .with(KeycloakAdminClientConfig::clientSecret, Optional.<Secret<String>> empty())
                     .build());
         });
     }
@@ -47,15 +49,15 @@ public class ConfigValidationTest {
                 .with(KeycloakAdminClientConfig::grantType, KeycloakAdminClientConfig.GrantType.PASSWORD)
                 .with(KeycloakAdminClientConfig::clientId, "client id")
                 .withOptional(KeycloakAdminClientConfig::username, "john")
-                .withOptional(KeycloakAdminClientConfig::password, "pwd")
+                .withOptional(KeycloakAdminClientConfig::password, (Secret<String>) () -> "pwd")
                 .with(KeycloakAdminClientConfig::realm, "master");
     }
 
     private ConfigInstanceBuilder<KeycloakAdminClientConfig> createClientCredentialsConfig() {
         return createConfig()
                 .with(KeycloakAdminClientConfig::grantType, KeycloakAdminClientConfig.GrantType.CLIENT_CREDENTIALS)
-                .with(KeycloakAdminClientConfig::password, Optional.<String> empty())
+                .with(KeycloakAdminClientConfig::password, Optional.<Secret<String>> empty())
                 .with(KeycloakAdminClientConfig::username, Optional.<String> empty())
-                .withOptional(KeycloakAdminClientConfig::clientSecret, "client secret");
+                .withOptional(KeycloakAdminClientConfig::clientSecret, (Secret<String>) () -> "client secret");
     }
 }

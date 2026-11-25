@@ -17,6 +17,7 @@ import io.quarkus.runtime.configuration.MemorySize;
 import io.smallrye.config.Config;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigValue;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithKeys;
@@ -206,7 +207,7 @@ public interface RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      */
-    Optional<String> trustStorePassword();
+    Optional<Secret<String>> trustStorePassword();
 
     /**
      * The type of the trust store. Defaults to "JKS".
@@ -227,7 +228,7 @@ public interface RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      */
-    Optional<String> keyStorePassword();
+    Optional<Secret<String>> keyStorePassword();
 
     /**
      * The type of the key store. Defaults to "JKS".
@@ -493,7 +494,7 @@ public interface RestClientsConfig {
         /**
          * The trust store password.
          */
-        Optional<String> trustStorePassword();
+        Optional<Secret<String>> trustStorePassword();
 
         /**
          * The type of the trust store. Defaults to "JKS".
@@ -508,7 +509,7 @@ public interface RestClientsConfig {
         /**
          * The key store password.
          */
-        Optional<String> keyStorePassword();
+        Optional<Secret<String>> keyStorePassword();
 
         /**
          * The type of the key store. Defaults to "JKS".

@@ -72,7 +72,7 @@ public class WebAuthnRecorder {
                                         + key);
                     }
                 } else {
-                    key = httpConfig.getValue().encryptionKey().get();
+                    key = httpConfig.getValue().encryptionKey().get().get();
                 }
                 WebAuthnRunTimeConfig config = WebAuthnRecorder.this.config.getValue();
                 PersistentLoginManager loginManager = new PersistentLoginManager(key, config.cookieName(),

@@ -13,6 +13,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithParentName;
 
@@ -58,7 +59,7 @@ public interface ProxyConfig {
          * <p>
          * See also {@code credentials-provider}
          */
-        Optional<String> password();
+        Optional<Secret<String>> password();
 
         /**
          * Hostnames or IP addresses to exclude from proxying

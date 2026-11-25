@@ -178,7 +178,7 @@ public class CsrfRequestResponseReactiveFilter {
             return;
         } else {
             String expectedCookieTokenValue = config.tokenSignatureKey().isPresent()
-                    ? CsrfTokenUtils.signCsrfToken(csrfToken, config.tokenSignatureKey().get())
+                    ? CsrfTokenUtils.signCsrfToken(csrfToken, config.tokenSignatureKey().get().get())
                     : csrfToken;
             if (!cookieToken.equals(expectedCookieTokenValue)) {
                 LOG.debug("CSRF token value is wrong");
@@ -239,7 +239,7 @@ public class CsrfRequestResponseReactiveFilter {
                             + ", no CSRF cookie will be created");
                     return;
                 }
-                cookieValue = CsrfTokenUtils.signCsrfToken(csrfTokenBytes, config.tokenSignatureKey().get());
+                cookieValue = CsrfTokenUtils.signCsrfToken(csrfTokenBytes, config.tokenSignatureKey().get().get());
             } else {
                 String csrfToken = routing.get(CSRF_TOKEN_KEY);
 

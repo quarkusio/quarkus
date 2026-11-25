@@ -680,6 +680,7 @@ public interface Defaults {
 No configuration properties required. The `Defaults.foo()` will return the value `foo` and `Defaults.bar()` will return
 the value `bar`.
 
+[[config-mapping-secrets]]
 === Secrets
 
 A mapping can mark a member as a secret with `Secret<T>`:
@@ -699,9 +700,48 @@ A `Secret` value modifies the behavior of the Config system by:
 - Omitting the name of the secret from `Config#getPropertyNames()`
 - Omitting the name and value of the secret from the mapping `toString` output
 - Throwing a `SecurityException` when trying to retrieve the value via the `Config` programmatic API
+- Throwing a `SecurityException` when trying to retrieve a value that references the secret in an expression (e.g.
+`my.url=https://user:${credentials.password}@example.com`) via the `Config` programmatic API
+
+A call to `Credentials.password().get()` returns the value of the secret. Injection with `@ConfigProperty` is not
+affected, and also returns the value of the secret.
 
 A `Secret` can be of any type that can be converted by a registered `org.eclipse.microprofile.config.spi.Converter`
 of the same type.
+
+A `Secret` can also be wrapped in an `Optional`, a collection or a `Map`. For a `Secret` in a `Map`, the secret applies
+to every key of the `Map`:
+
+[source,java]
+----
+@ConfigMapping(prefix = "app")
+public interface App {
+    Map<String, Client> clients();
+
+    interface Client {
+        Optional<Secret<String>> password();
+    }
+}
+----
+
+.application.properties
+[source,properties]
+----
+app.clients.github.password=github-password
+app.clients.gitlab.password=gitlab-password
+----
+
+Both `app.clients.github.password` and `app.clients.gitlab.password` are secrets.
+
+To retrieve a secret via the `Config` programmatic API, wrap the call in `io.smallrye.config.SecretKeys#doUnlocked`:
+
+[source,java]
+----
+String password = SecretKeys.doUnlocked(() -> config.getValue("credentials.password", String.class));
+----
+
+The list of properties in the Dev UI configuration editor and the dev console `config` command mask the value of a
+secret.
 
 === `toString`, `equals`, `hashCode`
 

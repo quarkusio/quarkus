@@ -16,6 +16,7 @@ import io.quarkus.tls.runtime.config.KeyStoreConfig;
 import io.quarkus.tls.runtime.config.KeyStoreCredentialProviderConfig;
 import io.quarkus.tls.runtime.config.TrustStoreConfig;
 import io.quarkus.tls.runtime.config.TrustStoreCredentialProviderConfig;
+import io.smallrye.config.Secret;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.JksOptions;
@@ -57,7 +58,8 @@ public class JKSKeyStores {
         JksOptions options = new JksOptions();
         try {
             options.setValue(Buffer.buffer(read(config.path())));
-            String p = CredentialProviders.getKeyStorePassword(config.password(), keyStoreCredentialProviderConfig)
+            String p = CredentialProviders
+                    .getKeyStorePassword(config.password().map(Secret::get), keyStoreCredentialProviderConfig)
                     .orElse(null);
             if (p == null) {
                 throw new IllegalArgumentException("Invalid JKS key store configuration for certificate '" + name
@@ -67,7 +69,8 @@ public class JKSKeyStores {
             if (config.alias().isPresent()) {
                 options.setAlias(config.alias().get());
             }
-            String ap = CredentialProviders.getAliasPassword(config.aliasPassword(), keyStoreCredentialProviderConfig)
+            String ap = CredentialProviders
+                    .getAliasPassword(config.aliasPassword().map(Secret::get), keyStoreCredentialProviderConfig)
                     .orElse(null);
             options.setAliasPassword(ap);
             return options;
@@ -84,7 +87,8 @@ public class JKSKeyStores {
         JksOptions options = new JksOptions();
         try {
             options.setValue(Buffer.buffer(read(config.path())));
-            String password = CredentialProviders.getTrustStorePassword(config.password(), trustStoreCredentialProviderConfig)
+            String password = CredentialProviders
+                    .getTrustStorePassword(config.password().map(Secret::get), trustStoreCredentialProviderConfig)
                     .orElse(null);
             if (password == null) {
                 throw new IllegalStateException("Invalid JKS trust store configuration for certificate '" + name

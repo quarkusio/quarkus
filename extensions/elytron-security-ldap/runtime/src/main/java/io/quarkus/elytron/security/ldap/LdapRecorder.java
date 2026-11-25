@@ -23,6 +23,7 @@ import io.quarkus.elytron.security.ldap.config.IdentityMappingConfig;
 import io.quarkus.elytron.security.ldap.config.LdapSecurityRealmRuntimeConfig;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.smallrye.config.Secret;
 
 public class LdapRecorder {
     private static final Logger log = LoggerFactory.getLogger(LdapRecorder.class);
@@ -67,7 +68,7 @@ public class LdapRecorder {
         DirContextFactory dirContextFactory = new QuarkusDirContextFactory(
                 dirContext.url(),
                 dirContext.principal().orElse(null),
-                dirContext.password().orElse(null),
+                dirContext.password().map(Secret::get).orElse(null),
                 dirContext.connectTimeout(),
                 dirContext.readTimeout(),
                 configureTls(dirContext, tlsRegistry));

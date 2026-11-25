@@ -72,7 +72,7 @@ public class ProgrammaticCsrfTest {
         Assertions.assertEquals("path1", fullConfig.cookiePath());
         Assertions.assertFalse(fullConfig.requireFormUrlEncoded());
         Assertions.assertEquals(1234, fullConfig.tokenSize());
-        Assertions.assertEquals("12345".repeat(10), fullConfig.tokenSignatureKey().get());
+        Assertions.assertEquals("12345".repeat(10), fullConfig.tokenSignatureKey().get().get());
         Assertions.assertEquals(Duration.ofHours(5), fullConfig.cookieMaxAge());
         Assertions.assertEquals("Domain1", fullConfig.cookieDomain().get());
         Assertions.assertEquals(Set.of("tokenPath1"), fullConfig.createTokenPath().get());

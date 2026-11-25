@@ -173,7 +173,7 @@ public class InfinispanClientProducer {
             }
 
             if (infinispanClientRuntimeConfig.password().isPresent()) {
-                properties.put(ConfigurationProperties.AUTH_PASSWORD, infinispanClientRuntimeConfig.password().get());
+                properties.put(ConfigurationProperties.AUTH_PASSWORD, infinispanClientRuntimeConfig.password().get().get());
             }
         }
 
@@ -201,7 +201,7 @@ public class InfinispanClientProducer {
         }
         if (infinispanClientRuntimeConfig.keyStorePassword().isPresent()) {
             properties.put(ConfigurationProperties.KEY_STORE_PASSWORD,
-                    infinispanClientRuntimeConfig.keyStorePassword().get());
+                    infinispanClientRuntimeConfig.keyStorePassword().get().get());
         }
         if (infinispanClientRuntimeConfig.keyStoreType().isPresent()) {
             properties.put(ConfigurationProperties.KEY_STORE_TYPE,
@@ -216,7 +216,7 @@ public class InfinispanClientProducer {
         }
         if (infinispanClientRuntimeConfig.trustStorePassword().isPresent()) {
             properties.put(ConfigurationProperties.TRUST_STORE_PASSWORD,
-                    infinispanClientRuntimeConfig.trustStorePassword().get());
+                    infinispanClientRuntimeConfig.trustStorePassword().get().get());
         }
         if (infinispanClientRuntimeConfig.trustStoreType().isPresent()) {
             properties.put(ConfigurationProperties.TRUST_STORE_TYPE, infinispanClientRuntimeConfig.trustStoreType().get());

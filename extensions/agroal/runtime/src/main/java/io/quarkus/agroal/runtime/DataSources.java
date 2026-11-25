@@ -307,7 +307,7 @@ public class DataSources {
                     .principal(username).recoveryPrincipal(username);
         }
         if (dataSourceRuntimeConfig.password().isPresent()) {
-            SimplePassword password = new SimplePassword(dataSourceRuntimeConfig.password().get());
+            SimplePassword password = new SimplePassword(dataSourceRuntimeConfig.password().get().get());
             connectionFactoryConfiguration
                     .credential(password).recoveryCredential(password);
         }

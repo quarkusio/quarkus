@@ -45,6 +45,7 @@ import io.quarkus.devservices.datasource.common.DevServicesDatasourceResultBuild
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.smallrye.config.SecretKeys;
 
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class DevServicesDatasourceProcessor {
@@ -155,8 +156,8 @@ public class DevServicesDatasourceProcessor {
             Optional<String> username = ConfigUtils.getFirstOptionalValue(
                     DataSourceUtil.dataSourcePropertyKeys(name, "username"), String.class);
             res.put(name + ".username", username);
-            Optional<String> password = ConfigUtils.getFirstOptionalValue(
-                    DataSourceUtil.dataSourcePropertyKeys(name, "password"), String.class);
+            Optional<String> password = SecretKeys.doUnlocked(() -> ConfigUtils.getFirstOptionalValue(
+                    DataSourceUtil.dataSourcePropertyKeys(name, "password"), String.class));
             res.put(name + ".password", password);
         }
         return res;
@@ -213,9 +214,9 @@ public class DevServicesDatasourceProcessor {
             Optional<String> usernameFromConfig = ConfigUtils.getFirstOptionalValue(
                     DataSourceUtil.dataSourcePropertyKeys(dbName, "username"),
                     String.class);
-            Optional<String> passwordFromConfig = ConfigUtils.getFirstOptionalValue(
+            Optional<String> passwordFromConfig = SecretKeys.doUnlocked(() -> ConfigUtils.getFirstOptionalValue(
                     DataSourceUtil.dataSourcePropertyKeys(dbName, "password"),
-                    String.class);
+                    String.class));
 
             String feature = devDbProvider.getFeature();
 

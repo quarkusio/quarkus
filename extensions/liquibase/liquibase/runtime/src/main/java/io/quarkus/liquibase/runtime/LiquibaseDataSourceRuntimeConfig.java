@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 
 /**
@@ -95,7 +96,7 @@ public interface LiquibaseDataSourceRuntimeConfig {
      * The password that Liquibase uses to connect to the database.
      * If no specific password is configured, falls back to the datasource username and password.
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * The name of the catalog with the liquibase tables.

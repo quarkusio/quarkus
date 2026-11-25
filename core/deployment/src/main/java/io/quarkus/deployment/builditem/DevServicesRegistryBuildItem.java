@@ -313,9 +313,16 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
                 // and DevServicesAdditionalConfigBuildItem evaluation.
                 Map<String, String> currentDevServiceConfig = new HashMap<>(config);
 
+                Map<String, BiConsumer<Startable, String>> applicationValueActions = request.getApplicationValueActions();
+                Startable started = startable;
                 RunningService service = new RunningService(request.getName(), request.getDescription(),
                         new HashMap<>(currentDevServiceConfig), startable.getContainerId(), startable,
-                        startable.isReusable());
+                        startable.isReusable(), (key, value) -> {
+                            BiConsumer<Startable, String> applicationValueAction = applicationValueActions.get(key);
+                            if (applicationValueAction != null) {
+                                applicationValueAction.accept(started, value);
+                            }
+                        });
 
                 for (DevServicesAdditionalConfigBuildItem additionalConfigBuildItem : additionalConfigBuildItems) {
                     Map<String, String> extraFromBuildItem = additionalConfigBuildItem.getConfigProvider()

@@ -1,6 +1,8 @@
 package io.quarkus.rest.client.reactive.spi;
 
 import java.io.Closeable;
+import java.net.URI;
+import java.util.function.Consumer;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
@@ -23,12 +25,16 @@ public interface DevServicesRestClientProxyProvider {
     Closeable setup();
 
     /**
-     * Called by Quarkus for each of the REST Clients that need to be proxied
+     * Called by Quarkus for each of the REST Clients that need to be proxied.
+     * <p>
+     * The proxy starts before the application, so it starts without an origin. The base URI of the REST Client comes
+     * from the runtime configuration of the application, and may reference an address of the application, such as
+     * {@code quarkus://vertx-http}, that is only bound once the application starts. The application resolves it on
+     * every start, and hands it to the {@link CreateResult#origin()} consumer.
      */
     CreateResult create(RestClientHttpProxyBuildItem buildItem);
 
-    record CreateResult(String host, Integer port, Closeable closeable) {
-
+    record CreateResult(String host, Integer port, Consumer<URI> origin, Closeable closeable) {
     }
 
     /**

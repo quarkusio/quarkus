@@ -12,33 +12,41 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.exception.UncheckedException;
 import org.jboss.logging.Logger;
 
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.builditem.ApplicationInstanceIdBuildItem;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesRegistry;
 import io.quarkus.rest.client.reactive.spi.DevServicesRestClientProxyProvider;
 import io.quarkus.rest.client.reactive.spi.RestClientHttpProxyBuildItem;
 import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig.RestClientBuildConfig;
+import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
 import io.quarkus.restclient.config.deployment.RestClientsBuildTimeConfigBuildItem;
-import io.smallrye.config.SmallRyeConfig;
+import io.quarkus.runtime.Address;
+import io.quarkus.runtime.AddressResolver;
 
 @BuildSteps(onlyIf = IsDevServicesSupportedByLaunchMode.class)
 public class DevServicesRestClientHttpProxyProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesRestClientHttpProxyProcessor.class);
 
-    // the following fields are needed for state management as proxied can come and go
-    private static final AtomicReference<Set<RestClientHttpProxyBuildItem>> runningProxies = new AtomicReference<>(
-            new HashSet<>());
+    // the following fields are needed for state management as providers can come and go; the proxies themselves are
+    // Dev Services, closed by the Dev Services registry
     private static final AtomicReference<Set<DevServicesRestClientProxyProvider>> runningProviders = new AtomicReference<>(
             Collections.newSetFromMap(new IdentityHashMap<>()));
     private static final AtomicReference<Set<Closeable>> providerCloseables = new AtomicReference<>(
@@ -59,7 +67,6 @@ public class DevServicesRestClientHttpProxyProcessor {
             return;
         }
 
-        SmallRyeConfig config = restClientBuildTimeConfig.getConfig();
         for (RegisteredRestClient registeredRestClient : restClientBuildTimeConfig.getRestClients()) {
             String restClient = registeredRestClient.getFullName();
 
@@ -69,16 +76,8 @@ public class DevServicesRestClientHttpProxyProcessor {
                 continue;
             }
 
-            // TODO - DevServices - We shouldn't do this, because we are querying runtime configuration
-            Optional<String> baseUri = oneOf(
-                    config.getOptionalValue("quarkus.rest-client." + "\"" + restClient + "\"" + ".uri", String.class),
-                    config.getOptionalValue("quarkus.rest-client." + "\"" + restClient + "\"" + ".url", String.class));
-            if (baseUri.isEmpty()) {
-                log.debug("Unable to determine uri or url for REST Client '" + restClient + "'");
-                continue;
-            }
-            producer.produce(
-                    new RestClientHttpProxyBuildItem(restClient, baseUri.get(), restClientBuildConfig.localProxyProvider()));
+            // the base URI is runtime configuration, which the application publishes to the proxy once it starts
+            producer.produce(new RestClientHttpProxyBuildItem(restClient, restClientBuildConfig.localProxyProvider()));
         }
     }
 
@@ -91,24 +90,9 @@ public class DevServicesRestClientHttpProxyProcessor {
             return;
         }
 
-        Set<RestClientHttpProxyBuildItem> requestedProxies = new HashSet<>(restClientHttpProxyBuildItems);
-
-        Set<RestClientHttpProxyBuildItem> proxiesToClose = new HashSet<>(runningProxies.get());
-        proxiesToClose.removeAll(requestedProxies);
-
-        // we need to remove the running ones that should no longer be running
-        for (var running : proxiesToClose) {
-            closeRunningProxy(running);
-        }
-        runningProxies.get().removeAll(proxiesToClose);
-
-        // we need to figure out which ones to start
-        Set<RestClientHttpProxyBuildItem> proxiesToRun = new HashSet<>(requestedProxies);
-        proxiesToRun.removeAll(runningProxies.get());
-
-        // determine which providers to use for each of the new proxies to start
+        // determine which providers to use for each of the proxies
         Map<RestClientHttpProxyBuildItem, DevServicesRestClientProxyProvider> biToProviderMap = new HashMap<>();
-        for (var toStart : proxiesToRun) {
+        for (var toStart : restClientHttpProxyBuildItems) {
             DevServicesRestClientProxyProvider provider;
             if (toStart.getProvider().isPresent()) {
                 String requestedProviderName = toStart.getProvider().get();
@@ -161,83 +145,87 @@ public class DevServicesRestClientHttpProxyProcessor {
             runningProviders.get().add(provider);
         }
 
-        // this is where we actually start proxies
-        for (var bi : proxiesToRun) {
-            URI baseUri = URI.create(bi.getBaseUri());
+        // the proxies are Dev Services, started before the application and kept across restarts while unchanged
+        for (var entry : biToProviderMap.entrySet()) {
+            RestClientHttpProxyBuildItem bi = entry.getKey();
+            DevServicesRestClientProxyProvider provider = entry.getValue();
+            String urlKeyName = String.format("quarkus.rest-client.\"%s\".override-uri", bi.getClassName());
 
-            var provider = biToProviderMap.get(bi);
-            var createResult = provider.create(bi);
-            var proxyServerClosable = createResult.closeable();
-            bi.attachClosable(proxyServerClosable);
-            runningProxies.get().add(bi);
-
-            var urlKeyName = String.format("quarkus.rest-client.\"%s\".override-uri", bi.getClassName());
-            var urlKeyValue = String.format("http://%s:%d", createResult.host(), createResult.port());
-            String basePath = baseUri.getPath();
-            if ((basePath != null) && !basePath.isEmpty()) {
-                if (basePath.startsWith("/")) {
-                    basePath = basePath.substring(1);
-                }
-                urlKeyValue = urlKeyValue + "/" + basePath;
-            }
-
-            devServicePropertiesProducer.produce(
-                    DevServicesResultBuildItem.discovered()
-                            .feature(Feature.REST_CLIENT)
-                            .description("rest-client-" + bi.getClassName() + "-proxy")
-                            .config(Map.of(urlKeyName, urlKeyValue))
-                            .build());
+            devServicePropertiesProducer.produce(DevServicesResultBuildItem.owned()
+                    .feature(Feature.REST_CLIENT)
+                    .serviceName(bi.getClassName())
+                    .description("rest-client-" + bi.getClassName() + "-proxy")
+                    .serviceConfig(provider.name())
+                    .startable(() -> new RestClientProxyStartable(provider, bi))
+                    .configProvider(new Function<RestClientProxyStartable, Map<String, String>>() {
+                        @Override
+                        public Map<String, String> apply(RestClientProxyStartable proxy) {
+                            return Map.of(urlKeyName, proxy.getConnectionInfo());
+                        }
+                    })
+                    // the application publishes the origin on every start, once it has resolved the base URI
+                    .onApplicationValue(RestClientProxyStartable.ORIGIN,
+                            new BiConsumer<RestClientProxyStartable, String>() {
+                                @Override
+                                public void accept(RestClientProxyStartable proxy, String origin) {
+                                    proxy.originAvailable(URI.create(origin));
+                                }
+                            })
+                    .build());
         }
 
-        closeBuildItem.addCloseTask(new CloseTask(runningProxies, providerCloseables, runningProviders), true);
+        closeBuildItem.addCloseTask(new CloseTask(providerCloseables, runningProviders), true);
     }
 
-    private static void closeRunningProxy(RestClientHttpProxyBuildItem running) {
-        try {
-            Closeable closeable = running.getCloseable();
-            if (closeable != null) {
-                log.debug("Attempting to close HTTP proxy server for REST Client '" + running.getClassName() + "'");
-                closeable.close();
-                log.debug("Closed HTTP proxy server for REST Client '" + running.getClassName() + "'");
-            }
-        } catch (IOException e) {
-            throw new UncheckedException(e);
+    /**
+     * Publishes the origin of the proxy of each REST Client on every application start: its base URI, from the runtime
+     * configuration, resolved against the addresses the application has bound, such as {@code quarkus://vertx-http}.
+     * <p>
+     * A separate build step from {@link #start}, which produces build items that the recorder steps binding the
+     * addresses depend on, and would order these services before them.
+     */
+    @BuildStep
+    void publishOrigins(List<RestClientHttpProxyBuildItem> restClientHttpProxyBuildItems,
+            ApplicationInstanceIdBuildItem applicationId,
+            ServiceRegistrar serviceRegistrar) {
+        // Same id the Dev Services registry keys the running proxies with
+        String applicationInstanceId = applicationId.getUUID().toString();
+        String feature = Feature.REST_CLIENT.getName();
+        for (RestClientHttpProxyBuildItem proxy : restClientHttpProxyBuildItems) {
+            String restClient = proxy.getClassName();
+            serviceRegistrar.forService("io.quarkus.rest-client.local-proxy." + restClient)
+                    .atPhase(Phase.BINDING)
+                    .require(RunningDevServicesRegistry.class)
+                    .require(RestClientsConfig.class)
+                    .consumeAll(Address.class)
+                    .onStart((ctx, registry, restClientsConfig, addresses) -> {
+                        RestClientConfig restClientConfig = restClientsConfig.clients().get(restClient);
+                        Optional<String> baseUri = restClientConfig.uri().isPresent() ? restClientConfig.uri()
+                                : restClientConfig.url();
+                        if (baseUri.isEmpty()) {
+                            return;
+                        }
+                        String resolved = AddressResolver
+                                .resolve(name -> Optional.ofNullable(addresses.get(name)), baseUri.get()).toString();
+                        registry.publish(applicationInstanceId, feature, restClient, RestClientProxyStartable.ORIGIN, resolved);
+                    });
         }
-    }
-
-    @SafeVarargs
-    private static <T> Optional<T> oneOf(Optional<T>... optionals) {
-        for (Optional<T> o : optionals) {
-            if (o != null && o.isPresent()) {
-                return o;
-            }
-        }
-        return Optional.empty();
     }
 
     private static class CloseTask implements Runnable {
 
-        private final AtomicReference<Set<RestClientHttpProxyBuildItem>> runningProxiesRef;
         private final AtomicReference<Set<Closeable>> providerCloseablesRef;
         private final AtomicReference<Set<DevServicesRestClientProxyProvider>> runningProvidersRef;
 
-        public CloseTask(AtomicReference<Set<RestClientHttpProxyBuildItem>> runningProxiesRef,
+        public CloseTask(
                 AtomicReference<Set<Closeable>> providerCloseablesRef,
                 AtomicReference<Set<DevServicesRestClientProxyProvider>> runningProvidersRef) {
-
-            this.runningProxiesRef = runningProxiesRef;
             this.providerCloseablesRef = providerCloseablesRef;
             this.runningProvidersRef = runningProvidersRef;
         }
 
         @Override
         public void run() {
-            Set<RestClientHttpProxyBuildItem> restClientHttpProxyBuildItems = runningProxiesRef.get();
-            for (var bi : restClientHttpProxyBuildItems) {
-                closeRunningProxy(bi);
-            }
-            runningProxiesRef.set(new HashSet<>());
-
             Set<Closeable> providerCloseables = providerCloseablesRef.get();
             for (Closeable closeable : providerCloseables) {
                 try {

@@ -39,12 +39,11 @@ import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
  */
 public final class RestClientsBuildTimeConfigBuildItem extends SimpleBuildItem {
     private final List<RegisteredRestClient> restClients;
-    private final SmallRyeConfig config;
     private final RestClientsBuildTimeConfig restClientsBuildTimeConfig;
 
     public RestClientsBuildTimeConfigBuildItem(final List<RegisteredRestClient> restClients) {
         this.restClients = Collections.unmodifiableList(restClients);
-        this.config = new SmallRyeConfigBuilder()
+        SmallRyeConfig config = new SmallRyeConfigBuilder()
                 .withSources(new ConfigSource() {
                     final Config config = Config.get();
 
@@ -89,10 +88,6 @@ public final class RestClientsBuildTimeConfigBuildItem extends SimpleBuildItem {
 
     public List<RegisteredRestClient> getRestClients() {
         return restClients;
-    }
-
-    public SmallRyeConfig getConfig() {
-        return config;
     }
 
     public RestClientsBuildTimeConfig getRestClientsBuildTimeConfig() {

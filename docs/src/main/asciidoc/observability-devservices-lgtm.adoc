@@ -553,7 +553,7 @@ quarkus.observability.lgtm.grafana-home-dashboard-path=/otel-lgtm/grafana-dashbo
 
 === GCX configuration
 
-The https://grafana.com/docs/grafana-cloud/developer-resources/infrastructure-as-code/gcx/[GCX CLI] (Grafana Cloud Experience) can connect to the local LGTM stack for diagnostics, querying, and AI-assisted analysis. When the LGTM container starts, a GCX-compatible YAML configuration is automatically generated with the correct Grafana endpoint, credentials, and datasource UIDs.
+The https://grafana.com/docs/grafana/latest/ai-tools/grafana-cli/gcx/[GCX CLI] (Grafana Cloud Experience) can connect to the local LGTM stack for diagnostics, querying, and AI-assisted analysis. When the LGTM container starts, a GCX-compatible YAML configuration is automatically generated with the correct Grafana endpoint, credentials, and datasource UIDs.
 
 By default, the configuration is printed to standard output between delimiters:
 

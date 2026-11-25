@@ -22,10 +22,10 @@ xref:quarkus-data-hibernate-sql.adoc[Quarkus Data native SQL tutorial].
 
 [NOTE]
 ====
-This guide does not go into the specifics of using either
-xref:hibernate-orm.adoc[Hibernate ORM], or its underlying
-link:{jakarta-persistence-spec-url}[Jakarta Persistence specification].
-Refer to their documentation for more in-depth knowledge.
+Quarkus Data Hibernate builds on Hibernate ORM.
+For configuration topics such as multiple persistence units and multi-tenancy, see the
+xref:hibernate-orm.adoc[Hibernate ORM and Jakarta Persistence Advanced Reference Guide].
+For the standard entity mapping and persistence APIs, see the link:{jakarta-persistence-spec-url}[Jakarta Persistence specification].
 ====
 
 include::{includes}/extension-status.adoc[]

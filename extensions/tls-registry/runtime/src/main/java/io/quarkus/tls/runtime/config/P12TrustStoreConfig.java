@@ -15,7 +15,8 @@ public interface P12TrustStoreConfig {
 
     /**
      * Password of the trust store.
-     * If not set, the password must be retrieved from the credential provider.
+     * If not set, the password is retrieved from the credential provider, if configured.
+     * Otherwise, the trust store is loaded without a password.
      */
     Optional<String> password();
 

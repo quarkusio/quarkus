@@ -42,6 +42,7 @@ public class P12KeyStores {
         P12TrustStoreConfig p12Config = config.p12().orElseThrow();
         PfxOptions options = toOptions(p12Config, config.credentialsProvider(), name);
         KeyStore ks = loadKeyStore(vertx, name, options, "trust");
+        verifyNotEmptyWithoutPassword(options, name, ks);
         verifyTrustStoreAlias(p12Config.alias(), name, ks);
         if (config.certificateExpirationPolicy() == TrustStoreConfig.CertificateExpiryPolicy.IGNORE) {
             return new TrustStoreAndTrustOptions(ks, options);
@@ -82,7 +83,8 @@ public class P12KeyStores {
             options.setValue(Buffer.buffer(read(config.path())));
             String password = CredentialProviders.getTrustStorePassword(config.password(), cp)
                     .orElse(null);
-            if (password == null) {
+            // A null password is allowed: a PKCS12 trust store can be created without integrity check
+            if (password == null && cp.name().isPresent()) {
                 throw new IllegalStateException("Invalid P12 trust store configuration for certificate '" + name
                         + "' - the trust store password is not set and cannot be retrieved from the credential provider.");
             }
@@ -133,6 +135,18 @@ public class P12KeyStores {
                 throw new IllegalArgumentException(
                         "Unable to recover the key for alias '" + alias + "' in P12 key store '" + name + "'", e);
             }
+        }
+    }
+
+    private static void verifyNotEmptyWithoutPassword(PfxOptions options, String name, KeyStore ks) {
+        try {
+            // Without a password, the JDK silently skips encrypted entries and returns an empty store
+            if (options.getPassword() == null && ks.size() == 0) {
+                throw new IllegalStateException("Invalid P12 trust store configuration for certificate '" + name
+                        + "' - the trust store is empty. If it is password-protected, configure the password.");
+            }
+        } catch (KeyStoreException e) {
+            throw new IllegalStateException("Unable to verify P12 trust store '" + name + "'", e);
         }
     }
 

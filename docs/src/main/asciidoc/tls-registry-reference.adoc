@@ -582,8 +582,12 @@ quarkus.tls.trust-store.p12.password=password
 quarkus.tls.trust-store.p12.alias=my-alias
 ----
 
-`.p12` files are password-protected, so you need to provide the password to open the truststore.
+`.p12` files are usually password-protected, so you need to provide the password to open the truststore.
 However, unlike keystores, the alias does not require a password because it contains a public certificate, not a private key.
+
+A PKCS12 truststore can also be created without a password (no certificate encryption and no integrity check).
+In this case, omit the `password` property.
+If the password is not set and the loaded truststore is empty, Quarkus fails at startup, as this usually indicates a password-protected truststore with a missing password.
 
 ==== JKS truststores
 
@@ -660,6 +664,7 @@ quarkus.tls.trust-store.other.alias=myca
 ----
 
 This works the same as the <<Other keystore types>> configuration described above.
+The `password` can be omitted if the truststore type supports loading without a password, such as a passwordless PKCS12 truststore.
 For custom loading logic, implement a `TrustStoreFactory` CDI bean annotated with `@Identifier` matching the `type` value.
 
 ==== Credential providers

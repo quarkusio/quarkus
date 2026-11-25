@@ -57,6 +57,7 @@ public interface OtherTrustStoreConfig extends OtherTrustStoreConfiguration {
      * <p>
      * Used by the standard fallback to load the store. A factory may also read this value.
      * When not set, the password can be retrieved from the credential provider configured on the parent trust store.
+     * If no credential provider is configured, the trust store is loaded without a password.
      */
     Optional<String> password();
 

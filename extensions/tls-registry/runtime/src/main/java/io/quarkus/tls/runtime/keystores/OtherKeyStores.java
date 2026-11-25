@@ -87,13 +87,19 @@ public class OtherKeyStores {
             byte[] data = read(config.path().get());
             String password = CredentialProviders.getTrustStorePassword(config.password(), tsc.credentialsProvider())
                     .orElse(null);
-            if (password == null) {
+            // A null password is allowed: some stores (e.g. PKCS12 without integrity check) do not need one
+            if (password == null && tsc.credentialsProvider().name().isPresent()) {
                 throw new IllegalStateException("Invalid trust store configuration for certificate '" + name
                         + "' - the trust store password is not set and cannot be retrieved from the credential provider.");
             }
 
             KeyStore ks = getInstance(config.type(), config.provider());
-            ks.load(new ByteArrayInputStream(data), password.toCharArray());
+            ks.load(new ByteArrayInputStream(data), password == null ? null : password.toCharArray());
+            // Without a password, the JDK PKCS12 provider silently skips encrypted entries and returns an empty store
+            if (password == null && ks.size() == 0) {
+                throw new IllegalStateException("Invalid trust store configuration for certificate '" + name
+                        + "' - the trust store is empty. If it is password-protected, configure the password.");
+            }
 
             KeyStoreOptions options = new KeyStoreOptions();
             options.setType(config.type());

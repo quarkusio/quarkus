@@ -64,14 +64,14 @@ public class WiringProcessor {
         beans.getBeans().stream()
                 .filter(bi -> bi.getQualifier(ReactiveMessagingDotNames.CONNECTOR).isPresent())
                 .forEach(bi -> {
-                    if (isInboundConnector(bi.getImplClazz())) {
+                    if (isInboundConnector(bi.getImplClazz(), index.getIndex())) {
                         builder.produce(
                                 ConnectorBuildItem.createIncomingConnector(getConnectorName(bi),
                                         getConnectorAttributes(bi, index,
                                                 ConnectorAttribute.Direction.INCOMING,
                                                 ConnectorAttribute.Direction.INCOMING_AND_OUTGOING)));
                     }
-                    if (isOutboundConnector(bi.getImplClazz())) {
+                    if (isOutboundConnector(bi.getImplClazz(), index.getIndex())) {
                         builder.produce(
                                 ConnectorBuildItem.createOutgoingConnector(getConnectorName(bi),
                                         getConnectorAttributes(bi, index,

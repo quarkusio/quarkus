@@ -1,15 +1,10 @@
 package io.quarkus.opentelemetry.runtime;
 
-import static io.opentelemetry.semconv.ServiceAttributes.SERVICE_VERSION;
-import static io.opentelemetry.semconv.incubating.WebengineIncubatingAttributes.WEBENGINE_NAME;
-import static io.opentelemetry.semconv.incubating.WebengineIncubatingAttributes.WEBENGINE_VERSION;
-
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
@@ -20,18 +15,13 @@ import org.eclipse.microprofile.config.spi.Converter;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
-import io.opentelemetry.sdk.resources.Resource;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvider;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.RuntimeInit;
-import io.quarkus.runtime.annotations.StaticInit;
 import io.quarkus.runtime.configuration.DurationConverter;
 import io.smallrye.config.Config;
 import io.smallrye.config.ConfigValue;
@@ -45,43 +35,6 @@ public class OpenTelemetryRecorder {
 
     public OpenTelemetryRecorder(final RuntimeValue<OTelRuntimeConfig> runtimeConfig) {
         this.runtimeConfig = runtimeConfig;
-    }
-
-    @StaticInit
-    public Supplier<DelayedAttributes> delayedAttributes(String quarkusVersion,
-            String serviceVersion) {
-        return new Supplier<>() {
-            @Override
-            public DelayedAttributes get() {
-                var result = new DelayedAttributes();
-                // These are merged into the resource after the SDK built it, so they must not carry
-                // an attribute the SDK built a resource entity from. Resource.getDefault() carries
-                // service.name="unknown_service:java", which would drop the service entity, and the
-                // SDK already starts its own resource from Resource.getDefault() anyway.
-                AttributesBuilder attributes = Resource.getDefault().getAttributes().toBuilder();
-                attributes.removeIf(new Predicate<AttributeKey<?>>() {
-                    @Override
-                    public boolean test(AttributeKey<?> key) {
-                        return ResourceConfigReconciler.ENTITY_OWNED_ATTRIBUTES.contains(key.getKey());
-                    }
-                });
-                attributes.put(SERVICE_VERSION, serviceVersion);
-                attributes.put(WEBENGINE_NAME, "Quarkus");
-                attributes.put(WEBENGINE_VERSION, quarkusVersion);
-                result.setAttributesDelegate(attributes.build());
-                return result;
-            }
-        };
-    }
-
-    @RuntimeInit
-    public Supplier<Resource> kubernetesResource() {
-        return new Supplier<>() {
-            @Override
-            public Resource get() {
-                return KubernetesResourceProvider.createResource();
-            }
-        };
     }
 
     @RuntimeInit

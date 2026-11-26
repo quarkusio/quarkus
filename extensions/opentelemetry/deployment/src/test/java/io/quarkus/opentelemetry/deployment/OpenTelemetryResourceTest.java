@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -30,6 +31,7 @@ import io.opentelemetry.semconv.ServiceAttributes;
 import io.quarkus.opentelemetry.deployment.common.ResourceWarningGuard;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
+import io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.config.SmallRyeConfig;
@@ -51,6 +53,8 @@ public class OpenTelemetryResourceTest {
     SmallRyeConfig config;
     @Inject
     InMemoryExporter exporter;
+    @Inject
+    Instance<Resource> kubernetesResource;
 
     @BeforeEach
     void setup() {
@@ -76,6 +80,15 @@ public class OpenTelemetryResourceTest {
 
         exporter.getMetricExporter().assertCountAtLeast(1);
         List<MetricData> finishedMetricItems = exporter.getMetricExporter().getFinishedMetricItems();
+    }
+
+    /**
+     * The extension provides a {@link Resource} bean with the Kubernetes attributes, that the SDK resource is merged with.
+     */
+    @Test
+    void kubernetesResourceBean() {
+        assertThat(kubernetesResource.isResolvable()).isTrue();
+        assertThat(kubernetesResource.get()).isEqualTo(KubernetesResourceProvider.createResource());
     }
 
     /**

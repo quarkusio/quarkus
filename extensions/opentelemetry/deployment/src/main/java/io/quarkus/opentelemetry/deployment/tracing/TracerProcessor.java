@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 import jakarta.enterprise.inject.spi.EventContext;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -33,15 +34,16 @@ import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem.ObserverConfiguratorBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
@@ -53,7 +55,7 @@ import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.SecurityEvents.SecurityEventType;
 import io.quarkus.opentelemetry.runtime.config.build.SamplerType;
 import io.quarkus.opentelemetry.runtime.config.build.TracesBuildConfig;
-import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
+import io.quarkus.opentelemetry.runtime.tracing.DropTargets;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.TracerProducer;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.websockets.WebSocketTracesInterceptorImpl;
 import io.quarkus.opentelemetry.runtime.tracing.security.EndUserSpanProcessor;
@@ -206,15 +208,29 @@ public class TracerProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void setupSampler(
-            TracerRecorder recorder,
+            ServiceRegistrar serviceRegistrar,
             DropNonApplicationUrisBuildItem dropNonApplicationUris,
             DropStaticResourcesBuildItem dropStaticResources) {
+        List<String> nonApplicationUris = List.copyOf(dropNonApplicationUris.getDropNames());
+        List<String> staticResources = List.copyOf(dropStaticResources.getDropNames());
+        serviceRegistrar.forService(DropTargets.class)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> new DropTargets(nonApplicationUris, staticResources));
+    }
 
-        recorder.setupSampler(
-                dropNonApplicationUris.getDropNames(),
-                dropStaticResources.getDropNames());
+    /**
+     * Exposes the {@link DropTargets} service as a bean. This is a separate build step from {@link #setupSampler}, because
+     * the drop targets are only known after the beans are validated.
+     */
+    @BuildStep
+    SyntheticBeanBuildItem dropTargetsBean() {
+        return SyntheticBeanBuildItem.configure(DropTargets.class)
+                .serviceValue(DropTargets.class)
+                .scope(Singleton.class)
+                .unremovable()
+                .setRuntimeInit()
+                .done();
     }
 
     @BuildStep(onlyIf = SecurityEventsEnabled.class)

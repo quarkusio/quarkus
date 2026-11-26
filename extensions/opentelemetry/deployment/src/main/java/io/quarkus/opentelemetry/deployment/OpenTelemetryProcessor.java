@@ -83,10 +83,12 @@ import io.quarkus.opentelemetry.OpenTelemetryDestroyer;
 import io.quarkus.opentelemetry.deployment.metric.MetricsEnabled;
 import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer;
 import io.quarkus.opentelemetry.runtime.DelayedAttributes;
+import io.quarkus.opentelemetry.runtime.DelayedAttributesCreator;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.config.build.ExporterType;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
+import io.quarkus.opentelemetry.runtime.resource.KubernetesResourceCreator;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.AddingSpanAttributesInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.InstrumentationRecorder;
@@ -149,21 +151,21 @@ public class OpenTelemetryProcessor {
 
     // Signal independent resource attributes
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    SyntheticBeanBuildItem setupDelayedAttribute(OpenTelemetryRecorder recorder, ApplicationInfoBuildItem appInfo) {
+    SyntheticBeanBuildItem setupDelayedAttribute(ApplicationInfoBuildItem appInfo) {
         return SyntheticBeanBuildItem.configure(DelayedAttributes.class).types(Attributes.class)
-                .supplier(recorder.delayedAttributes(Version.getVersion(), appInfo.getVersion()))
+                .creator(DelayedAttributesCreator.class)
+                .param(DelayedAttributesCreator.QUARKUS_VERSION_PARAM, Version.getVersion())
+                .param(DelayedAttributesCreator.SERVICE_VERSION_PARAM, appInfo.getVersion())
                 .scope(Singleton.class)
                 .setRuntimeInit()
                 .done();
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    SyntheticBeanBuildItem kubernetesResource(OpenTelemetryRecorder recorder) {
+    SyntheticBeanBuildItem kubernetesResource() {
         return SyntheticBeanBuildItem.configure(Resource.class)
                 .types(Resource.class)
-                .supplier(recorder.kubernetesResource())
+                .creator(KubernetesResourceCreator.class)
                 .scope(Singleton.class)
                 .setRuntimeInit()
                 .done();

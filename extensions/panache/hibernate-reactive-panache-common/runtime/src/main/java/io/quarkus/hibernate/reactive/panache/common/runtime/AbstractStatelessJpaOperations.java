@@ -78,12 +78,12 @@ public abstract class AbstractStatelessJpaOperations<PanacheQueryType>
 
     @Override
     protected <T> Uni<T> find(Mutiny.StatelessSession session, Class<T> entityClass, Object id) {
-        return session.get(entityClass, id);
+        return session.find(entityClass, id);
     }
 
     @Override
     protected <T> Uni<T> find(Mutiny.StatelessSession session, Class<T> entityClass, Object id, LockMode lockMode) {
-        return session.get(entityClass, id, lockMode);
+        return session.find(entityClass, id, lockMode);
     }
 
     @Override

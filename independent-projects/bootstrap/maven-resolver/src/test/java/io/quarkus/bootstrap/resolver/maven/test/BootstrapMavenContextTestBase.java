@@ -7,7 +7,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.aether.repository.RemoteRepository;
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.AfterEach;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 
 public class BootstrapMavenContextTestBase {
 
@@ -38,7 +41,17 @@ public class BootstrapMavenContextTestBase {
     }
 
     protected RemoteRepository newRepo(String id, String url) {
-        return new RemoteRepository.Builder(id, "default", url).setIntent(RemoteRepository.Intent.RESOLUTION).build();
+        return new RemoteRepository.Builder(id, "default", url).build();
+    }
+
+    /**
+     * Forms the repositories that are expected to be returned by {@link BootstrapMavenContext#getRemoteRepositories()}
+     * from bare repository definitions. They are passed through the repository system, the same way
+     * {@link BootstrapMavenContext} does it, which also sets the repository intent.
+     */
+    protected List<RemoteRepository> newResolutionRepos(BootstrapMavenContext mvn, RemoteRepository... repos)
+            throws BootstrapMavenException {
+        return mvn.getRepositorySystem().newResolutionRepositories(mvn.getRepositorySystemSession(), Arrays.asList(repos));
     }
 
     protected BootstrapMavenContext bootstrapMavenContextForProject(String projectOnCp) throws Exception {

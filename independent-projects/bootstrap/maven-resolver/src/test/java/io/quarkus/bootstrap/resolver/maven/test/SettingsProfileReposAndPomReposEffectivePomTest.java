@@ -3,7 +3,6 @@ package io.quarkus.bootstrap.resolver.maven.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.file.Files;
-import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +15,7 @@ public class SettingsProfileReposAndPomReposEffectivePomTest extends BootstrapMa
         final BootstrapMavenContext mvn = bootstrapMavenContextForProject("effective-pom/settings-profile-and-pom-repos");
         Files.createDirectories(mvn.getCurrentProjectBaseDir().resolve("target"));
         assertEquals(
-                Arrays.asList(
+                newResolutionRepos(mvn,
                         newRepo("common-repo", "https://common.settings"),
                         newRepo("settings-central", "https://settings.central"),
                         newRepo("central", "https://pom.central"),

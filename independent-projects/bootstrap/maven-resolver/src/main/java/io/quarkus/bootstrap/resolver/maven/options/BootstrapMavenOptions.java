@@ -18,8 +18,7 @@ import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.maven.shared.utils.cli.CommandLineException;
-import org.apache.maven.shared.utils.cli.CommandLineUtils;
+import org.codehaus.plexus.util.cli.CommandLineUtils;
 
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.commons.classloading.ClassLoaderHelper;
@@ -57,7 +56,7 @@ public class BootstrapMavenOptions {
         final String[] args;
         try {
             args = CommandLineUtils.translateCommandline(cmdLine);
-        } catch (CommandLineException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("Invalid command line: " + cmdLine, e);
         }
 
@@ -143,7 +142,7 @@ public class BootstrapMavenOptions {
             mvnOpts = Arrays.stream(CommandLineUtils.translateCommandline(mvnOpts))
                     .filter(part -> part.startsWith("-" + SYSTEM_PROPERTY))
                     .collect(Collectors.joining(" "));
-        } catch (CommandLineException e) {
+        } catch (Exception e) {
             throw new IllegalStateException("Failed to parse MAVEN_OPTS=" + mvnOpts, e);
         }
         if (mvnOpts.isEmpty()) {

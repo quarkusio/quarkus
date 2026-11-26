@@ -11,7 +11,7 @@ project:
   java:
     groupId: io.quarkus
     artifactId: quarkus-cli
-    version : 17
+    version : 21
   tags:
     - cli
     - quarkus

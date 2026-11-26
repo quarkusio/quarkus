@@ -20,14 +20,17 @@ import java.util.Set;
 
 import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
 import org.hibernate.search.engine.reporting.FailureHandler;
+import org.hibernate.search.mapper.orm.mapping.HibernateOrmSearchMappingConfigurer;
 import org.hibernate.search.mapper.pojo.work.IndexingPlanSynchronizationStrategy;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -89,6 +92,7 @@ class HibernateSearchElasticsearchProcessor {
     public void build(HibernateSearchElasticsearchRecorder recorder,
             CombinedIndexBuildItem combinedIndexBuildItem,
             HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticIntegrations,
@@ -113,7 +117,7 @@ class HibernateSearchElasticsearchProcessor {
             Map<String, Set<String>> backendAndIndexNamesForSearchExtensions = persistenceUnitAndBackendAndIndexNamesForSearchExtensions
                     .getOrDefault(puDescriptor.getPersistenceUnitName(), Collections.emptyMap());
             String puName = puDescriptor.getPersistenceUnitName();
-            buildForPersistenceUnit(recorder, indexedAnnotationsForPU, puName, configByPU.get(puName),
+            buildForPersistenceUnit(recorder, indexedAnnotationsForPU, puName, configByPU.get(puName), beanDiscovery,
                     backendAndIndexNamesForSearchExtensions,
                     configuredPersistenceUnits, staticIntegrations, runtimeIntegrations);
         }
@@ -140,12 +144,13 @@ class HibernateSearchElasticsearchProcessor {
     private void buildForPersistenceUnit(HibernateSearchElasticsearchRecorder recorder,
             Collection<AnnotationInstance> indexedAnnotationsForPU, String persistenceUnitName,
             HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit puConfig,
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
             Map<String, Set<String>> backendAndIndexNamesForSearchExtensions,
             BuildProducer<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticIntegrations,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeIntegrations) {
-        if (indexedAnnotationsForPU.isEmpty()) {
-            // we don't have any indexed entity, we can disable Hibernate Search
+        if (indexedAnnotationsForPU.isEmpty() && !hasMappingConfigurer(persistenceUnitName, puConfig, beanDiscovery)) {
+            // There are no indexed annotations or configurers that could supply a mapping for this persistence unit.
             staticIntegrations.produce(HibernateOrmIntegrationStaticConfiguredBuildItem.builder(HIBERNATE_SEARCH_ELASTICSEARCH,
                     persistenceUnitName).initListener(recorder.createStaticInitInactiveListener()).build());
             // we need a runtime listener even when Hibernate Search is disabled,
@@ -169,6 +174,20 @@ class HibernateSearchElasticsearchProcessor {
                         new HibernateSearchOrmElasticsearchMapperContext(persistenceUnitName,
                                 backendNamesForIndexedEntities, backendAndIndexNamesForSearchExtensions),
                         puConfig));
+    }
+
+    private static boolean hasMappingConfigurer(String persistenceUnitName,
+            HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit puConfig, BeanDiscoveryFinishedBuildItem beanDiscovery) {
+        if (puConfig != null && puConfig.mapping().configurer().isPresent()) {
+            return true;
+        }
+        var qualifier = AnnotationInstance.builder(ClassNames.SEARCH_EXTENSION)
+                .add("persistenceUnit", persistenceUnitName)
+                .add("backend", "")
+                .add("index", "")
+                .build();
+        return !beanDiscovery.getBeanResolver()
+                .resolveBeans(ClassType.create(HibernateOrmSearchMappingConfigurer.class), qualifier).isEmpty();
     }
 
     @BuildStep

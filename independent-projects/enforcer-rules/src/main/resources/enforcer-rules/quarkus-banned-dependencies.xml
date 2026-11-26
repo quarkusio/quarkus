@@ -23,6 +23,7 @@
                 <!-- Exclude javax dependencies in favor of Jakarta -->
                 <exclude>javax.activation:activation</exclude>
                 <exclude>javax.activation:javax.activation-api</exclude>
+                <exclude>com.sun.activation:javax.activation</exclude>
                 <!-- we allow javax.annotation-api for Maven -->
                 <exclude>javax.enterprise:cdi-api</exclude>
                 <!-- we allow javax.inject for Maven -->

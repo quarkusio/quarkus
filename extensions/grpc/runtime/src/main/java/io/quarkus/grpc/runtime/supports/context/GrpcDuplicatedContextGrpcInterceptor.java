@@ -139,15 +139,14 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
         }
 
         private void close(Throwable t) {
-            // TODO -- "call.isRead" guards against dup calls;
-            //  e.g. onComplete, after onError already closed it
-            if (closed.compareAndSet(false, true) && call.isReady()) {
-                // use EHP so that we're consistent with transforming any user exception
-                Throwable nt = ehp.transform(t);
-                StatusException sre = (StatusException) ExceptionHandlerProvider.toStatusException(nt, false);
-                Optional<Metadata> metadata = ExceptionHandlerProvider.toTrailers(nt);
-                log.warn("Closing gRPC call due to an error ...", t);
-                call.close(sre.getStatus(), metadata.orElse(new Metadata()));
+            if (closed.compareAndSet(false, true)) {
+                if (call.isReady()) {
+                    Throwable nt = ehp.transform(t);
+                    StatusException sre = (StatusException) ExceptionHandlerProvider.toStatusException(nt, false);
+                    Optional<Metadata> metadata = ExceptionHandlerProvider.toTrailers(nt);
+                    log.warn("Closing gRPC call due to an error ...", t);
+                    call.close(sre.getStatus(), metadata.orElse(new Metadata()));
+                }
                 // The call is dead: clear the worker marker so runCleanup proceeds.
                 // No worker can be running at this point because close() only fires when
                 // the interceptor chain failed before any event was dispatched to a worker.

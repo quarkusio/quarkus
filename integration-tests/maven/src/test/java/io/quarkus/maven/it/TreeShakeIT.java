@@ -323,6 +323,12 @@ public class TreeShakeIT extends MojoTestBase {
         assertJarContains(libDir, "lib-package-info", "org/acme/pkginfo/PkgAnnotation.class");
         assertJarNotContains(libDir, "lib-package-info", "org/acme/pkginfo/UnusedPkgInfo.class");
 
+        // Classes kept by quarkus.package.jar.tree-shake.keep-classes, with what they reference and their members
+        assertJarContains(libDir, "lib-keep-classes", "org/acme/keep/KeptByConfig.class");
+        assertJarContains(libDir, "lib-keep-classes", "org/acme/keep/KeptByConfigDependency.class");
+        assertJarContains(libDir, "lib-keep-classes", "org/acme/keep/KeptByConfig$Member.class");
+        assertJarNotContains(libDir, "lib-keep-classes", "org/acme/keep/UnusedKeep.class");
+
         // Transformed classes
         // In fast-jar, originals stay in lib JAR (transforms go to transformed-bytecode.jar).
         // In legacy-jar, transformed classes are moved to the runner JAR, so they're not in the lib JAR.
@@ -342,6 +348,8 @@ public class TreeShakeIT extends MojoTestBase {
                 List.of("clean verify"), Map.of());
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
         assertThat(appInvoker.log()).containsIgnoringCase("BUILD SUCCESS");
+        assertThat(appInvoker.log()).contains("Class org.acme.keep.Misspelled configured in"
+                + " quarkus.package.jar.tree-shake.keep-classes was not found");
 
         File fastJarLibDir = new File(appDir, "target/quarkus-app/lib/main");
         assertThat(fastJarLibDir).isDirectory();

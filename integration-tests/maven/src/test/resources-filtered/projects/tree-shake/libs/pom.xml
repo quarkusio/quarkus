@@ -48,6 +48,7 @@
         <module>lib-d</module>
         <module>lib-loadclass-chain</module>
         <module>lib-package-info</module>
+        <module>lib-keep-classes</module>
     </modules>
 
     <build>

@@ -95,6 +95,7 @@ public class JarTreeShakeProcessor {
 
         try (JarTreeShakeInput input = JarTreeShakeInput.collect(
                 packageConfig.jar().treeShake().mode(),
+                packageConfig.jar().treeShake().keepClasses().orElse(Set.of()),
                 curateOutcome.getApplicationModel(),
                 generatedClasses,
                 transformedClasses,

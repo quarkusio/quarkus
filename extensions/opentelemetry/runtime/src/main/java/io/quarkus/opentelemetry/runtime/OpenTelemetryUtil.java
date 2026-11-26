@@ -33,14 +33,6 @@ public final class OpenTelemetryUtil {
     }
 
     /**
-     * Converts a list of "key=value" pairs into a map.
-     * Empty entries will be removed.
-     * In case of duplicate keys, the latest takes precedence.
-     *
-     * @param headers nullable list of "key=value" pairs
-     * @return non-null map of key-value pairs
-     */
-    /**
      * Fails the creation of a bean that is created at runtime init, when it is requested during static init.
      * Static init runs at build time in native mode, and runtime configuration is not available yet.
      *
@@ -54,6 +46,14 @@ public final class OpenTelemetryUtil {
         }
     }
 
+    /**
+     * Converts a list of "key=value" pairs into a map.
+     * Empty entries will be removed.
+     * In case of duplicate keys, the latest takes precedence.
+     *
+     * @param headers nullable list of "key=value" pairs
+     * @return non-null map of key-value pairs
+     */
     public static Map<String, String> convertKeyValueListToMap(List<String> headers) {
         if (headers == null) {
             return Collections.emptyMap();

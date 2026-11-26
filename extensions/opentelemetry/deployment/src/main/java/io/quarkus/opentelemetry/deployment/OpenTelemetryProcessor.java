@@ -30,7 +30,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.context.ContextStorage;
@@ -65,6 +64,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.OpenTelemetrySdkBuildItem;
@@ -214,7 +214,6 @@ public class OpenTelemetryProcessor {
     @SuppressWarnings({ "deprecation", "removal" })
     @BuildStep
     void openTelemetryBean(ServiceRegistrar serviceRegistrar,
-            LaunchModeBuildItem launchMode,
             OTelBuildConfig oTelBuildConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticProducer,
             BuildProducer<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItemBuildProducer,
@@ -262,15 +261,6 @@ public class OpenTelemetryProcessor {
         deprecatedOpenTelemetrySdkBuildItemBuildProducer
                 .produce(new io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem(
                         tracingEnabled, metricsEnabled, loggingEnabled, sdkEnabled));
-
-        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT || launchMode.getLaunchMode() == LaunchMode.TEST) {
-            // The global OpenTelemetry of the previous application must be gone before the bean of this one is created.
-            // The bean is created after the synthetic beans are initialized, and that step runs after every service
-            // of this build step, because this step produces the bean.
-            serviceRegistrar.forService("io.quarkus.opentelemetry.reset-global-open-telemetry")
-                    .atPhase(Phase.INFRASTRUCTURE)
-                    .onStart(ctx -> GlobalOpenTelemetry.resetForTest());
-        }
 
         serviceRegistrar.forService("io.quarkus.opentelemetry.context-storage")
                 .atPhase(Phase.INFRASTRUCTURE)
@@ -473,12 +463,14 @@ public class OpenTelemetryProcessor {
 
     /**
      * Sets up the Vert.x tracer once the CDI beans are ready, and before the HTTP socket opens and the startup event is
-     * fired, as the produced {@link ServiceStartBuildItem} orders it. It runs with tracing disabled too, since getting
-     * the {@code OpenTelemetry} bean creates the SDK, and the exporters, which need Vert.x.
+     * fired: the startup event by a service edge, the socket opening by the declared {@link ServiceStartBuildItem}. It
+     * runs with tracing disabled too, since getting the {@code OpenTelemetry} bean creates the SDK, and the exporters,
+     * which need Vert.x.
      */
     @SuppressWarnings("deprecation")
     @BuildStep
-    ServiceStartBuildItem setupVertx(ServiceRegistrar serviceRegistrar, OTelBuildConfig buildConfig,
+    @Produce(ServiceStartBuildItem.class)
+    void setupVertx(ServiceRegistrar serviceRegistrar, OTelBuildConfig buildConfig,
             Capabilities capabilities) {
         boolean sqlClientAvailable = capabilities.isPresent(Capability.REACTIVE_DB2_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_MSSQL_CLIENT)
@@ -492,13 +484,12 @@ public class OpenTelemetryProcessor {
                 .require(OTelRuntimeConfig.class)
                 .require(VertxSupplier.class)
                 .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
-                // before the startup event, declared as a service edge; the returned ServiceStartBuildItem is kept for
-                // compatibility, and it is the only edge to the socket opening until that step is a service
+                // before the startup event, declared as a service edge; ServiceStartBuildItem is declared only to come
+                // before the socket opening, which is still a recorder step
                 .before(STARTUP_EVENT_SERVICE_NAME)
                 .onStart((ctx, beanContainer, runtimeConfig, vertx) -> OpenTelemetryVertxInstrumentation.setupVertxTracer(
                         beanContainer, buildConfig, runtimeConfig, sqlClientAvailable, redisClientAvailable,
                         grpcAvailable));
-        return null;
     }
 
     @BuildStep

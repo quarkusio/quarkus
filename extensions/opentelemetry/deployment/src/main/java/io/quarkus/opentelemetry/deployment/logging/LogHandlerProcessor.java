@@ -16,6 +16,7 @@ import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -77,22 +78,22 @@ class LogHandlerProcessor {
 
     /**
      * Activates the handler once the CDI beans are ready, and before the HTTP socket opens and the startup event is
-     * fired, as the produced {@link ServiceStartBuildItem} orders it. Getting the {@code OpenTelemetry} bean creates the
-     * SDK and the exporters, which need Vert.x.
+     * fired: the startup event by a service edge, the socket opening by the declared {@link ServiceStartBuildItem}.
+     * Getting the {@code OpenTelemetry} bean creates the SDK and the exporters, which need Vert.x.
      */
     @SuppressWarnings("deprecation")
     @BuildStep
-    ServiceStartBuildItem activate(ServiceRegistrar serviceRegistrar) {
+    @Produce(ServiceStartBuildItem.class)
+    void activate(ServiceRegistrar serviceRegistrar) {
         serviceRegistrar.forService("io.quarkus.opentelemetry.activate-log-handler")
                 .request(Handler.class, HANDLER_NAME)
                 .require(BeanContainer.class)
                 .require(VertxSupplier.class)
                 .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
-                // before the startup event, declared as a service edge; the returned ServiceStartBuildItem is kept for
-                // compatibility, and it is the only edge to the socket opening until that step is a service
+                // before the startup event, declared as a service edge; ServiceStartBuildItem is declared only to come
+                // before the socket opening, which is still a recorder step
                 .before(STARTUP_EVENT_SERVICE_NAME)
                 .onStart((ctx, handler, beanContainer, vertx) -> OpenTelemetryLogHandler.activateHandler(handler,
                         beanContainer));
-        return null;
     }
 }

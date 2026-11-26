@@ -12,11 +12,13 @@ import jakarta.enterprise.util.TypeLiteral;
 
 import org.eclipse.microprofile.config.spi.Converter;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.DurationConverter;
 import io.smallrye.config.Config;
 import io.smallrye.config.ConfigValue;
@@ -34,6 +36,11 @@ public class OpenTelemetryBeanCreator implements BeanCreator<OpenTelemetry> {
         Instance<AutoConfiguredOpenTelemetrySdkBuilderCustomizer> builderCustomizers = context
                 .getInjectedReference(new TypeLiteral<>() {
                 });
+
+        if (LaunchMode.current().isDevOrTest()) {
+            // The global OpenTelemetry of the previous application must be gone before this one is set as global
+            GlobalOpenTelemetry.resetForTest();
+        }
 
         final Map<String, String> oTelConfigs = getOtelConfigs(runtimeConfig);
         OtelConfigsSupplier propertiesSupplier = new OtelConfigsSupplier(oTelConfigs);

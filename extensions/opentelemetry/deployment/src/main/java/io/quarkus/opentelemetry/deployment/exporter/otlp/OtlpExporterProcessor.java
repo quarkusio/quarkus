@@ -23,19 +23,22 @@ import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.*;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.exporter.OtlpExporterBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfigBuilder;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterRecorder;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpExporterEndpoints;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpLogRecordExporterCreator;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpMetricExporterCreator;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpSpanExporterCreator;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.TlsConfigurationRegistry;
-import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
-import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
 @BuildSteps
 public class OtlpExporterProcessor {
@@ -143,12 +146,9 @@ public class OtlpExporterProcessor {
 
     @SuppressWarnings("deprecation")
     @BuildStep(onlyIf = OtlpExporterProcessor.OtlpTracingExporterEnabled.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @Consume(TlsRegistryBuildItem.class)
     void createSpanExporter(
+            ServiceRegistrar serviceRegistrar,
             BeanDiscoveryFinishedBuildItem beanDiscovery,
-            OTelExporterRecorder recorder,
-            CoreVertxBuildItem vertxBuildItem,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         if (!externalOtelExporterBuildItem.isEmpty()) {
@@ -159,6 +159,15 @@ public class OtlpExporterProcessor {
             // if there is a SpanExporter bean impl around, we don't want to create the default one
             return;
         }
+
+        // An invalid endpoint fails startup, even when the exporter is never created
+        serviceRegistrar.forService("io.quarkus.opentelemetry.exporter.otlp.traces-endpoint")
+                .atPhase(Phase.CONFIG)
+                .require(OtlpExporterRuntimeConfig.class)
+                .onStart((ctx, exporterConfig) -> {
+                    OtlpExporterEndpoints.uri(exporterConfig, exporterConfig.traces());
+                });
+
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
                 .configure(SpanExporter.class)
                 .types(SpanExporter.class)
@@ -166,18 +175,15 @@ public class OtlpExporterProcessor {
                 .scope(Singleton.class)
                 .unremovable()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
-                .createWith(recorder.spanExporterForOtlp(vertxBuildItem.getVertx()))
+                .creator(OtlpSpanExporterCreator.class)
                 .done());
     }
 
     @BuildStep(onlyIf = OtlpMetricsExporterEnabled.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @Consume(TlsRegistryBuildItem.class)
     void createMetricsExporterProcessor(
+            ServiceRegistrar serviceRegistrar,
             BeanDiscoveryFinishedBuildItem beanDiscovery,
-            OTelExporterRecorder recorder,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
-            CoreVertxBuildItem vertxBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
         if (!externalOtelExporterBuildItem.isEmpty()) {
@@ -191,6 +197,14 @@ public class OtlpExporterProcessor {
             return;
         }
 
+        // An invalid endpoint fails startup, even when the exporter is never created
+        serviceRegistrar.forService("io.quarkus.opentelemetry.exporter.otlp.metrics-endpoint")
+                .atPhase(Phase.CONFIG)
+                .require(OtlpExporterRuntimeConfig.class)
+                .onStart((ctx, exporterConfig) -> {
+                    OtlpExporterEndpoints.uri(exporterConfig, exporterConfig.metrics());
+                });
+
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
                 .configure(MetricExporter.class)
                 .types(MetricExporter.class)
@@ -200,18 +214,15 @@ public class OtlpExporterProcessor {
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(MetricExporter.class.getName())) }, null))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
-                .createWith(recorder.createMetricExporter(vertxBuildItem.getVertx()))
+                .creator(OtlpMetricExporterCreator.class)
                 .done());
     }
 
     @BuildStep(onlyIf = OtlpLogRecordExporterEnabled.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @Consume(TlsRegistryBuildItem.class)
     void createLogRecordExporterProcessor(
+            ServiceRegistrar serviceRegistrar,
             BeanDiscoveryFinishedBuildItem beanDiscovery,
-            OTelExporterRecorder recorder,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
-            CoreVertxBuildItem vertxBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
         if (!externalOtelExporterBuildItem.isEmpty()) {
@@ -225,6 +236,14 @@ public class OtlpExporterProcessor {
             return;
         }
 
+        // An invalid endpoint fails startup, even when the exporter is never created
+        serviceRegistrar.forService("io.quarkus.opentelemetry.exporter.otlp.logs-endpoint")
+                .atPhase(Phase.CONFIG)
+                .require(OtlpExporterRuntimeConfig.class)
+                .onStart((ctx, exporterConfig) -> {
+                    OtlpExporterEndpoints.uri(exporterConfig, exporterConfig.logs());
+                });
+
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
                 .configure(LogRecordExporter.class)
                 .types(LogRecordExporter.class)
@@ -234,7 +253,7 @@ public class OtlpExporterProcessor {
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(LogRecordExporter.class.getName())) }, null))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
-                .createWith(recorder.createLogRecordExporter(vertxBuildItem.getVertx()))
+                .creator(OtlpLogRecordExporterCreator.class)
                 .done());
     }
 }

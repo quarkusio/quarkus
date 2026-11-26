@@ -28,7 +28,7 @@ class HttpClientOptionsConsumerTest {
 
     @Test
     void testNoProxy() {
-        OTelExporterRecorder.HttpClientOptionsConsumer consumer = new OTelExporterRecorder.HttpClientOptionsConsumer(
+        HttpClientOptionsConsumer consumer = new HttpClientOptionsConsumer(
                 createExporterConfig(false),
                 URI.create("http://localhost:4317"),
                 new NoopTlsConfigurationRegistry());
@@ -40,7 +40,7 @@ class HttpClientOptionsConsumerTest {
 
     @Test
     void testWithProxy() {
-        OTelExporterRecorder.HttpClientOptionsConsumer consumer = new OTelExporterRecorder.HttpClientOptionsConsumer(
+        HttpClientOptionsConsumer consumer = new HttpClientOptionsConsumer(
                 createExporterConfig(true),
                 URI.create("http://localhost:4317"),
                 new NoopTlsConfigurationRegistry());
@@ -56,7 +56,7 @@ class HttpClientOptionsConsumerTest {
 
     @Test
     void testTrustAllLogsWarning() {
-        Logger logger = Logger.getLogger(OTelExporterRecorder.class.getName());
+        Logger logger = Logger.getLogger(HttpClientOptionsConsumer.class.getName());
         List<LogRecord> records = new ArrayList<>();
         Handler handler = new Handler() {
             @Override
@@ -74,7 +74,7 @@ class HttpClientOptionsConsumerTest {
         };
         logger.addHandler(handler);
         try {
-            OTelExporterRecorder.HttpClientOptionsConsumer consumer = new OTelExporterRecorder.HttpClientOptionsConsumer(
+            HttpClientOptionsConsumer consumer = new HttpClientOptionsConsumer(
                     createExporterConfig(false),
                     URI.create("https://localhost:4317"),
                     createTrustAllRegistry());

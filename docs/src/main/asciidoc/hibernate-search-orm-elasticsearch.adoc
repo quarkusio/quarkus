@@ -29,14 +29,14 @@ include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
-The application described in this guide allows you to manage a simple library: you manage authors and their books.
+The application described in this guide manages a simple library of authors and their books.
 
 The entities are stored in a PostgreSQL database and indexed in an Elasticsearch cluster.
 
 == Solution
 
 The preferred approach is to follow the instructions in the next sections and create the application step by step.
-However, you can go right to the completed example.
+Alternatively, use the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
@@ -49,8 +49,7 @@ The provided solution contains a few additional elements such as tests and testi
 
 == Creating the Maven project
 
-First, you need a new project.
-Create a new project with the following command:
+First, create a new project with the following command:
 
 :create-app-artifact-id: hibernate-search-orm-elasticsearch-quickstart
 :create-app-extensions: hibernate-orm-panache,jdbc-postgresql,hibernate-search-orm-elasticsearch,rest-jackson
@@ -63,7 +62,7 @@ This command generates a Maven structure importing the following extensions:
  * Hibernate Search + Elasticsearch,
  * Quarkus REST (formerly RESTEasy Reactive) and Jackson.
 
-If you already have your Quarkus project configured, you can add the `hibernate-search-orm-elasticsearch` extension
+If you already have your Quarkus project configured, add the `hibernate-search-orm-elasticsearch` extension
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: hibernate-search-orm-elasticsearch
@@ -134,7 +133,8 @@ public class Author extends PanacheEntity { // <1>
     }
 }
 ----
-<1> This example uses Hibernate ORM with Panache, but it is not mandatory.
+<1> This example uses Hibernate ORM with Panache.
+Panache is optional, but Hibernate ORM is required, because this extension indexes Hibernate ORM entities.
 <2> These elements are loaded eagerly so that they are present in the JSON output.
 In a real world application, you should probably use a DTO approach.
 
@@ -180,11 +180,12 @@ public class Book extends PanacheEntity {
     }
 }
 ----
-<1> The `@JsonIgnore` annotation on this property avoids infinite loops when serializing with Jackson.
+<1> The `@JsonIgnore` annotation excludes `Book.author` from the JSON output.
+This prevents recursive serialization of the bidirectional relationship between `Author.books` and `Book.author`.
 
 == Initializing the REST service
 
-While the REST service is not yet fully set up, you can initialize it with the standard CRUD operations.
+While the REST service is not yet fully set up, initialize it with the standard CRUD operations.
 
 Create the `org.acme.hibernate.search.elasticsearch.LibraryResource` class:
 
@@ -290,9 +291,7 @@ Only a few elements are needed to make the full-text search application work.
 
 == Using Hibernate Search annotations
 
-Return to the entities.
-
-Enabling full-text search capabilities for them requires adding only a few annotations.
+Enabling full-text search capabilities for entities requires adding only a few annotations.
 
 Edit the `Book` entity again to include this content:
 
@@ -330,7 +329,7 @@ public class Book extends PanacheEntity {
 <2> The `@FullTextField` annotation declares a field in the index specifically tailored for full-text search.
 In particular, you must define an analyzer to split and analyze the tokens (~ words) - more on this later.
 
-Now that the books are indexed, you can do the same for the authors.
+Now that the books are indexed, do the same for the authors.
 
 Open the `Author` class and include the content below.
 
@@ -379,8 +378,9 @@ public class Author extends PanacheEntity {
 ----
 <1> A `@FullTextField` similar to what was done for `Book`, but notice that the analyzer is different - more on this later.
 <2> You can define several fields for the same property.
-Here, a `@KeywordField` is defined with a specific name.
-The main difference is that a keyword field is not tokenized (the string is kept as one single token) but can be normalized (i.e. filtered) - more on this later.
+Field names must be unique, and a field is named after its property by default.
+The `@FullTextField` is therefore named `firstName`, so the additional `@KeywordField` is explicitly named `firstName_sort`.
+The main difference is that a keyword field is not tokenized (the string is kept as one single token) but can be normalized (i.e. filtered) by the `sort` normalizer - more on this later.
 This field is marked as sortable because it is used for sorting the authors.
 <3> The purpose of `@IndexedEmbedded` is to include the `Book` fields into the `Author` index.
 In this case, the default configuration is used: all the fields of the associated `Book` entities are included in the index (i.e. the `title` field).
@@ -405,7 +405,7 @@ You can learn more about the Elasticsearch analysis framework in the https://www
 
 === Defining the analyzers used
 
-When you added the Hibernate Search annotations to the entities, you defined the analyzers and normalizers used.
+When you added the Hibernate Search annotations to the entities, you referenced the analyzers and normalizers used.
 Typically:
 
 [source,java]
@@ -436,7 +436,7 @@ The following section shows how to do it with Hibernate Search.
 [[analysis-configurer]]
 === Setting up the analyzers
 
-You need to create an implementation of `ElasticsearchAnalysisConfigurer`
+Create an implementation of `ElasticsearchAnalysisConfigurer`
 (and configure Quarkus to use it, more on that later).
 
 To fulfill the requirements, create the following implementation:
@@ -475,10 +475,11 @@ The annotation can also target a specific persistence unit (`@SearchExtension(pe
 backend (`@SearchExtension(backend = "nameOfYourBackend")`), index (`@SearchExtension(index = "nameOfYourIndex")`),
 or a combination of those
 (`@SearchExtension(persistenceUnit = "nameOfYourPU", backend = "nameOfYourBackend", index = "nameOfYourIndex")`).
-<2> This is a simple analyzer separating the words on word boundaries (such as spaces and hyphens), removing any non-ASCII characters by their ASCII counterpart (and thus removing accents) and putting everything in lowercase.
+<2> This is a simple analyzer separating the words on word boundaries (such as spaces and hyphens), replacing non-ASCII characters with their ASCII equivalent when one exists (for example, `çćó` becomes `cco`, so accents are removed) and putting everything in lowercase.
 It is used in the examples for the author names.
-<3> This analyzer is more aggressive and includes some stemming: you can search for `mystery` and get a result even if the indexed input contains `mysteries`.
-It is too aggressive for person names, but it is suitable for book titles.
+<3> The `english` analyzer uses stemming to match different forms of a word in book titles.
+For example, a search for `mystery` can match the title Avenue of Mysteries.
+For person names, the `name` analyzer normalizes case and accents while preserving word endings, so names with different endings remain distinct.
 <4> Here is the normalizer used for sorting.
 Very similar to the first analyzer, except it does not tokenize the words because only one token is needed.
 
@@ -512,7 +513,7 @@ to select the right one:
 see <<multiple-persistence-units-attaching-cdi>>.
 
 The annotations added to the entities make them available for full-text search.
-You can now query the index by using the Hibernate Search DSL.
+Query the index by using the Hibernate Search DSL.
 Add the following method (and a few ``import``s):
 
 [source,java]
@@ -624,6 +625,12 @@ see <<multiple-persistence-units-attaching-cdi>>.
 <4> Create an instance of the Hibernate Search mass indexer, which allows you to index large amounts of data efficiently (you can fine-tune it for better performance).
 <5> Start the mass indexer and wait for it to finish.
 
+[NOTE]
+====
+Alternatively, instead of adding this method, start the same mass indexing by sending a request to the <<management,management endpoint>> after the application has started.
+This requires enabling the management interface and the Hibernate Search management endpoint, as described in that section.
+====
+
 == Configuring the application
 
 As usual, you can configure everything in the Quarkus configuration file, `application.properties`.
@@ -693,7 +700,7 @@ In the `src/main/resources/META-INF/resources` directory, overwrite the existing
 
 == Time to play with your application
 
-You can now interact with your REST service:
+Interact with the REST service:
 
 :devtools-wrapped:
 
@@ -710,7 +717,7 @@ As you can see, all your updates are automatically synchronized to the Elasticse
 
 == Building a native executable
 
-You can build a native executable with the usual command:
+Build a native executable with the usual command:
 
 include::{includes}/devtools/build-native.adoc[]
 
@@ -723,7 +730,7 @@ It might be safer to stop the two containers while you are building the native e
 
 Running the native executable is as simple as executing `./target/hibernate-search-orm-elasticsearch-quickstart-1.0.0-SNAPSHOT-runner`.
 
-You can then point your browser to `http://localhost:8080/` and use your application.
+Then point your browser to `http://localhost:8080/` and use your application.
 
 [NOTE]
 ====
@@ -1065,11 +1072,11 @@ To enable the `outbox-polling` coordination strategy, an additional extension is
 :add-extension-extensions: hibernate-search-orm-outbox-polling
 include::{includes}/devtools/extension-add.adoc[]
 
-Once the extension is there, you will need to explicitly select the `outbox-polling` strategy
+Once the extension is there, explicitly select the `outbox-polling` strategy
 by setting <<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-coordination-strategy,`quarkus.hibernate-search-orm.coordination.strategy`>>
 to `outbox-polling`.
 
-Finally, you will need to make sure that the Hibernate ORM entities added by Hibernate Search
+Finally, make sure that the Hibernate ORM entities added by Hibernate Search
 (to represent the outbox and agents) have corresponding tables/sequences in your database:
 
 * If you are just starting with your application
@@ -1097,7 +1104,10 @@ can be customized through the following configuration properties:
 ====
 
 Once you are done with the above, you are ready to use Hibernate Search with an outbox.
-Do not change any code, and just start your application:
+The application built in this guide sets `quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy=sync` in `application.properties`.
+Remove this line first, because the `outbox-polling` coordination strategy does not allow an explicit indexing plan synchronization strategy.
+Otherwise, the application fails on startup, as explained in the note below.
+Do not change any other code, and just start your application:
 it will automatically detect when multiple applications are connected to the same database,
 and coordinate the index updates.
 
@@ -1193,13 +1203,14 @@ then this information can be passed through the request body as shown below.
 <1> An array of entity names that should be re-indexed. If unspecified or empty, all entity types will be re-indexed.
 <2> Sets the number of entity types to be indexed in parallel.
 
-The full list of possible filters and available mass indexer configurations is presented in the example below.
+The following example is a template that shows the full list of possible filters and available mass indexer configurations.
+It uses generic entity names and tenant ids, so it is not a request to send as is to the application built in this guide.
 
 [source,json]
 ----
 {
   "filter": { <1>
-    "types": ["Author", "Book"], <2>
+    "types": ["EntityName1", "EntityName2"], <2>
     "tenants": ["tenant1", "tenant2"] <3>
   },
   "massIndexer":{ <4>
@@ -1218,7 +1229,9 @@ The full list of possible filters and available mass indexer configurations is p
 ----
 <1> Filter object that allows you to limit the scope of reindexing.
 <2> An array of entity names that should be re-indexed. If unspecified or empty, all entity types will be re-indexed.
+In the application built in this guide, the entity names are `Author` and `Book`.
 <3> An array of tenant ids, in case of multi-tenancy. If unspecified or empty, all tenants will be re-indexed.
+The application built in this guide does not use multi-tenancy, so its request does not contain `tenants`.
 <4> Mass indexer configuration object.
 <5> Sets the number of entity types to be indexed in parallel.
 <6> Sets the number of threads to be used to load the root entities.

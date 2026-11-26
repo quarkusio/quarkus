@@ -53,12 +53,11 @@ public class Person extends PanacheEntity {
 }
 ----
 
-NOTE: The `list()` method might be surprising at first.
-It takes fragments of HQL (JP-QL) queries and contextualizes the rest.
-That makes for concise yet readable code.
+NOTE: The `list()` method accepts Hibernate Query Language (HQL) fragments and supplies the missing parts of the query.
+HQL extends the Jakarta Persistence Query Language (JPQL).
 
 NOTE: What was described above is essentially the link:https://www.martinfowler.com/eaaCatalog/activeRecord.html[active record pattern], sometimes just called the entity pattern.
-Hibernate Reactive with Panache also allows for the use of the more classical link:https://martinfowler.com/eaaCatalog/repository.html[repository pattern] via `PanacheRepository`.
+Hibernate Reactive with Panache also supports the link:https://martinfowler.com/eaaCatalog/repository.html[repository pattern] through `PanacheRepository`.
 
 == Solution
 
@@ -123,7 +122,7 @@ quarkus.datasource.db-kind = postgresql <1>
 %prod.quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test
 %prod.quarkus.hibernate-orm.schema-management.strategy=create <2>
 ----
-<1> xref:datasource.adoc[Configure data sources] for production, relying on xref:datasource.adoc#dev-services[Dev Services] for connection information in tests / dev mode.
+<1> xref:datasource.adoc[Configure data sources] for production and rely on xref:datasource.adoc#dev-services[Dev Services] for connection information in dev mode or tests.
 <2> Configure Hibernate ORM to create the schema on startup in production, which is useful for experimentation, but rely on xref:hibernate-orm.adoc#dev-mode[convenient defaults in tests / dev mode].
 
 == Solution 1: using the active record pattern
@@ -143,9 +142,9 @@ public class Person extends PanacheEntity {
 }
 ----
 
-You can put all your Jakarta Persistence column annotations on the public fields.
-If you need a field to not be persisted, use the `@Transient` annotation on it.
-If you need to write accessors, you can:
+You can place Jakarta Persistence column annotations on public fields.
+To exclude a field from persistence, annotate it with `@Transient`.
+You can also write accessors:
 
 [source,java]
 ----
@@ -167,9 +166,8 @@ public class Person extends PanacheEntity {
 }
 ----
 
-And thanks to our field access rewrite, when your users read `person.name` they will actually call your `getName()` accessor,
-and similarly for field writes and the setter.
-This allows for proper encapsulation at runtime as all accesses to the public persistent fields will be replaced by the corresponding getter/setter calls.
+Panache rewrites access to public persistent fields to use their accessors.
+In this example, reading `person.name` calls `getName()`, and assigning a value to it calls `setName()`.
 
 === Most useful operations
 
@@ -395,8 +393,8 @@ The repository pattern examples have been omitted for brevity.
 
 === Paging
 
-You should only use the `list` methods if your table contains small enough data sets.
-For larger data sets you can use the `find` method equivalents, which return a `PanacheQuery` on which you can do paging:
+Use the `list` methods only when the result set is small enough to load into memory.
+For larger results, use the corresponding `find` methods, which return a `PanacheQuery` that you can page through:
 
 [source,java]
 ----
@@ -579,7 +577,7 @@ Query projection can be done with the `project(Class)` method on the `PanacheQue
 
 You can use it to restrict which fields will be returned by the database.
 
-Hibernate will use **DTO projection** and generate a SELECT clause with the attributes from the projection class.
+Hibernate uses **data transfer object (DTO) projection** to generate a SELECT clause with the attributes from the projection class.
 This is also called **dynamic instantiation** or **constructor expression**, more info can be found on the Hibernate guide:
 link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/querylanguage/html_single/#select-new[Hibernate Query Language: Instantiation]
 
@@ -604,8 +602,8 @@ public class PersonName {
 PanacheQuery<PersonName> query = Person.find("status", Status.Alive).project(PersonName.class);
 ----
 <1> The `@RegisterForReflection` annotation instructs Quarkus to keep the class and its members during the native compilation.
-More details about the `@RegisterForReflection` annotation can be found on the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
-<2> This example uses public fields, but you can use private fields and getters/setters if you prefer.
+For more information about `@RegisterForReflection`, see the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips].
+<2> This example uses public fields, but you can use private fields with getters and setters if you prefer.
 <3> Hibernate uses this constructor to create each projection result.
 
 [WARNING]
@@ -713,7 +711,7 @@ public class RaceWeight {
 // Only the race and the average weight will be loaded
 PanacheQuery<RaceWeight> query = Person.find("select d.race, AVG(d.weight) from Dog d group by d.race").project(RaceWeight.class);
 ----
-<1> Hibernate Reactive will use this constructor.
+<1> Hibernate Reactive uses this constructor.
 When the query has a select clause, it is possible to have multiple constructors.
 
 [WARNING]
@@ -766,7 +764,7 @@ The constructor resolution process follows this order:
 This is the most explicit and preferred way to indicate which constructor should be used.
 2. Look for a constructor with a parameter annotated with `@ProjectedFieldName`.
 3. If neither annotation is found, select the non-synthetic constructor with the fewest parameters among those that have at least one parameter and recorded parameter names.
-4. If no suitable constructor is found, throw a `PanacheQueryException`.
+4. If no suitable constructor is found, Panache throws a `PanacheQueryException`.
 ====
 
 == Multiple Persistence Units
@@ -790,10 +788,10 @@ If you have multiple persistence units, you can specify which one to use by prov
 If not specified, the default persistence unit is used.
 * The programmatic way to achieve the same effect is to use the `Panache.withSession()` method.
 
-NOTE: A Panache entity must not be used from a blocking thread.
-See also the xref:getting-started-reactive.adoc[Getting Started With Reactive] guide that explains the basics of reactive principles in Quarkus.
+NOTE: Do not use a Panache entity from a blocking thread.
+For an introduction to reactive principles in Quarkus, see xref:getting-started-reactive.adoc[Getting Started With Reactive].
 
-Also make sure to wrap methods that modify the database or involve multiple queries (such as `entity.persist()`) within a transaction.
+Wrap methods that modify the database, such as methods that call `entity.persist()`, or that involve multiple queries in a transaction.
 
 You can annotate the method with `@jakarta.transaction.Transactional` as you would in Hibernate ORM to specify declarative transaction management.
 
@@ -803,11 +801,10 @@ If you have multiple persistence units, you can specify which one to use by prov
 If not specified, the default persistence unit is used.
 Alternatively, you can use the `Panache.withTransaction()` method for the same effect.
 
-[NOTE]
+[WARNING]
 ====
-You should not mix `@Transactional` with Panache transaction annotations (`@WithTransaction`, `@WithSession`, `@WithSessionOnDemand`) in the same application.
-Choose one approach and use it consistently throughout your application.
-Mixing these annotations in a single reactive pipeline will result in an `UnsupportedOperationException`.
+Choose either `@Transactional` or the Panache annotations (`@WithTransaction`, `@WithSession`, and `@WithSessionOnDemand`) and use that approach consistently throughout the application.
+Mixing the two approaches in a single reactive pipeline results in an `UnsupportedOperationException`.
 
 See the xref:hibernate-reactive.adoc[Hibernate Reactive guide] for more details on using `@Transactional` with Hibernate Reactive.
 ====
@@ -816,12 +813,12 @@ See the xref:hibernate-reactive.adoc[Hibernate Reactive guide] for more details 
 There are some limitations when using different pipelines with `@Transactional`, refer to xref:hibernate-reactive.adoc#transactional-different-pipelines[the limitations section in the Hibernate Reactive guide]
 ====
 
-Hibernate Reactive batches changes you make to your entities and sends changes (it is called flush) at the end of the transaction or before a query.
-This is usually a good thing as it is more efficient.
-But if you want to check optimistic locking failures, do object validation right away, or generally want to get immediate feedback, you can force the flush operation by calling `entity.flush()` or even use `entity.persistAndFlush()` to make it a single method call.
-This allows you to catch any `PersistenceException` that could occur when Hibernate Reactive sends those changes to the database.
-Remember, this is less efficient, so do not overuse it.
-And your transaction still has to be committed.
+Hibernate Reactive batches changes to your entities and flushes them to the database at the end of the transaction or before a query.
+To check for optimistic locking failures or validate an entity immediately, call `entity.flush()`.
+To persist and flush an entity in one call, use `entity.persistAndFlush()`.
+An explicit flush lets you handle a `PersistenceException` at that point.
+Use explicit flushes sparingly because they reduce the benefit of batching.
+You still need to commit the transaction.
 
 Here is an example of the usage of the flush method to allow making a specific action in case of `PersistenceException`:
 [source,java]
@@ -894,11 +891,10 @@ Be careful that locks are released when the transaction ends, so the method that
 
 == Custom IDs
 
-IDs are often a sensitive topic, and not every project lets the framework handle them.
-Panache has you covered.
+Panache supports custom IDs if your application needs to manage them.
 
 You can specify your own ID strategy by extending `PanacheEntityBase` instead of `PanacheEntity`.
-Then you just declare whatever ID you want as a public field:
+Then declare the ID as a public field:
 
 [source,java]
 ----
@@ -1074,8 +1070,7 @@ public class PanacheFunctionalityTest {
 ----
 <1> Make sure the test method is run on the Vert.x event loop.
 <2> The injected `UniAsserter` argument is used to make assertions.
-<3> Be sure to call your `verify` and `do*` methods on `PanacheMock` rather than `Mockito`, otherwise you will not know
-what mock object to pass.
+<3> Call `verify` and `do*` on `PanacheMock` so you can identify the mock by its entity class.
 
 === Using the repository pattern
 
@@ -1206,48 +1201,32 @@ public class PanacheFunctionalityTest {
 
 == How and why Panache simplifies Hibernate Reactive mappings
 
-When it comes to writing Hibernate Reactive entities, there are a number of annoying things that users have grown used to
-reluctantly deal with, such as:
+Writing Hibernate Reactive entities often involves the following repetitive tasks:
 
-- Duplicating ID logic: most entities need an ID, most people do not care how it is set, because it is not really
-relevant to your model.
-- Dumb getters and setters: since Java lacks support for properties in the language, you have to create fields,
-then generate getters and setters for those fields, even if they do not actually do anything more than read/write
-the fields.
-- Traditional EE patterns advise to split entity definition (the model) from the operations you can do on them
-(DAOs, Repositories), but that requires an unnatural split between the state and its operations even though
-you would never do something like that for regular objects in the Object-Oriented architecture, where state and methods
-are in the same class.
-Moreover, this requires two classes per entity, and requires injection of the DAO or Repository
-where you need to do entity operations, which breaks your edit flow and requires you to get out of the code you are
-writing to set up an injection point before coming back to use it.
-- Hibernate queries are powerful, but overly verbose for common operations, requiring you to write queries even
-when you do not need all the parts.
-- Hibernate is very general-purpose, but does not make it trivial to do trivial operations that make up 90% of
-model usage.
+- Defining an ID for each entity, even when ID generation is incidental to the model.
+- Writing getters and setters that only read or write a field.
+- Defining a separate data access object (DAO) or repository for each entity to keep its operations separate from its state.
+To use those operations, you must create an injection point for the DAO or repository before returning to the calling code.
+- Writing a complete query for a common operation when only part of the query varies.
+- Implementing routine operations repeatedly with a general-purpose ORM API.
 
 Panache takes an opinionated approach to tackle all these problems:
 
-- Make your entities extend `PanacheEntity`: it has an ID field that is auto-generated.
-If you require a custom ID strategy, you can extend `PanacheEntityBase` instead and handle the ID yourself.
-- Use public fields.
-Get rid of dumb getter and setters.
-Under the hood, Panache generates all getters and setters that are missing for the public persistent fields, and rewrites every access to these fields to use the accessor methods.
-This way you can still write _useful_ accessors when you need them, which will be used even though your entity users still use field accesses.
-Fields annotated with `@Transient` are not persistent, so Panache does not generate accessors for them and leaves access to them unchanged.
-- With the active record pattern: put all your entity logic in static methods in your entity class and do not create DAOs.
-Your entity superclass comes with lots of useful static methods, and you can add your own in your entity class.
+- Extend `PanacheEntity` to inherit an auto-generated ID.
+For a custom ID strategy, extend `PanacheEntityBase` and manage the ID yourself.
+- Use public fields and omit accessors that only read or write a field.
+Panache generates missing getters and setters for public persistent fields and rewrites field access to call them.
+You can still write custom accessors when your model needs them.
+Panache leaves fields annotated with `@Transient` unchanged.
+- With the active record pattern, put your entity operations in static methods on the entity itself.
+The entity superclass provides static methods for common operations, and you can add your own.
 Users can just start using your entity `Person` by typing `Person.` and getting completion for all the operations in a single place.
-- Do not write parts of the query that you do not need: write `Person.find("order by name")` or
-`Person.find("name = ?1 and status = ?2", "stef", Status.Alive)` or even better
-`Person.find("name", "stef")`.
-
-That is all there is to it: with Panache, Hibernate Reactive has never looked so trim and neat.
+- Write only the parts of the query you need, such as `Person.find("order by name")`, `Person.find("name = ?1 and status = ?2", "stef", Status.Alive)`, or `Person.find("name", "stef")`.
 
 == Defining entities in external projects or jars
 
 Hibernate Reactive with Panache relies on compile-time bytecode enhancements to your entities.
-If you define your entities in the same project where you build your Quarkus application, everything will work fine.
+When you define entities in the same project as your Quarkus application, Quarkus enhances their bytecode during the application build.
 
 If the entities come from external projects
 or jars, you can make sure that your jar is treated like a Quarkus application library by adding an empty `META-INF/beans.xml` file.

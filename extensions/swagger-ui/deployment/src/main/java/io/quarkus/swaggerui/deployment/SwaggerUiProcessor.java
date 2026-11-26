@@ -427,11 +427,8 @@ public class SwaggerUiProcessor {
                     .get().toString();
             options.put(Option.oauthUseBasicAuthenticationWithAccessCodeGrant, oauthUseBasicAuthenticationWithAccessCodeGrant);
         }
-        if (swaggerUiConfig.oauthUsePkceWithAuthorizationCodeGrant().isPresent()) {
-            String oauthUsePkceWithAuthorizationCodeGrant = swaggerUiConfig.oauthUsePkceWithAuthorizationCodeGrant().get()
-                    .toString();
-            options.put(Option.oauthUsePkceWithAuthorizationCodeGrant, oauthUsePkceWithAuthorizationCodeGrant);
-        }
+        options.put(Option.oauthUsePkceWithAuthorizationCodeGrant,
+                String.valueOf(swaggerUiConfig.oauthUsePkceWithAuthorizationCodeGrant()));
         if (swaggerUiConfig.preauthorizeBasicAuthDefinitionKey().isPresent()) {
             String preauthorizeBasicAuthDefinitionKey = swaggerUiConfig.preauthorizeBasicAuthDefinitionKey().get();
             options.put(Option.preauthorizeBasicAuthDefinitionKey, preauthorizeBasicAuthDefinitionKey);

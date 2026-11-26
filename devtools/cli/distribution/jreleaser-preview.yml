@@ -8,10 +8,11 @@ project:
     - Quarkus Community
   license: Apache-2.0
   copyright: Quarkus contributors
-  java:
-    groupId: io.quarkus
-    artifactId: quarkus-cli
-    version : 21
+  languages:
+    java:
+      groupId: io.quarkus
+      artifactId: quarkus-cli
+      version: 21
   tags:
     - cli
     - quarkus
@@ -26,10 +27,15 @@ release:
     name: quarkus
     tagName: "{{projectVersion}}"
     overwrite: false
-    update:
+    # GitHub releases are immutable once published so the CLI archives have to be attached to a draft:
+    # JReleaser creates the draft with the archives, the release notes are added and the release is
+    # published later in the release process, setting makeLatest explicitly as GitHub doesn't keep
+    # the value defined when creating a draft
+    immutableRelease: true
+    draft: true
+    prerelease:
       enabled: true
-      sections:
-        - ASSETS
+    makeLatest: FALSE
     skipTag: true
     changelog:
       enabled: false
@@ -57,8 +63,3 @@ packagers:
     readTimeout: 60
     candidate: quarkus
     command: MINOR
-
-announce:
-  sdkman:
-    active: ALWAYS
-    candidate: quarkus

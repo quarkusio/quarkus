@@ -74,7 +74,7 @@
         <stax2.version>4.3.2</stax2.version><!-- Dependency of woodstox-core, keep compatible -->
         <smallrye-common.version>2.20.0</smallrye-common.version>
         <smallrye-classfile.version>26</smallrye-classfile.version>
-        <smallrye-beanbag.version>1.7.0</smallrye-beanbag.version>
+        <smallrye-beanbag.version>1.8.0</smallrye-beanbag.version>
         <gradle-tooling.version>9.9.0</gradle-tooling.version>
         <quarkus-fs-util.version>1.4.4</quarkus-fs-util.version>
         <crac.version>1.5.0</crac.version>

@@ -2,8 +2,6 @@ package io.quarkus.test.junit;
 
 import static io.quarkus.runtime.configuration.ConfigUtils.configBuilder;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -35,8 +33,6 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
     protected static Class<? extends QuarkusTestProfile> quarkusTestProfile;
 
-    //needed for @Nested
-    protected static final Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
     protected static Class<?> currentJUnitTestClass;
 
     /**

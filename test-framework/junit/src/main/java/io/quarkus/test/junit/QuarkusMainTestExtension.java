@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
@@ -34,6 +33,7 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
+import org.junit.platform.commons.support.AnnotationSupport;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
@@ -52,7 +52,7 @@ import io.quarkus.test.junit.main.QuarkusMainLauncher;
 import io.quarkus.value.registry.ValueRegistry;
 
 public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
-        implements InvocationInterceptor, BeforeEachCallback, AfterEachCallback, ParameterResolver, BeforeAllCallback,
+        implements InvocationInterceptor, BeforeEachCallback, AfterEachCallback, ParameterResolver,
         AfterAllCallback, ExecutionCondition {
 
     PrepareResult prepareResult;
@@ -72,7 +72,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        if (isIntegrationTest(context.getRequiredTestClass())) {
+        if (isIntegrationTest(context)) {
             return;
         }
 
@@ -296,7 +296,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
-        if (isIntegrationTest(extensionContext.getRequiredTestClass())) {
+        if (isIntegrationTest(extensionContext)) {
             return false;
         }
         Class<?> type = parameterContext.getParameter()
@@ -397,22 +397,13 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         invocation.proceed();
     }
 
-    private boolean isIntegrationTest(Class<?> clazz) {
-        for (Class<?> i : currentTestClassStack) {
-            if (i.isAnnotationPresent(QuarkusMainIntegrationTest.class)) {
-                return true;
-            }
-        }
-        if (clazz.isAnnotationPresent(QuarkusMainIntegrationTest.class)) {
-            return true;
-        }
-        return false;
+    private boolean isIntegrationTest(ExtensionContext context) {
+        return AnnotationSupport.findAnnotation(context.getRequiredTestClass(), QuarkusMainIntegrationTest.class,
+                context.getEnclosingTestClasses()).isPresent();
     }
 
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
-        currentTestClassStack.pop();
-
         try {
             if (shutdownTasks != null) {
                 for (Runnable shutdownTask : shutdownTasks) {
@@ -423,11 +414,6 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         } catch (Exception e) {
             System.err.println("Unable to run shutdown tasks: " + e.getMessage());
         }
-    }
-
-    @Override
-    public void beforeAll(ExtensionContext context) throws Exception {
-        currentTestClassStack.push(context.getRequiredTestClass());
     }
 
     @Override

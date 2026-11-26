@@ -69,7 +69,6 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ValueRegistryConfigSource;
 import io.quarkus.runtime.ValueRegistryImpl;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.test.common.ListeningResult;
 import io.quarkus.test.common.ListeningResults;
@@ -244,7 +243,6 @@ public class QuarkusDevModeTest
     @Override
     public void beforeAll(ExtensionContext context) {
         TestConfigUtil.cleanUp();
-        GroovyClassValue.disable();
         originalRootLoggerHandlers = rootLogger.getHandlers();
         rootLogger.addHandler(inMemoryLogHandler);
     }

@@ -133,8 +133,8 @@ jobs:
                 links=$'\n'"🌊 Many pages changed, so they are not listed individually."
                 ;;
               partial)
-                # deep links are only listed when fewer than 5 pages changed
-                if [ "${#paths[@]}" -ge 5 ]; then
+                # deep links are only listed when a small number of pages changed
+                if [ "${#paths[@]}" -ge 15 ]; then
                   links=$'\n'"🌊 Many pages changed (${#paths[@]}), so they are not listed individually."
                 else
                   list=""

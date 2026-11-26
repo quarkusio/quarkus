@@ -115,7 +115,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             TenantConfigContext resolvedContext) {
         if (!isIdToken(request.getToken()) && resolvedContext.oidcConfig().token().decryptAccessToken()) {
             String decryptedToken = OidcUtils.decryptToken(resolvedContext, request.getToken().getToken());
-            request = new TokenAuthenticationRequest(new AccessTokenCredential(decryptedToken));
+            TokenAuthenticationRequest decryptedRequest = new TokenAuthenticationRequest(
+                    new AccessTokenCredential(decryptedToken));
+            // Step-up and DPoP read the routing context from the authentication request.
+            decryptedRequest.getAttributes().putAll(request.getAttributes());
+            request = decryptedRequest;
         }
         if (resolvedContext.oidcConfig().authServerUrl().isPresent()) {
             return validateAllTokensWithOidcServer(requestData, request, resolvedContext);

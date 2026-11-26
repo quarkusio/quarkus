@@ -379,6 +379,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
                         long end = System.currentTimeMillis() + 4000;
                         while (System.currentTimeMillis() < end) {
                             responses.add(get(url));
+                            Thread.sleep(5);
                         }
                         return responses;
                     }));
@@ -404,13 +405,11 @@ public class DevMojoIT extends LaunchMojoTestBase {
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
             connection.setReadTimeout(30_000);
-            try {
-                int status = connection.getResponseCode();
-                InputStream stream = status < 400 ? connection.getInputStream() : connection.getErrorStream();
+            int status = connection.getResponseCode();
+            // close the stream instead of calling disconnect(), so that the next request reuses the connection
+            try (InputStream stream = status < 400 ? connection.getInputStream() : connection.getErrorStream()) {
                 String body = stream == null ? "" : new String(stream.readAllBytes(), StandardCharsets.UTF_8).strip();
                 return status + " " + (status < 400 ? body : body.lines().findFirst().orElse(""));
-            } finally {
-                connection.disconnect();
             }
         } catch (IOException e) {
             return "error " + e.getMessage();

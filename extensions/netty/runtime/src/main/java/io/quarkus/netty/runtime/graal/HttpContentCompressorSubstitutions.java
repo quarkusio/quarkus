@@ -93,22 +93,15 @@ final class Target_io_netty_handler_codec_compression_Brotli {
 
 class IsZstdAbsent implements BooleanSupplier {
 
-    private boolean zstdAbsent;
-
-    public IsZstdAbsent() {
-        try {
-            Class.forName("com.github.luben.zstd.Zstd");
-            zstdAbsent = false;
-        } catch (Exception e) {
-            // It can be a classloading issue (the library is not available), or a native issue
-            // (the library for the current OS/arch is not available)
-            zstdAbsent = true;
-        }
-    }
-
     @Override
     public boolean getAsBoolean() {
-        return zstdAbsent;
+        try {
+            // Do not initialize the class: its static initializer loads the native library.
+            Class.forName("com.github.luben.zstd.Zstd", false, IsZstdAbsent.class.getClassLoader());
+            return false;
+        } catch (ClassNotFoundException e) {
+            return true;
+        }
     }
 }
 

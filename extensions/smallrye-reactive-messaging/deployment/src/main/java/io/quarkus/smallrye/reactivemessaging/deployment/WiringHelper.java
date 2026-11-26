@@ -15,6 +15,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.objectweb.asm.Opcodes;
 
@@ -105,22 +106,36 @@ public class WiringHelper {
      * Checks if the given class is an inbound (incoming) connector.
      *
      * @param ci the class
-     * @return {@code true} if the class implements the inbound connector interface
+     * @param index the index used to look up the superclasses
+     * @return {@code true} if the class or one of its superclasses implements the inbound connector interface
      */
-    static boolean isInboundConnector(ClassInfo ci) {
-        return ci.interfaceNames().contains(ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY)
-                || ci.interfaceNames().contains(ReactiveMessagingDotNames.INBOUND_CONNECTOR);
+    static boolean isInboundConnector(ClassInfo ci, IndexView index) {
+        return implementsAny(ci, index, ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY,
+                ReactiveMessagingDotNames.INBOUND_CONNECTOR);
     }
 
     /**
      * Checks if the given class is an outbound (outgoing) connector.
      *
      * @param ci the class
-     * @return {@code true} if the class implements the outbound connector interface
+     * @param index the index used to look up the superclasses
+     * @return {@code true} if the class or one of its superclasses implements the outbound connector interface
      */
-    static boolean isOutboundConnector(ClassInfo ci) {
-        return ci.interfaceNames().contains(ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY)
-                || ci.interfaceNames().contains(ReactiveMessagingDotNames.OUTBOUND_CONNECTOR);
+    static boolean isOutboundConnector(ClassInfo ci, IndexView index) {
+        return implementsAny(ci, index, ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY,
+                ReactiveMessagingDotNames.OUTBOUND_CONNECTOR);
+    }
+
+    private static boolean implementsAny(ClassInfo ci, IndexView index, DotName... interfaces) {
+        while (ci != null && !ci.name().equals(ReactiveMessagingDotNames.OBJECT)) {
+            for (DotName iface : interfaces) {
+                if (ci.interfaceNames().contains(iface)) {
+                    return true;
+                }
+            }
+            ci = index.getClassByName(ci.superName());
+        }
+        return false;
     }
 
     /**

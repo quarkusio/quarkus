@@ -15,7 +15,7 @@ public class TrimmedPatternConverter implements Converter<Pattern> {
             return null;
         }
 
-        String trimmedString = s.trim().toLowerCase();
+        String trimmedString = s.trim();
 
         if (trimmedString.isEmpty()) {
             return null;

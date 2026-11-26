@@ -30,7 +30,7 @@ public class WebAuthnAttestationTlsConfigurationTest {
                             quarkus.webauthn.attestation=direct
                             quarkus.webauthn.tls-configuration-name=attestation
                             quarkus.tls.attestation.trust-store.pem.certs=%s
-                            """.formatted(AttestationCertificates.CA)), "application.properties")
+                            """.formatted(AttestationCertificates.caPath())), "application.properties")
                     .addClasses(WebAuthnManualTestUserProvider.class, WebAuthnTestUserProvider.class,
                             WebAuthnHardware.class, PackedAttestation.class, AttestationCertificates.class,
                             TestUtil.class));

@@ -54,6 +54,13 @@ final class AttestationCertificates {
     }
 
     /**
+     * @return the path of the CA, with forward slashes so that it survives a properties file on Windows
+     */
+    static String caPath() {
+        return CA.toString().replace('\\', '/');
+    }
+
+    /**
      * Writes the certificates if they don't exist yet.
      */
     static synchronized void generate() {

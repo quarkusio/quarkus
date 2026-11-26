@@ -2021,6 +2021,7 @@ You can add tests to your extension that test:
 
 - Build time data
 - Runtime data via JsonRPC
+- Your pages, rendered in a browser
 
 You must add this to your pom:
 
@@ -2033,7 +2034,7 @@ You must add this to your pom:
 </dependency>
 ----
 
-This will give you access to two base classes for creating these tests.
+This will give you access to base classes for creating these tests.
 
 ==== Testing Build time data
 
@@ -2119,3 +2120,49 @@ public class SomeTest extends DevUIJsonRPCTest {
     }
 }
 ----
+
+==== Testing in a browser
+
+To check that your pages render in a real browser, you can add a test that extends `DevUIBrowserTest`.
+It opens the Dev UI in a headless Chromium using https://playwright.dev/java/[Playwright], and collects the errors the page reports (uncaught exceptions and console errors) in `pageErrors()`.
+
+Playwright is not added by `quarkus-devui-test-spi`, so add it to your pom as well:
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.microsoft.playwright</groupId>
+    <artifactId>playwright</artifactId>
+    <version>${playwright.version}</version> <1>
+    <scope>test</scope>
+</dependency>
+----
+<1> Playwright is not managed by the Quarkus BOM, so you need to set the version.
+
+Playwright downloads the browsers it uses the first time it runs.
+Since `DevUIBrowserTest` only uses Chromium, you can install it with `mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`, and set the `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` environment variable when running tests so the other browsers are not downloaded.
+
+[source,java]
+----
+public class SomePageTest extends DevUIBrowserTest {
+
+    @RegisterExtension
+    static final QuarkusDevModeTest config = new QuarkusDevModeTest().withEmptyApplication();
+
+    @Test
+    public void testCardAndPageRender() {
+        openDevUI(); // <1>
+
+        assertThat(extensionCard("My Extension")).isVisible(); // <2>
+        menuItem("qwc-my-extension-page").click(); // <3>
+        assertThat(page().locator("qwc-my-extension-page")).isVisible();
+
+        Assertions.assertTrue(pageErrors().isEmpty(), () -> "Errors reported by the page: " + pageErrors());
+    }
+}
+----
+<1> Navigates to the Dev UI and fails if it is not reachable.
+<2> The card of an extension on the Extensions page, by extension name. `assertThat` is `com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat`, which waits for the element.
+<3> The menu item of a page, by the name of the web component that renders the page.
+
+Each test gets a new page. If you need a new one during a test, for example after a hot reload, call `reopenPage()`: it also discards the errors collected so far.

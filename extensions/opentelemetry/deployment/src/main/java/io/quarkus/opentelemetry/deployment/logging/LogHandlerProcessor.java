@@ -30,6 +30,7 @@ import io.quarkus.vertx.VertxSupplier;
 class LogHandlerProcessor {
 
     private static final String HANDLER_NAME = "opentelemetry";
+    private static final String STARTUP_EVENT_SERVICE_NAME = "io.quarkus.arc.startup-event";
 
     private static final DotName LOG_RECORD_EXPORTER = DotName.createSimple(LogRecordExporter.class.getName());
     private static final DotName LOG_RECORD_PROCESSOR = DotName.createSimple(LogRecordProcessor.class.getName());
@@ -87,8 +88,11 @@ class LogHandlerProcessor {
                 .require(BeanContainer.class)
                 .require(VertxSupplier.class)
                 .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                // before the startup event, declared as a service edge; the returned ServiceStartBuildItem is kept for
+                // compatibility, and it is the only edge to the socket opening until that step is a service
+                .before(STARTUP_EVENT_SERVICE_NAME)
                 .onStart((ctx, handler, beanContainer, vertx) -> OpenTelemetryLogHandler.activateHandler(handler,
                         beanContainer));
-        return new ServiceStartBuildItem("opentelemetry-log-handler");
+        return null;
     }
 }

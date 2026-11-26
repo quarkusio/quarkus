@@ -50,11 +50,12 @@ import io.opentelemetry.sdk.resources.Resource;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.builder.Version;
 import io.quarkus.core.Phase;
 import io.quarkus.core.deployment.service.ServiceRegistrar;
@@ -64,8 +65,6 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.OpenTelemetrySdkBuildItem;
@@ -95,17 +94,19 @@ import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.resource.KubernetesResourceCreator;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.AddingSpanAttributesInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
-import io.quarkus.opentelemetry.runtime.tracing.instrumentation.InstrumentationRecorder;
+import io.quarkus.opentelemetry.runtime.tracing.instrumentation.OpenTelemetryVertxInstrumentation;
 import io.quarkus.rest.client.reactive.spi.RegisteredRestClientBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.vertx.VertxSupplier;
 import io.smallrye.config.Config;
 
 @BuildSteps(onlyIf = OpenTelemetryEnabled.class)
 public class OpenTelemetryProcessor {
 
     private static final String OPEN_TELEMETRY_DRIVER = "io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver";
+    private static final String STARTUP_EVENT_SERVICE_NAME = "io.quarkus.arc.startup-event";
     private static final String SDK_ENABLED_SERVICE_NAME = "io.quarkus.opentelemetry.sdk-enabled";
 
     private static final DotName WITH_SPAN = DotName.createSimple(WithSpan.class.getName());
@@ -470,9 +471,14 @@ public class OpenTelemetryProcessor {
         return true;
     }
 
+    /**
+     * Sets up the Vert.x tracer once the CDI beans are ready, and before the HTTP socket opens and the startup event is
+     * fired, as the produced {@link ServiceStartBuildItem} orders it. It runs with tracing disabled too, since getting
+     * the {@code OpenTelemetry} bean creates the SDK, and the exporters, which need Vert.x.
+     */
+    @SuppressWarnings("deprecation")
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void setupVertx(InstrumentationRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
+    ServiceStartBuildItem setupVertx(ServiceRegistrar serviceRegistrar, OTelBuildConfig buildConfig,
             Capabilities capabilities) {
         boolean sqlClientAvailable = capabilities.isPresent(Capability.REACTIVE_DB2_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_MSSQL_CLIENT)
@@ -481,8 +487,18 @@ public class OpenTelemetryProcessor {
                 || capabilities.isPresent(Capability.REACTIVE_PG_CLIENT);
         boolean redisClientAvailable = capabilities.isPresent(Capability.REDIS_CLIENT);
         boolean grpcAvailable = capabilities.isPresent(Capability.GRPC);
-        recorder.setupVertxTracer(beanContainerBuildItem.getValue(), sqlClientAvailable, redisClientAvailable,
-                grpcAvailable);
+        serviceRegistrar.forService("io.quarkus.opentelemetry.setup-vertx-tracer")
+                .require(BeanContainer.class)
+                .require(OTelRuntimeConfig.class)
+                .require(VertxSupplier.class)
+                .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                // before the startup event, declared as a service edge; the returned ServiceStartBuildItem is kept for
+                // compatibility, and it is the only edge to the socket opening until that step is a service
+                .before(STARTUP_EVENT_SERVICE_NAME)
+                .onStart((ctx, beanContainer, runtimeConfig, vertx) -> OpenTelemetryVertxInstrumentation.setupVertxTracer(
+                        beanContainer, buildConfig, runtimeConfig, sqlClientAvailable, redisClientAvailable,
+                        grpcAvailable));
+        return null;
     }
 
     @BuildStep

@@ -68,7 +68,9 @@ for %%i in ("%~dp0..") do set "BASEDIR=%%~fi"
 set REPO=
 
 
-if "%JAVACMD%"=="" set JAVACMD=java
+@REM JAVACMD may be quoted (e.g. when the path contains spaces): remove the quotes as we quote it when using it
+if defined JAVACMD set "JAVACMD=%JAVACMD:"=%"
+if not defined JAVACMD set "JAVACMD=java"
 
 @REM The Quarkus CLI requires a recent Java version: check it to provide a clear error message.
 @REM If we can't determine the version, we just start the CLI.
@@ -77,7 +79,7 @@ set MINIMUM_JAVA_VERSION=__MINIMUM_JAVA_VERSION__
 set JAVA_VERSION_STRING=
 set JAVA_MAJOR_VERSION=
 @REM the version is the third token of the line containing "version", e.g. openjdk version "21.0.1" 2023-10-17
-for /f "tokens=2,3" %%a in ('%JAVACMD% -version 2^>^&1') do if /i "%%a"=="version" if not defined JAVA_VERSION_STRING set "JAVA_VERSION_STRING=%%~b"
+for /f "tokens=2,3" %%a in ('call "%JAVACMD%" -version 2^>^&1') do if /i "%%a"=="version" if not defined JAVA_VERSION_STRING set "JAVA_VERSION_STRING=%%~b"
 if not defined JAVA_VERSION_STRING goto javaVersionChecked
 @REM 1.8.0_292 -> 8, 17.0.2 -> 17, 21-ea -> 21
 for /f "tokens=1,2 delims=.-_+" %%a in ("%JAVA_VERSION_STRING%") do if "%%a"=="1" (set "JAVA_MAJOR_VERSION=%%b") else (set "JAVA_MAJOR_VERSION=%%a")
@@ -103,7 +105,7 @@ if NOT "%CLASSPATH_PREFIX%" == "" set CLASSPATH=%CLASSPATH_PREFIX%;%CLASSPATH%
 @REM Reaching here means variables are defined and arguments have been captured
 :endInit
 
-%JAVACMD% %JAVA_OPTS%  -classpath %CLASSPATH% -Dapp.name="quarkus" -Dapp.repo="%REPO%" -Dapp.home="%BASEDIR%" -Dbasedir="%BASEDIR%" io.quarkus.cli.Main %CMD_LINE_ARGS%
+"%JAVACMD%" %JAVA_OPTS%  -classpath %CLASSPATH% -Dapp.name="quarkus" -Dapp.repo="%REPO%" -Dapp.home="%BASEDIR%" -Dbasedir="%BASEDIR%" io.quarkus.cli.Main %CMD_LINE_ARGS%
 if %ERRORLEVEL% NEQ 0 goto error
 goto end
 

@@ -14,6 +14,7 @@ public class DisableLoggingFeature implements Feature {
 
     private static final String[] CATEGORIES = {
             "org.hibernate.orm.core",
+            "org.hibernate.orm.info",
             "org.hibernate.statistics",
             "org.hibernate.orm.jpa",
             "org.hibernate.orm.connections.pooling",

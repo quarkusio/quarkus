@@ -22,7 +22,6 @@ public final class HibernateLogFilterBuildStep {
 
     @BuildStep
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
-        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.core", "HHH000001"));
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.jpa", "HHH008540"));
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.statistics", "HHH000400"));
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.beans", "HHH10005002", "HHH10005004"));
@@ -34,8 +33,8 @@ public final class HibernateLogFilterBuildStep {
         // 1. We don't implement the retrieval of information in QuarkusConnectionProvider
         // 2. It's currently being logged even at static init when there is no connection
         //    See https://hibernate.atlassian.net/browse/HHH-18454
-        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.connections.pooling",
-                "HHH10001005"));
+        // Hibernate ORM 8 uses the same bootstrap logger for the version and connection info.
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.info", "HHH000001", "HHH10001005"));
 
         //This "deprecation" warning isn't practical for the specific Quarkus needs, as it reminds users they don't need
         //to set the 'hibernate.dialect' property, however it's being set by Quarkus buildsteps so they can't avoid it.

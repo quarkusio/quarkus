@@ -26,6 +26,8 @@ release:
     owner: quarkusio
     name: quarkus
     tagName: "{{projectVersion}}"
+    # the GitHub releases are named after the version (JReleaser defaults to "Release <version>")
+    releaseName: "{{projectVersion}}"
     overwrite: false
     # GitHub releases are immutable once published so the CLI archives have to be attached to a draft:
     # JReleaser creates the draft with the archives, the release notes are added and the release is

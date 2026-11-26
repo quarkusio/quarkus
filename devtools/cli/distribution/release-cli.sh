@@ -99,8 +99,9 @@ jbang org.jreleaser:jreleaser:${JRELEASER_VERSION} ${JRELEASER_COMMAND} \
   --git-root-search \
   --output-directory target 2>&1 | tee target/jreleaser-${JRELEASER_COMMAND}.log
 
-# JReleaser only logs a warning when it fails to update a package repository (Chocolatey is allowed to fail)
-if grep -q "Unexpected error updating quarkusio/homebrew-tap" target/jreleaser-${JRELEASER_COMMAND}.log; then
+# JReleaser only logs a warning when it fails to update a package repository (Chocolatey is allowed to fail).
+# Depending on when it fails, the repository is logged either as quarkusio/homebrew-tap or as its URL.
+if grep -q "Unexpected error updating .*homebrew-tap" target/jreleaser-${JRELEASER_COMMAND}.log; then
     echo "JReleaser failed to update the Homebrew tap, see the log above"
     exit 1
 fi

@@ -2,7 +2,6 @@ package io.quarkus.opentelemetry.deployment;
 
 import static io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime;
 import static io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem.SPI_ROOT;
-import static io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder.OPEN_TELEMETRY_DRIVER;
 import static io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvider.CONTAINER_NAME_ENV;
 import static io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvider.DEPLOYMENT_NAME_ENV;
 import static io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvider.NAMESPACE_ENV;
@@ -31,8 +30,10 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.exporter.otlp.internal.OtlpLogRecordExporterProvider;
 import io.opentelemetry.exporter.otlp.internal.OtlpMetricExporterProvider;
 import io.opentelemetry.exporter.otlp.internal.OtlpSpanExporterProvider;
@@ -55,6 +56,8 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.builder.Version;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -84,22 +87,26 @@ import io.quarkus.opentelemetry.deployment.metric.MetricsEnabled;
 import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer;
 import io.quarkus.opentelemetry.runtime.DelayedAttributes;
 import io.quarkus.opentelemetry.runtime.DelayedAttributesCreator;
-import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
+import io.quarkus.opentelemetry.runtime.OpenTelemetryBeanCreator;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.config.build.ExporterType;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.resource.KubernetesResourceCreator;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.AddingSpanAttributesInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.InstrumentationRecorder;
 import io.quarkus.rest.client.reactive.spi.RegisteredRestClientBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.smallrye.config.Config;
 
 @BuildSteps(onlyIf = OpenTelemetryEnabled.class)
 public class OpenTelemetryProcessor {
+
+    private static final String OPEN_TELEMETRY_DRIVER = "io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver";
+    private static final String SDK_ENABLED_SERVICE_NAME = "io.quarkus.opentelemetry.sdk-enabled";
 
     private static final DotName WITH_SPAN = DotName.createSimple(WithSpan.class.getName());
     private static final DotName ADD_SPAN_ATTRIBUTES = DotName.createSimple(AddingSpanAttributes.class.getName());
@@ -205,9 +212,7 @@ public class OpenTelemetryProcessor {
 
     @SuppressWarnings({ "deprecation", "removal" })
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void openTelemetryBean(OpenTelemetryRecorder recorder,
-            CoreVertxBuildItem vertx,
+    void openTelemetryBean(ServiceRegistrar serviceRegistrar,
             LaunchModeBuildItem launchMode,
             OTelBuildConfig oTelBuildConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticProducer,
@@ -226,7 +231,7 @@ public class OpenTelemetryProcessor {
                                         DotName.createSimple(
                                                 AutoConfiguredOpenTelemetrySdkBuilderCustomizer.class.getName())) },
                                 null))
-                .createWith(recorder.opentelemetryBean())
+                .creator(OpenTelemetryBeanCreator.class)
                 .destroyer(OpenTelemetryDestroyer.class)
                 .done());
 
@@ -243,18 +248,32 @@ public class OpenTelemetryProcessor {
                 .map(it -> it && oTelBuildConfig.enabled())
                 .orElseGet(oTelBuildConfig::enabled);
 
+        // Whether the SDK is enabled at run time: the opposite of quarkus.otel.sdk.disabled, not a configuration of its own
+        serviceRegistrar.forService(Boolean.class, SDK_ENABLED_SERVICE_NAME)
+                .atPhase(Phase.CONFIG)
+                .require(OTelRuntimeConfig.class)
+                .onStart((ctx, runtimeConfig) -> !runtimeConfig.sdkDisabled());
+        // Both build items carry a RuntimeValue that recorders of other extensions read, so they get a proxy of the
+        // service value rather than the service itself.
+        RuntimeValue<Boolean> sdkEnabled = serviceRegistrar.serviceAsRuntimeValue(Boolean.class, SDK_ENABLED_SERVICE_NAME);
         openTelemetrySdkBuildItemBuildProducer.produce(new OpenTelemetrySdkBuildItem(
-                tracingEnabled, metricsEnabled, loggingEnabled, recorder.isOtelSdkEnabled()));
+                tracingEnabled, metricsEnabled, loggingEnabled, sdkEnabled));
         deprecatedOpenTelemetrySdkBuildItemBuildProducer
                 .produce(new io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem(
-                        tracingEnabled, metricsEnabled, loggingEnabled, recorder.isOtelSdkEnabled()));
+                        tracingEnabled, metricsEnabled, loggingEnabled, sdkEnabled));
 
         if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT || launchMode.getLaunchMode() == LaunchMode.TEST) {
-            recorder.resetGlobalOpenTelemetryForDevMode();
+            // The global OpenTelemetry of the previous application must be gone before the bean of this one is created.
+            // The bean is created after the synthetic beans are initialized, and that step runs after every service
+            // of this build step, because this step produces the bean.
+            serviceRegistrar.forService("io.quarkus.opentelemetry.reset-global-open-telemetry")
+                    .atPhase(Phase.INFRASTRUCTURE)
+                    .onStart(ctx -> GlobalOpenTelemetry.resetForTest());
         }
 
-        recorder.eagerlyCreateContextStorage();
-        recorder.storeVertxOnContextStorage(vertx.getVertx());
+        serviceRegistrar.forService("io.quarkus.opentelemetry.context-storage")
+                .atPhase(Phase.INFRASTRUCTURE)
+                .onStart(ctx -> ContextStorage.get());
 
         serviceStart.produce(new ServiceStartBuildItem("OpenTelemetry"));
     }

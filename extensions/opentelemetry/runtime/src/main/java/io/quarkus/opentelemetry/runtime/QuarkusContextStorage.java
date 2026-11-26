@@ -26,7 +26,6 @@ public enum QuarkusContextStorage implements ContextStorage {
     private static final String OTEL_CONTEXT = QuarkusContextStorage.class.getName() + ".otelContext";
 
     private static final ContextStorage FALLBACK_CONTEXT_STORAGE = MDCEnabledContextStorage.INSTANCE;
-    static Vertx vertx;
 
     /**
      * Attach the OpenTelemetry Context to the current Context. If a Vert.x Context is available, and it is a duplicated

@@ -35,10 +35,6 @@ done
 PRGDIR=`dirname "$PRG"`
 BASEDIR=`cd "$PRGDIR/.." >/dev/null; pwd`
 
-# Reset the REPO variable. If you need to influence this use the environment setup file.
-REPO=
-
-
 # OS specific support.  $var _must_ be set to either true or false.
 cygwin=false;
 darwin=false;
@@ -69,7 +65,6 @@ fi
 # For Cygwin, ensure paths are in UNIX format before anything is touched
 if $cygwin ; then
   [ -n "$JAVA_HOME" ] && JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
-  [ -n "$CLASSPATH" ] && CLASSPATH=`cygpath --path --unix "$CLASSPATH"`
 fi
 
 # If a specific java binary isn't specified search for the standard 'java' binary
@@ -92,37 +87,40 @@ if [ ! -x "$JAVACMD" ] ; then
   exit 1
 fi
 
-if [ -z "$REPO" ]
-then
-  REPO="$BASEDIR"/lib
+# The Quarkus CLI requires a recent Java version: check it to provide a clear error message.
+# We read the release file of the JDK when we can find it to avoid starting a JVM, otherwise we use java -version.
+# If we can't determine the version, we just start the CLI.
+# The minimum Java version is injected by release-cli.sh.
+MINIMUM_JAVA_VERSION=__MINIMUM_JAVA_VERSION__
+
+JAVA_VERSION_STRING=
+JAVACMD_RESOLVED=`readlink -f "$JAVACMD" 2>/dev/null`
+if [ -n "$JAVACMD_RESOLVED" ] ; then
+  JAVA_RELEASE_FILE=`dirname "$JAVACMD_RESOLVED"`/../release
+  if [ -r "$JAVA_RELEASE_FILE" ] ; then
+    JAVA_VERSION_STRING=`sed -n 's/^JAVA_VERSION="\(.*\)"/\1/p' "$JAVA_RELEASE_FILE"`
+  fi
+fi
+if [ -z "$JAVA_VERSION_STRING" ] ; then
+  JAVA_VERSION_STRING=`"$JAVACMD" -version 2>&1 | sed -n 's/.* version "\([^"]*\)".*/\1/p' | head -n 1`
+fi
+# 1.8.0_292 -> 8, 17.0.2 -> 17, 21-ea -> 21
+JAVA_MAJOR_VERSION=`echo "$JAVA_VERSION_STRING" | sed -e 's/^1\.//' -e 's/[^0-9].*$//'`
+if [ -n "$JAVA_MAJOR_VERSION" ] && [ "$JAVA_MAJOR_VERSION" -lt "$MINIMUM_JAVA_VERSION" ] ; then
+  echo "Error: the Quarkus CLI requires Java $MINIMUM_JAVA_VERSION or later but $JAVACMD is Java $JAVA_VERSION_STRING." 1>&2
+  echo "  Please set JAVA_HOME to a Java $MINIMUM_JAVA_VERSION+ installation." 1>&2
+  exit 1
 fi
 
-CLASSPATH="$BASEDIR"/etc:"$REPO"/__RUNNER_JAR__
-
-ENDORSED_DIR=
-if [ -n "$ENDORSED_DIR" ] ; then
-  CLASSPATH=$BASEDIR/$ENDORSED_DIR/*:$CLASSPATH
-fi
-
-if [ -n "$CLASSPATH_PREFIX" ] ; then
-  CLASSPATH=$CLASSPATH_PREFIX:$CLASSPATH
-fi
+RUNNER_JAR="$BASEDIR"/lib/__RUNNER_JAR__
 
 # For Cygwin, switch paths to Windows format before running java
 if $cygwin; then
-  [ -n "$CLASSPATH" ] && CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
   [ -n "$JAVA_HOME" ] && JAVA_HOME=`cygpath --path --windows "$JAVA_HOME"`
   [ -n "$HOME" ] && HOME=`cygpath --path --windows "$HOME"`
-  [ -n "$BASEDIR" ] && BASEDIR=`cygpath --path --windows "$BASEDIR"`
-  [ -n "$REPO" ] && REPO=`cygpath --path --windows "$REPO"`
+  RUNNER_JAR=`cygpath --path --windows "$RUNNER_JAR"`
 fi
 
-exec "$JAVACMD" $JAVA_OPTS  \
-  -classpath "$CLASSPATH" \
-  -Dapp.name="quarkus" \
-  -Dapp.pid="$$" \
-  -Dapp.repo="$REPO" \
-  -Dapp.home="$BASEDIR" \
-  -Dbasedir="$BASEDIR" \
-  io.quarkus.cli.Main \
-  "$@"
+# The CLI is packaged as an uber-jar: we start it with -jar so that the JVM applies the attributes of its manifest
+# (e.g. Add-Opens, Enable-Native-Access)
+exec "$JAVACMD" $JAVA_OPTS -jar "$RUNNER_JAR" "$@"

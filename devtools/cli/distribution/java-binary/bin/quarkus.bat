@@ -65,24 +65,40 @@ goto repoSetup
 for %%i in ("%~dp0..") do set "BASEDIR=%%~fi"
 
 :repoSetup
-set REPO=
 
+@REM JAVACMD may be quoted (e.g. when the path contains spaces): remove the quotes as we quote it when using it
+if defined JAVACMD set "JAVACMD=%JAVACMD:"=%"
+if not defined JAVACMD set "JAVACMD=java"
 
-if "%JAVACMD%"=="" set JAVACMD=java
+@REM The Quarkus CLI requires a recent Java version: check it to provide a clear error message.
+@REM If we can't determine the version, we just start the CLI.
+@REM The minimum Java version is injected by release-cli.sh.
+set MINIMUM_JAVA_VERSION=__MINIMUM_JAVA_VERSION__
+set JAVA_VERSION_STRING=
+set JAVA_MAJOR_VERSION=
+@REM the version is the third token of the line containing "version", e.g. openjdk version "21.0.1" 2023-10-17
+for /f "tokens=2,3" %%a in ('call "%JAVACMD%" -version 2^>^&1') do if /i "%%a"=="version" if not defined JAVA_VERSION_STRING set "JAVA_VERSION_STRING=%%~b"
+if not defined JAVA_VERSION_STRING goto javaVersionChecked
+@REM 1.8.0_292 -> 8, 17.0.2 -> 17, 21-ea -> 21
+for /f "tokens=1,2 delims=.-_+" %%a in ("%JAVA_VERSION_STRING%") do if "%%a"=="1" (set "JAVA_MAJOR_VERSION=%%b") else (set "JAVA_MAJOR_VERSION=%%a")
+if not defined JAVA_MAJOR_VERSION goto javaVersionChecked
+echo %JAVA_MAJOR_VERSION%| findstr /r /x "[0-9][0-9]*" >nul || goto javaVersionChecked
+if %JAVA_MAJOR_VERSION% GEQ %MINIMUM_JAVA_VERSION% goto javaVersionChecked
+1>&2 echo Error: the Quarkus CLI requires Java %MINIMUM_JAVA_VERSION% or later but %JAVACMD% is Java %JAVA_VERSION_STRING%.
+1>&2 echo   Please make sure a Java %MINIMUM_JAVA_VERSION%+ java is in your PATH or set JAVACMD.
+@REM sets ERRORLEVEL to 1
+verify other 2>nul
+goto error
+:javaVersionChecked
 
-if "%REPO%"=="" set REPO=%BASEDIR%\lib
-
-set CLASSPATH="%BASEDIR%"\etc;"%REPO%"\__RUNNER_JAR__
-
-set ENDORSED_DIR=
-if NOT "%ENDORSED_DIR%" == "" set CLASSPATH="%BASEDIR%"\%ENDORSED_DIR%\*;%CLASSPATH%
-
-if NOT "%CLASSPATH_PREFIX%" == "" set CLASSPATH=%CLASSPATH_PREFIX%;%CLASSPATH%
+set "RUNNER_JAR=%BASEDIR%\lib\__RUNNER_JAR__"
 
 @REM Reaching here means variables are defined and arguments have been captured
 :endInit
 
-%JAVACMD% %JAVA_OPTS%  -classpath %CLASSPATH% -Dapp.name="quarkus" -Dapp.repo="%REPO%" -Dapp.home="%BASEDIR%" -Dbasedir="%BASEDIR%" io.quarkus.cli.Main %CMD_LINE_ARGS%
+@REM The CLI is packaged as an uber-jar: we start it with -jar so that the JVM applies the attributes of its manifest
+@REM (e.g. Add-Opens, Enable-Native-Access)
+"%JAVACMD%" %JAVA_OPTS% -jar "%RUNNER_JAR%" %CMD_LINE_ARGS%
 if %ERRORLEVEL% NEQ 0 goto error
 goto end
 

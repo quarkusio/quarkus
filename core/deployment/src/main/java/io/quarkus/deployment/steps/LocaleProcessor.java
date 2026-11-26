@@ -13,7 +13,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
@@ -64,23 +63,6 @@ public class LocaleProcessor {
     }
 
     /**
-     * These exports are only required for GraalVM for JDK < 24, but don't cause any issues for newer versions.
-     * To be removed once we drop support for GraalVM for JDK < 24.
-     */
-    @BuildStep(onlyIf = NativeBuild.class)
-    void setDefaults(BuildProducer<NativeImageSystemPropertyBuildItem> buildtimeSystemProperties,
-            NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
-        String language = nativeImageUserLanguage(nativeConfig, localesBuildTimeConfig);
-        if (!language.isEmpty()) {
-            buildtimeSystemProperties.produce(new NativeImageSystemPropertyBuildItem("user.language", language));
-        }
-        String country = nativeImageUserCountry(nativeConfig, localesBuildTimeConfig);
-        if (!country.isEmpty()) {
-            buildtimeSystemProperties.produce(new NativeImageSystemPropertyBuildItem("user.country", country));
-        }
-    }
-
-    /**
      * We activate additional resources in native-image executable only if user opts
      * for anything else than what is already the system default.
      */
@@ -100,22 +82,6 @@ public class LocaleProcessor {
                     ||
                     localesBuildTimeConfig.locales().stream().anyMatch(l -> !Locale.getDefault().equals(l));
         }
-    }
-
-    private static String nativeImageUserLanguage(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
-        String language = System.getProperty("user.language", "en");
-        if (localesBuildTimeConfig.defaultLocale().isPresent()) {
-            language = localesBuildTimeConfig.defaultLocale().get().getLanguage();
-        }
-        return language;
-    }
-
-    private static String nativeImageUserCountry(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
-        String country = System.getProperty("user.country", "");
-        if (localesBuildTimeConfig.defaultLocale().isPresent()) {
-            country = localesBuildTimeConfig.defaultLocale().get().getCountry();
-        }
-        return country;
     }
 
     /**

@@ -606,6 +606,12 @@ To support some external libraries that are creating a `ValidatorFactory` using 
 Quarkus returns the `ValidatorFactory` managed by Quarkus when `Validation.buildDefaultValidatorFactory()`
 is called.
 
+[NOTE]
+====
+Quarkus uses generated accessors when available and falls back to reflection.
+To disable reflection fallback or resolve a missing-accessor error, see xref:hibernate-accessor.adoc[Hibernate Accessor in Quarkus].
+====
+
 [[configuration-reference]]
 == Hibernate Validator Configuration Reference
 

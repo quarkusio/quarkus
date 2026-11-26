@@ -152,6 +152,7 @@ categories:
           - hibernate-reactive-panache.adoc
           - hibernate-search-orm-elasticsearch.adoc
           - hibernate-search-standalone-elasticsearch.adoc
+          - hibernate-accessor.adoc
           - blaze-persistence.adoc
       - id: data-transactions
         title: Transactions
@@ -164,6 +165,7 @@ categories:
         title: Validation
         guides:
           - validation.adoc
+          - hibernate-accessor.adoc
       - id: data-nosql
         title: NoSQL
         guides:

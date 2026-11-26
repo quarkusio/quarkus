@@ -2550,6 +2550,12 @@ public interface MyRepository {
 ----
 ====
 
+[NOTE]
+====
+Quarkus uses generated accessors when available and falls back to reflection.
+To disable reflection fallback or resolve a missing-accessor error, see xref:hibernate-accessor.adoc[Hibernate Accessor in Quarkus].
+====
+
 [[configuration-reference]]
 == Configuration Reference for Hibernate ORM
 

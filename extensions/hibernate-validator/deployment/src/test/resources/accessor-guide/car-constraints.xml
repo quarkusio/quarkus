@@ -1,0 +1,7 @@
+<constraint-mappings xmlns="https://jakarta.ee/xml/ns/validation/mapping" version="3.0">
+    <bean class="io.quarkus.hibernate.validator.test.accessor.XmlConstraintAccessorTest$Car">
+        <field name="manufacturer">
+            <constraint annotation="jakarta.validation.constraints.NotNull"/>
+        </field>
+    </bean>
+</constraint-mappings>

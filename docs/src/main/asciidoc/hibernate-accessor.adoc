@@ -1,0 +1,271 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Hibernate Accessor in Quarkus
+include::_attributes.adoc[]
+:summary: Use generated Hibernate accessors and register members that Quarkus cannot discover.
+:topics: data,hibernate-orm,hibernate-search,hibernate-validator,validation
+
+Hibernate projects use the Hibernate Accessor library to read and write fields,
+invoke methods, and create objects through constructors.
+The https://github.com/hibernate/hibernate-accessor/blob/main/README.md[Hibernate Accessor README]
+describes the library and its access strategies.
+
+Quarkus integrates Hibernate Accessor with xref:hibernate-orm.adoc[Hibernate ORM],
+xref:validation.adoc[Hibernate Validator],
+xref:hibernate-search-orm-elasticsearch.adoc[Hibernate Search with Hibernate ORM], and
+xref:hibernate-search-standalone-elasticsearch.adoc[Hibernate Search Standalone].
+
+Quarkus analyzes application metadata during the build and generates accessors for the members it discovers.
+Most applications need no configuration. The default strategy, `generated-with-fallback`, uses generated
+accessors when available and reflection otherwise.
+
+== Require generated accessors
+
+To disable reflection fallback for member access through Hibernate Accessor,
+set the following property and rebuild your application.
+
+[source,properties]
+----
+quarkus.hibernate-accessor.strategy=generated
+----
+
+With this strategy, a request for a missing accessor fails when Hibernate needs it,
+which can happen during application startup or later at runtime.
+
+== Register members explicitly
+
+When Quarkus cannot discover a member automatically, use the annotations in `io.quarkus.hibernate.accessor`
+to tell Quarkus which access Hibernate extension needs. This is called _explicit registration_.
+
+To register an individual member, choose the annotation that matches it.
+
+* `@GeneratedFieldAccessor` on an instance field.
+  Its `access` attribute accepts `FieldAccess.READ` (the default), `FieldAccess.WRITE`,
+  or `FieldAccess.READ_WRITE`.
+* `@GeneratedMethodAccessor` on an instance method.
+  A reader (getter) must have no parameters and a non-void return type.
+  A writer (setter) must have exactly one parameter; its return value is ignored.
+* `@GeneratedConstructorAccessor` on a constructor of a concrete, non-enum class.
+
+For example, register only the constructor and field reader required for a model class:
+
+[source,java]
+----
+import io.quarkus.hibernate.accessor.GeneratedConstructorAccessor;
+import io.quarkus.hibernate.accessor.GeneratedFieldAccessor;
+
+public class Book {
+    @GeneratedFieldAccessor
+    private final String title;
+
+    @GeneratedConstructorAccessor
+    public Book(String title) {
+        this.title = title;
+    }
+}
+----
+
+To register a type's declared members together, use `@GeneratedAccessor`.
+By default, it registers instance fields for reading, methods matching the
+reader or writer signatures rules described above, and constructors of concrete,
+non-enum classes. It does not register inherited members; annotate their
+declaring types or members separately.
+
+You can configure each member category and override those settings on individual members:
+
+[source,java]
+----
+import io.quarkus.hibernate.accessor.FieldAccess;
+import io.quarkus.hibernate.accessor.GeneratedAccessor;
+import io.quarkus.hibernate.accessor.GeneratedConstructorAccessor;
+import io.quarkus.hibernate.accessor.GeneratedFieldAccessor;
+import io.quarkus.hibernate.accessor.GeneratedMethodAccessor;
+
+@GeneratedAccessor(
+        fields = @GeneratedFieldAccessor(access = FieldAccess.READ_WRITE),
+        methods = @GeneratedMethodAccessor(enabled = false),
+        constructors = @GeneratedConstructorAccessor(enabled = false))
+public class Book {
+    private String title;
+
+    @GeneratedFieldAccessor(enabled = false)
+    private String internalNotes;
+
+    @GeneratedMethodAccessor
+    public String title() {
+        return title;
+    }
+}
+----
+
+Here, `title` has both a field reader and a field writer, `internalNotes` is excluded
+from annotation-based registration, and `title()` is registered despite methods being
+disabled at the type level. Member annotations override the type-level settings for
+that member. Setting `enabled = false` does not cancel registrations requested independently
+by the extension.
+
+The configured strategy still determines how annotated members are accessed.
+With `reflection`, the annotations register members for reflection instead of
+generating bytecode accessors.
+
+[IMPORTANT]
+====
+Generated field writers remove `final` from ordinary instance fields; the `reflection`
+strategy leaves field modifiers unchanged. Requesting write access to a record field
+fails the build with every strategy. Explicitly enabling a member annotation on a static
+field, a static method, a method with an unsupported signature, or a constructor of an
+abstract class or enum also fails the build.
+====
+
+== Examples of explicit registration
+
+=== Hibernate Validator constraints in XML
+
+Quarkus discovers fields and getters from validation annotations in the application metadata.
+Suppose your application already lists a constraint mapping in `META-INF/validation.xml`.
+
+// Source: extensions/hibernate-validator/deployment/src/test/resources/accessor-guide/validation.xml
+[source,xml]
+----
+<validation-config xmlns="https://jakarta.ee/xml/ns/validation/configuration" version="3.0">
+    <constraint-mapping>META-INF/car-constraints.xml</constraint-mapping>
+</validation-config>
+----
+
+In this example, `META-INF/car-constraints.xml` declares a `@NotNull` constraint on `Car.manufacturer`.
+
+// Source: extensions/hibernate-validator/deployment/src/test/resources/accessor-guide/car-constraints.xml
+[source,xml]
+----
+<constraint-mappings xmlns="https://jakarta.ee/xml/ns/validation/mapping" version="3.0">
+    <bean class="org.acme.Car">
+        <field name="manufacturer">
+            <constraint annotation="jakarta.validation.constraints.NotNull"/>
+        </field>
+    </bean>
+</constraint-mappings>
+----
+
+Hibernate Validator reads the XML mapping at startup.
+Because the constraint is declared only in XML,
+Quarkus does not register a reader for `manufacturer` during the build.
+Add `@GeneratedFieldAccessor` to the field to generate the reader Hibernate Validator needs.
+
+// Source: extensions/hibernate-validator/deployment/src/test/java/io/quarkus/hibernate/validator/test/accessor/XmlConstraintAccessorTest.java
+[source,java]
+----
+package org.acme;
+
+import io.quarkus.hibernate.accessor.GeneratedFieldAccessor;
+
+public class Car {
+    @GeneratedFieldAccessor
+    private String manufacturer;
+}
+----
+
+=== Hibernate Search Standalone programmatic mapping
+
+Quarkus uses built-in and custom Search mapping annotations to discover types and their supertypes.
+It registers accessors for eligible members of those types, including members without mapping annotations.
+
+In this example, `Author` has no Search mapping annotations.
+The mapping configurer marks it for indexing with `indexed()` and attaches a binder
+that asks Search for a reader for the `name` property.
+
+// Source: extensions/hibernate-search-standalone-elasticsearch/deployment/src/test/java/io/quarkus/hibernate/search/standalone/elasticsearch/test/accessor/ProgrammaticBinderAccessorTest.java
+[source,java]
+----
+@SearchExtension
+public class AuthorMapping implements StandalonePojoMappingConfigurer {
+    @Override
+    public void configure(StandalonePojoMappingConfigurationContext context) {
+        var author = context.programmaticMapping().type(Author.class);
+        author.searchEntity();
+        author.indexed();
+        author.property("id").documentId();
+        author.binder(new NameBinder());
+    }
+}
+
+public class NameBinder implements TypeBinder {
+    @Override
+    public void bind(TypeBindingContext context) {
+        PojoElementAccessor<String> name = context.bridgedElement().property("name").createAccessor(String.class);
+        context.dependencies().use("name");
+        var field = context.indexSchemaElement().field("name", f -> f.asString()).toReference();
+        context.bridge(Author.class, (target, author, bridgeContext) -> target.addValue(field, name.read(author)));
+    }
+}
+----
+
+Quarkus does not discover `Author` from Search annotations in this mapping.
+Add `@GeneratedMethodAccessor` to `getName()` for the binder
+and `@GeneratedFieldAccessor` to `id` for the document ID mapping.
+
+// Source: extensions/hibernate-search-standalone-elasticsearch/deployment/src/test/java/io/quarkus/hibernate/search/standalone/elasticsearch/test/accessor/ProgrammaticBinderAccessorTest.java
+[source,java]
+----
+import io.quarkus.hibernate.accessor.GeneratedFieldAccessor;
+import io.quarkus.hibernate.accessor.GeneratedMethodAccessor;
+
+public class Author {
+    @GeneratedFieldAccessor
+    private final int id;
+    private final String name;
+
+    public Author(int id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    @GeneratedMethodAccessor
+    public String getName() {
+        return name;
+    }
+}
+----
+
+=== Hibernate ORM identifier classes in XML
+
+Quarkus registers accessors for the managed model and for ID classes referenced by `@IdClass`.
+Suppose your application maps the `Purchase` entity in `META-INF/orm.xml`
+and refers to `PurchaseId` only through the `<id-class>` element.
+
+// Source: extensions/hibernate-orm/deployment/src/test/resources/accessor-guide/orm.xml
+[source,xml]
+----
+<entity-mappings xmlns="https://jakarta.ee/xml/ns/persistence/orm" version="3.1">
+    <entity class="org.acme.Purchase" access="FIELD">
+        <id-class class="org.acme.PurchaseId"/>
+        <attributes>
+            <id name="shopId"/>
+            <id name="purchaseNumber"/>
+        </attributes>
+    </entity>
+</entity-mappings>
+----
+
+Quarkus discovers `Purchase` from the XML mapping.
+But it does not follow the `<id-class>` reference to discover `PurchaseId`.
+Add `@GeneratedAccessor` to the ID record to register its canonical constructor and readable members.
+
+// Source: extensions/hibernate-orm/deployment/src/test/java/io/quarkus/hibernate/orm/xml/orm/XmlIdClassAccessorTest.java
+[source,java]
+----
+package org.acme;
+
+import io.quarkus.hibernate.accessor.GeneratedAccessor;
+
+@GeneratedAccessor
+public record PurchaseId(int shopId, int purchaseNumber) {
+}
+----
+
+[[configuration-reference]]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-hibernate-accessor.adoc[opts=optional, leveloffset=+1]

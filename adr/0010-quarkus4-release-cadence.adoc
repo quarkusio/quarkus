@@ -1,7 +1,7 @@
 = Release Cadence for Quarkus 4
 
-* Status: _proposed_
-* Date: 2026-11-23 by @cescoffier
+* Status: _accepted_
+* Date: 2026-11-27 by @cescoffier
 
 == Context and Problem Statement
 

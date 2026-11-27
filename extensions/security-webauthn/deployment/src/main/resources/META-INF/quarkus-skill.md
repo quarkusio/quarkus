@@ -51,7 +51,7 @@ quarkus.webauthn.enable-registration-endpoint=true
 quarkus.webauthn.enable-login-endpoint=true
 ```
 
-Built-in paths (all under `/q/webauthn/`):
+Built-in paths (all under `/q/webauthn/` by default; `quarkus.webauthn.root-path` moves them):
 - `GET /q/webauthn/register-options-challenge?username=X` — returns registration challenge JSON
 - `POST /q/webauthn/register?username=X` — completes registration (JSON body)
 - `GET /q/webauthn/login-options-challenge?username=X` — returns login challenge JSON

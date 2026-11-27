@@ -1,5 +1,6 @@
 package io.quarkus.security.webauthn.deployment;
 
+import java.net.URI;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
@@ -33,6 +34,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.util.UriNormalizationUtil;
 import io.quarkus.security.webauthn.WebAuthn;
 import io.quarkus.security.webauthn.WebAuthnAuthenticationMechanism;
 import io.quarkus.security.webauthn.WebAuthnAuthenticatorStorage;
@@ -105,8 +107,10 @@ class QuarkusSecurityWebAuthnProcessor {
     public void setup(
             WebAuthnRecorder recorder,
             VertxWebRouterBuildItem vertxWebRouterBuildItem,
-            BeanContainerBuildItem beanContainerBuildItem) {
-        recorder.setupRoutes(beanContainerBuildItem.getValue(), vertxWebRouterBuildItem.getHttpRouter());
+            BeanContainerBuildItem beanContainerBuildItem,
+            WebAuthnBuildTimeConfig config) {
+        recorder.setupRoutes(beanContainerBuildItem.getValue(), vertxWebRouterBuildItem.getHttpRouter(),
+                UriNormalizationUtil.normalizeWithBase(URI.create("/"), config.rootPath(), false).getPath());
     }
 
     @BuildStep

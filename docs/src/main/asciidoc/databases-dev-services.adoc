@@ -107,6 +107,25 @@ Explicitly setting the image name always takes precedence over automatic selecti
 quarkus.datasource.devservices.image-name=<custom-image>
 ----
 
+[[image-pull-policy]]
+== Pulling Images
+
+By default, Dev Services pull the container image only if it is not available locally,
+unless a `pull.policy` is set in `testcontainers.properties`.
+So an image with a moving tag, such as `latest`, is not updated once it has been pulled.
+
+You can choose when the image is pulled with the `image-pull-policy` property:
+
+[source,properties]
+----
+quarkus.datasource.devservices.image-pull-policy=always
+----
+
+* `always`: pull the image every time the container is started, to keep it up to date.
+* `missing`: pull the image only if it is not available locally.
+* `never`: never pull the image, for example to only use images that are available locally;
+the container fails to start if the image is missing.
+
 [[reuse]]
 == Reusing Dev Services
 

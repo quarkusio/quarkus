@@ -82,6 +82,7 @@ public class MySQLDevServicesProcessor {
                         .withPassword(effectivePassword)
                         .withDatabaseName(effectiveDbName)
                         .withReuse(containerConfig.isReuse());
+                containerConfig.getImagePullPolicy().ifPresent(container::withImagePullPolicy);
                 Labels.addDataSourceLabel(container, datasourceName);
                 ConfigureUtil.configureSharedServiceLabel(container, launchMode, DEV_SERVICE_LABEL,
                         containerConfig.getServiceName());

@@ -4,14 +4,12 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.CertificateUpdatedEvent;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -23,20 +21,25 @@ import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Recorder for Let's Encrypt support.
+ * The handlers of the Let's Encrypt challenge and certificate reload routes.
  */
-@Recorder
-public class LetsEncryptRecorder {
+public class LetsEncryptSupport {
 
-    private TlsConfigurationRegistry registry;
-    private Event<CertificateUpdatedEvent> event;
+    private final TlsConfigurationRegistry registry;
+    private final Event<CertificateUpdatedEvent> event;
 
     private final AtomicReference<AcmeChallenge> acmeChallenge = new AtomicReference<>();
 
-    private static final Logger LOGGER = Logger.getLogger(LetsEncryptRecorder.class);
+    private static final Logger LOGGER = Logger.getLogger(LetsEncryptSupport.class);
 
-    public void initialize(Supplier<TlsConfigurationRegistry> registry) {
-        this.registry = registry.get();
+    public interface RouteHandler extends Handler<RoutingContext> {
+    }
+
+    public interface RouteCustomizer extends Consumer<Route> {
+    }
+
+    public LetsEncryptSupport(TlsConfigurationRegistry registry) {
+        this.registry = registry;
         this.event = CDI.current().getBeanManager().getEvent().select(CertificateUpdatedEvent.class);
     }
 
@@ -78,8 +81,8 @@ public class LetsEncryptRecorder {
      *
      * @return the handler that serves the Let's Encrypt challenge, returns a 404 status code if the challenge is not set.
      */
-    public Handler<RoutingContext> challengeHandler() {
-        return new Handler<RoutingContext>() {
+    public RouteHandler challengeHandler() {
+        return new RouteHandler() {
             @Override
             public void handle(RoutingContext rc) {
                 if (rc.request().method() != HttpMethod.GET) {
@@ -213,9 +216,9 @@ public class LetsEncryptRecorder {
         }
     }
 
-    public Handler<RoutingContext> reload() {
+    public RouteHandler reload() {
         // Registered as a blocking route, so we can fire the reload event in the same thread.
-        return new Handler<RoutingContext>() {
+        return new RouteHandler() {
             @Override
             public void handle(RoutingContext rc) {
                 if (rc.request().method() != HttpMethod.POST) {
@@ -255,8 +258,8 @@ public class LetsEncryptRecorder {
         };
     }
 
-    public Consumer<Route> setupCustomizer() {
-        return new Consumer<Route>() {
+    public RouteCustomizer setupCustomizer() {
+        return new RouteCustomizer() {
             @Override
             public void accept(Route r) {
                 r.method(HttpMethod.POST).method(HttpMethod.GET).method(HttpMethod.DELETE);
@@ -264,8 +267,8 @@ public class LetsEncryptRecorder {
         };
     }
 
-    public Handler<RoutingContext> chalengeAdminHandler() {
-        return new Handler<RoutingContext>() {
+    public RouteHandler chalengeAdminHandler() {
+        return new RouteHandler() {
             @Override
             public void handle(RoutingContext rc) {
                 if (rc.request().method() == HttpMethod.POST) {

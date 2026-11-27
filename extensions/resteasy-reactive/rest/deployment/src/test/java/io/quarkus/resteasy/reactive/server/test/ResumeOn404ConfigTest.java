@@ -10,7 +10,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -27,10 +29,10 @@ public class ResumeOn404ConfigTest {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, CustomRoute.class);
+                            .addClasses(Resource.class, CustomRoute.class, ThrowableExceptionMapper.class);
                 }
             })
-            .overrideRuntimeConfigKey("quarkus.rest.resume-on-404", "true");
+            .overrideConfigKey("quarkus.rest.resume-on404", "true");
 
     @Test
     public void matchingFromResteasyReactive() {
@@ -42,6 +44,16 @@ public class ResumeOn404ConfigTest {
     @Test
     public void matchingFromCustomRoute() {
         get("/main")
+                .then()
+                .statusCode(200);
+    }
+
+    /**
+     * A route with a lower priority than the REST routes, such as the welcome page in dev mode.
+     */
+    @Test
+    public void matchingFromLateCustomRoute() {
+        get("/late")
                 .then()
                 .statusCode(200);
     }
@@ -68,6 +80,18 @@ public class ResumeOn404ConfigTest {
 
         public void initMain(@Observes Router router) {
             router.get("/main").handler(rc -> rc.response().end("main"));
+            router.get("/late").order(Integer.MAX_VALUE).handler(rc -> rc.response().end("late"));
+        }
+    }
+
+    /**
+     * A global mapper that also matches {@code NotFoundException} must not prevent the resume.
+     */
+    public static class ThrowableExceptionMapper {
+
+        @ServerExceptionMapper
+        public Response handleThrowable(Throwable t) {
+            return Response.status(418).build();
         }
     }
 }

@@ -5488,6 +5488,13 @@
                 <artifactId>shrinkwrap-depchain</artifactId>
                 <version>${shrinkwrap.version}</version>
                 <type>pom</type>
+                <exclusions>
+                    <!-- Workaround for https://github.com/shrinkwrap/shrinkwrap/issues/272 -->
+                    <exclusion>
+                        <groupId>com.sun.activation</groupId>
+                        <artifactId>javax.activation</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>

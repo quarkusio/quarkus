@@ -1121,8 +1121,44 @@ During registration, an authenticator can attest its make and model with a certi
 requests it with the <<quarkus-security-webauthn_quarkus-webauthn-attestation,`quarkus.webauthn.attestation`>> property.
 Quarkus verifies the chain against a set of trust anchors, and rejects the registration if the chain does not lead to one of them.
 
-By default, the trust anchors are the root certificates of the Android Keystore, Apple WebAuthn and FIDO Metadata
-Service attestations.
+By default, the trust anchors are the following root certificates:
+
+[cols="3,2,1"]
+|===
+|Root certificate |Used for |Expires
+
+|Google Hardware Attestation Root (RSA, subject serial number `f92009e853b6b045`)
+|Android key attestation of devices with factory-provisioned keys
+|2042-03-15
+
+|Google Key Attestation CA1 (ECDSA P-384)
+|Android key attestation of devices with remotely provisioned keys
+|2035-07-15
+
+|Android Keystore Software Attestation Root
+|Android software attestation
+|2036-01-06
+
+|Apple WebAuthn Root CA
+|Apple anonymous attestation
+|2045-03-15
+
+|GlobalSign Root CA - R3
+|FIDO Metadata Service BLOB signature
+|2029-03-18
+
+|GlobalSign Root R46
+|FIDO Metadata Service BLOB signature
+|2046-03-20
+|===
+
+The Google roots are published at https://android.googleapis.com/attestation/root.
+
+WARNING: The Android Keystore Software Attestation Root signs with a key which is hard-coded in the Android sources, so
+it does not prove that the key of a credential is stored in secure hardware.
+
+If you enable <<quarkus-security-webauthn_quarkus-webauthn-load-metadata,`quarkus.webauthn.load-metadata`>>,
+the same trust anchors are used to verify the signature of the https://fidoalliance.org/metadata/[FIDO Metadata Service] BLOB.
 
 To trust other roots, for example the private CA of your enterprise authenticators, put them in
 the trust store of a xref:./tls-registry-reference.adoc[TLS configuration] named `webauthn`.

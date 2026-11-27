@@ -648,12 +648,14 @@ public class VertxCoreRecorder {
         //We used to recommend a default of twice the number of cores,
         //but more recent developments seem to suggest matching the number of cores 1:1
         //being a more reasonable default. It also saves memory.
-        int recommended = ProcessorInfo.availableProcessors();
-        long mem = Runtime.getRuntime().maxMemory();
-        long memInMb = mem / (1024 * 1024);
-        long maxAllowed = memInMb / 10;
+        return calculateDefaultIOThreads(ProcessorInfo.availableProcessors(), Runtime.getRuntime().maxMemory());
+    }
 
-        return (int) Math.max(2, Math.min(maxAllowed, recommended));
+    static int calculateDefaultIOThreads(int availableProcessors, long maxMemory) {
+        long memInMb = maxMemory / (1024 * 1024);
+        long maxAllowed = memInMb / 10;
+        // one event loop per CPU, capped by memory, and at least one
+        return (int) Math.max(1, Math.min(maxAllowed, availableProcessors));
     }
 
     void destroy() {

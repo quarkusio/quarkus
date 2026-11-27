@@ -13,7 +13,9 @@ import jakarta.enterprise.inject.Default;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -24,6 +26,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.BuildExtension;
@@ -102,22 +105,28 @@ public class MailerProcessor {
     MailersBuildItem generateMailerSupportBean(ServiceRegistrar serviceRegistrar,
             CombinedIndexBuildItem index,
             BeanDiscoveryFinishedBuildItem beans,
+            TransformedAnnotationsBuildItem transformedAnnotations,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         List<InjectionPointInfo> mailerInjectionPoints = beans.getInjectionPoints().stream()
                 .filter(i -> SUPPORTED_INJECTION_TYPES.contains(i.getRequiredType().name()))
                 .collect(Collectors.toList());
 
         boolean hasDefaultMailer = mailerInjectionPoints.stream()
-                .anyMatch(i -> i.hasDefaultedQualifier() ||
+                .anyMatch(i -> !isNamedMailTemplate(i, transformedAnnotations) && (i.hasDefaultedQualifier() ||
                 // we inject a MailTemplate and it is not named
-                        (MAIL_TEMPLATE.equals(i.getType().name()) && i.getRequiredQualifier(MAILER_NAME) == null))
+                        (MAIL_TEMPLATE.equals(i.getType().name())
+                                && declaredMailerName(i, transformedAnnotations) == null)))
                 || isTypeSafeMailTemplateFound(index.getIndex());
 
-        Set<String> namedMailers = mailerInjectionPoints.stream()
-                .map(i -> i.getRequiredQualifier(MAILER_NAME))
-                .filter(ai -> ai != null)
-                .map(ai -> ai.value().asString())
-                .collect(Collectors.toSet());
+        Set<String> namedMailers = new HashSet<>();
+        for (InjectionPointInfo injectionPoint : mailerInjectionPoints) {
+            AnnotationInstance mailerName = injectionPoint.getRequiredQualifier(MAILER_NAME);
+            if (mailerName == null) {
+                // @MailTemplateMailerName is not a qualifier. Read it from the transformed target.
+                mailerName = declaredMailerName(injectionPoint, transformedAnnotations);
+            }
+            addMailerName(namedMailers, mailerName);
+        }
 
         Set<String> mailerNames = Set.copyOf(namedMailers);
         serviceRegistrar
@@ -132,6 +141,33 @@ public class MailerProcessor {
                 .done());
 
         return new MailersBuildItem(hasDefaultMailer, namedMailers);
+    }
+
+    private static boolean isNamedMailTemplate(InjectionPointInfo injectionPoint,
+            TransformedAnnotationsBuildItem transformedAnnotations) {
+        return declaredMailerName(injectionPoint, transformedAnnotations) != null;
+    }
+
+    private static AnnotationInstance declaredMailerName(InjectionPointInfo injectionPoint,
+            TransformedAnnotationsBuildItem transformedAnnotations) {
+        if (!MAIL_TEMPLATE.equals(injectionPoint.getType().name())) {
+            return null;
+        }
+        AnnotationTarget target = injectionPoint.getAnnotationTarget();
+        if (target == null) {
+            return null;
+        }
+        return transformedAnnotations.getAnnotation(target, MAIL_TEMPLATE_MAILER_NAME);
+    }
+
+    private static void addMailerName(Set<String> namedMailers, AnnotationInstance mailerName) {
+        if (mailerName == null) {
+            return;
+        }
+        AnnotationValue value = mailerName.value();
+        if (value != null && !value.asString().isEmpty()) {
+            namedMailers.add(value.asString());
+        }
     }
 
     private boolean isTypeSafeMailTemplateFound(IndexView index) {

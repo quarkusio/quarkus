@@ -21,9 +21,11 @@ import jakarta.enterprise.inject.Default;
 
 import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
 import org.hibernate.search.mapper.pojo.standalone.mapping.SearchMapping;
+import org.hibernate.search.mapper.pojo.standalone.mapping.StandalonePojoMappingConfigurer;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
@@ -32,6 +34,7 @@ import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
@@ -82,11 +85,13 @@ class HibernateSearchStandaloneProcessor {
 
     @BuildStep
     public void configure(CombinedIndexBuildItem combinedIndexBuildItem,
+            HibernateSearchStandaloneBuildTimeConfig buildTimeConfig,
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
             BuildProducer<HibernateSearchStandaloneEnabledBuildItem> enabled) {
         IndexView index = combinedIndexBuildItem.getIndex();
         Collection<AnnotationInstance> indexedAnnotations = index.getAnnotations(INDEXED);
-        if (indexedAnnotations.isEmpty()) {
-            // we don't have any indexed entity, we can disable Hibernate Search
+        if (indexedAnnotations.isEmpty() && !hasMappingConfigurer(buildTimeConfig, beanDiscovery)) {
+            // There are no indexed annotations or configurers that could supply a mapping.
             return;
         }
 
@@ -105,6 +110,19 @@ class HibernateSearchStandaloneProcessor {
         var mapperContext = new HibernateSearchStandaloneElasticsearchMapperContext(backendNamesForIndexedEntities,
                 backendAndIndexNamesForSearchExtensions);
         enabled.produce(new HibernateSearchStandaloneEnabledBuildItem(mapperContext, rootAnnotationMappedClassNames));
+    }
+
+    private static boolean hasMappingConfigurer(HibernateSearchStandaloneBuildTimeConfig buildTimeConfig,
+            BeanDiscoveryFinishedBuildItem beanDiscovery) {
+        if (buildTimeConfig.mapping().configurer().isPresent()) {
+            return true;
+        }
+        var qualifier = AnnotationInstance.builder(HibernateSearchTypes.SEARCH_EXTENSION)
+                .add("backend", "")
+                .add("index", "")
+                .build();
+        return !beanDiscovery.getBeanResolver()
+                .resolveBeans(ClassType.create(StandalonePojoMappingConfigurer.class), qualifier).isEmpty();
     }
 
     @BuildStep
@@ -146,7 +164,7 @@ class HibernateSearchStandaloneProcessor {
         return result;
     }
 
-    private static Set<String> collectRootAnnotationMappedClasses(IndexView index) {
+    static Set<String> collectRootAnnotationMappedClasses(IndexView index) {
         // Look for classes annotated with annotations meta-annotated with @RootMapping:
         // those classes will have their annotations processed.
         // Built-in annotations from Hibernate Search must be added explicitly,

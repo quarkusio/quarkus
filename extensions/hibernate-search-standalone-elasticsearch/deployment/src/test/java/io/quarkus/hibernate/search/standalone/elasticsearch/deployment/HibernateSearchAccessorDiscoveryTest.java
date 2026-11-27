@@ -10,7 +10,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
@@ -71,9 +70,8 @@ class HibernateSearchAccessorDiscoveryTest {
     @Test
     void keepsAccessorDiscoverySeparateFromMappingRoots() throws IOException {
         CombinedIndexBuildItem index = combinedIndex(Index.of(IndexedType.class, PropertyMappedType.class));
-        AtomicReference<HibernateSearchStandaloneEnabledBuildItem> enabled = new AtomicReference<>();
-        new HibernateSearchStandaloneProcessor().configure(index, enabled::set);
-        assertThat(enabled.get().getRootAnnotationMappedClassNames()).containsExactly(IndexedType.class.getName());
+        assertThat(HibernateSearchStandaloneProcessor.collectRootAnnotationMappedClasses(index.getIndex()))
+                .containsExactly(IndexedType.class.getName());
         assertThat(HibernateSearchAccessorDiscovery.collectTypes(index))
                 .extracting(type -> type.name().toString())
                 .containsExactlyInAnyOrder(IndexedType.class.getName(), PropertyMappedType.class.getName());

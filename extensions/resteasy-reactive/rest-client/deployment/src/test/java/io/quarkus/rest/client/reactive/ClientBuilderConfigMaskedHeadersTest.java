@@ -25,7 +25,7 @@ public class ClientBuilderConfigMaskedHeadersTest extends AbstractClientMaskedHe
             .setLogRecordPredicate(record -> record.getLoggerName()
                     .equalsIgnoreCase("org.jboss.resteasy.reactive.client.logging.DefaultClientLogger"))
             .withConfiguration("""
-                    quarkus.rest-client.my-client.url=http://localhost:${quarkus.http.test-port:8081}
+                    quarkus.rest-client.my-client.url=quarkus://vertx-http
                     """).assertLogRecords(records -> {
                 Formatter formatter = new PatternFormatter("[%p] %m");
                 List<String> lines = records.stream().map(formatter::format).map(String::trim).collect(Collectors.toList());

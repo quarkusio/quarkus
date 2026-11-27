@@ -40,7 +40,7 @@ public class ClientDisconnectResponseLeakTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(UpstreamResource.class, UpstreamClient.class, ProxyResource.class))
             .overrideRuntimeConfigKey("quarkus.rest-client.upstream.url",
-                    "http://localhost:${quarkus.http.test-port:8081}")
+                    "quarkus://vertx-http")
             .overrideRuntimeConfigKey("quarkus.rest-client.upstream.connect-timeout", "2000")
             .overrideRuntimeConfigKey("quarkus.rest-client.upstream.read-timeout", "10000")
             .overrideConfigKey("quarkus.rest-client.upstream.connection-pool-size", "2")

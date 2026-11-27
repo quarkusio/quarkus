@@ -203,7 +203,7 @@ class RestClientBaseTest {
     private static Map<String, String> createSampleClientConfig(final String restClientName) {
         Map<String, String> clientConfig = new HashMap<>();
         // properties only configurable via client config
-        clientConfig.put("quarkus.rest-client." + restClientName + ".url", "http://localhost");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".url", "http://localhost:8080");
         // properties that override configRoot counterparts
         clientConfig.put("quarkus.rest-client." + restClientName + ".connect-timeout", "100");
         clientConfig.put("quarkus.rest-client." + restClientName + ".read-timeout", "101");

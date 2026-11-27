@@ -153,7 +153,6 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             if (DefaultJarLauncher.HTTP_PRESENT) {
                 args.addAll(toEnvVar("quarkus.http.port", "" + httpPort));
                 args.addAll(toEnvVar("quarkus.http.ssl-port", "" + httpsPort));
-                args.addAll(toEnvVar("test.url", LauncherUtil.generateTestUrl()));
             }
             if (testProfile != null) {
                 args.addAll(toEnvVar("quarkus.profile", testProfile));
@@ -263,7 +262,6 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             args.addAll(toEnvVar("quarkus.http.ssl-port", "" + httpsPort));
             // This won't be correct when using the random port, but it's really only used by us for the rest client tests
             // in the main module, since those tests hit the application itself
-            args.addAll(toEnvVar("test.url", LauncherUtil.generateTestUrl()));
         }
         if (testProfile != null) {
             args.addAll(toEnvVar("quarkus.profile", testProfile));

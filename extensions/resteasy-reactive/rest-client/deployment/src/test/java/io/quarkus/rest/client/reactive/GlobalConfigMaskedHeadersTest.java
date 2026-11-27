@@ -22,7 +22,7 @@ public class GlobalConfigMaskedHeadersTest extends AbstractClientMaskedHeaderLog
             .setLogRecordPredicate(record -> record.getLoggerName()
                     .equalsIgnoreCase("org.jboss.resteasy.reactive.client.logging.DefaultClientLogger"))
             .withConfiguration("""
-                    quarkus.rest-client.my-client.url=http://localhost:${quarkus.http.test-port:8081}
+                    quarkus.rest-client.my-client.url=quarkus://vertx-http
                     quarkus.rest-client.logging.scope=request-response
                     quarkus.rest-client.logging.masked-headers=x-secret,Authorization
                     """).assertLogRecords(records -> {

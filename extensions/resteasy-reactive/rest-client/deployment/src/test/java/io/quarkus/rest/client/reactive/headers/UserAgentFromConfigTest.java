@@ -25,8 +25,8 @@ public class UserAgentFromConfigTest {
             .withApplicationRoot((jar) -> jar.addClasses(Resource.class, Client.class)
                     .addAsResource(new StringAsset(
                             "quarkus.rest-client.user-agent=base\n" +
-                                    "quarkus.rest-client.client1.url=http://localhost:${quarkus.http.test-port:8081}\n" +
-                                    "quarkus.rest-client.client2.url=http://localhost:${quarkus.http.test-port:8081}\n" +
+                                    "quarkus.rest-client.client1.url=quarkus://vertx-http\n" +
+                                    "quarkus.rest-client.client2.url=quarkus://vertx-http\n" +
                                     "quarkus.rest-client.client2.user-agent=specific"),
                             "application.properties"));
 

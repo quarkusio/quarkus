@@ -27,7 +27,7 @@ public class ClientLogMdcTest {
             .setLogRecordPredicate(record -> record.getLoggerName()
                     .equals("org.jboss.resteasy.reactive.client.logging.DefaultClientLogger"))
             .overrideRuntimeConfigKey("quarkus.rest-client.my-client.url",
-                    "http://localhost:${quarkus.http.test-port:8081}")
+                    "quarkus://vertx-http")
             .overrideRuntimeConfigKey("quarkus.rest-client.logging.scope", "request-response")
             .assertLogRecords(records -> {
                 assertThat(records).hasSize(2);

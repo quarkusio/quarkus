@@ -22,8 +22,7 @@ public class RestClientExceptionOriginalBehaviorTest {
     static StringAsset createStringAsset() {
         try {
             Properties props = new Properties();
-            props.put("io.quarkus.restclient.exception.DownstreamServiceClient/mp-rest/url",
-                    "${test.url}/downstream");
+            props.put("io.quarkus.restclient.exception.DownstreamServiceClient/mp-rest/url", "quarkus://vertx-http/downstream");
             props.put("resteasy.original.webapplicationexception.behavior", "true");
             StringWriter sw = new StringWriter();
             props.store(sw, "application.properties");

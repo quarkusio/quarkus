@@ -25,7 +25,7 @@ public class HttpTagExplosionPreventionTest {
             .overrideConfigKey("quarkus.micrometer.binder.http-client.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.http-server.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
-            .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
+            .overrideConfigKey("pingpong/mp-rest/url", "quarkus://vertx-http")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.binder.http-server.suppress4xx-errors", "true")
             .withApplicationRoot((jar) -> jar

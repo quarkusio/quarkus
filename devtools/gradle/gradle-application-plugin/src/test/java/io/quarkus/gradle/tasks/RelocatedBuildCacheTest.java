@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -87,6 +89,15 @@ public class RelocatedBuildCacheTest extends BaseGradleTest {
                     .describedAs("%s" + KEY, model)
                     .hasSameTextualContentAs(modelFile(first, model + KEY));
         }
+
+        // Restored from the first checkout's build, so it must not point into the first checkout
+        Properties artifactProperties = new Properties();
+        try (Reader reader = Files.newBufferedReader(second.resolve("app/build/quarkus-artifact.properties"))) {
+            artifactProperties.load(reader);
+        }
+        soft.assertThat(artifactProperties.getProperty("metadata.library-dir"))
+                .describedAs("library directory in the second checkout's quarkus-artifact.properties")
+                .isEqualTo(Path.of("quarkus-app", "lib").toString());
     }
 
     @Test

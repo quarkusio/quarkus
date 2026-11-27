@@ -15,6 +15,9 @@ import io.quarkus.sbom.CoreSbomContributionConfig;
  */
 public final class ArtifactResultBuildItem extends MultiBuildItem {
 
+    public static final String METADATA_LIBRARY_DIR = "library-dir";
+    public static final String METADATA_OUTPUT_DIRECTORY = "output-directory";
+
     private final Path path;
     private final String type;
     private final Map<String, String> metadata;

@@ -245,6 +245,8 @@ public class JarRunnerIT extends MojoTestBase {
                 .load(new FileInputStream(testDir.toPath().resolve("target").resolve("quarkus-artifact.properties").toFile()));
         Assertions.assertEquals("jar", quarkusArtifactProperties.get("type"));
         Assertions.assertEquals("acme-1.0-SNAPSHOT-runner.jar", quarkusArtifactProperties.get("path"));
+        // relative to the output directory, like the path, so that the file can be restored to another location
+        Assertions.assertEquals("lib", quarkusArtifactProperties.get("metadata.library-dir"));
 
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
@@ -1016,6 +1018,9 @@ public class JarRunnerIT extends MojoTestBase {
         Assertions.assertEquals("jar", properties.get("type"));
         Assertions.assertTrue(properties.get("path").toString().startsWith(outputDir == null ? "quarkus-app" : outputDir));
         Assertions.assertTrue(properties.get("path").toString().endsWith("quarkus-run.jar"));
+        // relative to the output directory, like the path, so that the file can be restored to another location
+        Assertions.assertEquals(Path.of(outputDir == null ? "quarkus-app" : outputDir, "lib").toString(),
+                properties.get("metadata.library-dir"));
 
         // quarkus-pre-init-raise-errors is used to catch errors related to pre-init execution when running the Quarkus tests
         Process process = doLaunch(jar, output, List.of("-Dquarkus-pre-init-raise-errors=true")).start();

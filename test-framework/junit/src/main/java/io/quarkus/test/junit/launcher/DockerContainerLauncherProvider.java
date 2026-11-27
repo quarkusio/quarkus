@@ -5,6 +5,7 @@ import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_HTTPS_PORT;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_PORT;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,6 +20,7 @@ import java.util.ServiceLoader;
 
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.deployment.images.ContainerImages;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.test.common.DefaultDockerContainerLauncher;
 import io.quarkus.test.common.DockerContainerArtifactLauncher;
@@ -32,11 +34,41 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         return isContainer(type) || (isJar(type) && "test-with-native-agent".equals(testProfile));
     }
 
+    /**
+     * Resolves the recorded {@code output-directory} against the build output directory, which holds
+     * {@code quarkus-artifact.properties}. Quarkus records it relative to that directory, so that a build tool can
+     * restore the file from a cache populated by a build in another directory. A value recorded as an absolute path,
+     * by an earlier version, is kept as it is. A relative value that resolves outside the build output directory is
+     * rejected, since Quarkus never records one.
+     *
+     * @param buildOutputDirectory the directory holding {@code quarkus-artifact.properties}
+     * @param value the recorded {@code output-directory}, may be {@code null}
+     * @return the absolute output directory, or {@code null} if none was recorded
+     */
+    static String outputTargetDirectory(Path buildOutputDirectory, String value) {
+        if (value == null || buildOutputDirectory == null) {
+            return value;
+        }
+        final Path normalizedBuildOutputDirectory = buildOutputDirectory.toAbsolutePath().normalize();
+        final Path path = Path.of(value);
+        if (path.isAbsolute()) {
+            return path.normalize().toString();
+        }
+        final Path resolved = normalizedBuildOutputDirectory.resolve(path).normalize();
+        if (!resolved.startsWith(normalizedBuildOutputDirectory)) {
+            throw new IllegalStateException("The output-directory " + value + " recorded in quarkus-artifact.properties"
+                    + " is outside the build output directory " + normalizedBuildOutputDirectory);
+        }
+        return resolved.toString();
+    }
+
     @Override
     public DockerContainerArtifactLauncher create(CreateContext context) {
         String containerImage = context.quarkusArtifactProperties().getProperty("metadata.container-image");
         String containerWorkingDirectory = context.quarkusArtifactProperties().getProperty("metadata.working-directory");
-        String outputTargetDirectory = context.quarkusArtifactProperties().getProperty("metadata.output-directory");
+        String outputTargetDirectory = outputTargetDirectory(context.buildOutputDirectory(),
+                context.quarkusArtifactProperties()
+                        .getProperty("metadata." + ArtifactResultBuildItem.METADATA_OUTPUT_DIRECTORY));
         boolean pullRequired = Boolean
                 .parseBoolean(context.quarkusArtifactProperties().getProperty("metadata.pull-required", "false"));
         Config config = Config.get();

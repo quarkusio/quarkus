@@ -205,7 +205,8 @@ public class JibProcessor {
                 Map.of("container-image", container.getTargetImage().toString(),
                         "pull-required", Boolean.toString(pushContainerImage),
                         "working-directory", jibConfig.workingDirectory(),
-                        "output-directory", outputTarget.getOutputDirectory().toAbsolutePath().toString())));
+                        ArtifactResultBuildItem.METADATA_OUTPUT_DIRECTORY,
+                        outputTarget.getOutputDirectory().toAbsolutePath().toString())));
         containerImageBuilder.produce(new ContainerImageBuilderBuildItem(JIB));
     }
 

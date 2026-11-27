@@ -29,13 +29,7 @@ public class GeneratedBeanGizmo2Adaptor implements ClassOutput {
 
     public GeneratedBeanGizmo2Adaptor(BuildProducer<GeneratedBeanBuildItem> classOutput,
             BuildProducer<ConstantBootstrapBuildItem> constantBootstraps) {
-        this(classOutput, new Predicate<>() {
-
-            @Override
-            public boolean test(String t) {
-                return true;
-            }
-        }, constantBootstraps);
+        this(classOutput, t -> true, constantBootstraps);
     }
 
     public GeneratedBeanGizmo2Adaptor(BuildProducer<GeneratedBeanBuildItem> classOutput,

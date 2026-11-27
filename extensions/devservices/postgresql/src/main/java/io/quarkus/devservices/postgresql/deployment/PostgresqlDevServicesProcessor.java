@@ -17,6 +17,8 @@ import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
+
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Feature;
@@ -92,6 +94,7 @@ public class PostgresqlDevServicesProcessor {
                         .withPassword(effectivePassword)
                         .withDatabaseName(effectiveDbName)
                         .withReuse(containerConfig.isReuse());
+                container.setRunInitScriptsOnReuse(containerConfig.isRunInitScriptsOnReuse());
                 Labels.addDataSourceLabel(container, datasourceName);
                 ConfigureUtil.configureSharedServiceLabel(container, launchMode, DEV_SERVICE_LABEL,
                         containerConfig.getServiceName());
@@ -144,7 +147,7 @@ public class PostgresqlDevServicesProcessor {
         });
     }
 
-    private static class QuarkusPostgreSQLContainer extends PostgreSQLContainer implements DatasourceStartable {
+    static class QuarkusPostgreSQLContainer extends PostgreSQLContainer implements DatasourceStartable {
 
         private static final String READY_REGEX = ".*database system is ready to accept connections.*\\s";
         private static final String SKIPPING_INITIALIZATION_REGEX = ".*PostgreSQL Database directory appears to contain a database; Skipping initialization:*\\s";
@@ -153,6 +156,9 @@ public class PostgresqlDevServicesProcessor {
         private final boolean useSharedNetwork;
 
         private final String hostName;
+
+        private boolean runInitScriptsOnReuse = true;
+        private boolean reused;
 
         public QuarkusPostgreSQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
                 String defaultNetworkId, boolean useSharedNetwork) {
@@ -176,6 +182,31 @@ public class PostgresqlDevServicesProcessor {
                     .withStrategy(Wait.forListeningPort())
                     .withStartupTimeout(Duration.of(60L, ChronoUnit.SECONDS));
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "postgres");
+        }
+
+        /**
+         * @param runInitScriptsOnReuse whether the init scripts run again when the container is reused
+         */
+        void setRunInitScriptsOnReuse(boolean runInitScriptsOnReuse) {
+            this.runInitScriptsOnReuse = runInitScriptsOnReuse;
+        }
+
+        @Override
+        protected void containerIsStarted(InspectContainerResponse containerInfo, boolean reused) {
+            this.reused = reused;
+            super.containerIsStarted(containerInfo, reused);
+        }
+
+        /**
+         * A reused container keeps its data, including the effect of the init scripts that ran when it was first
+         * started. With {@code reuse=skip-init-scripts}, the scripts are not run again on a reused container: a
+         * non-idempotent script would fail on the second run.
+         */
+        @Override
+        protected void runInitScriptIfRequired() {
+            if (!reused || runInitScriptsOnReuse) {
+                super.runInitScriptIfRequired();
+            }
         }
 
         @Override

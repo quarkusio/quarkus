@@ -12,6 +12,8 @@ import org.jboss.logging.Logger;
 import org.testcontainers.mssqlserver.MSSQLServerContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
+
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -86,6 +88,7 @@ public class MSSQLDevServicesProcessor {
                 // Defining the database name and the username is not supported by this container yet
                 container.withPassword(effectivePassword)
                         .withReuse(containerConfig.isReuse());
+                container.setRunInitScriptsOnReuse(containerConfig.isRunInitScriptsOnReuse());
                 Labels.addDataSourceLabel(container, datasourceName);
                 ConfigureUtil.configureSharedServiceLabel(container, launchMode, DEV_SERVICE_LABEL,
                         containerConfig.getServiceName());
@@ -133,10 +136,14 @@ public class MSSQLDevServicesProcessor {
     }
 
     private static class QuarkusMSSQLServerContainer extends MSSQLServerContainer implements DatasourceStartable {
+
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
         private final String hostName;
+
+        private boolean runInitScriptsOnReuse = true;
+        private boolean reused;
 
         public QuarkusMSSQLServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
                 String defaultNetworkId, boolean useSharedNetwork) {
@@ -146,6 +153,31 @@ public class MSSQLDevServicesProcessor {
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mssql");
+        }
+
+        /**
+         * @param runInitScriptsOnReuse whether the init scripts run again when the container is reused
+         */
+        void setRunInitScriptsOnReuse(boolean runInitScriptsOnReuse) {
+            this.runInitScriptsOnReuse = runInitScriptsOnReuse;
+        }
+
+        @Override
+        protected void containerIsStarted(InspectContainerResponse containerInfo, boolean reused) {
+            this.reused = reused;
+            super.containerIsStarted(containerInfo, reused);
+        }
+
+        /**
+         * A reused container keeps its data, including the effect of the init scripts that ran when it was first
+         * started. With {@code reuse=skip-init-scripts}, the scripts are not run again on a reused container: a
+         * non-idempotent script would fail on the second run.
+         */
+        @Override
+        protected void runInitScriptIfRequired() {
+            if (!reused || runInitScriptsOnReuse) {
+                super.runInitScriptIfRequired();
+            }
         }
 
         @Override

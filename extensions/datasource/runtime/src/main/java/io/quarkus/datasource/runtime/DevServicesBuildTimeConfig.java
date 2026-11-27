@@ -185,10 +185,13 @@ public interface DevServicesBuildTimeConfig {
      * if you enabled it in `testcontainers.properties`
      * but only want to use it for some of your Quarkus applications or datasources.
      *
+     * With `true`, the init scripts (see `init-script-path`) run again on a reused container.
+     * Set it to `skip-init-scripts` to reuse the container without running the init scripts again.
+     *
      * @asciidoclet
      */
     @WithDefault("true")
-    boolean reuse();
+    Reuse reuse();
 
     /**
      * Whether the logs should be consumed by the JBoss logger.
@@ -198,4 +201,22 @@ public interface DevServicesBuildTimeConfig {
     @WithDefault("false")
     boolean showLogs();
 
+    /**
+     * Whether Dev Service containers are kept running and reused across runs, and whether the init scripts run again on a
+     * reused container.
+     */
+    enum Reuse {
+        /**
+         * Reuse the container and run the init scripts again.
+         */
+        TRUE,
+        /**
+         * Do not reuse the container.
+         */
+        FALSE,
+        /**
+         * Reuse the container and do not run the init scripts again.
+         */
+        SKIP_INIT_SCRIPTS
+    }
 }

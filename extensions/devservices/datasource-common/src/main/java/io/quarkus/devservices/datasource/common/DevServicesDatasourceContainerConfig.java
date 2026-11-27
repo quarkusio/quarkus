@@ -24,6 +24,7 @@ public class DevServicesDatasourceContainerConfig {
     private final Optional<List<String>> initPrivilegedScriptPath;
     private final Map<String, String> volumes;
     private final boolean reuse;
+    private final boolean runInitScriptsOnReuse;
     private final boolean showLogs;
     private final String datasourceName;
     private final Set<DatabaseFeature> requiredFeatures;
@@ -43,6 +44,7 @@ public class DevServicesDatasourceContainerConfig {
             Optional<List<String>> initPrivilegedScriptPath,
             Map<String, String> volumes,
             boolean reuse,
+            boolean runInitScriptsOnReuse,
             boolean showLogs,
             String datasourceName,
             Set<DatabaseFeature> requiredFeatures,
@@ -61,6 +63,7 @@ public class DevServicesDatasourceContainerConfig {
         this.initPrivilegedScriptPath = initPrivilegedScriptPath;
         this.volumes = volumes;
         this.reuse = reuse;
+        this.runInitScriptsOnReuse = runInitScriptsOnReuse;
         this.showLogs = showLogs;
         this.datasourceName = datasourceName;
         this.requiredFeatures = requiredFeatures != null ? requiredFeatures : Collections.emptySet();
@@ -122,6 +125,13 @@ public class DevServicesDatasourceContainerConfig {
 
     public boolean isReuse() {
         return reuse;
+    }
+
+    /**
+     * @return whether the init scripts run again when a container is reused
+     */
+    public boolean isRunInitScriptsOnReuse() {
+        return runInitScriptsOnReuse;
     }
 
     public String getDatasourceName() {

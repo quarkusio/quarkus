@@ -95,6 +95,8 @@ need for a separate step. Let the build fix formatting for you.
   edits whose sole purpose is reorganizing imports.
 - Use **JBoss Logging** (`org.jboss.logging.Logger`), not SLF4J/JUL/Log4j
 - No `@author` tags, no wildcard imports
+- Javadoc on every new type and public or package-private member; `//`
+  comments name what a block does, never restate a statement
 - Naming: `<Feature>Processor.java`, `<Feature>Recorder.java`,
   `<Description>BuildItem.java`, `<Feature>Config.java`
 - Package root: `io.quarkus.<extension-name>` (hyphens become underscores)

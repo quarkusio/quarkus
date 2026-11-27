@@ -5,7 +5,6 @@ import java.util.List;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
 
 import org.jboss.logging.Logger;
 
@@ -41,24 +40,22 @@ public class RawTestService extends TestRawGrpc.TestRawImplBase {
         requestContext = Arc.container().requestContext();
     }
 
+    // The DAO commits the transaction before the response is sent, so that the next call of the client sees the change
     @Override
-    @Transactional
     public void add(TestOuterClass.Item request, StreamObserver<TestOuterClass.Empty> responseObserver) {
         contextChecker.newContextId("RawTestService#add");
         Item item = new Item();
         item.text = request.getText();
-        entityManager.persist(item);
+        dao.add(item);
         responseObserver.onNext(EMPTY);
         responseObserver.onCompleted();
     }
 
     @Override
     @Blocking
-    @Transactional
     public void clear(TestOuterClass.Empty request, StreamObserver<TestOuterClass.Empty> responseObserver) {
         contextChecker.newContextId("RawTestService#clear");
-        entityManager.createQuery("DELETE from Item")
-                .executeUpdate();
+        dao.clear();
         responseObserver.onNext(EMPTY);
         responseObserver.onCompleted();
     }

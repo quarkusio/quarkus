@@ -50,6 +50,16 @@ public interface QuteConfig {
     Optional<List<String>> typeCheckExcludes();
 
     /**
+     * If set to {@code false} then the arguments of user tag calls are not validated against the parameter
+     * declarations of the tag templates.
+     * <p>
+     * This validation fails the build of an application that passes an argument whose type does not match the
+     * declaration, which was accepted before the validation was introduced.
+     */
+    @WithDefault("true")
+    boolean validateUserTagArguments();
+
+    /**
      * This regular expression is used to exclude template files found in template roots. Excluded templates are
      * neither parsed nor validated during build and are not available at runtime.
      * <p>

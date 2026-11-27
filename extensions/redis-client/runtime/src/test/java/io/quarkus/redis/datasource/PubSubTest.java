@@ -1,6 +1,7 @@
 package io.quarkus.redis.datasource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
 import java.util.List;
@@ -16,6 +17,7 @@ import io.quarkus.redis.runtime.datasource.ReactivePubSubCommandsImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.Cancellable;
+import io.vertx.redis.client.Response;
 
 public class PubSubTest extends DatasourceTestBase {
 
@@ -33,6 +35,26 @@ public class PubSubTest extends DatasourceTestBase {
     @AfterEach
     void tearDown() {
         ds.flushall().await().atMost(Duration.ofSeconds(10));
+    }
+
+    /**
+     * Waits until Redis reports at least one subscriber on the given channel.
+     * <p>
+     * The {@link Multi}-based subscriptions register asynchronously: subscribing to the {@code Multi} returns
+     * before the {@code SUBSCRIBE} command reaches Redis. As pub/sub messages are not buffered, anything
+     * published in that window is silently dropped, which used to make these tests flaky.
+     */
+    private void awaitSubscribedToChannel(String channel) {
+        await().untilAsserted(() -> {
+            assertThat(subscriberCount(channel)).isGreaterThanOrEqualTo(1);
+        });
+    }
+
+    private int subscriberCount(String channel) {
+        // PUBSUB NUMSUB <channel> replies with [channel, count]
+        Response response = api.pubsub(List.of("NUMSUB", channel)).await().indefinitely();
+        Response count = response.get(1);
+        return count == null ? 0 : count.toInteger();
     }
 
     @Test
@@ -123,6 +145,8 @@ public class PubSubTest extends DatasourceTestBase {
         Multi<Person> multi = ps.subscribe("people");
 
         Cancellable cancellable = multi.subscribe().with(p -> latch.countDown());
+
+        awaitSubscribedToChannel("people");
 
         for (int i = 0; i < 1000; i++) {
             ps.publish("people", new Person("p" + i, "")).await().atMost(Duration.ofSeconds(10));

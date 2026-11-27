@@ -477,7 +477,6 @@ public class CycloneDxSbomGenerator {
         Component c = renderComponentCore(descriptor);
         c.setType(Component.Type.APPLICATION);
         bom.getMetadata().setComponent(c);
-        bom.addComponent(c);
     }
 
     /**
@@ -494,9 +493,6 @@ public class CycloneDxSbomGenerator {
      * cannot be resolved, this method is a no-op.
      */
     private void applyProjectLicenseToFiles(Bom bom) {
-        if (bom.getComponents() == null) {
-            return;
-        }
         LicenseChoice projectLicenses = resolveProjectLicenses(bom);
         if (projectLicenses == null) {
             return;
@@ -505,9 +501,11 @@ public class CycloneDxSbomGenerator {
         if (main != null && !hasLicenses(main)) {
             main.setLicenses(projectLicenses);
         }
-        for (Component c : bom.getComponents()) {
-            if (c.getType() == Component.Type.FILE && !hasLicenses(c)) {
-                c.setLicenses(projectLicenses);
+        if (bom.getComponents() != null) {
+            for (Component c : bom.getComponents()) {
+                if (c.getType() == Component.Type.FILE && !hasLicenses(c)) {
+                    c.setLicenses(projectLicenses);
+                }
             }
         }
     }

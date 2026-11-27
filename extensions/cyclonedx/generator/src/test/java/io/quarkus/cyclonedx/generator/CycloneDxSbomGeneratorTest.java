@@ -390,12 +390,17 @@ class CycloneDxSbomGeneratorTest {
                 .setContributions(List.of(coreContribution, extContribution))
                 .generateText().get(0));
 
+        // Main component should be present in metadata, not in components[]
+        assertThat(bom.getMetadata().getComponent()).isNotNull();
+        assertThat(bom.getMetadata().getComponent().getName()).isEqualTo("acme-app");
+
         List<String> componentNames = bom.getComponents().stream()
                 .map(Component::getName)
                 .toList();
 
-        // Library and main components should be present
-        assertThat(componentNames).contains("react", "quarkus-rest", "acme-app");
+        // Library components should be present, main component should not be in components[]
+        assertThat(componentNames).contains("react", "quarkus-rest");
+        assertThat(componentNames).doesNotContain("acme-app");
         // File components should be excluded
         assertThat(componentNames).doesNotContain("quarkus-run.jar", "app-data.dat");
 
@@ -866,6 +871,54 @@ class CycloneDxSbomGeneratorTest {
                 .findFirst().orElseThrow();
         assertThat(c.getLicenses().getLicenses())
                 .anyMatch(l -> "Apache-2.0".equals(l.getId()) || "Apache-2.0".equals(l.getName()));
+    }
+
+    @Test
+    void mainComponentNotDuplicatedInComponents() {
+        ResolvedDependency mainArtifact = resolvedDep("org.acme", "acme-app", "1.0.0",
+                List.of(ArtifactCoords.jar("io.quarkus", "quarkus-rest", "3.0.0")));
+        ResolvedDependency restDep = resolvedDep("io.quarkus", "quarkus-rest", "3.0.0", List.of());
+
+        SbomContribution coreContribution = new CoreSbomContributionConfig()
+                .setMainArtifact(mainArtifact)
+                .addComponent(restDep)
+                .toSbomContribution();
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setContributions(List.of(coreContribution))
+                .generateText().get(0));
+
+        Component main = bom.getMetadata().getComponent();
+        assertThat(main).isNotNull();
+        assertThat(main.getBomRef()).isNotNull();
+
+        // The main component's bom-ref must not appear in the components array
+        assertThat(bom.getComponents()).noneMatch(c -> main.getBomRef().equals(c.getBomRef()));
+    }
+
+    @Test
+    void runnerMainComponentNotDuplicatedInComponents() {
+        ResolvedDependency mainArtifact = resolvedDep("org.acme", "acme-app", "1.0.0", List.of());
+
+        SbomContribution coreContribution = new CoreSbomContributionConfig()
+                .addComponent(mainArtifact)
+                .setMainPurl(Purl.generic("quarkus-run.jar", "1.0.0"))
+                .toSbomContribution();
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setContributions(List.of(coreContribution))
+                .generateText().get(0));
+
+        Component main = bom.getMetadata().getComponent();
+        assertThat(main).isNotNull();
+        assertThat(main.getName()).isEqualTo("quarkus-run.jar");
+
+        // The runner component's bom-ref must not appear in the components array
+        assertThat(bom.getComponents()).noneMatch(c -> main.getBomRef().equals(c.getBomRef()));
+        // But the app artifact itself should be in components
+        assertThat(bom.getComponents()).anyMatch(c -> "acme-app".equals(c.getName()));
     }
 
     private static org.apache.maven.model.Model pomWithDescription(String groupId, String artifactId,

@@ -22,6 +22,8 @@ import org.eclipse.microprofile.health.Readiness;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.runtime.AgroalDataSourceSupport;
 import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
+import io.quarkus.agroal.runtime.DataSourcesJdbcRuntimeConfig;
+import io.quarkus.agroal.runtime.DataSourcesJdbcRuntimeConfig.DataSourceJdbcOuterNamedRuntimeConfig;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceSupport;
 
@@ -35,7 +37,12 @@ public class DataSourceHealthCheck implements HealthCheck {
     @Inject
     Instance<AgroalDataSourceSupport> agroalDataSourceSupport;
 
+    @Inject
+    Instance<DataSourcesJdbcRuntimeConfig> jdbcRuntimeConfig;
+
     private final Map<String, DataSource> checkedDataSources = new HashMap<>();
+
+    private final Map<String, Boolean> newConnectionAllowed = new HashMap<>();
 
     @PostConstruct
     protected void init() {
@@ -52,6 +59,7 @@ public class DataSourceHealthCheck implements HealthCheck {
             Optional<AgroalDataSource> dataSource = AgroalDataSourceUtil.dataSourceIfActive(name);
             if (dataSource.isPresent()) {
                 checkedDataSources.put(name, dataSource.get());
+                newConnectionAllowed.put(name, isNewConnectionAllowed(name));
             }
         }
     }
@@ -65,7 +73,7 @@ public class DataSourceHealthCheck implements HealthCheck {
             String dsName = dataSource.getKey();
 
             try {
-                boolean valid = ads.isHealthy(false);
+                boolean valid = ads.isHealthy(newConnectionAllowed.getOrDefault(dsName, false));
                 if (!valid) {
                     String data = isDefault ? "validation check failed for the default DataSource"
                             : "validation check failed for DataSource '" + dataSource.getKey() + "'";
@@ -84,5 +92,13 @@ public class DataSourceHealthCheck implements HealthCheck {
 
     protected Map<String, DataSource> getCheckedDataSources() {
         return Collections.unmodifiableMap(checkedDataSources);
+    }
+
+    private boolean isNewConnectionAllowed(String dataSourceName) {
+        if (!jdbcRuntimeConfig.isResolvable()) {
+            return false;
+        }
+        DataSourceJdbcOuterNamedRuntimeConfig config = jdbcRuntimeConfig.get().dataSources().get(dataSourceName);
+        return config != null && config.jdbc().healthCheckNewConnection();
     }
 }

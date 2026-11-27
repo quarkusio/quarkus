@@ -148,9 +148,6 @@ public class KafkaProcessor {
     private static final DotName AUTHENTICATE_CALLBACK_HANDLER = DotName
             .createSimple(AuthenticateCallbackHandler.class.getName());
 
-    static final DotName PARTITION_ASSIGNER = DotName
-            .createSimple("org.apache.kafka.clients.consumer.internals.PartitionAssignor");
-
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.KAFKA_CLIENT);
@@ -253,10 +250,6 @@ public class KafkaProcessor {
         collectImplementors(toRegister, indexBuildItem, Serializer.class);
         collectImplementors(toRegister, indexBuildItem, Deserializer.class);
         collectImplementors(toRegister, indexBuildItem, Partitioner.class);
-        if (QuarkusClassLoader.isClassPresentAtRuntime(PARTITION_ASSIGNER.toString())) {
-            // PartitionAssignor is now deprecated, replaced by ConsumerPartitionAssignor
-            collectImplementors(toRegister, indexBuildItem, PARTITION_ASSIGNER);
-        }
         collectImplementors(toRegister, indexBuildItem, ConsumerPartitionAssignor.class);
         collectImplementors(toRegister, indexBuildItem, ConsumerInterceptor.class);
         collectImplementors(toRegister, indexBuildItem, ProducerInterceptor.class);
@@ -473,9 +466,6 @@ public class KafkaProcessor {
         }
         // Add a condition for the optional authenticate callback handler
         reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(
-                "org.apache.kafka.common.security.oauthbearer.secured.OAuthBearerValidatorCallbackHandler",
-                "org.jose4j.keys.resolvers.VerificationKeyResolver"));
-        reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(
                 "org.apache.kafka.common.security.oauthbearer.OAuthBearerValidatorCallbackHandler",
                 "org.jose4j.keys.resolvers.VerificationKeyResolver"));
     }
@@ -496,10 +486,6 @@ public class KafkaProcessor {
 
     private static void collectImplementors(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, Class<?> cls) {
         collectClassNames(set, indexBuildItem.getIndex().getAllKnownImplementors(DotName.createSimple(cls.getName())));
-    }
-
-    private static void collectImplementors(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, DotName className) {
-        collectClassNames(set, indexBuildItem.getIndex().getAllKnownImplementors(className));
     }
 
     private static void collectSubclasses(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, Class<?> cls) {

@@ -24,6 +24,11 @@ public class JPAFunctionalityTest {
     }
 
     @Test
+    public void testDatasourceXmlRejectsDtd() throws Exception {
+        RestAssured.when().get("/jpa-withxml/testfunctionality/datasource-xml-dtd").then().body(is("OK"));
+    }
+
+    @Test
     public void testHibernateXml() throws Exception {
         RestAssured.when().get("/jpa-withxml/testfunctionality/hibernate-xml").then().body(is("OK"));
     }

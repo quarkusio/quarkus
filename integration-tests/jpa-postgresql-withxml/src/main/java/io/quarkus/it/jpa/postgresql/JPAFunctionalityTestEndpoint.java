@@ -18,6 +18,7 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMResult;
+import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamSource;
 
 import jakarta.inject.Inject;
@@ -138,6 +139,42 @@ public class JPAFunctionalityTestEndpoint {
             checkWrittenXmlObject(con);
         }
         return "OK";
+    }
+
+    /**
+     * Stores an XML document with a link to an external DTD and reads it back through {@link SQLXML#getSource(Class)}.
+     * The XML factories of the driver must reject the DOCTYPE declaration, in JVM mode and in native mode.
+     */
+    @GET
+    @Path("datasource-xml-dtd")
+    public String datasourceXmlWithDtd() throws SQLException {
+        try (final Connection con = ds.getConnection()) {
+            deleteXmlSchema(con);
+            createXmlSchema(con);
+            try (PreparedStatement ps = con.prepareStatement("INSERT INTO xmltest VALUES (?, XMLPARSE(DOCUMENT ?))")) {
+                ps.setInt(1, 1);
+                ps.setString(2, "<!DOCTYPE root SYSTEM \"http://localhost/does-not-exist.dtd\"><root><ele>1</ele></root>");
+                ps.executeUpdate();
+            }
+            try (Statement stmt = con.createStatement();
+                    ResultSet resultSet = stmt.executeQuery("SELECT val FROM xmltest")) {
+                if (!resultSet.next()) {
+                    throw new IllegalStateException("Stored XML element not found!");
+                }
+                SQLXML xml = resultSet.getSQLXML(1);
+                try {
+                    xml.getSource(DOMSource.class);
+                } catch (SQLException e) {
+                    for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+                        if (cause.getMessage() != null && cause.getMessage().contains("DOCTYPE is disallowed")) {
+                            return "OK";
+                        }
+                    }
+                    throw e;
+                }
+                throw new IllegalStateException("The driver accepted an XML document with a DOCTYPE declaration");
+            }
+        }
     }
 
     private void checkWrittenXmlObject(Connection con) throws SQLException {

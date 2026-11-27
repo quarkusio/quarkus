@@ -158,6 +158,23 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 * xref:spring-tx.adoc[Quarkus - Extension for Spring Transaction]
 * xref:spring-test.adoc[Testing Spring-style Applications in Quarkus]
 
+== Authenticating with the Config Server
+
+When the Config Server uses HTTP BASIC authentication, set `quarkus.spring-cloud-config.username` and `quarkus.spring-cloud-config.password`.
+
+When the Config Server sits behind an OpenID Connect / OAuth2 protected gateway, the client can obtain a bearer token from the token endpoint of the provider with the `client_credentials` grant, before it requests the configuration:
+
+[source,properties]
+----
+quarkus.spring-cloud-config.oidc.token-url=https://keycloak.example.com/realms/quarkus/protocol/openid-connect/token
+quarkus.spring-cloud-config.oidc.client-id=config-client
+quarkus.spring-cloud-config.oidc.client-secret=secret
+quarkus.spring-cloud-config.oidc.scope=config
+----
+
+The token is requested directly by the extension when the application starts, so the `quarkus-oidc-client` extension is not needed.
+A static token can also be sent with `quarkus.spring-cloud-config.headers.Authorization=Bearer <token>`, but it is never refreshed.
+
 [[spring-cloud-config-client-configuration-reference]]
 == Spring Cloud Config Client Reference
 

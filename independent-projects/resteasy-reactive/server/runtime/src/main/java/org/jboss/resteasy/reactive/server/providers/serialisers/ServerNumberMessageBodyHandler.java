@@ -1,8 +1,10 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 
@@ -23,6 +25,15 @@ public class ServerNumberMessageBodyHandler extends NumberMessageBodyHandler
     public Number readFrom(Class<Number> type, Type genericType, MediaType mediaType, ServerRequestContext context)
             throws WebApplicationException, IOException {
         return doReadFrom(type, context.getInputStream());
+    }
+
+    @Override
+    protected Number doReadFrom(Class<Number> type, InputStream entityStream) throws IOException {
+        try {
+            return super.doReadFrom(type, entityStream);
+        } catch (NumberFormatException e) {
+            throw new BadRequestException(e);
+        }
     }
 
 }

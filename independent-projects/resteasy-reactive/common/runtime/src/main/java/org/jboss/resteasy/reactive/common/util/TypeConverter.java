@@ -210,8 +210,10 @@ public final class TypeConverter {
                 // because you can't use targetType.cast() with primitives.
                 result = (T) value;
             }
-        } catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw sneakyThrow(e.getCause());
         }
         return result;
     }
@@ -238,9 +240,16 @@ public final class TypeConverter {
 
         try {
             result = c.newInstance(source);
-        } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException e) {
             throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw sneakyThrow(e.getCause());
         }
         return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable> RuntimeException sneakyThrow(Throwable cause) throws E {
+        throw (E) cause;
     }
 }

@@ -23,7 +23,6 @@ import org.rocksdb.Status;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.core.Phase;
 import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Feature;
@@ -44,8 +43,6 @@ import io.quarkus.kafka.streams.runtime.graal.KafkaStreamsFeature;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class KafkaStreamsProcessor {
-
-    public static final String DEFAULT_PARTITION_GROUPER = "org.apache.kafka.streams.processor.DefaultPartitionGrouper";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -72,13 +69,6 @@ class KafkaStreamsProcessor {
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(StreamsPartitionAssignor.class)
                 .reason(getClass().getName())
                 .build());
-        if (QuarkusClassLoader.isClassPresentAtRuntime(DEFAULT_PARTITION_GROUPER)) {
-            // Class DefaultPartitionGrouper deprecated in Kafka 2.8.x and removed in 3.0.0
-            reflectiveClasses.produce(
-                    ReflectiveClassBuildItem.builder(DEFAULT_PARTITION_GROUPER)
-                            .reason(getClass().getName() + " compulsory class")
-                            .build());
-        }
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(
                 DefaultKafkaClientSupplier.class,
                 DefaultProductionExceptionHandler.class,
@@ -89,11 +79,6 @@ class KafkaStreamsProcessor {
                 org.apache.kafka.streams.processor.internals.assignment.HighAvailabilityTaskAssignor.class,
                 org.apache.kafka.streams.processor.internals.assignment.LegacyStickyTaskAssignor.class,
                 org.apache.kafka.streams.processor.internals.assignment.FallbackPriorTaskAssignor.class)
-                .reason(getClass().getName())
-                .methods().fields().build());
-        // for backwards compatibility with < Kafka 3.9.0
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(
-                "org.apache.kafka.streams.processor.internals.assignment.StickyTaskAssignor")
                 .reason(getClass().getName())
                 .methods().fields().build());
         // See https://github.com/quarkusio/quarkus/issues/23404

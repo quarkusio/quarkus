@@ -1,8 +1,8 @@
 package io.quarkus.devtools.codestarts.quarkus;
 
-import static io.quarkus.devtools.codestarts.CodestartResourceLoader.loadCodestartsFromResources;
 import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findLanguageName;
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.AppContent.CODE;
+import static io.quarkus.devtools.project.CodestartResourceLoader.loadCodestartsFromResources;
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getGuide;
 

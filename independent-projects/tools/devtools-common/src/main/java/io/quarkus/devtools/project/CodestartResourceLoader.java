@@ -1,4 +1,4 @@
-package io.quarkus.devtools.codestarts;
+package io.quarkus.devtools.project;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.devtools.codestarts.Codestart;
+import io.quarkus.devtools.codestarts.CodestartCatalogLoader;
+import io.quarkus.devtools.codestarts.CodestartPathLoader;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 
 public final class CodestartResourceLoader implements CodestartPathLoader {

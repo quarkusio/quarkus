@@ -25,6 +25,7 @@ import jakarta.inject.Singleton;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.streams.KafkaClientSupplier;
@@ -309,7 +310,7 @@ public class KafkaStreamsProducer {
         return inetSocketAddress.getHostString() + ":" + inetSocketAddress.getPort();
     }
 
-    private static Properties getAdminClientConfig(Properties properties) {
+    static Properties getAdminClientConfig(Properties properties) {
         Properties adminClientConfig = new Properties(properties);
         // include TLS config name if it has been configured
         if (properties.containsKey(TLS_CONFIG_NAME_KEY)) {
@@ -325,7 +326,33 @@ public class KafkaStreamsProducer {
                 adminClientConfig.put(knownAdminClientConfig, properties.get(knownAdminClientConfig));
             }
         }
+        copyConfigProviders(properties, adminClientConfig);
         return adminClientConfig;
+    }
+
+    /**
+     * The config providers ({@code config.providers} and {@code config.providers.<name>.class} / {@code .param.*})
+     * are dynamic keys that {@link AdminClientConfig#configNames()} does not list, so they have to be copied
+     * explicitly for the admin client to resolve {@code ${provider:...}} variables. As for the known names, the
+     * {@code admin.} prefixed variant of a key wins.
+     */
+    private static void copyConfigProviders(Properties properties, Properties adminClientConfig) {
+        for (String name : properties.stringPropertyNames()) {
+            if (isConfigProviderKey(name) && !properties.containsKey(StreamsConfig.ADMIN_CLIENT_PREFIX + name)) {
+                adminClientConfig.put(name, properties.get(name));
+            }
+        }
+        for (String name : properties.stringPropertyNames()) {
+            if (name.startsWith(StreamsConfig.ADMIN_CLIENT_PREFIX)
+                    && isConfigProviderKey(name.substring(StreamsConfig.ADMIN_CLIENT_PREFIX.length()))) {
+                adminClientConfig.put(name.substring(StreamsConfig.ADMIN_CLIENT_PREFIX.length()), properties.get(name));
+            }
+        }
+    }
+
+    private static boolean isConfigProviderKey(String name) {
+        return name.equals(AbstractConfig.CONFIG_PROVIDERS_CONFIG)
+                || name.startsWith(AbstractConfig.CONFIG_PROVIDERS_CONFIG + ".");
     }
 
     private static final class DurationToSecondsFunction implements Function<Duration, String> {

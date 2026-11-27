@@ -290,7 +290,9 @@ public final class VertxGrpcSender implements GrpcSender {
                 Buffer buffer = Buffer.buffer(messageSize);
                 var os = new BufferOutputStream(buffer);
                 messageWriter.writeMessage(os);
-                request.send(buffer).onSuccess(new Handler<>() {
+                // Registered before the request is ended: Vert.x drops an end of stream that arrives before the
+                // end handler is set, which would leave the export uncompleted forever
+                request.response().onSuccess(new Handler<>() {
                     @Override
                     public void handle(GrpcClientResponse<Buffer, Buffer> response) {
                         response.exceptionHandler(new Handler<>() {
@@ -494,6 +496,7 @@ public final class VertxGrpcSender implements GrpcSender {
                         }
                     }
                 });
+                request.end(buffer);
             } catch (IOException e) {
                 final String message = "Failed to export "
                         + type

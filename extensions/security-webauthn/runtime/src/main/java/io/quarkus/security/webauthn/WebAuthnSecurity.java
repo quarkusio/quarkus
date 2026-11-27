@@ -120,7 +120,8 @@ public class WebAuthnSecurity {
      * <p>
      * Valid until 15 March 2042
      */
-    private static final String ANDROID_KEY_ATTESTATION_ROOT_RSA = "MIIFHDCCAwSgAwIBAgIJAPHBcqaZ6vUdMA0GCSqGSIb3DQEBCwUAMBsxGTAXBgNV" +
+    private static final String ANDROID_KEY_ATTESTATION_ROOT_RSA = "MIIFHDCCAwSgAwIBAgIJAPHBcqaZ6vUdMA0GCSqGSIb3DQEBCwUAMBsxGTAXBgNV"
+            +
             "BAUTEGY5MjAwOWU4NTNiNmIwNDUwHhcNMjIwMzIwMTgwNzQ4WhcNNDIwMzE1MTgw" +
             "NzQ4WjAbMRkwFwYDVQQFExBmOTIwMDllODUzYjZiMDQ1MIICIjANBgkqhkiG9w0B" +
             "AQEFAAOCAg8AMIICCgKCAgEAr7bHgiuxpwHsK7Qui8xUFmOr75gvMsd/dTEDDJdS" +
@@ -158,7 +159,8 @@ public class WebAuthnSecurity {
      * <p>
      * Valid until 15 July 2035
      */
-    private static final String ANDROID_KEY_ATTESTATION_ROOT_ECDSA = "MIICIjCCAaigAwIBAgIRAISp0Cl7DrWK5/8OgN52BgUwCgYIKoZIzj0EAwMwUjEc" +
+    private static final String ANDROID_KEY_ATTESTATION_ROOT_ECDSA = "MIICIjCCAaigAwIBAgIRAISp0Cl7DrWK5/8OgN52BgUwCgYIKoZIzj0EAwMwUjEc"
+            +
             "MBoGA1UEAwwTS2V5IEF0dGVzdGF0aW9uIENBMTEQMA4GA1UECwwHQW5kcm9pZDET" +
             "MBEGA1UECgwKR29vZ2xlIExMQzELMAkGA1UEBhMCVVMwHhcNMjUwNzE3MjIzMjE4" +
             "WhcNMzUwNzE1MjIzMjE4WjBSMRwwGgYDVQQDDBNLZXkgQXR0ZXN0YXRpb24gQ0Ex" +
@@ -227,7 +229,8 @@ public class WebAuthnSecurity {
      * <p>
      * Valid until 20 March 2046
      */
-    private static final String FIDO_MDS3_ROOT_R46_CERTIFICATE = "MIIFWjCCA0KgAwIBAgISEdK7udcjGJ5AXwqdLdDfJWfRMA0GCSqGSIb3DQEBDAUA" +
+    private static final String FIDO_MDS3_ROOT_R46_CERTIFICATE = "MIIFWjCCA0KgAwIBAgISEdK7udcjGJ5AXwqdLdDfJWfRMA0GCSqGSIb3DQEBDAUA"
+            +
             "MEYxCzAJBgNVBAYTAkJFMRkwFwYDVQQKExBHbG9iYWxTaWduIG52LXNhMRwwGgYD" +
             "VQQDExNHbG9iYWxTaWduIFJvb3QgUjQ2MB4XDTE5MDMyMDAwMDAwMFoXDTQ2MDMy" +
             "MDAwMDAwMFowRjELMAkGA1UEBhMCQkUxGTAXBgNVBAoTEEdsb2JhbFNpZ24gbnYt" +
@@ -379,6 +382,13 @@ public class WebAuthnSecurity {
             throw new IllegalStateException("Unable to find the TLS configuration " + tlsConfigurationName
                     + " for the WebAuthn attestation trust anchors.");
         }
+        return defaultAttestationTrustStore();
+    }
+
+    /**
+     * @return a trust store with the root certificates trusted by default to verify attestations
+     */
+    static KeyStore defaultAttestationTrustStore() {
         try {
             KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
             trustStore.load(null, null);
@@ -394,7 +404,7 @@ public class WebAuthnSecurity {
         }
     }
 
-    private void addCert(KeyStore keyStore, String pemCertificate) throws CertificateException, KeyStoreException {
+    private static void addCert(KeyStore keyStore, String pemCertificate) throws CertificateException, KeyStoreException {
         X509Certificate cert = JWS.parseX5c(pemCertificate);
         CertInfo info = CertificateHelper.getCertInfo(cert);
         // some roots, such as the Google Hardware Attestation Root, have no common name

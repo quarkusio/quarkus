@@ -20,6 +20,8 @@ public interface WebsocketConfig {
     /**
      * If the websocket methods should be run in a worker thread. This allows them to run
      * blocking tasks, however it will not be as fast as running directly in the IO thread.
+     * The handshake of a server endpoint, including its {@code ServerEndpointConfig.Configurator}, is
+     * run in a worker thread as well.
      */
     @WithDefault("false")
     boolean dispatchToWorker();

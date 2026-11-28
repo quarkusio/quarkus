@@ -3,7 +3,6 @@ package org.jboss.resteasy.reactive.client.handlers;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 
@@ -24,17 +23,13 @@ public class ClientCaptureCurrentContextRestHandler implements ClientRestHandler
 
     @Override
     public void handle(RestClientRequestContext requestContext) throws Exception {
-        ClientRequestContextImpl clientRequestContext = requestContext.getClientRequestContext();
-        if (clientRequestContext == null) {
-            return;
-        }
-
+        // the ClientRequestContextImpl does not exist yet: this handler runs before the request filters create it
         if (captureStacktrace) {
-            captureCallerStackTrace(clientRequestContext);
+            captureCallerStackTrace(requestContext);
         }
     }
 
-    private void captureCallerStackTrace(ClientRequestContextImpl clientRequestContext) {
+    private void captureCallerStackTrace(RestClientRequestContext requestContext) {
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         List<StackTraceElement> effectiveStackTrace = new ArrayList<>(stackTrace.length);
         boolean foundUserMethod = false;
@@ -51,7 +46,6 @@ public class ClientCaptureCurrentContextRestHandler implements ClientRestHandler
             }
         }
 
-        clientRequestContext.getRestClientRequestContext()
-                .setCallerStackTrace(effectiveStackTrace.toArray(EMPTY_ARRAY));
+        requestContext.setCallerStackTrace(effectiveStackTrace.toArray(EMPTY_ARRAY));
     }
 }

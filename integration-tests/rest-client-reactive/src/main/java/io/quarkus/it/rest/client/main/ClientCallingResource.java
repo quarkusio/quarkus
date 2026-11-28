@@ -8,18 +8,15 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.RestResponse;
 
-import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.quarkus.arc.Arc;
 import io.quarkus.it.rest.client.main.MyResponseExceptionMapper.MyException;
 import io.quarkus.it.rest.client.main.selfsigned.ExternalSelfSignedClient;
@@ -29,7 +26,6 @@ import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.Json;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -63,9 +59,6 @@ public class ClientCallingResource {
 
     @RestClient
     WrongHostRejectedClient wrongHostRejectedClient;
-
-    @Inject
-    InMemorySpanExporter inMemorySpanExporter;
 
     void init(@Observes Router router) {
         router.post().handler(BodyHandler.create());
@@ -262,18 +255,6 @@ public class ClientCallingResource {
                     .build(RestResponseClient.class);
             RestResponse<String> restResponse = client.response();
             rc.response().end("" + restResponse.getStatus());
-        });
-
-        router.route("/export-clear").blockingHandler(rc -> {
-            inMemorySpanExporter.reset();
-            rc.response().end();
-        });
-
-        router.route("/export").blockingHandler(rc -> {
-            rc.response().putHeader("content-type", "application/json")
-                    .end(Json.encodePrettily(inMemorySpanExporter.getFinishedSpanItems()
-                            .stream().filter(sd -> !sd.getName().contains("export"))
-                            .collect(Collectors.toList())));
         });
 
         router.route("/call-with-fault-tolerance").blockingHandler(rc -> {

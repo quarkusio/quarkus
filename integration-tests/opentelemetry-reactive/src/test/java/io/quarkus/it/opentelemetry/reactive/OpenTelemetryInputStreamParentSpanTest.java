@@ -1,13 +1,11 @@
 package io.quarkus.it.opentelemetry.reactive;
 
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
-import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
-import static io.restassured.RestAssured.given;
-import static java.net.HttpURLConnection.HTTP_OK;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.ByteArrayInputStream;
+import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,7 +32,10 @@ import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Vertx;
@@ -45,6 +46,14 @@ import io.vertx.core.Vertx;
  */
 @QuarkusTest
 public class OpenTelemetryInputStreamParentSpanTest {
+
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
+
     @Inject
     @RestClient
     ReactiveRestClient client;
@@ -57,8 +66,7 @@ public class OpenTelemetryInputStreamParentSpanTest {
 
     @BeforeEach
     void reset() {
-        given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().isEmpty());
+        spanExporter().reset();
     }
 
     @Test
@@ -97,13 +105,15 @@ public class OpenTelemetryInputStreamParentSpanTest {
             }
         }
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            List<Map<String, Object>> spans = getSpans().stream()
-                    .filter(span -> CLIENT.toString().equals(span.get("kind"))).toList();
+            SpanDataList spans = spanExporter().fetch().ofKind(CLIENT);
             assertEquals(10, spans.size());
-            assertEquals(5, spans.stream().filter(span -> parentIds.contains(span.get("parentSpanId"))
-                    && expectedTraces.get(span.get("parentSpanId")).equals(span.get("traceId"))).count());
-            assertEquals(5, spans.stream().filter(span -> SpanContext.getInvalid().getSpanId().equals(span.get("parentSpanId"))
-                    && !parentTraceIds.contains(span.get("traceId"))).count());
+            assertEquals(5, spans.stream().filter(span -> parentIds.contains(span.getParentSpanContext().getSpanId())
+                    && expectedTraces.get(span.getParentSpanContext().getSpanId()).equals(span.getTraceId())).count());
+            assertEquals(5,
+                    spans.stream()
+                            .filter(span -> SpanContext.getInvalid().getSpanId().equals(span.getParentSpanContext().getSpanId())
+                                    && !parentTraceIds.contains(span.getTraceId()))
+                            .count());
         });
     }
 
@@ -139,12 +149,12 @@ public class OpenTelemetryInputStreamParentSpanTest {
                 parents.add(call.get(30, TimeUnit.SECONDS));
             }
             await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-                List<Map<String, Object>> spans = getSpans().stream()
-                        .filter(span -> CLIENT.toString().equals(span.get("kind"))).toList();
+                SpanDataList spans = spanExporter().fetch().ofKind(CLIENT);
                 assertEquals(parents.size(), spans.size());
                 for (SpanContext parent : parents) {
-                    assertEquals(1, spans.stream().filter(span -> parent.getSpanId().equals(span.get("parentSpanId"))
-                            && parent.getTraceId().equals(span.get("traceId"))).count());
+                    assertEquals(1,
+                            spans.stream().filter(span -> parent.getSpanId().equals(span.getParentSpanContext().getSpanId())
+                                    && parent.getTraceId().equals(span.getTraceId())).count());
                 }
             });
         } finally {
@@ -177,8 +187,7 @@ public class OpenTelemetryInputStreamParentSpanTest {
             }
         });
         SpanContext parent = done.get(30, TimeUnit.SECONDS);
-        await().atMost(10, TimeUnit.SECONDS).until(() -> clientSpan(parent.getSpanId()) != null);
-        assertEquals(parent.getTraceId(), clientSpan(parent.getSpanId()).get("traceId"));
+        assertEquals(parent.getTraceId(), awaitClientSpanTraceId(parent.getSpanId(), Duration.ofSeconds(10)));
     }
 
     private void assertClientSpanKeepsCaller(Consumer<ReactiveRestClient> call) {
@@ -189,14 +198,19 @@ public class OpenTelemetryInputStreamParentSpanTest {
             parent.end();
         }
         String parentId = parent.getSpanContext().getSpanId();
-        await().atMost(5, TimeUnit.SECONDS).until(() -> clientSpan(parentId) != null);
-        assertEquals(parent.getSpanContext().getTraceId(), clientSpan(parentId).get("traceId"));
+        assertEquals(parent.getSpanContext().getTraceId(), awaitClientSpanTraceId(parentId, Duration.ofSeconds(5)));
     }
 
-    private static Map<String, Object> clientSpan(String parentId) {
-        return getSpans().stream()
-                .filter(span -> parentId.equals(span.get("parentSpanId")) && CLIENT.toString().equals(span.get("kind")))
-                .findFirst()
-                .orElse(null);
+    /**
+     * @return the trace id of the first client span that has the given parent
+     */
+    private String awaitClientSpanTraceId(String parentId, Duration timeout) {
+        SpanDataList spans = spanExporter().awaitUntil("a client span with parent " + parentId, timeout,
+                s -> !clientSpans(s, parentId).isEmpty());
+        return clientSpans(spans, parentId).stream().findFirst().orElseThrow().getTraceId();
+    }
+
+    private static SpanDataList clientSpans(SpanDataList spans, String parentId) {
+        return spans.ofKind(CLIENT).filter(span -> parentId.equals(span.getParentSpanContext().getSpanId()));
     }
 }

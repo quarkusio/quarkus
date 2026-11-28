@@ -1,44 +1,50 @@
 package io.quarkus.it.opentelemetry;
 
+import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
 import static io.opentelemetry.semconv.DbAttributes.DB_NAMESPACE;
+import static io.opentelemetry.semconv.ExceptionAttributes.EXCEPTION_MESSAGE;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_LOCAL_ADDRESS;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_LOCAL_PORT;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_ADDRESS;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_PORT;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_OPERATION;
+import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_REDIS_DATABASE_INDEX;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_SYSTEM;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DbSystemNameIncubatingValues.REDIS;
-import static io.restassured.RestAssured.get;
-import static io.restassured.RestAssured.given;
-import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import java.net.URI;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Predicate;
 
-import org.awaitility.Awaitility;
 import org.hamcrest.CoreMatchers;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.sdk.trace.data.EventData;
+import io.opentelemetry.sdk.trace.data.ExceptionEventData;
+import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 import io.restassured.RestAssured;
-import io.restassured.common.mapper.TypeRef;
 import io.vertx.redis.client.Command;
 
 @QuarkusTest
-@SuppressWarnings("unchecked")
 class QuarkusOpenTelemetryRedisTest {
+
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
+
     static final String SYNC_KEY = "sync-key";
     static final String SYNC_VALUE = "sync-value";
     static final String REACTIVE_KEY = "reactive-key";
@@ -51,8 +57,7 @@ class QuarkusOpenTelemetryRedisTest {
 
     @BeforeEach
     void reset() {
-        given().get("/opentelemetry/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, SECONDS).until(() -> getSpans().isEmpty());
+        spanExporter().reset();
     }
 
     @Test
@@ -75,36 +80,32 @@ class QuarkusOpenTelemetryRedisTest {
                 .statusCode(200)
                 .body(CoreMatchers.is(SYNC_VALUE));
 
-        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> getSpans().size() == 4);
+        SpanDataList spans = spanExporter().awaitCount(4, Duration.ofSeconds(10));
 
-        List<Map<String, Object>> spans = getSpans();
-
-        Map<String, Object> setSpan = findSpan(spans,
-                m -> SpanKind.CLIENT.name().equals(m.get("kind")) && setCommand.equals(m.get("name")));
-        Map<String, Object> getSpan = findSpan(spans,
-                m -> SpanKind.CLIENT.name().equals(m.get("kind")) && getCommand.equals(m.get("name")));
-
-        Map<String, Object> setAttributes = (Map<String, Object>) setSpan.get("attributes");
-        Map<String, Object> getAttributes = (Map<String, Object>) getSpan.get("attributes");
+        SpanData setSpan = spans.ofKind(SpanKind.CLIENT).named(setCommand).single();
+        SpanData getSpan = spans.ofKind(SpanKind.CLIENT).named(getCommand).single();
 
         // SET
-        assertEquals(setCommand, setSpan.get("name"));
-        assertEquals("set", setAttributes.get(DB_OPERATION.getKey()));
-        assertEquals(REDIS, setAttributes.get(DB_SYSTEM.getKey()));
-        assertEquals("0", setAttributes.get(DB_NAMESPACE.getKey()));
-        assertEquals("127.0.0.1", setAttributes.get(NETWORK_PEER_ADDRESS.getKey()));
-        assertEquals(16379, setAttributes.get(NETWORK_PEER_PORT.getKey()));
-        assertEquals("localhost", setAttributes.get(NETWORK_LOCAL_ADDRESS.getKey()));
-        assertEquals(16379, setAttributes.get(NETWORK_LOCAL_PORT.getKey()));
+        assertThat(setSpan)
+                .hasName(setCommand)
+                .hasAttribute(DB_OPERATION, "set")
+                .hasAttribute(DB_SYSTEM, REDIS)
+                .hasAttribute(DB_NAMESPACE, "0")
+                .hasAttribute(NETWORK_PEER_ADDRESS, "127.0.0.1")
+                .hasAttribute(NETWORK_PEER_PORT, 16379L)
+                .hasAttribute(NETWORK_LOCAL_ADDRESS, "localhost")
+                .hasAttribute(NETWORK_LOCAL_PORT, 16379L);
         // GET
-        assertEquals(getCommand, getSpan.get("name"));
-        assertEquals("get", getAttributes.get(DB_OPERATION.getKey()));
-        assertEquals(REDIS, getAttributes.get(DB_SYSTEM.getKey()));
-        assertEquals("0", setAttributes.get(DB_NAMESPACE.getKey()));
-        assertEquals("127.0.0.1", setAttributes.get(NETWORK_PEER_ADDRESS.getKey()));
-        assertEquals(16379, setAttributes.get(NETWORK_PEER_PORT.getKey()));
-        assertEquals("localhost", setAttributes.get(NETWORK_LOCAL_ADDRESS.getKey()));
-        assertEquals(16379, setAttributes.get(NETWORK_LOCAL_PORT.getKey()));
+        assertThat(getSpan)
+                .hasName(getCommand)
+                .hasAttribute(DB_OPERATION, "get")
+                .hasAttribute(DB_SYSTEM, REDIS);
+        assertThat(setSpan)
+                .hasAttribute(DB_NAMESPACE, "0")
+                .hasAttribute(NETWORK_PEER_ADDRESS, "127.0.0.1")
+                .hasAttribute(NETWORK_PEER_PORT, 16379L)
+                .hasAttribute(NETWORK_LOCAL_ADDRESS, "localhost")
+                .hasAttribute(NETWORK_LOCAL_PORT, 16379L);
     }
 
     @Test
@@ -115,24 +116,23 @@ class QuarkusOpenTelemetryRedisTest {
                 .then()
                 .statusCode(500);
 
-        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> getSpans().size() == 2);
+        SpanData span = spanExporter().awaitCount(2, Duration.ofSeconds(10)).ofKind(SpanKind.CLIENT).single();
 
-        Map<String, Object> span = findSpan(getSpans(), m -> SpanKind.CLIENT.name().equals(m.get("kind")));
+        EventData event = span.getEvents().getFirst();
 
-        Map<String, Object> status = (Map<String, Object>) span.get("status");
-        Map<String, Object> event = ((List<Map<String, Object>>) span.get("events")).get(0);
-        Map<String, Object> exception = (Map<String, Object>) event.get("exception");
+        assertThat(span)
+                .hasName("bazinga 0")
+                .hasStatusSatisfying(status -> status.hasCode(StatusCode.ERROR));
+        assertEquals("exception", event.getName());
 
-        assertEquals("bazinga 0", span.get("name"));
-        assertEquals("ERROR", status.get("statusCode"));
-        assertEquals("exception", event.get("name"));
-
-        checkForException(exception);
+        checkForException(event);
 
     }
 
-    void checkForException(Map<String, Object> exception) {
-        assertThat((String) exception.get("message"), containsString("ERR unknown command 'bazinga'"));
+    private static void checkForException(EventData exception) {
+        ExceptionEventData recorded = assertInstanceOf(ExceptionEventData.class, exception);
+        assertThat(recorded.getException().getMessage(), containsString("ERR unknown command 'bazinga'"));
+        assertThat(exception.getAttributes().get(EXCEPTION_MESSAGE), containsString("ERR unknown command 'bazinga'"));
     }
 
     @Test
@@ -155,36 +155,32 @@ class QuarkusOpenTelemetryRedisTest {
                 .statusCode(200)
                 .body(CoreMatchers.is(REACTIVE_VALUE));
 
-        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> getSpans().size() == 4);
+        SpanDataList spans = spanExporter().awaitCount(4, Duration.ofSeconds(10));
 
-        List<Map<String, Object>> spans = getSpans();
-
-        Map<String, Object> setSpan = findSpan(spans,
-                m -> SpanKind.CLIENT.name().equals(m.get("kind")) && setCommand.equals(m.get("name")));
-        Map<String, Object> getSpan = findSpan(spans,
-                m -> SpanKind.CLIENT.name().equals(m.get("kind")) && getCommand.equals(m.get("name")));
-
-        Map<String, Object> setAttributes = (Map<String, Object>) setSpan.get("attributes");
-        Map<String, Object> getAttributes = (Map<String, Object>) getSpan.get("attributes");
+        SpanData setSpan = spans.ofKind(SpanKind.CLIENT).named(setCommand).single();
+        SpanData getSpan = spans.ofKind(SpanKind.CLIENT).named(getCommand).single();
 
         // SET
-        assertEquals(setCommand, setSpan.get("name"));
-        assertEquals("set", setAttributes.get(DB_OPERATION.getKey()));
-        assertEquals(REDIS, setAttributes.get(DB_SYSTEM.getKey()));
-        assertEquals("0", setAttributes.get(DB_NAMESPACE.getKey()));
-        assertEquals("127.0.0.1", setAttributes.get(NETWORK_PEER_ADDRESS.getKey()));
-        assertEquals(16379, setAttributes.get(NETWORK_PEER_PORT.getKey()));
-        assertEquals("localhost", setAttributes.get(NETWORK_LOCAL_ADDRESS.getKey()));
-        assertEquals(16379, setAttributes.get(NETWORK_LOCAL_PORT.getKey()));
+        assertThat(setSpan)
+                .hasName(setCommand)
+                .hasAttribute(DB_OPERATION, "set")
+                .hasAttribute(DB_SYSTEM, REDIS)
+                .hasAttribute(DB_NAMESPACE, "0")
+                .hasAttribute(NETWORK_PEER_ADDRESS, "127.0.0.1")
+                .hasAttribute(NETWORK_PEER_PORT, 16379L)
+                .hasAttribute(NETWORK_LOCAL_ADDRESS, "localhost")
+                .hasAttribute(NETWORK_LOCAL_PORT, 16379L);
         // GET
-        assertEquals(getCommand, getSpan.get("name"));
-        assertEquals("get", getAttributes.get(DB_OPERATION.getKey()));
-        assertEquals(REDIS, getAttributes.get(DB_SYSTEM.getKey()));
-        assertEquals("0", getAttributes.get(DB_NAMESPACE.getKey()));
-        assertEquals("127.0.0.1", setAttributes.get(NETWORK_PEER_ADDRESS.getKey()));
-        assertEquals(16379, setAttributes.get(NETWORK_PEER_PORT.getKey()));
-        assertEquals("localhost", setAttributes.get(NETWORK_LOCAL_ADDRESS.getKey()));
-        assertEquals(16379, setAttributes.get(NETWORK_LOCAL_PORT.getKey()));
+        assertThat(getSpan)
+                .hasName(getCommand)
+                .hasAttribute(DB_OPERATION, "get")
+                .hasAttribute(DB_SYSTEM, REDIS)
+                .hasAttribute(DB_NAMESPACE, "0");
+        assertThat(setSpan)
+                .hasAttribute(NETWORK_PEER_ADDRESS, "127.0.0.1")
+                .hasAttribute(NETWORK_PEER_PORT, 16379L)
+                .hasAttribute(NETWORK_LOCAL_ADDRESS, "localhost")
+                .hasAttribute(NETWORK_LOCAL_PORT, 16379L);
     }
 
     @Test
@@ -195,19 +191,16 @@ class QuarkusOpenTelemetryRedisTest {
                 .then()
                 .statusCode(500);
 
-        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> getSpans().size() == 2);
+        SpanData span = spanExporter().awaitCount(2, Duration.ofSeconds(10)).ofKind(SpanKind.CLIENT).single();
 
-        Map<String, Object> span = findSpan(getSpans(), m -> SpanKind.CLIENT.name().equals(m.get("kind")));
+        EventData event = span.getEvents().getFirst();
 
-        Map<String, Object> status = (Map<String, Object>) span.get("status");
-        Map<String, Object> event = ((List<Map<String, Object>>) span.get("events")).get(0);
-        Map<String, Object> exception = (Map<String, Object>) event.get("exception");
+        assertThat(span)
+                .hasName("bazinga 0")
+                .hasStatusSatisfying(status -> status.hasCode(StatusCode.ERROR));
+        assertEquals("exception", event.getName());
 
-        assertEquals("bazinga 0", span.get("name"));
-        assertEquals("ERROR", status.get("statusCode"));
-        assertEquals("exception", event.get("name"));
-
-        checkForException(exception);
+        checkForException(event);
     }
 
     @Test
@@ -217,28 +210,11 @@ class QuarkusOpenTelemetryRedisTest {
                 .statusCode(200)
                 .body(CoreMatchers.is("OK"));
 
-        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> getSpans().size() == 3);
+        SpanData span = spanExporter().awaitCount(3, Duration.ofSeconds(10)).ofKind(SpanKind.CLIENT).named("get").single();
 
-        Map<String, Object> span = findSpan(getSpans(), m -> SpanKind.CLIENT.name().equals(m.get("kind"))
-                && "get".equals(m.get("name")));
-        Map<String, Object> attributes = (Map<String, Object>) span.get("attributes");
-
-        assertEquals("redis", attributes.get("db.system"));
-        assertEquals("get", attributes.get("db.operation"));
-        assertFalse(span.containsKey("db.redis.database_index"));
-    }
-
-    private List<Map<String, Object>> getSpans() {
-        return get("/opentelemetry/export").body().as(new TypeRef<>() {
-        });
-    }
-
-    private static Map<String, Object> findSpan(List<Map<String, Object>> spans,
-            Predicate<Map<String, Object>> spanDataSelector) {
-        Optional<Map<String, Object>> select = spans.stream().filter(spanDataSelector).findFirst();
-        Assertions.assertTrue(select.isPresent());
-        Map<String, Object> spanData = select.get();
-        Assertions.assertNotNull(spanData.get("spanId"));
-        return spanData;
+        assertThat(span)
+                .hasAttribute(DB_SYSTEM, "redis")
+                .hasAttribute(DB_OPERATION, "get");
+        assertThat(span.getAttributes()).doesNotContainKey(DB_REDIS_DATABASE_INDEX.getKey());
     }
 }

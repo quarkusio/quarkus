@@ -1,38 +1,35 @@
 package io.quarkus.it.opentelemetry;
 
-import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
-import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 
-import java.util.List;
+import java.net.URI;
+import java.time.Duration;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 
 @QuarkusTest
 @TestProfile(OpenTelemetryDisabledTest.MyProfile.class)
 public class OpenTelemetryDisabledTest extends BaseTest {
 
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
+
     @BeforeEach
     void reset() {
-        await().atMost(5, SECONDS).until(() -> {
-            List<Map<String, Object>> spans = getSpans();
-            if (spans.size() == 0) {
-                return true;
-            } else {
-                given().get("/reset").then().statusCode(HTTP_OK);
-                return false;
-            }
-        });
+        spanExporter().reset();
     }
 
     @Test
@@ -43,7 +40,7 @@ public class OpenTelemetryDisabledTest extends BaseTest {
                 .statusCode(200)
                 .body(is("Hello from Quarkus REST"));
         // Service will start nevertheless.
-        await().atMost(300, MILLISECONDS).until(() -> getSpans().size() == 0);
+        spanExporter().awaitCount(0, Duration.ofMillis(300));
     }
 
     public static class MyProfile implements QuarkusTestProfile {

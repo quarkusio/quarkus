@@ -1,15 +1,17 @@
 package io.quarkus.it.observation.reactive;
 
+import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.restassured.RestAssured.get;
+import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -18,12 +20,23 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.sdk.testing.assertj.TracesAssert;
+import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
 public class ObservationReactiveTest {
+
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
 
     private static final Logger logger = Logger.getLogger(ObservationReactiveTest.class);
 
@@ -31,7 +44,7 @@ public class ObservationReactiveTest {
     @AfterEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, SECONDS).until(() -> getSpans().isEmpty());
+        spanExporter().reset();
     }
 
     @Test
@@ -44,18 +57,15 @@ public class ObservationReactiveTest {
 
         // 1 SERVER span (auto-instrumented) +
         // 1 INTERNAL span (observation)
-        List<Map<String, Object>> spans = waitForSpans(2);
+        SpanDataList spans = waitForSpans(2);
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> serverSpan = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertThat(serverSpan).isNotNull();
-        assertThat(serverSpan.get("name")).isEqualTo("GET /reactive");
+        SpanData serverSpan = spans.ofKind(SERVER).roots().single();
+        assertThat(serverSpan).hasName("GET /reactive");
 
-        Map<String, Object> observationSpan = getSpanByKindAndParentId(spans, INTERNAL, serverSpan.get("spanId"));
-        assertThat(observationSpan).isNotNull();
-        assertThat(observationSpan.get("name")).isEqualTo("reactive.hello.observation");
-        assertThat(observationSpan.get("traceId")).isEqualTo(serverSpan.get("traceId"));
-        Map attributes = (Map) observationSpan.get("attributes");
-        assertThat(attributes.get("name")).isEqualTo("Naruto");
+        SpanData observationSpan = spans.ofKind(INTERNAL).childrenOf(serverSpan).single();
+        assertThat(observationSpan).hasName("reactive.hello.observation");
+        assertThat(observationSpan).hasAttribute(stringKey("name"), "Naruto");
 
         // One request → the timer recorded at least one observation.
         await().atMost(5, SECONDS).untilAsserted(() -> assertThat(getTimerCount("reactive.hello.observation"))
@@ -71,16 +81,14 @@ public class ObservationReactiveTest {
 
         // 1 SERVER +
         // 1 INTERNAL (@Observed on Uni)
-        List<Map<String, Object>> spans = waitForSpans(2);
+        SpanDataList spans = waitForSpans(2);
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> serverSpan = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertThat(serverSpan).isNotNull();
+        SpanData serverSpan = spans.ofKind(SERVER).roots().single();
 
-        Map<String, Object> observedSpan = getSpanByKindAndParentId(spans, INTERNAL, serverSpan.get("spanId"));
-        assertThat(observedSpan).isNotNull();
-        assertThat(observedSpan.get("traceId")).isEqualTo(serverSpan.get("traceId"));
-        assertThat(((Map) observedSpan.get("attributes")).size()).isEqualTo(3);
-        logger.infov("reactive.hello.observation Attributes: {0}", observedSpan.get("attributes"));
+        SpanData observedSpan = spans.ofKind(INTERNAL).childrenOf(serverSpan).single();
+        assertThat(observedSpan.getAttributes().size()).isEqualTo(3);
+        logger.infov("reactive.hello.observation Attributes: {0}", observedSpan.getAttributes());
 
         // One @Observed invocation → the "reactiveWork" timer recorded at least one observation.
         await().atMost(5, SECONDS).untilAsserted(() -> assertThat(getTimerCount("reactiveWork"))
@@ -97,30 +105,22 @@ public class ObservationReactiveTest {
         // 1 SERVER +
         // 1 INTERNAL parent (@Observed on Multi, one per subscription) +
         // 3 INTERNAL children (one "stream.item.observation" per emitted item) = 5 spans
-        List<Map<String, Object>> spans = waitForSpans(5);
+        SpanDataList spans = waitForSpans(5);
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> serverSpan = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertThat(serverSpan).isNotNull();
+        SpanData serverSpan = spans.ofKind(SERVER).roots().single();
 
         // Exactly one parent observation span (the @Observed stream) is the child of the SERVER span.
-        List<Map<String, Object>> parentSpans = getSpansByKindAndParentId(spans, INTERNAL,
-                serverSpan.get("spanId"));
-        assertThat(parentSpans).hasSize(1);
-        Map<String, Object> parentSpan = parentSpans.get(0);
-        assertThat(parentSpan.get("traceId")).isEqualTo(serverSpan.get("traceId"));
-        assertThat((String) parentSpan.get("name")).contains("reactiveStream");
+        SpanData parentSpan = spans.ofKind(INTERNAL).childrenOf(serverSpan).single();
+        assertThat(parentSpan.getName()).contains("reactiveStream");
 
         // Each of the three emitted items opened its own child observation, parented to the
         // stream observation - so the parent span has exactly one child span per element.
-        List<Map<String, Object>> childSpans = getSpansByKindAndParentId(spans, INTERNAL,
-                parentSpan.get("spanId"));
+        SpanDataList childSpans = spans.ofKind(INTERNAL).childrenOf(parentSpan);
         assertThat(childSpans).hasSize(3);
-        assertThat(childSpans).allSatisfy(child -> {
-            assertThat(child.get("traceId")).isEqualTo(serverSpan.get("traceId"));
-            assertThat(child.get("name")).isEqualTo("stream.item.observation");
-        });
+        assertThat(childSpans).allSatisfy(child -> assertThat(child).hasName("stream.item.observation"));
         assertThat(childSpans)
-                .extracting(child -> ((Map) child.get("attributes")).get("item"))
+                .extracting(child -> child.getAttributes().get(stringKey("item")))
                 .containsExactlyInAnyOrder("one", "two", "three");
 
         // One @Observed subscription → the "reactiveStream" parent timer recorded once; the child
@@ -143,39 +143,28 @@ public class ObservationReactiveTest {
         // 2 CLIENT (rest-client calls) +
         // 2 SERVER (handlers) +
         // 2 INTERNAL (handler observations "reactive.hello.observation") = 8 spans
-        List<Map<String, Object>> spans = waitForSpans(8);
+        SpanDataList spans = waitForSpans(8);
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> rootServer = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertThat(rootServer).isNotNull();
-        assertThat(rootServer.get("name")).isEqualTo("GET /reactive/multiple-chain");
+        SpanData rootServer = spans.ofKind(SERVER).roots().single();
+        assertThat(rootServer).hasName("GET /reactive/multiple-chain");
 
-        Map<String, Object> chainObservation = getSpanByKindAndParentId(spans, INTERNAL,
-                rootServer.get("spanId"));
-        assertThat(chainObservation).isNotNull();
-        assertThat(chainObservation.get("name")).isEqualTo("chain.operation.observation");
-        assertThat(chainObservation.get("traceId")).isEqualTo(rootServer.get("traceId"));
+        SpanData chainObservation = spans.ofKind(INTERNAL).childrenOf(rootServer).single();
+        assertThat(chainObservation).hasName("chain.operation.observation");
 
-        List<Map<String, Object>> clientSpans = getSpansByKindAndParentId(spans, CLIENT,
-                chainObservation.get("spanId"));
+        SpanDataList clientSpans = spans.ofKind(CLIENT).childrenOf(chainObservation);
         assertThat(clientSpans).hasSize(2);
 
-        for (Map<String, Object> clientSpan : clientSpans) {
-            assertThat(clientSpan.get("traceId")).isEqualTo(rootServer.get("traceId"));
+        for (SpanData clientSpan : clientSpans) {
 
             // Each CLIENT span should have a child SERVER span (the handler)
-            Map<String, Object> handlerServer = getSpanByKindAndParentId(spans, SERVER,
-                    clientSpan.get("spanId"));
-            assertThat(handlerServer).isNotNull();
-            assertThat(handlerServer.get("name")).isEqualTo("GET /reactive");
-            assertThat(handlerServer.get("traceId")).isEqualTo(rootServer.get("traceId"));
+            SpanData handlerServer = spans.ofKind(SERVER).childrenOf(clientSpan).single();
+            assertThat(handlerServer).hasName("GET /reactive");
 
             // Each handler SERVER span should have a child INTERNAL span (reactive.hello.observation)
-            Map<String, Object> handlerObservation = getSpanByKindAndParentId(spans, INTERNAL,
-                    handlerServer.get("spanId"));
-            assertThat(handlerObservation).isNotNull();
-            assertThat(handlerObservation.get("name")).isEqualTo("reactive.hello.observation");
-            assertThat(handlerObservation.get("traceId")).isEqualTo(rootServer.get("traceId"));
-            logger.infov("reactive.hello.observation Attributes: {0}", handlerObservation.get("attributes"));
+            SpanData handlerObservation = spans.ofKind(INTERNAL).childrenOf(handlerServer).single();
+            assertThat(handlerObservation).hasName("reactive.hello.observation");
+            logger.infov("reactive.hello.observation Attributes: {0}", handlerObservation.getAttributes());
         }
 
         // One request → the chain timer recorded once, and each of the two handler calls
@@ -199,36 +188,25 @@ public class ObservationReactiveTest {
         // 2 CLIENT +
         // 2 SERVER +
         // 2 INTERNAL = 8
-        List<Map<String, Object>> spans = waitForSpans(8);
+        SpanDataList spans = waitForSpans(8);
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> rootServer = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertThat(rootServer).isNotNull();
+        SpanData rootServer = spans.ofKind(SERVER).roots().single();
 
-        Map<String, Object> combineObservation = getSpanByKindAndParentId(spans, INTERNAL,
-                rootServer.get("spanId"));
-        assertThat(combineObservation).isNotNull();
-        assertThat(combineObservation.get("name")).isEqualTo("combine.operation.observation");
-        assertThat(combineObservation.get("traceId")).isEqualTo(rootServer.get("traceId"));
+        SpanData combineObservation = spans.ofKind(INTERNAL).childrenOf(rootServer).single();
+        assertThat(combineObservation).hasName("combine.operation.observation");
 
-        List<Map<String, Object>> clientSpans = getSpansByKindAndParentId(spans, CLIENT,
-                combineObservation.get("spanId"));
+        SpanDataList clientSpans = spans.ofKind(CLIENT).childrenOf(combineObservation);
         assertThat(clientSpans).hasSize(2);
 
-        for (Map<String, Object> clientSpan : clientSpans) {
-            assertThat(clientSpan.get("traceId")).isEqualTo(rootServer.get("traceId"));
+        for (SpanData clientSpan : clientSpans) {
 
-            Map<String, Object> handlerServer = getSpanByKindAndParentId(spans, SERVER,
-                    clientSpan.get("spanId"));
-            assertThat(handlerServer).isNotNull();
-            assertThat(handlerServer.get("name")).isEqualTo("GET /reactive");
-            assertThat(handlerServer.get("traceId")).isEqualTo(rootServer.get("traceId"));
+            SpanData handlerServer = spans.ofKind(SERVER).childrenOf(clientSpan).single();
+            assertThat(handlerServer).hasName("GET /reactive");
 
-            Map<String, Object> handlerObservation = getSpanByKindAndParentId(spans, INTERNAL,
-                    handlerServer.get("spanId"));
-            assertThat(handlerObservation).isNotNull();
-            assertThat(handlerObservation.get("name")).isEqualTo("reactive.hello.observation");
-            assertThat(handlerObservation.get("traceId")).isEqualTo(rootServer.get("traceId"));
-            logger.infov("reactive.hello.observation Attributes: {0}", handlerObservation.get("attributes"));
+            SpanData handlerObservation = spans.ofKind(INTERNAL).childrenOf(handlerServer).single();
+            assertThat(handlerObservation).hasName("reactive.hello.observation");
+            logger.infov("reactive.hello.observation Attributes: {0}", handlerObservation.getAttributes());
         }
 
         // One request → the combine timer recorded once, plus two handler observations.
@@ -265,55 +243,36 @@ public class ObservationReactiveTest {
         executor.shutdown();
 
         // Each request produces 8 spans: 1 SERVER + 1 INTERNAL + 2 CLIENT + 2 SERVER + 2 INTERNAL
-        List<Map<String, Object>> spans = waitForSpans(parallelRequests * 8);
+        SpanDataList spans = waitForSpans(parallelRequests * 8);
 
         // Find all root SERVER spans (parentSpanId = 0)
-        List<Map<String, Object>> rootServers = spans.stream()
-                .filter(s -> SERVER.toString().equals(s.get("kind")))
-                .filter(s -> "0000000000000000".equals(s.get("parentSpanId")))
-                .filter(s -> "GET /reactive/multiple-combine".equals(s.get("name")))
-                .toList();
+        SpanDataList rootServers = spans.ofKind(SERVER).roots().named("GET /reactive/multiple-combine");
         assertThat(rootServers).hasSize(parallelRequests);
 
         // Verify each request's span hierarchy is self-contained within its traceId
-        for (Map<String, Object> rootServer : rootServers) {
-            String traceId = (String) rootServer.get("traceId");
+        for (SpanData rootServer : rootServers) {
+            String traceId = rootServer.getTraceId();
 
-            List<Map<String, Object>> traceSpans = spans.stream()
-                    .filter(s -> traceId.equals(s.get("traceId")))
-                    .toList();
+            SpanDataList traceSpans = spans.filter(s -> traceId.equals(s.getTraceId()));
             assertThat(traceSpans).hasSize(8);
 
             // Root SERVER → INTERNAL (combine.operation.observation)
-            Map<String, Object> combineObservation = getSpanByKindAndParentId(traceSpans, INTERNAL,
-                    rootServer.get("spanId"));
-            assertThat(combineObservation)
-                    .withFailMessage("Missing observation span for traceId=" + traceId)
-                    .isNotNull();
-            assertThat(combineObservation.get("name")).isEqualTo("combine.operation.observation");
+            SpanData combineObservation = traceSpans.ofKind(INTERNAL).childrenOf(rootServer).single();
+            assertThat(combineObservation).hasName("combine.operation.observation");
 
             // Observation → 2 CLIENT spans
-            List<Map<String, Object>> clientSpans = getSpansByKindAndParentId(traceSpans, CLIENT,
-                    combineObservation.get("spanId"));
+            SpanDataList clientSpans = traceSpans.ofKind(CLIENT).childrenOf(combineObservation);
             assertThat(clientSpans)
                     .withFailMessage("Expected 2 CLIENT spans for traceId=" + traceId)
                     .hasSize(2);
 
-            for (Map<String, Object> clientSpan : clientSpans) {
+            for (SpanData clientSpan : clientSpans) {
                 // CLIENT → SERVER (handler)
-                Map<String, Object> handlerServer = getSpanByKindAndParentId(traceSpans, SERVER,
-                        clientSpan.get("spanId"));
-                assertThat(handlerServer)
-                        .withFailMessage("Missing handler SERVER span for traceId=" + traceId)
-                        .isNotNull();
+                SpanData handlerServer = traceSpans.ofKind(SERVER).childrenOf(clientSpan).single();
 
                 // SERVER (handler) → INTERNAL (reactive.hello.observation)
-                Map<String, Object> handlerObservation = getSpanByKindAndParentId(traceSpans, INTERNAL,
-                        handlerServer.get("spanId"));
-                assertThat(handlerObservation)
-                        .withFailMessage("Missing handler observation span for traceId=" + traceId)
-                        .isNotNull();
-                assertThat(handlerObservation.get("name")).isEqualTo("reactive.hello.observation");
+                SpanData handlerObservation = traceSpans.ofKind(INTERNAL).childrenOf(handlerServer).single();
+                assertThat(handlerObservation).hasName("reactive.hello.observation");
             }
         }
 
@@ -337,21 +296,18 @@ public class ObservationReactiveTest {
         // 1 SERVER +
         // 1 INTERNAL (worker.parent.observation, request thread) +
         // 1 INTERNAL (child @Observed, worker thread) = 3 spans
-        List<Map<String, Object>> spans = waitForSpans(3);
+        SpanDataList spans = waitForSpans(3);
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> serverSpan = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertThat(serverSpan).isNotNull();
+        SpanData serverSpan = spans.ofKind(SERVER).roots().single();
 
-        Map<String, Object> workerSpan = getSpanByKindAndParentId(spans, INTERNAL, serverSpan.get("spanId"));
-        assertThat(workerSpan).isNotNull();
-        assertThat(workerSpan.get("name")).isEqualTo("worker.parent.observation");
+        SpanData workerSpan = spans.ofKind(INTERNAL).childrenOf(serverSpan).single();
+        assertThat(workerSpan).hasName("worker.parent.observation");
 
         // The child observation, produced on the worker thread, must be parented to the parent
         // observation (worker) opened on the request thread - proving the scope propagated across threads.
-        Map<String, Object> childSpan = getSpanByKindAndParentId(spans, INTERNAL, workerSpan.get("spanId"));
-        assertThat(childSpan).isNotNull();
-        assertThat(childSpan.get("traceId")).isEqualTo(serverSpan.get("traceId"));
-        assertThat((String) childSpan.get("name")).contains("doChildWork");
+        SpanData childSpan = spans.ofKind(INTERNAL).childrenOf(workerSpan).single();
+        assertThat(childSpan.getName()).contains("doChildWork");
 
         // Both the parent (request thread) and the child @Observed (worker thread) timers recorded.
         await().atMost(5, SECONDS).untilAsserted(() -> {
@@ -370,19 +326,16 @@ public class ObservationReactiveTest {
         // 1 SERVER +
         // 1 INTERNAL (virtual.parent.observation) +
         // 1 INTERNAL (nested child @Observed) = 3 spans
-        List<Map<String, Object>> spans = waitForSpans(3);
+        SpanDataList spans = waitForSpans(3);
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> serverSpan = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertThat(serverSpan).isNotNull();
+        SpanData serverSpan = spans.ofKind(SERVER).roots().single();
 
-        Map<String, Object> parentSpan = getSpanByKindAndParentId(spans, INTERNAL, serverSpan.get("spanId"));
-        assertThat(parentSpan).isNotNull();
-        assertThat(parentSpan.get("name")).isEqualTo("virtual.parent.observation");
+        SpanData parentSpan = spans.ofKind(INTERNAL).childrenOf(serverSpan).single();
+        assertThat(parentSpan).hasName("virtual.parent.observation");
 
-        Map<String, Object> childSpan = getSpanByKindAndParentId(spans, INTERNAL, parentSpan.get("spanId"));
-        assertThat(childSpan).isNotNull();
-        assertThat(childSpan.get("traceId")).isEqualTo(serverSpan.get("traceId"));
-        assertThat((String) childSpan.get("name")).contains("doChildWork");
+        SpanData childSpan = spans.ofKind(INTERNAL).childrenOf(parentSpan).single();
+        assertThat(childSpan.getName()).contains("doChildWork");
 
         // Both the parent and the nested child @Observed timers recorded on the (virtual) thread.
         await().atMost(5, SECONDS).untilAsserted(() -> {
@@ -400,34 +353,22 @@ public class ObservationReactiveTest {
 
         // 1 SERVER +
         // 1 INTERNAL (error observation)
-        List<Map<String, Object>> spans = waitForSpans(2);
+        SpanDataList spans = waitForSpans(2);
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> serverSpan = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertThat(serverSpan).isNotNull();
+        SpanData serverSpan = spans.ofKind(SERVER).roots().single();
 
-        Map<String, Object> errorSpan = getSpanByKindAndParentId(spans, INTERNAL, serverSpan.get("spanId"));
-        assertThat(errorSpan).isNotNull();
-        assertThat(errorSpan.get("name")).isEqualTo("error.operation.observation");
-        assertThat(errorSpan.get("traceId")).isEqualTo(serverSpan.get("traceId"));
+        SpanData errorSpan = spans.ofKind(INTERNAL).childrenOf(serverSpan).single();
+        assertThat(errorSpan).hasName("error.operation.observation");
 
         // The failing observation is still recorded once by the timer.
         await().atMost(5, SECONDS).untilAsserted(() -> assertThat(getTimerCount("error.operation.observation"))
                 .isGreaterThanOrEqualTo(1));
     }
 
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> waitForSpans(int minCount) {
-        await().atMost(5, SECONDS).untilAsserted(() -> {
-            List<Map<String, Object>> result = getSpans();
-            assertThat(result).hasSizeGreaterThanOrEqualTo(minCount);
-        });
-        return getSpans();
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> getSpans() {
-        return get("/export").body().as(new TypeRef<>() {
-        });
+    private SpanDataList waitForSpans(int minCount) {
+        return spanExporter().awaitUntil("at least " + minCount + " spans", Duration.ofSeconds(5),
+                spans -> spans.size() >= minCount);
     }
 
     private List<Map<String, Object>> getMetrics(String metricName) {
@@ -460,22 +401,5 @@ public class ObservationReactiveTest {
             max = Math.max(max, snapshotCount);
         }
         return max;
-    }
-
-    private Map<String, Object> getSpanByKindAndParentId(List<Map<String, Object>> spans,
-            SpanKind kind, Object parentSpanId) {
-        return spans.stream()
-                .filter(s -> kind.toString().equals(s.get("kind")))
-                .filter(s -> parentSpanId.equals(s.get("parentSpanId")))
-                .findFirst()
-                .orElse(null);
-    }
-
-    private List<Map<String, Object>> getSpansByKindAndParentId(List<Map<String, Object>> spans,
-            SpanKind kind, Object parentSpanId) {
-        return spans.stream()
-                .filter(s -> kind.toString().equals(s.get("kind")))
-                .filter(s -> parentSpanId.equals(s.get("parentSpanId")))
-                .toList();
     }
 }

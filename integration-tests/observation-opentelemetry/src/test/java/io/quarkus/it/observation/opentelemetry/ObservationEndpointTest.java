@@ -1,26 +1,37 @@
 package io.quarkus.it.observation.opentelemetry;
 
-import static io.restassured.RestAssured.get;
+import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
 import static io.restassured.RestAssured.given;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
+import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
 public class ObservationEndpointTest {
 
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
+
     @BeforeEach
     void reset() {
         given().get("/reset").then().statusCode(200);
+        spanExporter().reset();
     }
 
     @Test
@@ -30,9 +41,8 @@ public class ObservationEndpointTest {
                 .then()
                 .statusCode(200);
 
-        List<Map<String, Object>> spans = getSpans(1);
-        Map<String, Object> span = findSpanByName(spans, "manual.operation");
-        assertThat(span).isNotNull();
+        SpanDataList spans = getSpans(1);
+        assertThat(spans.named("manual.operation")).hasSize(1);
     }
 
     @Test
@@ -42,14 +52,11 @@ public class ObservationEndpointTest {
                 .then()
                 .statusCode(200);
 
-        List<Map<String, Object>> spans = getSpans(2);
-        Map<String, Object> parentSpan = findSpanByName(spans, "parent.operation");
-        Map<String, Object> childSpan = findSpanByName(spans, "child.operation");
+        SpanDataList spans = getSpans(2);
+        SpanData parentSpan = spans.named("parent.operation").single();
+        SpanData childSpan = spans.named("child.operation").single();
 
-        assertThat(parentSpan).isNotNull();
-        assertThat(childSpan).isNotNull();
-        assertThat(childSpan.get("traceId")).isEqualTo(parentSpan.get("traceId"));
-        assertThat(childSpan.get("parentSpanId")).isEqualTo(parentSpan.get("spanId"));
+        assertThat(childSpan).hasTraceId(parentSpan.getTraceId()).hasParent(parentSpan);
     }
 
     @Test
@@ -59,9 +66,8 @@ public class ObservationEndpointTest {
                 .then()
                 .statusCode(200);
 
-        List<Map<String, Object>> spans = getSpans(1);
-        Map<String, Object> span = findSpanByName(spans, "ObservedService#doWork");
-        assertThat(span).isNotNull();
+        SpanDataList spans = getSpans(1);
+        assertThat(spans.named("ObservedService#doWork")).hasSize(1);
     }
 
     @Test
@@ -71,9 +77,8 @@ public class ObservationEndpointTest {
                 .then()
                 .statusCode(200);
 
-        List<Map<String, Object>> spans = getSpans(1);
-        Map<String, Object> span = findSpanByName(spans, "error.operation");
-        assertThat(span).isNotNull();
+        SpanDataList spans = getSpans(1);
+        assertThat(spans.named("error.operation")).hasSize(1);
     }
 
     @Test
@@ -94,13 +99,9 @@ public class ObservationEndpointTest {
         assertThat(metrics).isEmpty();
     }
 
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> getSpans(int minCount) {
-        await().atMost(5, SECONDS).untilAsserted(() -> {
-            List<Map<String, Object>> result = get("/export").as(List.class);
-            assertThat(result).hasSizeGreaterThanOrEqualTo(minCount);
-        });
-        return get("/export").as(List.class);
+    private SpanDataList getSpans(int minCount) {
+        return spanExporter().awaitUntil("at least " + minCount + " spans", Duration.ofSeconds(5),
+                spans -> spans.size() >= minCount);
     }
 
     private List<Map<String, Object>> getMetrics(String metricName) {
@@ -109,13 +110,5 @@ public class ObservationEndpointTest {
                 .get("/export/metrics")
                 .body().as(new TypeRef<>() {
                 });
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> findSpanByName(List<Map<String, Object>> spans, String name) {
-        return spans.stream()
-                .filter(s -> name.equals(s.get("name")))
-                .findFirst()
-                .orElse(null);
     }
 }

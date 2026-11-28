@@ -1,28 +1,41 @@
 package io.quarkus.it.opentelemetry;
 
+import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
+import static io.opentelemetry.semconv.DbAttributes.DB_QUERY_TEXT;
+import static io.quarkus.it.opentelemetry.MongoSpanAttributes.optionalString;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
-import static java.net.HttpURLConnection.HTTP_OK;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.opentelemetry.sdk.testing.assertj.TracesAssert;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.ResourceArg;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.mongodb.MongoTestResource;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
 @QuarkusTestResource(value = MongoTestResource.class, initArgs = @ResourceArg(name = MongoTestResource.VERSION, value = "V6_0"))
 class BookResourceTest {
+
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
 
     private final TypeRef<List<Book>> bookListType = new TypeRef<>() {
     };
@@ -30,15 +43,7 @@ class BookResourceTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(Duration.ofSeconds(30L)).until(() -> {
-            // make sure spans are cleared
-            List<Map<String, Object>> spans = getSpans();
-            if (!spans.isEmpty()) {
-                given().get("/reset").then().statusCode(HTTP_OK);
-            }
-            return spans.isEmpty();
-        });
+        spanExporter().reset();
     }
 
     @Test
@@ -109,43 +114,32 @@ class BookResourceTest {
     }
 
     private void assertTraceAvailable(int expectedNumOfSpans, String... commandPart) {
-        await().atMost(Duration.ofSeconds(10L)).until(() -> getSpans().size() == expectedNumOfSpans);
+        SpanDataList spans = spanExporter().awaitCount(expectedNumOfSpans, Duration.ofSeconds(10));
         boolean found = false;
-        for (Map<String, Object> spanData : getSpans()) {
-            if (spanData.get("attributes") instanceof Map attr) {
-                var cmd = (String) attr.get("db.query.text");
-                if (cmd != null) {
-                    assertThat(cmd).contains(commandPart).contains("books");
-                    found = true;
-                }
+        for (SpanData span : spans) {
+            String cmd = optionalString(span.getAttributes(), DB_QUERY_TEXT);
+            if (cmd != null) {
+                assertThat(cmd).contains(commandPart).contains("books");
+                found = true;
             }
         }
         assertThat(found).isTrue();
     }
 
-    @SuppressWarnings("unchecked")
     private void assertParentChild(int expectedNumOfSpans, String... commandPart) {
-        await().atMost(Duration.ofSeconds(10L)).until(() -> getSpans().size() == expectedNumOfSpans);
-        List<Map<String, Object>> spans = getSpans();
-        var traceIds = spans.stream().map(data -> data.get("traceId")).toList();
-        String traceId = (String) traceIds.get(0);
-        assertThat(traceId).isNotBlank();
-        assertThat(traceIds).as("All spans must have the same trace id").containsOnly(traceId);
+        SpanDataList spans = spanExporter().awaitCount(expectedNumOfSpans, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).as("All spans must have the same trace id").hasSize(1);
+        assertThat(spans).allSatisfy(span -> assertThat(span.getTraceId()).isNotBlank());
 
-        var rootSpanId = getRootSpan(spans);
-        assertThat(rootSpanId).isNotBlank();
+        SpanData rootSpan = getRootSpan(spans);
+        assertThat(rootSpan.getSpanId()).isNotBlank();
 
-        for (Map<String, Object> spanData : spans) {
-            assertThat(spanData).as("span must have trace id").containsEntry("traceId", traceId);
-            if (spanData.get("attributes") instanceof Map attr) {
-                var cmd = (String) attr.get("db.query.text");
-                if (cmd != null) {
-                    assertThat(cmd).contains(commandPart).contains("books");
-                    var parentSpanContext = (Map<String, Object>) spanData.get("parentSpanContext");
-                    assertThat((String) spanData.get("traceId")).isNotBlank().isEqualTo(traceId);
-                    assertThat((String) parentSpanContext.get("spanId")).isNotBlank().isEqualTo(rootSpanId);
-                    assertThat((String) spanData.get("spanId")).isNotBlank().isNotEqualTo(rootSpanId);
-                }
+        for (SpanData span : spans) {
+            String cmd = optionalString(span.getAttributes(), DB_QUERY_TEXT);
+            if (cmd != null) {
+                assertThat(cmd).contains(commandPart).contains("books");
+                assertThat(span).hasParent(rootSpan);
+                assertThat(span.getSpanId()).isNotBlank().isNotEqualTo(rootSpan.getSpanId());
             }
         }
 
@@ -156,17 +150,15 @@ class BookResourceTest {
 
     /**
      * find root span id
-     * this is the case if the trace id in parentSpanContext contains only zeros
+     * this is the case if the span has no valid parent
      *
      * @param spans
      * @return
      */
-    @SuppressWarnings("unchecked")
-    private static String getRootSpan(Iterable<Map<String, Object>> spans) {
-        for (Map<String, Object> spanData : spans) {
-            var parentContext = (Map<String, Object>) spanData.get("parentSpanContext");
-            if (((String) parentContext.get("traceId")).matches("0+")) {
-                return (String) spanData.get("spanId");
+    private static SpanData getRootSpan(SpanDataList spans) {
+        for (SpanData span : spans) {
+            if (!span.getParentSpanContext().isValid()) {
+                return span;
             }
         }
         throw new IllegalStateException("No root span found");
@@ -197,10 +189,5 @@ class BookResourceTest {
                 .body(book)
                 .post(endpoint)
                 .then().assertThat().statusCode(202);
-    }
-
-    private List<Map<String, Object>> getSpans() {
-        return get("/export").body().as(new TypeRef<>() {
-        });
     }
 }

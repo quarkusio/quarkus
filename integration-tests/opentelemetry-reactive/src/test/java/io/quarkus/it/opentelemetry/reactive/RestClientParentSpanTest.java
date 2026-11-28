@@ -3,23 +3,18 @@ package io.quarkus.it.opentelemetry.reactive;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.quarkus.it.opentelemetry.reactive.Utils.getSpanByKindAndParentId;
-import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
-import static io.quarkus.it.opentelemetry.reactive.Utils.getSpansByKindAndParentId;
-import static io.restassured.RestAssured.given;
-import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.stream.Collectors.toSet;
-import static org.awaitility.Awaitility.await;
+import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -37,7 +32,12 @@ import org.junit.jupiter.api.io.TempDir;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.sdk.testing.assertj.TracesAssert;
+import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.buffer.Buffer;
 
@@ -50,7 +50,13 @@ import io.vertx.core.buffer.Buffer;
 @QuarkusTest
 public class RestClientParentSpanTest {
 
-    private static final String NO_PARENT = "0000000000000000";
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
+
     private static final byte[] BYTES = { 1, 2, 3 };
 
     @Inject
@@ -70,8 +76,7 @@ public class RestClientParentSpanTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 0);
+        spanExporter().reset();
     }
 
     /**
@@ -86,22 +91,20 @@ public class RestClientParentSpanTest {
             parentSpan.end();
         }
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(3, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
         // First span is the one created by the test. It does not have a parent span.
-        Map<String, Object> parent = getSpanByKindAndParentId(spans, INTERNAL, NO_PARENT);
-        assertEquals("parent", parent.get("name"));
+        SpanData parent = spans.ofKind(INTERNAL).roots().single();
+        assertThat(parent).hasName("parent");
 
         // The client span is a child of the span that was current when the client was called.
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, parent.get("spanId"));
-        assertEquals("POST /parent-span/string", client.get("name"));
+        SpanData client = spans.ofKind(CLIENT).childrenOf(parent).single();
+        assertThat(client).hasName("POST /parent-span/string");
 
         // We should get one server span, from the client call. The client is the parent.
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-        assertEquals("POST /parent-span/string", server.get("name"));
+        SpanData server = spans.ofKind(SERVER).childrenOf(client).single();
+        assertThat(server).hasName("POST /parent-span/string");
     }
 
     /**
@@ -126,19 +129,17 @@ public class RestClientParentSpanTest {
             executor.shutdownNow();
         }
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(3, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> parent = getSpanByKindAndParentId(spans, INTERNAL, NO_PARENT);
-        assertEquals("parent", parent.get("name"));
+        SpanData parent = spans.ofKind(INTERNAL).roots().single();
+        assertThat(parent).hasName("parent");
 
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, parent.get("spanId"));
-        assertEquals("POST /parent-span/string", client.get("name"));
+        SpanData client = spans.ofKind(CLIENT).childrenOf(parent).single();
+        assertThat(client).hasName("POST /parent-span/string");
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-        assertEquals("POST /parent-span/string", server.get("name"));
+        SpanData server = spans.ofKind(SERVER).childrenOf(client).single();
+        assertThat(server).hasName("POST /parent-span/string");
     }
 
     /**
@@ -155,19 +156,17 @@ public class RestClientParentSpanTest {
             parentSpan.end();
         }
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(3, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> parent = getSpanByKindAndParentId(spans, INTERNAL, NO_PARENT);
-        assertEquals("parent", parent.get("name"));
+        SpanData parent = spans.ofKind(INTERNAL).roots().single();
+        assertThat(parent).hasName("parent");
 
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, parent.get("spanId"));
-        assertEquals("POST /parent-span/stream", client.get("name"));
+        SpanData client = spans.ofKind(CLIENT).childrenOf(parent).single();
+        assertThat(client).hasName("POST /parent-span/stream");
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-        assertEquals("POST /parent-span/stream", server.get("name"));
+        SpanData server = spans.ofKind(SERVER).childrenOf(client).single();
+        assertThat(server).hasName("POST /parent-span/stream");
     }
 
     /**
@@ -184,19 +183,17 @@ public class RestClientParentSpanTest {
             parentSpan.end();
         }
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(3, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> parent = getSpanByKindAndParentId(spans, INTERNAL, NO_PARENT);
-        assertEquals("parent", parent.get("name"));
+        SpanData parent = spans.ofKind(INTERNAL).roots().single();
+        assertThat(parent).hasName("parent");
 
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, parent.get("spanId"));
-        assertEquals("POST /parent-span/stream", client.get("name"));
+        SpanData client = spans.ofKind(CLIENT).childrenOf(parent).single();
+        assertThat(client).hasName("POST /parent-span/stream");
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-        assertEquals("POST /parent-span/stream", server.get("name"));
+        SpanData server = spans.ofKind(SERVER).childrenOf(client).single();
+        assertThat(server).hasName("POST /parent-span/stream");
     }
 
     /**
@@ -215,19 +212,17 @@ public class RestClientParentSpanTest {
             parentSpan.end();
         }
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(3, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> parent = getSpanByKindAndParentId(spans, INTERNAL, NO_PARENT);
-        assertEquals("parent", parent.get("name"));
+        SpanData parent = spans.ofKind(INTERNAL).roots().single();
+        assertThat(parent).hasName("parent");
 
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, parent.get("spanId"));
-        assertEquals("POST /parent-span/stream", client.get("name"));
+        SpanData client = spans.ofKind(CLIENT).childrenOf(parent).single();
+        assertThat(client).hasName("POST /parent-span/stream");
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-        assertEquals("POST /parent-span/stream", server.get("name"));
+        SpanData server = spans.ofKind(SERVER).childrenOf(client).single();
+        assertThat(server).hasName("POST /parent-span/stream");
     }
 
     @Test
@@ -239,19 +234,17 @@ public class RestClientParentSpanTest {
             parentSpan.end();
         }
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(3, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> parent = getSpanByKindAndParentId(spans, INTERNAL, NO_PARENT);
-        assertEquals("parent", parent.get("name"));
+        SpanData parent = spans.ofKind(INTERNAL).roots().single();
+        assertThat(parent).hasName("parent");
 
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, parent.get("spanId"));
-        assertEquals("POST /parent-span/stream", client.get("name"));
+        SpanData client = spans.ofKind(CLIENT).childrenOf(parent).single();
+        assertThat(client).hasName("POST /parent-span/stream");
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-        assertEquals("POST /parent-span/stream", server.get("name"));
+        SpanData server = spans.ofKind(SERVER).childrenOf(client).single();
+        assertThat(server).hasName("POST /parent-span/stream");
     }
 
     @Test
@@ -265,19 +258,17 @@ public class RestClientParentSpanTest {
             parentSpan.end();
         }
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(3, spans.size());
-        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(3, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(1);
 
-        Map<String, Object> parent = getSpanByKindAndParentId(spans, INTERNAL, NO_PARENT);
-        assertEquals("parent", parent.get("name"));
+        SpanData parent = spans.ofKind(INTERNAL).roots().single();
+        assertThat(parent).hasName("parent");
 
-        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, parent.get("spanId"));
-        assertEquals("POST /parent-span/multipart", client.get("name"));
+        SpanData client = spans.ofKind(CLIENT).childrenOf(parent).single();
+        assertThat(client).hasName("POST /parent-span/multipart");
 
-        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-        assertEquals("POST /parent-span/multipart", server.get("name"));
+        SpanData server = spans.ofKind(SERVER).childrenOf(client).single();
+        assertThat(server).hasName("POST /parent-span/multipart");
     }
 
     /**
@@ -298,20 +289,20 @@ public class RestClientParentSpanTest {
         assertEquals("second", client.string("second"));
 
         // parent, client and server of the first call, client and server of the second one
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 5);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(5, spans.size());
-        assertEquals(2, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(5, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(2);
 
         // First call: the client span is a child of the span created by the test.
-        Map<String, Object> parent = getSpanByKindAndParentId(spans, INTERNAL, NO_PARENT);
-        Map<String, Object> firstClient = getSpanByKindAndParentId(spans, CLIENT, parent.get("spanId"));
-        assertEquals(parent.get("traceId"), firstClient.get("traceId"));
+        SpanData parent = spans.ofKind(INTERNAL).roots().single();
+        SpanData firstClient = spans.ofKind(CLIENT).childrenOf(parent).single();
+        assertThat(parent).hasTraceId(firstClient.getTraceId());
+        SpanData firstServer = spans.ofKind(SERVER).childrenOf(firstClient).single();
+        assertThat(firstServer).hasTraceId(parent.getTraceId());
 
         // Second call: the client span does not have a parent span and is in another trace.
-        Map<String, Object> secondClient = getSpanByKindAndParentId(spans, CLIENT, NO_PARENT);
-        Map<String, Object> secondServer = getSpanByKindAndParentId(spans, SERVER, secondClient.get("spanId"));
-        assertEquals(secondClient.get("traceId"), secondServer.get("traceId"));
+        SpanData secondClient = spans.ofKind(CLIENT).roots().single();
+        SpanData secondServer = spans.ofKind(SERVER).childrenOf(secondClient).single();
+        assertThat(secondClient).hasTraceId(secondServer.getTraceId());
     }
 
     /**
@@ -344,17 +335,15 @@ public class RestClientParentSpanTest {
         }
 
         // parent, client and server for each call
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == calls * 3);
-        List<Map<String, Object>> spans = getSpans();
-        assertEquals(calls * 3, spans.size());
-        assertEquals(calls, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+        SpanDataList spans = spanExporter().awaitCount(calls * 3, Duration.ofSeconds(10));
+        TracesAssert.assertThat(spans).hasSize(calls);
 
-        List<Map<String, Object>> parents = getSpansByKindAndParentId(spans, INTERNAL, NO_PARENT);
-        assertEquals(calls, parents.size());
-        for (Map<String, Object> parent : parents) {
-            Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, parent.get("spanId"));
-            Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
-            assertEquals(parent.get("traceId"), server.get("traceId"));
+        SpanDataList parents = spans.ofKind(INTERNAL).roots();
+        assertThat(parents).hasSize(calls);
+        for (SpanData parent : parents) {
+            SpanData client = spans.ofKind(CLIENT).childrenOf(parent).single();
+            SpanData server = spans.ofKind(SERVER).childrenOf(client).single();
+            assertThat(parent).hasTraceId(server.getTraceId());
         }
     }
 }

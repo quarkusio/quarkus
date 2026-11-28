@@ -1,38 +1,52 @@
 package io.quarkus.it.rest.client;
 
-import static io.restassured.RestAssured.get;
+import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
+import static io.opentelemetry.semconv.ClientAttributes.CLIENT_ADDRESS;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
+import static io.opentelemetry.semconv.UrlAttributes.URL_FULL;
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
+import static io.opentelemetry.semconv.UrlAttributes.URL_QUERY;
+import static io.opentelemetry.semconv.UrlAttributes.URL_SCHEME;
+import static io.opentelemetry.semconv.UserAgentAttributes.USER_AGENT_ORIGINAL;
 import static io.restassured.RestAssured.with;
 import static java.util.stream.Collectors.counting;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.*;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.trace.SpanId;
 import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.TraceId;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
-import io.restassured.RestAssured;
-import io.restassured.common.mapper.TypeRef;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 import io.restassured.response.Response;
 
 @QuarkusTest
 @TestProfile(BasicTest.TestProfile.class)
 public class BasicTest {
+
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
 
     @TestHTTPResource("/apples")
     String appleUrl;
@@ -47,7 +61,7 @@ public class BasicTest {
     @AfterEach
     public void clear() {
         // Reset captured traces
-        RestAssured.given().when().get("/export-clear").then().statusCode(200);
+        spanExporter().reset();
     }
 
     @Test
@@ -172,100 +186,71 @@ public class BasicTest {
         Response response = with().body(helloUrl).post("/call-hello-client-trace");
         assertThat(response.asString()).isEqualTo("Hello, MaryMaryMary");
 
-        String serverSpanId = null;
-        String serverTraceId = null;
-        String clientSpanId = null;
+        SpanDataList spans = spanExporter().awaitUntil("a server span of POST /call-hello-client-trace",
+                Duration.ofSeconds(30),
+                s -> !getServerSpansFromPath(s, "POST /call-hello-client-trace", "/call-hello-client-trace").isEmpty());
 
-        Awaitility.await().atMost(Duration.ofSeconds(30))
-                .until(() -> getServerSpansFromPath("POST /call-hello-client-trace", "/call-hello-client-trace").size() > 0);
-
-        List<Map<String, Object>> spans = getServerSpansFromPath("POST /call-hello-client-trace", "/call-hello-client-trace");
-        Assertions.assertEquals(1, spans.size());
-
-        final Map<String, Object> initialServerSpan = spans.get(0);
-        Assertions.assertNotNull(initialServerSpan);
-        Assertions.assertNotNull(initialServerSpan.get("spanId"));
+        SpanData initialServerSpan = getServerSpansFromPath(spans, "POST /call-hello-client-trace",
+                "/call-hello-client-trace").single();
+        assertNotNull(initialServerSpan.getSpanId());
 
         // *** Server Span ***
-        serverSpanId = (String) initialServerSpan.get("spanId");
-        serverTraceId = (String) initialServerSpan.get("traceId");
+        assertThat(initialServerSpan)
+                .hasName("POST /call-hello-client-trace")
+                .hasKind(SpanKind.SERVER)
+                .hasNoParent()
+                .hasAttribute(HTTP_REQUEST_METHOD, "POST")
+                .hasAttribute(URL_PATH, "/call-hello-client-trace")
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertTrue(initialServerSpan.hasEnded());
+        assertEquals(SpanId.getInvalid(), initialServerSpan.getParentSpanContext().getSpanId());
+        assertFalse(initialServerSpan.getParentSpanContext().isRemote());
+        assertNotNull(initialServerSpan.getAttributes().get(CLIENT_ADDRESS));
+        assertNotNull(initialServerSpan.getAttributes().get(USER_AGENT_ORIGINAL));
 
-        Assertions.assertEquals("POST /call-hello-client-trace", initialServerSpan.get("name"));
-        Assertions.assertEquals(SpanKind.SERVER.toString(), initialServerSpan.get("kind"));
-        Assertions.assertTrue((Boolean) initialServerSpan.get("ended"));
+        spans = spanExporter().awaitUntil("a client span of POST http://localhost:8081/hello?count=3", Duration.ofSeconds(5),
+                s -> !getClientSpansFromFullUrl(s, "POST", "http://localhost:8081/hello?count=3").isEmpty());
 
-        Assertions.assertEquals(SpanId.getInvalid(), initialServerSpan.get("parent_spanId"));
-        Assertions.assertEquals(TraceId.getInvalid(), initialServerSpan.get("parent_traceId"));
-        Assertions.assertFalse((Boolean) initialServerSpan.get("parent_valid"));
-        Assertions.assertFalse((Boolean) initialServerSpan.get("parent_remote"));
-
-        Assertions.assertEquals("POST", initialServerSpan.get("attr_http.request.method"));
-        Assertions.assertEquals("/call-hello-client-trace", initialServerSpan.get("attr_url.path"));
-        Assertions.assertEquals("http", initialServerSpan.get("attr_url.scheme"));
-        Assertions.assertEquals("200", initialServerSpan.get("attr_http.response.status_code"));
-        Assertions.assertNotNull(initialServerSpan.get("attr_client.address"));
-        Assertions.assertNotNull(initialServerSpan.get("attr_user_agent.original"));
-
-        Awaitility.await().atMost(Duration.ofSeconds(5))
-                .until(() -> getClientSpansFromFullUrl("POST", "http://localhost:8081/hello?count=3").size() > 0);
-
-        spans = getClientSpansFromFullUrl("POST", "http://localhost:8081/hello?count=3");
-        Assertions.assertEquals(1, spans.size());
-
-        final Map<String, Object> clientSpan = spans.get(0);
-        Assertions.assertNotNull(clientSpan);
-        Assertions.assertNotNull(clientSpan.get("spanId"));
+        SpanData clientSpan = getClientSpansFromFullUrl(spans, "POST", "http://localhost:8081/hello?count=3")
+                .single();
+        assertNotNull(clientSpan.getSpanId());
 
         // *** Client span ***
-        Assertions.assertEquals("POST", clientSpan.get("name"));
+        assertThat(clientSpan)
+                .hasName("POST")
+                .hasKind(SpanKind.CLIENT)
+                .hasParent(initialServerSpan)
+                .hasAttribute(HTTP_REQUEST_METHOD, "POST")
+                .hasAttribute(URL_FULL, "http://localhost:8081/hello?count=3")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertTrue(clientSpan.hasEnded());
+        assertEquals(initialServerSpan.getTraceId(), clientSpan.getParentSpanContext().getTraceId());
+        assertTrue(clientSpan.getParentSpanContext().isValid());
+        assertFalse(clientSpan.getParentSpanContext().isRemote());
 
-        Assertions.assertEquals(SpanKind.CLIENT.toString(), clientSpan.get("kind"));
-        Assertions.assertTrue((Boolean) clientSpan.get("ended"));
+        spans = spanExporter().awaitUntil("a server span of POST /hello", Duration.ofSeconds(5),
+                s -> !getServerSpansFromPath(s, "POST /hello", "/hello").isEmpty());
 
-        if (serverSpanId != null) {
-            Assertions.assertEquals(serverSpanId, clientSpan.get("parent_spanId"));
-        }
-        if (serverTraceId != null) {
-            Assertions.assertEquals(serverTraceId, clientSpan.get("parent_traceId"));
-        }
-        Assertions.assertTrue((Boolean) clientSpan.get("parent_valid"));
-        Assertions.assertFalse((Boolean) clientSpan.get("parent_remote"));
-
-        Assertions.assertEquals("POST", clientSpan.get("attr_http.request.method"));
-        Assertions.assertEquals("http://localhost:8081/hello?count=3", clientSpan.get("attr_url.full"));
-        Assertions.assertEquals("200", clientSpan.get("attr_http.response.status_code"));
-
-        clientSpanId = (String) clientSpan.get("spanId");
-
-        Awaitility.await().atMost(Duration.ofSeconds(5))
-                .until(() -> getServerSpansFromPath("POST /hello", "/hello").size() > 0);
-        spans = getServerSpansFromPath("POST /hello", "/hello");
-        Assertions.assertEquals(1, spans.size(), "found: " + spans);
-
-        final Map<String, Object> serverSpanClientSide = spans.get(0);
-        Assertions.assertNotNull(serverSpanClientSide);
-        Assertions.assertNotNull(serverSpanClientSide.get("spanId"));
+        SpanData serverSpanClientSide = getServerSpansFromPath(spans, "POST /hello", "/hello").single();
+        assertNotNull(serverSpanClientSide.getSpanId());
 
         // *** Server span of client ***
-        Assertions.assertEquals("POST /hello", serverSpanClientSide.get("name"));
-        Assertions.assertEquals(SpanKind.SERVER.toString(), serverSpanClientSide.get("kind"));
-        Assertions.assertTrue((Boolean) serverSpanClientSide.get("ended"));
-
-        if (clientSpanId != null) {
-            Assertions.assertEquals(clientSpanId, serverSpanClientSide.get("parent_spanId"));
-        }
-        if (serverTraceId != null) {
-            Assertions.assertEquals(serverTraceId, serverSpanClientSide.get("parent_traceId"));
-        }
-        Assertions.assertTrue((Boolean) serverSpanClientSide.get("parent_valid"));
-        Assertions.assertTrue((Boolean) serverSpanClientSide.get("parent_remote"));
-
-        Assertions.assertEquals("POST", serverSpanClientSide.get("attr_http.request.method"));
-        Assertions.assertEquals("/hello", serverSpanClientSide.get("attr_url.path"));
-        Assertions.assertEquals("count=3", serverSpanClientSide.get("attr_url.query"));
-        Assertions.assertEquals("http", serverSpanClientSide.get("attr_url.scheme"));
-        Assertions.assertEquals("200", serverSpanClientSide.get("attr_http.response.status_code"));
-        Assertions.assertNotNull(serverSpanClientSide.get("attr_client.address"));
+        assertThat(serverSpanClientSide)
+                .hasName("POST /hello")
+                .hasKind(SpanKind.SERVER)
+                .hasParent(clientSpan)
+                .hasTraceId(initialServerSpan.getTraceId())
+                .hasAttribute(HTTP_REQUEST_METHOD, "POST")
+                .hasAttribute(URL_PATH, "/hello")
+                .hasAttribute(URL_QUERY, "count=3")
+                .hasAttribute(URL_SCHEME, "http")
+                .hasAttribute(HTTP_RESPONSE_STATUS_CODE, 200L);
+        assertTrue(serverSpanClientSide.hasEnded());
+        assertEquals(initialServerSpan.getTraceId(), serverSpanClientSide.getParentSpanContext().getTraceId());
+        assertTrue(serverSpanClientSide.getParentSpanContext().isValid());
+        assertTrue(serverSpanClientSide.getParentSpanContext().isRemote());
+        assertNotNull(serverSpanClientSide.getAttributes().get(CLIENT_ADDRESS));
     }
 
     @Test
@@ -293,22 +278,14 @@ public class BasicTest {
                 .body(is(equalTo("true")));
     }
 
-    private List<Map<String, Object>> getServerSpansFromPath(final String spanName, final String urlPath) {
-        return get("/export").body().as(new TypeRef<List<Map<String, Object>>>() {
-        }).stream()
-                .filter(stringObjectMap -> spanName.equals(stringObjectMap.get("name")) &&
-                        "SERVER".equals(stringObjectMap.get("kind")) &&
-                        ((String) stringObjectMap.get("attr_url.path")).startsWith(urlPath))
-                .collect(Collectors.toList());
+    private SpanDataList getServerSpansFromPath(SpanDataList spans, final String spanName, final String urlPath) {
+        return spans.ofKind(SpanKind.SERVER).named(spanName)
+                .filter(span -> span.getAttributes().get(URL_PATH).startsWith(urlPath));
     }
 
-    private List<Map<String, Object>> getClientSpansFromFullUrl(final String spanName, final String httpUrl) {
-        return get("/export").body().as(new TypeRef<List<Map<String, Object>>>() {
-        }).stream()
-                .filter(stringObjectMap -> spanName.equals(stringObjectMap.get("name")) &&
-                        "CLIENT".equals(stringObjectMap.get("kind")) &&
-                        ((String) stringObjectMap.get("attr_url.full")).startsWith(httpUrl))
-                .collect(Collectors.toList());
+    private SpanDataList getClientSpansFromFullUrl(SpanDataList spans, final String spanName, final String httpUrl) {
+        return spans.ofKind(SpanKind.CLIENT).named(spanName)
+                .filter(span -> span.getAttributes().get(URL_FULL).startsWith(httpUrl));
     }
 
     public static class TestProfile implements QuarkusTestProfile {

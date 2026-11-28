@@ -22,13 +22,9 @@ import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
-import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
-import io.opentelemetry.sdk.trace.data.SpanData;
 
 @Path("")
 public class ExporterResource {
-    @Inject
-    InMemorySpanExporter inMemorySpanExporter;
     @Inject
     InMemoryMetricExporter inMemoryMetricExporter;
     @Inject
@@ -37,22 +33,9 @@ public class ExporterResource {
     @GET
     @Path("/reset")
     public Response reset() {
-        inMemorySpanExporter.reset();
         inMemoryMetricExporter.reset();
         inMemoryLogRecordExporter.reset();
         return Response.ok().build();
-    }
-
-    /**
-     * Will exclude export endpoint related traces
-     */
-    @GET
-    @Path("/export")
-    public List<SpanData> exportTraces() {
-        return inMemorySpanExporter.getFinishedSpanItems()
-                .stream()
-                .filter(sd -> !sd.getName().contains("export") && !sd.getName().contains("reset"))
-                .collect(Collectors.toList());
     }
 
     /**
@@ -95,15 +78,6 @@ public class ExporterResource {
             return false;
         }
         return value.toString().equals(path);
-    }
-
-    @ApplicationScoped
-    static class InMemorySpanExporterProducer {
-        @Produces
-        @Singleton
-        InMemorySpanExporter inMemorySpanExporter() {
-            return InMemorySpanExporter.create();
-        }
     }
 
     @ApplicationScoped

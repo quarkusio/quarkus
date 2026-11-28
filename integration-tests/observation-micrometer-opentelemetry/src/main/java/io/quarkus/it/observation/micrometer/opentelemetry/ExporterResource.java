@@ -16,14 +16,9 @@ import jakarta.ws.rs.core.Response;
 
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
-import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
-import io.opentelemetry.sdk.trace.data.SpanData;
 
 @Path("")
 public class ExporterResource {
-
-    @Inject
-    InMemorySpanExporter spanExporter;
 
     @Inject
     InMemoryMetricExporter metricExporter;
@@ -31,18 +26,8 @@ public class ExporterResource {
     @GET
     @Path("/reset")
     public Response reset() {
-        spanExporter.reset();
         metricExporter.reset();
         return Response.ok().build();
-    }
-
-    @GET
-    @Path("/export")
-    public List<SpanData> exportTraces() {
-        return spanExporter.getFinishedSpanItems()
-                .stream()
-                .filter(sd -> !sd.getName().contains("export") && !sd.getName().contains("reset"))
-                .collect(Collectors.toList());
     }
 
     @GET
@@ -52,15 +37,6 @@ public class ExporterResource {
                 metricExporter.getFinishedMetricItems().stream()
                         .filter(metricData -> name == null || metricData.getName().equals(name))
                         .collect(Collectors.toList())));
-    }
-
-    @ApplicationScoped
-    static class InMemorySpanExporterProducer {
-        @Produces
-        @Singleton
-        InMemorySpanExporter spanExporter() {
-            return InMemorySpanExporter.create();
-        }
     }
 
     @ApplicationScoped

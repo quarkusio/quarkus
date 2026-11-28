@@ -7,20 +7,30 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
 
-import java.util.List;
-import java.util.Map;
+import java.net.URI;
+import java.time.Duration;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 
 @QuarkusTest
 public class ObservationPrometheusTest {
 
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
+
     @BeforeEach
     void reset() {
-        given().get("/reset").then().statusCode(200);
+        spanExporter().reset();
     }
 
     @Test
@@ -31,9 +41,8 @@ public class ObservationPrometheusTest {
                 .statusCode(200)
                 .body(is("manual-result"));
 
-        List<Map<String, Object>> spans = getSpans(1);
-        Map<String, Object> span = findSpanByName(spans, "manual.operation");
-        assertThat(span).isNotNull();
+        SpanDataList spans = getSpans(1);
+        assertThat(spans.named("manual.operation")).hasSize(1);
 
         await().atMost(5, SECONDS).untilAsserted(() -> {
             String body = get("/q/metrics").then().extract().asString();
@@ -54,9 +63,8 @@ public class ObservationPrometheusTest {
                 .statusCode(200)
                 .body(is("observed-result"));
 
-        List<Map<String, Object>> spans = getSpans(1);
-        Map<String, Object> span = findSpanByName(spans, "ObservedService#doWork");
-        assertThat(span).isNotNull();
+        SpanDataList spans = getSpans(1);
+        assertThat(spans.named("ObservedService#doWork")).hasSize(1);
 
         await().atMost(5, SECONDS).untilAsserted(() -> {
             String body = get("/q/metrics").then().extract().asString();
@@ -72,20 +80,8 @@ public class ObservationPrometheusTest {
         });
     }
 
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> getSpans(int minCount) {
-        await().atMost(5, SECONDS).untilAsserted(() -> {
-            List<Map<String, Object>> result = get("/export").as(List.class);
-            assertThat(result).hasSizeGreaterThanOrEqualTo(minCount);
-        });
-        return get("/export").as(List.class);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> findSpanByName(List<Map<String, Object>> spans, String name) {
-        return spans.stream()
-                .filter(s -> name.equals(s.get("name")))
-                .findFirst()
-                .orElse(null);
+    private SpanDataList getSpans(int minCount) {
+        return spanExporter().awaitUntil("at least " + minCount + " spans", Duration.ofSeconds(5),
+                spans -> spans.size() >= minCount);
     }
 }

@@ -1,41 +1,43 @@
 package io.quarkus.it.opentelemetry;
 
+import static io.opentelemetry.api.common.AttributeKey.stringKey;
+import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
 import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
 import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ID;
 import static io.opentelemetry.semconv.incubating.UserIncubatingAttributes.USER_ROLES;
 import static io.quarkus.it.opentelemetry.AbstractEndUserTest.User.SCOTT;
 import static io.quarkus.it.opentelemetry.AbstractEndUserTest.User.STUART;
-import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
-import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 
-import org.awaitility.Awaitility;
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.restassured.common.mapper.TypeRef;
+import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.opentelemetry.SpanDataList;
+import io.quarkus.test.opentelemetry.SpanExporterClient;
 import io.restassured.response.ValidatableResponse;
 
 public abstract class AbstractEndUserTest {
 
+    @TestHTTPResource
+    URI applicationUri;
+
+    SpanExporterClient spanExporter() {
+        return SpanExporterClient.at(applicationUri);
+    }
+
     private static final String HTTP_PERM_AUGMENTOR_ROLE = "HTTP-PERM-AUGMENTOR";
-    private static final String END_USER_ID_ATTR = "attr_" + ENDUSER_ID.getKey();
-    private static final String END_USER_ROLE_ATTR = "attr_" + USER_ROLES.getKey();
     private static final String READER_ROLE = "READER";
     private static final String WRITER_ROLE = "WRITER";
     private static final String WRITER_HTTP_PERM_ROLE = "WRITER-HTTP-PERM";
@@ -52,8 +54,7 @@ public abstract class AbstractEndUserTest {
     @BeforeEach
     @AfterEach
     public void reset() {
-        given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, SECONDS).until(() -> getSpans().isEmpty());
+        spanExporter().reset();
     }
 
     @Test
@@ -68,7 +69,7 @@ public abstract class AbstractEndUserTest {
 
             var roles = getRolesAttribute(spanData);
             assertTrue(roles.contains(READER_ROLE));
-            assertFalse(roles.contains(WRITER_ROLE));
+            assertFalse(roles.toString().contains(WRITER_ROLE));
         } else {
             assertNoEndUserAttributes(spanData);
         }
@@ -86,7 +87,7 @@ public abstract class AbstractEndUserTest {
 
         var roles = getRolesAttribute(spanData);
         assertTrue(roles.contains(READER_ROLE));
-        assertFalse(roles.contains(WRITER_ROLE));
+        assertFalse(roles.toString().contains(WRITER_ROLE));
     }
 
     @Test
@@ -135,7 +136,7 @@ public abstract class AbstractEndUserTest {
         var roles = getRolesAttribute(spanData);
         assertTrue(roles.contains(AUGMENTOR_ROLE));
         assertTrue(roles.contains(READER_ROLE));
-        assertFalse(roles.contains(WRITER_ROLE));
+        assertFalse(roles.toString().contains(WRITER_ROLE));
     }
 
     @Test
@@ -172,7 +173,7 @@ public abstract class AbstractEndUserTest {
             var roles = getRolesAttribute(spanData);
             assertTrue(roles.contains(AUGMENTOR_ROLE));
             assertTrue(roles.contains(READER_ROLE));
-            assertFalse(roles.contains(WRITER_ROLE));
+            assertFalse(roles.toString().contains(WRITER_ROLE));
         } else {
             assertNoEndUserAttributes(spanData);
         }
@@ -233,8 +234,8 @@ public abstract class AbstractEndUserTest {
         var roles = getRolesAttribute(spanData);
         assertTrue(roles.contains(READER_ROLE));
         assertTrue(roles.contains(AUTH_FAILURE_ROLE));
-        assertFalse(roles.contains(WRITER_ROLE));
-        assertFalse(roles.contains(WRITER_HTTP_PERM_ROLE));
+        assertFalse(roles.toString().contains(WRITER_ROLE));
+        assertFalse(roles.toString().contains(WRITER_HTTP_PERM_ROLE));
     }
 
     @Test
@@ -301,7 +302,7 @@ public abstract class AbstractEndUserTest {
 
         var roles = getRolesAttribute(spanData);
         assertTrue(roles.contains(READER_ROLE));
-        assertFalse(roles.contains(WRITER_ROLE));
+        assertFalse(roles.toString().contains(WRITER_ROLE));
     }
 
     @Test
@@ -331,7 +332,7 @@ public abstract class AbstractEndUserTest {
 
         var roles = getRolesAttribute(spanData);
         assertTrue(roles.contains(READER_ROLE));
-        assertFalse(roles.contains(WRITER_ROLE));
+        assertFalse(roles.toString().contains(WRITER_ROLE));
     }
 
     @Test
@@ -345,17 +346,17 @@ public abstract class AbstractEndUserTest {
 
         var roles = getRolesAttribute(spanData);
         assertTrue(roles.contains(READER_ROLE));
-        assertFalse(roles.contains(WRITER_ROLE));
+        assertFalse(roles.toString().contains(WRITER_ROLE));
 
         // assert custom span also contains end user attributes
         spanData = waitForSpanWithPath("custom-path");
-        assertEquals("custom-value", spanData.get("attr_custom_attribute"), spanData.toString());
+        assertEquals("custom-value", spanData.getAttributes().get(stringKey("custom_attribute")), spanData.toString());
 
         assertEndUserId(SCOTT, spanData);
 
         roles = getRolesAttribute(spanData);
         assertTrue(roles.contains(READER_ROLE));
-        assertFalse(roles.contains(WRITER_ROLE));
+        assertFalse(roles.toString().contains(WRITER_ROLE));
     }
 
     protected abstract boolean isProactiveAuthEnabled();
@@ -376,17 +377,18 @@ public abstract class AbstractEndUserTest {
         }
     }
 
-    private static void assertEndUserId(User requestUser, Map<String, Object> spanData) {
-        assertEquals(requestUser.userName(), spanData.get(END_USER_ID_ATTR), spanData.toString());
+    private static void assertEndUserId(User requestUser, SpanData spanData) {
+        assertEquals(requestUser.userName(), spanData.getAttributes().get(ENDUSER_ID), spanData.toString());
     }
 
-    private static void assertNoEndUserAttributes(Map<String, Object> spanData) {
-        assertNull(spanData.get(END_USER_ID_ATTR), spanData.toString());
-        assertNull(spanData.get(END_USER_ROLE_ATTR), spanData.toString());
+    private static void assertNoEndUserAttributes(SpanData spanData) {
+        assertThat(spanData.getAttributes()).as("attributes of %s", spanData.getName())
+                .doesNotContainKey(ENDUSER_ID.getKey())
+                .doesNotContainKey(USER_ROLES.getKey());
     }
 
-    private static String getRolesAttribute(Map<String, Object> spanData) {
-        var roles = (String) spanData.get(END_USER_ROLE_ATTR);
+    private static List<String> getRolesAttribute(SpanData spanData) {
+        var roles = spanData.getAttributes().get(USER_ROLES);
         assertNotNull(roles, spanData.toString());
         return roles;
     }
@@ -403,35 +405,17 @@ public abstract class AbstractEndUserTest {
         return "/otel/enduser" + subPath;
     }
 
-    private static List<Map<String, Object>> getSpans() {
-        return get("/export").body().as(new TypeRef<>() {
-        });
-    }
-
-    private static Map<String, Object> getSpanByPath(final String path) {
-        return getSpans()
-                .stream()
-                .filter(m -> path.equals(m.get("attr_" + URL_PATH.getKey())))
-                .findFirst()
-                .orElse(Map.of());
-    }
-
-    private static Map<String, Object> waitForSpanWithSubPath(final String subPath) {
+    private SpanData waitForSpanWithSubPath(final String subPath) {
         return waitForSpanWithPath(createResourcePath(subPath));
     }
 
-    private static Map<String, Object> waitForSpanWithPath(final String path) {
-        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> !getSpanByPath(path).isEmpty(), new TypeSafeMatcher<>() {
-            @Override
-            protected boolean matchesSafely(Boolean aBoolean) {
-                return Boolean.TRUE.equals(aBoolean);
-            }
+    private SpanData waitForSpanWithPath(final String path) {
+        SpanDataList spans = spanExporter().awaitUntil("a span with the 'url.path' attribute " + path, Duration.ofSeconds(10),
+                s -> !withPath(s, path).isEmpty());
+        return withPath(spans, path).stream().findFirst().orElseThrow();
+    }
 
-            @Override
-            public void describeTo(Description description) {
-                description.appendText("Span with the 'url.path' attribute not found: " + path + " ; " + getSpans());
-            }
-        });
-        return getSpanByPath(path);
+    private static SpanDataList withPath(SpanDataList spans, String path) {
+        return spans.filter(span -> path.equals(span.getAttributes().get(URL_PATH)));
     }
 }

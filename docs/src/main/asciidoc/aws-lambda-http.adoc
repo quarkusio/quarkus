@@ -227,6 +227,13 @@ In general, client code will automatically handle this encoding, but in certain 
 you may need to manually manage that encoding.
 ====
 
+[NOTE]
+====
+xref:http-reference.adoc#http-compression[HTTP compression] (`quarkus.http.enable-compression`) works in deployed functions.
+The Lambda proxy response carries compressed bodies as Base64-encoded data.
+For Amazon API Gateway REST APIs (v1), configure `BinaryMediaTypes: "*/*"` as shown in the `sam.yaml` section below.
+====
+
 == Deploying a native executable
 
 To deploy a native executable, you must build it with GraalVM.

@@ -1,7 +1,7 @@
 package io.quarkus.it.virtual;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
@@ -47,7 +47,7 @@ public class HttpResponseMessageMock implements HttpResponseMessage {
     public static class HttpResponseMessageBuilderMock implements HttpResponseMessage.Builder {
         private Object body;
         private int httpStatusCode;
-        private Map<String, String> headers = new HashMap<>();
+        private Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         private HttpStatusType httpStatus;
 
         public Builder status(HttpStatus status) {

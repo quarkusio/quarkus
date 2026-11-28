@@ -3,6 +3,7 @@ package io.quarkus.data.hibernate.managed.reactive;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.data.restrict.Restriction;
 import jakarta.persistence.LockModeType;
 
 import io.quarkus.data.hibernate.reactive.ReactiveDataQuery;
@@ -104,5 +105,25 @@ public interface ReactiveManagedRepositoryQueries<Entity, Id> extends ReactiveRe
     @Override
     default Uni<Long> update(String query, Map<String, Object> params) {
         return operations().update(getEntityClass(), query, params);
+    }
+
+    @Override
+    default <T> ReactiveDataQuery<Entity> find(Restriction<T> restriction) {
+        return (ReactiveDataQuery<Entity>) operations().find(getEntityClass(), restriction);
+    }
+
+    @Override
+    default <T> Uni<List<Entity>> list(Restriction<T> restriction) {
+        return (Uni) operations().list(getEntityClass(), restriction);
+    }
+
+    @Override
+    default <T> Uni<Long> count(Restriction<T> restriction) {
+        return operations().count(getEntityClass(), restriction);
+    }
+
+    @Override
+    default <T> Uni<Long> delete(Restriction<T> restriction) {
+        return operations().delete(getEntityClass(), restriction);
     }
 }

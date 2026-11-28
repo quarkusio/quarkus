@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ForceNonWeakReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessMethodBuildItem;
@@ -32,6 +33,7 @@ class TreeShakeBuildItemRootsTest {
         TreeShakeBuildItemRoots.allModes(
                 List.of(ReflectiveClassBuildItem.builder("a.Strong").methods().build(),
                         ReflectiveClassBuildItem.builder("a.Weak").methods().weak().build()),
+                List.of(),
                 List.of(new ReflectiveFieldBuildItem("test", "a.FieldOwner", "f")),
                 List.of(new ReflectiveMethodBuildItem("test", "a.MethodOwner", "m")),
                 List.of(new JniRuntimeAccessBuildItem(true, true, true, "a.Jni")),
@@ -43,6 +45,20 @@ class TreeShakeBuildItemRootsTest {
         assertThat(roots).containsExactlyInAnyOrder(
                 "a.Strong", "a.FieldOwner", "a.MethodOwner", "a.Jni", "a.JniField", "a.JniMethod",
                 "a.Provider1", "a.Provider2");
+    }
+
+    @Test
+    void forcedNonWeakReflectiveClassesAreRoots() {
+        Set<String> roots = new HashSet<>();
+        TreeShakeBuildItemRoots.allModes(
+                List.of(ReflectiveClassBuildItem.builder("a.ForcedWeak", "a.Weak").methods().weak().build()),
+                // a forced class without a reflective registration isn't registered, so it isn't a root
+                List.of(new ForceNonWeakReflectiveClassBuildItem("a.ForcedWeak"),
+                        new ForceNonWeakReflectiveClassBuildItem("a.ForcedUnregistered")),
+                List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
+                item -> roots.add(item.getClassName()));
+
+        assertThat(roots).containsExactly("a.ForcedWeak");
     }
 
     @Test
@@ -77,7 +93,7 @@ class TreeShakeBuildItemRootsTest {
     void emptyInputsGiveNoRoots() {
         Set<String> roots = new HashSet<>();
         TreeShakeBuildItemRoots.allModes(List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
-                item -> roots.add(item.getClassName()));
+                List.of(), item -> roots.add(item.getClassName()));
         TreeShakeBuildItemRoots.nativeOnly(List.of(), List.of(), List.of(), List.of(), List.of(),
                 item -> roots.add(item.getClassName()));
         assertThat(roots).isEmpty();

@@ -1,10 +1,13 @@
 package io.quarkus.deployment.pkg.steps;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ForceNonWeakReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessMethodBuildItem;
@@ -30,12 +33,14 @@ final class TreeShakeBuildItemRoots {
     /**
      * Roots from build items describing dynamic access performed at runtime in any build mode:
      * reflection, JNI and service providers. Weak reflective class registrations are not roots,
-     * since they only apply if the class is reachable anyway.
+     * since they only apply if the class is reachable anyway, unless a {@link ForceNonWeakReflectiveClassBuildItem}
+     * makes them unconditional.
      *
      * @param roots receives the root classes, possibly more than once
      */
     static void allModes(
             List<ReflectiveClassBuildItem> reflectiveClasses,
+            List<ForceNonWeakReflectiveClassBuildItem> forcedNonWeakClasses,
             List<ReflectiveFieldBuildItem> reflectiveFields,
             List<ReflectiveMethodBuildItem> reflectiveMethods,
             List<JniRuntimeAccessBuildItem> jniClasses,
@@ -43,10 +48,17 @@ final class TreeShakeBuildItemRoots {
             List<JniRuntimeAccessMethodBuildItem> jniMethods,
             List<ServiceProviderBuildItem> serviceProviderItems,
             BuildProducer<JarTreeShakeRootClassBuildItem> roots) {
+        final Set<String> forcedNonWeakClassNames = forcedNonWeakClassNames(forcedNonWeakClasses);
         for (ReflectiveClassBuildItem item : reflectiveClasses) {
             if (!item.isWeak()) {
                 for (String className : item.getClassNames()) {
                     roots.produce(new JarTreeShakeRootClassBuildItem(className));
+                }
+            } else if (!forcedNonWeakClassNames.isEmpty()) {
+                for (String className : item.getClassNames()) {
+                    if (forcedNonWeakClassNames.contains(className)) {
+                        roots.produce(new JarTreeShakeRootClassBuildItem(className));
+                    }
                 }
             }
         }
@@ -72,6 +84,20 @@ final class TreeShakeBuildItemRoots {
                 roots.produce(new JarTreeShakeRootClassBuildItem(className));
             }
         }
+    }
+
+    /**
+     * Names of the classes whose weak reflective registrations are forced to be unconditional.
+     */
+    private static Set<String> forcedNonWeakClassNames(List<ForceNonWeakReflectiveClassBuildItem> items) {
+        if (items.isEmpty()) {
+            return Set.of();
+        }
+        final Set<String> names = new HashSet<>(items.size());
+        for (ForceNonWeakReflectiveClassBuildItem item : items) {
+            names.add(item.getClassName());
+        }
+        return names;
     }
 
     /**

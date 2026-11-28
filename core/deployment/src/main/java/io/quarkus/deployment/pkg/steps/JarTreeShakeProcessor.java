@@ -14,6 +14,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ForceNonWeakReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessMethodBuildItem;
@@ -146,6 +147,7 @@ public class JarTreeShakeProcessor {
     @BuildStep
     void collectReflectionRoots(
             List<ReflectiveClassBuildItem> reflectiveClasses,
+            List<ForceNonWeakReflectiveClassBuildItem> forcedNonWeakClasses,
             List<ReflectiveFieldBuildItem> reflectiveFields,
             List<ReflectiveMethodBuildItem> reflectiveMethods,
             List<JniRuntimeAccessBuildItem> jniClasses,
@@ -153,7 +155,7 @@ public class JarTreeShakeProcessor {
             List<JniRuntimeAccessMethodBuildItem> jniMethods,
             List<ServiceProviderBuildItem> serviceProviderItems,
             BuildProducer<JarTreeShakeRootClassBuildItem> roots) {
-        TreeShakeBuildItemRoots.allModes(reflectiveClasses, reflectiveFields, reflectiveMethods,
+        TreeShakeBuildItemRoots.allModes(reflectiveClasses, forcedNonWeakClasses, reflectiveFields, reflectiveMethods,
                 jniClasses, jniFields, jniMethods, serviceProviderItems, roots);
     }
 

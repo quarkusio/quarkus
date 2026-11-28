@@ -417,6 +417,25 @@ include::{includes}/devtools/build-native.adoc[]
 
 WARNING: It's the responsibility of the deployer to clear/remove the previous state, i.e. stale jobs and triggers. Moreover, the applications that form the "Quartz cluster" should be identical, otherwise an unpredictable result may occur.
 
+[[quartz-remove-orphaned-jobs]]
+== Removing orphaned jobs
+
+When a JDBC store is used, the job and the trigger of a scheduled method are stored under the identity of the method.
+If you remove the method, or change its identity, they remain in the database, and a warning is logged every time the trigger fires.
+
+You can let the scheduler remove these jobs and their triggers when it starts:
+
+[source,properties]
+----
+quarkus.quartz.remove-orphaned-jobs=true
+----
+
+Only the jobs that Quarkus created for `@Scheduled` methods are removed.
+Jobs scheduled programmatically with `Scheduler#newJob()`, and jobs scheduled directly with an injected `org.quartz.Scheduler`, are kept.
+
+WARNING: In a Quartz cluster, each node removes the orphaned jobs when it starts.
+During a rolling update, the nodes running the new version of the application remove the jobs of the scheduled methods that only exist in the previous version.
+
 [[quartz-configure-instance-id]]
 == Configuring the Instance ID
 

@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using Hibernate Reactive
 include::_attributes.adoc[]
 :config-file: application.properties
-:reactive-doc-url-prefix: https://hibernate.org/reactive/documentation/1.1/reference/html_single/#getting-started
 :extension-status: preview
 :topics: data,hibernate-reactive,sql
 :extensions: io.quarkus:quarkus-hibernate-reactive-panache,io.quarkus:quarkus-hibernate-reactive
@@ -19,24 +18,24 @@ and a reactive style of interaction with the database.
 Hibernate Reactive is not a replacement for xref:hibernate-orm.adoc[Hibernate ORM] or the future of Hibernate ORM.
 It is a different stack tailored for reactive use cases where you need high-concurrency.
 
-Also, using Quarkus REST (formerly RESTEasy Reactive), our default REST layer, does not require the use of Hibernate Reactive.
+Also, using Quarkus REST (formerly RESTEasy Reactive), the default REST layer, does not require the use of Hibernate Reactive.
 It is perfectly valid to use Quarkus REST with Hibernate ORM,
-and if you do not need high-concurrency, or are not accustomed to the reactive paradigm, it is recommended to use Hibernate ORM.
+and if you do not need high-concurrency, or are not accustomed to the reactive paradigm, Hibernate ORM is the preferred choice.
 ====
 
 [NOTE]
 ====
 Hibernate Reactive works with the same annotations and most of the configuration described in the
-xref:hibernate-orm.adoc[Hibernate ORM guide]. This guide will only focus on what's specific
-for Hibernate Reactive.
+xref:hibernate-orm.adoc[Hibernate ORM guide].
+This guide focuses only on what is specific to Hibernate Reactive.
 ====
 
 include::{includes}/extension-status.adoc[]
 
 == Solution
 
-We recommend that you follow the instructions in the next sections and create the application step by step.
-However, you can go right to the completed example.
+The preferred approach is to follow the instructions in the next sections and create the application step by step.
+Alternatively, you can skip to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
@@ -57,7 +56,7 @@ Add the following dependencies to your project:
 * the Hibernate Reactive extension: `io.quarkus:quarkus-hibernate-reactive`
 * the xref:reactive-sql-clients.adoc[Reactive SQL client extension] for the database of your choice; the following options are available:
   - `quarkus-reactive-pg-client`: link:https://vertx.io/docs/vertx-pg-client/java[the client for PostgreSQL or CockroachDB]
-  - `quarkus-reactive-mysql-client`: link:https://vertx.io/docs/vertx-mysql-client/java[the client MySQL or MariaDB]
+  - `quarkus-reactive-mysql-client`: link:https://vertx.io/docs/vertx-mysql-client/java[the client for MySQL or MariaDB]
   - `quarkus-reactive-mssql-client`: link:https://vertx.io/docs/vertx-mssql-client/java[the client for Microsoft SQL Server]
   - `quarkus-reactive-db2-client`: link:https://vertx.io/docs/vertx-db2-client/java[the client for IBM Db2]
   - `quarkus-reactive-oracle-client`: link:https://vertx.io/docs/vertx-oracle-client/java[the client for Oracle]
@@ -86,7 +85,7 @@ For instance:
 // Hibernate Reactive dependency
 implementation("io.quarkus:quarkus-hibernate-reactive")
 
-Reactive SQL client for PostgreSQL
+// Reactive SQL client for PostgreSQL
 implementation("io.quarkus:quarkus-reactive-pg-client")
 ----
 
@@ -103,12 +102,13 @@ quarkus.datasource.db-kind = postgresql <1>
 %prod.quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test <2>
 %prod.quarkus.hibernate-orm.schema-management.strategy=create <3>
 ----
-<1> xref:datasource.adoc[Configure the datasource] for production, relying on xref:datasource#dev-services[Dev Services] for connection information in tests / dev mode.
+<1> xref:datasource.adoc[Configure the data source] for production.
+In dev mode and tests, xref:datasource.adoc#dev-services[Dev Services] supply the connection information.
 <2> The only different property from a Hibernate ORM configuration
 <3> Configure Hibernate ORM to create the schema on startup in production, which is useful for experimentation, but rely on xref:hibernate-orm.adoc#dev-mode[convenient defaults in tests / dev mode].
 
-Note that these configuration properties are not the same ones as in your typical Hibernate Reactive configuration file.
-They will often map to Hibernate Reactive configuration properties but could have different names and don't necessarily map 1:1 to each other.
+Quarkus configuration properties differ from the properties in a standalone Hibernate Reactive configuration.
+Many Quarkus properties correspond to Hibernate Reactive properties, but names can differ and the mapping is not always one-to-one.
 
 Blocking (non-reactive) and reactive configuration xref:orm-and-reactive-extension-simultaneously[can be mixed together in the same project].
 
@@ -116,9 +116,9 @@ WARNING: Configuring Hibernate Reactive using the standard `persistence.xml` con
 
 See section <<configuration-reference>> for the list of properties you can set in `{config-file}`.
 
-A `Mutiny.SessionFactory` will be created based on the Quarkus `datasource` configuration as long as the Hibernate Reactive extension is listed among your project dependencies.
+When your project includes the Hibernate Reactive extension, Quarkus uses the data source configuration to create a `Mutiny.SessionFactory`.
 
-The dialect will be selected based on the Reactive SQL client - unless you set one explicitly.
+Unless you specify a dialect, Quarkus selects one based on the reactive SQL client.
 
 NOTE: For more information on dialect selection and database versions,
 see xref:hibernate-orm.adoc#hibernate-dialect[the corresponding section of the Hibernate ORM guide].
@@ -144,7 +144,7 @@ public class SantaClausService {
 <1> Inject the reactive session directly
 <2> Use `@Transactional` for write operations such as `persist()`
 
-WARNING: Make sure to wrap methods modifying your database (e.g. `session.persist(entity)`) within a transaction.
+WARNING: Wrap methods that modify your database, such as `session.persist(entity)`, within a transaction.
 
 [source,java]
 .Example of an Entity
@@ -189,9 +189,10 @@ in particular about `schema.sql`, which is only executed when Hibernate Reactive
 You can use the standard `jakarta.transaction.Transactional` annotation with Hibernate Reactive.
 This provides a more familiar programming model for developers coming from Hibernate ORM.
 
-While defining transaction handling using the annotation, you should inject `Mutiny.Session` or `Mutiny.StatelessSession` using CDI and use them in methods annotated with `@Transactional`.
+Inject a `Mutiny.Session` or `Mutiny.StatelessSession` using CDI.
+Use the injected session in methods annotated with `@Transactional`.
 
-Here's an example showing how to use `@Transactional` in a REST resource:
+The following example shows how to use `@Transactional` in a REST resource:
 
 [source,java]
 .Example REST resource using @Transactional
@@ -204,12 +205,13 @@ public class FruitResource {
 
     @GET
     @Path("/{id}")
+    @Transactional <2>
     public Uni<Fruit> getFruit(Long id) {
         return session.find(Fruit.class, id);
     }
 
     @POST
-    @Transactional <2>
+    @Transactional <3>
     public Uni<Fruit> createFruit(Fruit fruit) {
         return session.persist(fruit)
                 .chain(() -> session.find(Fruit.class, fruit.getId()));
@@ -217,7 +219,7 @@ public class FruitResource {
 
     @PUT
     @Path("/{id}")
-    @Transactional <3>
+    @Transactional <4>
     public Uni<Fruit> updateFruit(Long id, @QueryParam("name") String newName) {
         return session.find(Fruit.class, id)
                 .map(fruit -> {
@@ -229,8 +231,10 @@ public class FruitResource {
 }
 ----
 <1> Inject the reactive session directly
-<2> Use `@Transactional` for persist operations - creates new entities in the database
-<3> Use `@Transactional` for update operations - modifies existing entities
+<2> Use `@Transactional` for reads as well as writes when you inject `Mutiny.Session`.
+The annotation opens the session needed for the read.
+<3> Use `@Transactional` on the method that persists a new entity.
+<4> Use `@Transactional` on the method that updates an existing entity.
 
 The `@Transactional` interceptor will:
 
@@ -242,7 +246,11 @@ The `@Transactional` interceptor will:
 
 [IMPORTANT]
 ====
-There are some limitations when using `@Transactional` with Hibernate Reactive, in particular not being able to use a specific `TxType`, not being able to use multiple persistence units / datasources, or non-functional `Uni.combine()`/`Uni.joining()`.
+The following limitations apply when you use `@Transactional` with Hibernate Reactive.
+
+* Use only `Transactional.TxType.REQUIRED`.
+* Use only one persistence unit or data source per transaction.
+* Avoid combining calls to methods annotated with `@Transactional` using `Uni.combine()` or `Uni.join()`.
 
 See <<hr-limitations>> for more information.
 ====
@@ -253,7 +261,7 @@ See <<hr-limitations>> for more information.
 In addition to `Mutiny.Session`, Quarkus supports injecting Hibernate Reactive's link:{hibernate-orm-docs-url}#stateless-sessions[`Mutiny.StatelessSession`].
 
 Like its blocking counterpart, a stateless session does not maintain a first-level cache and does not perform automatic dirty checking.
-Entity changes are not persisted automatically: you must call `insert()`, `update()`, or `delete()` explicitly`.
+Entity changes are not persisted automatically: you must call `insert()`, `update()`, or `delete()` explicitly.
 
 Inject a `Mutiny.StatelessSession` and use it in methods annotated with `@Transactional`:
 
@@ -286,7 +294,7 @@ For more details on stateless sessions with Panache, see xref:quarkus-data-hiber
 There are various optional properties useful to refine your session factory or guide Quarkus' guesses.
 
 When no properties are set, Quarkus can typically infer everything it needs to set up Hibernate Reactive
-and will have it use the default datasource.
+and will have it use the default data source.
 
 The configuration properties listed here allow you to override such defaults, and customize and tune various aspects.
 
@@ -301,7 +309,8 @@ This is useful if your app normally uses Hibernate ORM (which is blocking), but 
 
 By adding the second extension, you can use the reactive API in another part of your code - without needing to create a separate app.
 
-NOTE: Hibernate ORM and Hibernate Reactive won't share the same persistence context, so it's recommended you stick to one or the other in a given method. For example use Hibernate ORM in blocking REST endpoints, and use Hibernate Reactive in reactive REST endpoints.
+NOTE: Hibernate ORM and Hibernate Reactive do not share the same persistence context, so using one or the other in a given method is preferred.
+For example, use Hibernate ORM in blocking REST endpoints and Hibernate Reactive in reactive REST endpoints.
 
 * To use both extensions simultaneously, add both extensions to the `pom.xml` file:
 +
@@ -329,21 +338,23 @@ NOTE: Hibernate ORM and Hibernate Reactive won't share the same persistence cont
 ----
 
 * Also update the `application.properties` file:
++
 [source,properties]
 ----
-%prod.quarkus.datasource.reactive.url=postgresql:///your_database
+%prod.quarkus.datasource.reactive.url=postgresql:///hibernate_orm_test
 %prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/hibernate_orm_test
 ----
 
-* The presence of the JDBC driver will enable Hibernate ORM. If you want to disable it, and only use Hibernate Reactive, you can use:
+* In this setup, the JDBC driver enables blocking Hibernate ORM.
+If you want to disable it and only use Hibernate Reactive, you can use:
 +
 [source,properties]
 ----
 quarkus.hibernate-orm.jdbc.enabled=false
 ----
 
-Quarkus will set many Hibernate Reactive configuration settings automatically, and will often use more modern defaults.
-
+Quarkus configures many Hibernate Reactive settings automatically.
+The defaults can differ from those of standalone Hibernate Reactive.
 
 [[hr-cdi-integration]]
 ==== CDI integration
@@ -370,7 +381,7 @@ Mutiny.SessionFactory sessionFactory;
 [[persistence-unit-active]]
 === Activate/deactivate persistence units
 
-When a persistence unit is configured at build time, and it is assigned entity types or an xref:datasource.adoc#datasource-active[active datasource], the persistence unit is active by default.
+When a persistence unit is configured at build time, and it is assigned entity types or an xref:datasource.adoc#datasource-active[active data source], the persistence unit is active by default.
 Quarkus starts the corresponding Hibernate Reactive `SessionFactory` when the application starts.
 
 To deactivate a persistence unit at runtime, see xref:hibernate-orm.adoc#persistence-unit-active[the corresponding section of the Hibernate ORM guide].
@@ -411,9 +422,10 @@ Two components are necessary to write these tests:
 * The use of `@io.quarkus.test.vertx.RunOnVertxContext` or `@io.quarkus.test.TestReactiveTransaction` on the test methods
 * The use of `io.quarkus.test.vertx.UniAsserter` as a test method parameter.
 
-IMPORTANT: These classes are provided by the `quarkus-test-vertx` dependency.
+IMPORTANT: `@RunOnVertxContext` and `UniAsserter` are provided by the `quarkus-test-vertx` dependency.
+`@TestReactiveTransaction` is applied by an interceptor of the `quarkus-hibernate-reactive-panache` extension, so it requires that extension in addition.
 
-A very simple example usage looks like:
+The following example shows a query assertion in a Hibernate Reactive test.
 
 [source,java]
 ----
@@ -438,7 +450,9 @@ NOTE: See the Javadoc of `UniAsserter` for a full description of the various met
 
 [TIP]
 ====
-You can also extend the `io.quarkus.test.vertx.UniAsserterInterceptor` to wrap the injected `UniAsserter` and customize the default behavior. For example, the interceptor can be used to execute the assert methods within a separate database transaction.:
+You can also extend the `io.quarkus.test.vertx.UniAsserterInterceptor` to wrap the injected `UniAsserter` and customize the default behavior.
+For example, use the interceptor to run the operations under test in separate database transactions.
+The following example uses `Panache.withTransaction` and a Panache entity, so it requires the `quarkus-hibernate-reactive-panache` dependency:
 
 [source,java]
 ----
@@ -469,8 +483,8 @@ public class SomeTest {
 
 In a similar fashion to Hibernate ORM, Hibernate Reactive supports multiple persistence units.
 
-You can define multiple persistence units and datasources, and they can mix blocking and reactive datasources.
-To ensure that a datasource supports reactive, you need to set the `reactive` property to `true`.
+You can define multiple persistence units and data sources, and they can mix blocking and reactive data sources.
+A data source supports reactive when its `reactive` property is `true`, which is the default.
 
 [source,properties]
 .Example `{config-file}`
@@ -489,14 +503,14 @@ quarkus.hibernate-orm."users".datasource=users <3>
 quarkus.hibernate-orm."users".packages=io.quarkus.hibernate.reactive.multiplepersistenceunits.model.config.user
 
 quarkus.hibernate-orm."inventory".datasource=inventory <4>
-quarkus.hibernate-orm."inventory".packages=io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory
+quarkus.hibernate-orm."inventory".packages=io.quarkus.hibernate.reactive.multiplepersistenceunits.model.config.inventory
 ----
-<1> Define a reactive datasource named `users`.
-<2> Define a reactive datasource named `inventory`.
-<3> Define a persistence unit named `users` and specify the datasource.
-<4> Define a persistence unit named `inventory` and specify the datasource.
+<1> Define a reactive data source named `users`.
+<2> Define a reactive data source named `inventory`.
+<3> Define a persistence unit named `users` and specify the data source.
+<4> Define a persistence unit named `inventory` and specify the data source.
 
-When using named persistence units, you must set the `datasource` property to the name of the corresponding datasource.
+When using named persistence units, you must set the `datasource` property to the name of the corresponding data source.
 
 [[hr-limitations]]
 == Limitations and other things you should know
@@ -504,16 +518,12 @@ When using named persistence units, you must set the `datasource` property to th
 Quarkus does not modify the libraries it uses; this rule applies to Hibernate Reactive as well: when using
 this extension you will mostly have the same experience as using the original library.
 
-But while they share the same code, Quarkus does configure some components automatically and inject custom implementations
-for some extension points; this should be transparent and useful but if you're an expert of Hibernate Reactive you might want to
-know what is being done.
+Quarkus configures some Hibernate Reactive components automatically and injects custom implementations for some extension points.
+These customizations usually require no action from you, but they can matter if you use Hibernate Reactive extension points directly.
 
 === General limitations
 
 * Hibernate Reactive is not configurable via a `persistence.xml` file.
-* This extension only considers the default persistence unit at the moment:
-it's not possible to configure multiple persistence units,
-or even a single named persistence unit.
 * This extension does not support xref:hibernate-orm.adoc#database-approach[database-based multitenancy]
 or xref:hibernate-orm.adoc#schema-approach[schema-based multitenancy] at the moment.
 xref:hibernate-orm.adoc#discriminator-approach[Discriminator-based multitenancy], on the other hand, is expected to work correctly.
@@ -529,29 +539,36 @@ With the introduction of the `quarkus-reactive-transactions` extension, you now 
 
 You must choose one approach and use it consistently throughout your application.
 Mixing both transaction management styles in the same reactive pipeline is not supported and will result in an `UnsupportedOperationException`.
-In the future, we'll deprecate the previous annotations provided by Panache and support only `@Transactional`.
+In the future, the previous annotations provided by Panache will be deprecated in favor of `@Transactional`.
 
 You can inject either `Mutiny.Session` or `Mutiny.StatelessSession`.
-Mixing both session types in the same transaction should work, but should be reserved for exotic use cases implemented by advanced users, as the (stateful) session will not be aware of changes operated through the stateless session, which could thus conflict or be silently erased by (stateful) session writes.
+You can mix both session types in the same transaction in some cases, but do so only if you can account for how the session types handle changes.
+A stateful session is unaware of changes made through a stateless session.
+Writes from the stateful session can conflict with or overwrite those changes.
 
 [[transactional-different-pipelines]]
 === Using Declarative Transaction Management in different reactive pipelines
 
-When using declarative transaction management with Vert.x context-based interceptors (`@Transactional`, `@WithTransaction`, `@WithSession`, `@WithSessionOnDemand`) in multiple methods and combining such methods with either `Uni.combine().all().unis()` or `Uni.join().all()` the same transaction might be shared by different reactive pipelines causing unpredictable behavior.
+When using declarative transaction management with Vert.x context-based interceptors (`@Transactional`, `@WithTransaction`, `@WithSession`, `@WithSessionOnDemand`) in multiple methods and combining such methods with either `Uni.combine().all().unis()` or `Uni.join().all()`, the same transaction might be shared by different reactive pipelines, causing unpredictable behavior.
 
 For this reason, **avoid using declarative transactional management with those methods**.
 
 [[transactional-others]]
 === Other Declarative Transactional Management limitations
 
-Reactive transactions do not use `TransactionManager`, thus they are local only and do not support XA transactions. Every parameter defined on the `TransactionManager` (such as `quarkus.transaction-manager.default-transaction-timeout`) will be ignored. Only a single datasource can participate in a transaction.
+Reactive transactions do not use `TransactionManager`.
+They are local transactions and do not support XA.
+`TransactionManager` settings such as `quarkus.transaction-manager.default-transaction-timeout` do not apply to reactive transactions.
+Only a single data source can participate in a transaction.
+A transaction managed with `@Transactional` can therefore use the sessions of only one persistence unit, even though the application can define several persistence units.
 
 Reactive transactions also work exclusively within the reactive pipeline.
-If blocking code is executed (for example on a worker thread) as part of that pipeline, it will not be able to participate in the transaction.
+If you run blocking code as part of that pipeline, for example on a worker thread, it cannot participate in the transaction.
 
 Declarative reactive transactions with `@Transactional` can only be applied to methods returning `Uni`, not `Multi`, `CompletionStage`, or `CompletableFuture`.
 
-Currently, only `Transactional.TxType.REQUIRED` is supported with reactive transactions. Other transaction types (`REQUIRES_NEW`, `MANDATORY`, etc.) will throw an `UnsupportedOperationException`.
+Currently, only `Transactional.TxType.REQUIRED` is supported with reactive transactions.
+Other transaction types (`REQUIRES_NEW`, `MANDATORY`, etc.) will throw an `UnsupportedOperationException`.
 
 == Simplifying Hibernate Reactive with Panache
 
@@ -560,17 +577,17 @@ by providing active record style entities (and repositories) and focuses on maki
 
 == Validation modes and Hibernate Validator integration
 
-To find out more on how the <<quarkus-hibernate-orm_quarkus-hibernate-orm-validation-mode,`quarkus.hibernate-orm.validation.mode` configuration property>>.
-influence your Hibernate Reactive application see the xref:hibernate-orm.adoc#validator_integration[corresponding Hibernate ORM guide],
-as these modes work the same in both cases.
+The <<quarkus-hibernate-orm_quarkus-hibernate-orm-validation-mode,`quarkus.hibernate-orm.validation.mode` configuration property>> works the same way in Hibernate Reactive and Hibernate ORM.
+For details, see the xref:hibernate-orm.adoc#validator_integration[Hibernate ORM guide].
 
 [[configuration-reference]]
 == Configuration Reference for Hibernate Reactive
 
 [TIP]
 ====
-You will notice that some properties
-contain "jdbc" in their name: this is because Hibernate ORM refers to its "data access" layer as "JDBC" for historical reasons. Hibernate Reactive uses Vert.x Reactive SQL clients for its data access layer rather than JDBC.
+Some configuration property names contain the lowercase segment `jdbc`.
+This is because Hibernate ORM refers to its "data access" layer as "JDBC" for historical reasons.
+Hibernate Reactive uses Vert.x Reactive SQL clients for its data access layer rather than JDBC.
 
 Regardless of their name, these properties still make sense for Hibernate Reactive.
 ====

@@ -31,6 +31,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.deployment.dev.devservices.ContainerInfo;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
+import io.quarkus.deployment.dev.devservices.PortBindings;
 import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
@@ -186,7 +187,8 @@ class ObservabilityDevServiceProcessor {
         if (!composeContainers.isEmpty()) {
             RunningContainer r = composeContainers.get(0);
             Map<String, String> cfg = new LinkedHashMap<>();
-            for (ContainerInfo.ContainerPort port : r.containerInfo().exposedPorts()) {
+            // one binding per private port, IPv4 and IPv6 may be published on different host ports
+            for (ContainerInfo.ContainerPort port : PortBindings.selectBindings(r.containerInfo().exposedPorts())) {
                 cfg.putAll(dev.config(port.privatePort(),
                         DockerClientFactory.instance().dockerHostIpAddress(),
                         port.publicPort()));

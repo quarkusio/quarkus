@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -16,6 +15,7 @@ import com.github.dockerjava.api.model.ContainerNetwork;
 import com.github.dockerjava.api.model.NetworkSettings;
 
 import io.quarkus.deployment.dev.devservices.ContainerInfo;
+import io.quarkus.deployment.dev.devservices.PortBindings;
 import io.quarkus.deployment.dev.devservices.RunningContainer;
 
 /**
@@ -169,14 +169,9 @@ public class ContainerUtil {
         // container port -> env var
         Map<Integer, String> mappings = envVarMappingHint.apply(containerInfo);
         if (mappings != null && !mappings.isEmpty()) {
-            mappings.forEach((containerPort, envVar) -> {
-                for (ContainerInfo.ContainerPort exposedPort : getExposedPorts(containerInfo)) {
-                    if (Objects.equals(exposedPort.privatePort(), containerPort)) {
-                        configs.put(envVar, String.valueOf(exposedPort.publicPort()));
-                        break;
-                    }
-                }
-            });
+            ContainerInfo.ContainerPort[] exposedPorts = getExposedPorts(containerInfo);
+            mappings.forEach((containerPort, envVar) -> PortBindings.selectBinding(exposedPorts, containerPort)
+                    .ifPresent(exposedPort -> configs.put(envVar, String.valueOf(exposedPort.publicPort()))));
         }
         return configs;
     }

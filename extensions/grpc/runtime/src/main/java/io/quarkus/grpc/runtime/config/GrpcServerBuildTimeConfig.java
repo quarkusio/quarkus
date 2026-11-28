@@ -10,6 +10,16 @@ import io.smallrye.config.WithName;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface GrpcServerBuildTimeConfig {
     /**
+     * Whether the gRPC server is enabled.
+     * <p>
+     * When disabled, no gRPC server is started and no gRPC server-related beans or health checks are registered, even
+     * if the application contains {@code @GrpcService} beans. This is useful for applications that only use gRPC
+     * clients.
+     */
+    @WithDefault("true")
+    boolean enabled();
+
+    /**
      * Whether a health check on gRPC status is published in case the smallrye-health extension is present.
      */
     @WithName("health.enabled")

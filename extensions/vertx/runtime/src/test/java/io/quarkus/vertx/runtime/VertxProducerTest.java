@@ -30,7 +30,7 @@ public class VertxProducerTest {
 
     @Test
     public void shouldNotFailWithoutConfig() {
-        verifyProducer(VertxCoreRecorder.initialize(null, null, null, null, LaunchMode.TEST, null, List.of()));
+        verifyProducer(VertxCoreRecorder.initialize(null, null, null, LaunchMode.TEST, null, List.of()));
     }
 
     private void verifyProducer(Vertx v) {

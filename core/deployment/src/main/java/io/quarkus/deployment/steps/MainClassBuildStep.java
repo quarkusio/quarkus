@@ -615,13 +615,6 @@ public class MainClassBuildStep {
                 mc.public_();
                 mc.body(b0 -> b0.return_(Const.of(applicationInfo.getName())));
             });
-
-            // hasStaticGraph method
-            file.method("hasStaticGraph", MethodTypeDesc.of(ConstantDescs.CD_boolean), mc -> {
-                mc.public_();
-                mc.final_();
-                mc.body(b0 -> b0.return_(b0.ne(b0.get(staticGraphField), Const.ofNull(CD_ServiceGraph))));
-            });
         });
     }
 

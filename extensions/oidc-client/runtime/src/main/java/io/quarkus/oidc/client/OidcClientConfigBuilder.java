@@ -29,6 +29,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
                 .with(OidcClientConfig::accessTokenExpiresIn, builder.accessTokenExpiresIn)
                 .with(OidcClientConfig::accessTokenExpirySkew, builder.accessTokenExpirySkew)
                 .with(OidcClientConfig::refreshTokenTimeSkew, builder.refreshTokenTimeSkew)
+                .with(OidcClientConfig::minRemainingAccessTokenLifespan, builder.minRemainingAccessTokenLifespan)
                 .with(OidcClientConfig::scopes, optionalListOf(builder.scopes))
                 .with(OidcClientConfig::audience, optionalListOf(builder.audience))
                 .with(OidcClientConfig::clientEnabled, builder.clientEnabled)
@@ -55,6 +56,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     private Optional<Duration> accessTokenExpiresIn;
     private Optional<Duration> accessTokenExpirySkew;
     private Optional<Duration> refreshTokenTimeSkew;
+    private Optional<Duration> minRemainingAccessTokenLifespan;
     private boolean clientEnabled;
     private Optional<String> id;
     private Optional<Duration> refreshInterval;
@@ -80,6 +82,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         this.accessTokenExpiresIn = config.accessTokenExpiresIn();
         this.accessTokenExpirySkew = config.accessTokenExpirySkew();
         this.refreshTokenTimeSkew = config.refreshTokenTimeSkew();
+        this.minRemainingAccessTokenLifespan = config.minRemainingAccessTokenLifespan();
         this.clientEnabled = config.clientEnabled();
         this.id = config.id();
         this.refreshInterval = config.refreshInterval();
@@ -200,6 +203,15 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
      */
     public OidcClientConfigBuilder refreshTokenTimeSkew(Duration refreshTokenTimeSkew) {
         this.refreshTokenTimeSkew = Optional.ofNullable(refreshTokenTimeSkew);
+        return this;
+    }
+
+    /**
+     * @param minRemainingAccessTokenLifespan {@link OidcClientConfig#minRemainingAccessTokenLifespan()}
+     * @return this builder
+     */
+    public OidcClientConfigBuilder minRemainingAccessTokenLifespan(Duration minRemainingAccessTokenLifespan) {
+        this.minRemainingAccessTokenLifespan = Optional.ofNullable(minRemainingAccessTokenLifespan);
         return this;
     }
 

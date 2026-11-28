@@ -1017,6 +1017,78 @@ Additionally, you can use the `quarkus.oidc-client.refresh-token-time-skew` prop
 
 For example, if this property is set to `3S` and the access token will expire in less than 3 seconds, the token is refreshed automatically.
 
+When such a preemptive refresh starts, the access token which is being refreshed has not expired yet.
+
+To allow such a token to be returned instead of making the requests wait for the token endpoint to reply, configure the `quarkus.oidc-client.min-remaining-access-token-lifespan` property, which sets how much of the access token lifespan must be left for it to still be returned while it is being refreshed. Its value must be less than `quarkus.oidc-client.refresh-token-time-skew`.
+The token is then refreshed in the background, and returned both to the request which starts the refresh and to the requests arriving until the refresh completes.
+If the background refresh fails, a warning is logged and the next request acquires new tokens.
+
+In two cases, the current token is not reused and the new token is awaited:
+
+* After the target service has rejected the current token with a 401 Unauthorized response, if `refresh-on-unauthorized` is enabled on the REST client OIDC filter. A rejected token would only be rejected again.
+* When the token is refreshed on a schedule with `quarkus.oidc-client.refresh-interval`. No request is waiting for this refresh, so it waits for the result to detect failures.
+
+If you use xref:#token-propagation-rest[token propagation] with `exchange-token` enabled, set `min-remaining-access-token-lifespan` on the OIDC client which exchanges the token to apply the same behavior to the exchanged tokens.
+
+Using both `quarkus.oidc-client.refresh-token-time-skew` and `quarkus.oidc-client.min-remaining-access-token-lifespan` can be recommended for high-throughput applications, to minimize the risk of latency spikes while requests wait for a token refresh to complete, while also finding an optimal refresh skew period so that the token is not refreshed too early, does not expire in transit, and remains valid while the target service uses it.
+
+Using `quarkus.oidc-client.min-remaining-access-token-lifespan` is only recommended after you have proven its effectiveness with your own application throughput measurement tests.
+
+For example, with `quarkus.oidc-client.refresh-token-time-skew=60S` the refresh starts while a minute of the access token lifespan is left, and `quarkus.oidc-client.min-remaining-access-token-lifespan=30S` returns that token while it is being refreshed for as long as at least 30 seconds of token duration are left.
+
+The following table shows when a request waits for the token endpoint to reply once `quarkus.oidc-client.min-remaining-access-token-lifespan` is configured:
+
+[cols="3,1,4"]
+|===
+|Case |Request waits |Reason
+
+|The token is valid and its refresh has not started yet
+|No
+|The token is returned from the cache.
+
+|The token has already been refreshed by the periodic refresh configured with `quarkus.oidc-client.refresh-interval`
+|No
+|The new token is returned from the cache.
+
+|The refresh starts and at least the minimum remaining lifespan of the token is left
+|No
+|The request which starts the refresh is returned the current token, and the token is refreshed in the background.
+
+|A refresh, started by a request or by the periodic refresh, is in progress and at least the minimum remaining lifespan of the token is left
+|No
+|The current token is returned until the refresh completes.
+
+|No token has been acquired yet
+|Yes
+|The tokens are not acquired at startup, for example, because `quarkus.oidc-client.early-tokens-acquisition` is disabled or the OIDC provider is not available at startup.
+
+|The previous refresh has failed
+|Yes
+|The failure discards the current tokens, even if the access token is still valid.
+
+|The access token has expired
+|Yes
+|An expired access token is never returned. Without the periodic refresh, this happens when no request has used the token during its refresh time skew.
+
+|Less than the minimum remaining lifespan of the token is left
+|Yes
+|For example, the refresh is still in progress because the OIDC provider is slow to reply, or the first request arrives late in the refresh time skew.
+
+|The target service has rejected the token with a 401 Unauthorized response and `refresh-on-unauthorized` is enabled
+|Yes
+|A rejected token would only be rejected again.
+
+|The periodic refresh has been cancelled after 10 consecutive failures
+|When the token duration left is less than `min-remaining-access-token-lifespan`
+|The requests refresh the tokens themselves, as if `quarkus.oidc-client.refresh-interval` was not configured.
+
+|The tokens are acquired with additional grant parameters, for example, by the token propagation filters when `exchange-token` is enabled
+|When the token duration left is less than `min-remaining-access-token-lifespan`
+|The periodic refresh only refreshes the tokens acquired without additional grant parameters, so the requests refresh these tokens themselves.
+|===
+
+When `quarkus.oidc-client.refresh-interval` is shorter than `quarkus.oidc-client.refresh-token-time-skew` and the OIDC provider is available, the tokens are usually refreshed before they expire, which reduces how often the requests wait for the token endpoint.
+
 By default, the OIDC client refreshes the token during the current request when it detects that the token has expired, or is nearly expired if the xref:#quarkus-oidc-client_quarkus-oidc-client-refresh-token-time-skew[refresh token time skew] is configured.
 Performance-critical applications might want to avoid waiting for a possible token refresh during incoming requests and configure an asynchronous token refresh instead.
 

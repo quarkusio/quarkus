@@ -293,8 +293,13 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
             if (disposition != null) {
                 if (disposition.startsWith("form-data")) {
                     currentName = HeaderUtil.extractQuotedValueFromHeader(disposition, "name");
-                    fileName = HeaderUtil.sanitizeFileName(
-                            HeaderUtil.extractQuotedValueFromHeaderWithEncoding(disposition, "filename"));
+                    try {
+                        fileName = HeaderUtil.sanitizeFileName(
+                                HeaderUtil.extractQuotedValueFromHeaderWithEncoding(disposition, "filename"));
+                    } catch (RuntimeException e) {
+                        // invalid filename* value, e.g. a bad percent-encoding or an unsupported charset
+                        throw new WebApplicationException(Response.Status.BAD_REQUEST);
+                    }
                     String contentType = headers.getFirst(HttpHeaders.CONTENT_TYPE);
                     filePart = (fileName != null) || isFileContentType(contentType) || fileFormNames.contains(currentName);
                     if (filePart && fileSizeThreshold == 0) {
@@ -385,7 +390,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
                         data.add(currentName, contentBytes.toString(charset), charset, headers);
                     } catch (UnsupportedEncodingException e) {
-                        throw new RuntimeException(e);
+                        throw new WebApplicationException(Response.Status.BAD_REQUEST);
                     }
                 } else {
                     data.add(currentName, Arrays.copyOf(contentBytes.toByteArray(), contentBytes.size()), null, headers);

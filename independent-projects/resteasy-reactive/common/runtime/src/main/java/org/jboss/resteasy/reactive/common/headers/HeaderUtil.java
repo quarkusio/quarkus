@@ -416,7 +416,7 @@ public class HeaderUtil {
 
         int end;
         int start = pos;
-        if (header.charAt(start) == '"') {
+        if (start < header.length() && header.charAt(start) == '"') {
             start++;
             for (end = start; end < header.length(); ++end) {
                 char c = header.charAt(end);

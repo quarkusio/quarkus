@@ -431,18 +431,20 @@ public class VertxHttpRecorder {
                         auxiliaryApplication);
                 if (launchMode != LaunchMode.DEVELOPMENT) {
                     shutdown.addShutdownTask(closeTask);
-                } else {
-                    shutdown.addShutdownTask(new Runnable() {
-                        @Override
-                        public void run() {
-                            VertxHttpHotReplacementSetup.handleDevModeRestart();
-                        }
-                    });
                 }
             } else if (valueRegistry != null) {
                 // A dev mode restart keeps the servers, so they do not bind again, but the restarted application has a
                 // new ValueRegistry: register the values of the server bindings in it
                 registerServerBindings(valueRegistry.getValue());
+            }
+            if (launchMode == LaunchMode.DEVELOPMENT) {
+                // the server is kept across restarts, but each application instance must be told when it is stopped
+                shutdown.addShutdownTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        VertxHttpHotReplacementSetup.handleDevModeRestart();
+                    }
+                });
             }
         }
     }

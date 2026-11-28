@@ -1,9 +1,12 @@
 package io.quarkus.deployment.steps;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 import io.quarkus.core.Phase;
+import io.quarkus.core.ServiceConfig;
+import io.quarkus.core.ServiceExecutorAccess;
 import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
@@ -23,8 +26,7 @@ public class ThreadPoolSetup {
     public ExecutorBuildItem createExecutor(ServiceRegistrar reg,
             LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode launchMode = launchModeBuildItem.getLaunchMode();
-        reg
-                .forService(ScheduledExecutorService.class)
+        reg.forService(ScheduledExecutorService.class)
                 .atPhase(Phase.INFRASTRUCTURE)
                 .require(ThreadPoolConfig.class)
                 .request(ThreadFactory.class)
@@ -38,6 +40,19 @@ public class ThreadPoolSetup {
                     ctx.onStop(() -> ExecutorRecorder.shutdownExecutor(config, launchMode));
                     return executor;
                 });
+
+        // this must be a separate service, so that executor shutdown does not happen from an executor thread
+        reg.forService("io.quarkus.core.parallel-services")
+                .atPhase(Phase.INFRASTRUCTURE)
+                .require(ServiceConfig.class)
+                .require(ScheduledExecutorService.class)
+                .onStart((ctx, config, executor) -> {
+                    if (config.parallel()) {
+                        Executor oldExecutor = ServiceExecutorAccess.setExecutor(ctx, executor);
+                        ctx.onStop(() -> ServiceExecutorAccess.setExecutor(ctx, oldExecutor));
+                    }
+                });
+
         return new ExecutorBuildItem(reg.getRecorderProxy(ScheduledExecutorService.class));
     }
 

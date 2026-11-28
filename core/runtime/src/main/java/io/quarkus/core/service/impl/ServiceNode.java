@@ -43,8 +43,10 @@ import io.smallrye.common.constraint.Assert;
  * and the action calls {@link #startComplete(Object)} or
  * {@link #startComplete()} to signal success. Completion triggers
  * {@link #dependencySatisfied()} on each dependent. When a
- * dependent's remaining count hits zero, it submits itself to the
- * executor.</li>
+ * dependent's remaining count hits zero, it is run: when the completion
+ * was signaled from the completing node's own action, the first such
+ * dependent runs on the same thread right after the action returns,
+ * the others are submitted to the executor.</li>
  * <li><b>Stop</b>: reverse wave-front. When a node's live-dependent count
  * reaches zero and it is in the {@code COMPLETED} state, it runs its
  * stop handler. Upon stop completion, it notifies each dependency via
@@ -206,7 +208,20 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
     private final ServiceGraph graph;
 
     /** Direct dependents. Built up during construction, used as-is during lifecycle. */
-    private final ArrayList<ServiceNode> dependents;
+    private volatile List<ServiceNode> dependents = new ArrayList<>();
+
+    /**
+     * The thread currently executing this node's action, or {@code null} outside of {@link #run()}.
+     * Only ever compared against the current thread: a completion signaled from this thread is synchronous and
+     * may continue with a ready dependent inline, any other thread must dispatch to the executor.
+     */
+    private Thread runningThread;
+
+    /**
+     * A dependent that became ready during a synchronous completion of this node, to be run on the same thread
+     * once the action returns, instead of being handed over to the executor.
+     */
+    private ServiceNode inlineNext;
 
     // ═══════════════════════════════════════════════
     // Packed lifecycle state (atomic via PACKED VarHandle)
@@ -342,11 +357,26 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
      */
     @Override
     public void run() {
+        ServiceNode node = this;
+        do {
+            node = node.runAction();
+        } while (node != null);
+    }
+
+    /**
+     * Run this node's action, and return the dependent that became ready while the action completed
+     * synchronously, if any, so that the calling thread continues with it instead of handing it over to the
+     * executor and parking: service graphs are mostly chains, and a handoff per node costs more than the nodes
+     * themselves. The other dependents that became ready are dispatched to the executor as usual.
+     *
+     * @return the next node to run on this thread, or {@code null}
+     */
+    private ServiceNode runAction() {
         // transition PENDING → RUNNING
         long old = (long) PACKED.getVolatile(this);
         for (;;) {
             if (stateOf(old) != S_PENDING) {
-                return; // canceled before execution
+                return null; // canceled before execution
             }
             long next = pack(S_RUNNING, remainingDepsOf(old), liveDependentsOf(old));
             long wit = (long) PACKED.compareAndExchange(this, old, next);
@@ -357,6 +387,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
         }
         LOG.tracef("Running service '%s'", displayKey(name));
         graph.monitor().startInitiated(name);
+        runningThread = Thread.currentThread();
         try {
             action.invokeExact(this);
         } catch (Throwable t) {
@@ -369,7 +400,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
                     if (s != S_COMPLETED && s != S_STOPPING && s != S_STOPPED) {
                         LOG.errorf(t, "Service '%s' threw after signaling %s", displayKey(name), stateName(s));
                     }
-                    return;
+                    return takeInlineNext();
                 }
                 long next = pack(S_FAILED, remainingDepsOf(old), liveDependentsOf(old));
                 long wit = (long) PACKED.compareAndExchange(this, old, next);
@@ -380,11 +411,19 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             }
             propagateFailure(t);
         } finally {
+            runningThread = null;
             // release the MethodHandle so it does not persist in the native
             // image heap, where it would make its target method (and all
             // transitive class references) reachable to GraalVM's analysis
             action = null;
         }
+        return takeInlineNext();
+    }
+
+    private ServiceNode takeInlineNext() {
+        ServiceNode next = inlineNext;
+        inlineNext = null;
+        return next;
     }
 
     /**
@@ -576,8 +615,16 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
      * Notify dependents that this dependency has been satisfied.
      */
     private void notifyDependentsSatisfied() {
+        // a completion signaled from the action itself may keep one ready dependent for the current thread
+        boolean synchronous = runningThread == Thread.currentThread();
         for (ServiceNode dep : dependents) {
-            dep.dependencySatisfied();
+            if (dep.dependencySatisfied()) {
+                if (synchronous && inlineNext == null) {
+                    inlineNext = dep;
+                } else {
+                    graph.execute(dep);
+                }
+            }
         }
     }
 
@@ -587,11 +634,12 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
 
     /**
      * Called by a dependency when it completes.
-     * Atomically decrements the remaining dependency count; if it reaches
-     * zero and the state is still {@code PENDING}, this node submits
-     * itself to the executor.
+     * Atomically decrements the remaining dependency count.
+     *
+     * @return {@code true} if the count reached zero while the node is still {@code PENDING}, in which case the
+     *         caller must run or dispatch this node
      */
-    void dependencySatisfied() {
+    boolean dependencySatisfied() {
         long old = (long) PACKED.getVolatile(this);
         long next;
         for (;;) {
@@ -602,9 +650,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             }
             old = wit;
         }
-        if (remainingDepsOf(next) == 0 && stateOf(next) == S_PENDING) {
-            graph.execute(this);
-        }
+        return remainingDepsOf(next) == 0 && stateOf(next) == S_PENDING;
     }
 
     // ═══════════════════════════════════════════════
@@ -670,9 +716,14 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             int ld = liveDependentsOf(old) - 1;
             int s = stateOf(old);
             long next;
-            if (ld == 0 && s == S_COMPLETED) {
-                // atomically decrement AND transition to STOPPING
-                next = pack(S_STOPPING, remainingDepsOf(old), 0);
+            if (ld == 0 && (s == S_COMPLETED || s == S_FAILED)) {
+                // atomically decrement AND transition to STOPPING/FAILED_STOPPING
+                int nextState = switch (s) {
+                    case S_COMPLETED -> S_STOPPING;
+                    case S_FAILED -> S_FAILED_STOPPING;
+                    default -> throw Assert.impossibleSwitchCase(s);
+                };
+                next = pack(nextState, remainingDepsOf(old), 0);
                 shouldStop = true;
             } else {
                 next = pack(s, remainingDepsOf(old), ld);
@@ -804,7 +855,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
         for (ServiceNode dep : dependencies) {
             dep.dependentTerminated();
         }
-        dependents.clear();
+        dependents = List.of();
     }
 
     // ═══════════════════════════════════════════════

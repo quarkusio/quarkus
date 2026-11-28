@@ -110,7 +110,8 @@ public abstract class CommonProcessor<C extends CommonConfig> {
             if (workingDirectory != null) {
                 metadata.put("working-directory", workingDirectory);
             }
-            metadata.put("output-directory", out.getOutputDirectory().toAbsolutePath().toString());
+            metadata.put(ArtifactResultBuildItem.METADATA_OUTPUT_DIRECTORY,
+                    out.getOutputDirectory().toAbsolutePath().toString());
             artifactResultProducer.produce(
                     new ArtifactResultBuildItem(
                             null,
@@ -243,7 +244,8 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                             Map.of(
                                     "container-image", builtContainerImage,
                                     "pull-required", "false",
-                                    "output-directory", out.getOutputDirectory().toAbsolutePath().toString())));
+                                    ArtifactResultBuildItem.METADATA_OUTPUT_DIRECTORY,
+                                    out.getOutputDirectory().toAbsolutePath().toString())));
 
             containerImageBuilder.produce(new ContainerImageBuilderBuildItem(getProcessorImplementation()));
         }

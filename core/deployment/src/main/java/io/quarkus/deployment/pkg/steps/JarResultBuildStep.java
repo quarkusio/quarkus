@@ -100,7 +100,7 @@ public class JarResultBuildStep {
     ArtifactResultBuildItem jarOutput(JarBuildItem jarBuildItem) {
         return new ArtifactResultBuildItem(jarBuildItem.getPath(), "jar",
                 jarBuildItem.getLibraryDir() == null ? Map.of()
-                        : Map.of("library-dir", jarBuildItem.getLibraryDir().toString()),
+                        : Map.of(ArtifactResultBuildItem.METADATA_LIBRARY_DIR, jarBuildItem.getLibraryDir().toString()),
                 jarBuildItem.getCoreSbomConfig());
     }
 

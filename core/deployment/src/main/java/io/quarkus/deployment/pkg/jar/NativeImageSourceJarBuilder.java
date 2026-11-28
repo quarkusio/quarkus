@@ -8,6 +8,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiPredicate;
@@ -45,6 +46,7 @@ public class NativeImageSourceJarBuilder extends AbstractLegacyThinJarBuilder<Na
             MainClassBuildItem mainClass,
             ApplicationArchivesBuildItem applicationArchives,
             TransformedClassesBuildItem transformedClasses,
+            Map<ArtifactKey, Set<String>> removedResources,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
@@ -54,8 +56,9 @@ public class NativeImageSourceJarBuilder extends AbstractLegacyThinJarBuilder<Na
             ResolvedJVMRequirements jvmRequirements,
             JarTreeShakeBuildItem treeShakeResult) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                augmentGeneratedClasses(generatedClasses, nativeImageResources), generatedResources, generatedServiceProviders,
-                augmentRemovedArtifactKeys(removedArtifactKeys), executorService, jvmRequirements, treeShakeResult);
+                removedResources, augmentGeneratedClasses(generatedClasses, nativeImageResources), generatedResources,
+                generatedServiceProviders, augmentRemovedArtifactKeys(removedArtifactKeys), executorService, jvmRequirements,
+                treeShakeResult);
     }
 
     public NativeImageSourceJarBuildItem build() throws IOException {

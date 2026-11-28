@@ -1,0 +1,1 @@
+This resource is used to test RemovedResourceBuildItem in jar packaging tests.

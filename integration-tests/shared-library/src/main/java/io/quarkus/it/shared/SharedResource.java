@@ -14,6 +14,21 @@ public class SharedResource {
         return "Shared Resource";
     }
 
+    @GET
+    @Path("/removed-resource")
+    public String removedResource() {
+        InputStream is = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream("io/quarkus/it/shared/shared-resource-for-removal-test.txt");
+        if (is == null) {
+            return "not found";
+        }
+        try (is) {
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
+        } catch (Exception e) {
+            return "error: " + e.getMessage();
+        }
+    }
+
     //https://github.com/quarkusio/quarkus/issues/17175
     @GET
     @Path("/classloading")

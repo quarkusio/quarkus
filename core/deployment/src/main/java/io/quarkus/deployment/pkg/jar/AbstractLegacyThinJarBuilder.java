@@ -47,6 +47,7 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             MainClassBuildItem mainClass,
             ApplicationArchivesBuildItem applicationArchives,
             TransformedClassesBuildItem transformedClasses,
+            Map<ArtifactKey, Set<String>> removedResources,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
@@ -55,8 +56,8 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
             ResolvedJVMRequirements jvmRequirements,
             JarTreeShakeBuildItem treeShakeResult) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, generatedServiceProviders, removedArtifactKeys, executorService,
-                jvmRequirements);
+                removedResources, generatedClasses, generatedResources, generatedServiceProviders, removedArtifactKeys,
+                executorService, jvmRequirements);
         this.treeShakeResult = treeShakeResult;
     }
 
@@ -74,8 +75,8 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
 
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
 
-            copyLibraryJars(archiveCreator, outputTarget, transformedClasses, libDir, classPath, appDeps, services,
-                    ignoredEntriesPredicate, removedArtifactKeys, treeShakeResult);
+            copyLibraryJars(archiveCreator, outputTarget, transformedClasses, removedResources, libDir, classPath, appDeps,
+                    services, ignoredEntriesPredicate, removedArtifactKeys, treeShakeResult);
 
             ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
             // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
@@ -93,10 +94,10 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
     }
 
     private static void copyLibraryJars(ArchiveCreator archiveCreator, OutputTargetBuildItem outputTargetBuildItem,
-            TransformedClassesBuildItem transformedClasses, Path libDir,
-            StringBuilder classPath, Collection<ResolvedDependency> appDeps, Map<String, List<byte[]>> services,
-            Predicate<String> ignoredEntriesPredicate, Set<ArtifactKey> removedDependencies,
-            JarTreeShakeBuildItem treeShakeResult) throws IOException {
+            TransformedClassesBuildItem transformedClasses, Map<ArtifactKey, Set<String>> removedResources,
+            Path libDir, StringBuilder classPath, Collection<ResolvedDependency> appDeps,
+            Map<String, List<byte[]>> services, Predicate<String> ignoredEntriesPredicate,
+            Set<ArtifactKey> removedDependencies, JarTreeShakeBuildItem treeShakeResult) throws IOException {
         for (ResolvedDependency appDep : appDeps) {
 
             // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
@@ -111,6 +112,10 @@ public abstract class AbstractLegacyThinJarBuilder<T extends BuildItem> extends 
                     Set<String> removedEntries = new HashSet<>();
                     if (transformedFromThisArchive != null && !transformedFromThisArchive.isEmpty()) {
                         removedEntries.addAll(transformedFromThisArchive);
+                    }
+                    Set<String> removedForArtifact = removedResources.get(appDep.getKey());
+                    if (removedForArtifact != null) {
+                        removedEntries.addAll(removedForArtifact);
                     }
                     if (treeShakeResult != null) {
                         treeShakeResult.collectUnreachableEntries(appDep, removedEntries);

@@ -81,6 +81,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             ApplicationArchivesBuildItem applicationArchives,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives,
             TransformedClassesBuildItem transformedClasses,
+            Map<ArtifactKey, Set<String>> removedResources,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
@@ -90,8 +91,8 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             ResolvedJVMRequirements jvmRequirements,
             JarTreeShakeBuildItem treeShakeResult) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, generatedServiceProviders, removedArtifactKeys, executorService,
-                jvmRequirements);
+                removedResources, generatedClasses, generatedResources, generatedServiceProviders, removedArtifactKeys,
+                executorService, jvmRequirements);
         this.additionalApplicationArchives = additionalApplicationArchives;
         this.parentFirstArtifactKeys = parentFirstArtifactKeys;
         this.treeShakeResult = treeShakeResult;
@@ -249,8 +250,8 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             if (!rebuild) {
                 copyDependency(parentFirstArtifactKeys, outputTarget, copiedArtifacts, mainLib, baseLib,
                         fastJarJarsBuilder::addDependency, fastJarJarsBuilder::addParentFirstDependency, true,
-                        appDep, transformedClasses, removedArtifactKeys, packageConfig, manifestConfig,
-                        executorService, treeShakeResult, newFilePermissions);
+                        appDep, transformedClasses, removedResources, removedArtifactKeys, packageConfig,
+                        manifestConfig, executorService, treeShakeResult, newFilePermissions);
             } else if (includeAppDependency(appDep, outputTarget.getIncludedOptionalDependencies(), removedArtifactKeys)) {
                 appDep.getResolvedPaths().forEach(fastJarJarsBuilder::addDependency);
             }
@@ -344,8 +345,8 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 for (ResolvedDependency appDep : curateOutcome.getApplicationModel().getDependencies()) {
                     copyDependency(parentFirstArtifactKeys, outputTarget, copiedArtifacts, deploymentLib, baseLib, p -> {
                     }, p -> {
-                    }, false, appDep, new TransformedClassesBuildItem(Map.of()), removedArtifactKeys, packageConfig,
-                            manifestConfig, executorService, null, newFilePermissions); //we don't care about transformation or tree shaking here
+                    }, false, appDep, new TransformedClassesBuildItem(Map.of()), removedResources, removedArtifactKeys,
+                            packageConfig, manifestConfig, executorService, null, newFilePermissions);
                 }
                 Map<ArtifactKey, List<String>> relativePaths = new HashMap<>();
                 for (Entry<ArtifactKey, List<Path>> e : copiedArtifacts.entrySet()) {
@@ -432,9 +433,10 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
     private static void copyDependency(Set<ArtifactKey> parentFirstArtifacts, OutputTargetBuildItem outputTargetBuildItem,
             Map<ArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, Consumer<Path> dependenciesConsumer,
             Consumer<Path> parentFirstDependenciesConsumer, boolean allowParentFirst, ResolvedDependency appDep,
-            TransformedClassesBuildItem transformedClasses, Set<ArtifactKey> removedDeps,
-            PackageConfig packageConfig, CoreSbomContributionConfig manifestConfig, ExecutorService executorService,
-            JarTreeShakeBuildItem treeShakeResult, Set<PosixFilePermission> newFilePermissions)
+            TransformedClassesBuildItem transformedClasses, Map<ArtifactKey, Set<String>> removedResources,
+            Set<ArtifactKey> removedDeps, PackageConfig packageConfig, CoreSbomContributionConfig manifestConfig,
+            ExecutorService executorService, JarTreeShakeBuildItem treeShakeResult,
+            Set<PosixFilePermission> newFilePermissions)
             throws IOException {
 
         // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
@@ -476,15 +478,10 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 // the non-jar dependencies are the Quarkus dependencies picked up on the file system
                 packageClasses(resolvedDep, targetPath, packageConfig, outputTargetBuildItem, executorService);
             } else {
-                Set<TransformedClass> transformedFromThisArchive = transformedClasses
-                        .getTransformedClassesByJar().get(resolvedDep);
                 Set<String> removedFromThisArchive = new HashSet<>();
-                if (transformedFromThisArchive != null) {
-                    for (TransformedClass i : transformedFromThisArchive) {
-                        if (i.getData() == null) {
-                            removedFromThisArchive.add(i.getFileName());
-                        }
-                    }
+                Set<String> removedForArtifact = removedResources.get(appDep.getKey());
+                if (removedForArtifact != null) {
+                    removedFromThisArchive.addAll(removedForArtifact);
                 }
                 if (treeShakeResult != null) {
                     treeShakeResult.collectUnreachableEntries(appDep, removedFromThisArchive);

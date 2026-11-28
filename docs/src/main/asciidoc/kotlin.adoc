@@ -401,6 +401,28 @@ tasks.quarkusDev {
 }
 ----
 
+With Gradle, the Kotlin compiler plugins configured through the Kotlin Gradle plugin of the application project, such as all-open, are also applied when sources are recompiled in development mode.
+This resolves additional plugin artifacts from your repositories and requires the Kotlin Gradle plugin to have the Kotlin version of the Quarkus platform (BOM).
+Otherwise, or if a compiler plugin cannot be used (for example a third-party plugin, offline, or with strict dependency verification), a warning is logged and no compiler plugins are applied.
+The `quarkusTest` and `quarkusRemoteDev` tasks behave the same way.
+To disable it:
+
+[source, groovy, subs=attributes+, role="primary asciidoc-tabs-sync-groovy"]
+.Gradle (Groovy DSL)
+----
+quarkusDev {
+    shouldPropagateKotlinCompilerPlugins(false)
+}
+----
+
+[source, kotlin, subs=attributes+, role="secondary asciidoc-tabs-sync-kotlin"]
+.Gradle (Kotlin DSL)
+----
+tasks.quarkusDev {
+    shouldPropagateKotlinCompilerPlugins(false)
+}
+----
+
 == Packaging the application
 
 As usual, the application can be packaged using:

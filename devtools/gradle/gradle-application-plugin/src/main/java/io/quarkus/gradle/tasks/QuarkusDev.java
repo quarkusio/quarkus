@@ -91,6 +91,10 @@ public abstract class QuarkusDev extends QuarkusTask {
 
     public static final String IO_QUARKUS_DEVMODE_ARGS = "io.quarkus.devmode-args";
 
+    private static final String KOTLIN_JVM_PLUGIN_ID = "org.jetbrains.kotlin.jvm";
+    private static final String KOTLIN_GROUP_ID = "org.jetbrains.kotlin";
+    private static final String KOTLIN_COMPILER_ARTIFACT_ID = "kotlin-compiler";
+
     private final Configuration quarkusDevConfiguration;
     private final SourceSet mainSourceSet;
     private final ObjectFactory objectFactory;
@@ -107,6 +111,7 @@ public abstract class QuarkusDev extends QuarkusTask {
 
     private final Property<Boolean> forceC2;
     private final Property<Boolean> shouldPropagateJavaCompilerArgs;
+    private final Property<Boolean> shouldPropagateKotlinCompilerPlugins;
     private final ListProperty<String> args;
     private final ListProperty<String> jvmArgs;
 
@@ -144,6 +149,9 @@ public abstract class QuarkusDev extends QuarkusTask {
 
         shouldPropagateJavaCompilerArgs = objectFactory.property(Boolean.class);
         shouldPropagateJavaCompilerArgs.convention(true);
+
+        shouldPropagateKotlinCompilerPlugins = objectFactory.property(Boolean.class);
+        shouldPropagateKotlinCompilerPlugins.convention(true);
 
         args = objectFactory.listProperty(String.class);
         compilerArgs = objectFactory.listProperty(String.class);
@@ -545,6 +553,8 @@ public abstract class QuarkusDev extends QuarkusTask {
             builder.compilerOptions("java", getCompilerArgs());
         }
 
+        addKotlinCompilerPlugins(builder, appModel);
+
         modifyDevModeContext(builder);
 
         final Path serializedModel = ToolingUtils.serializeAppModel(appModel, this, false);
@@ -564,6 +574,40 @@ public abstract class QuarkusDev extends QuarkusTask {
         }
 
         return builder.build();
+    }
+
+    /**
+     * Passes the Kotlin compiler plugins (e.g. all-open, no-arg) configured through the Kotlin Gradle plugin to the
+     * dev mode compiler, so that classes recompiled on reload are compiled with the same compiler plugins.
+     * <p>
+     * Only the Kotlin JVM plugin of the project this task runs on is taken into account. Like with Maven, the dev mode
+     * compiler uses one set of compiler plugins for all modules, so other modules are recompiled with the compiler
+     * plugins of this project.
+     *
+     * @param builder the dev mode command line builder
+     * @param appModel the application model
+     */
+    private void addKotlinCompilerPlugins(DevModeCommandLineBuilder builder, ApplicationModel appModel) {
+        if (!shouldPropagateKotlinCompilerPlugins.get() || !project.getPluginManager().hasPlugin(KOTLIN_JVM_PLUGIN_ID)) {
+            return;
+        }
+        String compilerVersion = null;
+        for (ResolvedDependency dep : appModel.getDependencies()) {
+            if (KOTLIN_GROUP_ID.equals(dep.getGroupId()) && KOTLIN_COMPILER_ARTIFACT_ID.equals(dep.getArtifactId())) {
+                compilerVersion = dep.getVersion();
+            }
+        }
+        if (compilerVersion == null) {
+            getLogger().debug("No Kotlin compiler on the dev mode classpath, Kotlin compiler plugins are not passed");
+            return;
+        }
+        try {
+            // only touch the Kotlin Gradle plugin API once we know it is applied
+            KotlinCompilerPlugins.configure(project, compilerVersion, builder, getLogger());
+        } catch (RuntimeException | LinkageError e) {
+            getLogger().warn("Unable to pass the Kotlin compiler plugins to dev mode: {}", e.toString());
+            getLogger().debug("Unable to pass the Kotlin compiler plugins to dev mode", e);
+        }
     }
 
     protected void modifyDevModeContext(DevModeCommandLineBuilder builder) {
@@ -802,5 +846,15 @@ public abstract class QuarkusDev extends QuarkusTask {
 
     public void shouldPropagateJavaCompilerArgs(boolean shouldPropagateJavaCompilerArgs) {
         this.shouldPropagateJavaCompilerArgs.set(shouldPropagateJavaCompilerArgs);
+    }
+
+    /**
+     * Whether the Kotlin compiler plugins configured through the Kotlin Gradle plugin are applied when Kotlin sources
+     * are recompiled in dev mode. Enabled by default.
+     *
+     * @param shouldPropagateKotlinCompilerPlugins {@code false} to recompile without the Kotlin compiler plugins
+     */
+    public void shouldPropagateKotlinCompilerPlugins(boolean shouldPropagateKotlinCompilerPlugins) {
+        this.shouldPropagateKotlinCompilerPlugins.set(shouldPropagateKotlinCompilerPlugins);
     }
 }

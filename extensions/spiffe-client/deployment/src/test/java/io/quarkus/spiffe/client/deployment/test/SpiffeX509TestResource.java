@@ -7,20 +7,38 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyFactory;
+import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.GeneralName;
+import org.bouncycastle.asn1.x509.GeneralNames;
+import org.bouncycastle.asn1.x509.KeyPurposeId;
+import org.bouncycastle.asn1.x509.KeyUsage;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -29,8 +47,6 @@ import io.quarkus.spiffe.client.runtime.internal.proto.X509SVID;
 import io.quarkus.spiffe.client.runtime.internal.proto.X509SVIDRequest;
 import io.quarkus.spiffe.client.runtime.internal.proto.X509SVIDResponse;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.smallrye.certs.CertificateRequest;
-import io.smallrye.certs.CertificateUtils;
 import io.smallrye.certs.KeyAlgorithm;
 import io.smallrye.certs.chain.CertificateChainGenerator;
 import io.vertx.core.Vertx;
@@ -51,6 +67,9 @@ public final class SpiffeX509TestResource implements QuarkusTestResourceLifecycl
     static final String DEFAULT_SPIFFE_ID = TEST_TRUST_DOMAIN + "/test-workload";
     static final String SECONDARY_SPIFFE_ID = TEST_TRUST_DOMAIN + "/secondary-workload";
     static final String MODE_PATH = "/api/mode";
+    static final String X509_SVID_TTL_PATH = "/api/x509-svid-ttl";
+    static final String X509_SVID_REUSE_PATH = "/api/x509-svid-reuse";
+    private static final Duration DEFAULT_X509_SVID_TTL = Duration.ofDays(1);
 
     private static final ServiceName SERVICE_NAME = ServiceName.create("SpiffeWorkloadAPI");
     private static final String FETCH_X509_SVID_METHOD = "FetchX509SVID";
@@ -62,6 +81,9 @@ public final class SpiffeX509TestResource implements QuarkusTestResourceLifecycl
     private volatile HttpServer httpServer;
     private volatile SocketAddress grpcAddress;
     private volatile X509Mode mode = X509Mode.HEALTHY;
+    private volatile Duration x509SvidTtl = DEFAULT_X509_SVID_TTL;
+    private volatile boolean reuseX509Svid;
+    private volatile WorkloadSvid reusedX509Svid;
 
     private enum X509Mode {
         HEALTHY,
@@ -211,17 +233,17 @@ public final class SpiffeX509TestResource implements QuarkusTestResourceLifecycl
         try {
             switch (mode) {
                 case EC_P384:
-                    responseBuilder.addSvids(buildProtoSvid(certMaterial.p384Svid()));
+                    responseBuilder.addSvids(buildProtoSvid(certMaterial.p384Svid(x509SvidTtl)));
                     break;
                 case RSA_2048:
-                    responseBuilder.addSvids(buildProtoSvid(certMaterial.rsaSvid()));
+                    responseBuilder.addSvids(buildProtoSvid(certMaterial.rsaSvid(x509SvidTtl)));
                     break;
                 case CHAIN_DEPTH_2:
                     responseBuilder.addSvids(buildProtoSvid(certMaterial.chainDepth2Svid()));
                     break;
                 case MULTI_SVID:
-                    responseBuilder.addSvids(buildProtoSvid(certMaterial.defaultSvid()));
-                    responseBuilder.addSvids(buildProtoSvid(certMaterial.secondarySvid()));
+                    responseBuilder.addSvids(buildProtoSvid(defaultSvid()));
+                    responseBuilder.addSvids(buildProtoSvid(certMaterial.secondarySvid(x509SvidTtl)));
                     break;
                 case EMPTY_SVIDS:
                     break;
@@ -234,7 +256,7 @@ public final class SpiffeX509TestResource implements QuarkusTestResourceLifecycl
                             .build());
                     break;
                 default:
-                    responseBuilder.addSvids(buildProtoSvid(certMaterial.defaultSvid()));
+                    responseBuilder.addSvids(buildProtoSvid(defaultSvid()));
                     break;
             }
         } catch (Exception e) {
@@ -278,9 +300,58 @@ public final class SpiffeX509TestResource implements QuarkusTestResourceLifecycl
     private void handleHttpRequest(HttpServerRequest request) {
         if (MODE_PATH.equals(request.path())) {
             handleModeRequest(request);
+        } else if (X509_SVID_TTL_PATH.equals(request.path())) {
+            handleX509SvidTtlRequest(request);
+        } else if (X509_SVID_REUSE_PATH.equals(request.path())) {
+            handleX509SvidReuseRequest(request);
         } else {
             request.response().setStatusCode(404).end();
         }
+    }
+
+    // ISO-8601 duration of the leaf certificates issued from now on, e.g. PT3S; GET returns the current value
+    private void handleX509SvidTtlRequest(HttpServerRequest request) {
+        if (GET.equals(request.method())) {
+            request.response().putHeader("content-type", "text/plain").end(x509SvidTtl.toString());
+        } else if (POST.equals(request.method())) {
+            request.body().onSuccess(body -> {
+                try {
+                    x509SvidTtl = Duration.parse(body.toString().trim());
+                } catch (Exception e) {
+                    request.response().setStatusCode(400).end("Invalid duration: " + body);
+                    return;
+                }
+                request.response().setStatusCode(200).end(x509SvidTtl.toString());
+            });
+        } else {
+            request.response().setStatusCode(405).end();
+        }
+    }
+
+    private void handleX509SvidReuseRequest(HttpServerRequest request) {
+        if (GET.equals(request.method())) {
+            request.response().putHeader("content-type", "text/plain").end(Boolean.toString(reuseX509Svid));
+        } else if (POST.equals(request.method())) {
+            request.body().onSuccess(body -> {
+                reuseX509Svid = Boolean.parseBoolean(body.toString().trim());
+                reusedX509Svid = null;
+                request.response().setStatusCode(200).end(Boolean.toString(reuseX509Svid));
+            });
+        } else {
+            request.response().setStatusCode(405).end();
+        }
+    }
+
+    private WorkloadSvid defaultSvid() {
+        if (!reuseX509Svid) {
+            return certMaterial.defaultSvid(x509SvidTtl);
+        }
+        WorkloadSvid svid = reusedX509Svid;
+        if (svid == null) {
+            svid = certMaterial.defaultSvid(x509SvidTtl);
+            reusedX509Svid = svid;
+        }
+        return svid;
     }
 
     private void handleModeRequest(HttpServerRequest request) {
@@ -353,24 +424,24 @@ public final class SpiffeX509TestResource implements QuarkusTestResourceLifecycl
             }
         }
 
-        WorkloadSvid defaultSvid() {
-            return createLeafSvid(DEFAULT_SPIFFE_ID, defaultCa, KeyAlgorithm.EC_P256);
+        WorkloadSvid defaultSvid(Duration ttl) {
+            return createLeafSvid(DEFAULT_SPIFFE_ID, defaultCa, KeyAlgorithm.EC_P256, ttl);
         }
 
-        WorkloadSvid p384Svid() {
-            return createLeafSvid(DEFAULT_SPIFFE_ID, p384Ca, KeyAlgorithm.EC_P384);
+        WorkloadSvid p384Svid(Duration ttl) {
+            return createLeafSvid(DEFAULT_SPIFFE_ID, p384Ca, KeyAlgorithm.EC_P384, ttl);
         }
 
-        WorkloadSvid rsaSvid() {
-            return createLeafSvid(DEFAULT_SPIFFE_ID, rsaCa, KeyAlgorithm.RSA_2048);
+        WorkloadSvid rsaSvid(Duration ttl) {
+            return createLeafSvid(DEFAULT_SPIFFE_ID, rsaCa, KeyAlgorithm.RSA_2048, ttl);
         }
 
         WorkloadSvid chainDepth2Svid() {
             return chainDepth2Svid;
         }
 
-        WorkloadSvid secondarySvid() {
-            return createLeafSvid(SECONDARY_SPIFFE_ID, defaultCa, KeyAlgorithm.EC_P256);
+        WorkloadSvid secondarySvid(Duration ttl) {
+            return createLeafSvid(SECONDARY_SPIFFE_ID, defaultCa, KeyAlgorithm.EC_P256, ttl);
         }
 
         void cleanup() {
@@ -409,15 +480,25 @@ public final class SpiffeX509TestResource implements QuarkusTestResourceLifecycl
             return new WorkloadSvid(DEFAULT_SPIFFE_ID, chain, leafKey, List.of(rootCert));
         }
 
-        private static WorkloadSvid createLeafSvid(String spiffeId, CertAuthority ca, KeyAlgorithm keyAlgorithm) {
+        // we need second precision, but SmallRye Certificate Generator currently works in days and backdates by two days
+        private static WorkloadSvid createLeafSvid(String spiffeId, CertAuthority ca, KeyAlgorithm keyAlgorithm,
+                Duration ttl) {
             try {
-                var leafKeyPair = keyAlgorithm.generateKeyPair();
-                X509Certificate leafCert = CertificateUtils.generateSignedCertificate(
-                        leafKeyPair, "SPIFFE Workload",
-                        List.of("URI:" + spiffeId),
-                        Duration.ofDays(1),
-                        new CertificateRequest.Issuer(ca.certificate(), ca.privateKey()),
-                        keyAlgorithm);
+                KeyPair leafKeyPair = keyAlgorithm.generateKeyPair();
+                Instant now = Instant.now();
+                X509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(ca.certificate(),
+                        BigInteger.valueOf(System.nanoTime()), Date.from(now), Date.from(now.plus(ttl)),
+                        new X500Name("CN=SPIFFE Workload"), leafKeyPair.getPublic())
+                        .addExtension(Extension.basicConstraints, true, new BasicConstraints(false))
+                        .addExtension(Extension.keyUsage, true, new KeyUsage(
+                                KeyUsage.digitalSignature | KeyUsage.keyEncipherment | KeyUsage.keyAgreement))
+                        .addExtension(Extension.extendedKeyUsage, false, new ExtendedKeyUsage(
+                                new KeyPurposeId[] { KeyPurposeId.id_kp_serverAuth, KeyPurposeId.id_kp_clientAuth }))
+                        .addExtension(Extension.subjectAlternativeName, false, new GeneralNames(
+                                new GeneralName(GeneralName.uniformResourceIdentifier, spiffeId)));
+                ContentSigner signer = new JcaContentSignerBuilder(keyAlgorithm.signatureAlgorithm())
+                        .build(ca.privateKey());
+                X509Certificate leafCert = new JcaX509CertificateConverter().getCertificate(builder.build(signer));
                 return new WorkloadSvid(spiffeId, List.of(leafCert), leafKeyPair.getPrivate(),
                         List.of(ca.certificate()));
             } catch (Exception e) {

@@ -48,4 +48,27 @@ public interface SpiffeClientConfig {
      */
     @WithDefault("10s")
     Duration requestTimeout();
+
+    /**
+     * Configuration of the X.509-SVID that backs the TLS configurations declared with {@code @X509Svid}.
+     */
+    X509SvidConfig x509Svid();
+
+    interface X509SvidConfig {
+
+        /**
+         * How often the X.509-SVID and the trust bundle are fetched from the SPIFFE Workload API.
+         * <p>
+         * The SPIRE agent issues a new X.509-SVID once about half of the lifetime of the current one has passed, and
+         * the workload has to fetch it before the current one expires. The period must therefore stay well below the
+         * SVID lifetime, one hour by default in SPIRE. A quarter of the lifetime still guarantees a fetch after the
+         * rotation, so a period above a quarter of the lifetime of the fetched SVID is reported with a warning.
+         * <p>
+         * A failed fetch is retried once after ten seconds when the period is a minute or longer, otherwise the next
+         * period is the retry. The current SVID stays in use until it expires or until the Workload API denies the
+         * workload.
+         */
+        @WithDefault("5m")
+        Duration refreshPeriod();
+    }
 }

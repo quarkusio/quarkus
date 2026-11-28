@@ -47,6 +47,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.grpc.client.GrpcClient;
+import io.vertx.grpc.client.InvalidStatusException;
 import io.vertx.grpc.common.GrpcStatus;
 import io.vertx.grpc.common.ServiceName;
 
@@ -410,7 +411,7 @@ final class SpiffeClientImpl implements SpiffeClient {
         if (status == GrpcStatus.PERMISSION_DENIED) {
             return new SpiffeAuthorizationException(detail);
         }
-        return new SpiffeConnectionException(detail);
+        return new SpiffeConnectionException(detail, new InvalidStatusException(GrpcStatus.OK, status));
     }
 
     private static SocketAddress toSocketAddress(URI uri) {

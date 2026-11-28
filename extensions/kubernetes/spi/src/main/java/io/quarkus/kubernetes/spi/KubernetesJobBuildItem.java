@@ -3,6 +3,7 @@ package io.quarkus.kubernetes.spi;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
@@ -23,6 +24,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
     private final Map<String, String> envVars;
     private final boolean sharedEnvironment;
     private final boolean sharedFilesystem;
+    private final Integer ttlSecondsAfterFinished;
 
     public static KubernetesJobBuildItem create(String image) {
         return new KubernetesJobBuildItem("init", null, image, Collections.emptyList(), Collections.emptyList(),
@@ -31,6 +33,12 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
 
     public KubernetesJobBuildItem(String name, String target, String image, List<String> command, List<String> arguments,
             Map<String, String> envVars, boolean sharedEnvironment, boolean sharedFilesystem) {
+        this(name, target, image, command, arguments, envVars, sharedEnvironment, sharedFilesystem, null);
+    }
+
+    private KubernetesJobBuildItem(String name, String target, String image, List<String> command, List<String> arguments,
+            Map<String, String> envVars, boolean sharedEnvironment, boolean sharedFilesystem,
+            Integer ttlSecondsAfterFinished) {
         this.name = name;
         this.target = target;
         this.image = image;
@@ -39,6 +47,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
         this.envVars = envVars;
         this.sharedEnvironment = sharedEnvironment;
         this.sharedFilesystem = sharedFilesystem;
+        this.ttlSecondsAfterFinished = ttlSecondsAfterFinished;
     }
 
     public String getName() {
@@ -47,7 +56,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
 
     public KubernetesJobBuildItem withName(String name) {
         return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 
     public String getTarget() {
@@ -56,7 +65,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
 
     public KubernetesJobBuildItem withTarget(String target) {
         return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 
     public String getImage() {
@@ -66,7 +75,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
     @SuppressWarnings("unused")
     public KubernetesJobBuildItem withImage(String image) {
         return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 
     public List<String> getCommand() {
@@ -75,7 +84,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
 
     public KubernetesJobBuildItem withCommand(List<String> command) {
         return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 
     public List<String> getArguments() {
@@ -84,7 +93,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
 
     public KubernetesJobBuildItem withArguments(List<String> arguments) {
         return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 
     public Map<String, String> getEnvVars() {
@@ -93,7 +102,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
 
     public KubernetesJobBuildItem withEnvVars(Map<String, String> envVars) {
         return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 
     /**
@@ -109,7 +118,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
 
     public KubernetesJobBuildItem withSharedEnvironment(boolean sharedEnvironment) {
         return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 
     /**
@@ -127,6 +136,19 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
 
     public KubernetesJobBuildItem withSharedFilesystem(boolean sharedFilesystem) {
         return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
-                sharedFilesystem);
+                sharedFilesystem, ttlSecondsAfterFinished);
+    }
+
+    /**
+     * Returns the number of seconds after the init-task Job finishes before Kubernetes automatically deletes it.
+     * When set, the Job is eligible to be automatically deleted after this many seconds following completion or failure.
+     */
+    public Optional<Integer> getTtlSecondsAfterFinished() {
+        return Optional.ofNullable(ttlSecondsAfterFinished);
+    }
+
+    public KubernetesJobBuildItem withTtlSecondsAfterFinished(Integer ttlSecondsAfterFinished) {
+        return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
+                sharedFilesystem, ttlSecondsAfterFinished);
     }
 }

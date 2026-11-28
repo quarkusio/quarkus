@@ -53,6 +53,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -133,6 +134,16 @@ public class ResteasyCommonProcessor {
         // but we want to keep Quarkus consistent and have Vert.x handle the exceptions
         // as we have a better error handling in our Vert.x error handler.
         systemProperties.produce(new SystemPropertyBuildItem("dev.resteasy.exception.mapper", "false"));
+    }
+
+    @BuildStep
+    void registerTextPlainNumberConversion(BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
+        // RESTEasy's DefaultTextPlain converts text/plain entities to primitives and their wrappers by looking up
+        // valueOf(String) on the wrapper type with reflection, both to check if the type is readable and to convert it
+        for (Class<?> wrapper : List.of(Integer.class, Long.class, Double.class, Float.class, Short.class, Byte.class)) {
+            reflectiveMethods.produce(
+                    new ReflectiveMethodBuildItem(getClass().getName(), wrapper.getName(), "valueOf", String.class));
+        }
     }
 
     @BuildStep

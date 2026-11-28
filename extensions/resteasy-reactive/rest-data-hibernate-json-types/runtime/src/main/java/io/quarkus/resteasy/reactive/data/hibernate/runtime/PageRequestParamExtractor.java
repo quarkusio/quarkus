@@ -7,37 +7,84 @@ import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 
 /**
  * Extracts a {@link PageRequest} from HTTP query parameters.
+ * <p>
+ * <b>Parameter naming:</b>
  * <ul>
- * <li>{@code page} — 1-based page number (default: {@value #DEFAULT_PAGE_NUMBER})</li>
- * <li>{@code size} — maximum number of results per page (default: {@value #DEFAULT_PAGE_SIZE})</li>
- * <li>{@code requestTotal} — whether to request the total number of elements (default: {@code true})</li>
+ * <li><b>Default name:</b> {@code "page"} when not annotated</li>
+ * <li><b>Custom name:</b> Uses the value specified in {@code @RestQuery("customName")} or
+ * {@code @QueryParam("customName")}</li>
+ * <li><b>Inferred name:</b> Uses the Java parameter name when bare {@code @RestQuery} or
+ * {@code @RestQuery("")} is used</li>
  * </ul>
+ * <p>
+ * <b>Query parameters:</b>
+ * <ul>
+ * <li>{@code <name>} — 1-based page number (default: {@value #DEFAULT_PAGE_NUMBER})</li>
+ * <li>{@code <name>_size} or {@code size} — maximum number of results per page
+ * (default: {@value #DEFAULT_PAGE_SIZE})</li>
+ * <li>{@code <name>_requestTotal} or {@code requestTotal} — whether to request
+ * the total number of elements (default: {@code true})</li>
+ * </ul>
+ * <p>
+ * <b>Auxiliary parameters:</b>
+ * <ul>
+ * <li><b>Default name:</b> Uses unprefixed {@code size} and {@code requestTotal}</li>
+ * <li><b>Custom name:</b> Uses prefixed {@code <name>_size} and {@code <name>_requestTotal}</li>
+ * </ul>
+ * This allows multiple {@code PageRequest} parameters with different names to coexist
+ * without interfering with each other.
+ * <p>
+ * <b>Examples:</b>
+ *
+ * <pre>
+ * // Default name:
+ * {@code PageRequest page}  →  ?page=2&size=25&requestTotal=false
+ *
+ * // Custom name:
+ * {@code @RestQuery("pageNum") PageRequest customPage}
+ *   →  ?pageNum=2&pageNum_size=25&pageNum_requestTotal=false
+ *
+ * // Multiple page requests:
+ * {@code @RestQuery("mainPage") PageRequest first, @RestQuery("secondPage") PageRequest second}
+ *   →  ?mainPage=2&mainPage_size=25&secondPage=5&secondPage_size=50
+ * </pre>
  */
 public class PageRequestParamExtractor implements ParameterExtractor {
 
     private static final int DEFAULT_PAGE_NUMBER = 1;
     private static final int DEFAULT_PAGE_SIZE = 10;
 
+    public final String parameterName;
+    private final boolean isDefault;
+
+    public PageRequestParamExtractor(String parameterName, boolean isDefault) {
+        this.parameterName = parameterName;
+        this.isDefault = isDefault;
+    }
+
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
-        long page = DEFAULT_PAGE_NUMBER;
-        int size = DEFAULT_PAGE_SIZE;
-        boolean requestTotal = true;
+        String pageStr = (String) context.getQueryParameter(parameterName, true, false);
 
-        String pageStr = (String) context.getQueryParameter("page", true, false);
-        if (pageStr != null) {
-            page = Long.parseLong(pageStr);
+        // Use unprefixed auxiliary parameters only for unannotated default "page"
+        // Default (unannotated): "size", "requestTotal" (for backward compatibility)
+        // Custom/inferred: "mainPage_size", "mainPage_requestTotal" when parameterName is "mainPage"
+        // Even "@RestQuery("page")" uses prefixed "page_size", "page_requestTotal"
+        String sizeParam = isDefault ? "size" : parameterName + "_size";
+        String requestTotalParam = isDefault ? "requestTotal" : parameterName + "_requestTotal";
+
+        String sizeStr = (String) context.getQueryParameter(sizeParam, true, false);
+        String requestTotalStr = (String) context.getQueryParameter(requestTotalParam, true, false);
+
+        // For custom-named parameters, return null if no parameters are provided
+        // For unannotated default "page" parameter, always return with defaults for backward compatibility
+        if (!isDefault && pageStr == null && sizeStr == null && requestTotalStr == null) {
+            return null;
         }
 
-        String sizeStr = (String) context.getQueryParameter("size", true, false);
-        if (sizeStr != null) {
-            size = Integer.parseInt(sizeStr);
-        }
-
-        String requestTotalStr = (String) context.getQueryParameter("requestTotal", true, false);
-        if (requestTotalStr != null) {
-            requestTotal = Boolean.parseBoolean(requestTotalStr);
-        }
+        long page = pageStr != null ? Long.parseLong(pageStr) : DEFAULT_PAGE_NUMBER;
+        int size = sizeStr != null ? Integer.parseInt(sizeStr) : DEFAULT_PAGE_SIZE;
+        boolean requestTotal = requestTotalStr != null ? Boolean.parseBoolean(requestTotalStr) : true;
 
         return PageRequest.ofPage(page, size, requestTotal);
     }

@@ -458,7 +458,7 @@ public class SpringWebResteasyReactiveProcessor {
 
             @Override
             public ParameterExtractor handleCustomParameter(Type paramType, Map<DotName, AnnotationInstance> annotations,
-                    boolean field, Map<String, Object> methodContext) {
+                    boolean field, String sourceName, Map<String, Object> methodContext) {
                 if (annotations.containsKey(REQUEST_PARAM)) {
                     methodContext.put("RequestParam", true);
                     if (paramType.name().equals(SPRING_MULTIVALUE_MAP)) {

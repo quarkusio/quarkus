@@ -7,6 +7,8 @@ import io.grpc.Context;
 import io.grpc.ServerCall;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.grpc.runtime.GrpcContextLocalsProvider;
+import io.vertx.core.Vertx;
 
 class BlockingExecutionHandler<ReqT> implements Callable<Void> {
     private final ServerCall.Listener<ReqT> delegate;
@@ -47,6 +49,11 @@ class BlockingExecutionHandler<ReqT> implements Callable<Void> {
                 return null;
             } finally {
                 grpcContext.detach(previous);
+                io.vertx.core.Context vertxDc = Vertx.currentContext();
+                if (vertxDc != null) {
+                    GrpcContextLocalsProvider.GRPC_CALL_IN_PROGRESS_LOCAL.remove(vertxDc);
+                    GrpcContextLocalsProvider.GRPC_CONTEXT_LOCAL.remove(vertxDc);
+                }
             }
         }
     }

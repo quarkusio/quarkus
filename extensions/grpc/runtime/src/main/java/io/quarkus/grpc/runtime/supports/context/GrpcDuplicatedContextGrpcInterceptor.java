@@ -22,6 +22,7 @@ import io.grpc.Status;
 import io.grpc.StatusException;
 import io.quarkus.grpc.ExceptionHandlerProvider;
 import io.quarkus.grpc.GlobalInterceptor;
+import io.quarkus.grpc.runtime.GrpcContextLocalsProvider;
 import io.quarkus.grpc.runtime.Interceptors;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
@@ -49,7 +50,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
             setContextSafe(local, true);
 
             // Must be sure to call next.startCall on the right context
-            return new ListenedOnDuplicatedContext<>(ehp, call, nextCall(call, headers, next), local);
+            return new ListenedOnDuplicatedContext<>(ehp, call, nextCall(call, headers, next, local), local);
         } else {
             log.warn("Unable to run on a duplicated context - interceptor not called on the Vert.x event loop");
             return next.startCall(call, headers);
@@ -58,34 +59,46 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
 
     private <ReqT, RespT> Function<Runnable, ServerCall.Listener<ReqT>> nextCall(ServerCall<ReqT, RespT> call,
             Metadata headers,
-            ServerCallHandler<ReqT, RespT> next) {
+            ServerCallHandler<ReqT, RespT> next,
+            Context dc) {
         // Must be sure to call next.startCall on the right context
         io.grpc.Context current = io.grpc.Context.current();
+        GrpcContextLocalsProvider.GRPC_CALL_IN_PROGRESS_LOCAL.put(dc, Boolean.TRUE);
         return onClose -> {
-            io.grpc.Context previous = current.attach();
-            try {
-                var forwardingCall = new ForwardingServerCall<ReqT, RespT>() {
-                    @Override
-                    protected ServerCall<ReqT, RespT> delegate() {
-                        return call;
-                    }
+            current.attach();
+            var forwardingCall = new ForwardingServerCall<ReqT, RespT>() {
+                @Override
+                protected ServerCall<ReqT, RespT> delegate() {
+                    return call;
+                }
 
-                    @Override
-                    public void close(Status status, Metadata trailers) {
-                        onClose.run();
+                @Override
+                public void close(Status status, Metadata trailers) {
+                    onClose.run();
+                    try {
                         super.close(status, trailers);
+                    } finally {
+                        runCleanup(dc);
                     }
-                };
-                return next.startCall(forwardingCall, headers);
-            } finally {
-                current.detach(previous);
-            }
+                }
+            };
+            return next.startCall(forwardingCall, headers);
         };
     }
 
     @Override
     public int getPriority() {
         return Interceptors.DUPLICATE_CONTEXT;
+    }
+
+    static void runCleanup(Context dc) {
+        if (GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.get(dc) != null) {
+            // Blocking/virtual path: the worker removes everything
+            // in BlockingExecutionHandler.call() after each event.
+            return;
+        }
+        GrpcContextLocalsProvider.GRPC_CALL_IN_PROGRESS_LOCAL.remove(dc);
+        GrpcContextLocalsProvider.GRPC_CONTEXT_LOCAL.remove(dc);
     }
 
     static class ListenedOnDuplicatedContext<ReqT, RespT> extends ServerCall.Listener<ReqT> {
@@ -126,15 +139,19 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
         }
 
         private void close(Throwable t) {
-            // TODO -- "call.isRead" guards against dup calls;
-            //  e.g. onComplete, after onError already closed it
-            if (closed.compareAndSet(false, true) && call.isReady()) {
-                // use EHP so that we're consistent with transforming any user exception
-                Throwable nt = ehp.transform(t);
-                StatusException sre = (StatusException) ExceptionHandlerProvider.toStatusException(nt, false);
-                Optional<Metadata> metadata = ExceptionHandlerProvider.toTrailers(nt);
-                log.warn("Closing gRPC call due to an error ...", t);
-                call.close(sre.getStatus(), metadata.orElse(new Metadata()));
+            if (closed.compareAndSet(false, true)) {
+                if (call.isReady()) {
+                    Throwable nt = ehp.transform(t);
+                    StatusException sre = (StatusException) ExceptionHandlerProvider.toStatusException(nt, false);
+                    Optional<Metadata> metadata = ExceptionHandlerProvider.toTrailers(nt);
+                    log.warn("Closing gRPC call due to an error ...", t);
+                    call.close(sre.getStatus(), metadata.orElse(new Metadata()));
+                }
+                // The call is dead: clear the worker marker so runCleanup proceeds.
+                // No worker can be running at this point because close() only fires when
+                // the interceptor chain failed before any event was dispatched to a worker.
+                GrpcContextLocalsProvider.GRPC_WORKER_ACTIVE_LOCAL.remove(context);
+                runCleanup(context);
             }
         }
 
@@ -181,12 +198,24 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
 
         @Override
         public void onCancel() {
-            invoke(ServerCall.Listener::onCancel);
+            invoke(listener -> {
+                try {
+                    listener.onCancel();
+                } finally {
+                    runCleanup(context);
+                }
+            });
         }
 
         @Override
         public void onComplete() {
-            invoke(ServerCall.Listener::onComplete);
+            invoke(listener -> {
+                try {
+                    listener.onComplete();
+                } finally {
+                    runCleanup(context);
+                }
+            });
         }
     }
 }

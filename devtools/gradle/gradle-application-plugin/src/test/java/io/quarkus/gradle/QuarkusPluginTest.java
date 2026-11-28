@@ -226,6 +226,60 @@ public class QuarkusPluginTest {
         assertResolvedProductionRuntimeClasspath(testProjectDir);
     }
 
+    private static final String WRITE_DEV_DEPLOYMENT_FIRST_TASK_NAME = "writeDevDeploymentFirstComponents";
+    private static final String WRITE_DEV_RUNTIME_FIRST_TASK_NAME = "writeDevRuntimeFirstComponents";
+
+    private static final String WRITE_DEV_RUNTIME_COMPONENTS_TASKS = """
+            abstract class WriteDevComponents extends DefaultTask {
+                @OutputFile
+                abstract RegularFileProperty getOutputFile()
+
+                @TaskAction
+                void write() {
+                    def appModel = io.quarkus.gradle.tooling.ToolingUtils.create(project, io.quarkus.runtime.LaunchMode.DEVELOPMENT)
+                    def modules = new TreeSet<String>()
+                    for (dep in appModel.dependencies) {
+                        if (dep.runtimeCp) {
+                            modules.add("${dep.groupId}:${dep.artifactId}:${dep.version}:runtimeExtension=${dep.runtimeExtensionArtifact}".toString())
+                        }
+                    }
+                    outputFile.get().asFile.text = modules.join('\\n') + '\\n'
+                }
+            }
+
+            tasks.register('%s', WriteDevComponents) {
+                doFirst {
+                    configurations.quarkusDevRuntimeClasspathConfigurationDeployment.incoming.resolutionResult.rootComponent.get()
+                }
+                outputFile.set(layout.buildDirectory.file('resolved-dev-deployment-first-components.txt'))
+            }
+
+            tasks.register('%s', WriteDevComponents) {
+                outputFile.set(layout.buildDirectory.file('resolved-dev-runtime-first-components.txt'))
+            }
+            """
+            .formatted(WRITE_DEV_DEPLOYMENT_FIRST_TASK_NAME, WRITE_DEV_RUNTIME_FIRST_TASK_NAME);
+
+    @Test
+    public void shouldResolveSatisfiedConditionalDevDependenciesWhenDeploymentConfigurationResolvesFirst(
+            @TempDir Path testProjectDir) throws IOException {
+        writeConditionalDevDependencyProject(testProjectDir);
+
+        BuildResult result = runInTestProject(testProjectDir, WRITE_DEV_DEPLOYMENT_FIRST_TASK_NAME);
+        assertEquals(SUCCESS, result.task(":" + WRITE_DEV_DEPLOYMENT_FIRST_TASK_NAME).getOutcome());
+        assertResolvedDevRuntimeClasspath(testProjectDir, "resolved-dev-deployment-first-components.txt");
+    }
+
+    @Test
+    public void shouldResolveSatisfiedConditionalDevDependenciesWhenRuntimeResolvesFirst(
+            @TempDir Path testProjectDir) throws IOException {
+        writeConditionalDevDependencyProject(testProjectDir);
+
+        BuildResult result = runInTestProject(testProjectDir, WRITE_DEV_RUNTIME_FIRST_TASK_NAME);
+        assertEquals(SUCCESS, result.task(":" + WRITE_DEV_RUNTIME_FIRST_TASK_NAME).getOutcome());
+        assertResolvedDevRuntimeClasspath(testProjectDir, "resolved-dev-runtime-first-components.txt");
+    }
+
     @Test
     public void analyticsAfterBuild() {
         Project project = ProjectBuilder.builder().build();
@@ -311,6 +365,47 @@ public class QuarkusPluginTest {
                 .contains("org.acme:parent-extension:1.0")
                 .contains("org.condition:present:1.0")
                 .contains("org.acme:satisfied-extension:1.0");
+    }
+
+    private static void writeConditionalDevDependencyProject(Path testProjectDir) throws IOException {
+        Path repository = testProjectDir.resolve("repo");
+        writeMavenArtifact(repository, "org.acme", "parent-dev-extension", "1.0", """
+                conditional-dev-dependencies=org.acme\\:satisfied-dev-extension\\:\\:jar\\:1.0
+                deployment-artifact=org.acme\\:parent-dev-extension-deployment\\:1.0
+                """);
+        writeMavenArtifact(repository, "org.acme", "parent-dev-extension-deployment", "1.0", null);
+        writeMavenArtifact(repository, "org.acme", "satisfied-dev-extension", "1.0", """
+                dependency-condition=org.condition\\:present
+                deployment-artifact=org.acme\\:satisfied-dev-extension-deployment\\:1.0
+                """);
+        writeMavenArtifact(repository, "org.acme", "satisfied-dev-extension-deployment", "1.0", null);
+        writeMavenArtifact(repository, "org.condition", "present", "1.0", null);
+        Files.writeString(testProjectDir.resolve("settings.gradle"), "rootProject.name = 'conditional-dev-runtime'\n");
+        Files.writeString(testProjectDir.resolve("build.gradle"), """
+                plugins {
+                    id 'io.quarkus'
+                }
+
+                repositories {
+                    maven {
+                        url = uri('repo')
+                    }
+                }
+
+                dependencies {
+                    implementation 'org.acme:parent-dev-extension:1.0'
+                    implementation 'org.condition:present:1.0'
+                }
+
+                """ + WRITE_DEV_RUNTIME_COMPONENTS_TASKS);
+    }
+
+    private static void assertResolvedDevRuntimeClasspath(Path testProjectDir, String fileName) {
+        assertThat(testProjectDir.resolve("build/" + fileName))
+                .content()
+                .contains("org.acme:parent-dev-extension:1.0:runtimeExtension=true")
+                .contains("org.condition:present:1.0:runtimeExtension=false")
+                .contains("org.acme:satisfied-dev-extension:1.0:runtimeExtension=true");
     }
 
     private static void writeMavenArtifact(Path repository, String groupId, String artifactId, String version,

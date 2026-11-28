@@ -7,7 +7,9 @@ import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.tls.runtime.config.PqcEnforcementPolicy;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 @ConfigMapping(prefix = "quarkus.kubernetes-client")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
@@ -144,5 +146,24 @@ public interface KubernetesClientConfig {
      * IP addresses or hosts to exclude from proxying
      */
     Optional<List<String>> noProxy();
+
+    /**
+     * Sets the PQC enforcement policy for TLS connections to the Kubernetes API server.
+     * <p>
+     * {@code STRICT}: connections are refused unless both sides negotiate a PQC key exchange group
+     * <p>
+     * {@code CLIENT_NEGOTIATED}: PQC groups are advertised but a fallback to classical key exchange is allowed if
+     * a client requires it.
+     * <p>
+     * {@code RELAXED} (default): no PQC enforcement; standard TLS key exchange negotiation applies.
+     */
+    @WithDefault("relaxed")
+    PqcEnforcementPolicy pqcEnforcementPolicy();
+
+    /**
+     * Ordered list of TLS key exchange groups to advertise to the Kubernetes API server.
+     * When not set, the JDK default groups are used.
+     */
+    Optional<List<String>> keyExchangeGroups();
 
 }

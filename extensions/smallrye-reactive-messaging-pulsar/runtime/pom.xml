@@ -73,6 +73,10 @@
             <artifactId>quarkus-avro</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.bookkeeper</groupId>
+            <artifactId>circe-checksum</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.pulsar</groupId>
             <artifactId>pulsar-client-messagecrypto-bc</artifactId>
         </dependency>

@@ -38,7 +38,8 @@ public class PulsarContainer extends GenericContainer<PulsarContainer> implement
         super(imageName);
         super.withExposedPorts(BROKER_PORT, BROKER_HTTP_PORT);
         super.withStartupTimeout(Duration.ofSeconds(60));
-        super.waitingFor(Wait.forLogMessage(".*Created namespace public/default.*", 1));
+        // Pulsar 5.x logs structured fields: "Created namespace {..., namespace=public/default}"
+        super.waitingFor(Wait.forLogMessage(".*Created namespace.*public/default.*", 1));
         super.withCommand("sh", "-c", runStarterScript());
         super.withTmpFs(Collections.singletonMap("/pulsar/data", "rw"));
         this.useSharedNetwork = useSharedNetwork;

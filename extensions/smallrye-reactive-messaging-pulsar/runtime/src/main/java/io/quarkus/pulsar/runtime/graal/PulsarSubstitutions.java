@@ -1,5 +1,7 @@
 package io.quarkus.pulsar.runtime.graal;
 
+import java.util.function.BooleanSupplier;
+
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
@@ -11,8 +13,11 @@ import com.oracle.svm.core.annotate.TargetClass;
  * API so GraalVM can link the io_uring classes. The substituted methods are
  * never called at runtime because io_uring is opt-in
  * ({@code -Dpulsar.enableUring=true}) and Linux-only.
+ * <p>
+ * Pulsar 5.x no longer depends on the incubator io_uring transport, so these
+ * substitutions are only applied when it is present on the classpath.
  */
-@TargetClass(className = "io.netty.incubator.channel.uring.IOUringEventLoop")
+@TargetClass(className = "io.netty.incubator.channel.uring.IOUringEventLoop", onlyWith = IsIncubatorIOUringPresent.class)
 final class Target_IOUringEventLoop {
 
     @Substitute
@@ -26,7 +31,7 @@ final class Target_IOUringEventLoop {
     }
 }
 
-@TargetClass(className = "io.netty.incubator.channel.uring.Native")
+@TargetClass(className = "io.netty.incubator.channel.uring.Native", onlyWith = IsIncubatorIOUringPresent.class)
 final class Target_IOUringNative {
 
     @Substitute
@@ -45,6 +50,20 @@ final class Target_IOUringNative {
     }
 }
 
-@TargetClass(className = "io.netty.incubator.channel.uring.RingBuffer")
+@TargetClass(className = "io.netty.incubator.channel.uring.RingBuffer", onlyWith = IsIncubatorIOUringPresent.class)
 final class Target_RingBuffer {
+}
+
+final class IsIncubatorIOUringPresent implements BooleanSupplier {
+
+    @Override
+    public boolean getAsBoolean() {
+        try {
+            Class.forName("io.netty.incubator.channel.uring.IOUringEventLoop", false,
+                    Thread.currentThread().getContextClassLoader());
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
 }

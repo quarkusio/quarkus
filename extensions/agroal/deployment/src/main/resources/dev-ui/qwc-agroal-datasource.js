@@ -314,7 +314,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
                 <vaadin-dialog
                     resizable
                     draggable
-                    header-title=${msg('Import SQL Script', { id: 'quarkus-agroal-import-sql-script' })}
+                    header-title=${msg('Insert script', { id: 'quarkus-agroal-insert-script' })}
                     .opened="${this._showImportSQLDialog}"
                     @opened-changed="${(event) => {
                         this._showImportSQLDialog = event.detail.value;
@@ -424,7 +424,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
 
             const anchor = document.createElement('a');
             anchor.href = url;
-            anchor.download = 'insert.sql';
+            anchor.download = 'data.sql';
             document.body.appendChild(anchor);
             anchor.click();
 
@@ -507,9 +507,9 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
     
     _renderExportButton(){
         if(this._selectedDataSource){
-            return html`<vaadin-button @click=${this._createImportSql} title=${msg('Create an import.sql from the current data', { id: 'quarkus-agroal-create-import-sql' })}>
+            return html`<vaadin-button @click=${this._createImportSql} title=${msg('Generate an SQL insert script from the current data (save it as src/main/resources/data.sql to have Hibernate ORM load it)', { id: 'quarkus-agroal-export-data-description' })}>
                             <vaadin-icon icon="font-awesome-solid:file-export" slot="prefix"></vaadin-icon>
-                            ${msg('import.sql', { id: 'quarkus-agroal-import-sql' })}
+                            ${msg('Export data', { id: 'quarkus-agroal-export-data' })}
                         </vaadin-button>`;
         }
     }
@@ -957,7 +957,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
                 this._insertSQL = jsonRpcResponse.result;
                 this._showImportSQLDialog = true;
             }).catch(error => {
-                notifier.showErrorMessage(msg(str`Failed to create import.sql: ${error?.error?.message || error}`, { id: 'quarkus-agroal-create-import-sql-failed' }));
+                notifier.showErrorMessage(msg(str`Failed to create the insert script: ${error?.error?.message || error}`, { id: 'quarkus-agroal-insert-script-failed' }));
             });
         }
     }

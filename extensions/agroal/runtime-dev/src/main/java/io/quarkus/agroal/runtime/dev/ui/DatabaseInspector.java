@@ -326,7 +326,7 @@ public final class DatabaseInspector {
         }
     }
 
-    @JsonRpcDescription("Get the import.sql script for a certain datasource")
+    @JsonRpcDescription("Get an SQL insert script with the current data of a certain datasource")
     public String getInsertScript(@JsonRpcDescription("Datasource name") String datasource) {
         if (isDev) {
             try {

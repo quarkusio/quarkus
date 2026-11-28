@@ -132,6 +132,23 @@ public class ExpressionTest {
     }
 
     @Test
+    public void testRedundantWhitespaceAroundSeparator() throws InterruptedException, ExecutionException {
+        verify("name .orElse('John')", null, null, name("name"), virtualMethod("orElse", ExpressionImpl.from("'John'")));
+        verify("name  .orElse('John')", null, null, name("name"), virtualMethod("orElse", ExpressionImpl.from("'John'")));
+        verify("name. orElse('John')", null, null, name("name"), virtualMethod("orElse", ExpressionImpl.from("'John'")));
+        verify("name\n  .orElse('John')", null, null, name("name"), virtualMethod("orElse", ExpressionImpl.from("'John'")));
+        verify("name\r\n\t.orElse('John')", null, null, name("name"),
+                virtualMethod("orElse", ExpressionImpl.from("'John'")));
+        verify("name.\n  orElse('John')", null, null, name("name"), virtualMethod("orElse", ExpressionImpl.from("'John'")));
+        verify("item\n  .name\n  or 'John'", null, null, name("item"), name("name"),
+                virtualMethod("or", ExpressionImpl.from("'John'")));
+        verify("name \n.orElse('John')", null, null, name("name"), virtualMethod("orElse", ExpressionImpl.from("'John'")));
+        verify("list[1] or 'John'", null, null, name("list"), name("1"),
+                virtualMethod("or", ExpressionImpl.from("'John'")));
+        verify("list [1]", null, null, name("list"), name("1"));
+    }
+
+    @Test
     public void testNestedVirtualMethods() {
         assertNestedVirtualMethod(ExpressionImpl.from("movie.findServices(movie.name,movie.toNumber(movie.getName))"));
         assertNestedVirtualMethod(ExpressionImpl.from("movie.findServices(movie.name, movie.toNumber(movie.getName) )"));

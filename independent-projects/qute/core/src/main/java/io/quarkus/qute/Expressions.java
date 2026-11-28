@@ -81,6 +81,13 @@ public final class Expressions {
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
             if (splitConfig.isSeparator(c)) {
+                if (infix == 1 && isBlank(buffer) && literal == 0 && brackets == 0
+                        && splitConfig.isInfixNotationSupported()) {
+                    // A separator right after the whitespace that started an infix method, i.e. the whitespace is redundant
+                    // foo .bar
+                    // ----^
+                    infix = 0;
+                }
                 // Adjacent separators may be ignored
                 if (separator == 0 || separator != c) {
                     if (literal == 0 && brackets == 0 && infix == 0) {
@@ -111,8 +118,9 @@ public final class Expressions {
                     // Not inside a string/type literal
                     if (brackets == 0 && c == ' ' && splitConfig.isInfixNotationSupported()) {
                         // Infix supported, blank space and not inside a virtual method
-                        if (separator == 0
-                                && (buffer.length() == 0 || buffer.charAt(buffer.length() - 1) == '(')) {
+                        if ((separator == 0
+                                && (isBlank(buffer) || buffer.charAt(buffer.length() - 1) == '('))
+                                || (separator != 0 && buffer.length() == 0 && !splitConfig.shouldPrependSeparator(separator))) {
                             // Skip redundant blank space:
                             // 1. before the infix method
                             // foo  or bar
@@ -120,6 +128,9 @@ public final class Expressions {
                             // 2. before an infix method parameter
                             // foo or  bar
                             // -------^
+                            // 3. after a separator
+                            // foo. bar
+                            // ----^
                         } else if (infix == 1) {
                             // The space after the infix method
                             // foo or bar
@@ -166,6 +177,15 @@ public final class Expressions {
         }
         addPart(buffer, parts);
         return parts.build();
+    }
+
+    private static boolean isBlank(StringBuilder buffer) {
+        for (int i = 0; i < buffer.length(); i++) {
+            if (!Character.isWhitespace(buffer.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static String typeInfoFrom(String typeName) {

@@ -185,6 +185,93 @@ public class ParserTest {
     }
 
     @Test
+    public void testLinesAfterMultilineTags() {
+        Engine engine = Engine.builder().addDefaults().build();
+        // {foo} is always on line 5
+        assertFooLine(engine, "a\n{#if true}b{/if}\n\n\n{foo}");
+        // section tag
+        assertFooLine(engine, "a\n{#if\n  true\n}b{/if}\n{foo}");
+        // string literal in a section tag
+        assertFooLine(engine, "a\n{#if 'b\n\n' }b{/if}\n{foo}");
+        // comment
+        assertFooLine(engine, "a\n{! one\n  two\n!}\n{foo}");
+        // expression
+        assertFooLine(engine, "a\n{bar\n  .or('x')\n}\n{foo}");
+        // unparsed character data
+        assertFooLine(engine, "a\n{| one\n  two\n|}\n{foo}");
+        // escaped line separator
+        assertFooLine(engine, "a\\\n\n\n\n{foo}");
+    }
+
+    @Test
+    public void testMultilineTagOrigin() {
+        Engine engine = Engine.builder().addDefaults().build();
+        Template template = engine.parse("a\n  {bar\n  .or('x')}\n {foo}");
+        Origin barOrigin = find(template.getExpressions(), "bar.or('x')").getOrigin();
+        // The origin starts at the start delimiter
+        assertEquals(2, barOrigin.getLine());
+        assertEquals(3, barOrigin.getLineCharacterStart());
+        // ... and ends at the end delimiter on the next line
+        assertEquals(11, barOrigin.getLineCharacterEnd());
+        Origin fooOrigin = find(template.getExpressions(), "foo").getOrigin();
+        assertEquals(4, fooOrigin.getLine());
+        assertEquals(2, fooOrigin.getLineCharacterStart());
+        assertEquals(6, fooOrigin.getLineCharacterEnd());
+
+        template = engine.parse("a\n{#if\n  bar\n}b{/if}");
+        SectionNode ifNode = (SectionNode) template.findNodes(n -> n instanceof SectionNode).iterator().next();
+        assertEquals(2, ifNode.getOrigin().getLine());
+        assertEquals(1, ifNode.getOrigin().getLineCharacterStart());
+        // Section parameter expressions share the origin of the section tag
+        Origin conditionOrigin = find(template.getExpressions(), "bar").getOrigin();
+        assertEquals(2, conditionOrigin.getLine());
+
+        // The standalone lines removal and rendering is not affected
+        assertEquals("b\n", engine.parse("{#if\n  true\n}\nb\n{/if}").render());
+        assertEquals("a\\\nb", engine.parse("a\\\nb").render());
+    }
+
+    @Test
+    public void testLinesCrLf() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertFooLine(engine, "a\r\n{#if\r\n  true\r\n}b{/if}\r\n{foo}");
+        assertFooLine(engine, "a\r\n{! one\r\n  two\r\n!}\r\n{foo}");
+        assertFooLine(engine, "a\r\n{bar\r\n  .or('x')\r\n}\r\n{foo}");
+        assertFooLine(engine, "a\r\n{| one\r\n  two\r\n|}\r\n{foo}");
+        assertFooLine(engine, "a\\\r\n\r\n\r\n\r\n{foo}");
+
+        // LF and CRLF line separators must result in the same line character
+        Origin lfOrigin = find(engine.parse("a\n  {foo}").getExpressions(), "foo").getOrigin();
+        Origin crLfOrigin = find(engine.parse("a\r\n  {foo}").getExpressions(), "foo").getOrigin();
+        assertEquals(2, lfOrigin.getLine());
+        assertEquals(3, lfOrigin.getLineCharacterStart());
+        assertEquals(7, lfOrigin.getLineCharacterEnd());
+        assertEquals(2, crLfOrigin.getLine());
+        assertEquals(3, crLfOrigin.getLineCharacterStart());
+        assertEquals(7, crLfOrigin.getLineCharacterEnd());
+
+        crLfOrigin = find(engine.parse("{bar\r\n  .baz}\r\n {foo}").getExpressions(), "foo").getOrigin();
+        assertEquals(3, crLfOrigin.getLine());
+        assertEquals(2, crLfOrigin.getLineCharacterStart());
+    }
+
+    @Test
+    public void testParserErrorLineAfterMultilineTag() {
+        assertParserError("a\n{#if\n  true\n}b{/if}\n{#unknown /}", ParserError.NO_SECTION_HELPER_FOUND,
+                "Parser error: no section helper found for {#unknown /}", 5);
+        // The error refers to the start of the tag
+        assertParserError("a\n{#unknown\n  foo\n/}", ParserError.NO_SECTION_HELPER_FOUND,
+                "Parser error: no section helper found for {#unknown\n  foo\n/}", 2);
+        assertParserError("a\n{! comment\n!}\n{foo\n.bar", ParserError.UNTERMINATED_EXPRESSION,
+                "Parser error: unexpected non-text buffer at the end of the template - unterminated expression: foo\n.bar", 4);
+    }
+
+    private void assertFooLine(Engine engine, String content) {
+        Template template = engine.parse(content);
+        assertEquals(5, find(template.getExpressions(), "foo").getOrigin().getLine(), content);
+    }
+
+    @Test
     public void testWithTemplateLocator() {
         Engine engine = Engine.builder().addDefaultSectionHelpers().addLocator(id -> Optional.of(new TemplateLocation() {
 

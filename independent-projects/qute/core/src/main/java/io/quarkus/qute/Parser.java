@@ -76,6 +76,10 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     private State state;
     private int line;
     private int lineCharacter;
+    private char previousCharacter;
+    // The position of the start delimiter of the tag (or comment, unparsed character data) that is currently parsed
+    private int tagLine;
+    private int tagLineCharacter;
     private final Deque<SectionNode.Builder> sectionStack;
     private final Deque<ParametersInfo> paramsStack;
     private final Deque<Scope> scopeStack;
@@ -161,8 +165,10 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
             int val;
             while ((val = r.read()) != -1) {
-                processCharacter((char) val);
+                char character = (char) val;
+                processCharacter(character);
                 lineCharacter++;
+                previousCharacter = character;
             }
 
             if (buffer.length() > 0) {
@@ -246,6 +252,10 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     }
 
     private void processCharacter(char character) {
+        if (isInsideTag()) {
+            // A line separator inside a tag never changes the state but must be counted
+            tagLineSeparator(character);
+        }
         switch (state) {
             case TEXT:
                 text(character);
@@ -284,8 +294,13 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             // Invalid escape sequence is just ignored
             buffer.append(ESCAPE_CHAR);
         }
-        buffer.append(character);
         state = State.TEXT;
+        if (isLineSeparatorStart(character)) {
+            // The line separator must be processed as usual
+            text(character);
+        } else {
+            buffer.append(character);
+        }
     }
 
     private void text(char character) {
@@ -307,6 +322,8 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             // CRLF
             buffer.append(character);
             flushNextLine();
+            // The LF is processed immediately, i.e. the next character is the first character of the next line
+            lineCharacter = 0;
             state = State.TEXT;
         } else {
             flushNextLine();
@@ -340,19 +357,20 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         // The counted pipes are not a multi-pipe opener: the opener was a single pipe,
         // the trailing |} closes an (empty) section, and extra pipes are content
         if (character == END_DELIMITER && buffer.length() == 0 && cdataPipeCount >= 2) {
-            state = State.TEXT;
             for (int i = 0; i < cdataPipeCount - 2; i++) {
                 buffer.append(CDATA_END_DELIMITER);
             }
+            // Flush the text before the state is changed so that the text node origin starts at the start delimiter
             flushText();
+            state = State.TEXT;
             return;
         }
         if (character == END_DELIMITER && buffer.length() >= cdataPipeCount
                 && isCdataEnd()) {
             // End of cdata
-            state = State.TEXT;
             buffer.delete(buffer.length() - cdataPipeCount, buffer.length());
             flushText();
+            state = State.TEXT;
         } else {
             buffer.append(character);
         }
@@ -398,6 +416,9 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         if (isValidIdentifierStart(character)) {
             // Real tag start, flush text if any
             flushText();
+            // The start delimiter is always the previous character on the same line
+            tagLine = line;
+            tagLineCharacter = lineCharacter - 1;
             if (character == COMMENT_DELIMITER) {
                 buffer.append(character);
                 state = State.COMMENT;
@@ -435,10 +456,28 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         return character == LINE_SEPARATOR_CR || character == LINE_SEPARATOR_LF;
     }
 
+    private boolean isInsideTag() {
+        return switch (state) {
+            case TAG_INSIDE, TAG_INSIDE_STRING_LITERAL_SINGLE, TAG_INSIDE_STRING_LITERAL_DOUBLE, COMMENT, CDATA -> true;
+            default -> false;
+        };
+    }
+
+    private void tagLineSeparator(char character) {
+        if (character == LINE_SEPARATOR_LF && previousCharacter == LINE_SEPARATOR_CR) {
+            // CRLF - the line was already incremented for CR
+            lineCharacter = 0;
+        } else if (isLineSeparatorStart(character)) {
+            line++;
+            // The line character is incremented after the character is processed
+            lineCharacter = 0;
+        }
+    }
+
     private void flushText() {
         if (buffer.length() > 0 && !ignoreContent) {
             SectionBlock.Builder block = sectionStack.peek().currentBlock();
-            block.addNode(new TextNode(buffer.toString(), origin(0)));
+            block.addNode(new TextNode(buffer.toString(), currentOrigin()));
         }
         this.buffer = new StringBuilder();
     }
@@ -446,7 +485,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     private void flushNextLine() {
         if (buffer.length() > 0 && !ignoreContent) {
             SectionBlock.Builder block = sectionStack.peek().currentBlock();
-            block.addNode(new LineSeparatorNode(buffer.toString(), origin(0)));
+            block.addNode(new LineSeparatorNode(buffer.toString(), currentOrigin()));
         }
         this.buffer = new StringBuilder();
         line++;
@@ -454,7 +493,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     }
 
     private void flushTag() {
-        state = State.TEXT;
+        // Note that the state is changed after the tag is processed so that currentOrigin() returns the origin of the tag
         String content = buffer.toString().trim();
         String tagStr = START_DELIMITER + content + END_DELIMITER;
 
@@ -474,6 +513,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             default -> throw new IllegalArgumentException("Unexpected tag: " + tag);
         }
         this.buffer = new StringBuilder();
+        state = State.TEXT;
     }
 
     private void sectionStart(String content, String tag) {
@@ -503,7 +543,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
             // => New section block
             SectionBlock.Builder block = SectionBlock.builder("" + sectionBlockIdx++, this, this)
-                    .setOrigin(origin(tag.length() - 1)).setLabel(sectionName);
+                    .setOrigin(currentOrigin()).setLabel(sectionName);
             lastSection.addBlock(block);
 
             processParams(tag, sectionName, iter, block);
@@ -522,7 +562,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                         .build();
             }
             SectionNode.Builder sectionNode = SectionNode
-                    .builder(sectionName, origin(tag.length() - 1), this, this)
+                    .builder(sectionName, currentOrigin(), this, this)
                     .setEngine(engine)
                     .setHelperFactory(factory);
 
@@ -653,7 +693,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         if (key == null || value == null || (parts.size() > 2 && defaultValue == null)) {
             throw error(ParserError.INVALID_PARAM_DECLARATION, "invalid parameter declaration {param}")
                     .argument("param", START_DELIMITER + buffer.toString() + END_DELIMITER)
-                    .origin(origin(0))
+                    .origin(currentOrigin())
                     .build();
         }
 
@@ -661,7 +701,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         currentScope.putBinding(key, typeInfo);
         sectionStack.peek().currentBlock().addNode(
                 new ParameterDeclarationNode(typeInfo, key, defaultValue != null ? createExpression(defaultValue) : null,
-                        origin(0)));
+                        currentOrigin()));
 
         // If a default value is set we add a synthetic {#let} section to define local variables with default values
         if (defaultValue != null) {
@@ -673,7 +713,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                         .build();
             }
             SectionNode.Builder sectionNode = SectionNode
-                    .builder("let", origin(0), this, this)
+                    .builder("let", currentOrigin(), this, this)
                     .setEngine(engine)
                     .setHelperFactory(factory);
 
@@ -695,7 +735,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     }
 
     private TemplateException.Builder error(ErrorCode code, String message) {
-        return error(code, message, origin(0));
+        return error(code, message, currentOrigin());
     }
 
     static TemplateException.Builder error(ErrorCode code, String message, Origin origin) {
@@ -707,7 +747,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
     @Override
     public Origin getOrigin() {
-        return origin(0);
+        return currentOrigin();
     }
 
     private void processParams(String tag, String label, Iterator<String> iter, SectionBlock.Builder block) {
@@ -729,7 +769,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 && actualSize > factoryParams.size()
                 && LOGGER.isDebugEnabled()) {
             StringBuilder builder = new StringBuilder("Too many section params for ").append(tag);
-            Origin origin = origin(0);
+            Origin origin = currentOrigin();
             origin.appendTo(builder);
             builder.append(String.format("[label=%s, params=%s, factoryParams=%s]", label, paramValues, factoryParams));
             LOGGER.debugf(builder.toString());
@@ -1173,11 +1213,22 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     }
 
     ExpressionImpl createExpression(String value) {
-        return parseExpression(expressionIdGenerator::incrementAndGet, value, scopeStack.peek(), origin(value.length() + 1));
+        return parseExpression(expressionIdGenerator::incrementAndGet, value, scopeStack.peek(), currentOrigin());
     }
 
-    Origin origin(int lineCharacterOffset) {
-        return new OriginImpl(line, lineCharacter - lineCharacterOffset, lineCharacter, templateId, generatedId,
+    /**
+     * If a tag (or comment, unparsed character data) is being parsed then the origin starts at the start delimiter of the
+     * tag and ends at the current character. Note that the end line character may refer to a subsequent line if the tag
+     * spans multiple lines. Otherwise, the origin refers to the current character.
+     *
+     * @return the current origin
+     */
+    Origin currentOrigin() {
+        if (isInsideTag()) {
+            return new OriginImpl(tagLine, tagLineCharacter, lineCharacter, templateId, generatedId,
+                    location.getVariant().orElse(null), location.getSource().orElse(null));
+        }
+        return new OriginImpl(line, lineCharacter, lineCharacter, templateId, generatedId,
                 location.getVariant().orElse(null), location.getSource().orElse(null));
     }
 

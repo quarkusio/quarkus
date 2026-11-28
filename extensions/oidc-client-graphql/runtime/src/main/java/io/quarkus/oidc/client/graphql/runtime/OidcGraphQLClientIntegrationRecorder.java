@@ -1,6 +1,7 @@
 package io.quarkus.oidc.client.graphql.runtime;
 
 import java.util.Map;
+import java.util.Set;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.annotations.Recorder;
@@ -12,10 +13,15 @@ public class OidcGraphQLClientIntegrationRecorder {
 
     public void enhanceGraphQLClientConfigurationWithOidc(Map<String, String> configKeysToOidcClients,
             String defaultOidcClientName,
-            Map<String, String> oidcClientToTokenProducerName) {
+            Map<String, String> oidcClientToTokenProducerName,
+            Set<String> tokenPropagationConfigKeys) {
         var container = Arc.requireContainer();
         GraphQLClientsConfiguration configs = GraphQLClientsConfiguration.getInstance();
         configs.getClients().forEach((graphQLClientKey, value) -> {
+            if (tokenPropagationConfigKeys.contains(graphQLClientKey)) {
+                // this GraphQL client propagates the access token instead of acquiring a new one
+                return;
+            }
             String oidcClient = configKeysToOidcClients.get(graphQLClientKey);
             if (oidcClient == null) {
                 oidcClient = defaultOidcClientName;

@@ -372,5 +372,6 @@ GraphQL service and explained the difference between the client types.
 ifndef::no-quarkus-oidc-client-graphql[]
 * xref:security-openid-connect-client-reference.adoc#quarkus-oidc-client-graphql[Integrating OIDC clients into GraphQL clients]
 endif::no-quarkus-oidc-client-graphql[]
+* xref:security-openid-connect-client-reference.adoc#token-propagation-graphql[Propagating access tokens with GraphQL clients]
 
 * https://smallrye.io/smallrye-graphql/latest/[Upstream SmallRye GraphQL Client documentation]

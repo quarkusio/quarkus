@@ -25,11 +25,11 @@ public final class AccessTokenInstanceBuildItem extends MultiBuildItem {
         this.targetMethodInfo = targetMethodInfo;
     }
 
-    String getClientName() {
+    public String getClientName() {
         return clientName;
     }
 
-    boolean exchangeTokenActivated() {
+    public boolean exchangeTokenActivated() {
         return tokenExchange;
     }
 

@@ -6,7 +6,10 @@ import static io.quarkus.oidc.client.runtime.OidcClientsConfig.DEFAULT_CLIENT_KE
 import java.lang.constant.ClassDesc;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import jakarta.inject.Singleton;
 
@@ -36,6 +39,7 @@ import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.oidc.client.graphql.runtime.AbstractGraphQLTokenProvider;
 import io.quarkus.oidc.client.graphql.runtime.OidcClientGraphQLConfig;
 import io.quarkus.oidc.client.graphql.runtime.OidcGraphQLClientIntegrationRecorder;
+import io.quarkus.oidc.token.propagation.graphql.deployment.spi.GraphQLClientTokenPropagationBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.graphql.client.deployment.GraphQLClientConfigInitializedBuildItem;
 
@@ -138,7 +142,8 @@ class OidcGraphQLClientIntegrationProcessor {
             OidcClientGraphQLConfig config,
             BeanArchiveIndexBuildItem index,
             GraphQLTokenProducerInfo graphQLTokenProducerInfo,
-            GraphQLClientConfigInitializedBuildItem configInitialized) {
+            GraphQLClientConfigInitializedBuildItem configInitialized,
+            List<GraphQLClientTokenPropagationBuildItem> tokenPropagations) {
         Map<String, String> configKeysToOidcClients = getConfigKeysToOidcClientsFromIndex(index.getIndex(), true);
         configKeysToOidcClients.forEach((graphQLConfigKey, oidcClient) -> {
             if (!graphQLTokenProducerInfo.configKeysToOidcClientsFromCombinedIndex.containsValue(oidcClient)) {
@@ -151,9 +156,26 @@ class OidcGraphQLClientIntegrationProcessor {
         config.additionalOidcClients()
                 .forEach((graphQlClient, oidcClient) -> configKeysToOidcClients.put(graphQlClient, oidcClient.clientName()));
 
+        // GraphQL clients which propagate the access token instead of acquiring a new one
+        Set<String> tokenPropagationConfigKeys = new TreeSet<>();
+        for (GraphQLClientTokenPropagationBuildItem tokenPropagation : tokenPropagations) {
+            String configKey = tokenPropagation.getConfigKey();
+            String oidcClient = configKeysToOidcClients.get(configKey);
+            if (oidcClient != null) {
+                throw new ConfigurationException("""
+                        The '%s' OIDC client has been configured for the '%s' GraphQL client, either with the '%s' annotation
+                        or with the 'quarkus.oidc-client-graphql."%s".client-name' configuration property.
+                        However, this GraphQL client is annotated with @AccessToken and propagates the access token.
+                        Please choose one way to provide the 'Authorization' header.
+                        """.formatted(oidcClient, configKey, OIDC_CLIENT_FILTER, configKey));
+            }
+            tokenPropagationConfigKeys.add(configKey);
+        }
+
         recorder.enhanceGraphQLClientConfigurationWithOidc(configKeysToOidcClients,
                 config.clientName().orElse(DEFAULT_CLIENT_KEY),
-                graphQLTokenProducerInfo.oidcClientToTokenProducerBeanName);
+                graphQLTokenProducerInfo.oidcClientToTokenProducerBeanName,
+                tokenPropagationConfigKeys);
     }
 
     private static Map<String, String> getConfigKeysToOidcClientsFromIndex(IndexView index, boolean withDefault) {

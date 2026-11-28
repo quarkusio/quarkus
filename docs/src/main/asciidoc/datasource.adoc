@@ -90,6 +90,53 @@ Be aware that setting the pool size too low might cause some requests to time ou
 
 For more information about pool size adjustment properties, see the <<jdbc-configuration>> section.
 
+[[jdbc-connection-validation]]
+==== JDBC connection validation
+
+A pooled connection can be closed on the database side without the pool noticing: an idle session dropped by a firewall, a session killed by an administrator, or a database failover.
+To avoid handing such a connection to the application, Agroal validates connections with
+link:{jdk-javadocs-url}/java.sql/java/sql/Connection.html#isValid(int)[`Connection.isValid()`].
+
+By default, idle connections are validated in the background every two minutes.
+To also validate a connection when it is acquired, if it has been idle for longer than a given duration, set a foreground validation interval:
+
+[source,properties]
+----
+quarkus.datasource.jdbc.background-validation-interval=2M
+quarkus.datasource.jdbc.foreground-validation-interval=30S
+----
+
+Set `background-validation-interval` to `0` to disable background validation.
+`foreground-validation-interval` is unset by default.
+
+TIP: `quarkus.datasource.jdbc.validate-on-borrow=true` validates on every acquisition regardless of how long the connection has been idle, which adds a round trip to each `getConnection()` call. Prefer idle validation.
+
+If `Connection.isValid()` is not reliable for your database, configure a validation query instead:
+
+[source,properties]
+----
+quarkus.datasource.jdbc.validation-query-sql=SELECT 1
+quarkus.datasource.jdbc.validation-query-timeout=5S
+----
+
+===== Pool flush on validation failure
+
+When a connection fails background validation, Quarkus considers the pool stale and flushes it: idle connections are closed immediately, connections in use are closed when they are returned, and replacements are created as needed.
+This is the right reaction to a database failover, where every connection is broken at once, but it is expensive when a single connection has been dropped: on a pool of 200 connections, one failed validation costs 200 reconnections.
+
+To require more than one failure in the same background validation run before the pool is flushed, set a threshold:
+
+[source,properties]
+----
+quarkus.datasource.jdbc.validation-failure-flush-threshold=3
+----
+
+With this configuration, the first two connections that fail validation in the same run are removed individually, and the third one flushes the pool.
+The threshold defaults to `1`, which flushes the pool on the first failed validation, and must not be greater than `quarkus.datasource.jdbc.max-size`.
+Set it to `0` to never flush the pool and only remove the connections that failed validation.
+
+NOTE: Connections that fail validation on acquisition, rather than during a background run, are removed and do not count towards this threshold.
+
 ==== Read-only JDBC pools
 
 You can mark a JDBC pool as read-only so that connections are created with

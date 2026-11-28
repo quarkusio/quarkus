@@ -78,6 +78,10 @@ public final class SpiffeX509MtlsTestResource implements QuarkusTestResourceLife
 
         return Map.of(
                 "quarkus.spiffe-client.endpoint-socket", "tcp://127.0.0.1:" + port,
+                // every fetch brings a new leaf, so the rotation shows within seconds
+                "quarkus.spiffe-client.x509-svid.refresh-period", "1s",
+                // the tests reach the application over plain HTTP, the application calls itself over mutual TLS
+                "quarkus.http.insecure-requests", "enabled",
                 "spiffe.mtls.enabled", "true",
                 "quarkus.oidc.tenant-enabled", "false");
     }

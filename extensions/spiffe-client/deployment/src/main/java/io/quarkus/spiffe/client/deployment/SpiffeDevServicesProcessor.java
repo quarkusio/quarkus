@@ -29,6 +29,7 @@ import io.quarkus.spiffe.client.deployment.SpiffeClientProcessor.SpiffeClientEna
 import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVID;
 import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVIDRequest;
 import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVIDResponse;
+import io.quarkus.spiffe.client.runtime.internal.tls.SpiffeTlsStoreProvider;
 import io.smallrye.common.os.OS;
 import io.smallrye.config.Config;
 import io.smallrye.jwk.EcCurve;
@@ -91,6 +92,7 @@ public final class SpiffeDevServicesProcessor {
                         .startable(() -> new SpiffeWorkloadApiDevServer(transport, config.devservices().httpPort()))
                         .configProvider(s -> Map.of(
                                 ENDPOINT_SOCKET_CONFIG_KEY, s.getConnectionInfo(),
+                                SpiffeTlsStoreProvider.DEV_SERVICE_ENDPOINT_SOCKET, s.getConnectionInfo(),
                                 BASE_URL_CONFIG_KEY, s.baseUrl()))
                         .postStartHook(server -> {
                             if (!server.errorMessages.isEmpty()) {

@@ -26,6 +26,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devservices</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-tls-registry-spi</artifactId>
+        </dependency>
         <!-- Exclusions follow the vertx-grpc pattern used by the OTel exporter (integration-tests/opentelemetry-vertx-exporter). -->
         <dependency>
             <groupId>io.vertx</groupId>
@@ -57,6 +61,16 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.certs</groupId>
+            <artifactId>smallrye-certificate-generator</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

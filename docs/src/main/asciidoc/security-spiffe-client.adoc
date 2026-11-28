@@ -127,95 +127,146 @@ Please see the xref:security-oidc-code-flow-authentication.adoc#oidc-provider-cl
 
 == Retrieve X.509-SVID
 
-X.509-SVID is an X.509 workload certificate document which includes a client certificate chain and private key, as well as a server trust bundle.
-
-To retrieve an X.509-SVID from the SPIFFE Agent, inject the `X509SvidClient` CDI bean:
-
-=== Quarkus REST Client
-
-The following example shows how to configure a Quarkus REST client with a retrieved X.509-SVID:
+The Workload API issues the X.509-SVID of the workload together with its private key and the trust bundle of its trust domain.
+Inject the `X509SvidClient` CDI bean to retrieve them from the SPIRE Agent.
 
 [source,java]
 ----
-import java.net.URI;
-
-import jakarta.enterprise.context.RequestScoped;
-import jakarta.enterprise.inject.Produces;
-import jakarta.inject.Inject;
-
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.spiffe.svid.x509.WorkloadCertificateDocument;
 import io.quarkus.spiffe.svid.x509.X509SvidClient;
-import io.quarkus.tls.BaseTlsConfiguration;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.net.KeyCertOptions;
-import io.vertx.core.net.PemKeyCertOptions;
-import io.vertx.core.net.PemTrustOptions;
-import io.vertx.core.net.TrustOptions;
+import io.smallrye.mutiny.Uni;
 
-@RequestScoped
-class MyServiceClientProducer {
+@ApplicationScoped
+public class MyService {
 
     @Inject
     X509SvidClient x509SvidClient;
 
-    @Produces
-    @ApplicationScoped
-    MyServiceClient createClient() { <1>
-        WorkloadCertificateDocument cert = x509SvidClient.getWorkloadCertificate()
-                .await().indefinitely();
-        return QuarkusRestClientBuilder.newBuilder()
-                .baseUri(URI.create("https://my-service:8443"))
-                .tlsConfiguration(new SpiffeTlsConfiguration(cert))
-                .build(MyServiceClient.class);
-    }
-
-    private static final class SpiffeTlsConfiguration extends BaseTlsConfiguration {
-
-        private final KeyCertOptions keyCertOptions;
-        private final TrustOptions trustOptions;
-
-        private SpiffeTlsConfiguration(WorkloadCertificateDocument cert) {
-            var keyCert = new PemKeyCertOptions(); <2>
-            for (String pem : cert.certificateChain().chainPem()) {
-                keyCert.addCertValue(Buffer.buffer(pem));
-            }
-            keyCert.addKeyValue(Buffer.buffer(cert.certificateChain().privateKeyPem()));
-            this.keyCertOptions = keyCert;
-
-            var trust = new PemTrustOptions(); <3>
-            for (String pem : cert.trustBundle().certificatesPem()) {
-                trust.addCertValue(Buffer.buffer(pem));
-            }
-            this.trustOptions = trust;
-        }
-
-        @Override
-        public KeyCertOptions getKeyStoreOptions() {
-            return keyCertOptions;
-        }
-
-        @Override
-        public TrustOptions getTrustStoreOptions() {
-            return trustOptions;
-        }
+    public Uni<String> getSpiffeId() {
+        return x509SvidClient.getWorkloadCertificate()
+                .map(WorkloadCertificateDocument::subject); <1>
     }
 }
 ----
-<1> Creates a REST client per request, fetching a fresh X.509-SVID from the SPIFFE Workload API. In practice, clients should consider caching SVIDs until close to expiration.
-<2> Builds PEM key-cert options from the SPIFFE certificate chain and private key.
-<3> Builds PEM trust options from the trust bundle CA certificates. The server certificate must be issued by a CA in the SPIFFE trust bundle for the TLS handshake to succeed.
+<1> The `subject()` method returns the SPIFFE ID of the workload, for example `spiffe://example.org/myservice`.
 
-NOTE: When the server also presents an X.509-SVID, standard hostname verification must be disabled because SPIFFE conveys workload identity in the URI SAN, not the DNS SAN.
-In that case, the https://github.com/spiffe/spiffe/blob/main/standards/X509-SVID.md#5-constraints-and-usage[X.509-SVID specification] requires additional leaf certificate validation — verifying the URI SAN contains a valid SPIFFE ID, that `basicConstraints` has `cA=false`, and that `keyUsage` includes `digitalSignature` but not `keyCertSign`.
-SPIFFE-aware trust validation via TLS registry integration will be provided in a future release.
+To secure connections with the X.509-SVID, declare a TLS configuration as described in <<x509-svid-tls-configurations>> instead of using the certificate directly.
 
 TIP: The `io.quarkus.spiffe.client.SpiffeClient` class extends both `JwtSvidClient` and `X509SvidClient` classes. When your workload needs both JWT-SVIDs and X.509-SVIDs, consider injecting `SpiffeClient` instead of dealing with both `JwtSvidClient` and `X509SvidClient` clients.
+
+[[x509-svid-tls-configurations]]
+== Mutual TLS with the X.509-SVID
+
+Annotate any class with `@X509Svid` to register a xref:tls-registry-reference.adoc[TLS registry] configuration that is backed by the X.509-SVID of the workload.
+The TLS configuration presents the current X.509-SVID and accepts only a peer that presents an X.509-SVID of the same trust domain with the declared SPIFFE ID.
+The Quarkus REST Client and the HTTP server refer to it by name.
+
+[source,java]
+----
+import io.quarkus.spiffe.svid.x509.X509Svid;
+
+@X509Svid(tls = "inventory", spiffeId = "spiffe://example.org/inventory") <1>
+@X509Svid(tls = "workloads") <2>
+public class TlsConfigurations {
+}
+----
+<1> The `inventory` TLS configuration accepts only the workload with the SPIFFE ID `spiffe://example.org/inventory`.
+<2> Without `spiffeId`, the `workloads` TLS configuration accepts any workload of the trust domain.
+
+The `spiffeId` attribute also accepts a property expression, so the SPIFFE ID of the peer can differ between environments.
+
+[source,java]
+----
+@X509Svid(tls = "inventory", spiffeId = "${inventory.spiffe-id:spiffe://example.org/inventory}")
+----
+
+Every `@X509Svid` must accept a different peer, because all of them present the same X.509-SVID.
+Peers of other trust domains are always rejected, because federated trust domains are currently not supported.
+
+=== Quarkus REST Client
+
+Reference the TLS configuration in the configuration of a REST client.
+
+[source,java]
+----
+@RegisterRestClient(configKey = "inventory")
+@Path("/items")
+public interface InventoryClient {
+
+    @GET
+    List<String> items();
+}
+----
+
+[source,properties]
+----
+quarkus.rest-client.inventory.url=https://inventory.example.org:8443
+quarkus.rest-client.inventory.tls-configuration-name=inventory
+----
+
+The REST client presents the X.509-SVID of the workload and accepts the server only when it presents an X.509-SVID with the SPIFFE ID `spiffe://example.org/inventory`.
+Hostname verification does not apply, because the SPIFFE ID identifies the server.
+
+=== HTTP server
+
+The HTTP server can also present the X.509-SVID and authorize the client workloads.
+
+[source,properties]
+----
+quarkus.http.tls-configuration-name=workloads
+quarkus.http.ssl.client-auth=required
+----
+
+With the `workloads` TLS configuration, the server accepts any client workload of the trust domain.
+Declare a `spiffeId` to accept a single client workload.
+
+IMPORTANT: Always set `quarkus.http.ssl.client-auth` to `required`.
+With `request` or `none`, the server also accepts clients that present no certificate, and those clients bypass the SPIFFE ID authorization.
+
+=== X.509-SVID rotation
+
+The extension fetches the X.509-SVID from the Workload API every `quarkus.spiffe-client.x509-svid.refresh-period`, which is five minutes by default.
+Every new TLS handshake uses the current X.509-SVID.
+SPIRE rotates an X.509-SVID when about half of its lifetime has passed, so keep the refresh period well below that lifetime.
+A warning is logged when the refresh period exceeds a quarter of the lifetime.
+
+[source,properties]
+----
+quarkus.spiffe-client.x509-svid.refresh-period=1m
+----
+
+The application waits for the first X.509-SVID at startup and fails to start when it gets none within a minute.
+When the X.509-SVID expires before a new one is fetched, or when the Workload API stops issuing an X.509-SVID to the workload, new TLS handshakes fail until a new X.509-SVID arrives.
+Connections that are already established stay open.
+
+=== TLS configuration properties
+
+You can also set the `+quarkus.tls.<name>.*+` properties of a TLS configuration declared with `@X509Svid` when you need to adjust it.
+For example, the following configuration allows only the AES-256 cipher suite for the `inventory` TLS configuration.
+
+[source,properties]
+----
+quarkus.tls.inventory.cipher-suites=TLS_AES_256_GCM_SHA384
+----
+
+The following settings are known to be unsupported.
+
+* `+quarkus.tls.<name>.key-store.*+` and `+quarkus.tls.<name>.trust-store.*+`
+* `quarkus.tls.<name>.trust-all`
+* `quarkus.tls.<name>.certificate-revocation-list`
+* `quarkus.tls.<name>.reload-period`
+* `quarkus.tls.<name>.hostname-verification-algorithm`
+* `quarkus.tls.<name>.protocols` with a version older than TLS 1.3
+* SSL engines other than the JDK SSL engine.
+
+These TLS configurations have no raw key store or trust store, so extensions that read them are not supported.
+The Pulsar client is currently not supported either.
 
 == Testing
 
 In dev and test modes, the extension provides a Dev Service that emulates the SPIFFE Workload API with a pre-configured identity and a locally generated key pair.
 While it does not support custom authorization policies or registration entries, it is sufficient for verifying that your application correctly retrieves and uses JWT-SVIDs without requiring external SPIRE infrastructure.
+The Dev Service does not issue X.509-SVIDs, so the TLS configurations declared with `@X509Svid` are not initialized and their TLS handshakes fail, which a warning reports at startup.
 You can choose the transport protocol with the `quarkus.spiffe-client.devservices.transport` property, which accepts `unix` (default) or `tcp`.
 
 [[keycloak-dev-svc-integration]]

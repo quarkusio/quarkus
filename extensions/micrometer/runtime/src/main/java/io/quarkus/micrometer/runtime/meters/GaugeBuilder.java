@@ -1,53 +1,47 @@
 package io.quarkus.micrometer.runtime.meters;
 
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
 
 public class GaugeBuilder<T> {
 
-    private final GaugeSupplier<T> supplier;
-    private final Gauge.Builder<Supplier<Number>> builder;
-    private final ConcurrentMap<Meter.Id, T> map;
-    private final Supplier<T> factory;
+    private final String name;
+    private final Gauges<T> gauges;
+    private final ToDoubleFunction<T> function;
+    private Tags tags = Tags.empty();
+    private String description;
 
-    GaugeBuilder(String name, ConcurrentMap<Meter.Id, T> map,
-            Supplier<T> factory, ToDoubleFunction<T> func) {
-        this.supplier = new GaugeSupplier<>(map, func);
-        this.builder = Gauge.builder(name, supplier);
-        this.map = map;
-        this.factory = factory;
+    GaugeBuilder(String name, Gauges<T> gauges, ToDoubleFunction<T> function) {
+        this.name = name;
+        this.gauges = gauges;
+        this.function = function;
     }
 
     public GaugeBuilder<T> description(String description) {
-        builder.description(description);
+        this.description = description;
         return this;
     }
 
     public GaugeBuilder<T> tags(Iterable<Tag> tags) {
-        builder.tags(tags);
+        this.tags = this.tags.and(tags);
         return this;
     }
 
     public GaugeBuilder<T> tag(String key, String value) {
-        builder.tag(key, value);
+        tags = tags.and(key, value);
         return this;
     }
 
     public T register(MeterRegistry registry) {
-        Meter.Id meterId = builder.register(registry).getId();
-        supplier.setId(meterId);
-        return map.computeIfAbsent(meterId, id -> factory.get());
+        return gauges.register(registry, new Meter.Id(name, tags, null, description, Meter.Type.GAUGE), function, null);
     }
 
     public T register(MeterRegistry registry, T externalValue) {
-        Meter.Id meterId = builder.register(registry).getId();
-        supplier.setId(meterId);
-        return map.computeIfAbsent(meterId, id -> externalValue);
+        return gauges.register(registry, new Meter.Id(name, tags, null, description, Meter.Type.GAUGE), function,
+                () -> externalValue);
     }
 }

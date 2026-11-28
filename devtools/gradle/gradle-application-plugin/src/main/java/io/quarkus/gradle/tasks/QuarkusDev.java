@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -372,8 +373,12 @@ public abstract class QuarkusDev extends QuarkusTask {
             String outputFile = System.getProperty(IO_QUARKUS_DEVMODE_ARGS);
             if (outputFile == null) {
                 getExecOperations().exec(action -> {
+                    Map<String, String> env = new HashMap<>(getEnvVars());
+                    for (Map.Entry<String, String> entry : runner.getLauncherEnvironmentVariables().entrySet()) {
+                        env.putIfAbsent(entry.getKey(), entry.getValue());
+                    }
                     action.commandLine(runner.getArguments()).workingDir(getWorkingDirectory().get());
-                    action.environment(getEnvVars());
+                    action.environment(env);
                     action.setStandardInput(System.in)
                             .setErrorOutput(System.out)
                             .setStandardOutput(System.out);

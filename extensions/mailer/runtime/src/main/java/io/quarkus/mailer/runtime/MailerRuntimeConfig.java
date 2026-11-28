@@ -200,6 +200,7 @@ public interface MailerRuntimeConfig {
      * Approved recipients are compiled to a {@code Pattern} and must be a valid regular expression.
      * The created {@code Pattern} is case-insensitive as emails are case insensitive.
      * Provided patterns are trimmed before being compiled.
+     * The pattern text is not lowercased, so character classes keep their meaning.
      *
      * @see {@link #logRejectedRecipients}
      */

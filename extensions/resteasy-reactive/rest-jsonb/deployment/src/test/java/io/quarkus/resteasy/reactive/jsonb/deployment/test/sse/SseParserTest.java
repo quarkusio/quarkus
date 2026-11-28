@@ -134,19 +134,23 @@ public class SseParserTest {
         // BOM
         testParserWithBytes(
                 Collections.singletonList(
-                        new byte[] { (byte) 0xFE, (byte) 0xFF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n', '\n' }),
+                        new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n',
+                                '\n' }),
                 Collections.singletonList(new InboundSseEventImpl(null, null)
                         .setData("foo")));
 
-        // invalid BOM location
-        Assertions
-                .assertThrows(IllegalStateException.class,
-                        () -> testParserWithBytes(
-                                Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n', '\n' },
-                                        new byte[] { (byte) 0xFE, (byte) 0xFF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n',
-                                                '\n' }),
-                                Collections.singletonList(new InboundSseEventImpl(null, null)
-                                        .setData("foo"))));
+        // BOM not at the start of the stream: it is not skipped, and the BOM bytes are decoded as the
+        // (invisible) U+FEFF character, which is a valid name char. It ends up at the start of the field name,
+        // so the field is not "data" but U+FEFF followed by "data", an unknown field that is ignored.
+        // As a result, we get a second event with empty data instead of "foo".
+        testParserWithBytes(
+                Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n', '\n' },
+                        new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o',
+                                '\n', '\n' }),
+                Arrays.asList(new InboundSseEventImpl(null, null)
+                        .setData("foo"),
+                        new InboundSseEventImpl(null, null)
+                                .setData("")));
         // invalid UTF-8
         Assertions.assertThrows(IllegalStateException.class,
                 () -> testParserWithBytes(

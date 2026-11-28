@@ -240,6 +240,28 @@ public class GraalVMTest {
         assertThat(version.javaVersion.update()).isEqualTo(0);
     }
 
+    /**
+     * GraalVM 25.1 changed how URL protocol handlers are enabled, so NativeImageBuildStep only passes
+     * {@code --enable-url-protocols} to older versions: the 25.0.x line (including Mandrel and Oracle GraalVM 25.0.x)
+     * must compare lower than 25.1, and the 25.1+ line (whose JDK version is still 25.0.x) must not.
+     */
+    @Test
+    public void testGraalVM25_1Cutoff() {
+        assertThat(Version.of(("native-image 25.0.5 2026-10-20\n"
+                + "OpenJDK Runtime Environment Mandrel-25.0.5.0-Final (build 25.0.5+8-LTS)\n"
+                + "OpenJDK 64-Bit Server VM Mandrel-25.0.5.0-Final (build 25.0.5+8-LTS, mixed mode)").lines())
+                .compareTo(Version.VERSION_25_1_0)).isNegative();
+        assertThat(Version.of(("native-image 25.0.4 2026-07-21\n"
+                + "GraalVM Runtime Environment Oracle GraalVM 25.0.4+7.1 (build 25.0.4+7-LTS-jvmci-b01)\n"
+                + "Substrate VM Oracle GraalVM 25.0.4+7.1 (build 25.0.4+7-LTS, serial gc, compressed references)").lines())
+                .compareTo(Version.VERSION_25_1_0)).isNegative();
+        assertThat(Version.of(("native-image 25.0.4.1.1 2026-08-18\n"
+                + "GraalVM Runtime Environment Oracle GraalVM 25.4.4.1.1+1.1 (build 25.0.4.1.1+1-LTS-jvmci-25.4-b23)\n"
+                + "Substrate VM Oracle GraalVM 25.4.4.1.1+1.1 (build 25.0.4.1.1+1-LTS, serial gc, compressed references)")
+                .lines())
+                .compareTo(Version.VERSION_25_1_0)).isNotNegative();
+    }
+
     @Test
     public void testGraalVMVersionsOlderThan() {
         assertOlderThan("native-image 21 2023-09-19\n" +

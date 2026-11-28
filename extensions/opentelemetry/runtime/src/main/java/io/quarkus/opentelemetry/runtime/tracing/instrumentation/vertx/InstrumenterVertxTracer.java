@@ -3,7 +3,9 @@ package io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.vertx.OpenTelemetryVertxTracer.SpanOperation;
@@ -37,6 +39,13 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
         io.opentelemetry.context.Context parentContext = QuarkusContextStorage.getOtelContext(context);
         if (parentContext == null) {
             parentContext = io.opentelemetry.context.Context.current();
+        }
+
+        // Under PROPAGATE there must be a trace to continue: either an active local context or a parent
+        // propagated through the incoming headers, so a distributed trace is still joined.
+        if (TracingPolicy.PROPAGATE == effectivePolicy(policy)
+                && !hasParentSpan(extractParent(parentContext, headers))) {
+            return null;
         }
 
         if (instrumenter.shouldStart(parentContext, (REQ) request)) {
@@ -108,6 +117,12 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
             parentContext = io.opentelemetry.context.Context.current();
         }
 
+        // Under PROPAGATE there must be an active trace to propagate. An outgoing request carries no incoming
+        // headers to extract a parent from, so the active context is the only source.
+        if (TracingPolicy.PROPAGATE == effectivePolicy(policy) && !hasParentSpan(parentContext)) {
+            return null;
+        }
+
         if (instrumenter.shouldStart(parentContext, (REQ) request)) {
             io.opentelemetry.context.Context spanContext = instrumenter.start(parentContext,
                     writableHeaders((REQ) request, headers));
@@ -154,9 +169,52 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
 
     Instrumenter<REQ, RESP> getReceiveResponseInstrumenter();
 
+    /**
+     * Policy this tracer falls back to when Vert.x reports {@link TracingPolicy#PROPAGATE}.
+     * <p>
+     * Vert.x reports {@code PROPAGATE} both when the caller explicitly asked for it and when nothing was
+     * configured, and the two cannot be told apart here. The fallback is therefore {@link TracingPolicy#ALWAYS}:
+     * a client or server boundary keeps starting a span even outside an existing trace, which is what the
+     * OpenTelemetry specification expects. Instrumentations that should stay silent outside a trace override
+     * this with {@code PROPAGATE}.
+     * <p>
+     * {@link TracingPolicy#IGNORE} and an explicit {@link TracingPolicy#ALWAYS} are honored as-is and never
+     * reach this method.
+     */
+    default TracingPolicy getDefaultTracingPolicy() {
+        return TracingPolicy.ALWAYS;
+    }
+
+    /**
+     * Propagator used to look for a parent in the incoming headers. Only tracers that default to
+     * {@link TracingPolicy#PROPAGATE} need to override this.
+     */
+    default TextMapPropagator getPropagator() {
+        return null;
+    }
+
     default SpanOperation spanOperation(Context context, REQ request, MultiMap headers,
             io.opentelemetry.context.Context spanContext, Scope scope) {
         return SpanOperation.span(context, request, headers, spanContext, scope);
+    }
+
+    private TracingPolicy effectivePolicy(TracingPolicy policy) {
+        return TracingPolicy.PROPAGATE == policy ? getDefaultTracingPolicy() : policy;
+    }
+
+    private io.opentelemetry.context.Context extractParent(
+            io.opentelemetry.context.Context parentContext,
+            Iterable<Map.Entry<String, String>> headers) {
+
+        TextMapPropagator propagator = getPropagator();
+        if (propagator == null || headers == null) {
+            return parentContext;
+        }
+        return propagator.extract(parentContext, headers, HeadersTextMapGetter.INSTANCE);
+    }
+
+    private static boolean hasParentSpan(io.opentelemetry.context.Context context) {
+        return Span.fromContext(context).getSpanContext().isValid();
     }
 
     default REQ writableHeaders(REQ request, BiConsumer<String, String> headers) {

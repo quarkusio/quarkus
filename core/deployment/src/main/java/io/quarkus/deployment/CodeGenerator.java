@@ -69,7 +69,7 @@ public class CodeGenerator {
         Map<String, String> props = new HashMap<>();
         properties.entrySet().stream().forEach(e -> props.put((String) e.getKey(), (String) e.getValue()));
         final List<CodeGenData> generators = init(appModel, props, classLoader, sourceParentDirs, generatedSourcesDir, buildDir,
-                sourceRegistrar);
+                sourceRegistrar, test);
         if (generators.isEmpty()) {
             return;
         }
@@ -88,7 +88,8 @@ public class CodeGenerator {
             PathCollection sourceParentDirs,
             Path generatedSourcesDir,
             Path buildDir,
-            Consumer<Path> sourceRegistrar) throws CodeGenException {
+            Consumer<Path> sourceRegistrar,
+            boolean test) throws CodeGenException {
         return callWithClassloader(deploymentClassLoader, () -> {
             final List<CodeGenProvider> codeGenProviders = loadCodeGenProviders(deploymentClassLoader);
             if (codeGenProviders.isEmpty()) {
@@ -99,10 +100,7 @@ public class CodeGenerator {
                 provider.init(model, properties);
                 Path outputDir = codeGenOutDir(generatedSourcesDir, provider, sourceRegistrar);
                 for (Path sourceParentDir : sourceParentDirs) {
-                    Path in = provider.getInputDirectory();
-                    if (in == null) {
-                        in = sourceParentDir.resolve(provider.inputDirectory());
-                    }
+                    Path in = resolveInputDirectory(provider, sourceParentDir, test);
                     result.add(
                             new CodeGenData(provider, outputDir, in, buildDir));
                 }
@@ -134,10 +132,7 @@ public class CodeGenerator {
                             if (codeGens.isEmpty()) {
                                 codeGens = new ArrayList<>();
                             }
-                            Path in = provider.getInputDirectory();
-                            if (in == null) {
-                                in = sourceParentDir.resolve(provider.inputDirectory());
-                            }
+                            Path in = resolveInputDirectory(provider, sourceParentDir, isTestSourceParent(sourceParentDir));
                             codeGens.add(
                                     new CodeGenData(provider, outputDir, in,
                                             Path.of(module.getTargetDir())));
@@ -398,6 +393,24 @@ public class CodeGenerator {
         } catch (IOException e) {
             throw new CodeGenException("Failed to read " + dep.getResolvedPaths(), e);
         }
+    }
+
+    /**
+     * Resolves the input directory for a code generator.
+     * <p>
+     * A custom input directory configured by a {@link CodeGenProvider} applies to production sources only.
+     * Test sources always use the default location under the test sources root (for example {@code src/test/proto}).
+     */
+    private static Path resolveInputDirectory(CodeGenProvider provider, Path sourceParentDir, boolean test) {
+        Path customInput = provider.getInputDirectory();
+        if (customInput == null || test) {
+            return sourceParentDir.resolve(provider.inputDirectory());
+        }
+        return customInput;
+    }
+
+    private static boolean isTestSourceParent(Path sourceParentDir) {
+        return sourceParentDir != null && "test".equals(sourceParentDir.getFileName().toString());
     }
 
     private static Path codeGenOutDir(Path generatedSourcesDir,

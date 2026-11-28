@@ -610,6 +610,10 @@ export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:$PORT_9092;
 /etc/kafka/docker/run
 ----
 
+Services with this label are started, and their file is copied, before the rest of the project is started.
+A service can therefore wait for the file in its health check, even when other services use `depends_on` with `condition: service_healthy` on it.
+This does not apply when a service with this label itself uses `condition: service_healthy` on another service with this label.
+
 == Controlling Service Lifecycle with Compose
 
 Compose Dev Services provides several configuration options to control how services are started, stopped and shared between application instances.

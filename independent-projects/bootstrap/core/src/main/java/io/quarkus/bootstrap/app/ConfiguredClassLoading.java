@@ -236,4 +236,24 @@ public class ConfiguredClassLoading implements Serializable {
     public Collection<Path> getAdditionalClasspathElements() {
         return additionalPaths;
     }
+
+    /**
+     * Check whether this configuration is compatible with the given configuration
+     * for the purpose of sharing an augmentation class loader.
+     * <p>
+     * Only fields that affect augmentation class loader construction are compared:
+     * removed artifacts, parent-first artifacts, reloadable artifacts, and removed resources.
+     * <p>
+     * {@code flatTestClassPath} and {@code additionalPaths} are intentionally excluded
+     * because they are only used for runtime class loader construction, not augmentation.
+     * <p>
+     * When adding new fields to this class that affect augmentation class loader construction,
+     * make sure to include them in this check.
+     */
+    public boolean isCompatibleForAugmentationWith(ConfiguredClassLoading other) {
+        return removedArtifacts.equals(other.removedArtifacts)
+                && parentFirstArtifacts.equals(other.parentFirstArtifacts)
+                && reloadableArtifacts.equals(other.reloadableArtifacts)
+                && removedResources.equals(other.removedResources);
+    }
 }

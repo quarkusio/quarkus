@@ -122,6 +122,7 @@ Consult the relevant skill when you are about to do that type of work:
 | `building-and-testing` | Maven build commands, flags, incremental builds, and build rules                      |
 | `updating-hibernate` | Hibernate dependency upgrades, compatibility checks, and migration guide updates       |
 | `pull-requests` | PR title/description conventions, commit hygiene, labels, and contribution rules      |
+| `writing-style` | Sentence and paragraph rules for PR descriptions, issues, commits, replies, Javadoc and comments |
 | `writing-extension-devui` | Writing a Dev UI for a Quarkus extension                                              |
 | `building-docs` | Building, previewing, or testing documentation changes locally                        |
 | `manage-deprecations` | Removing code deprecated for over 12 months, adding missed `@Deprecated` annotations, or applying a new deprecation |

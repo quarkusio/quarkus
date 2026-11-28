@@ -1,0 +1,3 @@
+<validation-config xmlns="https://jakarta.ee/xml/ns/validation/configuration" version="3.0">
+    <constraint-mapping>META-INF/car-constraints.xml</constraint-mapping>
+</validation-config>

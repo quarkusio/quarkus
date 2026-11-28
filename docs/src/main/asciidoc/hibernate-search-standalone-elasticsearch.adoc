@@ -1028,6 +1028,12 @@ Quarkus does not currently plan to support the Lucene backend,
 though there is an issue tracking progress on such an implementation in the Quarkiverse:
 https://github.com/quarkiverse/quarkus-hibernate-search-extras/issues/180[quarkiverse/quarkus-hibernate-search-extras#180].
 
+[NOTE]
+====
+Quarkus uses generated accessors when available and falls back to reflection.
+To disable reflection fallback or resolve a missing-accessor error, see xref:hibernate-accessor.adoc[Hibernate Accessor in Quarkus].
+====
+
 [[configuration-reference]]
 == Configuration Reference for Hibernate Search Standalone
 

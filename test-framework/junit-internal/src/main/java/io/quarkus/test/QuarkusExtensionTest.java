@@ -79,7 +79,6 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.TestConfigUtil;
@@ -621,7 +620,6 @@ public class QuarkusExtensionTest
 
     protected void doBeforeAll(ExtensionContext extensionContext) throws Exception {
         TestConfigUtil.cleanUp();
-        GroovyClassValue.disable();
         //set the right launch mode in the outer CL, used by the HTTP host config source
         LaunchMode.set(LaunchMode.TEST);
         if (beforeAllCustomizer != null) {

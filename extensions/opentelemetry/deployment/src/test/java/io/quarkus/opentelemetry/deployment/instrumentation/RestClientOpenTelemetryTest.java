@@ -62,7 +62,7 @@ public class RestClientOpenTelemetryTest {
             .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
             .withConfigurationResource("application-default.properties")
-            .overrideConfigKey("quarkus.rest-client.client.url", "${test.url}")
+            .overrideConfigKey("quarkus.rest-client.client.url", "quarkus://vertx-http")
             .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
             .overrideConfigKey("quarkus.otel.logs.enabled", "false");
 

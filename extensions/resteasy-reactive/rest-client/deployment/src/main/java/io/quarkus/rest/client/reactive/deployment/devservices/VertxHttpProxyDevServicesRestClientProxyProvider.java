@@ -21,8 +21,10 @@ import io.vertx.core.file.FileSystemOptions;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.RequestOptions;
 import io.vertx.core.metrics.MetricsOptions;
 import io.vertx.core.net.HostAndPort;
+import io.vertx.core.net.SocketAddress;
 import io.vertx.httpproxy.HttpProxy;
 import io.vertx.httpproxy.ProxyContext;
 import io.vertx.httpproxy.ProxyInterceptor;
@@ -63,18 +65,23 @@ public class VertxHttpProxyDevServicesRestClientProxyProvider implements DevServ
 
     @Override
     public CreateResult create(RestClientHttpProxyBuildItem buildItem) {
-        URI baseUri = URI.create(buildItem.getBaseUri());
+        // The application hands the origin on every start, after the proxy started
+        AtomicReference<URI> origin = new AtomicReference<>();
 
-        var clientOptions = new HttpClientOptions();
-        if (baseUri.getScheme().equals("https")) {
-            clientOptions.setSsl(true);
-        }
-        HttpClient proxyClient = vertx.get().createHttpClient(clientOptions);
+        HttpClient proxyClient = vertx.get().createHttpClient(new HttpClientOptions());
         HttpProxy proxy = HttpProxy.reverseProxy(proxyClient);
-        int targetPort = determineOriginPort(baseUri);
-        String targetHost = baseUri.getHost();
-        proxy.origin(targetPort, targetHost)
-                .addInterceptor(new AuthoritySettingInterceptor(targetPort, targetHost));
+        proxy.origin(context -> {
+            URI target = origin.get();
+            if (target == null) {
+                return Future.failedFuture("The origin of the HTTP proxy for REST Client '" + buildItem.getClassName()
+                        + "' is not available. Either the application has not started yet, or neither 'quarkus.rest-client.\""
+                        + buildItem.getClassName() + "\".url' nor 'quarkus.rest-client.\"" + buildItem.getClassName()
+                        + "\".uri' is set");
+            }
+            return context.client().request(new RequestOptions()
+                    .setServer(SocketAddress.inetSocketAddress(determineOriginPort(target), target.getHost()))
+                    .setSsl("https".equals(target.getScheme())));
+        }).addInterceptor(new OriginInterceptor(origin));
 
         HttpServer proxyServer = vertx.get().createHttpServer();
         Integer proxyPort = findRandomPort();
@@ -82,7 +89,7 @@ public class VertxHttpProxyDevServicesRestClientProxyProvider implements DevServ
 
         logStartup(buildItem.getClassName(), proxyPort);
 
-        return new CreateResult("localhost", proxyPort, new HttpServerClosable(proxyServer));
+        return new CreateResult("localhost", proxyPort, origin::set, new HttpServerClosable(proxyServer));
     }
 
     protected void logStartup(String className, Integer port) {
@@ -104,7 +111,7 @@ public class VertxHttpProxyDevServicesRestClientProxyProvider implements DevServ
         }
     }
 
-    private int determineOriginPort(URI baseUri) {
+    private static int determineOriginPort(URI baseUri) {
         if (baseUri.getPort() != -1) {
             return baseUri.getPort();
         }
@@ -123,21 +130,32 @@ public class VertxHttpProxyDevServicesRestClientProxyProvider implements DevServ
     }
 
     /**
-     * This class sets the Host HTTP Header in order to avoid having services being blocked
-     * for presenting a wrong value
+     * Sends each request to the origin: under its path, since the REST Client calls the proxy at its root, and with its
+     * authority, which sets the Host HTTP Header in order to avoid having services being blocked for presenting a wrong
+     * value.
      */
-    private static class AuthoritySettingInterceptor implements ProxyInterceptor {
+    private static class OriginInterceptor implements ProxyInterceptor {
 
-        private final HostAndPort authority;
+        private final AtomicReference<URI> origin;
 
-        private AuthoritySettingInterceptor(int targetPort, String host) {
-            this.authority = HostAndPort.authority(host, targetPort);
+        private OriginInterceptor(AtomicReference<URI> origin) {
+            this.origin = origin;
         }
 
         @Override
         public Future<ProxyResponse> handleProxyRequest(ProxyContext context) {
-            ProxyRequest request = context.request();
-            request.setAuthority(authority);
+            URI target = origin.get();
+            if (target != null) {
+                ProxyRequest request = context.request();
+                request.setAuthority(HostAndPort.authority(target.getHost(), determineOriginPort(target)));
+                String basePath = target.getRawPath();
+                if (basePath != null && basePath.endsWith("/")) {
+                    basePath = basePath.substring(0, basePath.length() - 1);
+                }
+                if (basePath != null && !basePath.isEmpty()) {
+                    request.setURI(basePath + request.getURI());
+                }
+            }
 
             return context.sendRequest();
         }

@@ -39,6 +39,6 @@ public class UnknownConfigTest {
 
     private void verifyClientConfig(RestClientsConfig.RestClientConfig config) {
         assertTrue(config.url().isPresent());
-        assertEquals("http://localhost:8081", config.url().get());
+        assertEquals("quarkus://vertx-http", config.url().get());
     }
 }

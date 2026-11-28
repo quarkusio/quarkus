@@ -20,7 +20,9 @@ public class RegisterProviderTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(EchoResource.class, EchoClient.class, MyFilter.class, MethodsCollector.class,
                             MyRequestBean.class)
-                    .addAsResource(new StringAsset("io.quarkus.restclient.registerprovider.EchoClient/mp-rest/url=${test.url}"),
+                    .addAsResource(
+                            new StringAsset(
+                                    "io.quarkus.restclient.registerprovider.EchoClient/mp-rest/url=quarkus://vertx-http"),
                             "application.properties"));
 
     @RestClient

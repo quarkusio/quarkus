@@ -24,9 +24,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
+                        <quarkus.http.test-port>9080</quarkus.http.test-port>
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
-                        <test.url>http://localhost:8081</test.url>
                         <!-- Change metrics endpoint to be /metrics -->
                         <quarkus.http.non-application-root-path>/</quarkus.http.non-application-root-path>
                         <quarkus.smallrye-openapi.auto-add-tags>false</quarkus.smallrye-openapi.auto-add-tags>

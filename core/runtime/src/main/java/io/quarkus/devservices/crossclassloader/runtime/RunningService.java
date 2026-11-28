@@ -3,6 +3,7 @@ package io.quarkus.devservices.crossclassloader.runtime;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 /**
  * Represents a running service in Dev Services.
@@ -19,16 +20,27 @@ public final class RunningService implements Closeable {
     private final String containerId;
     private final Closeable closeable;
     private final boolean reusable;
+    // Only JDK types, since the listener is called from the runtime classloader of each application start
+    private final BiConsumer<String, String> valueListener;
 
     public RunningService(String feature, String description, Map<String, String> configs,
             String containerId,
             Closeable closeable, boolean reusable) {
+        this(feature, description, configs, containerId, closeable, reusable, (key, value) -> {
+        });
+    }
+
+    public RunningService(String feature, String description, Map<String, String> configs,
+            String containerId,
+            Closeable closeable, boolean reusable,
+            BiConsumer<String, String> valueListener) {
         this.feature = feature;
         this.description = description;
         this.configs = configs;
         this.containerId = containerId;
         this.closeable = closeable;
         this.reusable = reusable;
+        this.valueListener = valueListener;
     }
 
     @Override
@@ -54,5 +66,15 @@ public final class RunningService implements Closeable {
 
     public boolean isReusable() {
         return reusable;
+    }
+
+    /**
+     * Hands this service a value of the running application.
+     *
+     * @param key the key of the value, as agreed between the service and the application
+     * @param value the value
+     */
+    public void valueAvailable(String key, String value) {
+        valueListener.accept(key, value);
     }
 }

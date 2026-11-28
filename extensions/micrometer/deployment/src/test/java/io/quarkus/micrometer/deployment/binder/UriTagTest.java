@@ -29,7 +29,7 @@ public class UriTagTest {
             .overrideConfigKey("quarkus.micrometer.binder.http-server.match-patterns", "/one=/two")
             .overrideConfigKey("quarkus.micrometer.binder.http-server.ignore-patterns", "/two")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
-            .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
+            .overrideConfigKey("pingpong/mp-rest/url", "quarkus://vertx-http")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(Util.class,

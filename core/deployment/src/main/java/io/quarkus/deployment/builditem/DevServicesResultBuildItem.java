@@ -79,12 +79,18 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     private final Set<DevServiceConfigDependency<? extends Startable>> dependencies;
     private final Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies;
 
+    /**
+     * The actions to perform with the values the running application publishes to the dev service, by key.
+     */
+    private final Map<String, BiConsumer<Startable, String>> applicationValueActions;
+
     private DevServicesResultBuildItem(String name, String description, String containerId,
             String serviceName, Object serviceConfig,
             Map<String, String> config, Supplier<Startable> startableSupplier, Consumer<Startable> postStartAction,
             Function<Startable, Map<String, String>> applicationConfigProvider,
             Set<DevServiceConfigDependency<? extends Startable>> dependencies,
-            Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies) {
+            Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies,
+            Map<String, BiConsumer<Startable, String>> applicationValueActions) {
         this.name = name;
         this.description = description;
         this.containerId = containerId;
@@ -96,6 +102,8 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         this.applicationConfigProvider = applicationConfigProvider;
         this.dependencies = dependencies;
         this.optionalDependencies = optionalDependencies;
+        this.applicationValueActions = applicationValueActions == null ? Collections.emptyMap()
+                : Collections.unmodifiableMap(applicationValueActions);
     }
 
     public static DiscoveredServiceBuilder discovered() {
@@ -145,6 +153,10 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
 
     public Consumer<Startable> getPostStartAction() {
         return postStartAction;
+    }
+
+    public Map<String, BiConsumer<Startable, String>> getApplicationValueActions() {
+        return applicationValueActions;
     }
 
     public Map<String, String> getConfig(Startable startable) {
@@ -218,7 +230,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
                 throw new IllegalStateException("name cannot be null");
             }
             return new DevServicesResultBuildItem(name, description, containerId, null, null, config, null, null, null, null,
-                    null);
+                    null, null);
         }
     }
 
@@ -233,6 +245,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         private Function<Startable, Map<String, String>> applicationConfigProvider;
         private final Set<DevServiceConfigDependency<? extends Startable>> dependencies = new HashSet<>();
         private final Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies = new HashSet<>();
+        private final Map<String, BiConsumer<Startable, String>> applicationValueActions = new HashMap<>();
 
         /**
          * Use {@link #feature(String)} instead
@@ -389,6 +402,21 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         }
 
         /**
+         * Receives the values that the running application publishes to this dev service under the specified key, with
+         * {@code RunningDevServicesRegistry#publish}, such as a value that is only known at runtime. It is called on every
+         * application start, such as a dev mode restart that reuses this dev service.
+         *
+         * @param key the key of the value, as agreed between this dev service and the application
+         * @param applicationValueAction the action, which takes the started service and the published value
+         * @return the builder, for chaining
+         */
+        @SuppressWarnings("unchecked")
+        public OwnedServiceBuilder<T> onApplicationValue(String key, BiConsumer<T, String> applicationValueAction) {
+            this.applicationValueActions.put(key, (BiConsumer<Startable, String>) applicationValueAction);
+            return this;
+        }
+
+        /**
          * Provides config to inject into the config system. If you've got values that don't change, use {@link #config(Map)},
          * and if you've
          * got values that you'll only know after starting the container, use configProvider() and provide a map of
@@ -447,7 +475,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
                     serviceName, serviceConfig, config,
                     (Supplier<Startable>) startableSupplier,
                     (Consumer<Startable>) postStartAction,
-                    applicationConfigProvider, dependencies, optionalDependencies);
+                    applicationConfigProvider, dependencies, optionalDependencies, applicationValueActions);
         }
     }
 

@@ -56,7 +56,7 @@ public class HttpCompatibilityTest {
                                     quarkus.micrometer.binder.http-server.match-patterns=/one=/two\n
                                     quarkus.micrometer.binder.http-server.ignore-patterns=/two\n
                                     quarkus.micrometer.binder.vertx.enabled=true\n
-                                    pingpong/mp-rest/url=${test.url}\n
+                                    pingpong/mp-rest/url=quarkus://vertx-http\n
                                     quarkus.redis.devservices.enabled=false\n
                                     """),
                                     "application.properties"));

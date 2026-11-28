@@ -314,7 +314,7 @@ public class BasicTest {
     public static class TestProfile implements QuarkusTestProfile {
         @Override
         public Map<String, String> getConfigOverrides() {
-            return Map.of("w-fault-tolerance-int/mp-rest/url", "${test.url}");
+            return Map.of("w-fault-tolerance-int/mp-rest/url", "quarkus://vertx-http");
         }
     }
 }

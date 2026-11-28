@@ -41,7 +41,7 @@ public class HttpProxyDevServicesMultipleCustomProvidersTest {
                     "true")
             .overrideConfigKey(
                     "quarkus.rest-client.\"io.quarkus.rest.client.reactive.proxy.HttpProxyDevServicesMultipleCustomProvidersTest$Client\".url",
-                    "http://localhost:${quarkus.http.test-port:8081}")
+                    "quarkus://vertx-http")
             .setLogRecordPredicate(record -> record.getLevel().equals(Level.INFO))
             .assertLogRecords(new Consumer<>() {
                 @Override

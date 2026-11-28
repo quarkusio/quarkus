@@ -33,9 +33,9 @@ public class JfrRestClientTest {
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Resource.class, HelloClient.class, UnreachableClient.class, StreamingClient.class))
-            .overrideConfigKey("quarkus.rest-client.hello.url", "${test.url}")
+            .overrideConfigKey("quarkus.rest-client.hello.url", "quarkus://vertx-http")
             .overrideConfigKey("quarkus.rest-client.unreachable.url", "http://localhost:1")
-            .overrideConfigKey("quarkus.rest-client.streaming.url", "${test.url}");
+            .overrideConfigKey("quarkus.rest-client.streaming.url", "quarkus://vertx-http");
 
     @Test
     public void test() throws IOException {

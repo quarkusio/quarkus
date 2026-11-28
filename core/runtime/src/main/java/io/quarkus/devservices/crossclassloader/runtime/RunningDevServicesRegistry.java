@@ -169,6 +169,32 @@ public final class RunningDevServicesRegistry {
         return servicesIndexedByConfig.get(identifyingConfig);
     }
 
+    /**
+     * Hands a value of the running application to one of its dev services, such as a value that is only known at
+     * runtime. Called from the application on every start, so a service reused across dev mode restarts gets the value
+     * of every start. Nothing happens if the dev service is not running, for instance when dev services are disabled.
+     *
+     * @param applicationInstanceId the id of the application instance that owns the service, as a {@code String}
+     *        since a service of the application cannot capture a {@link UUID}. Each curated application has its own id,
+     *        so it also tells dev mode apart from its continuous testing
+     * @param featureName the name of the feature of the dev service, such as {@code rest-client}
+     * @param serviceName the name of the dev service
+     * @param key the key of the value, as agreed between the dev service and the application
+     * @param value the value
+     */
+    public void publish(String applicationInstanceId, String featureName, String serviceName, String key, String value) {
+        for (Map.Entry<ComparableDevServicesConfig, RunningService> entry : servicesIndexedByConfig.entrySet()) {
+            DevServiceOwner owner = entry.getKey().owner();
+            if (entry.getKey().applicationInstanceId().toString().equals(applicationInstanceId)
+                    && owner.featureName().equals(featureName)
+                    && Objects.equals(owner.configName(), serviceName)) {
+                entry.getValue().valueAvailable(key, value);
+                log.debugf("Published %s=%s to dev service %s of %s in launch mode %s", key, value, serviceName,
+                        featureName, owner.launchMode());
+            }
+        }
+    }
+
     public void addRunningService(ComparableDevServicesConfig key, RunningService service) {
         servicesIndexedByConfig.put(key, service);
         // Be aware of thread safety; if there are multiple services this method will be accessed by multiple threads; we use the ConcurrentHashMap's thread-safe set instead of HashSet

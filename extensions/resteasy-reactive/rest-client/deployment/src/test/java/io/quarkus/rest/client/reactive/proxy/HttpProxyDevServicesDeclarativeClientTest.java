@@ -28,7 +28,7 @@ public class HttpProxyDevServicesDeclarativeClientTest {
             .withApplicationRoot(
                     jar -> jar.addClasses(Resource.class, Client.class))
             .overrideConfigKey("quarkus.rest-client.\"client\".enable-local-proxy", "true")
-            .overrideConfigKey("quarkus.rest-client.\"client\".url", "http://localhost:${quarkus.http.test-port:8081}")
+            .overrideConfigKey("quarkus.rest-client.\"client\".url", "quarkus://vertx-http")
             .setLogRecordPredicate(record -> record.getLevel().equals(Level.INFO))
             .assertLogRecords(new Consumer<>() {
                 @Override

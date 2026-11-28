@@ -236,13 +236,12 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
         }
 
         ProtocolMetaData metadata = new ProtocolMetaData();
-        String testUrl = deployment.get().getRunningApp().valueRegistry()
-                .getOrDefault(RuntimeKey.key("test.url"), null);
-        if (testUrl != null) {
-            URI uri = URI.create(testUrl);
-            HTTPContext httpContext = new HTTPContext(uri.getHost(), uri.getPort());
+        URI localBaseUri = deployment.get().getRunningApp().valueRegistry()
+                .getOrDefault(RuntimeKey.key("quarkus.http.local-base-uri"), null);
+        if (localBaseUri != null) {
+            HTTPContext httpContext = new HTTPContext(localBaseUri.getHost(), localBaseUri.getPort());
             // This is to work around https://github.com/arquillian/arquillian-core/issues/216
-            String path = uri.getPath();
+            String path = localBaseUri.getPath();
             if (path == null) {
                 path = "/";
             } else if (!path.endsWith("/")) {

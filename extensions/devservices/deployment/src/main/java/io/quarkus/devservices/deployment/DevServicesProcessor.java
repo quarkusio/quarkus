@@ -37,6 +37,8 @@ import com.github.dockerjava.api.command.LogContainerCmd;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ContainerNetworkSettings;
 
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -68,6 +70,7 @@ import io.quarkus.devservice.runtime.config.DevServicesConfigBuilder;
 import io.quarkus.devservices.common.ContainerUtil;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.StartableContainer;
+import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesRegistry;
 import io.quarkus.devservices.crossclassloader.runtime.RunningService;
 import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
 import io.quarkus.runtime.LaunchMode;
@@ -198,6 +201,17 @@ public class DevServicesProcessor {
                 devServicesConfig, launchMode.getLaunchMode(), Config.get());
         shutdownBuildItem.addCloseTask(registryBuildItem::closeOwnRunningServices, true);
         return registryBuildItem;
+    }
+
+    /**
+     * Provides the {@link RunningDevServicesRegistry}, shared across class loaders, to the services that publish values
+     * of the running application to its dev services, with {@link RunningDevServicesRegistry#publish}.
+     */
+    @BuildStep(onlyIf = IsDevServicesSupportedByLaunchMode.class)
+    void runningDevServicesRegistry(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar.forService(RunningDevServicesRegistry.class)
+                .atPhase(Phase.INFRASTRUCTURE)
+                .onStart(ctx -> RunningDevServicesRegistry.INSTANCE);
     }
 
     @BuildStep

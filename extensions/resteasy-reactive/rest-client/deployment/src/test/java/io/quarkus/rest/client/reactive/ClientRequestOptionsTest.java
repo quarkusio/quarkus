@@ -32,7 +32,7 @@ public class ClientRequestOptionsTest {
             .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class))
             .overrideRuntimeConfigKey("quarkus.rest-client.client.read-timeout", "1000")
             .overrideRuntimeConfigKey("quarkus.rest-client.client.url",
-                    "http://${quarkus.http.host}:${quarkus.http.test-port}");
+                    "quarkus://vertx-http");
 
     @Test
     void shouldUseReadTimeoutOfRequestOptions() {

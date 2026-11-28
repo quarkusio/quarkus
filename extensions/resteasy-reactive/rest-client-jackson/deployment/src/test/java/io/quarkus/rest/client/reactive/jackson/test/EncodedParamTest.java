@@ -21,7 +21,7 @@ public class EncodedParamTest {
     @RegisterExtension
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(GitLabClient.class, MyResource.class))
-            .overrideConfigKey("quarkus.rest-client.my-client.url", "http://localhost:${quarkus.http.test-port:8081}");
+            .overrideConfigKey("quarkus.rest-client.my-client.url", "quarkus://vertx-http");
 
     @RestClient
     GitLabClient gitLabClient;

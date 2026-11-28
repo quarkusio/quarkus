@@ -1,0 +1,125 @@
+= Setup of Development Discussions  
+
+* Status: proposed
+* Date:  2024-07-18
+
+== Context and Problem Statement
+
+Currently development discussions happens in a variety of places, including the mailing list, zulip, github issues, pull-requests, discussions, calls etc.
+
+Its awesome that we have so many ways to communicate, but it also makes it difficult to find the information you need or being able to at least follow certain areas.
+ 
+This ADR proposes to have a more structured way of having development discussions, so that it is easier to find and follow such discussions.
+
+== Decision Drivers
+
+* Enable better open governance
+* Prefer async over sync communication
+* Avoid requiring to subscribe to a "raging river" of notifications that is not filterable
+* Allow use of e-mail as not everyone can/will use web-ui
+* Have consistent place to publish and lookup Quarkus development ideas/suggestions
+
+== Scenarios 
+
+For a Quarkus core developer, where do they best post ideas for suggestion and feedback? Zulip chat? Open an issue? Submit a PR directly? Post to quarkus-dev? Open a GitHub discussion? Use private chat? Today all of the above happens based on habit or specific requests.
+
+A dev interested in doing contributions by following the ongoing conversations - which of the many channels do they follow? 
+
+== Considered options 
+
+Primarily use quarkus-dev mailing list::
+    Advantages::::
+        * well-known and understood by most if not all existing Quarkus contributors (~1000+ subscribers)
+        * can post, comment and read with any e-mail client
+        * filters out most noise as people need to subscribe
+    Disadvantages::::
+        * over time it has died out, rarely where conversations starts/continues being discussed
+        * e-mail/google groups is just not where new people show up as much now
+        * requires subscribing to specific list to post
+        * spam (fixed now by moderation)
+        * arbitrary blocking of mails (specifally @gsmet and others)
+
+Primarily have "Design Discussions" a sub-category of Quarkus Community/User Discussions::
+    Advantages::::
+        * Centralized location for discussions, anyone sees it
+        * Anyone can read
+        * Anyone with GitHub account can post/reply
+        * Moderation tools available to battle spam/noise
+    Disadvantages::::
+        * Notifications via email comes for *all* discussions, not possible to choose specific category
+        * User forums gets intermixed with Developer/Design discussions
+
+Primarily use issues/PR's::
+    Advantages::::
+        * Conversation directly linked to code changes
+    Disadvantages::::
+        * Not possible to just monitor the overall design discussions as all mixed up with anything else
+        * Notification filtering is quite limited
+        * Limited threading in webui
+        * No-threading on email responses
+
+Primarily use Zulip Chat::
+    Advantages::::
+        * Real-time communication
+    Disadvantages::::
+        * Only for those who have time/privilege to follow along
+
+Use private chat/mail::
+    Advantages::::
+        * Direct and focused private communication (sometimes useful)
+    Disadvantages::::
+        * Not great for open governance unless culture to comment/report on conclusion somewhere more public
+        * Cannot be located/found when trying to search for answers/why something was done
+
+Status quo/Do nothing::
+    Advantages::::
+        * Nothing need to change
+    Disadvanteges::::
+        * All of the above disadvantages
+        * No clear place to go for design discussions
+
+Seperate quarkusio/quarkus-dev repository with discussions::
+    Advantages::::
+        * Clear place to go for design discussions
+        * Easy to find and follow discussions
+        * Can filter/focus separately on user versus developer discussions
+        * Can use e-mail, at least for commenting
+        * ADR can be moved there
+        * Future call minutes can be moved there
+        * Does not break existing user conversations
+    Disadvantages::::
+        * Need to move discussions from other places to this new place
+        * Need to retire quarkus-dev mailing list
+        * Users conversation is in the repo where code is, developer conversation is in a separate repo
+
+== Decision
+
+- Introduce a new GitHub repository called `quarkusio/quarkus-dev`.
+  * Have a README with links to discussions, ADRs, call minutes etc.
+  * Enable discussions in the repository
+  * Use @quarkus-bot for tagging
+- Move/Close existing "Design Discussions" to the new repository
+- Move existing quarkusio/quarkus ADRs to the new repository
+  * keep `adr` directory in the main repository with a README pointing to the new location
+- Retire `quarkus-dev` mailing list
+  * Add a footer to all mails with a message to go to the new repository
+  * Change the name of the mailing list to `quarkus-dev-retired`
+  * Post last e-mail to the list with a message to go to the new repository
+  * Eventually (6-12 months?) enable moderation 
+    ** not doing it on day one as it will take a while for 1000+ members to get the message
+- Encourage moving Zulip chat introducing/tracking ideas to discussions
+  * Encourage summarizing chat outcomes on discussions/issues
+     * Rename `#dev` channel to `#contributors` 
+== Consequences
+
+- Can no longer use e-mail cc's to add people into conversatiion. Use @'s to mention github user and if needed forward link to user who are not on github.
+
+- Starting a thread must be done via web-ui; comments and notifications will work with standard mail.
+
+- move discussion to issue ends up in quarkus-dev, not quarkus repo 
+    - automate move with bot moving if certain label added? (to be discussed)
+
+== Related decisions
+
+- link:0001-community-decision-making.adoc[]
+- https://quarkus.io/blog/quarkus-in-a-foundation/[Moving Quarkus to a Foundation]

@@ -338,6 +338,7 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("./mvnw package"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-17:"))
+                .satisfies(checkContains("RUN chmod 775 /deployments && chown 185:0 /deployments"))
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
                 .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
@@ -364,6 +365,7 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("./gradlew build"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-17:"))
+                .satisfies(checkContains("RUN chmod 775 /deployments && chown 185:0 /deployments"))
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
                 .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()

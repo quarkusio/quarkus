@@ -12,7 +12,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @QuarkusTestResource.List({
-        @QuarkusTestResource(LifecycleManager.class)
+        @QuarkusTestResource(value = LifecycleManager.class, restrictToAnnotatedClass = true)
 })
 @Stereotype
 public @interface CustomResourceWithList {

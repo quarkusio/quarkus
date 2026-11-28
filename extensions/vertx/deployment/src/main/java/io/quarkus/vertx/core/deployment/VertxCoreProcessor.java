@@ -48,6 +48,7 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.IOThreadDetectorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.MaterializeLambdasBuildItem;
 import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.PreInitRunnableBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -553,5 +554,22 @@ class VertxCoreProcessor {
             serviceClassNames.add(serviceImplClass.getName());
         }
         return serviceClassNames;
+    }
+
+    /**
+     * The Vert.x classes that spin lambdas while the Vert.x instance and the HTTP server start: one per event loop
+     * for the service resources, plus the executor factory and the blocked thread checker. Their lambdas are
+     * rewritten into generated classes, which the AOT cache can archive, instead of hidden classes spun at
+     * startup.
+     */
+    @BuildStep
+    void materializeStartupLambdas(BuildProducer<MaterializeLambdasBuildItem> lambdas) {
+        for (String className : List.of(
+                "io.vertx.core.internal.ServiceResource$Start",
+                "io.vertx.core.internal.threadchecker.BlockedThreadChecker$1",
+                "io.vertx.core.spi.ExecutorServiceFactory",
+                "io.vertx.core.http.impl.tcp.TcpHttpServer")) {
+            lambdas.produce(new MaterializeLambdasBuildItem(className));
+        }
     }
 }

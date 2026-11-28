@@ -278,9 +278,11 @@ public interface SwaggerUiConfig {
 
     /**
      * OAuth only applies to authorization code flows. Proof Key for Code Exchange brings enhanced security for OAuth public
-     * clients - Used in the initOAuth method.
+     * clients, and RFC 9700 requires it for them. Swagger UI runs in the browser and is such a client, so it is enabled by
+     * default - Used in the initOAuth method.
      */
-    Optional<Boolean> oauthUsePkceWithAuthorizationCodeGrant();
+    @WithDefault("true")
+    boolean oauthUsePkceWithAuthorizationCodeGrant();
 
     /**
      * Pre-authorize Basic Auth, programmatically set DefinitionKey for a Basic authorization scheme - Used in the

@@ -35,6 +35,7 @@ public class NoConfigTest {
         assertTrue(indexHtml.contains("/proxy/8080/q/swagger-ui/oauth2-redirect.html"));
         assertTrue(indexHtml.contains("id='swaggerUiLogoLink' href='.'"));
         assertTrue(indexHtml.contains("id='swaggerUiTitleLink' href='.'"));
+        assertTrue(indexHtml.contains("usePkceWithAuthorizationCodeGrant: true"));
     }
 
     private static void assertResolvedPath(String indexHtml, Pattern pattern, String pageUrl, String expectedPath) {

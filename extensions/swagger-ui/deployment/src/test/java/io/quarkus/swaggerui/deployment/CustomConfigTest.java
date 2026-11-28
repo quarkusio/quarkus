@@ -21,7 +21,9 @@ public class CustomConfigTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.swagger-ui.path=/custom"), "application.properties"));
+                    .addAsResource(new StringAsset("quarkus.swagger-ui.path=/custom\n"
+                            + "quarkus.swagger-ui.oauth-use-pkce-with-authorization-code-grant=false"),
+                            "application.properties"));
 
     @Test
     public void shouldUseCustomConfig() {
@@ -29,5 +31,6 @@ public class CustomConfigTest {
         Matcher matcher = URL_PATTERN.matcher(indexHtml);
         assertTrue(matcher.find());
         assertEquals("/prefix/q/openapi", URI.create("http://h/prefix/custom/").resolve(matcher.group(1)).getPath());
+        assertTrue(indexHtml.contains("usePkceWithAuthorizationCodeGrant: false"));
     }
 }

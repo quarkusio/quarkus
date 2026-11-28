@@ -27,7 +27,6 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
@@ -61,31 +60,14 @@ public class SimpleSpanProcessorTest {
     }
 
     @Test
-    void activeProcessorIsSimpleSpanProcessorWithBatchShutdown() throws Exception {
+    void activeProcessorIsSimpleSpanProcessor() throws Exception {
+        // The declarative configuration model describes the simple processor directly, so no
+        // batch processor is ever constructed and no SimpleSpanProcessorWithBatchShutdown
+        // wrapper is needed to shut a discarded one down.
         SpanProcessor activeProcessor = TestUtil.getActiveSpanProcessor(openTelemetry);
         assertNotNull(activeProcessor);
-        assertEquals(
-                "SimpleSpanProcessorWithBatchShutdown",
-                activeProcessor.getClass().getSimpleName(),
-                "Active processor should be SimpleSpanProcessorWithBatchShutdown when quarkus.otel.simple=true");
-    }
-
-    @Test
-    void delegateIsSimpleSpanProcessor() throws Exception {
-        SpanProcessor activeProcessor = TestUtil.getActiveSpanProcessor(openTelemetry);
-        SpanProcessor delegate = TestUtil.getSimpleSpanProcessorDelegate(activeProcessor);
-
-        assertInstanceOf(SimpleSpanProcessor.class, delegate,
-                "The delegate should be a SimpleSpanProcessor");
-    }
-
-    @Test
-    void replacedBatchProcessorIsRetained() throws Exception {
-        SpanProcessor activeProcessor = TestUtil.getActiveSpanProcessor(openTelemetry);
-        SpanProcessor replacedBatchProcessor = TestUtil.getReplacedBatchProcessor(activeProcessor);
-
-        assertInstanceOf(BatchSpanProcessor.class, replacedBatchProcessor,
-                "The replacedBatchProcessor should be a BatchSpanProcessor");
+        assertInstanceOf(SimpleSpanProcessor.class, activeProcessor,
+                "Active processor should be a SimpleSpanProcessor when quarkus.otel.simple=true");
     }
 
     @Test
@@ -115,10 +97,8 @@ public class SimpleSpanProcessorTest {
 
     @Test
     @Order(Integer.MAX_VALUE)
-    void shutdownStopsBothDelegateAndReplacedBatchProcessor() throws Exception {
-        SpanProcessor activeProcessor = TestUtil.getActiveSpanProcessor(openTelemetry);
-        SimpleSpanProcessor delegate = (SimpleSpanProcessor) TestUtil.getSimpleSpanProcessorDelegate(activeProcessor);
-        BatchSpanProcessor replacedBatchProcessor = (BatchSpanProcessor) TestUtil.getReplacedBatchProcessor(activeProcessor);
+    void shutdownStopsProcessor() throws Exception {
+        SimpleSpanProcessor activeProcessor = (SimpleSpanProcessor) TestUtil.getActiveSpanProcessor(openTelemetry);
 
         Tracer tracer = openTelemetry.getTracer("test");
         Span span = tracer.spanBuilder("before-shutdown").startSpan();
@@ -130,8 +110,7 @@ public class SimpleSpanProcessorTest {
         shutdownResult.join(5, TimeUnit.SECONDS);
         assertTrue(shutdownResult.isSuccess(), "Shutdown result should be successful");
 
-        assertTrue(TestUtil.isShutdown(delegate), "Delegate SimpleSpanProcessor should be shut down");
-        assertTrue(TestUtil.isShutdown(replacedBatchProcessor), "Replaced BatchSpanProcessor should be shut down");
+        assertTrue(TestUtil.isShutdown(activeProcessor), "SimpleSpanProcessor should be shut down");
 
         Span postShutdownSpan = tracer.spanBuilder("after-shutdown").startSpan();
         postShutdownSpan.end();

@@ -27,6 +27,7 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.declarativeconfig.QuarkusDeclarativeSdk;
 import io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvider;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -115,6 +116,11 @@ public class OpenTelemetryRecorder {
                         });
 
                 final Map<String, String> oTelConfigs = getOtelConfigs();
+                QuarkusDeclarativeSdk.Engine engine = QuarkusDeclarativeSdk.select(context, builderCustomizers,
+                        runtimeConfig.getValue(), oTelConfigs);
+                if (engine.declarative()) {
+                    return engine.create();
+                }
                 OtelConfigsSupplier propertiesSupplier = new OtelConfigsSupplier(oTelConfigs);
                 if (runtimeConfig.getValue().sdkDisabled()) {
                     return AutoConfiguredOpenTelemetrySdk.builder()

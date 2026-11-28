@@ -91,6 +91,45 @@ implementation("io.quarkus:quarkus-opentelemetry")
 :opentelemetry-config:
 include::{includes}/opentelemetry-config.adoc[]
 
+=== How the SDK is initialized
+
+Quarkus initializes the OpenTelemetry SDK from the
+https://opentelemetry.io/docs/languages/java/configuration/#declarative-configuration[OpenTelemetry declarative configuration]
+model. The model is built in memory from the resolved `quarkus.otel.*` configuration: no configuration file is
+read, and the `otel.config.file` / `OTEL_CONFIG_FILE` file-based configuration is not supported.
+
+The SDK can be customized through CDI beans of the OpenTelemetry component types, which replace or extend what the
+configuration describes:
+
+* `io.opentelemetry.sdk.trace.samplers.Sampler` (replaces the configured sampler)
+* `io.opentelemetry.sdk.trace.IdGenerator`
+* `io.opentelemetry.sdk.trace.SpanProcessor` (added after the configured processors)
+* `io.opentelemetry.sdk.resources.Resource` (merged into the SDK resource)
+* `io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer`
+* `SpanExporter`, `MetricExporter` and `LogRecordExporter` beans, used by the default `cdi` exporter
+
+For compatibility with MicroProfile Telemetry, the OpenTelemetry autoconfigure ServiceLoader SPIs (such as
+`ResourceProvider` and the `Configurable*Provider` interfaces) also remain honored, in JVM and native mode. Prefer
+the CDI beans above for new code.
+
+Some customizations have no equivalent in the declarative configuration model. If your application uses one of
+them, Quarkus initializes the SDK through the legacy `AutoConfiguredOpenTelemetrySdk` path instead, and logs a
+warning at startup that names the reason and its source:
+
+* You provide a bean that implements the deprecated
+`io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer` interface. Migrate it to the CDI
+beans above; the interface and the legacy initialization path are scheduled for removal.
+* An `AutoConfigurationCustomizerProvider` registers a tracer, meter or logger provider customizer, or a span
+processor, metric reader or log record processor customizer.
+* Your application contains an `SdkTracerProviderConfigurer`.
+* You set `quarkus.otel.experimental.sdk.telemetry.version=legacy`.
+* Metrics are enabled, and you provide an `io.opentelemetry.sdk.common.Clock` bean that replaces the default clock.
+* An `AutoConfigurationCustomizerProvider` registers a span exporter customizer, and the `cdi` traces exporter drops
+every span because it has no `SpanExporter` beans. Quarkus drops the spans when tracing is enabled, `cdi` is the only
+exporter without its own simple processor, `quarkus.otel.simple` is off, and there are no `SpanProcessor` beans.
+
+If you set `quarkus.otel.sdk.disabled=true`, only the first condition selects the legacy path.
+
 === Disable all or parts of the OpenTelemetry extension
 
 Once you add the dependency, the extension will generate tracing, metrics and logging data by default. To disable the OpenTelemetry extension globally or partially these are the properties to use (they are extracted from the config reference below):

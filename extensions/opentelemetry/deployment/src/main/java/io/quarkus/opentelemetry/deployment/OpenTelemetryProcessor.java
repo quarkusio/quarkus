@@ -212,7 +212,8 @@ public class OpenTelemetryProcessor {
             BuildProducer<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItemBuildProducer,
             BuildProducer<io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem> deprecatedOpenTelemetrySdkBuildItemBuildProducer,
             BuildProducer<ServiceStartBuildItem> serviceStart) {
-        syntheticProducer.produce(SyntheticBeanBuildItem.configure(OpenTelemetry.class)
+        syntheticProducer.produce(DeclarativeConfigProcessor.addInjectionPoints(
+                SyntheticBeanBuildItem.configure(OpenTelemetry.class))
                 .defaultBean()
                 .setRuntimeInit()
                 .unremovable()

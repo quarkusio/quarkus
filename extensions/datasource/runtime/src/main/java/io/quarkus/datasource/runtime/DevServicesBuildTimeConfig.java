@@ -11,6 +11,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 @ConfigGroup
 public interface DevServicesBuildTimeConfig {
@@ -82,6 +83,12 @@ public interface DevServicesBuildTimeConfig {
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
     Optional<@WithConverter(TrimmedStringConverter.class) String> command();
+
+    /**
+     * How to determine that the database in the container is ready.
+     */
+    @WithName("wait")
+    DevServicesWaitConfig waitConfig();
 
     /**
      * The database name to use if this Dev Service supports overriding it.
@@ -197,5 +204,40 @@ public interface DevServicesBuildTimeConfig {
      */
     @WithDefault("false")
     boolean showLogs();
+
+    @ConfigGroup
+    interface DevServicesWaitConfig {
+
+        /**
+         * The strategy used to determine that the database in the container is ready to accept connections.
+         *
+         * * `default`: use the strategy of the Dev Service provider.
+         * DB2, Oracle and PostgreSQL wait for the messages that the official image logs once the database is ready,
+         * while MariaDB, MySQL and Microsoft SQL Server wait until a JDBC connection to the database can be opened.
+         * * `connection`: wait until a JDBC connection to the database can be opened.
+         * Unlike waiting for log messages, this does not depend on what the image logs,
+         * so it also works with images that log differently from the official ones,
+         * for example images with another entrypoint, a pre-initialized database, or another locale.
+         * This is supported by PostgreSQL, and is what MariaDB, MySQL and Microsoft SQL Server always do.
+         * DB2 and Oracle do not support it yet: they log a warning and use their default strategy.
+         *
+         * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+         *
+         * @asciidoclet
+         */
+        @WithDefault("default")
+        WaitStrategy strategy();
+
+        enum WaitStrategy {
+            /**
+             * Use the strategy of the Dev Service provider.
+             */
+            DEFAULT,
+            /**
+             * Wait until a JDBC connection to the database can be opened.
+             */
+            CONNECTION
+        }
+    }
 
 }

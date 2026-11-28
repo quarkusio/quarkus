@@ -152,6 +152,7 @@ public class DevServicesDatasourceProcessor {
             res.put(name + ".devservices.service-name", config.devservices().serviceName());
             res.put(name + ".devservices.username", config.devservices().username());
             res.put(name + ".devservices.volumes", config.devservices().volumes());
+            res.put(name + ".devservices.named-volumes", config.devservices().namedVolumes());
             Optional<String> username = ConfigUtils.getFirstOptionalValue(
                     DataSourceUtil.dataSourcePropertyKeys(name, "username"), String.class);
             res.put(name + ".username", username);
@@ -423,7 +424,7 @@ public class DevServicesDatasourceProcessor {
                 dataSourceBuildTimeConfig.devservices().password(),
                 dataSourceBuildTimeConfig.devservices().initScriptPath(),
                 dataSourceBuildTimeConfig.devservices().initPrivilegedScriptPath(),
-                dataSourceBuildTimeConfig.devservices().volumes(),
+                DevServicesVolumes.toVolumeMounts(dataSourceBuildTimeConfig.devservices()),
                 dataSourceBuildTimeConfig.devservices().reuse(),
                 dataSourceBuildTimeConfig.devservices().showLogs(),
                 datasourceName,

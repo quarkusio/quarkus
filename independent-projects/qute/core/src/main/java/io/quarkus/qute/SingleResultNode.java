@@ -52,4 +52,12 @@ public final class SingleResultNode extends ResultNode {
         }
     }
 
+    @Override
+    public void process(ChunkWriter writer) {
+        // Do not fall back to the default implementation that allocates a method reference per value
+        if (value != null) {
+            writer.write(node != null ? node.mapResult(value) : value.toString());
+        }
+    }
+
 }

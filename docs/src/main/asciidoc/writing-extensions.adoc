@@ -520,6 +520,41 @@ You will also need to configure the `maven-compiler-plugin` of the deployment mo
 </build>
 ----
 
+[[extension-structure-check]]
+===== Extension structure check
+
+The `extension-structure` goal of the `quarkus-extension-maven-plugin` checks that an extension follows the
+https://github.com/quarkusio/quarkus/blob/main/adr/0009-extension-structure.adoc[extension structure guidelines]:
+packages of the runtime and deployment modules, build steps declared in `*Processor` classes of the deployment module,
+GraalVM substitutions and features in the `.runtime.graal` package, and artifact IDs.
+Package rules only apply to extensions in the `io.quarkus` and `io.quarkiverse` group IDs, where the root package can be derived from the artifact ID.
+
+Existing extensions are not required to follow these guidelines, so the goal only logs warnings and never fails the build.
+Extensions created with `create-extension` for Quarkus 4.0 or later enable it in their deployment module.
+To enable it in an existing extension, add it to the deployment module:
+
+[source%nowrap,xml]
+----
+<build>
+    <plugins>
+        <plugin>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-extension-maven-plugin</artifactId>
+            <version>${quarkus.version}</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>extension-structure</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+----
+
+The check can be skipped with `-DskipExtensionStructureCheck`.
+
 ===== Config documentation generation
 
 Modern extensions built with Quarkus 3.14+ use the `io.quarkus:quarkus-config-doc-maven-plugin` Maven plugin

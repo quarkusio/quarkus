@@ -36,6 +36,20 @@ public interface TreeShakeConfig {
     Optional<Set<String>> excludedArtifacts();
 
     /**
+     * Dependency classes to keep regardless of reachability analysis, expressed as fully qualified
+     * binary class names, e.g. {@code com.example.Outer$Inner} for a member class.
+     * <p>
+     * Each class is treated as a root of the reachability analysis: the classes it references,
+     * its supertypes and its member classes are kept as well.
+     * <p>
+     * This is a finer-grained alternative to {@code excluded-artifacts} for classes that are loaded in
+     * ways the tree-shaker cannot detect. A class that isn't a candidate for removal, such as an application
+     * class, a class of an excluded artifact or a class that isn't on the runtime classpath, is
+     * reported with a warning.
+     */
+    Optional<Set<String>> keepClasses();
+
+    /**
      * Tree shaking mode.
      */
     enum TreeShakeMode {

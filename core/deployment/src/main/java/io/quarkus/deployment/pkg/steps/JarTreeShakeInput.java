@@ -182,7 +182,7 @@ class JarTreeShakeInput implements AutoCloseable {
      * Factory method that assembles all input for the tree-shake analysis.
      * Walks dependency and application JARs, collects bytecode, service provider metadata,
      * and extracts root classes from generated classes, native-image build items,
-     * and string-constant class references.
+     * string-constant class references and the configured classes to keep.
      *
      * <p>
      * The caller must close the returned instance to release the opened dependency trees.
@@ -190,6 +190,7 @@ class JarTreeShakeInput implements AutoCloseable {
      */
     static JarTreeShakeInput collect(
             TreeShakeConfig.TreeShakeMode treeShakeMode,
+            Set<String> keepClasses,
             ApplicationModel appModel,
             List<GeneratedClassBuildItem> generatedClasses,
             TransformedClassesBuildItem transformedClasses,
@@ -230,6 +231,7 @@ class JarTreeShakeInput implements AutoCloseable {
                     input.excludedArtifacts);
             final Predicate<String> alwaysPresent = alwaysPresent(input.depBytecode, input.appBytecode,
                     input.generatedBytecode);
+            addKeptClassRoots(keepClasses, reachabilityAnalyzed, alwaysPresent, input.roots);
             addConditionalRoots(conditionalRootClasses, reachabilityAnalyzed, alwaysPresent, input.roots,
                     input.conditionalRoots);
             for (JarTreeShakeDeclaredClassesBuildItem item : declaredClasses) {
@@ -478,6 +480,37 @@ class JarTreeShakeInput implements AutoCloseable {
             }
         }
         return ClassLoader.getPlatformClassLoader().getResource(name.replace('.', '/') + ".class") != null;
+    }
+
+    /**
+     * Adds the classes configured with {@code quarkus.package.jar.tree-shake.keep-classes} as roots.
+     * A configured class that tree-shaking would never remove isn't added. Instead, it is reported with
+     * a warning, because the entry is either a typo or names a class that doesn't need to be kept,
+     * such as an application class or a class of an excluded artifact.
+     *
+     * @param keepClasses configured class names to keep
+     * @param reachabilityAnalyzed whether the analysis determines the reachability of a class
+     * @param alwaysPresent whether a class whose reachability isn't analyzed is present at runtime
+     * @param roots unconditional roots to add to
+     */
+    static void addKeptClassRoots(
+            Set<String> keepClasses,
+            Predicate<String> reachabilityAnalyzed,
+            Predicate<String> alwaysPresent,
+            Set<String> roots) {
+        for (String className : keepClasses) {
+            if (reachabilityAnalyzed.test(className)) {
+                roots.add(className);
+            } else if (alwaysPresent.test(className)) {
+                log.warnf("Class %s configured in quarkus.package.jar.tree-shake.keep-classes is never removed"
+                        + " by tree-shaking (it is an application, generated or platform class,"
+                        + " or belongs to an excluded artifact)", className);
+            } else {
+                log.warnf("Class %s configured in quarkus.package.jar.tree-shake.keep-classes was not found"
+                        + " among the runtime dependency classes; nested classes must use their binary name,"
+                        + " e.g. com.example.Outer$Inner", className);
+            }
+        }
     }
 
     /**

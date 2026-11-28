@@ -24,7 +24,7 @@ public class OidcRedisTokenStateManagerProcessor {
 
     @BuildStep
     RequestedRedisClientBuildItem requestRedisClient(OidcRedisTokenStateManagerBuildConfig buildConfig) {
-        return new RequestedRedisClientBuildItem(buildConfig.redisClientName());
+        return RequestedRedisClientBuildItem.dataSource(buildConfig.redisClientName());
     }
 
     @BuildStep

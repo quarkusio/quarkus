@@ -17,11 +17,14 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.redis.client.RedisClientName;
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.smallrye.mutiny.TimeoutException;
+import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.redis.client.Command;
 import io.vertx.redis.client.Request;
@@ -31,6 +34,8 @@ import io.vertx.redis.client.Response;
 @ApplicationScoped
 class RedisHealthCheck implements HealthCheck {
     private final Map<String, Redis> clients = new HashMap<>();
+    // The data sources of the clients that have no Vert.x client: another backend provides them
+    private final Map<String, ReactiveRedisDataSource> dataSources = new HashMap<>();
 
     @Inject
     RedisConfig config;
@@ -45,6 +50,14 @@ class RedisHealthCheck implements HealthCheck {
                 clients.putIfAbsent(getClientName(handle.getBean()), handle.get());
             }
         }
+        // Not an injection point: the health check must not make the data sources of every configured client exist
+        for (InstanceHandle<ReactiveRedisDataSource> handle : Arc.container().listAll(ReactiveRedisDataSource.class,
+                Any.Literal.INSTANCE)) {
+            String clientName = getClientName(handle.getBean());
+            if (handle.getBean().isActive() && !clients.containsKey(clientName)) {
+                dataSources.putIfAbsent(clientName, handle.get());
+            }
+        }
     }
 
     @Override
@@ -53,23 +66,32 @@ class RedisHealthCheck implements HealthCheck {
         for (Map.Entry<String, Redis> client : clients.entrySet()) {
             String clientName = client.getKey().equals(DEFAULT_CLIENT_NAME) ? "default" : client.getKey();
             Redis redisClient = client.getValue();
-            Duration timeout = config.clients().get(clientName).timeout();
-            try {
-                Response response = redisClient.send(Request.cmd(Command.PING)).await().atMost(timeout);
-                builder.up().withData(clientName, response.toString());
-            } catch (TimeoutException e) {
-                builder.down().withData(clientName,
-                        "Unable to execute the validation check for the Redis Client due to timeout");
-            } catch (Exception e) {
-                if (e.getMessage() == null) {
-                    builder.down().withData(clientName, "Unable to execute the validation check for the Redis Client: " + e);
-                } else {
-                    builder.down().withData(clientName,
-                            "Unable to execute the validation check for the Redis Client: " + e.getMessage());
-                }
-            }
+            ping(builder, clientName, redisClient.send(Request.cmd(Command.PING)));
+        }
+        for (Map.Entry<String, ReactiveRedisDataSource> dataSource : dataSources.entrySet()) {
+            String clientName = dataSource.getKey().equals(DEFAULT_CLIENT_NAME) ? "default" : dataSource.getKey();
+            ping(builder, clientName, dataSource.getValue().execute(Command.PING));
         }
         return builder.build();
+    }
+
+    private void ping(HealthCheckResponseBuilder builder, String clientName, Uni<Response> ping) {
+        Duration timeout = config.clients().get(clientName).timeout();
+        try {
+            Response response = ping.await().atMost(timeout);
+            // the builder starts up: a client that answers must not put it back up after another one failed
+            builder.withData(clientName, response.toString());
+        } catch (TimeoutException e) {
+            builder.down().withData(clientName,
+                    "Unable to execute the validation check for the Redis Client due to timeout");
+        } catch (Exception e) {
+            if (e.getMessage() == null) {
+                builder.down().withData(clientName, "Unable to execute the validation check for the Redis Client: " + e);
+            } else {
+                builder.down().withData(clientName,
+                        "Unable to execute the validation check for the Redis Client: " + e.getMessage());
+            }
+        }
     }
 
     private static String getClientName(final Bean<?> bean) {

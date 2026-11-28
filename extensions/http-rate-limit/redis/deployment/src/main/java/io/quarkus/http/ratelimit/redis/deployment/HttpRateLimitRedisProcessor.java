@@ -40,7 +40,7 @@ public class HttpRateLimitRedisProcessor {
             return;
         }
         String client = config.redisClientName().orElse(RedisConfig.DEFAULT_CLIENT_NAME);
-        requestedClients.produce(new RequestedRedisClientBuildItem(client));
+        requestedClients.produce(RequestedRedisClientBuildItem.dataSource(client));
 
         // the data source service is optional: it is absent when the client is not active
         serviceRegistrar.forService(RedisRateLimitStore.class)

@@ -3,9 +3,8 @@ package io.quarkus.devservices.common;
 import static io.quarkus.devservices.common.ContainerUtil.getShortId;
 import static io.quarkus.devservices.common.Labels.DOCKER_COMPOSE_SERVICE;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
@@ -23,23 +22,35 @@ public class ComposeLocator {
 
     public static Optional<ContainerAddress> locateContainer(DevServicesComposeProjectBuildItem composeProject,
             List<String> images, int port, LaunchMode launchMode, boolean useSharedNetwork) {
+        return locateContainers(composeProject, images, Set.of(port), launchMode, useSharedNetwork)
+                .stream()
+                .findFirst();
+    }
+
+    public static Set<ContainerAddress> locateContainers(DevServicesComposeProjectBuildItem composeProject,
+            List<String> images, Collection<Integer> ports, LaunchMode launchMode, boolean useSharedNetwork) {
         if (launchMode.isDevServicesSupported()) {
-            return composeProject.locate(images, port)
-                    .map(runningContainer -> {
-                        String serviceName = getServiceName(runningContainer);
-                        ContainerAddress containerAddress = new ContainerAddress(runningContainer,
-                                useSharedNetwork ? serviceName : DockerClientFactory.instance().dockerHostIpAddress(),
-                                useSharedNetwork ? port
-                                        : runningContainer.getPortMapping(port).orElseThrow(
-                                                () -> new IllegalStateException("No public port found for " + port)));
-                        log.infof("Compose Dev Service container found: %s (%s). Connecting to: %s.",
-                                getShortId(containerAddress.getId()),
-                                containerAddress.getRunningContainer().containerInfo().imageName(),
-                                containerAddress.getUrl());
-                        return containerAddress;
-                    });
+            return composeProject.locate(images, ports).map(runningContainer -> {
+                String serviceName = getServiceName(runningContainer);
+                String dockerHostIpAddress = DockerClientFactory.instance().dockerHostIpAddress();
+
+                return ports.stream().map(port -> {
+                    ContainerAddress containerAddress = new ContainerAddress(runningContainer,
+                            useSharedNetwork ? serviceName : dockerHostIpAddress,
+                            useSharedNetwork ? port
+                                    : runningContainer.getPortMapping(port).orElseThrow(
+                                            () -> new IllegalStateException("No public port found for " + port)));
+
+                    log.infof("Compose Dev Service container found: %s (%s). Connecting to: %s.",
+                            getShortId(containerAddress.getId()),
+                            containerAddress.getRunningContainer().containerInfo().imageName(),
+                            containerAddress.getUrl());
+
+                    return containerAddress;
+                }).collect(Collectors.toSet());
+            }).orElse(Set.of());
         }
-        return Optional.empty();
+        return Set.of();
     }
 
     public static String getServiceName(RunningContainer runningContainer) {

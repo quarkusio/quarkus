@@ -3,7 +3,6 @@ package org.jboss.resteasy.reactive.client.handlers;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 
@@ -24,22 +23,21 @@ public class ClientCaptureCurrentContextRestHandler implements ClientRestHandler
 
     @Override
     public void handle(RestClientRequestContext requestContext) throws Exception {
-        ClientRequestContextImpl clientRequestContext = requestContext.getClientRequestContext();
-        if (clientRequestContext == null) {
-            return;
-        }
-
+        // the ClientRequestContextImpl does not exist yet: this handler runs before the request filters create it
         if (captureStacktrace) {
-            captureCallerStackTrace(clientRequestContext);
+            captureCallerStackTrace(requestContext);
         }
     }
 
-    private void captureCallerStackTrace(ClientRequestContextImpl clientRequestContext) {
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+    private void captureCallerStackTrace(RestClientRequestContext requestContext) {
+        // only fills the VM backtrace: the StackTraceElement[] is built in getCallerStackTrace(), on error responses
+        requestContext.setCallerStackTraceCapture(new CallerStackTrace());
+    }
+
+    public static StackTraceElement[] filterCallerStackTrace(StackTraceElement[] stackTrace) {
         List<StackTraceElement> effectiveStackTrace = new ArrayList<>(stackTrace.length);
         boolean foundUserMethod = false;
-        // skip first trace which is Thread.getStackTrace
-        for (int i = 1; i < stackTrace.length; i++) {
+        for (int i = 0; i < stackTrace.length; i++) {
             StackTraceElement trace = stackTrace[i];
             if (foundUserMethod) {
                 effectiveStackTrace.add(trace);
@@ -50,8 +48,16 @@ public class ClientCaptureCurrentContextRestHandler implements ClientRestHandler
                 foundUserMethod = true;
             }
         }
+        return effectiveStackTrace.toArray(EMPTY_ARRAY);
+    }
 
-        clientRequestContext.getRestClientRequestContext()
-                .setCallerStackTrace(effectiveStackTrace.toArray(EMPTY_ARRAY));
+    /**
+     * Records the caller frames when created; never thrown.
+     */
+    private static final class CallerStackTrace extends Throwable {
+
+        CallerStackTrace() {
+            super("REST Client caller stack trace", null, false, true);
+        }
     }
 }

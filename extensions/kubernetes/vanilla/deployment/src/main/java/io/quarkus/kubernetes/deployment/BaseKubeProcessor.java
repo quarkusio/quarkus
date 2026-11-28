@@ -17,6 +17,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jboss.logging.Logger;
+
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.JobCompletionMode;
 import io.dekorate.kubernetes.annotation.JobRestartPolicy;
@@ -94,10 +96,13 @@ import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.RoleRef;
 import io.quarkus.kubernetes.spi.Subject;
 import io.quarkus.kubernetes.spi.Targetable;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.config.Config;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
+
+    private static final Logger log = Logger.getLogger(BaseKubeProcessor.class);
 
     protected abstract int priority();
 
@@ -298,6 +303,7 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
             Optional<ContainerImageInfoBuildItem> image,
             Optional<KubernetesCommandBuildItem> command,
             Optional<Port> port,
+            Optional<Port> httpsPort,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessProbePath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessProbePath,
             Optional<KubernetesHealthStartupPathBuildItem> startupPath,
@@ -307,7 +313,7 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
             List<KubernetesRoleBindingBuildItem> roleBindings,
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings) {
         createLabelDecorators(context, config, labels);
-        createAnnotationDecorators(context, project, config, metricsConfiguration, annotations, port);
+        createAnnotationDecorators(context, project, config, metricsConfiguration, annotations, port, httpsPort);
         createContainerDecorators(context, namespace, config);
         createCommandDecorator(context, config, command);
         createArgsDecorator(context, config, command);
@@ -639,7 +645,8 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
             C config,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             List<KubernetesAnnotationBuildItem> annotations,
-            Optional<Port> port) {
+            Optional<Port> port,
+            Optional<Port> httpsPort) {
         final var name = context.name();
         annotations
                 .forEach(a -> context.addToTarget(new AddAnnotationDecorator(name, a.getKey(), a.getValue()), a.getTarget()));
@@ -680,20 +687,50 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
             String prefix = config.prometheus().prefix();
 
             if (port.isPresent() && path != null) {
-                // Determine the effective Prometheus port: management port if enabled, otherwise use container port
-                final int containerPort = port.get().getContainerPort();
-                final int managementPort = Config.get()
-                        .getOptionalValue("quarkus.management.port", Integer.class)
-                        .orElse(9000);
-                final int prometheusPort = KubernetesConfigUtil.managementPortIsEnabled()
-                        ? managementPort
-                        : containerPort;
+                // Before scrape-scheme existed, quarkus.kubernetes.prometheus.scheme=https was the way to scrape over
+                // HTTPS. Keep that meaning when scrape-scheme is not set, so such applications keep using TLS.
+                final Optional<PrometheusConfig.ScrapeScheme> legacyScheme = config.prometheus().scheme()
+                        .flatMap(PrometheusConfig.ScrapeScheme::of);
+                if (legacyScheme.isPresent() && config.prometheus().scrapeScheme().isEmpty()) {
+                    log.warnf("quarkus.kubernetes.prometheus.scheme=%1$s is read as the scrape scheme. "
+                            + "Set quarkus.kubernetes.prometheus.scrape-scheme=%1$s instead: "
+                            + "quarkus.kubernetes.prometheus.scheme names the scheme annotation.",
+                            legacyScheme.get().value());
+                }
+                final String scrapeScheme = config.prometheus().scrapeScheme()
+                        .or(() -> legacyScheme)
+                        .orElse(PrometheusConfig.ScrapeScheme.HTTP)
+                        .value();
+                final String schemeAnnotation = legacyScheme.isPresent()
+                        ? prefix + "/scheme"
+                        : config.prometheus().scheme().orElse(prefix + "/scheme");
+                if (!config.prometheus().generateServiceMonitor() && !config.prometheus().annotations()) {
+                    return;
+                }
+
+                // Determine the effective Prometheus port: the management port if the management interface is enabled,
+                // otherwise the https port to scrape over HTTPS, or the container port
+                final int prometheusPort;
+                if (KubernetesConfigUtil.managementPortIsEnabled()) {
+                    prometheusPort = Config.get()
+                            .getOptionalValue("quarkus.management.port", Integer.class)
+                            .orElse(9000);
+                } else if (PrometheusConfig.ScrapeScheme.HTTPS.value().equals(scrapeScheme)) {
+                    prometheusPort = httpsPort.map(Port::getContainerPort)
+                            .orElseThrow(() -> new ConfigurationException(
+                                    "Prometheus scrapes over HTTPS, but the generated resources have no https port. "
+                                            + "Configure TLS with the quarkus.http.ssl.certificate.* properties, declare "
+                                            + "an https port (for example quarkus.kubernetes.ports.https.container-port), "
+                                            + "enable the management interface, or set the Prometheus scrape-scheme to http."));
+                } else {
+                    prometheusPort = port.get().getContainerPort();
+                }
 
                 if (config.prometheus().generateServiceMonitor()) {
                     context.add(new AddServiceMonitorResourceDecorator(
-                            config.prometheus().scheme().orElse("http"),
+                            scrapeScheme,
                             String.valueOf(prometheusPort),
-                            config.prometheus().path().orElse(path),
+                            path,
                             10,
                             true));
                 }
@@ -708,7 +745,7 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                             config.prometheus().port().orElse(prefix + "/port"), "" + prometheusPort,
                             PROMETHEUS_ANNOTATION_TARGETS));
                     context.add(new AddAnnotationDecorator(name,
-                            config.prometheus().scheme().orElse(prefix + "/scheme"), "http",
+                            schemeAnnotation, scrapeScheme,
                             PROMETHEUS_ANNOTATION_TARGETS));
                 }
             }
@@ -815,11 +852,12 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
         Optional<Port> port = optionalPort(ports);
+        Optional<Port> httpsPort = asStream(ports).filter(p -> "https".equals(p.getName())).findFirst();
 
         createDecorators(context, project, namespace, config,
                 metricsConfiguration, kubernetesClientConfiguration,
                 annotations, labels, image, command,
-                port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
+                port, httpsPort, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
                 clusterRoleBindings);
 
         context.add(new ApplyImagePullPolicyDecorator(name, pullPolicy()));

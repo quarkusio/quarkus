@@ -1,7 +1,9 @@
 package io.quarkus.kubernetes.deployment;
 
+import java.util.Locale;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.smallrye.config.WithDefault;
 
 public interface PrometheusConfig {
@@ -62,4 +64,51 @@ public interface PrometheusConfig {
      * appended to the defined prefix.
      */
     Optional<String> scheme();
+
+    /**
+     * The scheme Prometheus uses to scrape the metrics endpoint. It is the value of the scheme annotation and the
+     * scheme of the generated {@code ServiceMonitor} endpoint.
+     * <p>
+     * With {@code https} and without the management interface, Prometheus scrapes the {@code https} port. The build fails
+     * when the generated resources have no {@code https} port.
+     * <p>
+     * When this is not set and {@code quarkus.kubernetes.prometheus.scheme} is {@code http} or {@code https}, that value
+     * is the scheme, as in earlier versions, and a warning asks to move it to this property.
+     */
+    @ConfigDocDefault("http")
+    Optional<ScrapeScheme> scrapeScheme();
+
+    /**
+     * The schemes Prometheus can use to scrape the metrics endpoint.
+     */
+    enum ScrapeScheme {
+        /**
+         * Scrape over plain HTTP.
+         */
+        HTTP,
+        /**
+         * Scrape over HTTPS.
+         */
+        HTTPS;
+
+        /**
+         * @return the scheme in lower case, as the Prometheus annotation and the {@code ServiceMonitor} expect it
+         */
+        public String value() {
+            return name().toLowerCase(Locale.ROOT);
+        }
+
+        /**
+         * @param value a scheme name, in any case
+         * @return the matching scheme, or empty if the value is neither {@code http} nor {@code https}
+         */
+        public static Optional<ScrapeScheme> of(String value) {
+            for (ScrapeScheme scheme : values()) {
+                if (scheme.value().equalsIgnoreCase(value)) {
+                    return Optional.of(scheme);
+                }
+            }
+            return Optional.empty();
+        }
+    }
 }

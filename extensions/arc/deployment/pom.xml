@@ -69,6 +69,12 @@
             <version>4.0.1</version>
             <scope>test</scope>
         </dependency>
+        <!-- Used to test wrong @PostConstruct and @PreDestroy detection -->
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 

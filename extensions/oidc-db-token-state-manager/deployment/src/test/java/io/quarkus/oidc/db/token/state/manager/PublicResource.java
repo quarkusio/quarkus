@@ -2,8 +2,7 @@ package io.quarkus.oidc.db.token.state.manager;
 
 import java.util.function.Function;
 
-import javax.annotation.security.PermitAll;
-
+import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;

@@ -105,9 +105,28 @@ public class BootstrapMavenContext {
     private static final String MAVEN_RESOLVER_TRANSPORT_NATIVE = "native";
     private static final String MAVEN_RESOLVER_TRANSPORT_AUTO = "auto";
     private static final String WAGON_TRANSPORTER_PRIORITY_KEY = "aether.priority.WagonTransporterFactory";
+    // native HTTP transport of Maven Resolver 1.x (maven-resolver-transport-http)
     private static final String NATIVE_HTTP_TRANSPORTER_PRIORITY_KEY = "aether.priority.HttpTransporterFactory";
+    // native HTTP transport of Maven Resolver 2.x (maven-resolver-transport-apache)
+    private static final String APACHE_HTTP_TRANSPORTER_PRIORITY_KEY = "aether.priority.ApacheTransporterFactory";
     private static final String NATIVE_FILE_TRANSPORTER_PRIORITY_KEY = "aether.priority.FileTransporterFactory";
     private static final String RESOLVER_MAX_PRIORITY = String.valueOf(Float.MAX_VALUE);
+
+    /*
+     * HTTP transport configuration keys. Maven Resolver 2.x renamed them from aether.connector.* to aether.transport.http.*.
+     * Both variants are set, so that the session is honored by whichever resolver version is available at runtime
+     * (e.g. resolver 1.9 provided by Maven 3.9 or resolver 2.x provided by Maven 3.10), regardless of the resolver version
+     * Quarkus was compiled against. The values are intentionally not taken from ConfigurationProperties, since those
+     * constants are inlined at compile time.
+     */
+    private static final String HTTP_USER_AGENT_KEY = "aether.transport.http.userAgent";
+    private static final String LEGACY_HTTP_USER_AGENT_KEY = "aether.connector.userAgent";
+    private static final String HTTP_HEADERS_KEY = "aether.transport.http.headers";
+    private static final String LEGACY_HTTP_HEADERS_KEY = "aether.connector.http.headers";
+    private static final String HTTP_CONNECT_TIMEOUT_KEY = "aether.transport.http.connectTimeout";
+    private static final String LEGACY_HTTP_CONNECT_TIMEOUT_KEY = "aether.connector.connectTimeout";
+    private static final String HTTP_REQUEST_TIMEOUT_KEY = "aether.transport.http.requestTimeout";
+    private static final String LEGACY_HTTP_REQUEST_TIMEOUT_KEY = "aether.connector.requestTimeout";
 
     private boolean artifactTransferLogging;
     private BootstrapMavenOptions cliOptions;
@@ -500,6 +519,19 @@ public class BootstrapMavenContext {
         return null;
     }
 
+    /**
+     * Sets an HTTP transport configuration value under both its Maven Resolver 2.x key and its Maven Resolver 1.x key.
+     *
+     * @param configProps session configuration properties
+     * @param key Maven Resolver 2.x key
+     * @param legacyKey Maven Resolver 1.x key
+     * @param value configuration value
+     */
+    private static void putHttpTransportConfig(Map<Object, Object> configProps, String key, String legacyKey, Object value) {
+        configProps.put(key, value);
+        configProps.put(legacyKey, value);
+    }
+
     // mostly a copy of `DefaultRepositorySystemSessionFactory.newRepositorySession()`
     private DefaultRepositorySystemSession newRepositorySystemSession() throws BootstrapMavenException {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
@@ -508,7 +540,7 @@ public class BootstrapMavenContext {
         session.setCache(new DefaultRepositoryCache());
 
         Map<Object, Object> configProps = new LinkedHashMap<>();
-        configProps.put(ConfigurationProperties.USER_AGENT, getUserAgent());
+        putHttpTransportConfig(configProps, HTTP_USER_AGENT_KEY, LEGACY_HTTP_USER_AGENT_KEY, getUserAgent());
         configProps.put(ConfigurationProperties.INTERACTIVE, settings.isInteractiveMode());
         // First add properties populated from settings.xml
         Map<?, ?> propertiesFromActiveProfiles = getActiveSettingsProfiles()
@@ -664,17 +696,21 @@ public class BootstrapMavenContext {
                     }
                 }
 
+                final String serverSuffix = "." + server.getId();
                 // org.eclipse.aether.ConfigurationProperties.HTTP_HEADERS => Map<String, String>
                 if (headers != null) {
-                    configProps.put(ConfigurationProperties.HTTP_HEADERS + "." + server.getId(), headers);
+                    putHttpTransportConfig(configProps, HTTP_HEADERS_KEY + serverSuffix,
+                            LEGACY_HTTP_HEADERS_KEY + serverSuffix, headers);
                 }
                 // org.eclipse.aether.ConfigurationProperties.CONNECT_TIMEOUT => int
                 if (connectTimeout != null) {
-                    configProps.put(ConfigurationProperties.CONNECT_TIMEOUT + "." + server.getId(), connectTimeout);
+                    putHttpTransportConfig(configProps, HTTP_CONNECT_TIMEOUT_KEY + serverSuffix,
+                            LEGACY_HTTP_CONNECT_TIMEOUT_KEY + serverSuffix, connectTimeout);
                 }
                 // org.eclipse.aether.ConfigurationProperties.REQUEST_TIMEOUT => int
                 if (requestTimeout != null) {
-                    configProps.put(ConfigurationProperties.REQUEST_TIMEOUT + "." + server.getId(), requestTimeout);
+                    putHttpTransportConfig(configProps, HTTP_REQUEST_TIMEOUT_KEY + serverSuffix,
+                            LEGACY_HTTP_REQUEST_TIMEOUT_KEY + serverSuffix, requestTimeout);
                 }
             }
 
@@ -690,6 +726,7 @@ public class BootstrapMavenContext {
             // Make sure (whatever extra priority is set) that resolver native is selected
             configProps.put(NATIVE_FILE_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);
             configProps.put(NATIVE_HTTP_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);
+            configProps.put(APACHE_HTTP_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);
         } else if (MAVEN_RESOLVER_TRANSPORT_WAGON.equals(transport)) {
             // Make sure (whatever extra priority is set) that wagon is selected
             configProps.put(WAGON_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);

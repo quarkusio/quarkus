@@ -4,6 +4,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -82,5 +83,15 @@ public class ConfluentRegistryClientProcessor {
     @BuildStep(onlyIf = NativeImageFutureDefault.RunTimeInitializeSecurityProvider.class)
     RuntimeInitializedPackageBuildItem runtimeInitializedClasses() {
         return new RuntimeInitializedPackageBuildItem("io.confluent.kafka.schemaregistry.client.security");
+    }
+
+    /**
+     * snappy-java, which comes with kafka-clients, ships a resource configuration that embeds its native library for
+     * every platform in the native executable.
+     */
+    @BuildStep
+    ExcludeConfigBuildItem excludeSnappyResourceConfig() {
+        return new ExcludeConfigBuildItem("org\\.xerial\\.snappy\\.snappy-java",
+                "/META-INF/native-image/org\\.xerial\\.snappy/snappy-java/resource-config\\.json");
     }
 }

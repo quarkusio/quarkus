@@ -65,6 +65,7 @@ import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
@@ -334,6 +335,16 @@ public class KafkaProcessor {
                 ReflectiveClassBuildItem.builder(QuarkusKafkaSslEngineFactory.class).build());
         configDescBuildItems.produce(new ConfigDescriptionBuildItem("kafka.tls-configuration-name", null,
                 "The tls-configuration to use for the Kafka client", null, null, ConfigPhase.RUN_TIME));
+    }
+
+    /**
+     * snappy-java ships a resource configuration that embeds its native library for every platform in the native
+     * executable. {@link SnappyFeature} registers the library of the build platform when Snappy is enabled.
+     */
+    @BuildStep
+    ExcludeConfigBuildItem excludeSnappyResourceConfig() {
+        return new ExcludeConfigBuildItem("org\\.xerial\\.snappy\\.snappy-java",
+                "/META-INF/native-image/org\\.xerial\\.snappy/snappy-java/resource-config\\.json");
     }
 
     @BuildStep(onlyIf = HasSnappy.class)

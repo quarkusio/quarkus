@@ -1,15 +1,18 @@
 package io.quarkus.devtools.project.create;
 
 import static io.quarkus.devtools.project.create.MultiplePlatformBomsTestBase.enableRegistryClient;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.util.List;
 
+import org.apache.maven.model.Model;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
 import io.quarkus.registry.catalog.PlatformStreamCoords;
@@ -59,6 +62,15 @@ public class MavenProjectAddExtensionTest extends MultiplePlatformBomsTestBase {
         // valid characters, existing dependency
         QuarkusCommandOutcome outcome = addExtensions(projectDir, List.of("io.quarkus:quarkus-info:3.20.1"));
         assertTrue(outcome.isSuccess());
+
+        // the version of an independent (non-platform-managed) extension should be exposed as a
+        // <properties> entry rather than hard-coded in the dependency's <version> element
+        final Model resultModel = ModelUtils.readModel(projectDir.resolve("pom.xml"));
+        assertEquals("3.20.1", resultModel.getProperties().getProperty("quarkus-info.version"));
+        final boolean versionIsProperty = resultModel.getDependencies().stream()
+                .filter(dep -> "quarkus-info".equals(dep.getArtifactId()))
+                .anyMatch(dep -> "${quarkus-info.version}".equals(dep.getVersion()));
+        assertTrue(versionIsProperty);
 
         // invalid characters (tilde in artifactId)
         outcome = addExtensions(projectDir,

@@ -46,8 +46,9 @@ class HibernateAccessorTransformationTest {
         var registration = new Builder(type).addFieldWriter(type.field("value")).build();
         List<BytecodeTransformerBuildItem> transformers = new ArrayList<>();
         List<GeneratedClassBuildItem> classes = new ArrayList<>();
-        new HibernateAccessorProcessor().generateDirectAccessors(() -> HibernateAccessorStrategy.REFLECTION,
-                List.of(registration), classes::add, transformers::add);
+        var processor = new HibernateAccessorProcessor();
+        processor.generateDirectAccessors(() -> HibernateAccessorStrategy.REFLECTION,
+                processor.processRegistrations(List.of(registration)), classes::add, transformers::add);
         assertThat(transformers).isEmpty();
         assertThat(classes).isEmpty();
     }

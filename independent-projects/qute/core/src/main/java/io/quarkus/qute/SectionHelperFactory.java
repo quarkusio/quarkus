@@ -128,6 +128,17 @@ public interface SectionHelperFactory<T extends SectionHelper> {
     }
 
     /**
+     * If {@code true} then the content of the section is not parsed; instead it is treated as raw text.
+     * <p>
+     * The raw text is added as a single text node in the main block of the section.
+     *
+     * @return {@code true} if the section content should not be parsed
+     */
+    default boolean rawContent() {
+        return false;
+    }
+
+    /**
      * A section end tag may be mandatory or optional.
      *
      * @return the strategy

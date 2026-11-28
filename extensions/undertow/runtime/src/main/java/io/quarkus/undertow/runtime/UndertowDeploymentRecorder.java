@@ -55,6 +55,7 @@ import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundData;
+import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
@@ -236,7 +237,30 @@ public class UndertowDeploymentRecorder {
                     Instance<CurrentIdentityAssociation> instance = CDI.current().select(CurrentIdentityAssociation.class);
                     if (instance.isResolvable())
                         instance.get().setIdentity(account.getSecurityIdentity());
+                    if (notification.isProgramatic()) {
+                        // HttpServletRequest#login(): persist the identity the same way form authentication does,
+                        // otherwise the next request would be anonymous at the Vert.x HTTP security layer
+                        FormAuthenticationMechanism formAuth = getFormAuthenticationMechanism();
+                        if (formAuth != null) {
+                            formAuth.persistLogin(account.getSecurityIdentity(), getRoutingContext(notification));
+                        }
+                    }
+                } else if (notification.getEventType() == SecurityNotification.EventType.LOGGED_OUT) {
+                    // HttpServletRequest#logout()
+                    FormAuthenticationMechanism formAuth = getFormAuthenticationMechanism();
+                    if (formAuth != null) {
+                        formAuth.clearLogin(getRoutingContext(notification));
+                    }
                 }
+            }
+
+            private FormAuthenticationMechanism getFormAuthenticationMechanism() {
+                Instance<FormAuthenticationMechanism> instance = CDI.current().select(FormAuthenticationMechanism.class);
+                return instance.isResolvable() ? instance.get() : null;
+            }
+
+            private RoutingContext getRoutingContext(SecurityNotification notification) {
+                return (RoutingContext) ((VertxHttpExchange) notification.getExchange().getDelegate()).getContext();
             }
         });
         if (proactiveAuth) {

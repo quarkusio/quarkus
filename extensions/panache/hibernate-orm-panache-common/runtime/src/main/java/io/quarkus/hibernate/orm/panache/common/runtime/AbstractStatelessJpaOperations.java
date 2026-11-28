@@ -72,11 +72,11 @@ public abstract class AbstractStatelessJpaOperations<PanacheQueryType>
     }
 
     public Object findById(Class<?> entityClass, Object id) {
-        return getSession(entityClass).get(entityClass, id);
+        return getSession(entityClass).find(entityClass, id);
     }
 
     public Object findById(Class<?> entityClass, Object id, LockModeType lockModeType) {
-        return getSession(entityClass).get(entityClass, id, LockMode.fromJpaLockMode(lockModeType));
+        return getSession(entityClass).find(entityClass, id, LockMode.fromJpaLockMode(lockModeType));
     }
 
     public Optional<?> findByIdOptional(Class<?> entityClass, Object id) {

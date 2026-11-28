@@ -1034,7 +1034,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return EMPTY_STRING_ARRAY;
     }
 
-    private Type getNonAsyncReturnType(Type returnType) {
+    protected Type getNonAsyncReturnType(Type returnType) {
         switch (returnType.kind()) {
             case ARRAY:
             case CLASS:

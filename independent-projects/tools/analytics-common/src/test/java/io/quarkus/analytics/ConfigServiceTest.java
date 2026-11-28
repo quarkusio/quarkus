@@ -8,14 +8,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import io.quarkus.analytics.common.TestRestClient;
 import io.quarkus.analytics.config.FileLocations;
@@ -23,6 +29,8 @@ import io.quarkus.analytics.config.TestFileLocationsImpl;
 import io.quarkus.analytics.dto.config.NoopRemoteConfig;
 import io.quarkus.analytics.dto.config.RemoteConfig;
 import io.quarkus.analytics.util.FileUtils;
+import io.quarkus.analytics.util.ForwardedInputStream;
+import io.quarkus.analytics.util.InterruptibleLineReader;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 
 class ConfigServiceTest {
@@ -220,6 +228,91 @@ class ConfigServiceTest {
         assertFalse(configService.isActive());
         assertFalse(Files.exists(fileLocations.getLocalConfigFile()), "Local config file cannot be present");
         assertFalse(Files.exists(fileLocations.getRemoteConfigFile()), "remote config file cannot be present");
+    }
+
+    @Test
+    void userAcceptance_timeoutInterruptsPrompt() throws Exception {
+        deleteLocalConfigFile();
+        ConfigService configService = createConfigService();
+        CountDownLatch promptInterrupted = new CountDownLatch(1);
+
+        System.setProperty("quarkus.analytics.prompt.timeout", "0");
+        try {
+            configService.userAcceptance(s -> {
+                try {
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(5));
+                } catch (InterruptedException e) {
+                    promptInterrupted.countDown();
+                }
+                return "y";
+            });
+        } finally {
+            System.clearProperty("quarkus.analytics.prompt.timeout");
+        }
+
+        assertTrue(promptInterrupted.await(5, TimeUnit.SECONDS),
+                "The prompt must be interrupted once the timeout expires, so it stops reading the console");
+        assertFalse(Files.exists(fileLocations.getLocalConfigFile()), "Local config file cannot be present");
+    }
+
+    @Test
+    @Timeout(30)
+    void userAcceptance_timedOutPromptDoesNotConsumeLaterInput() throws Exception {
+        deleteLocalConfigFile();
+        ConfigService configService = createConfigService();
+
+        try (PipedOutputStream console = new PipedOutputStream();
+                PipedInputStream consoleInput = new PipedInputStream(console)) {
+            System.setProperty("quarkus.analytics.prompt.timeout", "0");
+            try {
+                configService.userAcceptance(s -> {
+                    try {
+                        return InterruptibleLineReader.readLine(consoleInput);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+            } finally {
+                System.clearProperty("quarkus.analytics.prompt.timeout");
+            }
+
+            // a key pressed for the dev mode console after the prompt gave up must reach the dev mode console
+            console.write('h');
+            console.flush();
+            // leave a prompt that is still polling the console plenty of time to steal the key
+            Thread.sleep(200);
+            assertEquals(1, consoleInput.available(), "The timed out prompt consumed console input");
+            assertEquals('h', consoleInput.read());
+        }
+        assertFalse(Files.exists(fileLocations.getLocalConfigFile()), "Local config file cannot be present");
+    }
+
+    @Test
+    @Timeout(30)
+    void userAcceptance_timedOutPromptDoesNotConsumeLaterForwardedInput() throws Exception {
+        deleteLocalConfigFile();
+        ConfigService configService = createConfigService();
+        ForwardedInputStream console = new ForwardedInputStream();
+
+        System.setProperty("quarkus.analytics.prompt.timeout", "0");
+        try {
+            configService.userAcceptance(s -> {
+                try {
+                    return InterruptibleLineReader.readLineInterruptibly(console);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        } finally {
+            System.clearProperty("quarkus.analytics.prompt.timeout");
+        }
+
+        // a line typed for the dev mode console after the prompt gave up must reach the dev mode console
+        console.type("h\n");
+        // leave a prompt that is still reading the console plenty of time to steal the line
+        Thread.sleep(200);
+        assertEquals('h', console.read(), "The timed out prompt consumed console input");
+        assertFalse(Files.exists(fileLocations.getLocalConfigFile()), "Local config file cannot be present");
     }
 
     @Test

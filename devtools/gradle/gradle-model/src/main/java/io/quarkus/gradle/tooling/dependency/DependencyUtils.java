@@ -193,13 +193,17 @@ public class DependencyUtils {
             Project project,
             String projectPath,
             @Nullable String buildPath) {
-        Project extensionProject = project.getRootProject().findProject(projectPath);
-        if (extensionProject == null) {
-            IncludedBuild extProjIncludedBuild = ToolingUtils.includedBuild(project, buildPath);
-            if (extProjIncludedBuild instanceof IncludedBuildInternal) {
-                extensionProject = ToolingUtils
-                        .includedBuildProject((IncludedBuildInternal) extProjIncludedBuild, projectPath);
-            }
+        // The included build first: the project path alone, such as ":" for the root project of an included build, can
+        // also name a project of this build
+        final Project extensionProject;
+        IncludedBuild extProjIncludedBuild = ToolingUtils.includedBuild(project, buildPath);
+        if (extProjIncludedBuild == null) {
+            extensionProject = project.getRootProject().findProject(projectPath);
+        } else if (extProjIncludedBuild instanceof IncludedBuildInternal) {
+            extensionProject = ToolingUtils
+                    .includedBuildProject((IncludedBuildInternal) extProjIncludedBuild, projectPath);
+        } else {
+            extensionProject = null;
         }
 
         if (extensionProject != null) {

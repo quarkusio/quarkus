@@ -1,5 +1,6 @@
 package io.quarkus.container.image.jib.deployment;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -235,4 +236,30 @@ public interface ContainerImageJibConfig {
      */
     Optional<String> applicationLayersCache();
 
+    /**
+     * Additional directories whose files are added to the container image, in the same manner as the
+     * {@code extraDirectories} option of the Jib Maven and Gradle plugins.
+     *
+     * Each directory is added in its own layer, after the files of {@code src/main/jib}. The directories are added in the
+     * alphabetical order of their names, so a file overrides the same file added by a directory whose name comes before.
+     */
+    @ConfigDocMapKey("directory-name")
+    Map<String, ExtraDirectory> extraDirectories();
+
+    interface ExtraDirectory {
+
+        /**
+         * The local directory whose files are added to the container image.
+         * If the path is relative, it is resolved against the project directory.
+         */
+        Path from();
+
+        /**
+         * The absolute path of the directory of the container image in which the files are added.
+         * For example, with {@code /opt/app}, the file {@code foo/bar} of the local directory is added as
+         * {@code /opt/app/foo/bar}.
+         */
+        @WithDefault("/")
+        String into();
+    }
 }

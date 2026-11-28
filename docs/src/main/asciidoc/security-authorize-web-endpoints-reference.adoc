@@ -11,11 +11,76 @@ include::_attributes.adoc[]
 :extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-rest,io.quarkus:quarkus-resteasy
 
 To control which callers can access the web endpoints of a {project-name} application, define authorization rules with security annotations or HTTP security policies for request paths.
-When security is active, {project-name} checks every HTTP request against these rules to determine whether it can proceed.
+When security is active, {project-name} checks HTTP requests against these rules to determine whether they can proceed.
 
 Most authorization rules check the roles and permissions of the `SecurityIdentity` that represents the caller.
 The security identity provider supplies the roles.
 To customize them, create a `SecurityIdentityAugmentor`, as described in xref:security-customization.adoc#security-identity-customization[Security Identity Customization].
+
+[id="choose-how-to-authorize"]
+== Choose how to authorize
+
+Security annotations are the first choice for authorization rules, because they need no path expressions, which can overlap or contain typos.
+To choose between security annotations and HTTP security policies, use the following table:
+
+[cols="1,1",options="header"]
+|===
+|If |Use
+
+|You can use a standard security annotation, such as `@RolesAllowed`, or a {project-name} security annotation, such as `@PermissionsAllowed`
+|Security annotations, as described in <<choose-security-annotation>>.
+
+|You cannot use a security annotation, for example, because the path serves static resources
+|HTTP security policies, as described in <<choose-http-security-policy>>.
+|===
+
+[id="choose-security-annotation"]
+=== Choose a security annotation
+
+To choose a security annotation, find your task in the following table:
+
+[cols="1,1",options="header"]
+|===
+|To |Use
+
+|Deny access to all callers
+|The `@DenyAll` annotation, as described in <<standard-security-annotations>>.
+
+|Allow access to all callers, including callers that are not authenticated
+|The `@PermitAll` annotation, as described in <<standard-security-annotations>>.
+
+|Allow access to any authenticated caller
+|The `@Authenticated` annotation, as described in <<standard-security-annotations>>.
+
+|Allow access to callers with specific roles
+|The `@RolesAllowed` annotation, as described in <<standard-security-annotations>>.
+
+|Authorize by what a caller is allowed to do rather than by the role of the caller
+|The `@PermissionsAllowed` annotation, as described in <<permission-annotation>>.
+|===
+
+To set a default access rule for the Jakarta REST endpoints that have no security annotation, use the `quarkus.security.jaxrs.deny-unannotated-endpoints` or `quarkus.security.jaxrs.default-roles-allowed` configuration property, as described in <<configuration-properties-to-deny-access>>.
+
+[id="choose-http-security-policy"]
+=== Choose an HTTP security policy
+
+To choose an HTTP security policy, find your task in the following table:
+
+[cols="1,1",options="header"]
+|===
+|To |Use
+
+|Deny access, permit access, or require authentication for request paths
+|The built-in `deny`, `permit`, or `authenticated` policy, as described in <<authorization-using-configuration>>.
+
+|Allow access to request paths for callers with specific roles
+|A role-based policy, as described in <<authorization-using-configuration>>.
+
+|Decide based on the request itself, such as a header
+|A custom HTTP security policy, as described in <<custom-http-security-policy>>.
+|===
+
+To set up path rules in code instead of in the `application.properties` file, observe the `HttpSecurity` CDI event, as described in <<path-specific-authz-programmatic-set-up>>.
 
 [id="authorization-using-configuration"]
 == Authorize requests in configuration
@@ -563,6 +628,7 @@ This cannot be combined with `deny-unannotated-endpoints` because `deny` takes e
 
 `quarkus.security.deny-unannotated-members=true|false`::
 If set to true, the access is denied to all CDI methods and Jakarta REST endpoints that do not have security annotations but are defined in classes that contain methods with security annotations.
+Using this property together with the `@AuthorizationPolicy` annotation is not supported.
 Defaults to `false`.
 
 These are build-time properties.

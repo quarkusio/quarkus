@@ -16,7 +16,11 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
+import java.util.Optional;
+import java.util.logging.ErrorManager;
+import java.util.logging.Filter;
 import java.util.logging.Formatter;
+import java.util.logging.Handler;
 import java.util.logging.Level;
 
 import org.jboss.logmanager.ExtHandler;
@@ -28,6 +32,8 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.smallrye.config.Config;
 
 public class OpenTelemetryLogHandler extends ExtHandler {
@@ -47,6 +53,42 @@ public class OpenTelemetryLogHandler extends ExtHandler {
     // Records published before the OpenTelemetry SDK is available; drained on activation.
     // Set to null after activation or close to release the backing array.
     private Deque<ExtLogRecord> pendingRecords = new ArrayDeque<>();
+
+    /**
+     * Creates the handler without touching the CDI container, so it can be installed during
+     * early logging setup. Making logging setup wait for the OpenTelemetry SDK would leave
+     * all loggers running at the initial (all-enabling) level while the rest of runtime
+     * initialization — CDI startup, eagerly started services — executes, see
+     * <a href="https://github.com/quarkusio/quarkus/issues/55889">GitHub issue #55889</a>.
+     * The handler buffers published records until {@link #activateHandler} provides the SDK.
+     *
+     * @param errorManager the error manager shared by the root handlers
+     * @param cleanupFilter the filter that downgrades or drops the records that extensions mark as noise
+     * @return the handler, or empty when the SDK or the log handler is disabled
+     */
+    public static Optional<Handler> createHandler(OTelRuntimeConfig runtimeConfig, ErrorManager errorManager,
+            Filter cleanupFilter) {
+        if (runtimeConfig.sdkDisabled() || !runtimeConfig.logs().handlerEnabled()) {
+            return Optional.empty();
+        }
+        final OpenTelemetryLogHandler logHandler = new OpenTelemetryLogHandler();
+        logHandler.setLevel(runtimeConfig.logs().level());
+        // as logging setup does for the handlers that extensions contribute
+        logHandler.setErrorManager(errorManager);
+        logHandler.setFilter(cleanupFilter);
+        return Optional.of(logHandler);
+    }
+
+    /**
+     * Gives the handler created by {@link #createHandler} the {@link OpenTelemetry} bean, which creates the SDK.
+     */
+    public static void activateHandler(Optional<Handler> handler, BeanContainer beanContainer) {
+        if (handler.isEmpty()) {
+            return;
+        }
+        final OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class);
+        ((OpenTelemetryLogHandler) handler.get()).activate(openTelemetry);
+    }
 
     /**
      * Creates a handler that buffers records (up to a limit) until

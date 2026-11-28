@@ -47,9 +47,9 @@ import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
 import io.quarkus.opentelemetry.runtime.tracing.DropAllSpanProcessor;
+import io.quarkus.opentelemetry.runtime.tracing.DropTargets;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
 import io.quarkus.opentelemetry.runtime.tracing.SimpleSpanProcessorWithBatchShutdown;
-import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.TracerUtil;
 import io.quarkus.runtime.ApplicationConfig;
 import io.smallrye.common.net.HostName;
@@ -195,13 +195,16 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         private final OTelBuildConfig oTelBuildConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final List<Sampler> sampler;
+        private final Instance<DropTargets> dropTargets;
 
         public SamplerCustomizer(OTelBuildConfig oTelBuildConfig,
                 OTelRuntimeConfig oTelRuntimeConfig,
-                @All List<Sampler> sampler) {
+                @All List<Sampler> sampler,
+                Instance<DropTargets> dropTargets) {
             this.oTelBuildConfig = oTelBuildConfig;
             this.oTelRuntimeConfig = oTelRuntimeConfig;
             this.sampler = sampler;
+            this.dropTargets = dropTargets;
         }
 
         @Override
@@ -216,11 +219,15 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
                         //collect default filtering targets (Needed for all samplers)
                         Set<String> dropTargets = new HashSet<>();
-                        if (oTelRuntimeConfig.traces().suppressNonApplicationUris()) {//default is true
-                            dropTargets.addAll(TracerRecorder.dropNonApplicationUriTargets);
-                        }
-                        if (!oTelRuntimeConfig.traces().includeStaticResources()) {// default is false
-                            dropTargets.addAll(TracerRecorder.dropStaticResourceTargets);
+                        // the drop targets are only known when tracing is enabled at build time
+                        if (SamplerCustomizer.this.dropTargets.isResolvable()) {
+                            DropTargets buildTimeTargets = SamplerCustomizer.this.dropTargets.get();
+                            if (oTelRuntimeConfig.traces().suppressNonApplicationUris()) {//default is true
+                                dropTargets.addAll(buildTimeTargets.nonApplicationUris());
+                            }
+                            if (!oTelRuntimeConfig.traces().includeStaticResources()) {// default is false
+                                dropTargets.addAll(buildTimeTargets.staticResources());
+                            }
                         }
                         if (oTelRuntimeConfig.traces().suppressApplicationUris().isPresent()) {
                             dropTargets.addAll(oTelRuntimeConfig.traces().suppressApplicationUris().get()

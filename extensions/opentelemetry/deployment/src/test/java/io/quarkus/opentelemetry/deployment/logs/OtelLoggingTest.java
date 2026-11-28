@@ -17,12 +17,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
+import java.util.logging.Handler;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
 
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.ExtHandler;
+import org.jboss.logmanager.LogContext;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -38,6 +41,7 @@ import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExpo
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryLogRecordExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
+import io.quarkus.opentelemetry.runtime.logs.OpenTelemetryLogHandler;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class OtelLoggingTest {
@@ -72,6 +76,23 @@ public class OtelLoggingTest {
     void setup() {
         logRecordExporter.reset();
         spanExporter.reset();
+    }
+
+    @Test
+    public void handlerIsInstalledOnce() {
+        assertEquals(1, countOpenTelemetryHandlers(LogContext.getLogContext().getLogger("").getHandlers()));
+    }
+
+    private static int countOpenTelemetryHandlers(Handler[] handlers) {
+        int count = 0;
+        for (Handler handler : handlers) {
+            if (handler instanceof OpenTelemetryLogHandler) {
+                count++;
+            } else if (handler instanceof ExtHandler extHandler) {
+                count += countOpenTelemetryHandlers(extHandler.getHandlers());
+            }
+        }
+        return count;
     }
 
     @Test

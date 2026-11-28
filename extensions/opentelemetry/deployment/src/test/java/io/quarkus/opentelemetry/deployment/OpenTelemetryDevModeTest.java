@@ -2,10 +2,16 @@ package io.quarkus.opentelemetry.deployment;
 
 import static org.hamcrest.Matchers.is;
 
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.quarkus.opentelemetry.deployment.common.HelloResource;
 import io.quarkus.opentelemetry.deployment.common.TracerRouter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
@@ -18,7 +24,7 @@ public class OpenTelemetryDevModeTest {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(TracerRouter.class, HelloResource.class)
+                    .addClasses(TracerRouter.class, HelloResource.class, GlobalOpenTelemetryResource.class)
                     .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
@@ -46,5 +52,26 @@ public class OpenTelemetryDevModeTest {
         RestAssured.when().get("/tracer").then()
                 .statusCode(200)
                 .body(is("Goodbye Tracer!"));
+    }
+
+    @Test
+    void globalIsTheBeanAfterEachReload() {
+        RestAssured.get("/global").then().statusCode(200).body(is("v0 true"));
+        // the resource is a nested class, so its source file is this one
+        TEST.modifySourceFile(OpenTelemetryDevModeTest.class, s -> s.replace("\"v0 \" +", "\"v1 \" +"));
+        RestAssured.get("/global").then().statusCode(200).body(is("v1 true"));
+        TEST.modifySourceFile(OpenTelemetryDevModeTest.class, s -> s.replace("\"v1 \" +", "\"v2 \" +"));
+        RestAssured.get("/global").then().statusCode(200).body(is("v2 true"));
+    }
+
+    @Path("/global")
+    public static class GlobalOpenTelemetryResource {
+        @Inject
+        OpenTelemetry openTelemetry;
+
+        @GET
+        public String get() {
+            return "v0 " + (GlobalOpenTelemetry.get().getTracerProvider() == openTelemetry.getTracerProvider());
+        }
     }
 }

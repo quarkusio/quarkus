@@ -7,17 +7,19 @@ import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.opentelemetry.deployment.tracing.TracerEnabled;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
-import io.quarkus.opentelemetry.runtime.tracing.instrumentation.InstrumentationRecorder;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.tracing.instrumentation.OTelVertxBootstrapCustomizer;
+import io.quarkus.opentelemetry.runtime.tracing.instrumentation.OpenTelemetryVertxInstrumentation;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.grpc.GrpcTracingClientInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.grpc.GrpcTracingServerInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.reactivemessaging.ReactiveMessagingTracingIncomingDecorator;
@@ -37,6 +39,11 @@ import io.smallrye.config.Config;
 
 @BuildSteps(onlyIf = TracerEnabled.class)
 public class InstrumentationProcessor {
+
+    private static final String VERTX_HTTP_METRICS = "opentelemetry.vertx.http-metrics";
+    private static final String VERTX_METRICS = "opentelemetry.vertx.metrics";
+    private static final String VERTX_TRACING = "opentelemetry.vertx.tracing";
+
     static class MetricsExtensionAvailable implements BooleanSupplier {
         private static final boolean IS_MICROMETER_EXTENSION_AVAILABLE = isClassPresentAtRuntime(
                 "io.quarkus.micrometer.runtime.binder.vertx.VertxHttpServerMetrics");
@@ -128,26 +135,41 @@ public class InstrumentationProcessor {
         }
     }
 
+    // VertxBootstrapConsumerBuildItem carries the consumers that Vert.x core applies when it creates Vert.x, so each
+    // consumer is a service bridged into the build item by a recorder proxy, until Vert.x core takes them as services
+
+    @SuppressWarnings("deprecation")
     @BuildStep(onlyIfNot = MetricsExtensionAvailable.class, onlyIf = VertxHttpAvailable.class)
-    @Record(ExecutionTime.STATIC_INIT)
-    VertxBootstrapConsumerBuildItem vertxHttpMetrics(InstrumentationRecorder recorder) {
-        return new VertxBootstrapConsumerBuildItem(recorder.getVertxHttpMetrics(), LIBRARY_AFTER + 1,
-                "opentelemetry.vertx.http-metrics");
+    VertxBootstrapConsumerBuildItem vertxHttpMetrics(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar.forService(OTelVertxBootstrapCustomizer.class, VERTX_HTTP_METRICS)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> OpenTelemetryVertxInstrumentation.httpMetrics());
+        return new VertxBootstrapConsumerBuildItem(
+                serviceRegistrar.getRecorderProxy(OTelVertxBootstrapCustomizer.class, VERTX_HTTP_METRICS),
+                LIBRARY_AFTER + 1, VERTX_HTTP_METRICS);
     }
 
+    @SuppressWarnings("deprecation")
     @BuildStep(onlyIfNot = { MetricsExtensionAvailable.class, VertxHttpAvailable.class })
-    @Record(ExecutionTime.STATIC_INIT)
-    VertxBootstrapConsumerBuildItem vertxMetricsOptions(InstrumentationRecorder recorder) {
-        return new VertxBootstrapConsumerBuildItem(recorder.getVertxMetricsOptions(), LIBRARY_AFTER + 2,
-                "opentelemetry.vertx.metrics");
+    VertxBootstrapConsumerBuildItem vertxMetricsOptions(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar.forService(OTelVertxBootstrapCustomizer.class, VERTX_METRICS)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> OpenTelemetryVertxInstrumentation.metrics());
+        return new VertxBootstrapConsumerBuildItem(
+                serviceRegistrar.getRecorderProxy(OTelVertxBootstrapCustomizer.class, VERTX_METRICS),
+                LIBRARY_AFTER + 2, VERTX_METRICS);
     }
 
+    @SuppressWarnings("deprecation")
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    VertxBootstrapConsumerBuildItem vertxTracingOptions(
-            InstrumentationRecorder recorder) {
-        return new VertxBootstrapConsumerBuildItem(recorder.processVertxBootstrap(), LIBRARY_AFTER,
-                "opentelemetry.vertx.tracing");
+    VertxBootstrapConsumerBuildItem vertxTracingOptions(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar.forService(OTelVertxBootstrapCustomizer.class, VERTX_TRACING)
+                .atPhase(Phase.INFRASTRUCTURE)
+                .require(OTelRuntimeConfig.class)
+                .onStart((ctx, runtimeConfig) -> OpenTelemetryVertxInstrumentation.tracing(runtimeConfig));
+        return new VertxBootstrapConsumerBuildItem(
+                serviceRegistrar.getRecorderProxy(OTelVertxBootstrapCustomizer.class, VERTX_TRACING),
+                LIBRARY_AFTER, VERTX_TRACING);
     }
 
     // RESTEasy and Vert.x web

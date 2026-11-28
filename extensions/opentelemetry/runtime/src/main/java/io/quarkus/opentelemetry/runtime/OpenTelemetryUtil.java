@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import jakarta.enterprise.inject.CreationException;
+
 import org.jboss.logging.Logger;
 import org.slf4j.MDC;
 
@@ -14,6 +16,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.trace.ReadableSpan;
+import io.quarkus.runtime.ExecutionMode;
 import io.quarkus.vertx.core.runtime.VertxMDC;
 
 public final class OpenTelemetryUtil {
@@ -27,6 +30,20 @@ public final class OpenTelemetryUtil {
     private static final Set<String> TRACING_MDC_KEYS = Set.of(TRACE_ID, SPAN_ID, SAMPLED, PARENT_ID);
 
     private OpenTelemetryUtil() {
+    }
+
+    /**
+     * Fails the creation of a bean that is created at runtime init, when it is requested during static init.
+     * Static init runs at build time in native mode, and runtime configuration is not available yet.
+     *
+     * @param beanType the type of the bean being created
+     */
+    public static void checkNotStaticInit(Class<?> beanType) {
+        if (ExecutionMode.current() == ExecutionMode.STATIC_INIT) {
+            throw new CreationException("Synthetic bean instance for " + beanType.getName()
+                    + " not initialized yet: a synthetic bean initialized during RUNTIME_INIT must not be accessed"
+                    + " during STATIC_INIT");
+        }
     }
 
     /**

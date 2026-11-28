@@ -16,122 +16,122 @@ class OtlpExporterProviderTest {
 
     @Test
     public void resolveTraceEndpoint_newWins() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig("http://localhost:1111/",
+                "http://localhost:2222/");
         assertEquals("http://localhost:2222/",
-                OTelExporterRecorder.resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
-                        "http://localhost:1111/",
-                        "http://localhost:2222/")));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.traces()));
     }
 
     @Test
     public void resolveTraceEndpoint_globalWins() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig("http://localhost:1111/",
+                DEFAULT_HTTP_BASE_URI);
         assertEquals("http://localhost:1111/",
-                OTelExporterRecorder.resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
-                        "http://localhost:1111/",
-                        DEFAULT_HTTP_BASE_URI)));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.traces()));
     }
 
     @Test
     public void resolveTraceEndpoint_legacyTraceWins() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig(DEFAULT_HTTP_BASE_URI,
+                "http://localhost:2222/");
         assertEquals("http://localhost:2222/",
-                OTelExporterRecorder.resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
-                        DEFAULT_HTTP_BASE_URI,
-                        "http://localhost:2222/")));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.traces()));
     }
 
     @Test
     public void resolveTraceEndpoint_legacyGlobalWins() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig(DEFAULT_HTTP_BASE_URI,
+                null);
         assertEquals(DEFAULT_HTTP_BASE_URI,
-                OTelExporterRecorder.resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
-                        DEFAULT_HTTP_BASE_URI,
-                        null)));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.traces()));
     }
 
     @Test
     public void resolveTraceEndpoint_testIsSet() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig(null,
+                null);
         assertEquals(DEFAULT_HTTP_BASE_URI,
-                OTelExporterRecorder.resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
-                        null,
-                        null)));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.traces()));
     }
 
     @Test
     public void resolveMetricEndpoint_newWins() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig("http://localhost:1111/",
+                "http://localhost:2222/");
         assertEquals("http://localhost:2222/",
-                OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
-                        "http://localhost:1111/",
-                        "http://localhost:2222/")));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.metrics()));
     }
 
     @Test
     public void resolveMetricEndpoint_globalWins() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig("http://localhost:1111/",
+                DEFAULT_HTTP_BASE_URI);
         assertEquals("http://localhost:1111/",
-                OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
-                        "http://localhost:1111/",
-                        DEFAULT_HTTP_BASE_URI)));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.metrics()));
     }
 
     @Test
     public void resolveMetricEndpoint_legacyTraceWins() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig(DEFAULT_HTTP_BASE_URI,
+                "http://localhost:2222/");
         assertEquals("http://localhost:2222/",
-                OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
-                        DEFAULT_HTTP_BASE_URI,
-                        "http://localhost:2222/")));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.metrics()));
     }
 
     @Test
     public void resolveMetricEndpoint_legacyGlobalWins() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig(DEFAULT_HTTP_BASE_URI,
+                null);
         assertEquals(DEFAULT_HTTP_BASE_URI,
-                OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
-                        DEFAULT_HTTP_BASE_URI,
-                        null)));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.metrics()));
     }
 
     @Test
     public void resolveMetricEndpoint_testIsSet() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig(null,
+                null);
         assertEquals(DEFAULT_HTTP_BASE_URI,
-                OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
-                        null,
-                        null)));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.metrics()));
     }
 
     @Test
     public void resolveLogsEndpoint_newWins() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig("http://localhost:1111/",
+                "http://localhost:2222/");
         assertEquals("http://localhost:2222/",
-                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
-                        "http://localhost:1111/",
-                        "http://localhost:2222/")));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.logs()));
     }
 
     @Test
     public void resolveLogsEndpoint_globalWins() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig("http://localhost:1111/",
+                DEFAULT_HTTP_BASE_URI);
         assertEquals("http://localhost:1111/",
-                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
-                        "http://localhost:1111/",
-                        DEFAULT_HTTP_BASE_URI)));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.logs()));
     }
 
     @Test
     public void resolveLogsEndpoint_legacyTraceWins() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig(DEFAULT_HTTP_BASE_URI,
+                "http://localhost:2222/");
         assertEquals("http://localhost:2222/",
-                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
-                        DEFAULT_HTTP_BASE_URI,
-                        "http://localhost:2222/")));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.logs()));
     }
 
     @Test
     public void resolveLogsEndpoint_legacyGlobalWins() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig(DEFAULT_HTTP_BASE_URI,
+                null);
         assertEquals(DEFAULT_HTTP_BASE_URI,
-                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
-                        DEFAULT_HTTP_BASE_URI,
-                        null)));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.logs()));
     }
 
     @Test
     public void resolveLogsEndpoint_testIsSet() {
+        OtlpExporterRuntimeConfig config = createOtlpExporterRuntimeConfig(null,
+                null);
         assertEquals(DEFAULT_HTTP_BASE_URI,
-                OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
-                        null,
-                        null)));
+                OtlpExporterEndpoints.resolveEndpoint(config, config.logs()));
     }
 
     private OtlpExporterRuntimeConfig createOtlpExporterRuntimeConfig(String exporterGlobal, String newTrace) {

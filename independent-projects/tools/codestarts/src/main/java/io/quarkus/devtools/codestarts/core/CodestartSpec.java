@@ -130,6 +130,7 @@ public final class CodestartSpec {
         private static final String VERSION = "version";
         private static final String FORMATTED_GAV = "formatted-gav";
         private static final String FORMATTED_GA = "formatted-ga";
+        private static final String VERSION_PROPERTY = "versionProperty";
 
         public CodestartDep() {
         }
@@ -145,6 +146,7 @@ public final class CodestartSpec {
 
             if (split.length == 3) {
                 this.put(VERSION, split[2]);
+                this.put(VERSION_PROPERTY, split[1] + ".version");
                 this.put(FORMATTED_GA, split[0] + ":" + split[1]);
             } else {
                 this.put(FORMATTED_GA, expression);
@@ -163,6 +165,10 @@ public final class CodestartSpec {
 
         public String getVersion() {
             return this.get(VERSION);
+        }
+
+        public String getVersionProperty() {
+            return this.get(VERSION_PROPERTY);
         }
 
         @Override

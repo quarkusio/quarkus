@@ -31,6 +31,16 @@
         {#if uberjar}
         <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
         {/if}
+        {#each dependencies}
+        {#if it.versionProperty}
+        <{it.versionProperty}>{it.version}</{it.versionProperty}>
+        {/if}
+        {/each}
+        {#each test-dependencies}
+        {#if it.versionProperty}
+        <{it.versionProperty}>{it.version}</{it.versionProperty}>
+        {/if}
+        {/each}
     </properties>
 
     <dependencyManagement>
@@ -97,8 +107,8 @@
         <dependency>
             <groupId>{it.groupId}</groupId>
             <artifactId>{it.artifactId}</artifactId>
-            {#if it.version}
-            <version>{it.version}</version>
+            {#if it.versionProperty}
+            <version>$\{{it.versionProperty}}</version>
             {/if}
         </dependency>
         {/each}
@@ -117,8 +127,8 @@
         <dependency>
             <groupId>{it.groupId}</groupId>
             <artifactId>{it.artifactId}</artifactId>
-            {#if it.version}
-            <version>{it.version}</version>
+            {#if it.versionProperty}
+            <version>$\{{it.versionProperty}}</version>
             {/if}
             <scope>test</scope>
         </dependency>
